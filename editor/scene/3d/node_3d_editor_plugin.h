@@ -881,6 +881,7 @@ private:
 	Label *environ_title = nullptr;
 	VBoxContainer *environ_vb = nullptr;
 	ColorPickerButton *environ_sky_color = nullptr;
+	ColorPickerButton *environ_horizon_color = nullptr;
 	ColorPickerButton *environ_ground_color = nullptr;
 	EditorSpinSlider *environ_energy = nullptr;
 	Button *environ_ao_button = nullptr;
@@ -910,6 +911,7 @@ private:
 	void _sun_set_shadow_max_distance(float p_shadow_max_distance);
 
 	void _environ_set_sky_color(const Color &p_color);
+	void _environ_set_horizon_color(const Color &p_color);
 	void _environ_set_ground_color(const Color &p_color);
 	void _environ_set_sky_energy(float p_energy);
 	void _environ_set_ao();
