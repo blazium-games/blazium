@@ -50,6 +50,15 @@
 #endif
 #endif
 
+#if defined(__MINGW32__)
+#ifndef _In_opt_count_
+#define _In_opt_count_(x)
+#endif
+#ifndef _In_count_
+#define _In_count_(x)
+#endif
+#endif // __MINGW32__
+
 /* Forward Declarations */ 
 
 #ifndef __ID3D12Object_FWD_DEFINED__
@@ -663,7 +672,9 @@ extern "C"{
 /* [local] */ 
 
 #include <winapifamily.h>
+#ifdef _MSC_VER
 #pragma region App Family
+#endif
 #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP | WINAPI_PARTITION_GAMES)
 #ifndef _D3D12_CONSTANTS
 #define _D3D12_CONSTANTS
@@ -36782,7 +36793,9 @@ EXTERN_C const IID IID_ID3D12GBVDiagnostics;
 /* [local] */ 
 
 #endif /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP | WINAPI_PARTITION_GAMES) */
+#ifdef _MSC_VER
 #pragma endregion
+#endif
 DEFINE_GUID(IID_ID3D12Object,0xc4fec28f,0x7966,0x4e95,0x9f,0x94,0xf4,0x31,0xcb,0x56,0xc3,0xb8);
 DEFINE_GUID(IID_ID3D12DeviceChild,0x905db94b,0xa00c,0x4140,0x9d,0xf5,0x2b,0x64,0xca,0x9e,0xa3,0x57);
 DEFINE_GUID(IID_ID3D12RootSignature,0xc54a6b66,0x72df,0x4ee8,0x8b,0xe5,0xa9,0x46,0xa1,0x42,0x92,0x14);
