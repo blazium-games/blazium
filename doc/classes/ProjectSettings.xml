@@ -543,7 +543,7 @@
 		<member name="debug/file_logging/enable_file_logging.pc" type="bool" setter="" getter="" default="true">
 			Desktop override for [member debug/file_logging/enable_file_logging], as log files are not readily accessible on mobile/Web platforms.
 		</member>
-		<member name="debug/file_logging/log_path" type="String" setter="" getter="" default="&quot;user://logs/godot.log&quot;">
+		<member name="debug/file_logging/log_path" type="String" setter="" getter="" default="&quot;user://logs/blazium.log&quot;">
 			Path at which to store log files for the project. Using a path under [code]user://[/code] is recommended.
 			This can be specified manually on the command line using the [code]--log-file &lt;file&gt;[/code] [url=$DOCS_URL/tutorials/editor/command_line_tutorial.html]command line argument[/url]. If this command line argument is specified, log rotation is automatically disabled (see [member debug/file_logging/max_log_files]).
 		</member>
