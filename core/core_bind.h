@@ -592,6 +592,7 @@ public:
 	uint64_t get_process_frames() const;
 
 	int get_frames_drawn();
+	uint64_t get_frame_ticks() const;
 
 	void set_time_scale(double p_scale);
 	double get_time_scale();
