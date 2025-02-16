@@ -55,6 +55,10 @@
 		<member name="expand_icon" type="bool" setter="set_expand_icon" getter="is_expand_icon" default="false">
 			When enabled, the button's icon will expand/shrink to fit the button's size while keeping its aspect. See also [theme_item icon_max_width].
 		</member>
+		<member name="expand_text" type="bool" setter="set_expand_text" getter="is_expand_text" default="true">
+			Allows text to expand horizontally.
+			If [code]false[/code], text alignment will only affect multiline text. Also helps to center icon and text properly without overlapping.
+		</member>
 		<member name="flat" type="bool" setter="set_flat" getter="is_flat" default="false">
 			Flat buttons don't display decoration.
 		</member>
