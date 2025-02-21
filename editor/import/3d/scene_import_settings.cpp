@@ -230,6 +230,7 @@ void SceneImportSettingsDialog::_fill_material(Tree *p_tree, const Ref<Material>
 		_load_default_subresource_settings(md.settings, "materials", import_id, ResourceImporterScene::INTERNAL_IMPORT_CATEGORY_MATERIAL);
 
 		material_map[import_id] = md;
+		material_name_map[p_material] = import_id;
 	}
 
 	MaterialData &material_data = material_map[import_id];
@@ -767,6 +768,7 @@ void SceneImportSettingsDialog::open_settings(const String &p_path, const String
 	mesh_set.clear();
 	animation_map.clear();
 	material_map.clear();
+	material_name_map.clear();
 	unnamed_material_name_map.clear();
 	mesh_map.clear();
 	node_map.clear();
@@ -866,9 +868,7 @@ void SceneImportSettingsDialog::_select(Tree *p_from, const String &p_type, cons
 		mesh_preview->hide();
 		_reset_animation();
 
-		if (Object::cast_to<Node3D>(scene)) {
-			Object::cast_to<Node3D>(scene)->show();
-		}
+		_show_scene();
 		material_tree->deselect_all();
 		mesh_tree->deselect_all();
 		NodeData &nd = node_map[p_id];
@@ -913,9 +913,7 @@ void SceneImportSettingsDialog::_select(Tree *p_from, const String &p_type, cons
 		mesh_preview->hide();
 		_reset_animation(p_id);
 
-		if (Object::cast_to<Node3D>(scene)) {
-			Object::cast_to<Node3D>(scene)->show();
-		}
+		_show_scene();
 		material_tree->deselect_all();
 		mesh_tree->deselect_all();
 		AnimationData &ad = animation_map[p_id];
@@ -946,6 +944,7 @@ void SceneImportSettingsDialog::_select(Tree *p_from, const String &p_type, cons
 		}
 
 		mesh_preview->set_mesh(md.mesh);
+		_update_mesh_instance_material_overrides(mesh_preview);
 		mesh_preview->show();
 		_reset_animation();
 
@@ -966,6 +965,7 @@ void SceneImportSettingsDialog::_select(Tree *p_from, const String &p_type, cons
 
 		material_preview->set_material(md.material);
 		mesh_preview->set_mesh(material_preview);
+		mesh_preview->set_surface_override_material(0, _get_preview_material(md));
 
 		if (p_from != mesh_tree) {
 			md.mesh_node->uncollapse_tree();
@@ -1033,6 +1033,9 @@ void SceneImportSettingsDialog::_inspector_property_edited(const String &p_name)
 		} else {
 			animation_loop_mode = Animation::LoopMode::LOOP_NONE;
 		}
+	} else if (p_name == "use_external/enabled" || p_name == "use_external/path") {
+		MaterialData &md = material_map[selected_id];
+		mesh_preview->set_surface_override_material(0, _get_preview_material(md));
 	}
 	if ((p_name == "use_external/enabled") || (p_name == "use_external/path") || (p_name == "use_external/fallback_path")) {
 		MaterialData &material_data = material_map[selected_id];
@@ -1239,6 +1242,76 @@ void SceneImportSettingsDialog::_on_light_rotate_switch_pressed() {
 	light2->set_as_top_level_keep_local(light_top_level);
 }
 
+void SceneImportSettingsDialog::_on_external_material_switch_pressed() {
+	if (selected_type == "Material") {
+		MaterialData &md = material_map[selected_id];
+		mesh_preview->set_surface_override_material(0, _get_preview_material(md));
+	} else if (selected_type == "Mesh") {
+		_update_mesh_instance_material_overrides(mesh_preview);
+	} else {
+		_update_scene_materials(scene);
+	}
+}
+
+void SceneImportSettingsDialog::_show_scene() {
+	if (Object::cast_to<Node3D>(scene)) {
+		Node3D *node3d = Object::cast_to<Node3D>(scene);
+		_update_scene_materials(node3d);
+		node3d->show();
+	}
+}
+
+void SceneImportSettingsDialog::_update_scene_materials(Node *scene_node) {
+	int child_count = scene_node->get_child_count(false);
+	if (child_count == 0) {
+		return;
+	}
+	for (int i = 0; i < child_count; ++i) {
+		Node *chile_node = scene_node->get_child(i, false);
+		if (Object::cast_to<MeshInstance3D>(chile_node)) {
+			_update_mesh_instance_material_overrides(Object::cast_to<MeshInstance3D>(chile_node));
+		}
+		_update_scene_materials(chile_node);
+	}
+}
+
+void SceneImportSettingsDialog::_update_mesh_instance_material_overrides(MeshInstance3D *mesh_instance) {
+	int total_surfaces = mesh_instance->get_surface_override_material_count();
+	for (int surface = 0; surface < total_surfaces; ++surface) {
+		mesh_instance->set_surface_override_material(surface, nullptr);
+	}
+	if (!external_material_switch->is_pressed()) {
+		return;
+	}
+	for (int surface = 0; surface < total_surfaces; ++surface) {
+		String material_name = material_name_map[mesh_instance->get_active_material(surface)];
+		if (material_name.length() > 0) {
+			MaterialData &md = material_map[material_name];
+			mesh_instance->set_surface_override_material(surface, _get_preview_material(md));
+		}
+	}
+}
+
+Ref<Material> SceneImportSettingsDialog::_get_preview_material(MaterialData &md) {
+	if (external_material_switch->is_pressed() && md.settings.has("use_external/enabled") && bool(md.settings["use_external/enabled"])) {
+		if (md.settings.has("use_external/path")) {
+			String external_path = String(md.settings["use_external/path"]);
+			if (md.last_external_path != external_path) {
+				md.last_external_path = external_path;
+				Ref<Material> external_mat = ResourceLoader::load(external_path);
+				if (external_mat.is_valid()) {
+					md.external_material = external_mat;
+				} else {
+					return nullptr;
+				}
+			}
+		}
+		return md.external_material;
+	} else {
+		return nullptr;
+	}
+}
+
 void SceneImportSettingsDialog::_viewport_input(const Ref<InputEvent> &p_input) {
 	float *rot_x = &cam_rot_x;
 	float *rot_y = &cam_rot_y;
@@ -1371,6 +1444,7 @@ void SceneImportSettingsDialog::_update_theme_item_cache() {
 	theme_cache.light_1_icon = get_editor_theme_icon(SNAME("MaterialPreviewLight1"));
 	theme_cache.light_2_icon = get_editor_theme_icon(SNAME("MaterialPreviewLight2"));
 	theme_cache.rotate_icon = get_editor_theme_icon(SNAME("PreviewRotate"));
+	theme_cache.material_icon = get_editor_theme_icon(SNAME("StandardMaterial3D"));
 }
 
 void SceneImportSettingsDialog::_notification(int p_what) {
@@ -1390,6 +1464,7 @@ void SceneImportSettingsDialog::_notification(int p_what) {
 			light_1_switch->set_button_icon(theme_cache.light_1_icon);
 			light_2_switch->set_button_icon(theme_cache.light_2_icon);
 			light_rotate_switch->set_button_icon(theme_cache.rotate_icon);
+			external_material_switch->set_button_icon(theme_cache.material_icon);
 
 			animation_toggle_skeleton_visibility->set_button_icon(get_editor_theme_icon(SNAME("SkeletonPreview")));
 		} break;
@@ -1839,6 +1914,14 @@ SceneImportSettingsDialog::SceneImportSettingsDialog() {
 	light_2_switch->set_tooltip_text(TTR("Secondary Light"));
 	light_2_switch->connect(SceneStringName(pressed), callable_mp(this, &SceneImportSettingsDialog::_on_light_2_switch_pressed));
 	vb_light->add_child(light_2_switch);
+
+	external_material_switch = memnew(Button);
+	external_material_switch->set_theme_type_variation("PreviewLightButton");
+	external_material_switch->set_toggle_mode(true);
+	external_material_switch->set_pressed(true);
+	external_material_switch->set_tooltip_text(TTR("External Materials"));
+	external_material_switch->connect(SceneStringName(pressed), callable_mp(this, &SceneImportSettingsDialog::_on_external_material_switch_pressed));
+	vb_light->add_child(external_material_switch);
 
 	camera = memnew(Camera3D);
 	base_viewport->add_child(camera);
