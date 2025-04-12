@@ -3365,6 +3365,19 @@ GDScriptParser::ExpressionNode *GDScriptParser::parse_dictionary(ExpressionNode 
 				dictionary->elements.push_back({ key, value });
 			}
 
+			if (!check(GDScriptTokenizer::Token::BRACE_CLOSE)) {
+				switch (current.type) {
+					case GDScriptTokenizer::Token::IDENTIFIER:
+					case GDScriptTokenizer::Token::LITERAL:
+					case GDScriptTokenizer::Token::BRACKET_OPEN:
+					case GDScriptTokenizer::Token::PARENTHESIS_OPEN:
+						push_error(R"(Expected ',' between dictionary entries.)");
+						break;
+					default:
+						break;
+				}
+			}
+
 			// Do phrase level recovery by inserting an imaginary expression for missing keys or values.
 			// This ensures the successfully parsed expression is part of the AST and can be analyzed.
 			if (key != nullptr && value == nullptr) {
