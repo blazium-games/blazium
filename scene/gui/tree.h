@@ -410,8 +410,6 @@ public:
 
 VARIANT_ENUM_CAST(TreeItem::TreeCellMode);
 
-class VBoxContainer;
-
 class Tree : public Control {
 	GDCLASS(Tree, Control);
 
@@ -494,8 +492,6 @@ private:
 	};
 
 	bool show_column_titles = false;
-
-	VBoxContainer *popup_editor_vb = nullptr;
 
 	bool popup_edit_committed = true;
 	Popup *popup_editor = nullptr;

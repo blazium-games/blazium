@@ -6092,7 +6092,7 @@ Tree::Tree() {
 	popup_editor = memnew(Popup);
 	add_child(popup_editor, false, INTERNAL_MODE_FRONT);
 
-	popup_editor_vb = memnew(VBoxContainer);
+	VBoxContainer *popup_editor_vb = memnew(VBoxContainer);
 	popup_editor_vb->add_theme_constant_override("separation", 0);
 	popup_editor_vb->set_anchors_and_offsets_preset(PRESET_FULL_RECT);
 	popup_editor->add_child(popup_editor_vb);
