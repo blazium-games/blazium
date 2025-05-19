@@ -33,6 +33,7 @@
 #include "scene/gui/control.h"
 #include "scene/resources/text_paragraph.h"
 
+class VBoxContainer;
 class HScrollBar;
 class HSlider;
 class LineEdit;
@@ -494,6 +495,8 @@ private:
 	bool show_column_titles = false;
 
 	bool popup_edit_committed = true;
+
+	VBoxContainer *popup_editor_vb = nullptr;
 	Popup *popup_editor = nullptr;
 	LineEdit *line_editor = nullptr;
 	TextEdit *text_editor = nullptr;
@@ -524,6 +527,8 @@ private:
 	void _text_editor_popup_modal_close();
 	void _text_editor_gui_input(const Ref<InputEvent> &p_event);
 	void value_editor_changed(double p_value);
+	void _update_popup_menu(const TreeItem::Cell &p_cell);
+	void _update_value_editor(const TreeItem::Cell &p_cell);
 
 	void popup_select(int p_option);
 
