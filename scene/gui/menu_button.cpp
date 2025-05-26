@@ -141,6 +141,7 @@ int MenuButton::get_item_count() const {
 
 void MenuButton::_notification(int p_what) {
 	switch (p_what) {
+		case NOTIFICATION_TRANSLATION_CHANGED:
 		case NOTIFICATION_LAYOUT_DIRECTION_CHANGED: {
 			popup->set_layout_direction((Window::LayoutDirection)get_layout_direction());
 		} break;
