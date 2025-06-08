@@ -37,7 +37,19 @@
 #include <drivers/d3d12/godot_d3dx12.h>
 
 #ifdef DCOMP_ENABLED
+#if (WINVER < _WIN32_WINNT_WIN8) && defined(_MSC_VER)
+#pragma push_macro("NTDDI_VERSION")
+#pragma push_macro("WINVER")
+#undef NTDDI_VERSION
+#undef WINVER
+#define NTDDI_VERSION NTDDI_WIN8
+#define WINVER _WIN32_WINNT_WIN8
 #include <dcomp.h>
+#pragma pop_macro("WINVER")
+#pragma pop_macro("NTDDI_VERSION")
+#else
+#include <dcomp.h>
+#endif
 #endif
 
 #include <wrl/client.h>
