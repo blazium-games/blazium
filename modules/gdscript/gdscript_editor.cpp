@@ -1504,7 +1504,7 @@ static void _find_identifiers(const GDScriptParser::CompletionContext &p_context
 
 	static const char *_keywords_with_space[] = {
 		"and", "not", "or", "in", "as", "class", "class_name", "trait", "trait_name", "extends", "uses", "is", "func", "signal", "await",
-		"const", "enum", "abstract", "static", "var", "if", "elif", "else", "for", "match", "when", "while",
+		"const", "enum", "static", "var", "if", "elif", "else", "for", "match", "when", "while",
 		nullptr
 	};
 
