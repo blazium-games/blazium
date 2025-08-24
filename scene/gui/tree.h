@@ -98,6 +98,7 @@ private:
 		Color icon_color = Color(1, 1, 1);
 		Ref<StyleBox> custom_stylebox;
 
+		Rect2 focus_rect;
 		Size2i cached_minimum_size;
 		bool cached_minimum_size_dirty = true;
 
@@ -132,6 +133,7 @@ private:
 
 	Vector<Cell> cells;
 
+	Rect2 focus_rect;
 	bool collapsed = false; // Won't show children.
 	bool visible = true;
 	bool parent_visible_in_tree = true;

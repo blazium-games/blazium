@@ -2305,11 +2305,11 @@ int Tree::draw_item(const Point2i &p_pos, const Point2 &p_draw_ofs, const Size2 
 				}
 			}
 
-			if ((select_mode == SELECT_ROW && selected_item == p_item) || (select_mode == SELECT_MULTI && selected_item == p_item && selected_col == i) || p_item->cells[i].selected || !p_item->has_meta("__focus_rect")) {
+			if ((select_mode == SELECT_ROW && selected_item == p_item) || (select_mode == SELECT_MULTI && selected_item == p_item && selected_col == i) || p_item->cells[i].selected || !p_item->focus_rect.has_area()) {
 				Rect2i r = cell_rect;
 
 				if (select_mode != SELECT_ROW) {
-					p_item->set_meta("__focus_rect", Rect2(r.position, r.size));
+					p_item->focus_rect = Rect2(r.position, r.size);
 					r = convert_rtl_rect(r);
 					if (p_item->cells[i].selected) {
 						if (has_focus()) {
@@ -2319,7 +2319,7 @@ int Tree::draw_item(const Point2i &p_pos, const Point2 &p_draw_ofs, const Size2 
 						}
 					}
 				} else {
-					p_item->set_meta("__focus_col_" + itos(i), Rect2(r.position, r.size));
+					p_item->cells.write[i].focus_rect = Rect2(r.position, r.size);
 				}
 			}
 
@@ -4329,9 +4329,9 @@ bool Tree::edit_selected(bool p_force_edit) {
 Rect2 Tree::_get_item_focus_rect(const TreeItem *p_item) const {
 	Rect2 rect;
 	if (select_mode == SELECT_ROW) {
-		rect = p_item->get_meta("__focus_col_" + itos(selected_col));
+		rect = p_item->cells[selected_col].focus_rect;
 	} else {
-		rect = p_item->get_meta("__focus_rect");
+		rect = p_item->focus_rect;
 	}
 	return rect;
 }
