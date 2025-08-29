@@ -33,6 +33,7 @@
 
 #include "core/config/project_settings.h"
 #include "core/os/os.h"
+#include "scene/gui/graph_element.h"
 #include "scene/gui/menu_bar.h"
 #include "scene/gui/panel_container.h"
 #include "scene/gui/scroll_bar.h"
@@ -3193,12 +3194,29 @@ void PopupMenu::popup(const Rect2i &p_bounds) {
 }
 
 void PopupMenu::_pre_popup() {
-	Size2 scale = get_force_native() ? get_parent_viewport()->get_popup_base_transform_native().get_scale() : get_parent_viewport()->get_popup_base_transform().get_scale();
-	CanvasItem *c = Object::cast_to<CanvasItem>(get_parent());
-	if (c) {
-		scale *= c->get_global_transform_with_canvas().get_scale();
+	real_t popup_scale = 1.0;
+	bool scale_with_parent = true;
+
+	// Disable content scaling to avoid too tiny or too big menus when using GraphEdit zoom, applied only if menu is a child of GraphElement.
+	Node *p = get_parent();
+	while (p) {
+		GraphElement *ge = Object::cast_to<GraphElement>(p);
+		if (ge) {
+			scale_with_parent = ge->is_scaling_menus();
+			break;
+		}
+		p = p->get_parent();
 	}
-	real_t popup_scale = MIN(scale.x, scale.y);
+
+	if (scale_with_parent) {
+		Size2 scale = get_force_native() ? get_parent_viewport()->get_popup_base_transform_native().get_scale() : get_parent_viewport()->get_popup_base_transform().get_scale();
+		CanvasItem *c = Object::cast_to<CanvasItem>(get_parent());
+		if (c) {
+			scale *= c->get_global_transform_with_canvas().get_scale();
+		}
+		popup_scale = MIN(scale.x, scale.y);
+	}
+
 	set_content_scale_factor(popup_scale);
 	if (is_wrapping_controls()) {
 		Size2 minsize = get_contents_minimum_size() * popup_scale;
