@@ -372,6 +372,14 @@
 		<member name="application/config/windows_native_icon" type="String" setter="" getter="" default="&quot;&quot;">
 			Icon set in [code].ico[/code] format used on Windows to set the game's icon. This is done automatically on start by calling [method DisplayServer.set_native_icon].
 		</member>
+		<member name="application/export/global_exclude_filter" type="String" setter="" getter="" default="&quot;&quot;">
+			Global filters to exclude files/folders from project, (comma-separated, e.g: *.json, *.txt, docs/*).
+			[b]Note:[/b] This filter is applied to all export presets before the preset's own exclude filters, ensuring global exclusions take precedence.
+		</member>
+		<member name="application/export/global_include_filter" type="String" setter="" getter="" default="&quot;&quot;">
+			Global filters to export non-resource files/folders, (comma-separated, e.g: *.json, *.txt, docs/*).
+			[b]Note:[/b] This filter is applied to all export presets before the preset's own include filters, ensuring global inclusions take precedence.
+		</member>
 		<member name="application/run/delta_smoothing" type="bool" setter="" getter="" default="true">
 			Time samples for frame deltas are subject to random variation introduced by the platform, even when frames are displayed at regular intervals thanks to V-Sync. This can lead to jitter. Delta smoothing can often give a better result by filtering the input deltas to correct for minor fluctuations from the refresh rate.
 			[b]Note:[/b] Delta smoothing is only attempted when [member display/window/vsync/vsync_mode] is set to [code]enabled[/code], as it does not work well without V-Sync.
