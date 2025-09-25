@@ -1680,6 +1680,9 @@ void SceneTreeDock::_notification(int p_what) {
 				scene_tree->set_auto_expand_selected(EDITOR_GET("docks/scene_tree/auto_expand_to_selected"), false);
 				scene_tree->set_hide_filtered_out_parents(EDITOR_GET("docks/scene_tree/hide_filtered_out_parents"), false);
 			}
+			if (EditorSettings::get_singleton()->check_changed_settings_in_group("interface/editor")) {
+				inspect_hovered_node_delay->set_wait_time(EDITOR_GET("interface/editor/dragging_hover_wait_seconds"));
+			}
 		} break;
 
 		case NOTIFICATION_THEME_CHANGED: {

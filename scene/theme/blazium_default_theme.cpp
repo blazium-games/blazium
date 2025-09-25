@@ -1673,6 +1673,7 @@ void make_default_theme(Ref<Font> p_font, ThemeTemplate &p_template) {
 	t->set_constant("completion_scroll_width", "CodeEdit", 6);
 	t->set_constant("completion_lines", "CodeEdit", 7);
 	t->set_constant("wrap_offset", "TextEdit", 10);
+	t->set_constant("dragging_unfold_wait_msec", "Tree", 500);
 
 	t->set_color("font_shadow_color", "Label", Color(0, 0, 0, 0));
 	t->set_color("font_shadow_color", "GraphNodeTitleLabel", Color(0, 0, 0, 0));
