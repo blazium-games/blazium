@@ -6382,7 +6382,7 @@ float RichTextLabel::get_visible_ratio() const {
 }
 
 void RichTextLabel::set_effects(const Array &p_effects) {
-	custom_effects = p_effects;
+	custom_effects = Array(p_effects);
 	reload_effects();
 }
 
