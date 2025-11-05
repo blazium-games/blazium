@@ -335,6 +335,9 @@ EditorThemeManager::ThemeConfiguration EditorThemeManager::_create_theme_config(
 			} else if (config.preset == "Breeze Dark") {
 				preset_accent_color = Color(0.239, 0.682, 0.914);
 				preset_base_color = Color(0.1255, 0.1373, 0.149);
+			} else if (config.preset == "Godot") { // Godot default
+				preset_accent_color = Color(0.337, 0.62, 1.0);
+				preset_base_color = Color(0.161, 0.161, 0.161);
 			} else if (config.preset == "Godot 2") {
 				preset_accent_color = Color(0.53, 0.67, 0.89);
 				preset_base_color = Color(0.24, 0.23, 0.27);
@@ -363,9 +366,10 @@ EditorThemeManager::ThemeConfiguration EditorThemeManager::_create_theme_config(
 				preset_accent_color = Color(0.15, 0.55, 0.82);
 				preset_base_color = Color(0.89, 0.86, 0.79);
 				preset_contrast = light_contrast;
-			} else { // Default
-				preset_accent_color = Color(0.337, 0.62, 1.0);
-				preset_base_color = Color(0.161, 0.161, 0.161);
+			} else { // Blazium default
+				preset_accent_color = Color(0.733, 0.604, 0.969);
+				preset_base_color = Color(0.141, 0.157, 0.231);
+				preset_contrast = 0.24;
 			}
 
 			config.accent_color = preset_accent_color;
