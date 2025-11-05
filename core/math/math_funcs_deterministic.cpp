@@ -1,13 +1,11 @@
 //Source file originally made by FBM
 
-//LICENCE: NO CLAIM FROM THE AUTHOR FBM
+//LICENSE: NO CLAIM FROM THE AUTHOR FBM, yes,
+//even for the formulas he invented.
+//(FBM, wrote this)
 
-//But, if someone ever contributes to this specific file please write your name down
-//in the CONTRIBUTOR_LIST in the same way you would populate a list of string
-//because this is hard and I want at least a sense of comradery.
-
-//CONTRIBUTOR_LIST {
-//
+//WORKED_ON_FILE {
+//FBM
 //}
 
 #include "math_funcs_deterministic.h"
@@ -42,6 +40,20 @@ int64_t MathFI::Q13Mul(const int64_t v1, const int64_t v2)
 
 //COMPLEX MATH
 
+//Highly precise conversion of Q12 radians to Q12 degrees by FBM.
+FInt MathFI::radians_to_degrees(FInt radians)
+{
+    return FInt{(((radians.raw_value << 13) + (radians.raw_value << 12)) * 45) / 9651};
+}
+
+//Highly precise conversion of Q12 degrees to Q12 radians by FBM.
+FInt MathFI::degrees_to_radians(FInt degrees)
+{
+    //Compiler has once again made this a big multiplication, god help the CPU.
+    return FInt{degrees.raw_value * 9651 / 552960};
+}
+
+//Sqrt that can process any number.
 FInt MathFI::sqrt( const FInt f )
 {
     //Ez operation that only works for 2.350.000 FInt
@@ -92,6 +104,7 @@ FInt MathFI::opt_sqrt( const FInt f )
 }
 
 //from https://github.com/chmike/fpsqrt
+//NEVER call this.
 uint64_t MathFI::sqrtfx12( const uint64_t v )
 {
     uint64_t t, q, b, r;
@@ -240,48 +253,79 @@ FInt MathFI::atan_r(const FInt p)
     return FInt{MathFI::atan_sanitized(p.raw_value << 4) * flip};
 }
 
-// Adapted from https://gitlab.com/snopek-games/sg-physics-2d/
-// which is also an adaptation of Mike's code, hence why 2 copyrights.
-// Copyright 2019 Mike Lankamp, Copyright (c) 2021-2022 David Snopek
-// Licenses: both MIT
-// 2-argument arctangent that returns in radians.
-FInt MathFI::atan2_r(const FInt in, const FInt inX) {
-	if (in == FInt::ZERO) {
-		return (inX < FInt::ZERO) ? MathFI::PI : FInt::ZERO;
-	}
-	if (inX == FInt::ZERO) {
-		return (in > FInt::ZERO) ? MathFI::PI_DIV_2 : -MathFI::PI_DIV_2;
-	}
-
-	FInt ret = MathFI::atan_div(in, inX);
-
-	if (inX < FInt::ZERO) {
-		return (in >= FInt::ZERO) ? ret + MathFI::PI : ret - MathFI::PI;
-	}
-	return ret;
+FInt MathFI::atan_d(const FInt p)
+{
+    MathFI::radians_to_degrees(MathFI::atan_r(p));
 }
 
 // Adapted from https://gitlab.com/snopek-games/sg-physics-2d/
 // which is also an adaptation of Mike's code, hence why 2 copyrights.
 // Copyright 2019 Mike Lankamp, Copyright (c) 2021-2022 David Snopek
 // Licenses: both MIT
+// 2-argument arctangent that returns in radians.
+// Optimized to the point of being unreadable.
+FInt MathFI::atan2_r(const FInt in, const FInt inX) {
+    bool in_zero = in == FInt::ZERO;
+    bool inx_zero = inX == FInt::ZERO;
+
+    if (in_zero | inx_zero)
+    {
+        bool inx_lzero = inX < FInt::ZERO;
+        bool in_leqzero = in < FInt::ZERO | in_zero;
+        int64_t flip_pi_div2 = (in_leqzero * -1LL) | 1LL;
+
+        return FInt{
+            (MathFI::PI.raw_value * (in_zero & inx_lzero))
+            | ((MathFI::PI_DIV_2.raw_value * flip_pi_div2) * !in_zero)
+        };
+    }
+
+    int64_t flip_pi = ((in < FInt::ZERO) * -1LL) | 1LL;
+
+	FInt adiv_ret = MathFI::atan_div(in, inX);
+
+    FInt ret = adiv_ret + (MathFI::PI * flip_pi * (inX < FInt::ZERO));
+
+	return ret;
+}
+
+FInt MathFI::atan2_d(const FInt in, const FInt inX)
+{
+    MathFI::radians_to_degrees(MathFI::atan2_r(in, inX));
+}
+
+// Adapted from https://gitlab.com/snopek-games/sg-physics-2d/
+// which is also an adaptation of Mike's code, hence why 2 copyrights.
+// Copyright 2019 Mike Lankamp, Copyright (c) 2021-2022 David Snopek
+// Licenses: both MIT
+// Optimized to the point of being unreadable.
 FInt MathFI::atan_div(const FInt p_y, const FInt p_x) {
 	ERR_FAIL_COND_V(p_x == FInt::ZERO, FInt::ZERO);
 
-	if (p_y < FInt::ZERO) {
-		if (p_x < FInt::ZERO) {
-			return MathFI::atan_div(-p_y, -p_x);
-		}
-		return -MathFI::atan_div(-p_y, p_x);
-	}
-	if (p_x < FInt::ZERO) {
-		return -MathFI::atan_div(p_y, -p_x);
-	}
+    bool y_lzero = p_y < FInt::ZERO;
+    bool x_lzero = p_x < FInt::ZERO;
+    bool x_y_discronguous = (y_lzero | x_lzero) & (y_lzero ^ x_lzero);
 
-	if (p_y > p_x) {
-		return MathFI::PI_DIV_2 - MathFI::atan_sanitized((p_x.raw_value << 20) / (p_y.raw_value << 4));
-	}
-	return FInt{MathFI::atan_sanitized((p_y.raw_value << 20) / (p_x.raw_value << 4))};
+    // f is for 'final'
+    // Flips p_coordinate according to the condition.
+    int64_t f_y = p_y.raw_value * ((-1LL * (int64_t)(y_lzero)) | 1);
+    int64_t f_x = p_x.raw_value * ((-1LL * (int64_t)(x_lzero)) | 1);
+
+    int64_t flip_result = (-1LL * (int64_t)(x_y_discronguous)) | 1LL;
+
+    //I didn't know what to call it.
+    bool discombobulate = p_y > p_x;
+    int64_t y_first = (int64_t)(discombobulate ^ true);
+    int64_t x_first = (int64_t)discombobulate;
+
+    int64_t f_1 = (f_y * y_first) | (f_x * x_first);
+    int64_t f_2 = (f_y * x_first) | (f_x * y_first);
+
+    FInt atan_sani = FInt{MathFI::atan_sanitized((f_1 << 20) / (f_2 << 4))};
+
+    FInt result = (MathFI::PI_DIV_2 * x_first) + (atan_sani * ((-1LL * x_first) | 1));
+
+	return result * flip_result;
 }
 
 
@@ -328,6 +372,7 @@ FInt MathFI::fp_sin_r( const FInt radians )
 
 //https://www.nullhardware.com/blog/fixed-point-sine-and-cosine-for-embedded-systems/
 //Optimized sine, uses the max value of short as a representation of PI*2.
+//NEVER CALL unless you know what you're doing.
 FInt MathFI::fp_sin(const int16_t value)
 {
     int16_t i = value;
@@ -362,17 +407,4 @@ FInt MathFI::fp_sin(const int16_t value)
     to_return.raw_value = c ? -y : y;
 
     return to_return;
-}
-
-//Highly precise conversion of Q12 radians to Q12 degrees by FBM.
-FInt MathFI::radians_to_degrees(FInt radians)
-{
-    return FInt{(((radians.raw_value << 13) + (radians.raw_value << 12)) * 45) / 9651};
-}
-
-//Highly precise conversion of Q12 degrees to Q12 radians by FBM.
-FInt MathFI::degrees_to_radians(FInt degrees)
-{
-    //Compiler has once again made this a big multiplication, god help the CPU.
-    return FInt{degrees.raw_value * 9651 / 552960};
 }

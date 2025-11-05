@@ -20,6 +20,10 @@ namespace MathFI {
 
 	int64_t Q13Mul(const int64_t v1, const int64_t v2);
 
+	FInt radians_to_degrees(FInt radians);
+
+	FInt degrees_to_radians(FInt degrees);
+
 	FInt sqrt(const FInt f);
 
 	FInt opt_sqrt(const FInt f);
@@ -40,7 +44,11 @@ namespace MathFI {
 
 	FInt atan_r(const FInt p);
 
+	FInt atan_d(const FInt p);
+
 	FInt atan2_r(const FInt in, const FInt inX);
+
+	FInt atan2_d(const FInt in, const FInt inX);
 
 	FInt atan_div(const FInt p_y, const FInt p_x);
 
@@ -51,8 +59,4 @@ namespace MathFI {
     FInt MathFI::fp_sin_r( const FInt radians );
 
     FInt MathFI::fp_sin(const int16_t value);
-
-    FInt MathFI::radians_to_degrees(FInt radians);
-
-    FInt MathFI::degrees_to_radians(FInt degrees);
 }
