@@ -4,6 +4,8 @@
 #include "core/error/error_macros.h"
 #include "core/math/math_funcs.h"
 
+class String;
+
 //https://stackoverflow.com/questions/605124/fixed-point-math-in-c
 //Q12 deterministic number.
 //Search 'Q notation' for more info.
@@ -81,6 +83,7 @@ struct [[nodiscard]] FInt {
 
 	constexpr explicit FInt(const int32_t sbj) : raw_value{((int64_t) sbj) << FInt::SHIFT_AMOUNT}  {}
 	constexpr explicit FInt(const int64_t sbj) : raw_value{sbj << FInt::SHIFT_AMOUNT}  {}
+	operator String() const;
 };
 
 _FORCE_INLINE_ constexpr FInt &FInt::operator+=(const FInt p_d) {

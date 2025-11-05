@@ -12,6 +12,12 @@
 
 //SIMPLE MATH
 
+bool MathFI::is_equal_approx(const FInt v1, const FInt v2, FInt max_approx)
+{
+    int64_t diff = MathFI::abs(v1 - v2).raw_value;
+    return diff <= max_approx.raw_value;
+}
+
 FInt MathFI::min( const FInt v1, const FInt v2 )
 {
     int32_t first = v1 < v2;
@@ -31,6 +37,48 @@ FInt MathFI::max( const FInt v1, const FInt v2 )
 FInt MathFI::lerp( const FInt start, const FInt end, const FInt progress )
 {
     return (Q13Mul(start.raw_value << 1, 8192 - (progress.raw_value << 1)) + Q13Mul(end.raw_value << 1, progress.raw_value << 1)) >> 1;
+}
+
+FInt MathFI::clamp(const FInt subj, const FInt min, const FInt max) {
+	return subj < min ? min : (subj > max ? max : subj);
+}
+
+FInt MathFI::abs(const FInt subj)
+{
+    return subj * ((-1LL * (subj.raw_value < 0)) | 1);
+}
+
+FInt MathFI::floor(const FInt subj)
+{
+    return FInt((int64_t) subj);
+}
+
+FInt MathFI::ceil(const FInt subj)
+{
+    FInt floor = MathFI::floor(subj);
+
+    return floor + FInt::ONE * (subj > floor);
+}
+
+FInt MathFI::round(const FInt subj)
+{
+    FInt floor = MathFI::floor(subj);
+
+    return floor + FInt::ONE * (subj > floor + FInt::HALF);
+}
+
+FInt MathFI::snapped(FInt p_value, FInt p_step) {
+
+    FInt result;
+	if (p_step != FInt::ZERO) {
+		//p_value = Math::floor(p_value / p_step + 0.5) * p_step;
+
+        int64_t mod = p_value.raw_value % p_step.raw_value;
+        int64_t sided_add = (int64_t)(mod >= (p_step.raw_value >> 1));
+
+        return FInt{p_value.raw_value - mod + p_step * sided_add};
+	}
+	return result;
 }
 
 int64_t MathFI::Q13Mul(const int64_t v1, const int64_t v2)

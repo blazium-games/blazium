@@ -12,11 +12,25 @@ namespace MathFI {
 
     constexpr static const FInt PI_DIV_2 = FInt{6434};
 
+	bool is_equal_approx(const FInt v1, const FInt v2, FInt max_approx);
+
 	FInt min(const FInt v1, const FInt v2);
 
 	FInt max(const FInt v1, const FInt v2);
 
 	FInt lerp(const FInt start, const FInt end, const FInt progress);
+
+	FInt clamp(const FInt m_a, const FInt m_min, const FInt m_max);
+
+	FInt abs(const FInt subj);
+
+	FInt floor(const FInt subj);
+
+	FInt ceil(const FInt subj);
+
+	FInt round(const FInt subj);
+
+	FInt snapped(FInt p_value, FInt p_step);
 
 	int64_t Q13Mul(const int64_t v1, const int64_t v2);
 
