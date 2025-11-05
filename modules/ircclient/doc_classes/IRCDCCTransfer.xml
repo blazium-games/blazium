@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="IRCDCCTransfer" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="accept">
+			<return type="int" enum="Error" />
+			<description>
+				Returns accept.
+			</description>
+		</method>
+		<method name="cancel">
+			<return type="int" enum="Error" />
+			<description>
+				Returns cancel.
+			</description>
+		</method>
+		<method name="get_error_message" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the error message.
+			</description>
+		</method>
+		<method name="get_progress" qualifiers="const">
+			<return type="float" />
+			<description>
+				Returns the progress.
+			</description>
+		</method>
+		<method name="get_resume_position" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the resume position.
+			</description>
+		</method>
+		<method name="reject">
+			<return type="int" enum="Error" />
+			<description>
+				Returns reject.
+			</description>
+		</method>
+		<method name="set_resume_position">
+			<return type="void" />
+			<param index="0" name="position" type="int" />
+			<description>
+				Sets the resume position. [param position] - Position.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="address" type="String" setter="set_address" getter="get_address" default="&quot;&quot;">
+		</member>
+		<member name="file_size" type="int" setter="set_file_size" getter="get_file_size" default="0">
+		</member>
+		<member name="filename" type="String" setter="set_filename" getter="get_filename" default="&quot;&quot;">
+		</member>
+		<member name="local_path" type="String" setter="set_local_path" getter="get_local_path" default="&quot;&quot;">
+		</member>
+		<member name="port" type="int" setter="set_port" getter="get_port" default="0">
+		</member>
+		<member name="remote_nick" type="String" setter="set_remote_nick" getter="get_remote_nick" default="&quot;&quot;">
+		</member>
+		<member name="status" type="int" setter="set_status" getter="get_status" enum="IRCDCCTransfer.Status" default="0">
+		</member>
+		<member name="transferred" type="int" setter="" getter="get_transferred" default="0">
+		</member>
+		<member name="type" type="int" setter="set_transfer_type" getter="get_transfer_type" enum="IRCDCCTransfer.Type" default="0">
+		</member>
+		<member name="use_ipv6" type="bool" setter="set_use_ipv6" getter="get_use_ipv6" default="false">
+		</member>
+	</members>
+	<constants>
+		<constant name="TYPE_FILE_SEND" value="0" enum="Type">
+		</constant>
+		<constant name="TYPE_FILE_RECEIVE" value="1" enum="Type">
+		</constant>
+		<constant name="TYPE_CHAT" value="2" enum="Type">
+		</constant>
+		<constant name="DCC_STATUS_PENDING" value="0" enum="Status">
+		</constant>
+		<constant name="DCC_STATUS_CONNECTING" value="1" enum="Status">
+		</constant>
+		<constant name="DCC_STATUS_TRANSFERRING" value="2" enum="Status">
+		</constant>
+		<constant name="DCC_STATUS_COMPLETED" value="3" enum="Status">
+		</constant>
+		<constant name="DCC_STATUS_FAILED" value="4" enum="Status">
+		</constant>
+		<constant name="DCC_STATUS_CANCELLED" value="5" enum="Status">
+		</constant>
+	</constants>
+</class>

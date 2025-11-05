@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="KickCategoriesRequests" inherits="KickRequestBase" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Handles Kick API requests related to categories.
+	</brief_description>
+	<description>
+		KickCategoriesRequests provides methods for searching categories and retrieving category information from the Kick API.
+		Access this handler through [method KickAPI.get_categories].
+		[codeblocks]
+		[gdscript]
+		func _ready():
+		    KickAPI.configure("your_token")
+		    KickAPI.request_completed.connect(_on_request_completed)
+
+		    # Search for categories
+		    KickAPI.get_categories().get_categories("Gaming", 1)
+
+		    # Get specific category
+		    KickAPI.get_categories().get_category(42)
+
+		func _on_request_completed(signal_name: String, response_code: int, data: Dictionary):
+		    if signal_name == "categories_received":
+		        # Output from search:
+		        # {
+		        #   "data": [
+		        #     {
+		        #       "id": 123,
+		        #       "name": "Gaming",
+		        #       "thumbnail": "https://..."
+		        #     },
+		        #     ...
+		        #   ],
+		        #   "message": "success"
+		        # }
+		        for category in data["data"]:
+		            print("Category: ", category["name"], " ID: ", category["id"])
+
+		    elif signal_name == "category_received":
+		        # Output from get_category:
+		        # {
+		        #   "data": {
+		        #     "id": 42,
+		        #     "name": "Just Chatting",
+		        #     "thumbnail": "https://..."
+		        #   },
+		        #   "message": "success"
+		        # }
+		        print("Category: ", data["data"]["name"])
+		[/gdscript]
+		[/codeblocks]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_categories">
+			<return type="void" />
+			<param index="0" name="search_query" type="String" />
+			<param index="1" name="page" type="int" default="1" />
+			<description>
+				Searches for categories on Kick based on [param search_query]. Returns up to 100 results per page.
+				Results are returned via the [signal KickAPI.request_completed] signal with signal_name [code]"categories_received"[/code].
+			</description>
+		</method>
+		<method name="get_category">
+			<return type="void" />
+			<param index="0" name="category_id" type="int" />
+			<description>
+				Retrieves information about a specific category by its ID.
+				Results are returned via the [signal KickAPI.request_completed] signal with signal_name [code]"category_received"[/code].
+			</description>
+		</method>
+	</methods>
+</class>

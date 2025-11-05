@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SSEConnection" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Represents an active Server-Sent Events connection.
+	</brief_description>
+	<description>
+		SSEConnection manages an individual Server-Sent Events (SSE) connection to a client. It handles the formatting and sending of SSE events according to the W3C specification. SSEConnection objects are created automatically by [HTTPServer] when a route handler calls [method HTTPResponse.start_sse].
+		You typically don't create SSEConnection objects directly. Instead, use [method HTTPServer.send_sse_event] to send events to connections identified by their connection ID.
+		[codeblocks]
+		[gdscript]
+		# Listen for new SSE connections
+		HTTPServer.sse_connection_opened.connect(func(conn_id, path, headers):
+		    print("New SSE client: ", conn_id)
+		    # Send a welcome event
+		    HTTPServer.send_sse_event(conn_id, "welcome", "Connected!")
+		)
+		[/gdscript]
+		[/codeblocks]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="close_connection">
+			<return type="void" />
+			<description>
+				Closes the SSE connection. This will disconnect the client and free resources.
+			</description>
+		</method>
+		<method name="is_connection_active" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the connection is still active.
+			</description>
+		</method>
+		<method name="send_data">
+			<return type="int" enum="Error" />
+			<param index="0" name="data" type="String" />
+			<description>
+				Sends data to the client without specifying an event type. This is equivalent to calling [method send_event] with an empty event type.
+				Multi-line data is automatically formatted according to the SSE specification.
+			</description>
+		</method>
+		<method name="send_event">
+			<return type="int" enum="Error" />
+			<param index="0" name="event_type" type="String" />
+			<param index="1" name="data" type="String" />
+			<param index="2" name="event_id" type="String" default="&quot;&quot;" />
+			<description>
+				Sends a Server-Sent Event to the client. The [param event_type] specifies the type of event (used by client-side EventSource.addEventListener), [param data] is the event payload, and [param event_id] is an optional event ID for client-side tracking.
+				Multi-line data is automatically split and formatted correctly. Returns [constant OK] on success.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="connection_id" type="int" setter="set_connection_id" getter="get_connection_id" default="0">
+			The unique identifier for this SSE connection.
+		</member>
+		<member name="path" type="String" setter="set_path" getter="get_path" default="&quot;&quot;">
+			The request path that initiated this SSE connection.
+		</member>
+	</members>
+</class>

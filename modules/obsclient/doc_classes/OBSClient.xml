@@ -1,0 +1,1760 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="OBSClient" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Singleton for connecting to and controlling OBS Studio via WebSocket.
+	</brief_description>
+	<description>
+		OBSClient is a singleton that provides a complete implementation of the obs-websocket 5.x protocol, allowing Blazium Engine games and applications to connect to and control OBS Studio. It supports authentication, all request types, event subscription, and both signal-based and callback-based event handling.
+		The client must be connected to an OBS instance running obs-websocket 5.x or later. Use [method connect_to_obs] to establish a connection, and call [method poll] regularly (typically in [code]_process[/code]) to receive and process messages.
+		[codeblocks]
+		[gdscript]
+		func _ready():
+		    # Connect to OBS with password
+		    var error = OBSClient.connect_to_obs("ws://localhost:4455", "my_password")
+		    if error != OK:
+		        print("Failed to connect to OBS")
+		        return
+
+		    # Subscribe to scene change events
+		    OBSClient.current_program_scene_changed.connect(_on_scene_changed)
+
+		    # Get OBS version
+		    OBSClient.get_version(func(status, data):
+		        if status.result:
+		            print("OBS Version: ", data.obsVersion)
+		    )
+
+		func _process(delta):
+		    # Poll must be called regularly to receive messages
+		    OBSClient.poll()
+
+		func _on_scene_changed(scene_name: String, scene_uuid: String):
+		    print("Scene changed to: ", scene_name)
+		[/gdscript]
+		[/codeblocks]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="broadcast_custom_event">
+			<return type="void" />
+			<param index="0" name="event_data" type="Dictionary" />
+			<description>
+				Broadcasts a custom event to all connected WebSocket clients. The event will be received by other clients subscribed to custom events.
+			</description>
+		</method>
+		<method name="connect_to_obs">
+			<return type="int" enum="Error" />
+			<param index="0" name="url" type="String" />
+			<param index="1" name="password" type="String" default="&quot;&quot;" />
+			<param index="2" name="event_subscriptions" type="int" default="2047" />
+			<description>
+				Connects to an OBS WebSocket server at the specified [param url]. If the server requires authentication, provide the [param password]. The [param event_subscriptions] parameter controls which event categories to subscribe to using [code]OBSEventSubscription[/code] flags.
+				Returns [constant OK] if the connection was initiated successfully. You must call [method poll] regularly after connecting to complete the handshake and receive messages.
+				[codeblock]
+				# Connect without password
+				OBSClient.connect_to_obs("ws://localhost:4455")
+
+				# Connect with password
+				OBSClient.connect_to_obs("ws://localhost:4455", "my_password")
+
+				# Connect with specific event subscriptions
+				OBSClient.connect_to_obs("ws://localhost:4455", "",
+				    OBSEventSubscription.SCENES | OBSEventSubscription.OUTPUTS)
+				[/codeblock]
+			</description>
+		</method>
+		<method name="create_input">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="input_name" type="String" />
+			<param index="2" name="input_kind" type="String" />
+			<param index="3" name="input_settings" type="Dictionary" default="{}" />
+			<param index="4" name="scene_item_enabled" type="bool" default="true" />
+			<param index="5" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Creates a new input source in the specified scene. The [param input_kind] specifies the type of input (e.g., "browser_source", "image_source"). The [param input_settings] dictionary contains input-specific configuration. If [param scene_item_enabled] is [code]true[/code], the input will be visible immediately. The [param callback] receives the input UUID and scene item ID.
+			</description>
+		</method>
+		<method name="create_profile">
+			<return type="void" />
+			<param index="0" name="profile_name" type="String" />
+			<description>
+				Creates a new profile with the specified name. Profiles contain OBS configuration settings like output, audio, and video settings.
+			</description>
+		</method>
+		<method name="create_record_chapter">
+			<return type="void" />
+			<param index="0" name="chapter_name" type="String" default="&quot;&quot;" />
+			<description>
+				Creates a chapter marker in the current recording at the current timestamp. If [param chapter_name] is empty, OBS will use a default name. Chapters are useful for marking important moments during long recordings.
+			</description>
+		</method>
+		<method name="create_scene">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Creates a new scene in OBS with the specified [param scene_name]. If provided, [param callback] will be called with the response containing the new scene's UUID.
+			</description>
+		</method>
+		<method name="create_scene_collection">
+			<return type="void" />
+			<param index="0" name="scene_collection_name" type="String" />
+			<description>
+				Creates a new scene collection with the specified name. Scene collections are complete sets of scenes, sources, and their configurations.
+			</description>
+		</method>
+		<method name="create_scene_item">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="source_name" type="String" />
+			<param index="2" name="scene_item_enabled" type="bool" default="true" />
+			<param index="3" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Adds an existing source to a scene as a scene item. The [param source_name] must reference an existing input or scene. If [param scene_item_enabled] is [code]true[/code], the item will be visible. The [param callback] receives the new scene item ID.
+			</description>
+		</method>
+		<method name="create_source_filter">
+			<return type="void" />
+			<param index="0" name="source_name" type="String" />
+			<param index="1" name="filter_name" type="String" />
+			<param index="2" name="filter_kind" type="String" />
+			<param index="3" name="filter_settings" type="Dictionary" default="{}" />
+			<description>
+				Creates a new filter on the specified source. The [param filter_kind] specifies the type of filter (e.g., "color_correction", "sharpness_filter"). The [param filter_settings] dictionary contains filter-specific configuration.
+			</description>
+		</method>
+		<method name="disconnect_from_obs">
+			<return type="void" />
+			<description>
+				Disconnects from the OBS WebSocket server and cleans up all connection resources. Any pending requests will be cancelled.
+			</description>
+		</method>
+		<method name="duplicate_scene_item">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_item_id" type="int" />
+			<param index="2" name="destination_scene_name" type="String" default="&quot;&quot;" />
+			<param index="3" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Duplicates a scene item to the same scene or a different scene. If [param destination_scene_name] is empty, the item is duplicated in the same scene. The [param callback] receives the new scene item ID.
+			</description>
+		</method>
+		<method name="get_connection_state" qualifiers="const">
+			<return type="int" enum="OBSClient.ConnectionState" />
+			<description>
+				Returns the current connection state. Possible values are:
+				- [constant STATE_DISCONNECTED]: Not connected
+				- [constant STATE_CONNECTING]: Connection in progress
+				- [constant STATE_IDENTIFYING]: Authenticating with server
+				- [constant STATE_CONNECTED]: Fully connected and ready
+			</description>
+		</method>
+		<method name="get_current_preview_scene">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the current preview scene when studio mode is enabled. The [param callback] receives the scene name and UUID. Returns an error if studio mode is not active.
+			</description>
+		</method>
+		<method name="get_current_program_scene">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the current program scene. The [param callback] receives the scene name and UUID.
+			</description>
+		</method>
+		<method name="get_current_scene_transition">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the current scene transition. The [param callback] receives the transition name, UUID, kind, whether it's fixed, and its settings.
+			</description>
+		</method>
+		<method name="get_group_list">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets a list of all groups in OBS. Groups are special scenes that can be nested within other scenes. The [param callback] receives an array of group names.
+			</description>
+		</method>
+		<method name="get_group_scene_item_list">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the list of scene items within a group. The [param callback] receives an array of scene item objects containing their IDs, source names, and other properties.
+			</description>
+		</method>
+		<method name="get_hotkey_list">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets a list of all available hotkeys in OBS. The [param callback] receives an array of hotkey names that can be triggered using [method trigger_hotkey_by_name].
+			</description>
+		</method>
+		<method name="get_input_default_settings">
+			<return type="void" />
+			<param index="0" name="input_kind" type="String" />
+			<param index="1" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the default settings for a specific input kind. The [param callback] receives a dictionary containing the default configuration values for that input type.
+			</description>
+		</method>
+		<method name="get_input_kind_list">
+			<return type="void" />
+			<param index="0" name="unversioned" type="bool" default="false" />
+			<param index="1" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets a list of all available input kinds. If [param unversioned] is [code]true[/code], returns input kinds without version suffixes. The [param callback] receives an array of input kind strings like "browser_source", "image_source", etc.
+			</description>
+		</method>
+		<method name="get_input_list">
+			<return type="void" />
+			<param index="0" name="input_kind" type="String" default="&quot;&quot;" />
+			<param index="1" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets a list of all inputs (sources). If [param input_kind] is specified, only returns inputs of that type. The [param callback] receives an array of input objects containing names, UUIDs, kinds, and other properties.
+			</description>
+		</method>
+		<method name="get_input_mute">
+			<return type="void" />
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the mute state of an input. The [param callback] receives a boolean indicating whether the input is muted.
+			</description>
+		</method>
+		<method name="get_input_settings">
+			<return type="void" />
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the settings dictionary for an input. The [param callback] receives the input's kind, settings dictionary, and default settings.
+			</description>
+		</method>
+		<method name="get_input_volume">
+			<return type="void" />
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the volume level of an input. The [param callback] receives the volume as a multiplier (0.0 to 1.0+) and in decibels.
+			</description>
+		</method>
+		<method name="get_last_replay_buffer_replay">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the file path of the last saved replay buffer. The [param callback] receives the saved replay path string.
+			</description>
+		</method>
+		<method name="get_media_input_status">
+			<return type="void" />
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the status of a media input (video/audio file playback). The [param callback] receives playback state, current time, duration, and other media properties.
+			</description>
+		</method>
+		<method name="get_monitor_list">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets a list of all monitors/displays available on the system. The [param callback] receives an array of monitor information for use with projector functions.
+			</description>
+		</method>
+		<method name="get_negotiated_rpc_version" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the RPC version negotiated with the server during connection. Returns 0 if not connected.
+			</description>
+		</method>
+		<method name="get_persistent_data">
+			<return type="void" />
+			<param index="0" name="realm" type="String" />
+			<param index="1" name="slot_name" type="String" />
+			<param index="2" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets persistent data stored in OBS. The [param realm] defines the storage namespace (e.g., "OBS_WEBSOCKET_DATA_REALM_GLOBAL"). The [param callback] receives the stored value.
+			</description>
+		</method>
+		<method name="get_profile_list">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets a list of all available profiles. The [param callback] receives an array of profile names and the current profile name.
+			</description>
+		</method>
+		<method name="get_profile_parameter">
+			<return type="void" />
+			<param index="0" name="parameter_category" type="String" />
+			<param index="1" name="parameter_name" type="String" />
+			<param index="2" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets a specific parameter value from the current profile's configuration file. The [param parameter_category] is the INI section name. The [param callback] receives the parameter value and default value.
+			</description>
+		</method>
+		<method name="get_record_directory">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the directory path where recordings are saved. The [param callback] receives the record directory path string.
+			</description>
+		</method>
+		<method name="get_record_status">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the current status of the record output. The [param callback] receives information about whether recording is active, paused, and the current timecode.
+			</description>
+		</method>
+		<method name="get_replay_buffer_status">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the current status of the replay buffer output. The [param callback] receives information about whether the replay buffer is active.
+			</description>
+		</method>
+		<method name="get_scene_collection_list">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets a list of all available scene collections. The [param callback] receives an array of scene collection names and the current scene collection name.
+			</description>
+		</method>
+		<method name="get_scene_item_blend_mode">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_item_id" type="int" />
+			<param index="2" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the blend mode of a scene item. The [param callback] receives the blend mode string (e.g., "OBS_BLEND_NORMAL", "OBS_BLEND_ADDITIVE").
+			</description>
+		</method>
+		<method name="get_scene_item_enabled">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_item_id" type="int" />
+			<param index="2" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets whether a scene item is enabled (visible). The [param callback] receives a boolean indicating the enabled state.
+			</description>
+		</method>
+		<method name="get_scene_item_id">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="source_name" type="String" />
+			<param index="2" name="search_offset" type="int" default="0" />
+			<param index="3" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the scene item ID for a source in a scene. Use [param search_offset] to find subsequent items if the same source appears multiple times. The [param callback] receives the scene item ID.
+			</description>
+		</method>
+		<method name="get_scene_item_index">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_item_id" type="int" />
+			<param index="2" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the index (z-order position) of a scene item. The [param callback] receives the item's index in the scene's layer stack.
+			</description>
+		</method>
+		<method name="get_scene_item_list">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets a list of all scene items in a scene. The [param callback] receives an array of scene item objects containing their IDs, source names, transforms, and other properties.
+			</description>
+		</method>
+		<method name="get_scene_item_locked">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_item_id" type="int" />
+			<param index="2" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets whether a scene item is locked (cannot be moved or resized in the OBS UI). The [param callback] receives a boolean indicating the locked state.
+			</description>
+		</method>
+		<method name="get_scene_item_transform">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_item_id" type="int" />
+			<param index="2" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the transform properties of a scene item including position, scale, rotation, crop, and alignment. The [param callback] receives a dictionary with all transform values.
+			</description>
+		</method>
+		<method name="get_scene_list">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets a list of all scenes in OBS. The [param callback] receives an array of scene objects, the current program scene, and current preview scene (if in studio mode).
+			</description>
+		</method>
+		<method name="get_scene_scene_transition_override">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the transition override settings for a specific scene. The [param callback] receives the override transition name and duration if set.
+			</description>
+		</method>
+		<method name="get_scene_transition_list">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets a list of all available scene transitions. The [param callback] receives an array of transition objects with their names, kinds, and whether they are fixed.
+			</description>
+		</method>
+		<method name="get_server_info" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns information about the connected OBS server, including OBS version, obs-websocket version, and RPC version. Returns an empty dictionary if not connected.
+			</description>
+		</method>
+		<method name="get_source_active">
+			<return type="void" />
+			<param index="0" name="source_name" type="String" />
+			<param index="1" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets whether a source is currently active (visible in the program output). The [param callback] receives boolean values for video active and showing state.
+			</description>
+		</method>
+		<method name="get_source_filter">
+			<return type="void" />
+			<param index="0" name="source_name" type="String" />
+			<param index="1" name="filter_name" type="String" />
+			<param index="2" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets information about a specific filter on a source. The [param callback] receives the filter's enabled state, index, kind, and settings.
+			</description>
+		</method>
+		<method name="get_source_filter_default_settings">
+			<return type="void" />
+			<param index="0" name="filter_kind" type="String" />
+			<param index="1" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the default settings for a specific filter kind. The [param callback] receives a dictionary containing the default configuration values for that filter type.
+			</description>
+		</method>
+		<method name="get_source_filter_kind_list">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets a list of all available filter kinds. The [param callback] receives an array of filter kind strings like "color_correction", "sharpness_filter", etc.
+			</description>
+		</method>
+		<method name="get_source_filter_list">
+			<return type="void" />
+			<param index="0" name="source_name" type="String" />
+			<param index="1" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets a list of all filters applied to a source. The [param callback] receives an array of filter objects containing their names, kinds, enabled states, and settings.
+			</description>
+		</method>
+		<method name="get_source_screenshot">
+			<return type="void" />
+			<param index="0" name="source_name" type="String" />
+			<param index="1" name="image_format" type="String" />
+			<param index="2" name="image_width" type="int" default="-1" />
+			<param index="3" name="image_height" type="int" default="-1" />
+			<param index="4" name="image_compression_quality" type="int" default="-1" />
+			<param index="5" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Takes a screenshot of a source and returns it as a base64-encoded image. The [param image_format] can be "png", "jpg", etc. Optional parameters control the dimensions and quality. The [param callback] receives the base64-encoded image data.
+			</description>
+		</method>
+		<method name="get_special_inputs">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the names of special inputs like Desktop Audio, Mic/Aux, and others. The [param callback] receives a dictionary with the special input names.
+			</description>
+		</method>
+		<method name="get_stats">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets statistics about OBS performance including CPU usage, memory usage, FPS, and frame counts.
+			</description>
+		</method>
+		<method name="get_stream_service_settings">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the current streaming service settings including service type and configuration. The [param callback] receives the stream service type and settings dictionary.
+			</description>
+		</method>
+		<method name="get_stream_status">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the current status of the stream output. The [param callback] receives information about whether streaming is active, the timecode, bitrate, and other streaming metrics.
+			</description>
+		</method>
+		<method name="get_studio_mode_enabled">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets whether studio mode is currently enabled. Studio mode allows previewing scenes before transitioning them to program. The [param callback] receives a boolean indicating studio mode state.
+			</description>
+		</method>
+		<method name="get_transition_kind_list">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets a list of all available transition kinds. The [param callback] receives an array of transition kind strings like "fade_transition", "cut_transition", etc.
+			</description>
+		</method>
+		<method name="get_version">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets version information about OBS and obs-websocket. The [param callback] receives the OBS version, obs-websocket version, RPC version, available requests, and platform information.
+			</description>
+		</method>
+		<method name="get_video_settings">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the current video settings including base and output resolution, FPS, and video format. The [param callback] receives a dictionary with all video configuration values.
+			</description>
+		</method>
+		<method name="get_virtual_cam_status">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Gets the current status of the virtual camera output.
+			</description>
+		</method>
+		<method name="is_obs_connected" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if currently connected and authenticated with an OBS WebSocket server.
+			</description>
+		</method>
+		<method name="offset_media_input_cursor">
+			<return type="void" />
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="media_cursor_offset" type="int" />
+			<description>
+				Offsets the current playback position of a media input by the specified number of milliseconds. Use negative values to seek backwards.
+			</description>
+		</method>
+		<method name="open_input_filters_dialog">
+			<return type="void" />
+			<param index="0" name="input_name" type="String" />
+			<description>
+				Opens the filters dialog for the specified input in the OBS user interface.
+			</description>
+		</method>
+		<method name="open_input_interact_dialog">
+			<return type="void" />
+			<param index="0" name="input_name" type="String" />
+			<description>
+				Opens the interact dialog for the specified input in the OBS user interface. This is useful for sources like browser sources that support interaction.
+			</description>
+		</method>
+		<method name="open_input_properties_dialog">
+			<return type="void" />
+			<param index="0" name="input_name" type="String" />
+			<description>
+				Opens the properties dialog for the specified input in the OBS user interface.
+			</description>
+		</method>
+		<method name="open_source_projector">
+			<return type="void" />
+			<param index="0" name="source_name" type="String" />
+			<param index="1" name="monitor_index" type="int" default="-1" />
+			<param index="2" name="projector_geometry" type="String" default="&quot;&quot;" />
+			<description>
+				Opens a projector window displaying the specified source. Use [param monitor_index] to open on a specific monitor, or provide [param projector_geometry] as a string in the format "X,Y,Width,Height" for custom positioning.
+			</description>
+		</method>
+		<method name="open_video_mix_projector">
+			<return type="void" />
+			<param index="0" name="video_mix_type" type="String" />
+			<param index="1" name="monitor_index" type="int" default="-1" />
+			<param index="2" name="projector_geometry" type="String" default="&quot;&quot;" />
+			<description>
+				Opens a projector window displaying a video mix. The [param video_mix_type] can be "OBS_WEBSOCKET_VIDEO_MIX_TYPE_PREVIEW" or "OBS_WEBSOCKET_VIDEO_MIX_TYPE_PROGRAM". Use [param monitor_index] to open on a specific monitor, or provide [param projector_geometry] for custom positioning.
+			</description>
+		</method>
+		<method name="pause_record">
+			<return type="void" />
+			<description>
+				Pauses the record output. The recording will remain active but stop writing to the file.
+			</description>
+		</method>
+		<method name="poll">
+			<return type="void" />
+			<description>
+				Polls the WebSocket connection to process incoming and outgoing messages. This method must be called regularly (typically in [code]_process[/code]) for the client to function properly. Without regular polling, messages will not be received and the connection will not complete its handshake.
+				[codeblock]
+				func _process(delta):
+				    OBSClient.poll()
+				[/codeblock]
+			</description>
+		</method>
+		<method name="reidentify">
+			<return type="void" />
+			<param index="0" name="event_subscriptions" type="int" />
+			<description>
+				Updates the event subscription mask without disconnecting. Use this to change which event categories you want to receive.
+				[codeblock]
+				# Change to only receive scene and output events
+				OBSClient.reidentify(
+				    OBSEventSubscription.SCENES | OBSEventSubscription.OUTPUTS
+				)
+				[/codeblock]
+			</description>
+		</method>
+		<method name="remove_input">
+			<return type="void" />
+			<param index="0" name="input_name" type="String" />
+			<description>
+				Removes an input (source) from OBS. This will also remove all scene items referencing this input.
+			</description>
+		</method>
+		<method name="remove_profile">
+			<return type="void" />
+			<param index="0" name="profile_name" type="String" />
+			<description>
+				Removes a profile from OBS. The profile cannot be the currently active profile.
+			</description>
+		</method>
+		<method name="remove_scene">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<description>
+				Removes a scene from OBS. The scene cannot be the currently active program or preview scene.
+			</description>
+		</method>
+		<method name="remove_scene_item">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_item_id" type="int" />
+			<description>
+				Removes a scene item from a scene. This does not delete the underlying source, only the reference to it in this scene.
+			</description>
+		</method>
+		<method name="remove_source_filter">
+			<return type="void" />
+			<param index="0" name="source_name" type="String" />
+			<param index="1" name="filter_name" type="String" />
+			<description>
+				Removes a filter from a source.
+			</description>
+		</method>
+		<method name="resume_record">
+			<return type="void" />
+			<description>
+				Resumes the record output after it has been paused.
+			</description>
+		</method>
+		<method name="save_replay_buffer">
+			<return type="void" />
+			<description>
+				Saves the current replay buffer to disk. The replay buffer must be active for this to work.
+			</description>
+		</method>
+		<method name="save_source_screenshot">
+			<return type="void" />
+			<param index="0" name="source_name" type="String" />
+			<param index="1" name="image_format" type="String" />
+			<param index="2" name="image_file_path" type="String" />
+			<param index="3" name="image_width" type="int" default="-1" />
+			<param index="4" name="image_height" type="int" default="-1" />
+			<param index="5" name="image_compression_quality" type="int" default="-1" />
+			<description>
+				Takes a screenshot of a source and saves it to a file. The [param image_format] can be "png", "jpg", etc. The [param image_file_path] specifies where to save the file. Optional parameters control the dimensions and quality.
+			</description>
+		</method>
+		<method name="send_request">
+			<return type="String" />
+			<param index="0" name="request_type" type="String" />
+			<param index="1" name="request_data" type="Dictionary" default="{}" />
+			<param index="2" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Sends a generic request to OBS. This is a low-level method that can be used for any request type. Returns the request ID string. If [param callback] is provided, it will be called when the response is received with the request status and response data.
+				[codeblock]
+				OBSClient.send_request("GetInputList", {"inputKind": "browser_source"},
+				    func(status, data):
+				        if status.result:
+				            print("Browser sources: ", data.inputs)
+				)
+				[/codeblock]
+			</description>
+		</method>
+		<method name="send_request_batch">
+			<return type="String" />
+			<param index="0" name="requests" type="Array" />
+			<param index="1" name="halt_on_failure" type="bool" default="false" />
+			<param index="2" name="execution_type" type="int" default="0" />
+			<param index="3" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Sends a batch of requests to OBS. If [param halt_on_failure] is [code]true[/code], processing stops at the first failed request. The [param execution_type] determines how requests are processed (serial realtime, serial frame, or parallel).
+			</description>
+		</method>
+		<method name="send_stream_caption">
+			<return type="void" />
+			<param index="0" name="caption_text" type="String" />
+			<description>
+				Sends CEA-608 caption text over the stream output.
+			</description>
+		</method>
+		<method name="set_current_preview_scene">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<description>
+				Sets the current preview scene when studio mode is enabled. Returns an error if studio mode is not active.
+			</description>
+		</method>
+		<method name="set_current_profile">
+			<return type="void" />
+			<param index="0" name="profile_name" type="String" />
+			<description>
+				Switches to the specified profile. This will reload OBS configuration with the settings from that profile.
+			</description>
+		</method>
+		<method name="set_current_program_scene">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<description>
+				Switches to the specified scene in the program output.
+			</description>
+		</method>
+		<method name="set_current_scene_collection">
+			<return type="void" />
+			<param index="0" name="scene_collection_name" type="String" />
+			<description>
+				Switches to the specified scene collection. Note: This will block until the collection has finished changing.
+			</description>
+		</method>
+		<method name="set_current_scene_transition">
+			<return type="void" />
+			<param index="0" name="transition_name" type="String" />
+			<description>
+				Sets the current scene transition by name.
+			</description>
+		</method>
+		<method name="set_current_scene_transition_duration">
+			<return type="void" />
+			<param index="0" name="transition_duration" type="int" />
+			<description>
+				Sets the duration of the current scene transition in milliseconds.
+			</description>
+		</method>
+		<method name="set_current_scene_transition_settings">
+			<return type="void" />
+			<param index="0" name="transition_settings" type="Dictionary" />
+			<param index="1" name="overlay" type="bool" default="true" />
+			<description>
+				Sets the settings of the current scene transition. If [param overlay] is [code]true[/code], only the provided settings are changed; if [code]false[/code], all settings are replaced.
+			</description>
+		</method>
+		<method name="set_input_mute">
+			<return type="void" />
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="input_muted" type="bool" />
+			<description>
+				Sets the mute state of an input. If [code]true[/code], the input will be muted.
+			</description>
+		</method>
+		<method name="set_input_name">
+			<return type="void" />
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="new_input_name" type="String" />
+			<description>
+				Renames an input to a new name. The new name must not already exist.
+			</description>
+		</method>
+		<method name="set_input_settings">
+			<return type="void" />
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="input_settings" type="Dictionary" />
+			<param index="2" name="overlay" type="bool" default="true" />
+			<description>
+				Sets the settings of an input. If [param overlay] is [code]true[/code], only the provided settings are changed; if [code]false[/code], all settings are replaced.
+			</description>
+		</method>
+		<method name="set_input_volume">
+			<return type="void" />
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="input_volume_mul" type="float" default="-1.0" />
+			<param index="2" name="input_volume_db" type="float" default="0.0" />
+			<description>
+				Sets the volume of an input. Provide either [param input_volume_mul] (multiplier 0.0 to 1.0+) or [param input_volume_db] (decibels). If [param input_volume_mul] is -1.0, the decibel value is used.
+			</description>
+		</method>
+		<method name="set_media_input_cursor">
+			<return type="void" />
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="media_cursor" type="int" />
+			<description>
+				Sets the absolute playback position of a media input in milliseconds.
+			</description>
+		</method>
+		<method name="set_persistent_data">
+			<return type="void" />
+			<param index="0" name="realm" type="String" />
+			<param index="1" name="slot_name" type="String" />
+			<param index="2" name="slot_value" type="Variant" />
+			<description>
+				Sets persistent data in OBS. The [param realm] defines the storage namespace (e.g., "OBS_WEBSOCKET_DATA_REALM_GLOBAL"). The [param slot_value] can be any JSON-serializable type.
+			</description>
+		</method>
+		<method name="set_profile_parameter">
+			<return type="void" />
+			<param index="0" name="parameter_category" type="String" />
+			<param index="1" name="parameter_name" type="String" />
+			<param index="2" name="parameter_value" type="String" />
+			<description>
+				Sets a specific parameter value in the current profile's configuration file. The [param parameter_category] is the INI section name.
+			</description>
+		</method>
+		<method name="set_record_directory">
+			<return type="void" />
+			<param index="0" name="record_directory" type="String" />
+			<description>
+				Sets the directory path where recordings will be saved.
+			</description>
+		</method>
+		<method name="set_scene_item_blend_mode">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_item_id" type="int" />
+			<param index="2" name="scene_item_blend_mode" type="String" />
+			<description>
+				Sets the blend mode of a scene item. The [param scene_item_blend_mode] should be a string like "OBS_BLEND_NORMAL", "OBS_BLEND_ADDITIVE", etc.
+			</description>
+		</method>
+		<method name="set_scene_item_enabled">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_item_id" type="int" />
+			<param index="2" name="scene_item_enabled" type="bool" />
+			<description>
+				Sets whether a scene item is enabled (visible). If [code]false[/code], the item will be hidden.
+			</description>
+		</method>
+		<method name="set_scene_item_index">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_item_id" type="int" />
+			<param index="2" name="scene_item_index" type="int" />
+			<description>
+				Sets the index (z-order position) of a scene item. Lower indices are rendered first (behind higher indices).
+			</description>
+		</method>
+		<method name="set_scene_item_locked">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_item_id" type="int" />
+			<param index="2" name="scene_item_locked" type="bool" />
+			<description>
+				Sets whether a scene item is locked. Locked items cannot be moved or resized in the OBS user interface.
+			</description>
+		</method>
+		<method name="set_scene_item_transform">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_item_id" type="int" />
+			<param index="2" name="scene_item_transform" type="Dictionary" />
+			<description>
+				Sets the transform properties of a scene item. The [param scene_item_transform] dictionary can include position, scale, rotation, crop, bounds, and alignment values.
+			</description>
+		</method>
+		<method name="set_scene_name">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="new_scene_name" type="String" />
+			<description>
+				Renames a scene to a new name. The new name must not already exist.
+			</description>
+		</method>
+		<method name="set_scene_scene_transition_override">
+			<return type="void" />
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="transition_name" type="String" />
+			<param index="2" name="transition_duration" type="int" default="-1" />
+			<description>
+				Sets a transition override for a specific scene. When switching to this scene, the specified transition will be used instead of the default. If [param transition_duration] is provided and not -1, it overrides the transition's default duration.
+			</description>
+		</method>
+		<method name="set_source_filter_enabled">
+			<return type="void" />
+			<param index="0" name="source_name" type="String" />
+			<param index="1" name="filter_name" type="String" />
+			<param index="2" name="filter_enabled" type="bool" />
+			<description>
+				Sets whether a filter is enabled. Disabled filters remain on the source but don't affect the output.
+			</description>
+		</method>
+		<method name="set_source_filter_index">
+			<return type="void" />
+			<param index="0" name="source_name" type="String" />
+			<param index="1" name="filter_name" type="String" />
+			<param index="2" name="filter_index" type="int" />
+			<description>
+				Sets the index (order) of a filter in the filter chain. Filters are applied in order from index 0 upward.
+			</description>
+		</method>
+		<method name="set_source_filter_name">
+			<return type="void" />
+			<param index="0" name="source_name" type="String" />
+			<param index="1" name="filter_name" type="String" />
+			<param index="2" name="new_filter_name" type="String" />
+			<description>
+				Renames a filter to a new name. The new name must not already exist on the source.
+			</description>
+		</method>
+		<method name="set_source_filter_settings">
+			<return type="void" />
+			<param index="0" name="source_name" type="String" />
+			<param index="1" name="filter_name" type="String" />
+			<param index="2" name="filter_settings" type="Dictionary" />
+			<param index="3" name="overlay" type="bool" default="true" />
+			<description>
+				Sets the settings of a filter. If [param overlay] is [code]true[/code], only the provided settings are changed; if [code]false[/code], all settings are replaced.
+			</description>
+		</method>
+		<method name="set_stream_service_settings">
+			<return type="void" />
+			<param index="0" name="stream_service_type" type="String" />
+			<param index="1" name="stream_service_settings" type="Dictionary" />
+			<description>
+				Sets the streaming service configuration. The [param stream_service_type] specifies the service (e.g., "rtmp_custom"), and [param stream_service_settings] contains the service-specific configuration like server and key.
+			</description>
+		</method>
+		<method name="set_studio_mode_enabled">
+			<return type="void" />
+			<param index="0" name="studio_mode_enabled" type="bool" />
+			<description>
+				Enables or disables studio mode. When enabled, studio mode allows previewing scenes before transitioning them to program output.
+			</description>
+		</method>
+		<method name="set_tbar_position">
+			<return type="void" />
+			<param index="0" name="position" type="float" />
+			<param index="1" name="release" type="bool" default="true" />
+			<description>
+				Sets the T-bar position for manual transition control in studio mode. The [param position] ranges from 0.0 to 1.0. If [param release] is [code]true[/code], the transition completes automatically; if [code]false[/code], it stays at the specified position.
+			</description>
+		</method>
+		<method name="set_video_settings">
+			<return type="void" />
+			<param index="0" name="video_settings" type="Dictionary" />
+			<description>
+				Sets the video settings including base and output resolution, FPS numerator and denominator.
+			</description>
+		</method>
+		<method name="split_record_file">
+			<return type="void" />
+			<description>
+				Splits the current recording file. The recording continues but starts writing to a new file. This is useful for creating segment breaks in long recordings.
+			</description>
+		</method>
+		<method name="start_record">
+			<return type="void" />
+			<description>
+				Starts the record output.
+			</description>
+		</method>
+		<method name="start_replay_buffer">
+			<return type="void" />
+			<description>
+				Starts the replay buffer output. The replay buffer continuously records recent video which can be saved on demand using [method save_replay_buffer].
+			</description>
+		</method>
+		<method name="start_stream">
+			<return type="void" />
+			<description>
+				Starts the stream output.
+			</description>
+		</method>
+		<method name="start_virtual_cam">
+			<return type="void" />
+			<description>
+				Starts the virtual camera output.
+			</description>
+		</method>
+		<method name="stop_record">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Stops the record output. The [param callback] receives the file path where the recording was saved.
+			</description>
+		</method>
+		<method name="stop_replay_buffer">
+			<return type="void" />
+			<description>
+				Stops the replay buffer output.
+			</description>
+		</method>
+		<method name="stop_stream">
+			<return type="void" />
+			<description>
+				Stops the stream output.
+			</description>
+		</method>
+		<method name="stop_virtual_cam">
+			<return type="void" />
+			<description>
+				Stops the virtual camera output.
+			</description>
+		</method>
+		<method name="subscribe_to_events">
+			<return type="void" />
+			<param index="0" name="event_mask" type="int" />
+			<param index="1" name="callback" type="Callable" />
+			<description>
+				Subscribes to specific event categories using a callback function. The [param event_mask] is a bitmask of [code]OBSEventSubscription[/code] flags. The [param callback] will be called for matching events with the event type and event data.
+				[codeblock]
+				OBSClient.subscribe_to_events(
+				    OBSEventSubscription.SCENES | OBSEventSubscription.OUTPUTS,
+				    func(event_type, event_data):
+				        print("Event: ", event_type)
+				        print("Data: ", event_data)
+				)
+				[/codeblock]
+			</description>
+		</method>
+		<method name="toggle_input_mute">
+			<return type="void" />
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Toggles the mute state of an input. If muted, it will be unmuted and vice versa. The [param callback] receives the new mute state.
+			</description>
+		</method>
+		<method name="toggle_record">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Toggles the record output state (starts if stopped, stops if started).
+			</description>
+		</method>
+		<method name="toggle_record_pause">
+			<return type="void" />
+			<description>
+				Toggles the pause state of the recording. If paused, it will resume; if recording, it will pause.
+			</description>
+		</method>
+		<method name="toggle_replay_buffer">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Toggles the replay buffer output state (starts if stopped, stops if started).
+			</description>
+		</method>
+		<method name="toggle_stream">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Toggles the stream output state (starts if stopped, stops if started).
+			</description>
+		</method>
+		<method name="toggle_virtual_cam">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Toggles the virtual camera output state (starts if stopped, stops if started).
+			</description>
+		</method>
+		<method name="trigger_hotkey_by_name">
+			<return type="void" />
+			<param index="0" name="hotkey_name" type="String" />
+			<param index="1" name="context_name" type="String" default="&quot;&quot;" />
+			<description>
+				Triggers a hotkey by its name. Use [method get_hotkey_list] to get available hotkey names. The optional [param context_name] can specify a source context for source-specific hotkeys.
+			</description>
+		</method>
+		<method name="trigger_media_input_action">
+			<return type="void" />
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="media_action" type="String" />
+			<description>
+				Triggers a media action on a media input. The [param media_action] should be one of: "OBS_WEBSOCKET_MEDIA_INPUT_ACTION_PLAY", "OBS_WEBSOCKET_MEDIA_INPUT_ACTION_PAUSE", "OBS_WEBSOCKET_MEDIA_INPUT_ACTION_STOP", "OBS_WEBSOCKET_MEDIA_INPUT_ACTION_RESTART", "OBS_WEBSOCKET_MEDIA_INPUT_ACTION_NEXT", or "OBS_WEBSOCKET_MEDIA_INPUT_ACTION_PREVIOUS".
+			</description>
+		</method>
+		<method name="trigger_studio_mode_transition">
+			<return type="void" />
+			<description>
+				Triggers a transition from the current preview scene to program in studio mode. This is equivalent to clicking the Transition button in OBS.
+			</description>
+		</method>
+		<method name="unsubscribe_from_events">
+			<return type="void" />
+			<param index="0" name="event_mask" type="int" />
+			<param index="1" name="callback" type="Callable" />
+			<description>
+				Unsubscribes a previously registered callback from specific event categories.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="current_preview_scene_changed">
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_uuid" type="String" />
+			<description>
+				Emitted when the current preview scene has changed in studio mode.
+			</description>
+		</signal>
+		<signal name="current_profile_changed">
+			<param index="0" name="profile_name" type="String" />
+			<description>
+				Emitted when the current profile has changed.
+			</description>
+		</signal>
+		<signal name="current_profile_changing">
+			<param index="0" name="profile_name" type="String" />
+			<description>
+				Emitted when the current profile has begun changing.
+			</description>
+		</signal>
+		<signal name="current_program_scene_changed">
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_uuid" type="String" />
+			<description>
+				Emitted when the current program scene has changed.
+			</description>
+		</signal>
+		<signal name="current_scene_collection_changed">
+			<param index="0" name="scene_collection_name" type="String" />
+			<description>
+				Emitted when the current scene collection has changed.
+			</description>
+		</signal>
+		<signal name="current_scene_collection_changing">
+			<param index="0" name="scene_collection_name" type="String" />
+			<description>
+				Emitted when the current scene collection has begun changing. It is recommended to pause polling requests during this event.
+			</description>
+		</signal>
+		<signal name="current_scene_transition_changed">
+			<param index="0" name="transition_name" type="String" />
+			<param index="1" name="transition_uuid" type="String" />
+			<description>
+				Emitted when the current scene transition has changed.
+			</description>
+		</signal>
+		<signal name="current_scene_transition_duration_changed">
+			<param index="0" name="transition_duration" type="int" />
+			<description>
+				Emitted when the current scene transition duration has changed. The duration is in milliseconds.
+			</description>
+		</signal>
+		<signal name="custom_event">
+			<param index="0" name="event_data" type="Dictionary" />
+			<description>
+				Emitted when a custom event is received from OBS or another WebSocket client. The [param event_data] contains the event payload.
+			</description>
+		</signal>
+		<signal name="exit_started">
+			<description>
+				Emitted when OBS has begun the shutdown process.
+			</description>
+		</signal>
+		<signal name="input_active_state_changed">
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="input_uuid" type="String" />
+			<param index="2" name="video_active" type="bool" />
+			<description>
+				Emitted when an input's active state changes. An input is active when it is rendering video.
+			</description>
+		</signal>
+		<signal name="input_audio_balance_changed">
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="input_uuid" type="String" />
+			<param index="2" name="input_audio_balance" type="float" />
+			<description>
+				Emitted when an input's audio balance (stereo pan) changes. Values range from 0.0 (left) to 1.0 (right), with 0.5 being center.
+			</description>
+		</signal>
+		<signal name="input_audio_monitor_type_changed">
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="input_uuid" type="String" />
+			<param index="2" name="monitor_type" type="String" />
+			<description>
+				Emitted when an input's audio monitor type changes (e.g., "OBS_MONITORING_TYPE_NONE", "OBS_MONITORING_TYPE_MONITOR_ONLY", "OBS_MONITORING_TYPE_MONITOR_AND_OUTPUT").
+			</description>
+		</signal>
+		<signal name="input_audio_sync_offset_changed">
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="input_uuid" type="String" />
+			<param index="2" name="input_audio_sync_offset" type="int" />
+			<description>
+				Emitted when an input's audio sync offset changes. The offset is in milliseconds.
+			</description>
+		</signal>
+		<signal name="input_audio_tracks_changed">
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="input_uuid" type="String" />
+			<param index="2" name="input_audio_tracks" type="Dictionary" />
+			<description>
+				Emitted when an input's audio track assignments change.
+			</description>
+		</signal>
+		<signal name="input_created">
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="input_uuid" type="String" />
+			<param index="2" name="input_kind" type="String" />
+			<param index="3" name="input_settings" type="Dictionary" />
+			<description>
+				Emitted when a new input (source) has been created.
+			</description>
+		</signal>
+		<signal name="input_mute_state_changed">
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="input_uuid" type="String" />
+			<param index="2" name="input_muted" type="bool" />
+			<description>
+				Emitted when an input's mute state changes.
+			</description>
+		</signal>
+		<signal name="input_name_changed">
+			<param index="0" name="input_uuid" type="String" />
+			<param index="1" name="old_input_name" type="String" />
+			<param index="2" name="input_name" type="String" />
+			<description>
+				Emitted when an input has been renamed.
+			</description>
+		</signal>
+		<signal name="input_removed">
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="input_uuid" type="String" />
+			<description>
+				Emitted when an input has been removed.
+			</description>
+		</signal>
+		<signal name="input_settings_changed">
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="input_uuid" type="String" />
+			<param index="2" name="input_settings" type="Dictionary" />
+			<description>
+				Emitted when an input's settings have changed.
+			</description>
+		</signal>
+		<signal name="input_show_state_changed">
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="input_uuid" type="String" />
+			<param index="2" name="video_showing" type="bool" />
+			<description>
+				Emitted when an input's show state changes. An input is showing when it is visible in a scene.
+			</description>
+		</signal>
+		<signal name="input_volume_changed">
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="input_uuid" type="String" />
+			<param index="2" name="input_volume_mul" type="float" />
+			<param index="3" name="input_volume_db" type="float" />
+			<description>
+				Emitted when an input's volume level changes.
+			</description>
+		</signal>
+		<signal name="input_volume_meters">
+			<param index="0" name="inputs" type="Array" />
+			<description>
+				Emitted continuously with volume meter data for all inputs. This is a high-volume event and must be specifically subscribed to.
+			</description>
+		</signal>
+		<signal name="media_input_action_triggered">
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="input_uuid" type="String" />
+			<param index="2" name="media_action" type="String" />
+			<description>
+				Emitted when a media action has been triggered on a media input.
+			</description>
+		</signal>
+		<signal name="media_input_playback_ended">
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="input_uuid" type="String" />
+			<description>
+				Emitted when a media input has finished playing.
+			</description>
+		</signal>
+		<signal name="media_input_playback_started">
+			<param index="0" name="input_name" type="String" />
+			<param index="1" name="input_uuid" type="String" />
+			<description>
+				Emitted when a media input has started playing.
+			</description>
+		</signal>
+		<signal name="profile_list_changed">
+			<param index="0" name="profiles" type="Array" />
+			<description>
+				Emitted when the list of available profiles has changed.
+			</description>
+		</signal>
+		<signal name="record_file_changed">
+			<param index="0" name="new_output_path" type="String" />
+			<description>
+				Emitted when the recording file has been changed (e.g., when splitting files).
+			</description>
+		</signal>
+		<signal name="record_state_changed">
+			<param index="0" name="output_active" type="bool" />
+			<param index="1" name="output_state" type="String" />
+			<param index="2" name="output_path" type="String" />
+			<description>
+				Emitted when the state of the record output has changed. The [param output_path] contains the file path if recording stopped, otherwise it is empty.
+			</description>
+		</signal>
+		<signal name="replay_buffer_saved">
+			<param index="0" name="saved_replay_path" type="String" />
+			<description>
+				Emitted when a replay buffer has been saved to disk. The [param saved_replay_path] contains the file path where it was saved.
+			</description>
+		</signal>
+		<signal name="replay_buffer_state_changed">
+			<param index="0" name="output_active" type="bool" />
+			<param index="1" name="output_state" type="String" />
+			<description>
+				Emitted when the state of the replay buffer output has changed.
+			</description>
+		</signal>
+		<signal name="scene_collection_list_changed">
+			<param index="0" name="scene_collections" type="Array" />
+			<description>
+				Emitted when the list of available scene collections has changed.
+			</description>
+		</signal>
+		<signal name="scene_created">
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_uuid" type="String" />
+			<param index="2" name="is_group" type="bool" />
+			<description>
+				Emitted when a new scene has been created.
+			</description>
+		</signal>
+		<signal name="scene_item_created">
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_uuid" type="String" />
+			<param index="2" name="source_name" type="String" />
+			<param index="3" name="scene_item_id" type="int" />
+			<param index="4" name="scene_item_index" type="int" />
+			<description>
+				Emitted when a new scene item has been created in a scene.
+			</description>
+		</signal>
+		<signal name="scene_item_enable_state_changed">
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_uuid" type="String" />
+			<param index="2" name="scene_item_id" type="int" />
+			<param index="3" name="scene_item_enabled" type="bool" />
+			<description>
+				Emitted when a scene item's enabled (visibility) state has changed.
+			</description>
+		</signal>
+		<signal name="scene_item_list_reindexed">
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_uuid" type="String" />
+			<param index="2" name="scene_items" type="Array" />
+			<description>
+				Emitted when scene items have been reordered in a scene. The [param scene_items] array contains the new ordering.
+			</description>
+		</signal>
+		<signal name="scene_item_lock_state_changed">
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_uuid" type="String" />
+			<param index="2" name="scene_item_id" type="int" />
+			<param index="3" name="scene_item_locked" type="bool" />
+			<description>
+				Emitted when a scene item's lock state has changed.
+			</description>
+		</signal>
+		<signal name="scene_item_removed">
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_uuid" type="String" />
+			<param index="2" name="source_name" type="String" />
+			<param index="3" name="scene_item_id" type="int" />
+			<description>
+				Emitted when a scene item has been removed from a scene.
+			</description>
+		</signal>
+		<signal name="scene_item_selected">
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_uuid" type="String" />
+			<param index="2" name="scene_item_id" type="int" />
+			<description>
+				Emitted when a scene item has been selected in the OBS user interface.
+			</description>
+		</signal>
+		<signal name="scene_item_transform_changed">
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_uuid" type="String" />
+			<param index="2" name="scene_item_id" type="int" />
+			<param index="3" name="scene_item_transform" type="Dictionary" />
+			<description>
+				Emitted when a scene item's transform (position, scale, rotation, etc.) has changed. This is a high-volume event and must be specifically subscribed to.
+			</description>
+		</signal>
+		<signal name="scene_list_changed">
+			<param index="0" name="scenes" type="Array" />
+			<description>
+				Emitted when the list of scenes has changed.
+			</description>
+		</signal>
+		<signal name="scene_name_changed">
+			<param index="0" name="scene_uuid" type="String" />
+			<param index="1" name="old_scene_name" type="String" />
+			<param index="2" name="scene_name" type="String" />
+			<description>
+				Emitted when the name of a scene has changed.
+			</description>
+		</signal>
+		<signal name="scene_removed">
+			<param index="0" name="scene_name" type="String" />
+			<param index="1" name="scene_uuid" type="String" />
+			<param index="2" name="is_group" type="bool" />
+			<description>
+				Emitted when a scene has been removed.
+			</description>
+		</signal>
+		<signal name="scene_transition_ended">
+			<param index="0" name="transition_name" type="String" />
+			<param index="1" name="transition_uuid" type="String" />
+			<description>
+				Emitted when a scene transition has completed.
+			</description>
+		</signal>
+		<signal name="scene_transition_started">
+			<param index="0" name="transition_name" type="String" />
+			<param index="1" name="transition_uuid" type="String" />
+			<description>
+				Emitted when a scene transition has started.
+			</description>
+		</signal>
+		<signal name="scene_transition_video_ended">
+			<param index="0" name="transition_name" type="String" />
+			<param index="1" name="transition_uuid" type="String" />
+			<description>
+				Emitted when a scene transition's video has finished playing (for transitions with video).
+			</description>
+		</signal>
+		<signal name="screenshot_saved">
+			<param index="0" name="saved_screenshot_path" type="String" />
+			<description>
+				Emitted when a screenshot has been saved to disk. The [param saved_screenshot_path] contains the file path where it was saved.
+			</description>
+		</signal>
+		<signal name="source_filter_created">
+			<param index="0" name="source_name" type="String" />
+			<param index="1" name="filter_name" type="String" />
+			<param index="2" name="filter_kind" type="String" />
+			<param index="3" name="filter_index" type="int" />
+			<param index="4" name="filter_settings" type="Dictionary" />
+			<description>
+				Emitted when a new filter has been created on a source.
+			</description>
+		</signal>
+		<signal name="source_filter_enable_state_changed">
+			<param index="0" name="source_name" type="String" />
+			<param index="1" name="filter_name" type="String" />
+			<param index="2" name="filter_enabled" type="bool" />
+			<description>
+				Emitted when a filter's enabled state has changed.
+			</description>
+		</signal>
+		<signal name="source_filter_list_reindexed">
+			<param index="0" name="source_name" type="String" />
+			<param index="1" name="filters" type="Array" />
+			<description>
+				Emitted when filters have been reordered on a source. The [param filters] array contains the new ordering.
+			</description>
+		</signal>
+		<signal name="source_filter_name_changed">
+			<param index="0" name="source_name" type="String" />
+			<param index="1" name="old_filter_name" type="String" />
+			<param index="2" name="filter_name" type="String" />
+			<description>
+				Emitted when a filter has been renamed.
+			</description>
+		</signal>
+		<signal name="source_filter_removed">
+			<param index="0" name="source_name" type="String" />
+			<param index="1" name="filter_name" type="String" />
+			<description>
+				Emitted when a filter has been removed from a source.
+			</description>
+		</signal>
+		<signal name="source_filter_settings_changed">
+			<param index="0" name="source_name" type="String" />
+			<param index="1" name="filter_name" type="String" />
+			<param index="2" name="filter_settings" type="Dictionary" />
+			<description>
+				Emitted when a filter's settings have changed.
+			</description>
+		</signal>
+		<signal name="stream_state_changed">
+			<param index="0" name="output_active" type="bool" />
+			<param index="1" name="output_state" type="String" />
+			<description>
+				Emitted when the state of the stream output has changed.
+			</description>
+		</signal>
+		<signal name="studio_mode_state_changed">
+			<param index="0" name="studio_mode_enabled" type="bool" />
+			<description>
+				Emitted when studio mode has been enabled or disabled.
+			</description>
+		</signal>
+		<signal name="vendor_event">
+			<param index="0" name="vendor_name" type="String" />
+			<param index="1" name="event_type" type="String" />
+			<param index="2" name="event_data" type="Dictionary" />
+			<description>
+				Emitted when a vendor-specific event is received from OBS. Vendor events are custom events from OBS plugins or extensions.
+			</description>
+		</signal>
+		<signal name="virtualcam_state_changed">
+			<param index="0" name="output_active" type="bool" />
+			<param index="1" name="output_state" type="String" />
+			<description>
+				Emitted when the state of the virtual camera output has changed.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="STATE_DISCONNECTED" value="0" enum="ConnectionState">
+			Not connected to OBS.
+		</constant>
+		<constant name="STATE_CONNECTING" value="1" enum="ConnectionState">
+			Connection to OBS in progress.
+		</constant>
+		<constant name="STATE_IDENTIFYING" value="2" enum="ConnectionState">
+			Authenticating with OBS.
+		</constant>
+		<constant name="STATE_CONNECTED" value="3" enum="ConnectionState">
+			Fully connected and authenticated with OBS.
+		</constant>
+		<constant name="OBS_WEBSOCKET_OPCODE_HELLO" value="0">
+			OpCode for Hello message (server to client).
+		</constant>
+		<constant name="OBS_WEBSOCKET_OPCODE_IDENTIFY" value="1">
+			OpCode for Identify message (client to server).
+		</constant>
+		<constant name="OBS_WEBSOCKET_OPCODE_IDENTIFIED" value="2">
+			OpCode for Identified message (server to client).
+		</constant>
+		<constant name="OBS_WEBSOCKET_OPCODE_REIDENTIFY" value="3">
+			OpCode for Reidentify message (client to server).
+		</constant>
+		<constant name="OBS_WEBSOCKET_OPCODE_EVENT" value="5">
+			OpCode for Event message (server to client).
+		</constant>
+		<constant name="OBS_WEBSOCKET_OPCODE_REQUEST" value="6">
+			OpCode for Request message (client to server).
+		</constant>
+		<constant name="OBS_WEBSOCKET_OPCODE_REQUEST_RESPONSE" value="7">
+			OpCode for RequestResponse message (server to client).
+		</constant>
+		<constant name="OBS_WEBSOCKET_OPCODE_REQUEST_BATCH" value="8">
+			OpCode for RequestBatch message (client to server).
+		</constant>
+		<constant name="OBS_WEBSOCKET_OPCODE_REQUEST_BATCH_RESPONSE" value="9">
+			OpCode for RequestBatchResponse message (server to client).
+		</constant>
+		<constant name="OBS_EVENT_SUBSCRIPTION_NONE" value="0">
+			Disable all events.
+		</constant>
+		<constant name="OBS_EVENT_SUBSCRIPTION_GENERAL" value="1">
+			Subscribe to general events.
+		</constant>
+		<constant name="OBS_EVENT_SUBSCRIPTION_CONFIG" value="2">
+			Subscribe to configuration events.
+		</constant>
+		<constant name="OBS_EVENT_SUBSCRIPTION_SCENES" value="4">
+			Subscribe to scene events.
+		</constant>
+		<constant name="OBS_EVENT_SUBSCRIPTION_INPUTS" value="8">
+			Subscribe to input events.
+		</constant>
+		<constant name="OBS_EVENT_SUBSCRIPTION_TRANSITIONS" value="16">
+			Subscribe to transition events.
+		</constant>
+		<constant name="OBS_EVENT_SUBSCRIPTION_FILTERS" value="32">
+			Subscribe to filter events.
+		</constant>
+		<constant name="OBS_EVENT_SUBSCRIPTION_OUTPUTS" value="64">
+			Subscribe to output events.
+		</constant>
+		<constant name="OBS_EVENT_SUBSCRIPTION_SCENE_ITEMS" value="128">
+			Subscribe to scene item events.
+		</constant>
+		<constant name="OBS_EVENT_SUBSCRIPTION_MEDIA_INPUTS" value="256">
+			Subscribe to media input events.
+		</constant>
+		<constant name="OBS_EVENT_SUBSCRIPTION_VENDORS" value="512">
+			Subscribe to vendor events.
+		</constant>
+		<constant name="OBS_EVENT_SUBSCRIPTION_UI" value="1024">
+			Subscribe to UI events.
+		</constant>
+		<constant name="OBS_EVENT_SUBSCRIPTION_INPUT_VOLUME_METERS" value="65536">
+			Subscribe to high-volume InputVolumeMeters event.
+		</constant>
+		<constant name="OBS_EVENT_SUBSCRIPTION_INPUT_ACTIVE_STATE_CHANGED" value="131072">
+			Subscribe to high-volume InputActiveStateChanged event.
+		</constant>
+		<constant name="OBS_EVENT_SUBSCRIPTION_INPUT_SHOW_STATE_CHANGED" value="262144">
+			Subscribe to high-volume InputShowStateChanged event.
+		</constant>
+		<constant name="OBS_EVENT_SUBSCRIPTION_SCENE_ITEM_TRANSFORM_CHANGED" value="524288">
+			Subscribe to high-volume SceneItemTransformChanged event.
+		</constant>
+		<constant name="OBS_EVENT_SUBSCRIPTION_ALL" value="2047">
+			Subscribe to all standard events (excludes high-volume events).
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_UNKNOWN" value="0">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_NO_ERROR" value="10">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_SUCCESS" value="100">
+			Request completed successfully.
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_MISSING_REQUEST_TYPE" value="203">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_UNKNOWN_REQUEST_TYPE" value="204">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_GENERIC_ERROR" value="205">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_UNSUPPORTED_REQUEST_BATCH_EXECUTION_TYPE" value="206">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_NOT_READY" value="207">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_MISSING_REQUEST_FIELD" value="300">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_MISSING_REQUEST_DATA" value="301">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_INVALID_REQUEST_FIELD" value="400">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_INVALID_REQUEST_FIELD_TYPE" value="401">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_REQUEST_FIELD_OUT_OF_RANGE" value="402">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_REQUEST_FIELD_EMPTY" value="403">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_TOO_MANY_REQUEST_FIELDS" value="404">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_OUTPUT_RUNNING" value="500">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_OUTPUT_NOT_RUNNING" value="501">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_OUTPUT_PAUSED" value="502">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_OUTPUT_NOT_PAUSED" value="503">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_OUTPUT_DISABLED" value="504">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_STUDIO_MODE_ACTIVE" value="505">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_STUDIO_MODE_NOT_ACTIVE" value="506">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_RESOURCE_NOT_FOUND" value="600">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_RESOURCE_ALREADY_EXISTS" value="601">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_INVALID_RESOURCE_TYPE" value="602">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_NOT_ENOUGH_RESOURCES" value="603">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_INVALID_RESOURCE_STATE" value="604">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_INVALID_INPUT_KIND" value="605">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_RESOURCE_NOT_CONFIGURABLE" value="606">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_INVALID_FILTER_KIND" value="607">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_RESOURCE_CREATION_FAILED" value="700">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_RESOURCE_ACTION_FAILED" value="701">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_REQUEST_PROCESSING_FAILED" value="702">
+		</constant>
+		<constant name="OBS_REQUEST_STATUS_CANNOT_ACT" value="703">
+		</constant>
+		<constant name="OBS_REQUEST_BATCH_EXECUTION_TYPE_NONE" value="-1">
+			Not a request batch.
+		</constant>
+		<constant name="OBS_REQUEST_BATCH_EXECUTION_TYPE_SERIAL_REALTIME" value="0">
+			Process requests serially as fast as possible.
+		</constant>
+		<constant name="OBS_REQUEST_BATCH_EXECUTION_TYPE_SERIAL_FRAME" value="1">
+			Process requests serially in sync with graphics thread.
+		</constant>
+		<constant name="OBS_REQUEST_BATCH_EXECUTION_TYPE_PARALLEL" value="2">
+			Process requests in parallel using thread pool.
+		</constant>
+		<constant name="OBS_WEBSOCKET_CLOSE_DONT_CLOSE" value="0">
+		</constant>
+		<constant name="OBS_WEBSOCKET_CLOSE_UNKNOWN_REASON" value="4000">
+		</constant>
+		<constant name="OBS_WEBSOCKET_CLOSE_MESSAGE_DECODE_ERROR" value="4002">
+		</constant>
+		<constant name="OBS_WEBSOCKET_CLOSE_MISSING_DATA_FIELD" value="4003">
+		</constant>
+		<constant name="OBS_WEBSOCKET_CLOSE_INVALID_DATA_FIELD_TYPE" value="4004">
+		</constant>
+		<constant name="OBS_WEBSOCKET_CLOSE_INVALID_DATA_FIELD_VALUE" value="4005">
+		</constant>
+		<constant name="OBS_WEBSOCKET_CLOSE_UNKNOWN_OPCODE" value="4006">
+		</constant>
+		<constant name="OBS_WEBSOCKET_CLOSE_NOT_IDENTIFIED" value="4007">
+		</constant>
+		<constant name="OBS_WEBSOCKET_CLOSE_ALREADY_IDENTIFIED" value="4008">
+		</constant>
+		<constant name="OBS_WEBSOCKET_CLOSE_AUTHENTICATION_FAILED" value="4009">
+			WebSocket closed due to authentication failure.
+		</constant>
+		<constant name="OBS_WEBSOCKET_CLOSE_UNSUPPORTED_RPC_VERSION" value="4010">
+		</constant>
+		<constant name="OBS_WEBSOCKET_CLOSE_SESSION_INVALIDATED" value="4011">
+		</constant>
+		<constant name="OBS_WEBSOCKET_CLOSE_UNSUPPORTED_FEATURE" value="4012">
+		</constant>
+		<constant name="OBS_MEDIA_INPUT_ACTION_NONE" value="0">
+			No media action.
+		</constant>
+		<constant name="OBS_MEDIA_INPUT_ACTION_PLAY" value="1">
+			Play media input.
+		</constant>
+		<constant name="OBS_MEDIA_INPUT_ACTION_PAUSE" value="2">
+			Pause media input.
+		</constant>
+		<constant name="OBS_MEDIA_INPUT_ACTION_STOP" value="3">
+			Stop media input.
+		</constant>
+		<constant name="OBS_MEDIA_INPUT_ACTION_RESTART" value="4">
+			Restart media input.
+		</constant>
+		<constant name="OBS_MEDIA_INPUT_ACTION_NEXT" value="5">
+			Go to next playlist item.
+		</constant>
+		<constant name="OBS_MEDIA_INPUT_ACTION_PREVIOUS" value="6">
+			Go to previous playlist item.
+		</constant>
+		<constant name="OBS_OUTPUT_STATE_UNKNOWN" value="0">
+		</constant>
+		<constant name="OBS_OUTPUT_STATE_STARTING" value="1">
+		</constant>
+		<constant name="OBS_OUTPUT_STATE_STARTED" value="2">
+		</constant>
+		<constant name="OBS_OUTPUT_STATE_STOPPING" value="3">
+		</constant>
+		<constant name="OBS_OUTPUT_STATE_STOPPED" value="4">
+		</constant>
+		<constant name="OBS_OUTPUT_STATE_RECONNECTING" value="5">
+		</constant>
+		<constant name="OBS_OUTPUT_STATE_RECONNECTED" value="6">
+		</constant>
+		<constant name="OBS_OUTPUT_STATE_PAUSED" value="7">
+		</constant>
+		<constant name="OBS_OUTPUT_STATE_RESUMED" value="8">
+		</constant>
+	</constants>
+</class>

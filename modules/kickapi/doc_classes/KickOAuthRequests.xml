@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="KickOAuthRequests" inherits="KickRequestBase" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Handles Kick API requests related to OAuth and authentication.
+	</brief_description>
+	<description>
+		KickOAuthRequests provides methods for validating OAuth tokens and retrieving public keys for webhook signature verification.
+		Access this handler through [method KickAPI.get_oauth].
+		[codeblocks]
+		[gdscript]
+		func _ready():
+		    KickAPI.configure("your_token")
+		    KickAPI.request_completed.connect(_on_request_completed)
+
+		    # Validate current token
+		    KickAPI.get_oauth().introspect_token()
+
+		    # Get public key for webhook verification
+		    KickAPI.get_oauth().get_public_key()
+
+		func _on_request_completed(signal_name: String, response_code: int, data: Dictionary):
+		    if signal_name == "token_introspected":
+		        # Output:
+		        # {
+		        #   "data": {
+		        #     "active": true,
+		        #     "client_id": "your_client_id",
+		        #     "token_type": "Bearer",
+		        #     "scope": "chat:read chat:write channel:read",
+		        #     "exp": 1705334400
+		        #   },
+		        #   "message": "success"
+		        # }
+		        var token_data = data["data"]
+		        if token_data["active"]:
+		            print("Token is valid!")
+		            print("Scopes: ", token_data["scope"])
+		            print("Expires at: ", token_data["exp"])
+		        else:
+		            print("Token is invalid or expired!")
+
+		    elif signal_name == "public_key_received":
+		        # Output:
+		        # {
+		        #   "data": {
+		        #     "public_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjA..."
+		        #   },
+		        #   "message": "success"
+		        # }
+		        var public_key = data["data"]["public_key"]
+		        print("Public key retrieved for webhook verification")
+		        # Use this key to verify webhook signatures
+		[/gdscript]
+		[/codeblocks]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_public_key">
+			<return type="void" />
+			<description>
+				Retrieves the public key for webhook signature verification. Use this to verify that webhook payloads originated from Kick.
+				Results are returned via the [signal KickAPI.request_completed] signal with signal_name [code]"public_key_received"[/code].
+			</description>
+		</method>
+		<method name="introspect_token">
+			<return type="void" />
+			<description>
+				Validates and gets information about the current OAuth access token, including its expiration time and scopes.
+				Results are returned via the [signal KickAPI.request_completed] signal with signal_name [code]"token_introspected"[/code].
+			</description>
+		</method>
+	</methods>
+</class>

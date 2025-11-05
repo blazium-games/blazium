@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TwitchMessage" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_color" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="tags" type="Dictionary" />
+			<description>
+				Returns the color. [param tags] - Tags.
+			</description>
+		</method>
+		<method name="get_display_name" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="tags" type="Dictionary" />
+			<description>
+				Returns the display name. [param tags] - Tags.
+			</description>
+		</method>
+		<method name="get_msg_id" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="tags" type="Dictionary" />
+			<description>
+				Returns the msg id. [param tags] - Tags.
+			</description>
+		</method>
+		<method name="get_room_id" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="tags" type="Dictionary" />
+			<description>
+				Returns the room id. [param tags] - Tags.
+			</description>
+		</method>
+		<method name="get_twitch_command" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="message" type="IRCMessage" />
+			<description>
+				Returns the twitch command. [param message] - Message.
+			</description>
+		</method>
+		<method name="get_user_id" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="tags" type="Dictionary" />
+			<description>
+				Returns the user id. [param tags] - Tags.
+			</description>
+		</method>
+		<method name="is_moderator" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="tags" type="Dictionary" />
+			<description>
+				Returns [code]true[/code] if moderator. [param tags] - Tags.
+			</description>
+		</method>
+		<method name="is_subscriber" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="tags" type="Dictionary" />
+			<description>
+				Returns [code]true[/code] if subscriber. [param tags] - Tags.
+			</description>
+		</method>
+		<method name="is_turbo" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="tags" type="Dictionary" />
+			<description>
+				Returns [code]true[/code] if turbo. [param tags] - Tags.
+			</description>
+		</method>
+		<method name="is_twitch_command" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="message" type="IRCMessage" />
+			<description>
+				Returns [code]true[/code] if twitch command. [param message] - Message.
+			</description>
+		</method>
+		<method name="is_vip" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="tags" type="Dictionary" />
+			<description>
+				Returns [code]true[/code] if vip. [param tags] - Tags.
+			</description>
+		</method>
+		<method name="parse_badges" qualifiers="static">
+			<return type="Dictionary" />
+			<param index="0" name="badges_string" type="String" />
+			<description>
+				Returns parse badges. [param badges_string] - Badges string.
+			</description>
+		</method>
+		<method name="parse_emote_sets" qualifiers="static">
+			<return type="Array" />
+			<param index="0" name="emote_sets_string" type="String" />
+			<description>
+				Returns parse emote sets. [param emote_sets_string] - Emote sets string.
+			</description>
+		</method>
+		<method name="parse_emotes" qualifiers="static">
+			<return type="Dictionary" />
+			<param index="0" name="emotes_string" type="String" />
+			<description>
+				Returns parse emotes. [param emotes_string] - Emotes string.
+			</description>
+		</method>
+		<method name="parse_system_message" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="system_msg" type="String" />
+			<description>
+				Returns parse system message. [param system_msg] - System msg.
+			</description>
+		</method>
+	</methods>
+</class>

@@ -1462,7 +1462,14 @@ void EditorThemeManager::_populate_standard_styles(const Ref<EditorTheme> &p_the
 		if (p_config.increase_scrollbar_touch_area) {
 			p_theme->set_stylebox("scroll", "HScrollBar", make_line_stylebox(p_config.separator_color, 50));
 		} else {
-			p_theme->set_stylebox("scroll", "HScrollBar", make_stylebox(p_theme->get_icon(SNAME("GuiScrollBg"), EditorStringName(EditorIcons)), 5, 5, 5, 5, -5, 1, -5, 1));
+			if (EDITOR_GET("interface/editor/thick_scrollbars")) {
+				p_theme->set_stylebox("scroll", "HScrollBar", make_line_stylebox(p_config.separator_color, 15));
+#ifdef MACOS_ENABLED
+				p_theme->set_stylebox("scroll", "HScrollBar", make_line_stylebox(p_config.separator_color, 25));
+#endif
+			} else {
+				p_theme->set_stylebox("scroll", "HScrollBar", make_stylebox(p_theme->get_icon(SNAME("GuiScrollBg"), EditorStringName(EditorIcons)), 5, 5, 5, 5, -5, 1, -5, 1));
+			}
 		}
 		p_theme->set_stylebox("scroll_focus", "HScrollBar", make_stylebox(p_theme->get_icon(SNAME("GuiScrollBg"), EditorStringName(EditorIcons)), 5, 5, 5, 5, 1, 1, 1, 1));
 		p_theme->set_stylebox("grabber", "HScrollBar", make_stylebox(p_theme->get_icon(SNAME("GuiScrollGrabber"), EditorStringName(EditorIcons)), 6, 6, 6, 6, 1, 1, 1, 1));
@@ -1481,7 +1488,14 @@ void EditorThemeManager::_populate_standard_styles(const Ref<EditorTheme> &p_the
 		if (p_config.increase_scrollbar_touch_area) {
 			p_theme->set_stylebox("scroll", "VScrollBar", make_line_stylebox(p_config.separator_color, 50, 1, 1, true));
 		} else {
-			p_theme->set_stylebox("scroll", "VScrollBar", make_stylebox(p_theme->get_icon(SNAME("GuiScrollBg"), EditorStringName(EditorIcons)), 5, 5, 5, 5, 1, -5, 1, -5));
+			if (EDITOR_GET("interface/editor/thick_scrollbars")) {
+				p_theme->set_stylebox("scroll", "VScrollBar", make_line_stylebox(p_config.separator_color, 15, 1, 1, true));
+#ifdef MACOS_ENABLED
+				p_theme->set_stylebox("scroll", "VScrollBar", make_line_stylebox(p_config.separator_color, 25, 1, 1, true));
+#endif
+			} else {
+				p_theme->set_stylebox("scroll", "VScrollBar", make_stylebox(p_theme->get_icon(SNAME("GuiScrollBg"), EditorStringName(EditorIcons)), 5, 5, 5, 5, 1, -5, 1, -5));
+			}
 		}
 		p_theme->set_stylebox("scroll_focus", "VScrollBar", make_stylebox(p_theme->get_icon(SNAME("GuiScrollBg"), EditorStringName(EditorIcons)), 5, 5, 5, 5, 1, 1, 1, 1));
 		p_theme->set_stylebox("grabber", "VScrollBar", make_stylebox(p_theme->get_icon(SNAME("GuiScrollGrabber"), EditorStringName(EditorIcons)), 6, 6, 6, 6, 1, 1, 1, 1));
@@ -2897,6 +2911,7 @@ bool EditorThemeManager::is_generated_theme_outdated() {
 				EditorSettings::get_singleton()->check_changed_settings_in_group("interface/editor/font") ||
 				EditorSettings::get_singleton()->check_changed_settings_in_group("interface/editor/main_font") ||
 				EditorSettings::get_singleton()->check_changed_settings_in_group("interface/editor/code_font") ||
+				EditorSettings::get_singleton()->check_changed_settings_in_group("interface/editor/thick_scrollbars") ||
 				EditorSettings::get_singleton()->check_changed_settings_in_group("editors/visual_editors") ||
 				EditorSettings::get_singleton()->check_changed_settings_in_group("text_editor/theme") ||
 				EditorSettings::get_singleton()->check_changed_settings_in_group("text_editor/help/help") ||

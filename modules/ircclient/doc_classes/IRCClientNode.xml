@@ -1,0 +1,811 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="IRCClientNode" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Node wrapper for IRC client with automatic polling.
+	</brief_description>
+	<description>
+		A Node-based IRC (Internet Relay Chat) client that automatically polls for messages in the [code]_process()[/code] method. This is the recommended way to use the IRC client module as it handles polling automatically when added to the scene tree.
+		Supports full IRC protocol (RFC 1459, RFC 2812), IRCv3 extensions, SSL/TLS connections, and DCC file transfers.
+		[codeblock]
+		extends Node
+
+		var irc: IRCClientNode
+
+		func _ready():
+		    irc = IRCClientNode.new()
+		    add_child(irc)
+		    irc.connected.connect(_on_connected)
+		    irc.privmsg.connect(_on_message)
+		    irc.connect_to_server("irc.libera.chat", 6667, false, "MyNick", "myuser", "Real Name")
+
+		func _on_connected():
+		    print("Connected!")
+		    irc.join_channel("#blazium")
+
+		func _on_message(sender, target, text, tags):
+		    print("[%s] &lt;%s&gt; %s" % [target, sender, text])
+		[/codeblock]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="accept_dcc_transfer">
+			<return type="void" />
+			<param index="0" name="transfer_index" type="int" />
+			<description>
+				Accepts an incoming DCC file transfer by index from [method get_active_transfers]. [param transfer_index] - Transfer index.
+			</description>
+		</method>
+		<method name="cancel_dcc_transfer">
+			<return type="void" />
+			<param index="0" name="transfer_index" type="int" />
+			<description>
+				Cancels an active DCC transfer by index. [param transfer_index] - Transfer index.
+			</description>
+		</method>
+		<method name="clear_dcc_local_ip">
+			<return type="void" />
+			<description>
+				Clears manual DCC IP configuration, reverting to automatic detection.
+			</description>
+		</method>
+		<method name="clear_message_history">
+			<return type="void" />
+			<description>
+				Clears all stored message history.
+			</description>
+		</method>
+		<method name="connect_to_server">
+			<return type="int" enum="Error" />
+			<param index="0" name="host" type="String" />
+			<param index="1" name="port" type="int" />
+			<param index="2" name="use_ssl" type="bool" />
+			<param index="3" name="nick" type="String" />
+			<param index="4" name="username" type="String" />
+			<param index="5" name="realname" type="String" />
+			<param index="6" name="password" type="String" default="&quot;&quot;" />
+			<description>
+				Connects to an IRC server. Returns [constant OK] on success.
+				[param host] is the server hostname or IP address.
+				[param port] is the server port (typically 6667 for plain, 6697 for SSL).
+				[param use_ssl] enables SSL/TLS encryption (requires mbedtls module).
+				[param nick] is the nickname to use.
+				[param username] is the username for the connection.
+				[param realname] is the real name or description.
+				[param password] is optional server password (not NickServ).
+			</description>
+		</method>
+		<method name="disable_sasl">
+			<return type="void" />
+			<description>
+				Disables SASL authentication.
+			</description>
+		</method>
+		<method name="disconnect_from_server">
+			<return type="void" />
+			<param index="0" name="quit_message" type="String" default="&quot;&quot;" />
+			<description>
+				Disconnects from the IRC server with an optional quit message.
+			</description>
+		</method>
+		<method name="enable_sasl">
+			<return type="void" />
+			<param index="0" name="username" type="String" />
+			<param index="1" name="password" type="String" />
+			<description>
+				Enables SASL authentication with the given username and password. Must be called before [method connect_to_server].
+			</description>
+		</method>
+		<method name="get_active_transfers" qualifiers="const">
+			<return type="IRCDCCTransfer[]" />
+			<description>
+				Returns array of all active [IRCDCCTransfer] objects.
+			</description>
+		</method>
+		<method name="get_auto_detect_encoding" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if automatic encoding detection is enabled.
+			</description>
+		</method>
+		<method name="get_available_capabilities" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				Returns array of IRCv3 capabilities advertised by server (from CAP LS).
+			</description>
+		</method>
+		<method name="get_channel" qualifiers="const">
+			<return type="IRCChannel" />
+			<param index="0" name="channel" type="String" />
+			<description>
+				Returns [IRCChannel] object for the specified channel, or [code]null[/code] if not joined. [param channel] - Channel.
+			</description>
+		</method>
+		<method name="get_client">
+			<return type="IRCClient" />
+			<description>
+				Returns the underlying [IRCClient] instance for advanced usage.
+			</description>
+		</method>
+		<method name="get_current_nick" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns your current nickname. May differ from requested nick if changed.
+			</description>
+		</method>
+		<method name="get_dcc_local_ip" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the configured or auto-detected local IP address for DCC.
+			</description>
+		</method>
+		<method name="get_enabled_capabilities" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				Returns array of IRCv3 capabilities successfully enabled via CAP ACK.
+			</description>
+		</method>
+		<method name="get_encoding" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns current character encoding.
+			</description>
+		</method>
+		<method name="get_history_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if message history is enabled.
+			</description>
+		</method>
+		<method name="get_joined_channels" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				Returns array of all channel names you have joined.
+			</description>
+		</method>
+		<method name="get_max_history_size" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns maximum message history size.
+			</description>
+		</method>
+		<method name="get_message_history" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns array of recent messages as Dictionaries containing sender, target, text, and tags.
+			</description>
+		</method>
+		<method name="get_messages_per_second" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns current flood protection rate limit.
+			</description>
+		</method>
+		<method name="get_monitored_nicks" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				Returns array of locally tracked monitored nicknames.
+			</description>
+		</method>
+		<method name="get_ping_timeout" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns PING timeout in milliseconds.
+			</description>
+		</method>
+		<method name="get_status" qualifiers="const">
+			<return type="int" enum="IRCClient.Status" />
+			<description>
+				Returns the current connection status. See [enum IRCClient.Status].
+			</description>
+		</method>
+		<method name="get_supported_encodings" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				Returns array of supported character encodings.
+			</description>
+		</method>
+		<method name="get_tls_options" qualifiers="const">
+			<return type="TLSOptions" />
+			<description>
+				Returns the configured [TLSOptions] for SSL/TLS connections.
+			</description>
+		</method>
+		<method name="get_token_bucket_size" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns token bucket size (burst capacity for messages).
+			</description>
+		</method>
+		<method name="is_irc_connected" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the client is connected to an IRC server and ready to send/receive messages.
+			</description>
+		</method>
+		<method name="join_channel">
+			<return type="void" />
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="key" type="String" default="&quot;&quot;" />
+			<description>
+				Joins an IRC channel. Optionally provide a [param key] for password-protected channels.
+			</description>
+		</method>
+		<method name="monitor_add">
+			<return type="void" />
+			<param index="0" name="nick" type="String" />
+			<description>
+				Adds a nickname to MONITOR list for real-time presence tracking (IRCv3.3). Emits [signal numeric_730_mononline] or [signal numeric_731_monoffline]. [param nick] - Nick.
+			</description>
+		</method>
+		<method name="monitor_clear">
+			<return type="void" />
+			<description>
+				Clears all monitored nicknames.
+			</description>
+		</method>
+		<method name="monitor_list">
+			<return type="void" />
+			<description>
+				Requests current MONITOR list from server.
+			</description>
+		</method>
+		<method name="monitor_remove">
+			<return type="void" />
+			<param index="0" name="nick" type="String" />
+			<description>
+				Removes a nickname from MONITOR list. [param nick] - Nick.
+			</description>
+		</method>
+		<method name="monitor_status">
+			<return type="void" />
+			<description>
+				Requests online/offline status for all monitored nicknames.
+			</description>
+		</method>
+		<method name="parse_formatting">
+			<return type="Dictionary" />
+			<param index="0" name="text" type="String" />
+			<description>
+				Parses mIRC formatting and returns Dictionary with parsed segments, colors, and styles. [param text] - Text.
+			</description>
+		</method>
+		<method name="part_channel">
+			<return type="void" />
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="message" type="String" default="&quot;&quot;" />
+			<description>
+				Leaves an IRC channel with an optional part message.
+			</description>
+		</method>
+		<method name="reject_dcc_transfer">
+			<return type="void" />
+			<param index="0" name="transfer_index" type="int" />
+			<description>
+				Rejects an incoming DCC file transfer by index. [param transfer_index] - Transfer index.
+			</description>
+		</method>
+		<method name="request_capability">
+			<return type="void" />
+			<param index="0" name="capability" type="String" />
+			<description>
+				Requests an IRCv3 capability from the server. Emits [signal capability_acknowledged] or [signal capability_denied]. [param capability] - Capability.
+			</description>
+		</method>
+		<method name="send_action">
+			<return type="void" />
+			<param index="0" name="target" type="String" />
+			<param index="1" name="action" type="String" />
+			<description>
+				Sends a CTCP ACTION message (like /me in IRC clients).
+				Example: [code]irc.send_action("#channel", "waves hello")[/code]
+			</description>
+		</method>
+		<method name="send_dcc_file">
+			<return type="int" enum="Error" />
+			<param index="0" name="nick" type="String" />
+			<param index="1" name="file_path" type="String" />
+			<description>
+				Initiates a DCC SEND file transfer. Returns [constant OK] on success. Emits [signal dcc_request] to recipient. [param nick] - Nick. [param file_path] - File path.
+			</description>
+		</method>
+		<method name="send_notice">
+			<return type="void" />
+			<param index="0" name="target" type="String" />
+			<param index="1" name="message" type="String" />
+			<description>
+				Sends a notice to a channel or user. Notices are like messages but should not trigger automatic responses.
+			</description>
+		</method>
+		<method name="send_privmsg">
+			<return type="void" />
+			<param index="0" name="target" type="String" />
+			<param index="1" name="message" type="String" />
+			<description>
+				Sends a message to a channel or user. [param target] can be a channel name (starting with #) or a nickname.
+			</description>
+		</method>
+		<method name="send_raw">
+			<return type="void" />
+			<param index="0" name="message" type="String" />
+			<description>
+				Sends raw. [param message] - Message.
+			</description>
+		</method>
+		<method name="send_whois">
+			<return type="void" />
+			<param index="0" name="nick" type="String" />
+			<description>
+				Sends WHOIS command to query detailed information about a user. Server responds via numeric replies. [param nick] - Nick.
+			</description>
+		</method>
+		<method name="set_auto_detect_encoding">
+			<return type="void" />
+			<param index="0" name="auto" type="bool" />
+			<description>
+				Enables/disables automatic encoding detection on received messages. [param auto] - Auto.
+			</description>
+		</method>
+		<method name="set_dcc_local_ip">
+			<return type="void" />
+			<param index="0" name="ip" type="String" />
+			<description>
+				Manually sets the local IP address for DCC connections. Auto-detected if not set. [param ip] - Ip.
+			</description>
+		</method>
+		<method name="set_encoding">
+			<return type="void" />
+			<param index="0" name="encoding" type="String" />
+			<description>
+				Sets character encoding (UTF-8, ISO-8859-1, CP1252). Default is UTF-8. [param encoding] - Encoding.
+			</description>
+		</method>
+		<method name="set_history_enabled">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				Enables or disables local message history storage in memory. [param enabled] - Enabled.
+			</description>
+		</method>
+		<method name="set_max_history_size">
+			<return type="void" />
+			<param index="0" name="size" type="int" />
+			<description>
+				Sets maximum number of messages to store in history. Older messages are discarded. [param size] - Size.
+			</description>
+		</method>
+		<method name="set_messages_per_second">
+			<return type="void" />
+			<param index="0" name="rate" type="int" />
+			<description>
+				Sets maximum IRC messages to send per second for flood protection. Default is usually 2. [param rate] - Rate.
+			</description>
+		</method>
+		<method name="set_mode">
+			<return type="void" />
+			<param index="0" name="target" type="String" />
+			<param index="1" name="modes" type="String" />
+			<param index="2" name="params" type="PackedStringArray" default="PackedStringArray()" />
+			<description>
+				Sets IRC modes on a channel or user. [param modes] is the mode string (e.g., "+o"), [param params] are mode parameters.
+			</description>
+		</method>
+		<method name="set_nick">
+			<return type="void" />
+			<param index="0" name="new_nick" type="String" />
+			<description>
+				Changes the nickname. May fail if the nick is already in use.
+			</description>
+		</method>
+		<method name="set_ping_timeout">
+			<return type="void" />
+			<param index="0" name="timeout_ms" type="int" />
+			<description>
+				Sets the ping timeout. [param timeout_ms] - Timeout ms.
+			</description>
+		</method>
+		<method name="set_realname">
+			<return type="void" />
+			<param index="0" name="realname" type="String" />
+			<description>
+				Sets the realname. [param realname] - Realname.
+			</description>
+		</method>
+		<method name="set_tls_options">
+			<return type="void" />
+			<param index="0" name="options" type="TLSOptions" />
+			<description>
+				Sets the tls options. [param options] - Options.
+			</description>
+		</method>
+		<method name="set_token_bucket_size">
+			<return type="void" />
+			<param index="0" name="size" type="int" />
+			<description>
+				Sets the token bucket size. [param size] - Size.
+			</description>
+		</method>
+		<method name="set_topic">
+			<return type="void" />
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="topic" type="String" />
+			<description>
+				Sets the topic. [param channel] - Channel. [param topic] - Topic.
+			</description>
+		</method>
+		<method name="strip_formatting">
+			<return type="String" />
+			<param index="0" name="text" type="String" />
+			<description>
+				Removes all mIRC color codes and formatting characters from text. Returns plain text. [param text] - Text.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="account_registration_failed">
+			<param index="0" name="reason" type="String" />
+			<description>
+				Emitted when account registration fails. [param reason] contains the failure reason.
+			</description>
+		</signal>
+		<signal name="account_registration_success">
+			<param index="0" name="account" type="String" />
+			<description>
+				Emitted when account registration succeeds (IRCv3 draft/account-registration). [param account] is the registered account name.
+			</description>
+		</signal>
+		<signal name="account_verification_failed">
+			<param index="0" name="reason" type="String" />
+			<description>
+				Emitted when account verification fails. [param reason] contains the failure reason.
+			</description>
+		</signal>
+		<signal name="account_verification_required">
+			<param index="0" name="account" type="String" />
+			<param index="1" name="method" type="String" />
+			<description>
+				Emitted when account registration requires verification (email, etc.). [param account] is the account name, [param method] describes verification method.
+			</description>
+		</signal>
+		<signal name="account_verification_success">
+			<param index="0" name="account" type="String" />
+			<description>
+				Emitted when account verification succeeds. [param account] is the verified account name.
+			</description>
+		</signal>
+		<signal name="batch_ended">
+			<param index="0" name="ref_tag" type="String" />
+			<param index="1" name="batch_type" type="String" />
+			<param index="2" name="messages" type="Array" />
+			<description>
+				Emitted when IRCv3 BATCH ends. [param ref_tag] is the batch ID, [param batch_type] is the type, [param messages] contains accumulated messages.
+			</description>
+		</signal>
+		<signal name="batch_started">
+			<param index="0" name="ref_tag" type="String" />
+			<param index="1" name="batch_type" type="String" />
+			<param index="2" name="params" type="PackedStringArray" />
+			<description>
+				Emitted when IRCv3 BATCH starts. [param ref_tag] is the batch ID, [param batch_type] is the type, [param params] are batch parameters.
+			</description>
+		</signal>
+		<signal name="capability_acknowledged">
+			<param index="0" name="capability" type="String" />
+			<description>
+				Emitted when server acknowledges a requested capability (CAP ACK). [param capability] is the enabled capability.
+			</description>
+		</signal>
+		<signal name="capability_denied">
+			<param index="0" name="capability" type="String" />
+			<description>
+				Emitted when server denies a requested capability (CAP NAK). [param capability] is the denied capability.
+			</description>
+		</signal>
+		<signal name="capability_list">
+			<param index="0" name="capabilities" type="PackedStringArray" />
+			<description>
+				Emitted when server sends CAP LS response. [param capabilities] contains array of available IRCv3 capabilities.
+			</description>
+		</signal>
+		<signal name="connected">
+			<description>
+				Emitted when successfully connected and registered with the server.
+			</description>
+		</signal>
+		<signal name="connection_error">
+			<param index="0" name="error" type="String" />
+			<description>
+				Emitted when connection error.
+			</description>
+		</signal>
+		<signal name="ctcp_received">
+			<param index="0" name="sender" type="String" />
+			<param index="1" name="command" type="String" />
+			<param index="2" name="params" type="String" />
+			<description>
+				Emitted when ctcp received.
+			</description>
+		</signal>
+		<signal name="ctcp_reply">
+			<param index="0" name="sender" type="String" />
+			<param index="1" name="command" type="String" />
+			<param index="2" name="params" type="String" />
+			<description>
+				Emitted when ctcp reply.
+			</description>
+		</signal>
+		<signal name="dcc_completed">
+			<param index="0" name="transfer_index" type="int" />
+			<description>
+				Emitted when a DCC transfer completes successfully. [param transfer_index] identifies the transfer.
+			</description>
+		</signal>
+		<signal name="dcc_failed">
+			<param index="0" name="transfer_index" type="int" />
+			<param index="1" name="error" type="String" />
+			<description>
+				Emitted when a DCC transfer fails. [param transfer_index] identifies the transfer, [param error] contains error description.
+			</description>
+		</signal>
+		<signal name="dcc_progress">
+			<param index="0" name="transfer_index" type="int" />
+			<param index="1" name="bytes" type="int" />
+			<param index="2" name="total" type="int" />
+			<description>
+				Emitted during DCC transfer with progress. [param transfer_index] identifies the transfer, [param bytes] is transferred, [param total] is file size.
+			</description>
+		</signal>
+		<signal name="dcc_request">
+			<param index="0" name="transfer" type="IRCDCCTransfer" />
+			<description>
+				Emitted when receiving a DCC transfer request. [param transfer] is an [IRCDCCTransfer] object. Accept with [method accept_dcc_transfer].
+			</description>
+		</signal>
+		<signal name="disconnected">
+			<param index="0" name="reason" type="String" />
+			<description>
+				Emitted when disconnected from the server. [param reason] contains the disconnect reason.
+			</description>
+		</signal>
+		<signal name="highlighted">
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="sender" type="String" />
+			<param index="2" name="message" type="String" />
+			<param index="3" name="tags" type="Dictionary" />
+			<description>
+				Emitted when highlighted.
+			</description>
+		</signal>
+		<signal name="joined">
+			<param index="0" name="channel" type="String" />
+			<description>
+				Emitted when you successfully join a channel.
+			</description>
+		</signal>
+		<signal name="kicked">
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="kicker" type="String" />
+			<param index="2" name="reason" type="String" />
+			<description>
+				Emitted when kicked.
+			</description>
+		</signal>
+		<signal name="latency_measured">
+			<param index="0" name="latency_ms" type="int" />
+			<description>
+				Emitted when latency measured.
+			</description>
+		</signal>
+		<signal name="message_received">
+			<param index="0" name="message" type="IRCMessage" />
+			<description>
+				Emitted when message received.
+			</description>
+		</signal>
+		<signal name="mode_changed">
+			<param index="0" name="target" type="String" />
+			<param index="1" name="modes" type="String" />
+			<param index="2" name="params" type="PackedStringArray" />
+			<description>
+				Emitted when channel or user modes change. [param target] is the channel/user, [param modes] is the mode string, [param params] are mode parameters.
+			</description>
+		</signal>
+		<signal name="nick_changed">
+			<param index="0" name="old_nick" type="String" />
+			<param index="1" name="new_nick" type="String" />
+			<description>
+				Emitted when a user (including yourself) changes nickname.
+			</description>
+		</signal>
+		<signal name="notice">
+			<param index="0" name="sender" type="String" />
+			<param index="1" name="target" type="String" />
+			<param index="2" name="text" type="String" />
+			<description>
+				Emitted when notice.
+			</description>
+		</signal>
+		<signal name="numeric_001_welcome">
+			<param index="0" name="message" type="String" />
+			<description>
+				Emitted when the welcome message (001) is received, indicating successful registration.
+			</description>
+		</signal>
+		<signal name="numeric_005_isupport">
+			<param index="0" name="features" type="Dictionary" />
+			<description>
+				Emitted when numeric 005 isupport.
+			</description>
+		</signal>
+		<signal name="numeric_332_topic">
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="topic" type="String" />
+			<description>
+				Emitted when receiving channel topic (RPL_TOPIC, 332). [param channel] is the channel, [param topic] is the topic text.
+			</description>
+		</signal>
+		<signal name="numeric_353_names">
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="names" type="PackedStringArray" />
+			<description>
+				Emitted when receiving channel names list (RPL_NAMREPLY, 353). [param channel] is the channel, [param names] are the users.
+			</description>
+		</signal>
+		<signal name="numeric_366_endofnames">
+			<param index="0" name="channel" type="String" />
+			<description>
+				Emitted when channel names list is complete (RPL_ENDOFNAMES, 366). [param channel] is the channel name.
+			</description>
+		</signal>
+		<signal name="numeric_372_motd">
+			<param index="0" name="line" type="String" />
+			<description>
+				Emitted for each line of server MOTD (RPL_MOTD, 372). [param line] contains the MOTD line text.
+			</description>
+		</signal>
+		<signal name="numeric_433_nicknameinuse">
+			<param index="0" name="nick" type="String" />
+			<description>
+				Emitted when the chosen nickname is already in use. You should choose a different nick.
+			</description>
+		</signal>
+		<signal name="numeric_730_mononline">
+			<param index="0" name="nicks" type="PackedStringArray" />
+			<description>
+				Emitted when monitored nicks come online (RPL_MONONLINE, 730, IRCv3.3). [param nicks] contains array of nicks.
+			</description>
+		</signal>
+		<signal name="numeric_731_monoffline">
+			<param index="0" name="nicks" type="PackedStringArray" />
+			<description>
+				Emitted when monitored nicks go offline (RPL_MONOFFLINE, 731, IRCv3.3). [param nicks] contains array of nicks.
+			</description>
+		</signal>
+		<signal name="numeric_received">
+			<param index="0" name="code" type="int" />
+			<param index="1" name="params" type="PackedStringArray" />
+			<description>
+				Emitted for any numeric reply not otherwise handled specifically. [param code] is the numeric code, [param params] are parameters.
+			</description>
+		</signal>
+		<signal name="parted">
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="message" type="String" />
+			<description>
+				Emitted when parted.
+			</description>
+		</signal>
+		<signal name="privmsg">
+			<param index="0" name="sender" type="String" />
+			<param index="1" name="target" type="String" />
+			<param index="2" name="text" type="String" />
+			<param index="3" name="tags" type="Dictionary" />
+			<description>
+				Emitted when a message is received. [param sender] is the nickname, [param target] is the channel or your nickname, [param text] is the message content, and [param tags] contains IRCv3 message tags.
+			</description>
+		</signal>
+		<signal name="sasl_failed">
+			<param index="0" name="reason" type="String" />
+			<description>
+				Emitted when sasl failed.
+			</description>
+		</signal>
+		<signal name="sasl_success">
+			<description>
+				Emitted when sasl success.
+			</description>
+		</signal>
+		<signal name="standard_reply_fail">
+			<param index="0" name="command" type="String" />
+			<param index="1" name="code" type="String" />
+			<param index="2" name="context" type="String" />
+			<param index="3" name="description" type="String" />
+			<param index="4" name="tags" type="Dictionary" />
+			<description>
+				Emitted for IRCv3.4 FAIL command (structured error). [param command] is the failed command, [param code] is error code, [param context] and [param description] provide details.
+			</description>
+		</signal>
+		<signal name="standard_reply_note">
+			<param index="0" name="command" type="String" />
+			<param index="1" name="code" type="String" />
+			<param index="2" name="context" type="String" />
+			<param index="3" name="description" type="String" />
+			<param index="4" name="tags" type="Dictionary" />
+			<description>
+				Emitted for IRCv3.4 NOTE command (structured notice). [param command] is the command, [param code] is notice code.
+			</description>
+		</signal>
+		<signal name="standard_reply_warn">
+			<param index="0" name="command" type="String" />
+			<param index="1" name="code" type="String" />
+			<param index="2" name="context" type="String" />
+			<param index="3" name="description" type="String" />
+			<param index="4" name="tags" type="Dictionary" />
+			<description>
+				Emitted for IRCv3.4 WARN command (structured warning). [param command] is the command, [param code] is warning code.
+			</description>
+		</signal>
+		<signal name="status_changed">
+			<param index="0" name="status" type="int" />
+			<description>
+				Emitted when connection status changes. [param status] is the new [enum IRCClient.Status] value.
+			</description>
+		</signal>
+		<signal name="tag_base64_data">
+			<param index="0" name="key" type="String" />
+			<param index="1" name="encoded" type="String" />
+			<param index="2" name="decoded" type="String" />
+			<description>
+				Emitted when an IRCv3 tag contains base64 data. [param key] is the tag name, [param encoded] is original, [param decoded] is decoded string.
+			</description>
+		</signal>
+		<signal name="tag_json_data">
+			<param index="0" name="key" type="String" />
+			<param index="1" name="data" type="Dictionary" />
+			<description>
+				Emitted when an IRCv3 tag contains base64-encoded JSON data (automatically decoded). [param key] is the tag name, [param data] is the parsed Dictionary.
+			</description>
+		</signal>
+		<signal name="topic_changed">
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="topic" type="String" />
+			<param index="2" name="setter" type="String" />
+			<description>
+				Emitted when channel topic changes. [param channel] is the channel name, [param topic] is the new topic, [param setter] is who set it.
+			</description>
+		</signal>
+		<signal name="user_joined">
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="user" type="String" />
+			<param index="2" name="account" type="String" />
+			<param index="3" name="realname" type="String" />
+			<description>
+				Emitted when another user joins a channel. [param account] and [param realname] are only available with IRCv3 extended-join capability.
+			</description>
+		</signal>
+		<signal name="user_kicked">
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="kicker" type="String" />
+			<param index="2" name="kicked" type="String" />
+			<param index="3" name="reason" type="String" />
+			<description>
+				Emitted when user kicked.
+			</description>
+		</signal>
+		<signal name="user_parted">
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="user" type="String" />
+			<param index="2" name="message" type="String" />
+			<description>
+				Emitted when user parted.
+			</description>
+		</signal>
+		<signal name="user_quit">
+			<param index="0" name="user" type="String" />
+			<param index="1" name="message" type="String" />
+			<description>
+				Emitted when user quit.
+			</description>
+		</signal>
+	</signals>
+</class>

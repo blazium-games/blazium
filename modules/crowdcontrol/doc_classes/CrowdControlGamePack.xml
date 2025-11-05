@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CrowdControlGamePack" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Resource for defining Crowd Control game pack metadata and effects.
+	</brief_description>
+	<description>
+		CrowdControlGamePack is a resource that allows game developers to define their Crowd Control game pack configuration within the Blazium editor. It contains game metadata and a collection of effects that viewers can purchase.
+		The resource can be edited visually in the inspector and exported to JSON format for submission to Crowd Control developers.
+		[codeblocks]
+		[gdscript]
+		# Create a new game pack
+		var pack = CrowdControlGamePack.new()
+
+		# Set up metadata
+		var meta = CrowdControlGamePackMeta.new()
+		meta.game_name = "My Awesome Game"
+		meta.release_date = "2024-10-19"
+		meta.platform = "PC"
+		meta.steam_id = 123456
+		pack.pack_meta = meta
+
+		# Add an effect
+		var effect = CrowdControlEffect.new()
+		effect.effect_id = "kill_player"
+		effect.effect_name = "Kill Player"
+		effect.price = 500
+		effect.description = "Instantly kills the player"
+		pack.add_effect(effect)
+
+		# Export to JSON
+		pack.export_to_json("res://my_game_pack.json")
+		[/gdscript]
+		[/codeblocks]
+		When viewing this resource in the inspector, an "Export to JSON" button appears at the top for easy exporting.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_effect">
+			<return type="void" />
+			<param index="0" name="effect" type="CrowdControlEffect" />
+			<description>
+				Adds a [CrowdControlEffect] to the game pack's effects array.
+			</description>
+		</method>
+		<method name="export_to_json">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Exports the game pack to a JSON file at the specified [param path]. The JSON format follows the Crowd Control game pack specification.
+				Returns [constant OK] on success, or an error code if the export fails (e.g., [constant ERR_FILE_CANT_WRITE] if unable to write to the file).
+				The [member pack_meta] must be set before exporting, otherwise returns [constant ERR_UNCONFIGURED].
+			</description>
+		</method>
+		<method name="get_effect" qualifiers="const">
+			<return type="CrowdControlEffect" />
+			<param index="0" name="effect_id" type="String" />
+			<description>
+				Returns the [CrowdControlEffect] with the specified [param effect_id], or [code]null[/code] if not found.
+			</description>
+		</method>
+		<method name="remove_effect">
+			<return type="void" />
+			<param index="0" name="effect_id" type="String" />
+			<description>
+				Removes the effect with the specified [param effect_id] from the game pack.
+			</description>
+		</method>
+		<method name="to_json" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Converts the game pack to a Dictionary in the format expected by Crowd Control. This is used internally by [method export_to_json].
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="effects" type="CrowdControlEffect[]" setter="set_effects" getter="get_effects" default="[]">
+			Array of [CrowdControlEffect] resources that define the effects available for purchase by viewers.
+		</member>
+		<member name="pack_meta" type="CrowdControlGamePackMeta" setter="set_pack_meta" getter="get_pack_meta">
+			The [CrowdControlGamePackMeta] resource containing game metadata such as name, platform, and Steam ID.
+		</member>
+	</members>
+</class>

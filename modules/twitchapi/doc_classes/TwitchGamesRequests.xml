@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TwitchGamesRequests" inherits="TwitchRequestBase" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Twitch Games API for game information and top games.
+	</brief_description>
+	<description>
+		TwitchGamesRequests provides methods for retrieving game information and discovering top games by viewer count. No special OAuth scopes required. Access through [method TwitchAPI.get_games].
+	</description>
+	<tutorials>
+		<link title="Twitch API documentation">https://dev.twitch.tv/docs/api/reference</link>
+	</tutorials>
+	<methods>
+		<method name="get_games">
+			<return type="void" />
+			<param index="0" name="params" type="Dictionary" />
+			<description>
+				Gets information about specified games. [param params] must include id, name, or igdb_id. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "games_received".
+				[b]Response includes:[/b] Array of games with id, name, box_art_url (template with {width}x{height}), igdb_id.
+				[codeblock]
+				var params = {"name": ["Just Chatting", "Minecraft"]}
+				TwitchAPI.get_games().get_games(params)
+				# Response: {"data": [{"id": "509658", "name": "Just Chatting", "box_art_url": "https://static-cdn.jtvnw.net/ttv-boxart/509658-{width}x{height}.jpg", "igdb_id": ""}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_top_games">
+			<return type="void" />
+			<param index="0" name="params" type="Dictionary" default="{}" />
+			<description>
+				Gets games sorted by number of current viewers on Twitch. Optional [param params] can include first, before, and after for pagination. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "top_games_received".
+				[b]Response includes:[/b] Array of games with id, name, box_art_url, igdb_id.
+				[codeblock]
+				TwitchAPI.get_games().get_top_games({"first": 10})
+				# Response: {"data": [{"id": "509658", "name": "Just Chatting", "box_art_url": "https://static-cdn.jtvnw.net/ttv-boxart/509658-{width}x{height}.jpg"}]}
+				[/codeblock]
+			</description>
+		</method>
+	</methods>
+</class>

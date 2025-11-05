@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CrowdControlGamePackMeta" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Resource containing Crowd Control game pack metadata.
+	</brief_description>
+	<description>
+		CrowdControlGamePackMeta stores metadata about your game for the Crowd Control platform, including the game name, release date, platform, and optional Steam integration.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="to_json" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Converts the metadata to a Dictionary in the format expected by Crowd Control. This is used internally by [CrowdControlGamePack] when exporting.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="connector" type="PackedStringArray" setter="set_connector" getter="get_connector" default="PackedStringArray(&quot;ExternalUnity&quot;)">
+			Connector types for the game. Defaults to ExternalUnity for standalone games with built-in Crowd Control support.
+		</member>
+		<member name="description" type="String" setter="set_description" getter="get_description" default="&quot;&quot;">
+			Description or setup instructions shown next to your game in the Crowd Control app (e.g., "Navigate to Settings -&gt; Crowd Control for setup!").
+		</member>
+		<member name="game_name" type="Variant" setter="set_game_name" getter="get_game_name" default="null">
+			Name of your game. Can be a String or a Dictionary with "public" and "sort" keys for custom alphabetical sorting.
+		</member>
+		<member name="guide_url" type="String" setter="set_guide_url" getter="get_guide_url" default="&quot;&quot;">
+			URL to the game's setup guide. This is typically provided by Crowd Control after your game pack is approved.
+		</member>
+		<member name="platform" type="String" setter="set_platform" getter="get_platform" default="&quot;PC&quot;">
+			Platform the game runs on (e.g., "PC", "PS5", "Xbox Series X").
+		</member>
+		<member name="release_date" type="String" setter="set_release_date" getter="get_release_date" default="&quot;&quot;">
+			Release date in YYYY-MM-DD format. Updated when major changes are made to the effect pack.
+		</member>
+		<member name="steam_id" type="int" setter="set_steam_id" getter="get_steam_id" default="0">
+			Steam App ID for your game. If set, Crowd Control can provide a button to launch your game from their app.
+		</member>
+	</members>
+</class>

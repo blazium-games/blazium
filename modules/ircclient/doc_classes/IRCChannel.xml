@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="IRCChannel" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_user">
+			<return type="void" />
+			<param index="0" name="nick" type="String" />
+			<param index="1" name="modes" type="String" default="&quot;&quot;" />
+			<description>
+				Adds user. [param nick] - Nick. [param modes] - Modes.
+			</description>
+		</method>
+		<method name="get_user_modes" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="nick" type="String" />
+			<description>
+				Returns the user modes. [param nick] - Nick.
+			</description>
+		</method>
+		<method name="get_users" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				Returns the users.
+			</description>
+		</method>
+		<method name="has_user" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="nick" type="String" />
+			<description>
+				Returns [code]true[/code] if user exists. [param nick] - Nick.
+			</description>
+		</method>
+		<method name="is_user_operator" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="nick" type="String" />
+			<description>
+				Returns [code]true[/code] if user operator. [param nick] - Nick.
+			</description>
+		</method>
+		<method name="is_user_voiced" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="nick" type="String" />
+			<description>
+				Returns [code]true[/code] if user voiced. [param nick] - Nick.
+			</description>
+		</method>
+		<method name="remove_user">
+			<return type="void" />
+			<param index="0" name="nick" type="String" />
+			<description>
+				Removes user. [param nick] - Nick.
+			</description>
+		</method>
+		<method name="set_user_modes">
+			<return type="void" />
+			<param index="0" name="nick" type="String" />
+			<param index="1" name="modes" type="String" />
+			<description>
+				Sets the user modes. [param nick] - Nick. [param modes] - Modes.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="modes" type="String" setter="set_modes" getter="get_modes" default="&quot;&quot;">
+		</member>
+		<member name="name" type="String" setter="set_name" getter="get_name" default="&quot;&quot;">
+		</member>
+		<member name="topic" type="String" setter="set_topic" getter="get_topic" default="&quot;&quot;">
+		</member>
+		<member name="topic_setter" type="String" setter="set_topic_setter" getter="get_topic_setter" default="&quot;&quot;">
+		</member>
+		<member name="topic_time" type="int" setter="set_topic_time" getter="get_topic_time" default="0">
+		</member>
+	</members>
+</class>

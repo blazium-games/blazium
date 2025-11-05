@@ -913,6 +913,10 @@
 			[b]Note:[/b] To query whether the editor can use multiple windows in an editor plugin, use [method EditorInterface.is_multi_window_enabled] instead of querying the value of this editor setting.
 			[b]Note:[/b] If [code]true[/code], game embedding is disabled.
 		</member>
+		<member name="interface/editor/thick_scrollbars" type="bool" setter="" getter="">
+			If [code]true[/code], editor will utilize thicker scrollbars.
+			[b]Note:[/b] This setting will be ignored if [member interface/touchscreen/increase_scrollbar_touch_area] is [code]true[/code].
+		</member>
 		<member name="interface/editor/ui_layout_direction" type="int" setter="" getter="">
 			Editor UI default layout direction.
 		</member>

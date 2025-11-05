@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="KickEventsRequests" inherits="KickRequestBase" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Handles Kick API requests related to event subscriptions (webhooks).
+	</brief_description>
+	<description>
+		KickEventsRequests provides methods for managing event subscriptions to receive webhooks from the Kick API.
+		Access this handler through [method KickAPI.get_events].
+		[codeblocks]
+		[gdscript]
+		func _ready():
+		    KickAPI.configure("your_token")
+		    KickAPI.request_completed.connect(_on_request_completed)
+
+		    # Get current subscriptions
+		    KickAPI.get_events().get_subscriptions()
+
+		    # Create new subscriptions
+		    var events = [
+		        {"name": "stream.online", "version": 1},
+		        {"name": "channel.update", "version": 1},
+		        {"name": "chat.message", "version": 1}
+		    ]
+		    KickAPI.get_events().create_subscriptions(events, "webhook", 12345)
+
+		    # Delete a subscription
+		    KickAPI.get_events().delete_subscription("sub_abc123xyz")
+
+		func _on_request_completed(signal_name: String, response_code: int, data: Dictionary):
+		    if signal_name == "event_subscriptions_received":
+		        # Output:
+		        # {
+		        #   "data": [
+		        #     {
+		        #       "id": "sub_abc123",
+		        #       "app_id": "app_xyz789",
+		        #       "broadcaster_user_id": 12345,
+		        #       "event": "stream.online",
+		        #       "method": "webhook",
+		        #       "version": 1,
+		        #       "created_at": "2024-01-15T12:00:00Z",
+		        #       "updated_at": "2024-01-15T12:00:00Z"
+		        #     }
+		        #   ],
+		        #   "message": "success"
+		        # }
+		        print("Active subscriptions: ", data["data"].size())
+		        for sub in data["data"]:
+		            print("  ", sub["event"], " - ", sub["id"])
+
+		    elif signal_name == "event_subscriptions_created":
+		        # Output:
+		        # {
+		        #   "data": [
+		        #     {
+		        #       "name": "stream.online",
+		        #       "version": 1,
+		        #       "subscription_id": "sub_new123",
+		        #       "error": ""
+		        #     },
+		        #     ...
+		        #   ],
+		        #   "message": "success"
+		        # }
+		        for result in data["data"]:
+		            if result["error"].is_empty():
+		                print("Created: ", result["name"], " - ", result["subscription_id"])
+		            else:
+		                print("Failed: ", result["name"], " - ", result["error"])
+
+		    elif signal_name == "event_subscription_deleted":
+		        print("Subscription deleted successfully!") # Response code: 204
+		[/gdscript]
+		[/codeblocks]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="create_subscriptions">
+			<return type="void" />
+			<param index="0" name="events" type="Array" />
+			<param index="1" name="method" type="String" default="&quot;webhook&quot;" />
+			<param index="2" name="broadcaster_user_id" type="int" default="0" />
+			<description>
+				Creates one or more event subscriptions. The [param events] array should contain dictionaries with [code]name[/code] and [code]version[/code] fields.
+				Currently only [code]"webhook"[/code] method is supported.
+				Optionally provide [param broadcaster_user_id] to subscribe to events for a specific broadcaster.
+				Results are returned via the [signal KickAPI.request_completed] signal with signal_name [code]"event_subscriptions_created"[/code].
+			</description>
+		</method>
+		<method name="delete_subscription">
+			<return type="void" />
+			<param index="0" name="subscription_id" type="String" />
+			<description>
+				Deletes a specific event subscription by its ID.
+				Results are returned via the [signal KickAPI.request_completed] signal with signal_name [code]"event_subscription_deleted"[/code].
+			</description>
+		</method>
+		<method name="get_subscriptions">
+			<return type="void" />
+			<description>
+				Retrieves all event subscriptions for your application.
+				Results are returned via the [signal KickAPI.request_completed] signal with signal_name [code]"event_subscriptions_received"[/code].
+			</description>
+		</method>
+	</methods>
+</class>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="KickLivestreamsRequests" inherits="KickRequestBase" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Handles Kick API requests related to livestreams.
+	</brief_description>
+	<description>
+		KickLivestreamsRequests provides methods for retrieving livestream information from the Kick API.
+		Access this handler through [method KickAPI.get_livestreams].
+		[codeblocks]
+		[gdscript]
+		func _ready():
+		    KickAPI.configure("your_token")
+		    KickAPI.request_completed.connect(_on_request_completed)
+
+		    # Get livestream by channel slug
+		    KickAPI.get_livestreams().get_livestreams({"slug": ["streamer123"]})
+
+		    # Get multiple livestreams by broadcaster IDs
+		    KickAPI.get_livestreams().get_livestreams({"broadcaster_user_id": [123, 456, 789]})
+
+		func _on_request_completed(signal_name: String, response_code: int, data: Dictionary):
+		    if signal_name == "livestreams_received":
+		        # Output:
+		        # {
+		        #   "data": [
+		        #     {
+		        #       "broadcaster_user_id": 12345,
+		        #       "slug": "streamer123",
+		        #       "channel_id": 54321,
+		        #       "stream_title": "Epic Gaming Session!",
+		        #       "category": {
+		        #         "id": 42,
+		        #         "name": "Gaming",
+		        #         "thumbnail": "https://..."
+		        #       },
+		        #       "thumbnail": "https://...",
+		        #       "language": "en",
+		        #       "viewer_count": 1250,
+		        #       "started_at": "2024-01-15T10:00:00Z",
+		        #       "has_mature_content": false
+		        #     }
+		        #   ],
+		        #   "message": "success"
+		        # }
+		        for stream in data["data"]:
+		            print("Stream: ", stream["slug"])
+		            print("  Title: ", stream["stream_title"])
+		            print("  Viewers: ", stream["viewer_count"])
+		            print("  Category: ", stream["category"]["name"])
+		            print("  Started: ", stream["started_at"])
+		[/gdscript]
+		[/codeblocks]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_livestreams">
+			<return type="void" />
+			<param index="0" name="params" type="Dictionary" default="{}" />
+			<description>
+				Retrieves livestream information. The [param params] dictionary can include:
+				- [code]broadcaster_user_id[/code]: Array of broadcaster user IDs (up to 50)
+				- [code]slug[/code]: Array of channel slugs (up to 50)
+				You cannot mix [code]broadcaster_user_id[/code] and [code]slug[/code] parameters.
+				Results are returned via the [signal KickAPI.request_completed] signal with signal_name [code]"livestreams_received"[/code].
+			</description>
+		</method>
+	</methods>
+</class>

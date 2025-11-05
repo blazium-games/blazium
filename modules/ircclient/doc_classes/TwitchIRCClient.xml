@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TwitchIRCClient" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="ban_user">
+			<return type="void" />
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="username" type="String" />
+			<param index="2" name="reason" type="String" default="&quot;&quot;" />
+			<description>
+				Ban user. [param channel] - Channel. [param username] - Username. [param reason] - Reason.
+			</description>
+		</method>
+		<method name="clear_chat">
+			<return type="void" />
+			<param index="0" name="channel" type="String" />
+			<description>
+				Clears all chat. [param channel] - Channel.
+			</description>
+		</method>
+		<method name="connect_to_twitch">
+			<return type="int" enum="Error" />
+			<param index="0" name="username" type="String" />
+			<param index="1" name="oauth_token" type="String" />
+			<param index="2" name="use_ssl" type="bool" default="true" />
+			<description>
+				Returns connect to twitch. [param username] - Username. [param oauth_token] - Oauth token. [param use_ssl] - Use ssl.
+			</description>
+		</method>
+		<method name="delete_message">
+			<return type="void" />
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="message_id" type="String" />
+			<description>
+				Delete message. [param channel] - Channel. [param message_id] - Message id.
+			</description>
+		</method>
+		<method name="disable_followers_only">
+			<return type="void" />
+			<param index="0" name="channel" type="String" />
+			<description>
+				Disables followers only. [param channel] - Channel.
+			</description>
+		</method>
+		<method name="disable_slow_mode">
+			<return type="void" />
+			<param index="0" name="channel" type="String" />
+			<description>
+				Disables slow mode. [param channel] - Channel.
+			</description>
+		</method>
+		<method name="disconnect_from_twitch">
+			<return type="void" />
+			<param index="0" name="quit_message" type="String" default="&quot;&quot;" />
+			<description>
+				Disconnect from twitch. [param quit_message] - Quit message.
+			</description>
+		</method>
+		<method name="get_global_user_state" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns the global user state.
+			</description>
+		</method>
+		<method name="get_irc_client">
+			<return type="IRCClient" />
+			<description>
+				Returns the irc client.
+			</description>
+		</method>
+		<method name="get_joined_channels" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				Returns array of all channel names you have joined.
+			</description>
+		</method>
+		<method name="get_room_state" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="channel" type="String" />
+			<description>
+				Returns the room state. [param channel] - Channel.
+			</description>
+		</method>
+		<method name="get_user_state" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="channel" type="String" />
+			<description>
+				Returns the user state. [param channel] - Channel.
+			</description>
+		</method>
+		<method name="is_irc_connected" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the client is connected to Twitch IRC and ready to send/receive messages.
+			</description>
+		</method>
+		<method name="join_channel">
+			<return type="void" />
+			<param index="0" name="channel" type="String" />
+			<description>
+				Join channel. [param channel] - Channel.
+			</description>
+		</method>
+		<method name="part_channel">
+			<return type="void" />
+			<param index="0" name="channel" type="String" />
+			<description>
+				Part channel. [param channel] - Channel.
+			</description>
+		</method>
+		<method name="poll">
+			<return type="int" enum="Error" />
+			<description>
+				Returns poll.
+			</description>
+		</method>
+		<method name="request_twitch_capabilities">
+			<return type="void" />
+			<description>
+				Requests twitch capabilities from the server.
+			</description>
+		</method>
+		<method name="send_action">
+			<return type="void" />
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="action" type="String" />
+			<description>
+				Sends a CTCP ACTION message (/me action) to a channel or user. [param channel] - Channel. [param action] - Action.
+			</description>
+		</method>
+		<method name="send_message">
+			<return type="void" />
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="message" type="String" />
+			<description>
+				Sends message. [param channel] - Channel. [param message] - Message.
+			</description>
+		</method>
+		<method name="send_whisper">
+			<return type="void" />
+			<param index="0" name="username" type="String" />
+			<param index="1" name="message" type="String" />
+			<description>
+				Sends whisper. [param username] - Username. [param message] - Message.
+			</description>
+		</method>
+		<method name="set_emote_only">
+			<return type="void" />
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="enabled" type="bool" />
+			<description>
+				Sets the emote only. [param channel] - Channel. [param enabled] - Enabled.
+			</description>
+		</method>
+		<method name="set_followers_only">
+			<return type="void" />
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="duration_minutes" type="int" />
+			<description>
+				Sets the followers only. [param channel] - Channel. [param duration_minutes] - Duration minutes.
+			</description>
+		</method>
+		<method name="set_r9k_mode">
+			<return type="void" />
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="enabled" type="bool" />
+			<description>
+				Sets the r9k mode. [param channel] - Channel. [param enabled] - Enabled.
+			</description>
+		</method>
+		<method name="set_slow_mode">
+			<return type="void" />
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="duration" type="int" />
+			<description>
+				Sets the slow mode. [param channel] - Channel. [param duration] - Duration.
+			</description>
+		</method>
+		<method name="set_subscribers_only">
+			<return type="void" />
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="enabled" type="bool" />
+			<description>
+				Sets the subscribers only. [param channel] - Channel. [param enabled] - Enabled.
+			</description>
+		</method>
+		<method name="timeout_user">
+			<return type="void" />
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="username" type="String" />
+			<param index="2" name="duration" type="int" />
+			<param index="3" name="reason" type="String" default="&quot;&quot;" />
+			<description>
+				Timeout user. [param channel] - Channel. [param username] - Username. [param duration] - Duration. [param reason] - Reason.
+			</description>
+		</method>
+		<method name="unban_user">
+			<return type="void" />
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="username" type="String" />
+			<description>
+				Unban user. [param channel] - Channel. [param username] - Username.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="joined">
+			<param index="0" name="channel" type="String" />
+			<description>
+				Emitted when joined.
+			</description>
+		</signal>
+		<signal name="parted">
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="message" type="String" />
+			<description>
+				Emitted when parted.
+			</description>
+		</signal>
+		<signal name="twitch_clearchat">
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="username" type="String" />
+			<param index="2" name="duration" type="int" />
+			<param index="3" name="tags" type="Dictionary" />
+			<description>
+				Emitted when twitch clearchat.
+			</description>
+		</signal>
+		<signal name="twitch_clearmsg">
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="message" type="String" />
+			<param index="2" name="target_msg_id" type="String" />
+			<param index="3" name="tags" type="Dictionary" />
+			<description>
+				Emitted when twitch clearmsg.
+			</description>
+		</signal>
+		<signal name="twitch_connected">
+			<description>
+				Emitted when twitch connected.
+			</description>
+		</signal>
+		<signal name="twitch_disconnected">
+			<param index="0" name="reason" type="String" />
+			<description>
+				Emitted when twitch disconnected.
+			</description>
+		</signal>
+		<signal name="twitch_globaluserstate">
+			<param index="0" name="tags" type="Dictionary" />
+			<description>
+				Emitted when twitch globaluserstate.
+			</description>
+		</signal>
+		<signal name="twitch_hosttarget">
+			<param index="0" name="hosting_channel" type="String" />
+			<param index="1" name="target_channel" type="String" />
+			<param index="2" name="viewers" type="int" />
+			<description>
+				Emitted when twitch hosttarget.
+			</description>
+		</signal>
+		<signal name="twitch_message">
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="sender" type="String" />
+			<param index="2" name="message" type="String" />
+			<param index="3" name="tags" type="Dictionary" />
+			<description>
+				Emitted when twitch message.
+			</description>
+		</signal>
+		<signal name="twitch_notice">
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="msg_id" type="String" />
+			<param index="2" name="message" type="String" />
+			<param index="3" name="tags" type="Dictionary" />
+			<description>
+				Emitted when twitch notice.
+			</description>
+		</signal>
+		<signal name="twitch_raid">
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="raider" type="String" />
+			<param index="2" name="viewer_count" type="int" />
+			<param index="3" name="tags" type="Dictionary" />
+			<description>
+				Emitted when twitch raid.
+			</description>
+		</signal>
+		<signal name="twitch_ready">
+			<description>
+				Emitted when twitch ready.
+			</description>
+		</signal>
+		<signal name="twitch_reconnect">
+			<description>
+				Emitted when twitch reconnect.
+			</description>
+		</signal>
+		<signal name="twitch_roomstate">
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="tags" type="Dictionary" />
+			<description>
+				Emitted when twitch roomstate.
+			</description>
+		</signal>
+		<signal name="twitch_subscription">
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="username" type="String" />
+			<param index="2" name="sub_plan" type="String" />
+			<param index="3" name="tags" type="Dictionary" />
+			<description>
+				Emitted when twitch subscription.
+			</description>
+		</signal>
+		<signal name="twitch_usernotice">
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="msg_id" type="String" />
+			<param index="2" name="system_msg" type="String" />
+			<param index="3" name="tags" type="Dictionary" />
+			<description>
+				Emitted when twitch usernotice.
+			</description>
+		</signal>
+		<signal name="twitch_userstate">
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="tags" type="Dictionary" />
+			<description>
+				Emitted when twitch userstate.
+			</description>
+		</signal>
+		<signal name="twitch_whisper">
+			<param index="0" name="sender" type="String" />
+			<param index="1" name="message" type="String" />
+			<param index="2" name="tags" type="Dictionary" />
+			<description>
+				Emitted when twitch whisper.
+			</description>
+		</signal>
+		<signal name="user_joined">
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="user" type="String" />
+			<description>
+				Emitted when user joined.
+			</description>
+		</signal>
+		<signal name="user_parted">
+			<param index="0" name="channel" type="String" />
+			<param index="1" name="user" type="String" />
+			<description>
+				Emitted when user parted.
+			</description>
+		</signal>
+	</signals>
+</class>

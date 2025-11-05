@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TwitchAPI" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Main singleton for accessing the Twitch API with automatic polling.
+	</brief_description>
+	<description>
+		TwitchAPI provides a self-contained interface to the Twitch Helix API. It automatically polls for HTTP responses every physics frame, eliminating the need for manual polling. Access different API categories through getter methods like [method get_users], [method get_streams], [method get_chat], etc. Connect to signals [signal request_completed] and [signal request_failed] to handle responses asynchronously.
+		[b]Example:[/b]
+		[codeblock]
+		func _ready():
+		    TwitchAPI.configure("your_client_id", "your_access_token")
+		    TwitchAPI.request_completed.connect(_on_request_completed)
+		    TwitchAPI.get_users().get_users({"login": ["twitch"]})
+
+		func _on_request_completed(signal_name: String, response_code: int, data: Dictionary):
+		    print("Success: ", signal_name, " - ", data)
+		[/codeblock]
+	</description>
+	<tutorials>
+		<link title="Twitch API documentation">https://dev.twitch.tv/docs/api/reference</link>
+	</tutorials>
+	<methods>
+		<method name="configure">
+			<return type="void" />
+			<param index="0" name="client_id" type="String" />
+			<param index="1" name="access_token" type="String" />
+			<description>
+				Configures the API with Twitch credentials and enables automatic polling. This must be called before making any API requests. Both [param client_id] (from your Twitch Developer Console) and [param access_token] (OAuth token) are required.
+			</description>
+		</method>
+		<method name="get_ads">
+			<return type="TwitchAdsRequests" />
+			<description>
+				Returns the Ads API category handler for starting commercials, getting ad schedules, and snoozing ads.
+			</description>
+		</method>
+		<method name="get_analytics">
+			<return type="TwitchAnalyticsRequests" />
+			<description>
+				Returns the Analytics API category handler for accessing extension and game analytics reports.
+			</description>
+		</method>
+		<method name="get_bits">
+			<return type="TwitchBitsRequests" />
+			<description>
+				Returns the Bits API category handler for accessing Bits leaderboards, cheermotes, and extension transactions.
+			</description>
+		</method>
+		<method name="get_channel_points">
+			<return type="TwitchChannelPointsRequests" />
+			<description>
+				Returns the Channel Points API category handler for managing custom rewards and redemptions.
+			</description>
+		</method>
+		<method name="get_channels">
+			<return type="TwitchChannelsRequests" />
+			<description>
+				Returns the Channels API category handler for accessing and modifying channel information, editors, and followers.
+			</description>
+		</method>
+		<method name="get_chat">
+			<return type="TwitchChatRequests" />
+			<description>
+				Returns the Chat API category handler for sending messages, managing emotes, badges, and chat settings.
+			</description>
+		</method>
+		<method name="get_clips">
+			<return type="TwitchClipsRequests" />
+			<description>
+				Returns the Clips API category handler for creating and retrieving video clips.
+			</description>
+		</method>
+		<method name="get_games">
+			<return type="TwitchGamesRequests" />
+			<description>
+				Returns the Games API category handler for accessing game information and top games by viewer count.
+			</description>
+		</method>
+		<method name="get_moderation">
+			<return type="TwitchModerationRequests" />
+			<description>
+				Returns the Moderation API category handler for bans, timeouts, AutoMod, blocked terms, moderators, and VIPs.
+			</description>
+		</method>
+		<method name="get_rate_limit_remaining" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the number of API requests remaining before hitting the rate limit. Returns -1 if no requests have been made yet.
+			</description>
+		</method>
+		<method name="get_rate_limit_reset" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the Unix timestamp when the rate limit resets. Returns 0 if no requests have been made yet.
+			</description>
+		</method>
+		<method name="get_streams">
+			<return type="TwitchStreamsRequests" />
+			<description>
+				Returns the Streams API category handler for accessing stream information, stream keys, and stream markers.
+			</description>
+		</method>
+		<method name="get_users">
+			<return type="TwitchUsersRequests" />
+			<description>
+				Returns the Users API category handler for accessing user information, blocking users, and managing extensions.
+			</description>
+		</method>
+		<method name="is_busy" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if there are requests in the queue or a request is currently being processed.
+			</description>
+		</method>
+		<method name="poll">
+			<return type="void" />
+			<description>
+				Manually polls the HTTP client to process requests. This is automatically called every frame after [method configure] is invoked, so manual polling is typically not needed.
+			</description>
+		</method>
+		<method name="query_string_from_dict" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="params" type="Dictionary" />
+			<description>
+				Converts a Dictionary of parameters into a URL query string. Arrays are expanded into multiple parameters with the same key.
+			</description>
+		</method>
+		<method name="set_access_token">
+			<return type="void" />
+			<param index="0" name="token" type="String" />
+			<description>
+				Updates the OAuth access token used for API authentication. Useful when refreshing expired tokens.
+			</description>
+		</method>
+		<method name="set_client_id">
+			<return type="void" />
+			<param index="0" name="client_id" type="String" />
+			<description>
+				Updates the Twitch application Client ID used for API authentication.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="rate_limit_warning">
+			<param index="0" name="remaining" type="int" />
+			<param index="1" name="reset_time" type="int" />
+			<description>
+				Emitted when the remaining API rate limit drops below 100 requests. [param remaining] is the number of requests left, and [param reset_time] is the Unix timestamp when the limit resets.
+			</description>
+		</signal>
+		<signal name="request_completed">
+			<param index="0" name="signal_name" type="String" />
+			<param index="1" name="response_code" type="int" />
+			<param index="2" name="data" type="Dictionary" />
+			<description>
+				Emitted when an API request completes successfully (HTTP 2xx status). [param signal_name] identifies which request completed, [param response_code] is the HTTP status code, and [param data] contains the parsed JSON response.
+			</description>
+		</signal>
+		<signal name="request_failed">
+			<param index="0" name="signal_name" type="String" />
+			<param index="1" name="error_code" type="int" />
+			<param index="2" name="message" type="String" />
+			<description>
+				Emitted when an API request fails (HTTP error status or connection issue). [param signal_name] identifies which request failed, [param error_code] is the HTTP status code or error code, and [param message] contains the error description.
+			</description>
+		</signal>
+	</signals>
+</class>

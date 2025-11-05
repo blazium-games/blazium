@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TwitchUsersRequests" inherits="TwitchRequestBase" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Twitch Users API for user information, blocking, and extensions.
+	</brief_description>
+	<description>
+		TwitchUsersRequests provides methods for retrieving user information, managing blocked users, and accessing user extensions. Requires various OAuth scopes depending on the operation. Access through [method TwitchAPI.get_users].
+	</description>
+	<tutorials>
+		<link title="Twitch API documentation">https://dev.twitch.tv/docs/api/reference</link>
+	</tutorials>
+	<methods>
+		<method name="block_user">
+			<return type="void" />
+			<param index="0" name="target_user_id" type="String" />
+			<param index="1" name="params" type="Dictionary" default="{}" />
+			<description>
+				Blocks a user. Optional [param params] can include source_context and reason. Requires user:manage:blocked_users scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "user_blocked".
+				[b]Response:[/b] Returns 204 No Content on success.
+				[codeblock]
+				TwitchAPI.get_users().block_user("target_user_id", {"reason": "spam"})
+				# Response: 204 No Content on success
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_user_active_extensions">
+			<return type="void" />
+			<param index="0" name="user_id" type="String" default="&quot;&quot;" />
+			<description>
+				Gets information about active extensions installed by the user. Optional [param user_id] queries another user's extensions. Requires user:read:broadcast scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "user_active_extensions_received".
+				[b]Response includes:[/b] panel (slots 1-3), overlay (slot 1), component (slots 1-2) objects with extension configurations.
+				[codeblock]
+				TwitchAPI.get_users().get_user_active_extensions("user_id")
+				# Response: {"data": {"panel": {"1": {"active": true, "id": "ext123", "version": "1.0.0", "name": "My Extension"}}, "overlay": {}, "component": {}}}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_user_block_list">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="params" type="Dictionary" default="{}" />
+			<description>
+				Gets the list of users blocked by the broadcaster. Optional [param params] can include first. Requires user:read:blocked_users scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "user_block_list_received".
+				[b]Response includes:[/b] Array of blocked users with user_id, user_login, display_name.
+				[codeblock]
+				TwitchAPI.get_users().get_user_block_list("broadcaster_id")
+				# Response: {"data": [{"user_id": "456", "user_login": "blocked1", "display_name": "BlockedUser1"}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_user_extensions">
+			<return type="void" />
+			<description>
+				Gets all extensions available to the user. Requires user:read:broadcast scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "user_extensions_received".
+				[b]Response includes:[/b] Array of extensions with id, version, name, can_activate, type array.
+				[codeblock]
+				TwitchAPI.get_users().get_user_extensions()
+				# Response: {"data": [{"id": "ext123", "version": "1.0.0", "name": "My Extension", "can_activate": true, "type": ["panel", "overlay"]}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_users">
+			<return type="void" />
+			<param index="0" name="params" type="Dictionary" default="{}" />
+			<description>
+				Gets information about one or more users by ID or login name. [param params] should include id or login arrays. Optional user:read:email scope includes email field. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "users_received".
+				[b]Response includes:[/b] Array of users with id, login, display_name, type, broadcaster_type, description, profile_image_url, offline_image_url, view_count, email (if scope provided), created_at.
+				[codeblock]
+				var params = {"login": ["twitch", "twitchdev"]}
+				TwitchAPI.get_users().get_users(params)
+				# Response: {"data": [{"id": "141981764", "login": "twitch", "display_name": "Twitch", "type": "", "broadcaster_type": "partner", "description": "We're Twitch", "profile_image_url": "https://...", "created_at": "2007-05-22T10:39:54Z"}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="unblock_user">
+			<return type="void" />
+			<param index="0" name="target_user_id" type="String" />
+			<description>
+				Unblocks a user. Requires user:manage:blocked_users scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "user_unblocked".
+				[b]Response:[/b] Returns 204 No Content on success.
+				[codeblock]
+				TwitchAPI.get_users().unblock_user("target_user_id")
+				# Response: 204 No Content on success
+				[/codeblock]
+			</description>
+		</method>
+		<method name="update_user">
+			<return type="void" />
+			<param index="0" name="description" type="String" />
+			<description>
+				Updates the authenticated user's description/bio. Requires user:edit scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "user_updated".
+				[b]Response includes:[/b] Updated user object (same structure as get_users response).
+				[codeblock]
+				TwitchAPI.get_users().update_user("Streaming games and having fun!")
+				# Response: {"data": [{"id": "123", "description": "Streaming games and having fun!", ...}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="update_user_extensions">
+			<return type="void" />
+			<param index="0" name="data" type="Dictionary" />
+			<description>
+				Updates the user's installed extension configuration including panel, overlay, and component slots. Requires user:edit:broadcast scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "user_extensions_updated".
+				[b]Response includes:[/b] Updated extension configuration (same structure as get_user_active_extensions).
+				[codeblock]
+				var ext_config = {"panel": {"1": {"active": true, "id": "ext123", "version": "1.0.0"}}}
+				TwitchAPI.get_users().update_user_extensions(ext_config)
+				# Response: {"data": {"panel": {"1": {"active": true, "id": "ext123", "version": "1.0.0", "name": "My Extension"}}, ...}}
+				[/codeblock]
+			</description>
+		</method>
+	</methods>
+</class>

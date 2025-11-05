@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="HTTPResponse" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Builder for constructing HTTP responses in route handlers.
+	</brief_description>
+	<description>
+		HTTPResponse provides a fluent API for building HTTP responses. It is automatically created by [HTTPServer] and passed to route handler callbacks. You can set the status code, headers, and body content, or serve files and start Server-Sent Events streams.
+		[codeblocks]
+		[gdscript]
+		HTTPServer.register_route("GET", "/api/data", func(req, res: HTTPResponse):
+		    # Set JSON response
+		    res.set_json({"message": "Hello"})
+
+		    # Or set custom status and headers
+		    res.set_status(201)
+		    res.add_header("X-Custom", "Value")
+		    res.set_body("Custom response")
+
+		    # Or serve a file
+		    res.set_file("user://data.json")
+
+		    # Or start SSE stream
+		    res.start_sse()
+		)
+		[/gdscript]
+		[/codeblocks]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_header">
+			<return type="void" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="value" type="String" />
+			<description>
+				Adds a custom HTTP header to the response. The [param name] is the header name and [param value] is the header value.
+			</description>
+		</method>
+		<method name="is_sse_response" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if this response has been configured as a Server-Sent Events stream by calling [method start_sse].
+			</description>
+		</method>
+		<method name="set_content_type">
+			<return type="void" />
+			<param index="0" name="mime_type" type="String" />
+			<description>
+				Sets the Content-Type header to the specified [param mime_type]. For example: "application/json", "text/html", "image/png".
+			</description>
+		</method>
+		<method name="set_file">
+			<return type="void" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Configures the response to serve the file at the given [param path]. The MIME type is automatically determined from the file extension. The file will be streamed to the client.
+			</description>
+		</method>
+		<method name="set_json">
+			<return type="void" />
+			<param index="0" name="data" type="Dictionary" />
+			<description>
+				Sets the response body to the JSON representation of [param data] and automatically sets the Content-Type header to "application/json".
+			</description>
+		</method>
+		<method name="start_sse">
+			<return type="void" />
+			<description>
+				Configures the response as a Server-Sent Events stream. This sets the appropriate headers (Content-Type: text/event-stream) and keeps the connection open for streaming events. After calling this, use [method HTTPServer.send_sse_event] to send events to the client.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="body" type="String" setter="set_body" getter="get_body" default="&quot;&quot;">
+			The response body content that will be sent to the client.
+		</member>
+		<member name="headers" type="Dictionary" setter="" getter="get_headers" default="{ &quot;Server&quot;: &quot;Blazium-HTTPServer/1.0&quot; }">
+			Dictionary containing all HTTP headers that will be sent with the response.
+		</member>
+		<member name="status_code" type="int" setter="set_status" getter="get_status" default="200">
+			The HTTP status code for the response. Defaults to 200 (OK).
+		</member>
+	</members>
+</class>

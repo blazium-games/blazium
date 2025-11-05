@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="KickHTTPClient" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		HTTP client for making requests to the Kick API.
+	</brief_description>
+	<description>
+		KickHTTPClient handles low-level HTTP communication with the Kick API, including connection management, request queueing, rate limiting, and response parsing. This class is typically used internally by [KickAPI] and its request handlers.
+		[codeblocks]
+		[gdscript]
+		# Example of manual HTTP client usage (advanced)
+		var http_client = KickHTTPClient.new()
+
+		func _ready():
+		    http_client.set_access_token("your_token")
+		    http_client.set_response_callback(_on_response)
+
+		    # Queue a GET request
+		    var params = {"username": ["streamer123"]}
+		    http_client.queue_request("users_data", HTTPClient.METHOD_GET, "/users", params)
+
+		func _process(_delta):
+		    # Poll for responses
+		    http_client.poll()
+
+		func _on_response(signal_name: String, response_code: int, data: Dictionary):
+		    print("Response: ", signal_name, " Code: ", response_code)
+		    print("Data: ", data)
+
+		    # Check rate limit
+		    var remaining = http_client.get_rate_limit_remaining()
+		    print("Rate limit remaining: ", remaining)
+		[/gdscript]
+		[/codeblocks]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_queue_size" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the number of requests currently in the queue waiting to be sent.
+			</description>
+		</method>
+		<method name="get_rate_limit_remaining" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the number of API requests remaining before hitting the rate limit.
+			</description>
+		</method>
+		<method name="get_rate_limit_reset" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the Unix timestamp when the rate limit will reset.
+			</description>
+		</method>
+		<method name="is_busy" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the client is currently processing requests or has queued requests.
+			</description>
+		</method>
+		<method name="poll">
+			<return type="void" />
+			<description>
+				Polls the HTTP client to process pending requests and responses. Should be called regularly (e.g., each frame).
+			</description>
+		</method>
+		<method name="query_string_from_dict" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="params" type="Dictionary" />
+			<description>
+				Converts a Dictionary to a URL-encoded query string.
+			</description>
+		</method>
+		<method name="queue_request">
+			<return type="void" />
+			<param index="0" name="signal_name" type="String" />
+			<param index="1" name="method" type="int" enum="HTTPClient.Method" />
+			<param index="2" name="path" type="String" />
+			<param index="3" name="query_params" type="Dictionary" default="{}" />
+			<param index="4" name="body" type="String" default="&quot;&quot;" />
+			<description>
+				Queues an HTTP request to be sent to the Kick API.
+			</description>
+		</method>
+		<method name="set_access_token">
+			<return type="void" />
+			<param index="0" name="token" type="String" />
+			<description>
+				Sets the access token for API authentication.
+			</description>
+		</method>
+		<method name="set_base_url">
+			<return type="void" />
+			<param index="0" name="url" type="String" />
+			<description>
+				Sets the base URL for the Kick API. Default is [code]https://api.kick.com/public/v1[/code].
+			</description>
+		</method>
+		<method name="set_response_callback">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" />
+			<description>
+				Sets the callback function that will be called when a response is received.
+			</description>
+		</method>
+	</methods>
+</class>

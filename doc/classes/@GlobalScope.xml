@@ -1556,6 +1556,9 @@
 		<member name="ClassDB" type="ClassDB" setter="" getter="">
 			The [ClassDB] singleton.
 		</member>
+		<member name="CrowdControl" type="CrowdControl" setter="" getter="">
+			The [CrowdControl] singleton.
+		</member>
 		<member name="DisplayServer" type="DisplayServer" setter="" getter="">
 			The [DisplayServer] singleton.
 		</member>
@@ -1581,6 +1584,9 @@
 		<member name="Geometry3D" type="Geometry3D" setter="" getter="">
 			The [Geometry3D] singleton.
 		</member>
+		<member name="HTTPServer" type="HTTPServer" setter="" getter="">
+			The [HTTPServer] singleton.
+		</member>
 		<member name="IP" type="IP" setter="" getter="">
 			The [IP] singleton.
 		</member>
@@ -1601,6 +1607,9 @@
 			The [JavaScriptBridge] singleton.
 			[b]Note:[/b] Only implemented on the Web platform.
 		</member>
+		<member name="KickAPI" type="KickAPI" setter="" getter="">
+			The [KickAPI] singleton.
+		</member>
 		<member name="Marshalls" type="Marshalls" setter="" getter="">
 			The [Marshalls] singleton.
 		</member>
@@ -1616,6 +1625,9 @@
 		</member>
 		<member name="NavigationServer3D" type="NavigationServer3D" setter="" getter="">
 			The [NavigationServer3D] singleton.
+		</member>
+		<member name="OBSClient" type="OBSClient" setter="" getter="">
+			The [OBSClient] singleton.
 		</member>
 		<member name="OS" type="OS" setter="" getter="">
 			The [OS] singleton.
@@ -1650,6 +1662,9 @@
 		<member name="ResourceUID" type="ResourceUID" setter="" getter="">
 			The [ResourceUID] singleton.
 		</member>
+		<member name="SocketIOClient" type="SocketIOClient" setter="" getter="">
+			The [SocketIOClient] singleton.
+		</member>
 		<member name="Steam" type="Steam" setter="" getter="">
 			The [Steam] singleton.
 		</member>
@@ -1664,6 +1679,9 @@
 		</member>
 		<member name="TranslationServer" type="TranslationServer" setter="" getter="">
 			The [TranslationServer] singleton.
+		</member>
+		<member name="TwitchAPI" type="TwitchAPI" setter="" getter="">
+			The [TwitchAPI] singleton.
 		</member>
 		<member name="WorkerThreadPool" type="WorkerThreadPool" setter="" getter="">
 			The [WorkerThreadPool] singleton.

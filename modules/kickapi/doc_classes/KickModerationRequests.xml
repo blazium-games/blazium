@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="KickModerationRequests" inherits="KickRequestBase" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Handles Kick API requests related to moderation.
+	</brief_description>
+	<description>
+		KickModerationRequests provides methods for moderating users (banning, timing out, unbanning) in Kick channels.
+		Access this handler through [method KickAPI.get_moderation].
+		[codeblocks]
+		[gdscript]
+		func _ready():
+		    KickAPI.configure("your_token")
+		    KickAPI.request_completed.connect(_on_request_completed)
+
+		    # Permanently ban a user
+		    KickAPI.get_moderation().ban_user(12345, 67890, "Violation of community guidelines")
+
+		    # Timeout a user for 5 minutes
+		    KickAPI.get_moderation().ban_user(12345, 67890, "Spam warning", 5)
+
+		    # Timeout for 1 hour (60 minutes)
+		    KickAPI.get_moderation().ban_user(12345, 99999, "Inappropriate behavior", 60)
+
+		    # Unban/remove timeout
+		    KickAPI.get_moderation().unban_user(12345, 67890)
+
+		func _on_request_completed(signal_name: String, response_code: int, data: Dictionary):
+		    if signal_name == "user_banned":
+		        # Output (ban or timeout):
+		        # {
+		        #   "data": {},
+		        #   "message": "success"
+		        # }
+		        print("User banned/timed out successfully!")
+
+		    elif signal_name == "user_unbanned":
+		        print("User unbanned successfully!") # Response code: 204
+		[/gdscript]
+		[/codeblocks]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="ban_user">
+			<return type="void" />
+			<param index="0" name="broadcaster_user_id" type="int" />
+			<param index="1" name="user_id" type="int" />
+			<param index="2" name="reason" type="String" default="&quot;&quot;" />
+			<param index="3" name="duration" type="int" default="0" />
+			<description>
+				Bans a user or puts them in timeout in a channel.
+				If [param duration] is omitted or 0, the user is permanently banned.
+				If [param duration] is provided (1-10080 minutes), the user is timed out.
+				Optionally provide [param reason] (max 100 characters) to explain the ban/timeout.
+				Results are returned via the [signal KickAPI.request_completed] signal with signal_name [code]"user_banned"[/code].
+			</description>
+		</method>
+		<method name="unban_user">
+			<return type="void" />
+			<param index="0" name="broadcaster_user_id" type="int" />
+			<param index="1" name="user_id" type="int" />
+			<description>
+				Removes a ban or timeout from a user in a channel.
+				Results are returned via the [signal KickAPI.request_completed] signal with signal_name [code]"user_unbanned"[/code].
+			</description>
+		</method>
+	</methods>
+</class>

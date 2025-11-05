@@ -2394,7 +2394,14 @@ void Image::initialize_data(const char **p_xpm) {
 				for (int x = 0; x < size_width; x++) {
 					char pixelstr[6] = { 0, 0, 0, 0, 0, 0 };
 					for (int i = 0; i < pixelchars; i++) {
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
 						pixelstr[i] = line_ptr[x * pixelchars + i];
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 					}
 
 					Color *colorptr = colormap.getptr(pixelstr);

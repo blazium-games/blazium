@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TwitchChannelsRequests" inherits="TwitchRequestBase" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Twitch Channels API for channel information, editors, and followers.
+	</brief_description>
+	<description>
+		TwitchChannelsRequests provides methods for getting and modifying channel information, managing editors, and accessing follower data. Requires various OAuth scopes depending on the operation. Access through [method TwitchAPI.get_channels].
+	</description>
+	<tutorials>
+		<link title="Twitch API documentation">https://dev.twitch.tv/docs/api/reference</link>
+	</tutorials>
+	<methods>
+		<method name="get_channel_editors">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<description>
+				Gets the list of users who are editors for the broadcaster's channel. Requires channel:read:editors scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "channel_editors_received".
+				[b]Response includes:[/b] Array of editors with user_id, user_name, created_at.
+				[codeblock]
+				TwitchAPI.get_channels().get_channel_editors("broadcaster_id")
+				# Response: {"data": [{"user_id": "123", "user_name": "EditorUser", "created_at": "2025-01-15T10:00:00Z"}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_channel_followers">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="params" type="Dictionary" default="{}" />
+			<description>
+				Gets a list of users that follow the broadcaster. Optional [param params] can include user_id and first. Requires moderator:read:followers scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "channel_followers_received".
+				[b]Response includes:[/b] Array of followers with user_id, user_login, user_name, followed_at; total follower count.
+				[codeblock]
+				TwitchAPI.get_channels().get_channel_followers("broadcaster_id", {"first": 20})
+				# Response: {"data": [{"user_id": "456", "user_login": "follower1", "user_name": "Follower1", "followed_at": "2025-10-01T12:00:00Z"}], "total": 5000}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_channel_information">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<description>
+				Gets information about a channel including title, game, language, and tags. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "channel_information_received".
+				[b]Response includes:[/b] broadcaster_id/login/name, game_id, game_name, broadcaster_language, title, delay, tags, content_classification_labels, is_branded_content.
+				[codeblock]
+				TwitchAPI.get_channels().get_channel_information("broadcaster_id")
+				# Response: {"data": [{"broadcaster_id": "123", "broadcaster_name": "MyChannel", "game_id": "509658", "game_name": "Just Chatting", "title": "Streaming today!", "tags": ["English"]}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_followed_channels">
+			<return type="void" />
+			<param index="0" name="user_id" type="String" />
+			<param index="1" name="params" type="Dictionary" default="{}" />
+			<description>
+				Gets a list of channels that the specified user follows. Optional [param params] can include broadcaster_id and first. Requires user:read:follows scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "followed_channels_received".
+				[b]Response includes:[/b] Array of channels with broadcaster_id, broadcaster_login, broadcaster_name, followed_at; total channels followed.
+				[codeblock]
+				TwitchAPI.get_channels().get_followed_channels("user_id", {"first": 10})
+				# Response: {"data": [{"broadcaster_id": "789", "broadcaster_login": "channel1", "broadcaster_name": "Channel1", "followed_at": "2025-09-01T10:00:00Z"}], "total": 42}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="modify_channel_information">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="data" type="Dictionary" />
+			<description>
+				Modifies channel information such as title, game_id, broadcaster_language, delay, and tags. Requires channel:manage:broadcast scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "channel_information_modified".
+				[b]Response:[/b] Returns 204 No Content on success.
+				[codeblock]
+				var updates = {"title": "New Stream Title!", "game_id": "509658"}
+				TwitchAPI.get_channels().modify_channel_information("broadcaster_id", updates)
+				# Response: 204 No Content on success
+				[/codeblock]
+			</description>
+		</method>
+	</methods>
+</class>

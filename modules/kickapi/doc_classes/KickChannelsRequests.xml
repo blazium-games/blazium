@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="KickChannelsRequests" inherits="KickRequestBase" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Handles Kick API requests related to channels.
+	</brief_description>
+	<description>
+		KickChannelsRequests provides methods for retrieving and updating channel information from the Kick API.
+		Access this handler through [method KickAPI.get_channels].
+		[codeblocks]
+		[gdscript]
+		func _ready():
+		    KickAPI.configure("your_token")
+		    KickAPI.request_completed.connect(_on_request_completed)
+
+		    # Get channel by slug
+		    KickAPI.get_channels().get_channels({"slug": ["channelname"]})
+
+		    # Get multiple channels by IDs
+		    KickAPI.get_channels().get_channels({"broadcaster_user_id": [123, 456]})
+
+		    # Update channel metadata
+		    var update_data = {
+		        "stream_title": "New Stream Title",
+		        "category_id": 42,
+		        "custom_tags": ["gaming", "fun"]
+		    }
+		    KickAPI.get_channels().update_channel(update_data)
+
+		func _on_request_completed(signal_name: String, response_code: int, data: Dictionary):
+		    if signal_name == "channels_received":
+		        # Output:
+		        # {
+		        #   "data": [
+		        #     {
+		        #       "broadcaster_user_id": 12345,
+		        #       "slug": "channelname",
+		        #       "stream_title": "My Stream",
+		        #       "channel_description": "Welcome!",
+		        #       "banner_picture": "https://...",
+		        #       "category": {
+		        #         "id": 42,
+		        #         "name": "Gaming",
+		        #         "thumbnail": "https://..."
+		        #       },
+		        #       "stream": {
+		        #         "is_live": true,
+		        #         "is_mature": false,
+		        #         "language": "en",
+		        #         "viewer_count": 150,
+		        #         "start_time": "2024-01-15T12:00:00Z",
+		        #         "thumbnail": "https://...",
+		        #         "url": "https://..."
+		        #       }
+		        #     }
+		        #   ],
+		        #   "message": "success"
+		        # }
+		        for channel in data["data"]:
+		            print("Channel: ", channel["slug"])
+		            if channel["stream"]["is_live"]:
+		                print("  LIVE - ", channel["stream"]["viewer_count"], " viewers")
+
+		    elif signal_name == "channel_updated":
+		        print("Channel updated successfully!") # Response code: 204
+		[/gdscript]
+		[/codeblocks]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_channels">
+			<return type="void" />
+			<param index="0" name="params" type="Dictionary" default="{}" />
+			<description>
+				Retrieves channel information. The [param params] dictionary can include:
+				- [code]broadcaster_user_id[/code]: Array of broadcaster user IDs (up to 50)
+				- [code]slug[/code]: Array of channel slugs (up to 50)
+				If no parameters are provided, returns information for the authenticated user.
+				Results are returned via the [signal KickAPI.request_completed] signal with signal_name [code]"channels_received"[/code].
+			</description>
+		</method>
+		<method name="update_channel">
+			<return type="void" />
+			<param index="0" name="data" type="Dictionary" />
+			<description>
+				Updates livestream metadata for the authenticated user's channel. The [param data] dictionary can include:
+				- [code]stream_title[/code]: New stream title
+				- [code]category_id[/code]: Category ID
+				- [code]custom_tags[/code]: Array of custom tags
+				At least one field must be provided.
+				Results are returned via the [signal KickAPI.request_completed] signal with signal_name [code]"channel_updated"[/code].
+			</description>
+		</method>
+	</methods>
+</class>

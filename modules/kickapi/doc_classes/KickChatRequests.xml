@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="KickChatRequests" inherits="KickRequestBase" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Handles Kick API requests related to chat.
+	</brief_description>
+	<description>
+		KickChatRequests provides methods for sending chat messages to Kick channels.
+		Access this handler through [method KickAPI.get_chat].
+		[codeblocks]
+		[gdscript]
+		func _ready():
+		    KickAPI.configure("your_token")
+		    KickAPI.request_completed.connect(_on_request_completed)
+
+		    # Send message as bot (to channel attached to token)
+		    KickAPI.get_chat().send_message("Hello Kick! 👋", "bot")
+
+		    # Send message as user to specific channel
+		    KickAPI.get_chat().send_message("Hello everyone!", "user", 12345)
+
+		    # Reply to a specific message
+		    KickAPI.get_chat().send_message("Thanks for watching!", "bot", 0, "msg_abc123")
+
+		func _on_request_completed(signal_name: String, response_code: int, data: Dictionary):
+		    if signal_name == "chat_message_sent":
+		        # Output:
+		        # {
+		        #   "data": {
+		        #     "id": "msg_xyz789",
+		        #     "chatroom_id": 54321,
+		        #     "content": "Hello Kick! 👋",
+		        #     "type": "bot",
+		        #     "created_at": "2024-01-15T12:30:45Z",
+		        #     "sender": {
+		        #       "id": 12345,
+		        #       "username": "bot_user",
+		        #       "slug": "bot_user"
+		        #     }
+		        #   },
+		        #   "message": "success"
+		        # }
+		        print("Message sent! ID: ", data["data"]["id"])
+		        print("Sent at: ", data["data"]["created_at"])
+		[/gdscript]
+		[/codeblocks]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="send_message">
+			<return type="void" />
+			<param index="0" name="content" type="String" />
+			<param index="1" name="type" type="String" />
+			<param index="2" name="broadcaster_user_id" type="int" default="0" />
+			<param index="3" name="reply_to_message_id" type="String" default="&quot;&quot;" />
+			<description>
+				Sends a chat message to a channel. The [param content] must be 500 characters or less.
+				The [param type] must be either [code]"user"[/code] or [code]"bot"[/code].
+				When sending as a user, [param broadcaster_user_id] is required.
+				When sending as a bot, the message is sent to the channel attached to your token.
+				Optionally provide [param reply_to_message_id] to reply to a specific message.
+				Results are returned via the [signal KickAPI.request_completed] signal with signal_name [code]"chat_message_sent"[/code].
+			</description>
+		</method>
+	</methods>
+</class>

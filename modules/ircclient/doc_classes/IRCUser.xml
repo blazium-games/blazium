@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="IRCUser" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_prefix" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the prefix.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="account" type="String" setter="set_account" getter="get_account" default="&quot;&quot;">
+		</member>
+		<member name="away_message" type="String" setter="set_away_message" getter="get_away_message" default="&quot;&quot;">
+		</member>
+		<member name="hostname" type="String" setter="set_hostname" getter="get_hostname" default="&quot;&quot;">
+		</member>
+		<member name="is_away" type="bool" setter="set_is_away" getter="get_is_away" default="false">
+		</member>
+		<member name="nick" type="String" setter="set_nick" getter="get_nick" default="&quot;&quot;">
+		</member>
+		<member name="realname" type="String" setter="set_realname" getter="get_realname" default="&quot;&quot;">
+		</member>
+		<member name="username" type="String" setter="set_username" getter="get_username" default="&quot;&quot;">
+		</member>
+	</members>
+</class>

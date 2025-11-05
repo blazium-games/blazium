@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TwitchModerationRequests" inherits="TwitchRequestBase" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Twitch Moderation API for bans, timeouts, AutoMod, and moderator management.
+	</brief_description>
+	<description>
+		TwitchModerationRequests provides comprehensive moderation tools including bans, timeouts, AutoMod management, blocked terms, moderator and VIP management, and Shield Mode. Requires various moderation-related OAuth scopes. Access through [method TwitchAPI.get_moderation].
+	</description>
+	<tutorials>
+		<link title="Twitch API documentation">https://dev.twitch.tv/docs/api/reference</link>
+	</tutorials>
+	<methods>
+		<method name="add_blocked_term">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="moderator_id" type="String" />
+			<param index="2" name="text" type="String" />
+			<description>
+				Adds a word or phrase to the broadcaster's list of blocked terms. Requires moderator:manage:blocked_terms scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "blocked_term_added".
+				[codeblock]
+				TwitchAPI.get_moderation().add_blocked_term("broadcaster_id", "moderator_id", "badword")
+				# Response: {"data": [{"id": "term123", "text": "badword", "created_at": "2025-10-16T12:00:00Z", "updated_at": "2025-10-16T12:00:00Z"}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="add_channel_moderator">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="user_id" type="String" />
+			<description>
+				Adds a moderator to the broadcaster's chat. Requires channel:manage:moderators scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "channel_moderator_added".
+				[codeblock]
+				TwitchAPI.get_moderation().add_channel_moderator("broadcaster_id", "user_id_to_mod")
+				# Response: 204 No Content on success
+				[/codeblock]
+			</description>
+		</method>
+		<method name="add_channel_vip">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="user_id" type="String" />
+			<description>
+				Adds a VIP to the broadcaster's chat. Requires channel:manage:vips scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "channel_vip_added".
+				[codeblock]
+				TwitchAPI.get_moderation().add_channel_vip("broadcaster_id", "user_id_to_vip")
+				# Response: 204 No Content on success
+				[/codeblock]
+			</description>
+		</method>
+		<method name="ban_user">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="moderator_id" type="String" />
+			<param index="2" name="data" type="Dictionary" />
+			<description>
+				Bans or times out a user. [param data] must include user_id and can include duration (in seconds for timeout) and reason. Requires moderator:manage:banned_users scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "user_banned".
+				[codeblock]
+				var ban_data = {"user_id": "bad_user_id", "duration": 600, "reason": "Spam"}
+				TwitchAPI.get_moderation().ban_user("broadcaster_id", "moderator_id", ban_data)
+				# Response: {"data": [{"user_id": "bad_user_id", "created_at": "2025-10-16T12:00:00Z", "end_time": "2025-10-16T12:10:00Z"}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="check_automod_status">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="messages" type="Array" />
+			<description>
+				Checks whether AutoMod would flag an array of messages. [param messages] should be an array of dictionaries with msg_id, msg_text, and user_id. Requires moderation:read scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "automod_status_checked".
+				[codeblock]
+				var messages = [{"msg_id": "1", "msg_text": "Test message", "user_id": "user123"}]
+				TwitchAPI.get_moderation().check_automod_status("broadcaster_id", messages)
+				# Response: {"data": [{"msg_id": "1", "is_permitted": true}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="delete_chat_messages">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="moderator_id" type="String" />
+			<param index="2" name="message_id" type="String" default="&quot;&quot;" />
+			<description>
+				Deletes a single chat message or all messages from a user. Omit [param message_id] to clear all messages from the user. Requires moderator:manage:chat_messages scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "chat_messages_deleted".
+				[codeblock]
+				TwitchAPI.get_moderation().delete_chat_messages("broadcaster_id", "moderator_id", "message_id_123")
+				# Response: 204 No Content on success
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_automod_settings">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="moderator_id" type="String" />
+			<description>
+				Gets the broadcaster's AutoMod settings including levels for different categories. Requires moderator:read:automod_settings scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "automod_settings_received".
+				[codeblock]
+				TwitchAPI.get_moderation().get_automod_settings("broadcaster_id", "moderator_id")
+				# Response: {"data": [{"broadcaster_id": "123", "overall_level": 2, "disability": 1, "aggression": 2, "sexuality_sex_or_gender": 1, ...}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_banned_users">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="params" type="Dictionary" default="{}" />
+			<description>
+				Gets all users that are banned or timed out. Optional [param params] can include user_id and first. Requires moderation:read scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "banned_users_received".
+				[codeblock]
+				TwitchAPI.get_moderation().get_banned_users("broadcaster_id", {"first": 20})
+				# Response: {"data": [{"user_id": "456", "user_login": "baduser", "user_name": "BadUser", "expires_at": "2025-10-16T12:10:00Z", "created_at": "2025-10-16T12:00:00Z", "reason": "Spam"}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_blocked_terms">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="moderator_id" type="String" />
+			<param index="2" name="params" type="Dictionary" default="{}" />
+			<description>
+				Gets the broadcaster's list of blocked terms. Optional [param params] can include first. Requires moderator:read:blocked_terms scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "blocked_terms_received".
+				[codeblock]
+				TwitchAPI.get_moderation().get_blocked_terms("broadcaster_id", "moderator_id")
+				# Response: {"data": [{"id": "term123", "text": "badword", "created_at": "2025-10-16T12:00:00Z", "expires_at": null}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_moderated_channels">
+			<return type="void" />
+			<param index="0" name="user_id" type="String" />
+			<param index="1" name="params" type="Dictionary" default="{}" />
+			<description>
+				Gets a list of channels where the user has moderator privileges. Optional [param params] can include first. Requires user:read:moderated_channels scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "moderated_channels_received".
+				[codeblock]
+				TwitchAPI.get_moderation().get_moderated_channels("user_id")
+				# Response: {"data": [{"broadcaster_id": "123", "broadcaster_login": "channel1", "broadcaster_name": "Channel1"}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_moderators">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="params" type="Dictionary" default="{}" />
+			<description>
+				Gets all users allowed to moderate the broadcaster's chat. Optional [param params] can include user_id and first. Requires moderation:read scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "moderators_received".
+				[codeblock]
+				TwitchAPI.get_moderation().get_moderators("broadcaster_id")
+				# Response: {"data": [{"user_id": "789", "user_login": "mod1", "user_name": "Mod1"}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_shield_mode_status">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="moderator_id" type="String" />
+			<description>
+				Gets the broadcaster's Shield Mode activation status. Requires moderator:read:shield_mode scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "shield_mode_status_received".
+				[codeblock]
+				TwitchAPI.get_moderation().get_shield_mode_status("broadcaster_id", "moderator_id")
+				# Response: {"data": [{"is_active": false, "moderator_id": "789", "last_activated_at": "2025-10-15T14:30:00Z"}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_vips">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="params" type="Dictionary" default="{}" />
+			<description>
+				Gets the broadcaster's list of VIPs. Optional [param params] can include user_id and first. Requires channel:read:vips scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "vips_received".
+				[codeblock]
+				TwitchAPI.get_moderation().get_vips("broadcaster_id")
+				# Response: {"data": [{"user_id": "456", "user_login": "vipuser", "user_name": "VIPUser"}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="manage_held_automod_messages">
+			<return type="void" />
+			<param index="0" name="user_id" type="String" />
+			<param index="1" name="msg_id" type="String" />
+			<param index="2" name="action" type="String" />
+			<description>
+				Allows or denies a message held by AutoMod. [param action] must be "ALLOW" or "DENY". Requires moderator:manage:automod scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "automod_message_managed".
+				[codeblock]
+				TwitchAPI.get_moderation().manage_held_automod_messages("moderator_id", "msg_id_123", "ALLOW")
+				# Response: 204 No Content on success
+				[/codeblock]
+			</description>
+		</method>
+		<method name="remove_blocked_term">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="moderator_id" type="String" />
+			<param index="2" name="id" type="String" />
+			<description>
+				Removes a blocked term from the broadcaster's list. Requires moderator:manage:blocked_terms scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "blocked_term_removed".
+				[codeblock]
+				TwitchAPI.get_moderation().remove_blocked_term("broadcaster_id", "moderator_id", "term123")
+				# Response: 204 No Content on success
+				[/codeblock]
+			</description>
+		</method>
+		<method name="remove_channel_moderator">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="user_id" type="String" />
+			<description>
+				Removes a moderator from the broadcaster's chat. Requires channel:manage:moderators scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "channel_moderator_removed".
+				[codeblock]
+				TwitchAPI.get_moderation().remove_channel_moderator("broadcaster_id", "user_id")
+				# Response: 204 No Content on success
+				[/codeblock]
+			</description>
+		</method>
+		<method name="remove_channel_vip">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="user_id" type="String" />
+			<description>
+				Removes a VIP from the broadcaster's chat. Requires channel:manage:vips scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "channel_vip_removed".
+				[codeblock]
+				TwitchAPI.get_moderation().remove_channel_vip("broadcaster_id", "user_id")
+				# Response: 204 No Content on success
+				[/codeblock]
+			</description>
+		</method>
+		<method name="unban_user">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="moderator_id" type="String" />
+			<param index="2" name="user_id" type="String" />
+			<description>
+				Removes a ban or timeout from a user. Requires moderator:manage:banned_users scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "user_unbanned".
+				[codeblock]
+				TwitchAPI.get_moderation().unban_user("broadcaster_id", "moderator_id", "user_id")
+				# Response: 204 No Content on success
+				[/codeblock]
+			</description>
+		</method>
+		<method name="update_automod_settings">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="moderator_id" type="String" />
+			<param index="2" name="settings" type="Dictionary" />
+			<description>
+				Updates the broadcaster's AutoMod settings. [param settings] can include overall_level or individual category levels. Requires moderator:manage:automod_settings scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "automod_settings_updated".
+				[codeblock]
+				var settings = {"overall_level": 3}
+				TwitchAPI.get_moderation().update_automod_settings("broadcaster_id", "moderator_id", settings)
+				# Response: {"data": [{"broadcaster_id": "123", "overall_level": 3, "disability": 2, "aggression": 2, ...}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="update_shield_mode_status">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="moderator_id" type="String" />
+			<param index="2" name="is_active" type="bool" />
+			<description>
+				Activates or deactivates Shield Mode. Requires moderator:manage:shield_mode scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "shield_mode_status_updated".
+				[codeblock]
+				TwitchAPI.get_moderation().update_shield_mode_status("broadcaster_id", "moderator_id", true)
+				# Response: {"data": [{"is_active": true, "moderator_id": "789", "last_activated_at": "2025-10-16T12:00:00Z"}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="warn_chat_user">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="moderator_id" type="String" />
+			<param index="2" name="user_id" type="String" />
+			<param index="3" name="reason" type="String" />
+			<description>
+				Sends a warning to a user in chat. Requires moderator:manage:warnings scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "chat_user_warned".
+				[codeblock]
+				TwitchAPI.get_moderation().warn_chat_user("broadcaster_id", "moderator_id", "user_id", "Please follow the rules")
+				# Response: 204 No Content on success
+				[/codeblock]
+			</description>
+		</method>
+	</methods>
+</class>

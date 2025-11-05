@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="KickAPI" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Singleton for interacting with the Kick Developer Public API.
+	</brief_description>
+	<description>
+		KickAPI is a singleton that provides access to the Kick streaming platform API. It handles authentication, rate limiting, and provides organized access to different API endpoints through category-specific request handlers.
+		[codeblocks]
+		[gdscript]
+		extends Node
+
+		func _ready():
+		    # Configure the API with your access token
+		    KickAPI.configure("your_access_token_here")
+
+		    # Connect to the request completed signal
+		    KickAPI.request_completed.connect(_on_request_completed)
+		    KickAPI.request_failed.connect(_on_request_failed)
+		    KickAPI.rate_limit_warning.connect(_on_rate_limit_warning)
+
+		    # Get user information
+		    KickAPI.get_users().get_users({"username": ["streamer_name"]})
+
+		func _on_request_completed(signal_name: String, response_code: int, data: Dictionary):
+		    if signal_name == "users_received":
+		        print("Response code: ", response_code) # 200
+		        print("User data: ", data)
+		        # Output:
+		        # {
+		        #   "data": [
+		        #     {
+		        #       "user_id": 12345,
+		        #       "name": "streamer_name",
+		        #       "email": "user@example.com",
+		        #       "profile_picture": "https://..."
+		        #     }
+		        #   ],
+		        #   "message": "success"
+		        # }
+
+		func _on_request_failed(signal_name: String, error_code: int, message: String):
+		    printerr("Request failed: ", signal_name, " Error: ", error_code, " - ", message)
+
+		func _on_rate_limit_warning(remaining: int, reset_time: int):
+		    print("Rate limit warning: ", remaining, " requests remaining until ", reset_time)
+		[/gdscript]
+		[/codeblocks]
+		The API automatically polls for responses each frame. You can also manually call [method poll] if needed.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="configure">
+			<return type="void" />
+			<param index="0" name="access_token" type="String" />
+			<description>
+				Configures the API with your access token. This must be called before making any API requests.
+			</description>
+		</method>
+		<method name="get_categories">
+			<return type="KickCategoriesRequests" />
+			<description>
+				Returns the categories request handler for searching and retrieving category information.
+			</description>
+		</method>
+		<method name="get_channels">
+			<return type="KickChannelsRequests" />
+			<description>
+				Returns the channels request handler for retrieving and updating channel information.
+			</description>
+		</method>
+		<method name="get_chat">
+			<return type="KickChatRequests" />
+			<description>
+				Returns the chat request handler for sending chat messages.
+			</description>
+		</method>
+		<method name="get_events">
+			<return type="KickEventsRequests" />
+			<description>
+				Returns the events request handler for managing event subscriptions (webhooks).
+			</description>
+		</method>
+		<method name="get_livestreams">
+			<return type="KickLivestreamsRequests" />
+			<description>
+				Returns the livestreams request handler for retrieving livestream information.
+			</description>
+		</method>
+		<method name="get_moderation">
+			<return type="KickModerationRequests" />
+			<description>
+				Returns the moderation request handler for banning and unbanning users.
+			</description>
+		</method>
+		<method name="get_oauth">
+			<return type="KickOAuthRequests" />
+			<description>
+				Returns the OAuth request handler for token introspection and public key retrieval.
+			</description>
+		</method>
+		<method name="get_rate_limit_remaining" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the number of API requests remaining before hitting the rate limit. Returns -1 if unknown.
+			</description>
+		</method>
+		<method name="get_rate_limit_reset" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the Unix timestamp when the rate limit will reset. Returns 0 if unknown.
+			</description>
+		</method>
+		<method name="get_users">
+			<return type="KickUsersRequests" />
+			<description>
+				Returns the users request handler for retrieving user information.
+			</description>
+		</method>
+		<method name="is_busy" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if there are pending API requests in the queue.
+			</description>
+		</method>
+		<method name="poll">
+			<return type="void" />
+			<description>
+				Manually polls the HTTP client for responses. This is normally not needed as the API automatically polls each physics frame.
+			</description>
+		</method>
+		<method name="query_string_from_dict" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="params" type="Dictionary" />
+			<description>
+				Converts a Dictionary to a URL-encoded query string. Useful for building API requests.
+			</description>
+		</method>
+		<method name="set_access_token">
+			<return type="void" />
+			<param index="0" name="token" type="String" />
+			<description>
+				Updates the access token used for API authentication.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="rate_limit_warning">
+			<param index="0" name="remaining" type="int" />
+			<param index="1" name="reset_time" type="int" />
+			<description>
+				Emitted when the API is approaching its rate limit (less than 100 requests remaining).
+			</description>
+		</signal>
+		<signal name="request_completed">
+			<param index="0" name="signal_name" type="String" />
+			<param index="1" name="response_code" type="int" />
+			<param index="2" name="data" type="Dictionary" />
+			<description>
+				Emitted when an API request completes successfully (HTTP 2xx response).
+			</description>
+		</signal>
+		<signal name="request_failed">
+			<param index="0" name="signal_name" type="String" />
+			<param index="1" name="error_code" type="int" />
+			<param index="2" name="message" type="String" />
+			<description>
+				Emitted when an API request fails (HTTP 4xx or 5xx response).
+			</description>
+		</signal>
+	</signals>
+</class>

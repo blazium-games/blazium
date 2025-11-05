@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="KickRequestBase" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Base class for all Kick API request categories.
+	</brief_description>
+	<description>
+		KickRequestBase provides common functionality for all Kick API request handlers. This class is not used directly but is inherited by specific request category classes like [KickCategoriesRequests], [KickChannelsRequests], etc.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

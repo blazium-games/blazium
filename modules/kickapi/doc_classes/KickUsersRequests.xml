@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="KickUsersRequests" inherits="KickRequestBase" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Handles Kick API requests related to users.
+	</brief_description>
+	<description>
+		KickUsersRequests provides methods for retrieving user information from the Kick API.
+		Access this handler through [method KickAPI.get_users].
+		[codeblocks]
+		[gdscript]
+		func _ready():
+		    KickAPI.configure("your_token")
+		    KickAPI.request_completed.connect(_on_request_completed)
+
+		    # Get authenticated user
+		    KickAPI.get_users().get_users()
+
+		    # Get user by username
+		    KickAPI.get_users().get_users({"username": ["streamer123", "gamer456"]})
+
+		    # Get users by ID
+		    KickAPI.get_users().get_users({"user_id": [12345, 67890]})
+
+		func _on_request_completed(signal_name: String, response_code: int, data: Dictionary):
+		    if signal_name == "users_received":
+		        # Output:
+		        # {
+		        #   "data": [
+		        #     {
+		        #       "user_id": 12345,
+		        #       "name": "streamer123",
+		        #       "email": "user@example.com",
+		        #       "profile_picture": "https://..."
+		        #     },
+		        #     {
+		        #       "user_id": 67890,
+		        #       "name": "gamer456",
+		        #       "email": "gamer@example.com",
+		        #       "profile_picture": "https://..."
+		        #     }
+		        #   ],
+		        #   "message": "success"
+		        # }
+		        for user in data["data"]:
+		            print("User: ", user["name"])
+		            print("  ID: ", user["user_id"])
+		            print("  Email: ", user["email"])
+		            print("  Profile: ", user["profile_picture"])
+		[/gdscript]
+		[/codeblocks]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_users">
+			<return type="void" />
+			<param index="0" name="params" type="Dictionary" default="{}" />
+			<description>
+				Retrieves user information. The [param params] dictionary can include:
+				- [code]user_id[/code]: Array of user IDs (up to 50)
+				- [code]username[/code]: Array of usernames (up to 50, max 25 chars each)
+				If no parameters are provided, returns information for the authenticated user.
+				You cannot mix [code]user_id[/code] and [code]username[/code] parameters.
+				Results are returned via the [signal KickAPI.request_completed] signal with signal_name [code]"users_received"[/code].
+			</description>
+		</method>
+	</methods>
+</class>

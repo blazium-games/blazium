@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TwitchAdsRequests" inherits="TwitchRequestBase" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Twitch Ads API for managing commercials and ad schedules.
+	</brief_description>
+	<description>
+		TwitchAdsRequests provides methods for starting commercials, getting ad schedules, and managing ad breaks on Twitch channels. Requires appropriate OAuth scopes (channel:edit:commercial for starting commercials). Access through [method TwitchAPI.get_ads].
+	</description>
+	<tutorials>
+		<link title="Twitch API documentation">https://dev.twitch.tv/docs/api/reference</link>
+	</tutorials>
+	<methods>
+		<method name="get_ad_schedule">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<description>
+				Gets the broadcaster's ad schedule information including snooze count, next ad time, and preroll-free time. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "ad_schedule_received".
+				[b]Response includes:[/b] snooze_count, snooze_refresh_at, next_ad_at, duration, last_ad_at, preroll_free_time.
+				[codeblock]
+				TwitchAPI.get_ads().get_ad_schedule("broadcaster_id")
+				# Response: {"data": [{"snooze_count": 1, "snooze_refresh_at": "2025-10-16T12:00:00Z", "next_ad_at": "2025-10-16T13:00:00Z", "duration": 90, "last_ad_at": "2025-10-16T11:00:00Z", "preroll_free_time": 300}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="snooze_next_ad">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<description>
+				Snoozes the next scheduled ad by 5 minutes. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "ad_snoozed".
+				[b]Response includes:[/b] snooze_count, snooze_refresh_at, next_ad_at.
+				[codeblock]
+				TwitchAPI.get_ads().snooze_next_ad("broadcaster_id")
+				# Response: {"data": [{"snooze_count": 0, "snooze_refresh_at": "2025-10-17T00:00:00Z", "next_ad_at": "2025-10-16T13:05:00Z"}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="start_commercial">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="length" type="int" />
+			<description>
+				Starts a commercial break on the broadcaster's channel. [param length] must be 30, 60, 90, 120, 150, or 180 seconds. Requires channel:edit:commercial scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "commercial_started".
+				[b]Response includes:[/b] length (commercial duration), message (status message), retry_after (seconds until next commercial can be run).
+				[codeblock]
+				TwitchAPI.get_ads().start_commercial("broadcaster_id", 30)
+				# Response: {"data": [{"length": 30, "message": "Commercial started", "retry_after": 480}]}
+				[/codeblock]
+			</description>
+		</method>
+	</methods>
+</class>

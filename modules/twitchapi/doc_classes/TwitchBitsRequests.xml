@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TwitchBitsRequests" inherits="TwitchRequestBase" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Twitch Bits API for leaderboards, cheermotes, and transactions.
+	</brief_description>
+	<description>
+		TwitchBitsRequests provides methods for accessing Bits leaderboards, cheermote information, and extension Bits transactions. Requires bits:read OAuth scope for leaderboards. Access through [method TwitchAPI.get_bits].
+	</description>
+	<tutorials>
+		<link title="Twitch API documentation">https://dev.twitch.tv/docs/api/reference</link>
+	</tutorials>
+	<methods>
+		<method name="get_bits_leaderboard">
+			<return type="void" />
+			<param index="0" name="params" type="Dictionary" default="{}" />
+			<description>
+				Gets the Bits leaderboard for the authenticated broadcaster. Optional [param params] can include count, period, started_at, and user_id. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "bits_leaderboard_received".
+				[b]Response includes:[/b] Array of users with user_id, user_login, user_name, rank, score; date_range (started_at, ended_at); total count.
+				[codeblock]
+				var params = {"count": 10, "period": "week"}
+				TwitchAPI.get_bits().get_bits_leaderboard(params)
+				# Response: {"data": [{"user_id": "123", "user_login": "user1", "user_name": "User1", "rank": 1, "score": 5000}], "date_range": {"started_at": "2025-10-10T00:00:00Z", "ended_at": "2025-10-16T23:59:59Z"}, "total": 50}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_cheermotes">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" default="&quot;&quot;" />
+			<description>
+				Gets the list of Cheermotes available for Bits donations. Optional [param broadcaster_id] retrieves broadcaster-specific custom cheermotes. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "cheermotes_received".
+				[b]Response includes:[/b] Array of cheermotes with prefix, type, order, last_updated, is_charitable, tiers (min_bits, id, color, images, can_cheer).
+				[codeblock]
+				TwitchAPI.get_bits().get_cheermotes("broadcaster_id")
+				# Response: {"data": [{"prefix": "Cheer", "type": "global_first_party", "order": 1, "tiers": [{"min_bits": 1, "id": "1", "color": "#979797", "images": {...}, "can_cheer": true}]}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_extension_transactions">
+			<return type="void" />
+			<param index="0" name="extension_id" type="String" />
+			<param index="1" name="params" type="Dictionary" default="{}" />
+			<description>
+				Gets a list of Bits transactions for the specified extension. Optional [param params] can include id and first. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "extension_transactions_received".
+				[b]Response includes:[/b] Array of transactions with id, timestamp, broadcaster_id/login/name, user_id/login/name, product_type, product_data (domain, sku, cost).
+				[codeblock]
+				TwitchAPI.get_bits().get_extension_transactions("extension_id", {"first": 20})
+				# Response: {"data": [{"id": "txn123", "timestamp": "2025-10-16T12:00:00Z", "broadcaster_id": "456", "user_id": "789", "product_type": "BITS_IN_EXTENSION", "product_data": {"sku": "item1", "cost": {"amount": 100, "type": "bits"}}}]}
+				[/codeblock]
+			</description>
+		</method>
+	</methods>
+</class>

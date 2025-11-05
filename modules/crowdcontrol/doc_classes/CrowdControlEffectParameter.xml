@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CrowdControlEffectParameter" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Resource defining selectable parameters for Crowd Control effects.
+	</brief_description>
+	<description>
+		CrowdControlEffectParameter allows viewers to choose from a set of options when purchasing an effect (e.g., selecting a color for a cosmetic effect).
+		Parameters are added to [CrowdControlEffect] resources and don't affect the effect's price.
+		[codeblocks]
+		[gdscript]
+		# Create a color parameter
+		var color_param = CrowdControlEffectParameter.new()
+		color_param.parameter_name = "Color"
+		color_param.options = {
+		    "red": "Red",
+		    "blue": "Blue",
+		    "green": "Green"
+		}
+
+		# Add to effect
+		var effect = CrowdControlEffect.new()
+		effect.parameters = {"color": color_param}
+		[/gdscript]
+		[/codeblocks]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="to_json" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Converts the parameter to a Dictionary in the format expected by Crowd Control. This is used internally by [CrowdControlEffect] when exporting.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="options" type="Dictionary" setter="set_options" getter="get_options" default="{}">
+			Dictionary of option_id to display_name pairs (e.g., {"red": "Red", "blue": "Blue"}). The option_id is sent with the effect request.
+		</member>
+		<member name="parameter_name" type="String" setter="set_parameter_name" getter="get_parameter_name" default="&quot;&quot;">
+			Display name for the parameter shown to viewers (e.g., "Color", "Difficulty").
+		</member>
+		<member name="parameter_type" type="String" setter="set_parameter_type" getter="get_parameter_type" default="&quot;options&quot;">
+			Parameter type. Currently only "options" is supported for selectable options.
+		</member>
+	</members>
+</class>

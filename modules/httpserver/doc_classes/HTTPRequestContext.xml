@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="HTTPRequestContext" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Container for HTTP request data passed to route handlers.
+	</brief_description>
+	<description>
+		HTTPRequestContext encapsulates all data from an HTTP request including method, path, headers, query parameters, path parameters, and body content. It is automatically created by [HTTPServer] and passed to route handler callbacks.
+		[codeblocks]
+		[gdscript]
+		HTTPServer.register_route("GET", "/api/users/{id}", func(req: HTTPRequestContext, res):
+		    # Access path parameter
+		    var user_id = req.get_path_param("id")
+
+		    # Access query parameter
+		    var format = req.get_query_param("format", "json")
+
+		    # Access header
+		    var auth = req.get_header("authorization", "")
+
+		    # Get client info
+		    print("Request from: ", req.get_client_ip())
+		)
+		[/gdscript]
+		[/codeblocks]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_header" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="default_value" type="String" default="&quot;&quot;" />
+			<description>
+				Returns the value of the HTTP header with the given [param name], or [param default_value] if the header is not present. Header names are case-insensitive.
+			</description>
+		</method>
+		<method name="get_path_param" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="default_value" type="String" default="&quot;&quot;" />
+			<description>
+				Returns the value of a path parameter extracted from the route pattern. For example, with pattern "/api/users/{id}" and request "/api/users/123", calling [code]get_path_param("id")[/code] returns "123".
+			</description>
+		</method>
+		<method name="get_query_param" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="default_value" type="String" default="&quot;&quot;" />
+			<description>
+				Returns the value of a query parameter from the URL. For example, for "/api/users?id=5&amp;format=json", calling [code]get_query_param("id")[/code] returns "5".
+			</description>
+		</method>
+		<method name="has_header" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Returns [code]true[/code] if the request contains an HTTP header with the given [param name]. Header names are case-insensitive.
+			</description>
+		</method>
+		<method name="has_path_param" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Returns [code]true[/code] if a path parameter with the given [param name] exists.
+			</description>
+		</method>
+		<method name="has_query_param" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Returns [code]true[/code] if a query parameter with the given [param name] exists.
+			</description>
+		</method>
+		<method name="parse_form_data" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Parses the request body as application/x-www-form-urlencoded data and returns a dictionary of key-value pairs. Returns an empty dictionary if parsing fails.
+			</description>
+		</method>
+		<method name="parse_json_body" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Parses the request body as JSON and returns a dictionary. Returns an empty dictionary if the body is not valid JSON or is not a JSON object.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="body" type="String" setter="set_body" getter="get_body" default="&quot;&quot;">
+			The raw request body content as a string.
+		</member>
+		<member name="client_ip" type="String" setter="set_client_ip" getter="get_client_ip" default="&quot;&quot;">
+			The IP address of the client that made the request.
+		</member>
+		<member name="client_port" type="int" setter="set_client_port" getter="get_client_port" default="0">
+			The port number of the client connection.
+		</member>
+		<member name="headers" type="Dictionary" setter="set_headers" getter="get_headers" default="{}">
+			Dictionary containing all HTTP headers from the request. Header names are lowercase.
+		</member>
+		<member name="method" type="String" setter="set_method" getter="get_method" default="&quot;&quot;">
+			The HTTP method of the request (GET, POST, PUT, DELETE, etc.).
+		</member>
+		<member name="path" type="String" setter="set_path" getter="get_path" default="&quot;&quot;">
+			The request path without query parameters.
+		</member>
+		<member name="path_params" type="Dictionary" setter="set_path_params" getter="get_path_params" default="{}">
+			Dictionary containing path parameters extracted from the route pattern using [code]{variable}[/code] syntax.
+		</member>
+		<member name="query_params" type="Dictionary" setter="set_query_params" getter="get_query_params" default="{}">
+			Dictionary containing query parameters from the URL.
+		</member>
+		<member name="raw_path" type="String" setter="set_raw_path" getter="get_raw_path" default="&quot;&quot;">
+			The complete request path including query parameters.
+		</member>
+	</members>
+</class>

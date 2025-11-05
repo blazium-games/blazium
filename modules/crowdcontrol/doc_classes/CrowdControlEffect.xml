@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CrowdControlEffect" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Resource defining a single Crowd Control effect.
+	</brief_description>
+	<description>
+		CrowdControlEffect represents an individual effect that viewers can purchase through Crowd Control. Each effect has properties like price, duration, description, and categories for organization.
+		Effects can be instant (duration = 0) or timed (duration &gt; 0). The resource supports quantities, parameters, and grouping for advanced functionality.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="to_json" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Converts the effect to a Dictionary in the format expected by Crowd Control. This is used internally by [CrowdControlGamePack] when exporting.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="category" type="PackedStringArray" setter="set_category" getter="get_category" default="PackedStringArray()">
+			Categories for organizing effects in the Crowd Control menu (e.g., Player, Environment). Effects can belong to multiple categories.
+		</member>
+		<member name="description" type="String" setter="set_description" getter="get_description" default="&quot;&quot;">
+			Description shown to viewers before purchasing the effect. Use this to clarify what the effect does.
+		</member>
+		<member name="duration" type="int" setter="set_duration" getter="get_duration" default="0">
+			Duration of the effect in seconds. Set to 0 for instant effects, or 1-180 for timed effects. Streamers can override this value.
+		</member>
+		<member name="effect_id" type="String" setter="set_effect_id" getter="get_effect_id" default="&quot;&quot;">
+			Unique identifier for the effect (e.g., "kill_player"). This is used in your game code to identify which effect was purchased.
+		</member>
+		<member name="effect_name" type="Variant" setter="set_effect_name" getter="get_effect_name" default="null">
+			Display name of the effect. Can be a String (e.g., "Kill Player") or a Dictionary with "public" and "sort" keys for custom sorting.
+		</member>
+		<member name="group" type="PackedStringArray" setter="set_group" getter="get_group" default="PackedStringArray()">
+			Internal groups for bulk control via effect reports (e.g., singleplayer, multiplayer). Used to enable/disable multiple effects at once.
+		</member>
+		<member name="inactive" type="bool" setter="set_inactive" getter="is_inactive" default="false">
+			If [code]true[/code], the effect is hidden by default in the streamer's effect list. Useful for reducing clutter with many similar effects.
+		</member>
+		<member name="note" type="String" setter="set_note" getter="get_note" default="&quot;&quot;">
+			Optional note displayed next to the effect name in lower contrast (e.g., Random Player). Useful for distinguishing similar effects.
+		</member>
+		<member name="parameters" type="Dictionary" setter="set_parameters" getter="get_parameters" default="{}">
+			Dictionary of parameter_id to [CrowdControlEffectParameter] for viewer-selectable options (e.g., color choices). Parameters don't affect price.
+		</member>
+		<member name="price" type="int" setter="set_price" getter="get_price" default="100">
+			Cost of the effect in Crowd Control coins, where 100 coins = $1 USD. Streamers can adjust prices for their channel.
+		</member>
+		<member name="quantity_max" type="int" setter="set_quantity_max" getter="get_quantity_max" default="1">
+			Maximum quantity viewers can purchase in a single transaction. Must be at least 1.
+		</member>
+		<member name="quantity_min" type="int" setter="set_quantity_min" getter="get_quantity_min" default="1">
+			Minimum quantity viewers must purchase. Must be at least 1.
+		</member>
+	</members>
+</class>

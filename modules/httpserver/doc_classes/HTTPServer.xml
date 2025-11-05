@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="HTTPServer" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		HTTP server singleton for creating REST APIs and serving content.
+	</brief_description>
+	<description>
+		HTTPServer is a singleton that provides a complete HTTP server implementation with support for REST APIs, static file serving, and Server-Sent Events (SSE). It uses a route-based system where you register callbacks for specific HTTP methods and path patterns.
+		The server runs in a background thread and handles multiple concurrent connections. Routes can include path parameters using the [code]{variable}[/code] syntax.
+		[codeblocks]
+		[gdscript]
+		# Start server
+		HTTPServer.listen(8080)
+
+		# Register a route with path parameters
+		HTTPServer.register_route("GET", "/api/users/{id}", func(req, res):
+		    var user_id = req.get_path_param("id")
+		    res.set_json({"user_id": user_id})
+		)
+
+		# Register a POST route
+		HTTPServer.register_route("POST", "/api/data", func(req, res):
+		    var data = req.parse_json_body()
+		    res.set_status(201)
+		    res.set_json({"received": data})
+		)
+		[/gdscript]
+		[/codeblocks]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="clear_routes">
+			<return type="void" />
+			<description>
+				Removes all registered routes from the server.
+			</description>
+		</method>
+		<method name="close_sse_connection">
+			<return type="void" />
+			<param index="0" name="connection_id" type="int" />
+			<description>
+				Closes an active Server-Sent Events connection with the given [param connection_id]. Emits [signal sse_connection_closed].
+			</description>
+		</method>
+		<method name="enable_directory_listing">
+			<return type="void" />
+			<param index="0" name="enable" type="bool" />
+			<description>
+				Enables or disables directory listing for static file serving. When enabled, directories will show an index of files.
+			</description>
+		</method>
+		<method name="get_active_sse_connections" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns an array of connection IDs for all active Server-Sent Events connections.
+			</description>
+		</method>
+		<method name="get_cors_origin" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the current CORS (Cross-Origin Resource Sharing) origin setting.
+			</description>
+		</method>
+		<method name="get_max_request_size" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the maximum allowed request size in bytes.
+			</description>
+		</method>
+		<method name="get_port" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the port number the server is listening on, or 0 if not listening.
+			</description>
+		</method>
+		<method name="get_static_directory" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the directory path used for serving static files.
+			</description>
+		</method>
+		<method name="is_cors_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if CORS headers are being added to responses.
+			</description>
+		</method>
+		<method name="is_directory_listing_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if directory listing is enabled for static files.
+			</description>
+		</method>
+		<method name="is_listening" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the server is currently listening for connections.
+			</description>
+		</method>
+		<method name="listen">
+			<return type="int" enum="Error" />
+			<param index="0" name="port" type="int" />
+			<param index="1" name="bind_address" type="String" default="&quot;*&quot;" />
+			<param index="2" name="use_tls" type="bool" default="false" />
+			<param index="3" name="tls_key" type="String" default="&quot;&quot;" />
+			<param index="4" name="tls_cert" type="String" default="&quot;&quot;" />
+			<description>
+				Starts the HTTP server on the specified [param port] and [param bind_address]. Returns [constant OK] on success.
+				If [param use_tls] is [code]true[/code], the server will use HTTPS. In this case, [param tls_key] and [param tls_cert] must point to valid key and certificate files.
+				The [param bind_address] can be "*" to bind to all interfaces, "0.0.0.0" for IPv4, or a specific IP address.
+			</description>
+		</method>
+		<method name="register_route">
+			<return type="void" />
+			<param index="0" name="method" type="String" />
+			<param index="1" name="path" type="String" />
+			<param index="2" name="callback" type="Callable" />
+			<description>
+				Registers a route handler for the given HTTP [param method] and [param path] pattern. The [param callback] will be called with two arguments: [HTTPRequestContext] and [HTTPResponse].
+				The path can include parameters using the [code]{variable}[/code] syntax. For example: [code]"/api/users/{id}/posts/{post_id}"[/code].
+				Supported methods: GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD.
+			</description>
+		</method>
+		<method name="send_sse_data">
+			<return type="int" enum="Error" />
+			<param index="0" name="connection_id" type="int" />
+			<param index="1" name="data" type="String" />
+			<description>
+				Sends data to a Server-Sent Events connection without specifying an event type. This is equivalent to calling [method send_sse_event] with an empty event name.
+			</description>
+		</method>
+		<method name="send_sse_event">
+			<return type="int" enum="Error" />
+			<param index="0" name="connection_id" type="int" />
+			<param index="1" name="event" type="String" />
+			<param index="2" name="data" type="String" />
+			<description>
+				Sends a Server-Sent Event to the connection identified by [param connection_id]. The [param event] specifies the event type, and [param data] contains the event payload.
+				Multi-line data is automatically formatted according to the SSE specification. Returns [constant OK] on success.
+			</description>
+		</method>
+		<method name="set_cors_enabled">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				Enables or disables CORS (Cross-Origin Resource Sharing) headers in responses. When enabled, the server adds appropriate headers to allow cross-origin requests.
+			</description>
+		</method>
+		<method name="set_cors_origin">
+			<return type="void" />
+			<param index="0" name="origin" type="String" />
+			<description>
+				Sets the allowed origin for CORS requests. Use "*" to allow all origins, or specify a specific origin like "https://example.com".
+			</description>
+		</method>
+		<method name="set_max_request_size">
+			<return type="void" />
+			<param index="0" name="size" type="int" />
+			<description>
+				Sets the maximum allowed request size in bytes. Requests larger than this will be rejected with a 413 error. The value is clamped between 1KB and 1MB.
+			</description>
+		</method>
+		<method name="set_static_directory">
+			<return type="void" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Sets the directory path for serving static files. This is used as a base path for file serving routes.
+			</description>
+		</method>
+		<method name="stop">
+			<return type="void" />
+			<description>
+				Stops the HTTP server, closes all connections, and shuts down the background thread. All active SSE connections will be closed and [signal sse_connection_closed] will be emitted for each.
+			</description>
+		</method>
+		<method name="unregister_route">
+			<return type="void" />
+			<param index="0" name="method" type="String" />
+			<param index="1" name="path" type="String" />
+			<description>
+				Removes a previously registered route for the given [param method] and [param path].
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="server_error">
+			<param index="0" name="error_message" type="String" />
+			<description>
+				Emitted when a server error occurs.
+			</description>
+		</signal>
+		<signal name="sse_connection_closed">
+			<param index="0" name="connection_id" type="int" />
+			<description>
+				Emitted when a Server-Sent Events connection is closed, either by the client or by calling [method close_sse_connection].
+			</description>
+		</signal>
+		<signal name="sse_connection_opened">
+			<param index="0" name="connection_id" type="int" />
+			<param index="1" name="path" type="String" />
+			<param index="2" name="headers" type="Dictionary" />
+			<description>
+				Emitted when a new Server-Sent Events connection is established. The [param connection_id] can be used with [method send_sse_event] to send events to this client.
+			</description>
+		</signal>
+	</signals>
+</class>

@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TwitchChatRequests" inherits="TwitchRequestBase" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Twitch Chat API for messages, emotes, badges, and chat settings.
+	</brief_description>
+	<description>
+		TwitchChatRequests provides comprehensive methods for interacting with Twitch chat including sending messages, managing emotes and badges, configuring chat settings, and sending announcements. Requires various OAuth scopes depending on the operation. Access through [method TwitchAPI.get_chat].
+	</description>
+	<tutorials>
+		<link title="Twitch API documentation">https://dev.twitch.tv/docs/api/reference</link>
+	</tutorials>
+	<methods>
+		<method name="get_channel_chat_badges">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<description>
+				Gets the broadcaster's custom chat badges. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "channel_chat_badges_received".
+				[b]Response includes:[/b] Array of badge sets with set_id, versions (id, image_url_1x/2x/4x, title, description, click_action, click_url).
+				[codeblock]
+				TwitchAPI.get_chat().get_channel_chat_badges("broadcaster_id")
+				# Response: {"data": [{"set_id": "subscriber", "versions": [{"id": "1", "image_url_1x": "https://...", "title": "Subscriber", "description": "1-Month Subscriber"}]}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_channel_emotes">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<description>
+				Gets the broadcaster's custom emotes including subscriber emotes. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "channel_emotes_received".
+				[b]Response includes:[/b] Array of emotes with id, name, images (url_1x/2x/4x), tier, emote_type, emote_set_id, format, scale, theme_mode.
+				[codeblock]
+				TwitchAPI.get_chat().get_channel_emotes("broadcaster_id")
+				# Response: {"data": [{"id": "emotesv2_abc123", "name": "MyEmote", "images": {"url_1x": "...", "url_2x": "...", "url_4x": "..."}, "tier": "1000", "emote_type": "subscriptions"}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_chat_settings">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="moderator_id" type="String" default="&quot;&quot;" />
+			<description>
+				Gets the chat settings for a broadcaster's channel including emote-only mode, follower mode, slow mode, and subscriber mode. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "chat_settings_received".
+				[b]Response includes:[/b] broadcaster_id, emote_mode, follower_mode, follower_mode_duration, non_moderator_chat_delay, non_moderator_chat_delay_duration, slow_mode, slow_mode_wait_time, subscriber_mode, unique_chat_mode.
+				[codeblock]
+				TwitchAPI.get_chat().get_chat_settings("broadcaster_id")
+				# Response: {"data": [{"broadcaster_id": "123", "emote_mode": false, "follower_mode": true, "follower_mode_duration": 10, "slow_mode": false, "subscriber_mode": false}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_chatters">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="moderator_id" type="String" />
+			<param index="2" name="params" type="Dictionary" default="{}" />
+			<description>
+				Gets the list of users currently connected to the broadcaster's chat. Optional [param params] can include first. Requires moderator:read:chatters scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "chatters_received".
+				[b]Response includes:[/b] Array of chatters with user_id, user_login, user_name; total chatter count.
+				[codeblock]
+				TwitchAPI.get_chat().get_chatters("broadcaster_id", "moderator_id", {"first": 100})
+				# Response: {"data": [{"user_id": "123", "user_login": "viewer1", "user_name": "Viewer1"}], "total": 1523}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_emote_sets">
+			<return type="void" />
+			<param index="0" name="emote_set_id" type="String" />
+			<description>
+				Gets emotes from one or more specified emote sets. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "emote_sets_received".
+				[b]Response includes:[/b] Array of emotes (same structure as get_channel_emotes).
+				[codeblock]
+				TwitchAPI.get_chat().get_emote_sets("emote_set_id_123")
+				# Response: {"data": [{"id": "emotesv2_abc", "name": "MyEmote", "images": {"url_1x": "https://..."}}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_global_chat_badges">
+			<return type="void" />
+			<description>
+				Gets Twitch's global chat badges available to all users. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "global_chat_badges_received".
+				[b]Response includes:[/b] Array of badge sets (same structure as get_channel_chat_badges).
+				[codeblock]
+				TwitchAPI.get_chat().get_global_chat_badges()
+				# Response: {"data": [{"set_id": "moderator", "versions": [{"id": "1", "image_url_1x": "https://...", "title": "Moderator"}]}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_global_emotes">
+			<return type="void" />
+			<description>
+				Gets all global emotes available to all Twitch users. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "global_emotes_received".
+				[b]Response includes:[/b] Array of emotes (same structure as get_channel_emotes).
+				[codeblock]
+				TwitchAPI.get_chat().get_global_emotes()
+				# Response: {"data": [{"id": "emotesv2_global", "name": "Kappa", "images": {"url_1x": "https://..."}, "format": ["static"], "scale": ["1.0", "2.0", "3.0"]}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_user_chat_color">
+			<return type="void" />
+			<param index="0" name="user_id" type="String" />
+			<description>
+				Gets the color used for the user's name in chat. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "user_chat_color_received".
+				[b]Response includes:[/b] user_id, user_login, user_name, color (hex code or named color).
+				[codeblock]
+				TwitchAPI.get_chat().get_user_chat_color("user_id")
+				# Response: {"data": [{"user_id": "123", "user_login": "username", "user_name": "UserName", "color": "#FF0000"}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_user_emotes">
+			<return type="void" />
+			<param index="0" name="user_id" type="String" />
+			<param index="1" name="broadcaster_id" type="String" default="&quot;&quot;" />
+			<description>
+				Gets emotes available to the user across all channels. Optional [param broadcaster_id] filters to emotes from a specific broadcaster. Requires user:read:emotes scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "user_emotes_received".
+				[b]Response includes:[/b] Array of emotes (same structure as get_channel_emotes).
+				[codeblock]
+				TwitchAPI.get_chat().get_user_emotes("user_id", "broadcaster_id")
+				# Response: {"data": [{"id": "emotesv2_123", "name": "SubEmote", "emote_type": "subscriptions", "emote_set_id": "300374282"}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="send_a_shoutout">
+			<return type="void" />
+			<param index="0" name="from_broadcaster_id" type="String" />
+			<param index="1" name="to_broadcaster_id" type="String" />
+			<param index="2" name="moderator_id" type="String" />
+			<description>
+				Sends a Shoutout to the specified broadcaster. Requires moderator:manage:shoutouts scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "shoutout_sent".
+				[b]Response:[/b] Returns 204 No Content on success.
+				[codeblock]
+				TwitchAPI.get_chat().send_a_shoutout("from_broadcaster_id", "to_broadcaster_id", "moderator_id")
+				# Response: 204 No Content on success
+				[/codeblock]
+			</description>
+		</method>
+		<method name="send_chat_announcement">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="moderator_id" type="String" />
+			<param index="2" name="message" type="String" />
+			<param index="3" name="color" type="String" default="&quot;&quot;" />
+			<description>
+				Sends an announcement to the broadcaster's chat room. Optional [param color] can be blue, green, orange, purple, or primary. Requires moderator:manage:announcements scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "chat_announcement_sent".
+				[b]Response:[/b] Returns 204 No Content on success.
+				[codeblock]
+				TwitchAPI.get_chat().send_chat_announcement("broadcaster_id", "moderator_id", "Stream starting soon!", "purple")
+				# Response: 204 No Content on success
+				[/codeblock]
+			</description>
+		</method>
+		<method name="send_chat_message">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="sender_id" type="String" />
+			<param index="2" name="message" type="String" />
+			<param index="3" name="reply_parent_message_id" type="String" default="&quot;&quot;" />
+			<description>
+				Sends a message to the broadcaster's chat room. Optional [param reply_parent_message_id] makes this a reply. Requires user:write:chat scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "chat_message_sent".
+				[b]Response includes:[/b] message_id, is_sent (bool), drop_reason (code, message) if message was dropped.
+				[codeblock]
+				TwitchAPI.get_chat().send_chat_message("broadcaster_id", "sender_id", "Hello from Blazium!")
+				# Response: {"data": [{"message_id": "msg-id-123", "is_sent": true}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="update_chat_settings">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="moderator_id" type="String" />
+			<param index="2" name="settings" type="Dictionary" />
+			<description>
+				Updates the broadcaster's chat settings. [param settings] can include emote_mode, follower_mode, slow_mode, subscriber_mode, and related durations. Requires moderator:manage:chat_settings scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "chat_settings_updated".
+				[b]Response includes:[/b] Updated chat settings object (same structure as get_chat_settings).
+				[codeblock]
+				var settings = {"slow_mode": true, "slow_mode_wait_time": 30}
+				TwitchAPI.get_chat().update_chat_settings("broadcaster_id", "moderator_id", settings)
+				# Response: {"data": [{"broadcaster_id": "123", "slow_mode": true, "slow_mode_wait_time": 30, ...}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="update_user_chat_color">
+			<return type="void" />
+			<param index="0" name="user_id" type="String" />
+			<param index="1" name="color" type="String" />
+			<description>
+				Updates the color used for the user's name in chat. [param color] can be a named color (blue, coral, dodger_blue, etc.) or a hex code. Requires user:manage:chat_color scope. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "user_chat_color_updated".
+				[b]Response:[/b] Returns 204 No Content on success.
+				[codeblock]
+				TwitchAPI.get_chat().update_user_chat_color("user_id", "blue")
+				# Or with hex: TwitchAPI.get_chat().update_user_chat_color("user_id", "#FF0000")
+				# Response: 204 No Content on success
+				[/codeblock]
+			</description>
+		</method>
+	</methods>
+</class>

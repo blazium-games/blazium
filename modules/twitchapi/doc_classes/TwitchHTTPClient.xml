@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TwitchHTTPClient" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Low-level HTTP client for Twitch API with rate limiting and request queuing.
+	</brief_description>
+	<description>
+		TwitchHTTPClient handles HTTP communication with the Twitch API, including automatic rate limit tracking, request queuing, and retry logic. This class is used internally by [TwitchAPI] and typically does not need to be accessed directly.
+	</description>
+	<tutorials>
+		<link title="Twitch API documentation">https://dev.twitch.tv/docs/api/reference</link>
+	</tutorials>
+	<methods>
+		<method name="get_queue_size" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the number of requests currently waiting in the queue.
+			</description>
+		</method>
+		<method name="get_rate_limit_remaining" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the number of API requests remaining before hitting the rate limit. Returns -1 if no requests have been made yet.
+			</description>
+		</method>
+		<method name="get_rate_limit_reset" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the Unix timestamp when the rate limit resets. Returns 0 if no requests have been made yet.
+			</description>
+		</method>
+		<method name="is_busy" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if there are requests in the queue or a request is currently being processed.
+			</description>
+		</method>
+		<method name="poll">
+			<return type="void" />
+			<description>
+				Processes the HTTP client state machine and request queue. Called automatically by [TwitchAPI].
+			</description>
+		</method>
+		<method name="query_string_from_dict" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="params" type="Dictionary" />
+			<description>
+				Static utility method that converts a Dictionary into a URL query string. Arrays are automatically expanded into multiple parameters.
+			</description>
+		</method>
+		<method name="queue_request">
+			<return type="void" />
+			<param index="0" name="signal_name" type="String" />
+			<param index="1" name="method" type="int" enum="HTTPClient.Method" />
+			<param index="2" name="path" type="String" />
+			<param index="3" name="query_params" type="Dictionary" default="{}" />
+			<param index="4" name="body" type="String" default="&quot;&quot;" />
+			<description>
+				Queues an HTTP request to the Twitch API. Requests are processed sequentially. Used internally by request category classes.
+			</description>
+		</method>
+		<method name="set_access_token">
+			<return type="void" />
+			<param index="0" name="token" type="String" />
+			<description>
+				Sets the OAuth access token used in the Authorization header for all API requests.
+			</description>
+		</method>
+		<method name="set_base_url">
+			<return type="void" />
+			<param index="0" name="url" type="String" />
+			<description>
+				Sets the base URL for API requests. Defaults to the Twitch Helix API URL. Rarely needs to be changed.
+			</description>
+		</method>
+		<method name="set_client_id">
+			<return type="void" />
+			<param index="0" name="client_id" type="String" />
+			<description>
+				Sets the Twitch application Client ID used in the Client-Id header for all API requests.
+			</description>
+		</method>
+		<method name="set_credentials">
+			<return type="void" />
+			<param index="0" name="client_id" type="String" />
+			<param index="1" name="access_token" type="String" />
+			<description>
+				Sets both the Client ID and OAuth access token in one call. Convenience method equivalent to calling [method set_client_id] and [method set_access_token].
+			</description>
+		</method>
+		<method name="set_response_callback">
+			<return type="void" />
+			<param index="0" name="callback" type="Callable" />
+			<description>
+				Sets the callback function invoked when HTTP responses are received. Used internally by [TwitchAPI].
+			</description>
+		</method>
+	</methods>
+</class>

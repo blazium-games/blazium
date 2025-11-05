@@ -1,0 +1,357 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CrowdControl" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Singleton for integrating Crowd Control interactive streaming platform.
+	</brief_description>
+	<description>
+		CrowdControl is a singleton that provides integration with the Crowd Control interactive streaming platform. It allows streamers to let their viewers purchase in-game effects using the Crowd Control PubSub WebSocket API.
+		The module handles WebSocket connections, authentication, game sessions, effect requests, and effect reporting. Game developers can use signals to respond to viewer-purchased effects in real-time.
+		[b]Important:[/b] You must call [method poll] regularly (e.g., in _process) to process WebSocket messages.
+		[codeblocks]
+		[gdscript]
+		func _ready():
+		    # Connect to signals
+		    CrowdControl.authenticated.connect(_on_authenticated)
+		    CrowdControl.effect_requested.connect(_on_effect_requested)
+		    CrowdControl.game_session_started.connect(_on_session_started)
+
+		    # Connect to Crowd Control
+		    CrowdControl.connect_to_crowdcontrol()
+
+		func _process(delta):
+		    CrowdControl.poll()
+
+		func _on_authenticated(token, cc_uid, username):
+		    print("Authenticated as: ", username)
+		    # Start game session with your game pack ID
+		    CrowdControl.start_game_session("game_pack-your-pack-id-here")
+
+		func _on_session_started(session_id):
+		    print("Game session started: ", session_id)
+		    CrowdControl.request_interact_link()
+
+		func _on_effect_requested(effect_data):
+		    var effect_id = effect_data["effect_id"]
+		    var request_id = effect_data["request_id"]
+
+		    # Apply the effect
+		    if effect_id == "kill_player":
+		        player.kill()
+		        CrowdControl.respond_to_effect_instant(request_id, CrowdControl.STATUS_SUCCESS)
+		    else:
+		        CrowdControl.respond_to_effect_instant(request_id, CrowdControl.STATUS_UNAVAILABLE)
+		[/gdscript]
+		[/codeblocks]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="close">
+			<return type="void" />
+			<description>
+				Closes the WebSocket connection to Crowd Control and resets all internal state (authentication, session data, etc.).
+				Emits [signal connection_closed] when the disconnection is complete.
+			</description>
+		</method>
+		<method name="connect_to_crowdcontrol">
+			<return type="int" enum="Error" />
+			<description>
+				Initiates a WebSocket connection to the Crowd Control PubSub server at [code]wss://pubsub.crowdcontrol.live/[/code].
+				Returns [constant OK] on success, or an error code if the connection fails.
+				After connecting, call [method request_authentication] to begin the authentication flow.
+				Emits [signal connection_established] when the connection is ready, or [signal connection_error] on failure.
+			</description>
+		</method>
+		<method name="get_auth_token" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the JWT authentication token received after successful login. Returns an empty string if not authenticated.
+			</description>
+		</method>
+		<method name="get_authentication_url" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the authentication URL that users should open in their browser to log in to Crowd Control.
+				This URL is constructed using the connection ID received from the server.
+				Returns an empty string if [method request_authentication] hasn't been called yet.
+			</description>
+		</method>
+		<method name="get_cc_uid" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the Crowd Control User ID (ccUID) of the authenticated user. Returns an empty string if not authenticated.
+			</description>
+		</method>
+		<method name="get_connection_id" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the WebSocket connection ID assigned by the Crowd Control server. Returns an empty string if not connected or if the whoami request hasn't been sent yet.
+			</description>
+		</method>
+		<method name="get_game_session_id" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the current game session ID. Returns an empty string if no session is active.
+			</description>
+		</method>
+		<method name="get_username" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the username of the authenticated user. Returns an empty string if not authenticated.
+			</description>
+		</method>
+		<method name="is_authenticated" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the user has successfully authenticated with Crowd Control, [code]false[/code] otherwise.
+			</description>
+		</method>
+		<method name="is_websocket_connected" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the WebSocket connection to Crowd Control is open and ready, [code]false[/code] otherwise.
+			</description>
+		</method>
+		<method name="poll">
+			<return type="void" />
+			<description>
+				Polls the WebSocket connection to process incoming messages. [b]This must be called regularly[/b] (e.g., in your _process() method) to receive and handle Crowd Control events.
+				[codeblocks]
+				[gdscript]
+				func _process(delta):
+				    CrowdControl.poll()
+				[/gdscript]
+				[/codeblocks]
+			</description>
+		</method>
+		<method name="report_effects">
+			<return type="int" enum="Error" />
+			<param index="0" name="effect_ids" type="PackedStringArray" />
+			<param index="1" name="status" type="int" enum="CrowdControl.EffectReportStatus" />
+			<param index="2" name="identifier_type" type="String" default="&quot;effect&quot;" />
+			<description>
+				Reports the availability or visibility of effects to Crowd Control. This updates which effects viewers can see and purchase in the Crowd Control menu.
+				[param effect_ids] is an array of effect identifiers to update.
+				[param status] is one of the [enum EffectReportStatus] constants: [constant MENU_VISIBLE], [constant MENU_HIDDEN], [constant MENU_AVAILABLE], or [constant MENU_UNAVAILABLE].
+				[param identifier_type] specifies the type of identifiers: [code]"effect"[/code] for individual effects (default), [code]"category"[/code] for user-facing collections, or [code]"group"[/code] for internal collections.
+				[b]Important:[/b] Visibility and availability are tracked separately. To fully enable an effect that was both hidden and disabled, you must call this method twice: once with [constant MENU_VISIBLE] and once with [constant MENU_AVAILABLE].
+				[codeblocks]
+				[gdscript]
+				# Disable an effect during a cutscene
+				CrowdControl.report_effects(PackedStringArray(["kill_player"]), CrowdControl.MENU_UNAVAILABLE)
+
+				# Re-enable it after the cutscene
+				CrowdControl.report_effects(PackedStringArray(["kill_player"]), CrowdControl.MENU_AVAILABLE)
+				[/gdscript]
+				[/codeblocks]
+			</description>
+		</method>
+		<method name="request_authentication">
+			<return type="int" enum="Error" />
+			<description>
+				Requests authentication by sending a whoami request to the Crowd Control server.
+				This retrieves the connection ID needed to construct the authentication URL.
+				Emits [signal authentication_url_ready] with the URL that users should open in their browser to log in.
+				Must be called after [method connect_to_crowdcontrol] succeeds.
+			</description>
+		</method>
+		<method name="request_interact_link">
+			<return type="void" />
+			<description>
+				Requests the Crowd Control Interact Link, which is the URL that streamers share with viewers to allow them to purchase effects.
+				Emits [signal interact_link_received] when the link is received from the server.
+				Must be called after authentication.
+			</description>
+		</method>
+		<method name="respond_to_effect_instant">
+			<return type="int" enum="Error" />
+			<param index="0" name="request_id" type="String" />
+			<param index="1" name="status" type="int" enum="CrowdControl.EffectStatus" />
+			<param index="2" name="message" type="String" default="&quot;&quot;" />
+			<description>
+				Responds to an instant effect request (effects with duration 0).
+				[param request_id] is the unique request ID from the [signal effect_requested] signal's [code]effect_data["request_id"][/code].
+				[param status] should be one of: [constant STATUS_SUCCESS], [constant STATUS_FAILURE], [constant STATUS_UNAVAILABLE], [constant STATUS_RETRY], or [constant STATUS_QUEUE].
+				[param message] is an optional message to display to the viewer who purchased the effect.
+				[codeblocks]
+				[gdscript]
+				func _on_effect_requested(effect_data):
+				    var effect_id = effect_data["effect_id"]
+				    var request_id = effect_data["request_id"]
+
+				    if effect_id == "spawn_enemy":
+				        if can_spawn_enemy():
+				            spawn_enemy()
+				            CrowdControl.respond_to_effect_instant(request_id, CrowdControl.STATUS_SUCCESS)
+				        else:
+				            CrowdControl.respond_to_effect_instant(request_id, CrowdControl.STATUS_UNAVAILABLE, "Cannot spawn enemy right now")
+				[/gdscript]
+				[/codeblocks]
+			</description>
+		</method>
+		<method name="respond_to_effect_timed">
+			<return type="int" enum="Error" />
+			<param index="0" name="request_id" type="String" />
+			<param index="1" name="status" type="int" enum="CrowdControl.EffectStatus" />
+			<param index="2" name="time_remaining" type="int" />
+			<param index="3" name="message" type="String" default="&quot;&quot;" />
+			<description>
+				Responds to a timed effect request (effects with duration &gt; 0).
+				[param request_id] is the unique request ID from the [signal effect_requested] signal.
+				[param status] should be one of: [constant STATUS_TIMED_BEGIN], [constant STATUS_TIMED_PAUSE], [constant STATUS_TIMED_RESUME], or [constant STATUS_TIMED_END]. For failures, use the instant status constants.
+				[param time_remaining] is the number of milliseconds remaining until the effect ends. Not required for [constant STATUS_TIMED_END].
+				[param message] is an optional message to display to the viewer.
+				[b]Note:[/b] You should send [constant STATUS_TIMED_BEGIN] initially, then [constant STATUS_TIMED_PAUSE]/[constant STATUS_TIMED_RESUME] as needed (e.g., when pausing the game), and finally [constant STATUS_TIMED_END] when the effect completes.
+				[codeblocks]
+				[gdscript]
+				func _on_effect_requested(effect_data):
+				    var effect_id = effect_data["effect_id"]
+				    var request_id = effect_data["request_id"]
+				    var duration = effect_data["duration"]
+
+				    if effect_id == "invincibility":
+				        apply_invincibility(duration)
+				        CrowdControl.respond_to_effect_timed(request_id, CrowdControl.STATUS_TIMED_BEGIN, duration)
+
+				func _on_effect_ended(request_id):
+				    CrowdControl.respond_to_effect_timed(request_id, CrowdControl.STATUS_TIMED_END, 0)
+				[/gdscript]
+				[/codeblocks]
+			</description>
+		</method>
+		<method name="start_game_session">
+			<return type="int" enum="Error" />
+			<param index="0" name="game_pack_id" type="String" />
+			<description>
+				Starts a game session with the specified game pack ID. This makes effects available for viewers to purchase.
+				[param game_pack_id] is the ID of your game pack provided by Crowd Control developers.
+				Emits [signal game_session_started] when the session is successfully created.
+				Must be called after authentication.
+			</description>
+		</method>
+		<method name="stop_game_session">
+			<return type="int" enum="Error" />
+			<description>
+				Stops the current game session. This makes effects unavailable for purchase.
+				Emits [signal game_session_stopped] when the session is stopped.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="authenticated">
+			<param index="0" name="token" type="String" />
+			<param index="1" name="cc_uid" type="String" />
+			<param index="2" name="username" type="String" />
+			<description>
+				Emitted when authentication is successful. Provides the JWT [param token], Crowd Control User ID [param cc_uid], and [param username].
+				After this signal, you can call [method start_game_session] to begin accepting effects.
+			</description>
+		</signal>
+		<signal name="authentication_url_ready">
+			<param index="0" name="url" type="String" />
+			<description>
+				Emitted when the authentication URL is ready. The game should display this [param url] to the user so they can open it in their browser to log in to Crowd Control.
+			</description>
+		</signal>
+		<signal name="connection_closed">
+			<param index="0" name="code" type="int" />
+			<param index="1" name="reason" type="String" />
+			<description>
+				Emitted when the WebSocket connection is closed. Provides the close [param code] and [param reason].
+			</description>
+		</signal>
+		<signal name="connection_error">
+			<param index="0" name="error" type="String" />
+			<description>
+				Emitted when a connection error occurs. Provides a description of the [param error].
+			</description>
+		</signal>
+		<signal name="connection_established">
+			<description>
+				Emitted when the WebSocket connection to Crowd Control is successfully established. After this, call [method request_authentication] to begin the authentication flow.
+			</description>
+		</signal>
+		<signal name="effect_requested">
+			<param index="0" name="effect_data" type="Dictionary" />
+			<description>
+				Emitted when a viewer purchases an effect. The [param effect_data] dictionary contains:
+				- [code]effect_id[/code] (String): The unique identifier for the effect
+				- [code]name[/code] (String): Display name of the effect
+				- [code]duration[/code] (int): Duration in milliseconds (0 for instant effects)
+				- [code]parameters[/code] (Array): Effect parameters
+				- [code]request_id[/code] (String): Unique ID for this request (use in response methods)
+				- [code]viewer_name[/code] (String): Name of the viewer who purchased the effect
+				- [code]viewer_profile[/code] (String): Platform of the viewer (e.g., "twitch")
+				- [code]viewer_profile_id[/code] (String): Platform-specific viewer ID
+				- [code]cost[/code] (int): How many coins the viewer spent
+				- [code]message[/code] (String): Optional message from the viewer
+				Game code should apply the effect and respond using [method respond_to_effect_instant] or [method respond_to_effect_timed].
+			</description>
+		</signal>
+		<signal name="game_session_started">
+			<param index="0" name="session_id" type="String" />
+			<description>
+				Emitted when a game session is successfully started. Provides the [param session_id] assigned by Crowd Control.
+			</description>
+		</signal>
+		<signal name="game_session_stopped">
+			<description>
+				Emitted when the game session is stopped.
+			</description>
+		</signal>
+		<signal name="interact_link_received">
+			<param index="0" name="link" type="String" />
+			<description>
+				Emitted when the Crowd Control Interact Link is received. This [param link] should be shared with viewers so they can purchase effects.
+			</description>
+		</signal>
+		<signal name="rpc_error">
+			<param index="0" name="method" type="String" />
+			<param index="1" name="error" type="String" />
+			<description>
+				Emitted when an RPC call fails. Provides the RPC [param method] name and [param error] description.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="STATUS_SUCCESS" value="0" enum="EffectStatus">
+			Effect applied successfully (instant effects).
+		</constant>
+		<constant name="STATUS_FAILURE" value="1" enum="EffectStatus">
+			Effect failed to apply (instant effects).
+		</constant>
+		<constant name="STATUS_UNAVAILABLE" value="2" enum="EffectStatus">
+			Effect cannot be applied right now (instant effects).
+		</constant>
+		<constant name="STATUS_RETRY" value="3" enum="EffectStatus">
+			Effect should be retried - will refund but allow immediate retry (instant effects).
+		</constant>
+		<constant name="STATUS_QUEUE" value="4" enum="EffectStatus">
+			Effect has been queued for later (instant effects).
+		</constant>
+		<constant name="STATUS_TIMED_BEGIN" value="5" enum="EffectStatus">
+			Timed effect has started (initial response for timed effects).
+		</constant>
+		<constant name="STATUS_TIMED_PAUSE" value="6" enum="EffectStatus">
+			Timed effect has been paused (e.g., game paused).
+		</constant>
+		<constant name="STATUS_TIMED_RESUME" value="7" enum="EffectStatus">
+			Timed effect has resumed after being paused.
+		</constant>
+		<constant name="STATUS_TIMED_END" value="8" enum="EffectStatus">
+			Timed effect has finished.
+		</constant>
+		<constant name="MENU_VISIBLE" value="0" enum="EffectReportStatus">
+			Show the effect in the Crowd Control menu.
+		</constant>
+		<constant name="MENU_HIDDEN" value="1" enum="EffectReportStatus">
+			Hide the effect from the Crowd Control menu.
+		</constant>
+		<constant name="MENU_AVAILABLE" value="2" enum="EffectReportStatus">
+			Enable the effect for purchase (not grayed out).
+		</constant>
+		<constant name="MENU_UNAVAILABLE" value="3" enum="EffectReportStatus">
+			Disable the effect (grayed out) but keep it visible.
+		</constant>
+	</constants>
+</class>

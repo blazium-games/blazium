@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SocketIONamespace" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Represents a Socket.IO namespace for event-based communication.
+	</brief_description>
+	<description>
+		SocketIONamespace represents a Socket.IO namespace, which provides isolated communication channels within a single WebSocket connection (multiplexing).
+		Namespaces allow you to organize your Socket.IO communication into separate logical channels. For example, you might have a [code]/chat[/code] namespace for chat messages and a [code]/notifications[/code] namespace for system notifications.
+		Each namespace has its own:
+		- Connection state
+		- Event handlers
+		- Session ID
+		The main namespace [code]"/"[/code] is created automatically when connecting to a server via [SocketIOClient].
+		[codeblocks]
+		[gdscript]
+		# Get or create namespace
+		var chat_ns = SocketIOClient.get_singleton().create_namespace("/chat")
+
+		# Connect with authentication
+		chat_ns.connect_to_namespace({"token": "user_token_here"})
+
+		# Listen for events
+		chat_ns.on("message", func(data):
+		    print("Received message: ", data[0])
+		)
+
+		chat_ns.on("user_joined", func(data):
+		    print("User joined: ", data[0]["username"])
+		)
+
+		# Emit events
+		chat_ns.emit("send_message", ["Hello everyone!"])
+
+		# Request-response pattern with acknowledgments
+		chat_ns.emit_with_ack("get_history", [100], func(messages):
+		    for msg in messages[0]:
+		        display_message(msg)
+		)
+		[/gdscript]
+		[/codeblocks]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="connect_to_namespace">
+			<return type="int" enum="Error" />
+			<param index="0" name="auth" type="Dictionary" default="{}" />
+			<description>
+				Connects to this namespace on the server. Returns [constant OK] on success.
+				The [param auth] dictionary can contain authentication/authorization data that will be sent to the server. The server can use this to validate access to the namespace.
+				[b]Note:[/b] The main namespace [code]"/"[/code] connects automatically. You only need to call this for custom namespaces.
+				Wait for the [signal connected] signal before emitting events.
+			</description>
+		</method>
+		<method name="disconnect_from_namespace">
+			<return type="void" />
+			<description>
+				Disconnects from this namespace. The WebSocket connection remains open for other namespaces.
+				The [signal disconnected] signal will be emitted.
+			</description>
+		</method>
+		<method name="emit">
+			<return type="void" />
+			<param index="0" name="event" type="String" />
+			<param index="1" name="data" type="Array" default="[]" />
+			<description>
+				Emits an event to the server with the given [param event] name and [param data] array.
+				The [param data] array can contain any JSON-serializable types (strings, numbers, booleans, dictionaries, arrays) and binary data ([PackedByteArray]).
+				Binary data is automatically extracted and sent as separate attachments per the Socket.IO v5 protocol.
+				[codeblocks]
+				[gdscript]
+				# Simple event
+				namespace.emit("hello", [])
+
+				# Event with data
+				namespace.emit("chat_message", ["Hello!", {"timestamp": Time.get_unix_time_from_system()}])
+
+				# Event with binary data
+				var image_data = load_image_as_bytes()
+				namespace.emit("upload_avatar", [image_data, "avatar.png"])
+				[/gdscript]
+				[/codeblocks]
+			</description>
+		</method>
+		<method name="emit_with_ack">
+			<return type="void" />
+			<param index="0" name="event" type="String" />
+			<param index="1" name="data" type="Array" />
+			<param index="2" name="callback" type="Callable" />
+			<param index="3" name="timeout" type="float" default="5.0" />
+			<description>
+				Emits an event and expects an acknowledgment response from the server. The [param callback] will be called when the server responds, or when the [param timeout] (in seconds) is reached.
+				The callback receives an array containing the server's response data. If the timeout is reached, the callback receives [code]["timeout"][/code].
+				This is useful for request-response patterns where you need confirmation or data back from the server.
+				[codeblocks]
+				[gdscript]
+				# Request user profile with 10 second timeout
+				namespace.emit_with_ack("get_profile", [user_id], func(response):
+				    if response[0] == "timeout":
+				        print("Request timed out")
+				    else:
+				        var profile = response[0]
+				        display_profile(profile)
+				, 10.0)
+				[/gdscript]
+				[/codeblocks]
+			</description>
+		</method>
+		<method name="get_connection_state" qualifiers="const">
+			<return type="int" enum="SocketIONamespace.ConnectionState" />
+			<description>
+				Returns the current connection state of this namespace as a [enum ConnectionState] value.
+			</description>
+		</method>
+		<method name="get_namespace_path" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the namespace path (e.g., [code]"/"[/code], [code]"/admin"[/code], [code]"/chat"[/code]).
+			</description>
+		</method>
+		<method name="get_session_id" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the Socket.IO session ID for this namespace. Returns an empty string if not connected.
+				This is different from the Engine.IO session ID and is specific to each namespace.
+			</description>
+		</method>
+		<method name="is_namespace_connected" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="off">
+			<return type="void" />
+			<param index="0" name="event" type="String" />
+			<param index="1" name="callback" type="Callable" />
+			<description>
+				Removes an event listener. The [param callback] must be the same [Callable] that was registered with [method on].
+				[codeblocks]
+				[gdscript]
+				var message_handler = func(data): print(data)
+				namespace.on("message", message_handler)
+				# Later...
+				namespace.off("message", message_handler)
+				[/gdscript]
+				[/codeblocks]
+			</description>
+		</method>
+		<method name="on">
+			<return type="void" />
+			<param index="0" name="event" type="String" />
+			<param index="1" name="callback" type="Callable" />
+			<description>
+				Registers an event listener for the given [param event] name. When the server emits this event, the [param callback] will be called with an array containing the event data.
+				Multiple callbacks can be registered for the same event. They will all be called in the order they were registered.
+				[codeblocks]
+				[gdscript]
+				namespace.on("player_moved", func(data):
+				    var player_id = data[0]
+				    var position = data[1]
+				    update_player_position(player_id, position)
+				)
+				[/gdscript]
+				[/codeblocks]
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="connected">
+			<param index="0" name="session_id" type="String" />
+			<description>
+				Emitted when this namespace successfully connects to the server. The [param session_id] is the Socket.IO session identifier for this namespace.
+			</description>
+		</signal>
+		<signal name="disconnected">
+			<param index="0" name="reason" type="String" />
+			<description>
+				Emitted when this namespace is disconnected. The [param reason] describes why the disconnection occurred.
+			</description>
+		</signal>
+		<signal name="event_received">
+			<param index="0" name="event_name" type="String" />
+			<param index="1" name="data" type="Array" />
+			<description>
+				Emitted for every event received from the server, regardless of whether specific listeners are registered. This is useful as a catch-all event handler.
+				The [param event_name] is the name of the event, and [param data] contains the event arguments.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="STATE_DISCONNECTED" value="0" enum="ConnectionState">
+			The namespace is not connected.
+		</constant>
+		<constant name="STATE_CONNECTING" value="1" enum="ConnectionState">
+			The namespace is attempting to connect.
+		</constant>
+		<constant name="STATE_CONNECTED" value="2" enum="ConnectionState">
+			The namespace is connected and ready to send/receive events.
+		</constant>
+	</constants>
+</class>

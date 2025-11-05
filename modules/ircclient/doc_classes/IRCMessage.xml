@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="IRCMessage" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="decode_base64_string" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="value" type="String" />
+			<description>
+				Returns decode base64 string. [param value] - Value.
+			</description>
+		</method>
+		<method name="encode_ctcp" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="command" type="String" />
+			<param index="1" name="params" type="String" default="&quot;&quot;" />
+			<description>
+				Returns encode ctcp. [param command] - Command. [param params] - Params.
+			</description>
+		</method>
+		<method name="get_ctcp_command" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the ctcp command.
+			</description>
+		</method>
+		<method name="get_ctcp_params" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the ctcp params.
+			</description>
+		</method>
+		<method name="get_hostname" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the hostname.
+			</description>
+		</method>
+		<method name="get_nick" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the nick.
+			</description>
+		</method>
+		<method name="get_numeric" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the numeric.
+			</description>
+		</method>
+		<method name="get_processed_tags" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns the processed tags.
+			</description>
+		</method>
+		<method name="get_tag_value" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="key" type="String" />
+			<description>
+				Returns the tag value. [param key] - Key.
+			</description>
+		</method>
+		<method name="get_username" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the username.
+			</description>
+		</method>
+		<method name="is_base64" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="value" type="String" />
+			<description>
+				Returns [code]true[/code] if base64. [param value] - Value.
+			</description>
+		</method>
+		<method name="is_ctcp" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if ctcp.
+			</description>
+		</method>
+		<method name="is_json" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="value" type="String" />
+			<description>
+				Returns [code]true[/code] if json. [param value] - Value.
+			</description>
+		</method>
+		<method name="is_numeric" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if numeric.
+			</description>
+		</method>
+		<method name="parse" qualifiers="static">
+			<return type="IRCMessage" />
+			<param index="0" name="raw_message" type="String" />
+			<description>
+				Returns parse. [param raw_message] - Raw message.
+			</description>
+		</method>
+		<method name="parse_json_string" qualifiers="static">
+			<return type="Variant" />
+			<param index="0" name="value" type="String" />
+			<description>
+				Returns parse json string. [param value] - Value.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="command" type="String" setter="set_command" getter="get_command" default="&quot;&quot;">
+		</member>
+		<member name="params" type="PackedStringArray" setter="set_params" getter="get_params" default="PackedStringArray()">
+		</member>
+		<member name="prefix" type="String" setter="set_prefix" getter="get_prefix" default="&quot;&quot;">
+		</member>
+		<member name="tags" type="Dictionary" setter="set_tags" getter="get_tags" default="{}">
+		</member>
+	</members>
+</class>

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TwitchChannelPointsRequests" inherits="TwitchRequestBase" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Twitch Channel Points API for managing custom rewards and redemptions.
+	</brief_description>
+	<description>
+		TwitchChannelPointsRequests provides methods for creating, updating, and deleting custom Channel Points rewards, as well as managing redemptions. Requires channel:manage:redemptions or channel:read:redemptions OAuth scopes. Access through [method TwitchAPI.get_channel_points].
+	</description>
+	<tutorials>
+		<link title="Twitch API documentation">https://dev.twitch.tv/docs/api/reference</link>
+	</tutorials>
+	<methods>
+		<method name="create_custom_rewards">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="reward_data" type="Dictionary" />
+			<description>
+				Creates a custom Channel Points reward. [param reward_data] must include title and cost, and can include prompt, is_enabled, background_color, and various limit settings. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "custom_reward_created".
+				[b]Response includes:[/b] broadcaster_id/login/name, id, title, prompt, cost, image, default_image, background_color, is_enabled, is_user_input_required, max_per_stream_setting, max_per_user_per_stream_setting, global_cooldown_setting, is_paused, is_in_stock, should_redemptions_skip_request_queue, redemptions_redeemed_current_stream, cooldown_expires_at.
+				[codeblock]
+				var reward = {"title": "Highlight My Message", "cost": 500, "prompt": "Your message will be highlighted"}
+				TwitchAPI.get_channel_points().create_custom_rewards("broadcaster_id", reward)
+				# Response: {"data": [{"id": "reward123", "title": "Highlight My Message", "cost": 500, "is_enabled": true, ...}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="delete_custom_reward">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="id" type="String" />
+			<description>
+				Deletes a custom Channel Points reward. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "custom_reward_deleted".
+				[b]Response:[/b] Returns 204 No Content on success.
+				[codeblock]
+				TwitchAPI.get_channel_points().delete_custom_reward("broadcaster_id", "reward123")
+				# Response: 204 No Content on success
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_custom_reward">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="params" type="Dictionary" default="{}" />
+			<description>
+				Gets custom Channel Points rewards created by the broadcaster. Optional [param params] can include id and only_manageable_rewards. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "custom_reward_received".
+				[b]Response includes:[/b] Array of reward objects (same structure as create_custom_rewards response).
+				[codeblock]
+				TwitchAPI.get_channel_points().get_custom_reward("broadcaster_id")
+				# Response: {"data": [{"id": "reward123", "title": "Highlight My Message", "cost": 500, ...}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_custom_reward_redemption">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="reward_id" type="String" />
+			<param index="2" name="params" type="Dictionary" default="{}" />
+			<description>
+				Gets redemptions for a specific custom reward. Optional [param params] can include id, status, sort, and first. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "custom_reward_redemption_received".
+				[b]Response includes:[/b] Array of redemptions with broadcaster_id/login/name, id, user_id/login/name, user_input, status (UNFULFILLED/FULFILLED/CANCELED), redeemed_at, reward (full reward object).
+				[codeblock]
+				TwitchAPI.get_channel_points().get_custom_reward_redemption("broadcaster_id", "reward123", {"status": "UNFULFILLED"})
+				# Response: {"data": [{"id": "redemption456", "user_id": "789", "user_name": "Viewer1", "status": "UNFULFILLED", "redeemed_at": "2025-10-16T12:00:00Z", ...}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="update_custom_reward">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="id" type="String" />
+			<param index="2" name="reward_data" type="Dictionary" />
+			<description>
+				Updates a custom Channel Points reward. [param reward_data] can include title, cost, prompt, is_enabled, and various limit settings. Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "custom_reward_updated".
+				[b]Response includes:[/b] Updated reward object (same structure as create_custom_rewards response).
+				[codeblock]
+				var updates = {"cost": 1000, "is_enabled": false}
+				TwitchAPI.get_channel_points().update_custom_reward("broadcaster_id", "reward123", updates)
+				# Response: {"data": [{"id": "reward123", "cost": 1000, "is_enabled": false, ...}]}
+				[/codeblock]
+			</description>
+		</method>
+		<method name="update_redemption_status">
+			<return type="void" />
+			<param index="0" name="broadcaster_id" type="String" />
+			<param index="1" name="reward_id" type="String" />
+			<param index="2" name="id" type="String" />
+			<param index="3" name="status" type="String" />
+			<description>
+				Updates the status of a custom reward redemption. [param status] must be "FULFILLED" or "CANCELED". Results are returned via the [signal TwitchAPI.request_completed] signal with signal_name "redemption_status_updated".
+				[b]Response includes:[/b] Updated redemption object with new status.
+				[codeblock]
+				TwitchAPI.get_channel_points().update_redemption_status("broadcaster_id", "reward123", "redemption456", "FULFILLED")
+				# Response: {"data": [{"id": "redemption456", "status": "FULFILLED", ...}]}
+				[/codeblock]
+			</description>
+		</method>
+	</methods>
+</class>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TwitchRequestBase" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Base class for all Twitch API request category handlers.
+	</brief_description>
+	<description>
+		TwitchRequestBase provides common HTTP request functionality for all API category classes. It handles the HTTP client connection and provides helper methods for making GET, POST, PATCH, PUT, and DELETE requests. This class is not used directly; instead, use the category-specific classes like [TwitchUsersRequests], [TwitchStreamsRequests], etc.
+	</description>
+	<tutorials>
+		<link title="Twitch API documentation">https://dev.twitch.tv/docs/api/reference</link>
+	</tutorials>
+</class>

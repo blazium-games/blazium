@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SocketIOClient" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Socket.IO v5 protocol client for real-time bidirectional communication.
+	</brief_description>
+	<description>
+		SocketIOClient is a singleton that provides full Socket.IO v5 protocol client functionality. It manages WebSocket connections, namespaces, and handles the Socket.IO packet encoding/decoding automatically.
+		Socket.IO enables real-time, bidirectional communication between clients and servers. It's commonly used for chat applications, live updates, real-time games, and any application requiring instant data synchronization.
+		The client supports:
+		- Multiple namespaces (multiplexing)
+		- Event-based communication
+		- Acknowledgments with timeout
+		- Binary data transmission
+		- Automatic reconnection handling
+		- TLS/SSL secure connections (wss://)
+		[b]Important:[/b] You must call [method poll] regularly (e.g., in [code]_process[/code]) to process incoming messages and maintain the connection.
+		[codeblocks]
+		[gdscript]
+		# Connect to server
+		var socketio = SocketIOClient.get_singleton()
+		socketio.connect_to_url("ws://localhost:3000")
+
+		# Get main namespace and set up event handlers
+		var main_ns = socketio.get_namespace("/")
+		main_ns.on("welcome", func(data): print("Welcome: ", data))
+		main_ns.on("message", func(data): handle_message(data))
+
+		# Emit events
+		main_ns.emit("chat_message", ["Hello, server!"])
+
+		# Use acknowledgments
+		main_ns.emit_with_ack("get_user_data", [123], func(response):
+		    print("User data: ", response)
+		)
+
+		# Poll in _process
+		func _process(delta):
+		    socketio.poll()
+		[/gdscript]
+		[/codeblocks]
+		For more information about the Socket.IO protocol, see: https://socket.io/docs/v4/socket-io-protocol/
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="close">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="connect_to_url">
+			<return type="int" enum="Error" />
+			<param index="0" name="url" type="String" />
+			<param index="1" name="auth" type="Dictionary" default="{}" />
+			<param index="2" name="tls_options" type="TLSOptions" default="null" />
+			<description>
+				Connects to a Socket.IO server at the given [param url]. Returns [constant OK] on success, or an error code on failure.
+				The [param url] should be in the format [code]ws://host:port[/code] or [code]wss://host:port[/code] for secure connections. The [code]/socket.io/[/code] path and Engine.IO parameters are automatically appended.
+				The [param auth] dictionary can contain authentication data that will be sent with the initial connection to the main namespace.
+				The [param tls_options] parameter allows you to configure TLS/SSL settings for secure connections. Use [method TLSOptions.client] for standard secure connections.
+				After connecting, the main namespace ("/") is automatically created and will attempt to connect. Listen for the [signal connected] signal to know when the connection is established.
+				[b]Note:[/b] You must call [method poll] regularly for the connection to work.
+			</description>
+		</method>
+		<method name="create_namespace">
+			<return type="SocketIONamespace" />
+			<param index="0" name="namespace" type="String" />
+			<description>
+				Creates and returns a new [SocketIONamespace] for the given [param namespace] path. If the namespace already exists, returns the existing one.
+				The [param namespace] must start with a forward slash (e.g., [code]"/admin"[/code], [code]"/chat"[/code]).
+				After creating a namespace, you must call [method SocketIONamespace.connect_to_namespace] to actually connect to it on the server.
+				[codeblocks]
+				[gdscript]
+				var admin_ns = socketio.create_namespace("/admin")
+				admin_ns.connect_to_namespace({"token": "secret123"})
+				admin_ns.on("admin_event", func(data): process_admin(data))
+				[/gdscript]
+				[/codeblocks]
+			</description>
+		</method>
+		<method name="get_connection_state" qualifiers="const">
+			<return type="int" enum="SocketIOClient.ConnectionState" />
+			<description>
+				Returns the current connection state as a [enum ConnectionState] value.
+			</description>
+		</method>
+		<method name="get_connection_url" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the URL that was used to connect to the server.
+			</description>
+		</method>
+		<method name="get_engine_io_session_id" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the Engine.IO session ID received from the server. This is different from the Socket.IO session ID (which is per-namespace).
+				Returns an empty string if not connected.
+			</description>
+		</method>
+		<method name="get_namespace">
+			<return type="SocketIONamespace" />
+			<param index="0" name="namespace" type="String" default="&quot;/&quot;" />
+			<description>
+				Returns the [SocketIONamespace] for the given [param namespace] path, or [code]null[/code] if it doesn't exist.
+				The main namespace [code]"/"[/code] is created automatically when connecting.
+			</description>
+		</method>
+		<method name="has_namespace" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="namespace" type="String" />
+			<description>
+				Returns [code]true[/code] if a namespace with the given path exists.
+			</description>
+		</method>
+		<method name="is_socket_connected" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="poll">
+			<return type="void" />
+			<description>
+				Processes incoming and outgoing Socket.IO messages. This method must be called regularly (typically in [code]_process[/code]) for the client to function.
+				This method handles:
+				- WebSocket message processing
+				- Packet encoding/decoding
+				- Event dispatching to namespaces
+				- Acknowledgment timeout checking
+				- Connection state updates
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="connect_error">
+			<param index="0" name="error" type="Dictionary" />
+			<description>
+				Emitted when a connection error occurs. The [param error] dictionary contains error information from the server, typically including a "message" field.
+			</description>
+		</signal>
+		<signal name="connected">
+			<param index="0" name="session_id" type="String" />
+			<description>
+				Emitted when successfully connected to the server's main namespace ("/"). The [param session_id] is the Socket.IO session identifier.
+			</description>
+		</signal>
+		<signal name="disconnected">
+			<param index="0" name="reason" type="String" />
+			<description>
+				Emitted when disconnected from the server. The [param reason] describes why the disconnection occurred (e.g., "client disconnect", "server disconnect", connection error message).
+			</description>
+		</signal>
+		<signal name="namespace_connected">
+			<param index="0" name="namespace_path" type="String" />
+			<description>
+				Emitted when a namespace successfully connects. Use this to know when custom namespaces are ready to use.
+			</description>
+		</signal>
+		<signal name="namespace_disconnected">
+			<param index="0" name="namespace_path" type="String" />
+			<description>
+				Emitted when a namespace is disconnected.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="STATE_DISCONNECTED" value="0" enum="ConnectionState">
+			The client is not connected to any server.
+		</constant>
+		<constant name="STATE_CONNECTING" value="1" enum="ConnectionState">
+			The client is attempting to connect to the server.
+		</constant>
+		<constant name="STATE_CONNECTED" value="2" enum="ConnectionState">
+			The client is connected to the server.
+		</constant>
+	</constants>
+</class>

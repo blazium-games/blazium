@@ -267,7 +267,7 @@
 				Note that the translation [param offset] is affected by the node's scale, so if scaled by e.g. [code](10, 1, 1)[/code], a translation by an offset of [code](2, 0, 0)[/code] would actually add 20 ([code]2 * 10[/code]) to the X coordinate.
 			</description>
 		</method>
-		<method name="translate_object_local">
+		<method name="translate_object_local" keywords="move_local">
 			<return type="void" />
 			<param index="0" name="offset" type="Vector3" />
 			<description>
