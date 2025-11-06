@@ -34,6 +34,10 @@ namespace MathFI {
 
 	int64_t Q13Mul(const int64_t v1, const int64_t v2);
 
+	int64_t Q16Mul(const int64_t v1, const int64_t v2);
+
+	int64_t Q16Div(const int64_t v1, const int64_t v2);
+
 	FInt radians_to_degrees(FInt radians);
 
 	FInt degrees_to_radians(FInt degrees);

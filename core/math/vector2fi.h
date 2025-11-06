@@ -1,5 +1,9 @@
 #include "fint.h"
 #include "math_funcs_deterministic.h"
+#include "core/error/error_macros.h"
+#include "core/math/math_funcs.h"
+
+struct Vector2i;
 
 struct [[nodiscard]] Vector2FI {
     static const int AXIS_COUNT = 2;
@@ -91,6 +95,7 @@ struct [[nodiscard]] Vector2FI {
     bool is_same(const Vector2FI & p_v) const;
 
     operator String() const;
+    operator Vector2i() const;
 
     constexpr Vector2FI operator+(const Vector2FI& other) const;
     constexpr Vector2FI& operator+=(const Vector2FI& other);

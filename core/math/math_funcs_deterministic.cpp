@@ -12,12 +12,14 @@
 
 //SIMPLE MATH
 
+//Determines if v1 is close enough to v2 with a tolerance of max_approx.
 bool MathFI::is_equal_approx(const FInt v1, const FInt v2, FInt max_approx)
 {
     int64_t diff = MathFI::abs(v1 - v2).raw_value;
     return diff <= max_approx.raw_value;
 }
 
+//Returns the lowest number between the two.
 FInt MathFI::min( const FInt v1, const FInt v2 )
 {
     int32_t first = v1 < v2;
@@ -26,6 +28,7 @@ FInt MathFI::min( const FInt v1, const FInt v2 )
     return FInt{(v1.raw_value * first) | (v2.raw_value * last)};
 }
 
+//Returns the highest number between the two.
 FInt MathFI::max( const FInt v1, const FInt v2 )
 {
     int32_t first = v1 > v2;
@@ -39,20 +42,25 @@ FInt MathFI::lerp( const FInt start, const FInt end, const FInt progress )
     return (Q13Mul(start.raw_value << 1, 8192 - (progress.raw_value << 1)) + Q13Mul(end.raw_value << 1, progress.raw_value << 1)) >> 1;
 }
 
+//Limits subj to not being lower than min or higher than max.
 FInt MathFI::clamp(const FInt subj, const FInt min, const FInt max) {
 	return subj < min ? min : (subj > max ? max : subj);
 }
 
+//Returns the number removing the negative sign
+//if it's there.
 FInt MathFI::abs(const FInt subj)
 {
     return subj * ((-1LL * (subj.raw_value < 0)) | 1);
 }
 
+//Rounds subj to the lowest whole number.
 FInt MathFI::floor(const FInt subj)
 {
     return FInt((int64_t) subj);
 }
 
+//Rounds subj to the highest whole number.
 FInt MathFI::ceil(const FInt subj)
 {
     FInt floor = MathFI::floor(subj);
@@ -60,6 +68,7 @@ FInt MathFI::ceil(const FInt subj)
     return floor + FInt::ONE * (subj > floor);
 }
 
+//Rounds subj to the nearest whole number.
 FInt MathFI::round(const FInt subj)
 {
     FInt floor = MathFI::floor(subj);
@@ -67,6 +76,7 @@ FInt MathFI::round(const FInt subj)
     return floor + FInt::ONE * (subj > floor + FInt::HALF);
 }
 
+//Snaps p_value to the nearest number divisable by p_step.
 FInt MathFI::snapped(FInt p_value, FInt p_step) {
 
     FInt result;
@@ -84,6 +94,16 @@ FInt MathFI::snapped(FInt p_value, FInt p_step) {
 int64_t MathFI::Q13Mul(const int64_t v1, const int64_t v2)
 {
     return v1 * v2 >> 13;
+}
+
+int64_t MathFI::Q16Mul(const int64_t v1, const int64_t v2)
+{
+    return (v1 * v2) >> 16;
+}
+
+int64_t MathFI::Q16Div(const int64_t v1, const int64_t v2)
+{
+    return (v1 << 16) / v2;
 }
 
 //COMPLEX MATH
