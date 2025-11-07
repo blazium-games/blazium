@@ -12,6 +12,13 @@
 
 //SIMPLE MATH
 
+//If input is higher than or equal to 0 return 1
+//If input is less than 0 returns -1.
+int64_t MathFI::binary_sign(int64_t input)
+{
+    return ((int64_t)(input < 0) * -1) | 1;
+}
+
 //Determines if v1 is close enough to v2 with a tolerance of max_approx.
 bool MathFI::is_equal_approx(const FInt v1, const FInt v2, FInt max_approx)
 {

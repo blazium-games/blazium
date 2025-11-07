@@ -22,9 +22,13 @@ struct [[nodiscard]] FInt {
 			raw_value(0) {}
 	constexpr FInt(int64_t interger) :
 			raw_value(interger << FInt::SHIFT_AMOUNT) {}
-    constexpr FInt(int64_t interger, int decimalCount) :
-            raw_value(raw_value = (interger << FInt::SHIFT_AMOUNT) / decimalCount) {}
-    
+	//Initializes number with interger being the whole part and decimals_x1000 being the decimals * 1000.
+	// FInt(4, 1000) = 4.1 = 4.09985...
+    constexpr FInt(int64_t interger, short decimals_x10000) :
+			raw_value (
+				(interger << FInt::SHIFT_AMOUNT)
+				+ (((uint64_t)decimals_x10000 << FInt::SHIFT_AMOUNT) / 10000 + (decimals_x10000 < 3)) * (((interger < 0) * -1 ) | 1)
+			) {}
     constexpr FInt operator+(const FInt p_d) const;
 	constexpr FInt &operator+=(const FInt p_d);
 	constexpr FInt operator-(const FInt p_d) const;

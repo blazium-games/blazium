@@ -12,6 +12,8 @@ namespace MathFI {
 
     constexpr static const FInt PI_DIV_2 = FInt{6434};
 
+	int64_t binary_sign(int64_t input);
+
 	bool is_equal_approx(const FInt v1, const FInt v2, FInt max_approx);
 
 	FInt min(const FInt v1, const FInt v2);
