@@ -1670,6 +1670,7 @@ void make_default_theme(Ref<Font> p_font, ThemeTemplate &p_template) {
 	t->set_constant("draw_relationship_lines", "Tree", 1);
 	t->set_constant("center_slider_grabbers", "ColorPicker", 1);
 	t->set_constant("colorize_sliders", "ColorPicker", 1);
+	t->set_constant("gutter_compact", "PopupMenu", 1);
 
 	t->set_constant("minimum_character_width", "LineEdit", 4);
 	t->set_constant("completion_scroll_width", "CodeEdit", 6);
