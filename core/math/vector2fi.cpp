@@ -5,6 +5,27 @@
 
 const Vector2FI Vector2FI::ZERO = Vector2FI{FInt(0), FInt(0)};
 
+Vector2FI Vector2FI::get_normal_clockwise(Vector2FI p_other)
+{
+	return Vector2FI::from_angle_r((p_other - *this).angle_r()).inverted_xy();
+}
+
+void Vector2FI::invert_xy()
+{
+	FInt f_x = y;
+	FInt f_y = x;
+	x = f_x;
+	y = f_y;
+}
+
+Vector2FI Vector2FI::inverted_xy()
+{
+	Vector2FI f = *this;
+	f.invert_xy();
+
+	return f;
+}
+
 // Returns angle of the vector in RADIANS.
 FInt Vector2FI::angle_r() const {
 	return MathFI::atan2_r(y, x);
@@ -16,12 +37,12 @@ FInt Vector2FI::angle_d() const {
 }
 
 // Makes a normalized vector from RADIANS.
-Vector2FI Vector2FI::from_angle_r(real_t p_angle) {
+Vector2FI Vector2FI::from_angle_r(FInt p_angle) {
 	return Vector2FI(MathFI::cos_r(p_angle), MathFI::sin_r(p_angle));
 }
 
 // Makes a normalized vector from DEGREES.
-Vector2FI Vector2FI::from_angle_d(real_t p_angle) {
+Vector2FI Vector2FI::from_angle_d(FInt p_angle) {
 	return Vector2FI(MathFI::cos_d(p_angle), MathFI::sin_d(p_angle));
 }
 

@@ -137,19 +137,25 @@ struct [[nodiscard]] Vector2FI {
 
     constexpr _FORCE_INLINE_ Vector2FI operator<<(int64_t shift) const;
 
-    constexpr _FORCE_INLINE_ Vector2FI & operator<<=(int32_t shift);
+    constexpr _FORCE_INLINE_ Vector2FI &operator<<=(int32_t shift);
 
-    constexpr _FORCE_INLINE_ Vector2FI & operator<<=(int64_t shift);
+    constexpr _FORCE_INLINE_ Vector2FI &operator<<=(int64_t shift);
 
     constexpr _FORCE_INLINE_ Vector2FI operator-() const;
 
     _FORCE_INLINE_ bool operator==(const Vector2FI& other) const;
     _FORCE_INLINE_ bool operator!=(const Vector2FI& other) const;
     
+    Vector2FI get_normal_clockwise(Vector2FI p_other);
+
+    void invert_xy();
+
+    Vector2FI inverted_xy();
+
     FInt angle_r() const;
     FInt angle_d() const;
-    Vector2FI from_angle_r(real_t p_angle);
-    Vector2FI from_angle_d(real_t p_angle);
+    Vector2FI from_angle_r(FInt p_angle);
+    Vector2FI from_angle_d(FInt p_angle);
     FInt length() const;
     FInt length_squared() const;
     void normalize();

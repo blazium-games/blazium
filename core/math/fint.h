@@ -25,7 +25,7 @@ struct [[nodiscard]] FInt {
 			raw_value(interger << FInt::SHIFT_AMOUNT) {}
 	//Initializes number with interger being the whole part and decimals_x10000 being the decimals * 10000.
 	// FInt(4, 1000) = 4.1 = 4.09985...
-	//Optimized to unreadability.
+	//Optimized into unreadability.
     constexpr FInt(int64_t interger, short decimals_x10000) :
 			raw_value (
 				(interger << FInt::SHIFT_AMOUNT)

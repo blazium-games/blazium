@@ -303,7 +303,7 @@ FInt MathFI::tan_d(const FInt degrees)
     return MathFI::sin_d(degrees) / MathFI::cos_d(degrees);
 }
 
-///Tangent with degrees as input.
+///Tangent with radians as input.
 FInt MathFI::tan_r(const FInt radians)
 {
     return MathFI::sin_r(radians) / MathFI::cos_r(radians);
@@ -328,6 +328,7 @@ FInt MathFI::atan_r(const FInt p)
     return FInt{MathFI::atan_sanitized(p.raw_value << 4) * flip};
 }
 
+// Arctangent that returns in degrees.
 FInt MathFI::atan_d(const FInt p)
 {
     MathFI::radians_to_degrees(MathFI::atan_r(p));
@@ -346,7 +347,7 @@ FInt MathFI::atan2_r(const FInt in, const FInt inX) {
     if (in_zero | inx_zero)
     {
         bool inx_lzero = inX < FInt::ZERO;
-        bool in_leqzero = in < FInt::ZERO | in_zero;
+        bool in_leqzero = (in < FInt::ZERO) | in_zero;
         int64_t flip_pi_div2 = (in_leqzero * -1LL) | 1LL;
 
         return FInt{
@@ -364,6 +365,7 @@ FInt MathFI::atan2_r(const FInt in, const FInt inX) {
 	return ret;
 }
 
+// 2-argument arctangent that returns in degrees.
 FInt MathFI::atan2_d(const FInt in, const FInt inX)
 {
     MathFI::radians_to_degrees(MathFI::atan2_r(in, inX));
@@ -386,7 +388,7 @@ FInt MathFI::atan_div(const FInt p_y, const FInt p_x) {
     int64_t f_y = p_y.raw_value * ((-1LL * (int64_t)(y_lzero)) | 1);
     int64_t f_x = p_x.raw_value * ((-1LL * (int64_t)(x_lzero)) | 1);
 
-    int64_t flip_result = (-1LL * (int64_t)(x_y_discronguous)) | 1LL;
+    int64_t flip_result = (-((int64_t)x_y_discronguous) | 1);
 
     //I didn't know what to call it.
     bool discombobulate = p_y > p_x;
@@ -447,36 +449,40 @@ FInt MathFI::fp_sin_r( const FInt radians )
 
 //https://www.nullhardware.com/blog/fixed-point-sine-and-cosine-for-embedded-systems/
 //Optimized sine, uses the max value of short as a representation of PI*2.
+//"But why not use the other faster 4th order sine on [https://www.coranac.com/2009/07/sines/]?"
+//I ALREADY TESTED IT, IT'S TOO INNACURATE! It could cause mini-bounces upon collision.
+//NOTE: this function is 9 times faster than sqrt.
 //NEVER CALL unless you know what you're doing.
 FInt MathFI::fp_sin(const int16_t value)
 {
     int16_t i = value;
 
+    int16_t i = value;
+
     /* Convert (signed) input to a value between 0 and 8192. (8192 is pi/2, which is the region of the curve fit). */
     /* ------------------------------------------------------------------- */
     i <<= 1;
-    bool c = i<0; //set carry for output pos/neg
+    uint8_t c = i<0; //set carry for output pos/neg
 
-    if(i == (i| 0x4000)) // flip input value to corresponding value in range [0..8192)
-        i = (int16_t)(32768 - i);
-    i = (int16_t)((i & 0x7FFF) >> 1);
+    if(i == (i|0x4000)) // flip input value to corresponding value in range [0..8192)
+        i = (1<<15) - i;
+    i = (i & 0x7FFF) >> 1;
     /* ------------------------------------------------------------------- */
 
     /* The following section implements the formula:
-    = y * 2^-n * ( A1 - 2^(q-p)* y * 2^-n * y * 2^-n * [B1 - 2^-r * y * 2^-n * C1 * y]) * 2^(a-q)
+     = y * 2^-n * ( A1 - 2^(q-p)* y * 2^-n * y * 2^-n * [B1 - 2^-r * y * 2^-n * C1 * y]) * 2^(a-q)
     Where the constants are defined as follows:
     */
-    uint32_t iu = (uint32_t) i;
     enum {A1=3370945099UL, B1=2746362156UL, C1=292421UL};
     enum {n=13, p=32, q=31, r=3, a=12};
 
-    uint32_t y = (uint32_t)((C1*(iu))>>n);
-    y = (uint32_t)(B1 - ((iu*y)>>r));
-    y = (uint32_t)(iu * (y>>n));
-    y = (uint32_t)(iu * (y>>n));
-    y = (uint32_t)(A1 - (y>>(p-q)));
-    y = (uint32_t)(iu * (y>>n));
-    y = (uint32_t)((y+(1UL<<(q-a-1)))>>(q-a)); // Rounding
+    uint32_t y = (C1*((uint32_t)i))>>n;
+    y = B1 - (((uint32_t)i*y)>>r);
+    y = (uint32_t)i * (y>>n);
+    y = (uint32_t)i * (y>>n);
+    y = A1 - (y>>(p-q));
+    y = (uint32_t)i * (y>>n);
+    y = (y+(1UL<<(q-a-1)))>>(q-a); // Rounding
 
     FInt to_return;
     to_return.raw_value = c ? -y : y;
