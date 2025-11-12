@@ -827,7 +827,7 @@ void PopupMenu::_draw_items() {
 	// Loop through all items and draw each.
 	for (int i = 0; i < items.size(); i++) {
 		// For the first item only add half a separation. For all other items, add a whole separation to the offset.
-		ofs.y += i > 0 ? theme_cache.v_separation : (float)theme_cache.v_separation / 2;
+		ofs.y += i > 0 ? theme_cache.v_separation : theme_cache.v_separation / 2;
 
 		_shape_item(i);
 
