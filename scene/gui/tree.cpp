@@ -5128,6 +5128,7 @@ int Tree::get_columns() const {
 void Tree::_scroll_moved(float) {
 	_determine_hovered_item();
 	queue_redraw();
+	popup_editor->hide();
 }
 
 Rect2 Tree::get_custom_popup_rect() const {
