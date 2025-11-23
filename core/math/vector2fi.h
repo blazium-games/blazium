@@ -146,11 +146,11 @@ struct [[nodiscard]] Vector2FI {
     _FORCE_INLINE_ bool operator==(const Vector2FI& other) const;
     _FORCE_INLINE_ bool operator!=(const Vector2FI& other) const;
     
-    Vector2FI get_normal_clockwise(Vector2FI p_other);
+    [[nodiscard]] Vector2FI get_normal_clockwise(Vector2FI p_other);
 
     void invert_xy();
 
-    Vector2FI inverted_xy();
+    [[nodiscard]] Vector2FI inverted_xy();
 
     FInt angle_r() const;
     FInt angle_d() const;
@@ -159,7 +159,7 @@ struct [[nodiscard]] Vector2FI {
     FInt length() const;
     FInt length_squared() const;
     void normalize();
-    Vector2FI normalized() const;
+    [[nodiscard]] Vector2FI normalized() const;
     bool is_normalized() const;
 };
 
