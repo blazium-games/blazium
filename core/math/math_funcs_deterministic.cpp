@@ -270,19 +270,20 @@ FInt MathFI::sin_d(const FInt degrees_arg)
 }
 
 ///Sine with radians as input.
-FInt MathFI::sin_r(const FInt radians_arg)
+FInt sin_r(const FInt radians_arg)
 {
-    FInt radians = radians_arg;
 
-    int64_t is_negative = radians < 0;
+    int64_t radians = (radians_arg.raw_value * 32768) / 25736;
 
     //If the angle is higher than PI_X2, correct it. For example, PI_X2+1 becomes 1.
-    radians = radians % MathFI::PI_X2;
+    radians = radians % 32768;
+
+    int64_t is_negative = -((int64_t)(radians < 0));
 
     //If it's negative invert it back to positive, for example, -1 becomes 5.2831853072
-    radians = (MathFI::PI_X2 * is_negative) + radians;
+    radians = (32768 & is_negative) + radians;
 
-    return MathFI::fp_sin_r(radians);
+    return fp_sin((int16_t)radians);
 }
 
 ///Cosine with degrees as input.
@@ -340,29 +341,31 @@ FInt MathFI::atan_d(const FInt p)
 // Licenses: both MIT
 // 2-argument arctangent that returns in radians.
 // Optimized to the point of being unreadable.
-FInt MathFI::atan2_r(const FInt in, const FInt inX) {
-    bool in_zero = in == FInt::ZERO;
-    bool inx_zero = inX == FInt::ZERO;
+FInt MathFI::atan2_r(const FInt in_arg, const FInt inX_arg) {
+    int64_t in = in_arg.raw_value;
+    int64_t inX = inX_arg.raw_value;
 
-    if (in_zero | inx_zero)
+
+    int64_t in_zero = in == 0 ? 1 : 0;
+    int64_t inx_zero = inX == 0 ? 1 : 0;
+
+    if ((in_zero | inx_zero) != 0)
     {
-        bool inx_lzero = inX < FInt::ZERO;
-        bool in_leqzero = (in < FInt::ZERO) | in_zero;
-        int64_t flip_pi_div2 = (in_leqzero * -1LL) | 1LL;
+        int64_t inx_lzero = inX < 0;
+        int64_t in_leqzero = (int64_t)(in < 0) | in_zero;
 
-        return FInt{
-            (MathFI::PI.raw_value * (in_zero & inx_lzero))
-            | ((MathFI::PI_DIV_2.raw_value * flip_pi_div2) * !in_zero)
-        };
+        return
+            (12868 & -(int64_t)(in_zero & inx_lzero))
+            | (((6434LL ^ in_leqzero) - in_leqzero) & ((int64_t)in_zero - 1LL));
     }
 
-    int64_t flip_pi = ((in < FInt::ZERO) * -1LL) | 1LL;
+    int64_t flip_pi = in >> 63;
 
-	FInt adiv_ret = MathFI::atan_div(in, inX);
+	int64_t adiv_ret = atan_div(FInt{in}, FInt{inX}).raw_value;
 
-    FInt ret = adiv_ret + (MathFI::PI * flip_pi * (inX < FInt::ZERO));
+    int64_t ret = adiv_ret + (((12868LL ^ flip_pi) - flip_pi) & -(int64_t)(inX >> 63));
 
-	return ret;
+	return FInt{ret};
 }
 
 // 2-argument arctangent that returns in degrees.
@@ -379,30 +382,29 @@ FInt MathFI::atan2_d(const FInt in, const FInt inX)
 FInt MathFI::atan_div(const FInt p_y, const FInt p_x) {
 	ERR_FAIL_COND_V(p_x == FInt::ZERO, FInt::ZERO);
 
-    bool y_lzero = p_y < FInt::ZERO;
-    bool x_lzero = p_x < FInt::ZERO;
-    bool x_y_discronguous = (y_lzero | x_lzero) & (y_lzero ^ x_lzero);
+    int64_t y_lzero = p_y.raw_value >> 63;
+    int64_t x_lzero = p_x.raw_value >> 63;
+    int64_t x_y_discronguous = (y_lzero | x_lzero) & (y_lzero ^ x_lzero);
 
     // f is for 'final'
     // Flips p_coordinate according to the condition.
-    int64_t f_y = p_y.raw_value * ((-1LL * (int64_t)(y_lzero)) | 1);
-    int64_t f_x = p_x.raw_value * ((-1LL * (int64_t)(x_lzero)) | 1);
+    int64_t f_y = (p_y.raw_value ^ y_lzero) - y_lzero;
+    int64_t f_x = (p_x.raw_value ^ x_lzero) - x_lzero;
 
-    int64_t flip_result = (-((int64_t)x_y_discronguous) | 1);
+    bool x_first = p_y > p_x;
+    //y first
+    int64_t y_f = !x_first ? -1 : 0;
+    //x first
+    int64_t x_f = x_first ? -1 : 0;
 
-    //I didn't know what to call it.
-    bool discombobulate = p_y > p_x;
-    int64_t y_first = (int64_t)(discombobulate ^ true);
-    int64_t x_first = (int64_t)discombobulate;
+    uint64_t f_1 = (f_y & y_f) | (f_x & x_f);
+    uint64_t f_2 = (f_x & y_f) | (f_y & x_f);
 
-    int64_t f_1 = (f_y * y_first) | (f_x * x_first);
-    int64_t f_2 = (f_y * x_first) | (f_x * y_first);
+    int64_t atan_sani = atan_sanitized((f_1 << 20) / (f_2 << 4));
 
-    FInt atan_sani = FInt{MathFI::atan_sanitized((f_1 << 20) / (f_2 << 4))};
+    int64_t result = (6434LL & x_f) + (atan_sani * (x_f | 1LL));
 
-    FInt result = (MathFI::PI_DIV_2 * x_first) + (atan_sani * ((-1LL * x_first) | 1));
-
-	return result * flip_result;
+	return FInt{(result ^ x_y_discronguous) - x_y_discronguous};
 }
 
 
@@ -453,39 +455,35 @@ FInt MathFI::fp_sin_r( const FInt radians )
 //I ALREADY TESTED IT, IT'S TOO INNACURATE! It could cause mini-bounces upon collision.
 //NOTE: this function is 9 times faster than sqrt.
 //NEVER CALL unless you know what you're doing.
-FInt MathFI::fp_sin(const int16_t value)
+int64_t fp_sin(const uint16_t value)
 {
-    int16_t i = value;
-
-    int16_t i = value;
+    int16_t i = ((int16_t)value) << 1;
 
     /* Convert (signed) input to a value between 0 and 8192. (8192 is pi/2, which is the region of the curve fit). */
     /* ------------------------------------------------------------------- */
-    i <<= 1;
-    uint8_t c = i<0; //set carry for output pos/neg
 
-    if(i == (i|0x4000)) // flip input value to corresponding value in range [0..8192)
-        i = (1<<15) - i;
-    i = (i & 0x7FFF) >> 1;
+    //int64_t i_sign = (int32_t)(i) >> 31;
+    uint32_t ui = (uint32_t) i;
+
+    if(i == (i| 0x4000)) // flip input value to corresponding value in range [0..8192)
+        i = (int16_t)(32768 - i);
+    i = (int16_t)((i & 0x7FFF) >> 1);
     /* ------------------------------------------------------------------- */
 
     /* The following section implements the formula:
-     = y * 2^-n * ( A1 - 2^(q-p)* y * 2^-n * y * 2^-n * [B1 - 2^-r * y * 2^-n * C1 * y]) * 2^(a-q)
+    = y * 2^-n * ( A1 - 2^(q-p)* y * 2^-n * y * 2^-n * [B1 - 2^-r * y * 2^-n * C1 * y]) * 2^(a-q)
     Where the constants are defined as follows:
     */
     enum {A1=3370945099UL, B1=2746362156UL, C1=292421UL};
     enum {n=13, p=32, q=31, r=3, a=12};
 
-    uint32_t y = (C1*((uint32_t)i))>>n;
-    y = B1 - (((uint32_t)i*y)>>r);
-    y = (uint32_t)i * (y>>n);
-    y = (uint32_t)i * (y>>n);
-    y = A1 - (y>>(p-q));
-    y = (uint32_t)i * (y>>n);
-    y = (y+(1UL<<(q-a-1)))>>(q-a); // Rounding
+    uint32_t y = (uint32_t)((C1*(ui))>>n);
+    y = (uint32_t)(B1 - ((ui*y)>>r));
+    y = (uint32_t)(ui * (uint32_t)(y>>n));
+    y = (ui * (y>>n));
+    y = (uint32_t)(A1 - (y>>(p-q)));
+    y = (ui * (y>>n));
+    y = (uint32_t)((y+(1UL<<(q-a-1)))>>(q-a)); // Rounding
 
-    FInt to_return;
-    to_return.raw_value = c ? -y : y;
-
-    return to_return;
+    return i < 0 ? -y : y;
 }
