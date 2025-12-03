@@ -30,6 +30,7 @@ struct [[nodiscard]] Vector2FI {
 		// NOLINTEND(modernize-use-default-member-init)
 	};
 
+    constexpr Vector2FI () : x(FInt{0}), y(FInt{0}) {}
     constexpr Vector2FI (int32_t ix, int32_t iy) : x(FInt(ix)), y(FInt(iy)) {}
     constexpr Vector2FI (int64_t ix, int64_t iy) : x(FInt(ix)), y(FInt(iy)) {}
     constexpr Vector2FI (FInt ix, FInt iy) : x(ix), y(iy) {}

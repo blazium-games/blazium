@@ -15,6 +15,8 @@ struct [[nodiscard]] FInt {
 	static const FInt ZERO;
 	static const FInt ONE;
 	static const FInt HALF;
+	static const FInt MAX_VALUE;
+	static const FInt MIN_VALUE;
 
     int64_t raw_value;
 

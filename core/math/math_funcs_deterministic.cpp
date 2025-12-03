@@ -29,19 +29,19 @@ bool MathFI::is_equal_approx(const FInt v1, const FInt v2, FInt max_approx)
 //Returns the lowest number between the two.
 FInt MathFI::min( const FInt v1, const FInt v2 )
 {
-    int32_t first = v1 < v2;
-    int32_t last = first == 0;
+    int64_t first = -((int64_t)(v1 < v2));
+    int64_t last = -((int64_t)(first == 0));
 
-    return FInt{(v1.raw_value * first) | (v2.raw_value * last)};
+    return FInt{(v1.raw_value & first) | (v2.raw_value & last)};
 }
 
 //Returns the highest number between the two.
 FInt MathFI::max( const FInt v1, const FInt v2 )
 {
-    int32_t first = v1 > v2;
-    int32_t last = first == 0;
+    int64_t first = -((int64_t)(v1 > v2));
+    int64_t last = -((int64_t)(first == 0));
 
-    return FInt{(v1.raw_value * first) | (v2.raw_value * last)};
+    return FInt{(v1.raw_value & first) | (v2.raw_value & last)};
 }
 
 FInt MathFI::lerp( const FInt start, const FInt end, const FInt progress )

@@ -52,6 +52,13 @@ namespace DtrmnTrigAllocator {
 
         FInt& operator[](int idx)
         {
+            return TrigMemoryBlock::get(idx);
+        }
+
+        constexpr TrigMemoryBlock(uint32_t idx, uint32_t len) : index(idx), length(len) {}
+
+        constexpr FInt& get(int idx)
+        {
             if(unlikely(idx < 0 || index >= length))
             {
                 throw_idx(idx);
@@ -60,7 +67,11 @@ namespace DtrmnTrigAllocator {
             return DtrmnTrigAllocator::data[index + idx];
         }
 
-        constexpr TrigMemoryBlock(uint32_t idx, uint32_t len) : index(idx), length(len) {}
+        constexpr Vector2FI get_vec2(int idx) { return Vector2FI(this->get(idx << 1), this->get((idx << 1)+1)); }
+        constexpr void set_vec2(int idx, Vector2FI value) {
+            this->get(idx << 1) = value.x;
+            this->get((idx << 1)+1) = value.y;
+        }
 
         constexpr TrigMemoryBlock take_piece_start(uint32_t amount)
         {
