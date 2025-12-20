@@ -469,6 +469,7 @@ void update_theme_icons(const Ref<Theme> &p_theme, const Color &p_font_color, co
 	p_theme->set_icon("radio_unchecked_disabled", "PopupMenu", icons["radio_unchecked_disabled"]);
 	p_theme->set_icon("submenu", "PopupMenu", icons["popup_menu_arrow_right"]);
 	p_theme->set_icon("submenu_mirrored", "PopupMenu", icons["popup_menu_arrow_left"]);
+	p_theme->set_icon("search", "PopupMenu", icons["search"]);
 
 	p_theme->set_icon("close", "Window", icons["close"]);
 	p_theme->set_icon("close_pressed", "Window", icons["close_hl"]);
