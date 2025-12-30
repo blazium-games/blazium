@@ -235,6 +235,9 @@ class PopupMenu : public Popup {
 	String _atr(int p_idx, const String &p_text) const;
 	void _submenu_hidden();
 
+	bool shrink_height = true;
+	bool shrink_width = true;
+
 protected:
 	virtual void _pre_popup() override;
 	virtual Rect2i _popup_adjust_rect() const override;
@@ -401,6 +404,13 @@ public:
 	bool get_allow_search() const;
 
 	virtual void popup(const Rect2i &p_bounds = Rect2i()) override;
+
+	void set_shrink_height(bool p_shrink);
+	bool get_shrink_height() const;
+
+	void set_shrink_width(bool p_shrink);
+	bool get_shrink_width() const;
+
 	virtual void set_visible(bool p_visible) override;
 
 	PopupMenu();
