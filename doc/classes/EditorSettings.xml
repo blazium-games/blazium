@@ -715,7 +715,7 @@
 			If left empty, Godot will use the default terminal emulator for the system:
 			- [b]Windows:[/b] PowerShell
 			- [b]macOS:[/b] Terminal.app
-			- [b]Linux:[/b] The first terminal found on the system in this order: gnome-terminal, konsole, xfce4-terminal, lxterminal, kitty, alacritty, urxvt, xterm.
+			- [b]Linux:[/b] The first terminal found on the system in this order: gnome-terminal, konsole, qterminal, xfce4-terminal, lxterminal, kitty, alacritty, urxvt, xterm.
 			To use Command Prompt (cmd) instead of PowerShell on Windows, enter [code]cmd[/code] in this field and the correct flags will automatically be used.
 			On macOS, make sure to point to the actual program binary located within the [code]Programs/MacOS[/code] folder of the .app bundle, rather than the .app bundle directory.
 			If specifying a custom terminal emulator, you may need to override [member filesystem/external_programs/terminal_emulator_flags] so it opens in the correct folder.
