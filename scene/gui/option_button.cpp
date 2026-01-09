@@ -535,7 +535,7 @@ void OptionButton::show_popup() {
 		rect = xform.xform(rect);
 	}
 	rect.size.height = 0;
-	popup->set_shrink_width(false);
+	popup->set_min_size(Size2(0, 0));
 	popup->popup(rect);
 }
 
@@ -641,6 +641,7 @@ OptionButton::OptionButton(const String &p_text) :
 	set_action_mode(ACTION_MODE_BUTTON_PRESS);
 
 	popup = memnew(PopupMenu);
+	popup->set_shrink_width(false);
 	popup->hide();
 	add_child(popup, false, INTERNAL_MODE_FRONT);
 	popup->connect("index_pressed", callable_mp(this, &OptionButton::_selected));
