@@ -975,6 +975,7 @@ EditorSettingsDialog::EditorSettingsDialog() {
 
 	shortcuts = memnew(Tree);
 	shortcuts->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+	shortcuts->set_theme_type_variation("TreeTable");
 	shortcuts->set_columns(2);
 	shortcuts->set_hide_root(true);
 	shortcuts->set_column_titles_visible(true);

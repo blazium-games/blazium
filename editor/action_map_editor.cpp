@@ -599,6 +599,7 @@ ActionMapEditor::ActionMapEditor() {
 	// Action Editor Tree
 	action_tree = memnew(Tree);
 	action_tree->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+	action_tree->set_theme_type_variation("TreeTable");
 	action_tree->set_columns(3);
 	action_tree->set_hide_root(true);
 	action_tree->set_column_titles_visible(true);

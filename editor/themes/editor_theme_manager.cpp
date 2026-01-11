@@ -982,6 +982,8 @@ void EditorThemeManager::_populate_standard_styles(const Ref<EditorTheme> &p_the
 			p_theme->set_constant("inner_item_margin_bottom", "Tree", p_config.separation_margin);
 			p_theme->set_constant("inner_item_margin_left", "Tree", p_config.increased_margin * EDSCALE);
 			p_theme->set_constant("inner_item_margin_right", "Tree", p_config.increased_margin * EDSCALE);
+			p_theme->set_constant("check_h_separation", "Tree", (p_config.increased_margin + 2) * EDSCALE);
+			p_theme->set_constant("icon_h_separation", "Tree", (p_config.increased_margin + 2) * EDSCALE);
 			p_theme->set_constant("button_margin", "Tree", p_config.base_margin * EDSCALE);
 			p_theme->set_constant("dragging_unfold_wait_msec", "Tree", (float)EDITOR_GET("interface/editor/dragging_hover_wait_seconds") * 1000);
 			p_theme->set_constant("scroll_border", "Tree", 40 * EDSCALE);
