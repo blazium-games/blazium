@@ -458,7 +458,7 @@ private:
 	Vector2 pressing_pos;
 	Rect2 pressing_item_rect;
 
-	Vector2 hovered_pos;
+	Vector2 hovered_pos = Vector2(-1.0, -1.0);
 	bool is_mouse_hovering = false;
 
 	float range_drag_base = 0.0;
