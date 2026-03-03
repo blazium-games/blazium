@@ -8,6 +8,7 @@
 
 //Deterministic trigonometry allocator
 namespace DtrmnTrigAllocator {
+    
     static bool initialized = false;
     const static int start_amount = 512;
     const static int increment = 256;
@@ -18,8 +19,20 @@ namespace DtrmnTrigAllocator {
         DtrmnTrigAllocator::allocate_numbers(vector_amount * 2);
     }
 
-    constexpr static FInt* allocate_numbers(uint32_t number_amount) {
+    constexpr static TrigMemoryBlock allocate_numbers(uint32_t number_amount) {
         ensure_initialized(number_amount);
+
+        //try to get memory in the pool
+        TrigMemoryBlock data = retrieve_data(number_amount);
+
+        if(data.length == 0)
+        {
+            //if no memory, do default allocation by increment
+            //and retrieve a piece with the size desired.
+            data = d_allocate_and_retrieve_data(number_amount);
+        }
+
+        return data;
     }
 
     constexpr static void ensure_initialized(uint32_t amount)
@@ -41,6 +54,16 @@ namespace DtrmnTrigAllocator {
 
             return;
         }
+    }
+
+    constexpr static TrigMemoryBlock retrieve_data(uint32_t amount)
+    {
+
+    }
+
+    constexpr static TrigMemoryBlock d_allocate_and_retrieve_data(uint32_t amount)
+    {
+
     }
 
     struct TrigMemoryBlock

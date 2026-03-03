@@ -273,7 +273,7 @@ FInt MathFI::sin_d(const FInt degrees_arg)
 FInt sin_r(const FInt radians_arg)
 {
 
-    int64_t radians = (radians_arg.raw_value * 32768) / 25736;
+    int64_t radians = ((radians_arg.raw_value << 13) + (radians_arg.raw_value << 12)) / 9651;
 
     //If the angle is higher than PI_X2, correct it. For example, PI_X2+1 becomes 1.
     radians = radians % 32768;
@@ -463,11 +463,12 @@ int64_t fp_sin(const uint16_t value)
     /* ------------------------------------------------------------------- */
 
     //int64_t i_sign = (int32_t)(i) >> 31;
-    uint32_t ui = (uint32_t) i;
 
     if(i == (i| 0x4000)) // flip input value to corresponding value in range [0..8192)
         i = (int16_t)(32768 - i);
     i = (int16_t)((i & 0x7FFF) >> 1);
+
+    uint32_t ui = (uint32_t) i;
     /* ------------------------------------------------------------------- */
 
     /* The following section implements the formula:
