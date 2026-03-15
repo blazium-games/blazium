@@ -1220,6 +1220,7 @@ void update_theme_scale(const Ref<Theme> &p_theme) {
 	p_theme->set_constant("drop_mark_width", "TabBar", x4_scale);
 	p_theme->set_constant("check_h_separation", "Tree", x4_scale);
 	p_theme->set_constant("icon_h_separation", "Tree", x4_scale);
+	p_theme->set_constant("search_bar_separation", "PopupMenu", x4_scale);
 
 	color_button_normal_style->set_content_margin_all(x6_scale);
 	color_button_hover_style->set_content_margin_all(x6_scale);
