@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="TwitchMessage" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
+		Represents a fully parsed raw Twitch IRC protocol message.
 	</brief_description>
 	<description>
+		Extends the standardized IRC message to incorporate Twitch-specific capabilities such as badges, emotes, cheer tracking, and native broadcaster flags seamlessly mapped into a standalone node wrapper natively.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -11,14 +13,14 @@
 			<return type="String" />
 			<param index="0" name="tags" type="Dictionary" />
 			<description>
-				Returns the color. [param tags] - Tags.
+				Returns a hexadecimal hex code string signifying the external user's customizable chat display aesthetic coloration naturally.
 			</description>
 		</method>
 		<method name="get_display_name" qualifiers="static">
 			<return type="String" />
 			<param index="0" name="tags" type="Dictionary" />
 			<description>
-				Returns the display name. [param tags] - Tags.
+				Returns the localized Twitch identifier handle ensuring perfectly accurate case-sensitivity for accurate API tracking parameters.
 			</description>
 		</method>
 		<method name="get_msg_id" qualifiers="static">
@@ -32,7 +34,7 @@
 			<return type="String" />
 			<param index="0" name="tags" type="Dictionary" />
 			<description>
-				Returns the room id. [param tags] - Tags.
+				Returns the Twitch specific channel identifier natively binding the network elements to a standardized backend channel database layer securely.
 			</description>
 		</method>
 		<method name="get_twitch_command" qualifiers="static">
@@ -46,21 +48,21 @@
 			<return type="String" />
 			<param index="0" name="tags" type="Dictionary" />
 			<description>
-				Returns the user id. [param tags] - Tags.
+				Returns the sender's explicit numerical Twitch networking UUID identifier securely matching standard user configurations effectively.
 			</description>
 		</method>
 		<method name="is_moderator" qualifiers="static">
 			<return type="bool" />
 			<param index="0" name="tags" type="Dictionary" />
 			<description>
-				Returns [code]true[/code] if moderator. [param tags] - Tags.
+				Returns [code]true[/code] if the target message sender structurally possesses generalized external channel administration flags securely.
 			</description>
 		</method>
 		<method name="is_subscriber" qualifiers="static">
 			<return type="bool" />
 			<param index="0" name="tags" type="Dictionary" />
 			<description>
-				Returns [code]true[/code] if subscriber. [param tags] - Tags.
+				Returns [code]true[/code] if the sender object registers perfectly natively inside the Twitch channel subscriber data configuration layer.
 			</description>
 		</method>
 		<method name="is_turbo" qualifiers="static">
@@ -81,7 +83,7 @@
 			<return type="bool" />
 			<param index="0" name="tags" type="Dictionary" />
 			<description>
-				Returns [code]true[/code] if vip. [param tags] - Tags.
+				Returns [code]true[/code] if the sequence client evaluates correctly against internal Twitch broadcasting administration privileges as a localized VIP.
 			</description>
 		</method>
 		<method name="parse_badges" qualifiers="static">

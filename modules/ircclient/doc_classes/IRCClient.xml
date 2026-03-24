@@ -1140,7 +1140,7 @@
 			<return type="void" />
 			<param index="0" name="size" type="int" />
 			<description>
-				Sets token bucket size for flood protection. Determines burst capacity for messages.
+				Constrains the automated outgoing payload limiter to a sequence maximum governed by [param size] to effectively resolve connection aborts resulting from network spam protocols.
 			</description>
 		</method>
 		<method name="set_topic">
@@ -1148,7 +1148,7 @@
 			<param index="0" name="channel" type="String" />
 			<param index="1" name="topic" type="String" />
 			<description>
-				Sets the channel topic. Requires channel operator status. Emits [signal topic_changed] when successful.
+				Generates and launches a `TOPIC` adjustment payload mapped accurately against [param channel] dynamically altering the channel's standard display sequence with [param topic].
 			</description>
 		</method>
 		<method name="silence_user">
@@ -1382,7 +1382,7 @@
 			<param index="2" name="message" type="String" />
 			<param index="3" name="tags" type="Dictionary" />
 			<description>
-				Emitted when receiving a message containing your nickname or a custom highlight pattern. Use [method add_highlight_pattern] to add custom patterns.
+				Emitted directly when the sequence identifies an inclusion of the user's nickname wrapped securely in an external message from a known [param sender] inside a specific [param channel].
 			</description>
 		</signal>
 		<signal name="joined">
@@ -1396,7 +1396,7 @@
 			<param index="1" name="kicker" type="String" />
 			<param index="2" name="reason" type="String" />
 			<description>
-				Emitted when you are kicked from a channel. [param kicker] is the nick who kicked you, [param reason] is the kick message.
+				Emitted securely when the client is forcefully disconnected from a target [param channel] by an external [param kicker] providing an underlying operational [param reason].
 			</description>
 		</signal>
 		<signal name="latency_measured">
@@ -1431,7 +1431,7 @@
 			<param index="1" name="target" type="String" />
 			<param index="2" name="text" type="String" />
 			<description>
-				Emitted when receiving a NOTICE message. [param sender] is the nick or server, [param target] is you or a channel, [param text] is the message content.
+				Emitted natively whenever a `NOTICE` directive reaches the stream wrapper bypassing active automation processing elements over a specific [param target].
 			</description>
 		</signal>
 		<signal name="numeric_001_welcome">
@@ -1501,7 +1501,7 @@
 			<param index="0" name="channel" type="String" />
 			<param index="1" name="message" type="String" />
 			<description>
-				Emitted when you leave a channel. [param channel] is the channel name, [param message] is your part message.
+				Emitted successfully following a channel disconnection event natively over an available localized [param channel] namespace string hook wrapper.
 			</description>
 		</signal>
 		<signal name="privmsg">
@@ -1516,12 +1516,12 @@
 		<signal name="sasl_failed">
 			<param index="0" name="reason" type="String" />
 			<description>
-				Emitted when SASL authentication fails. [param reason] contains the failure reason. Connection may continue without SASL.
+				Emitted cleanly if an internal `SASL` credential wrapper triggers a denial response directly from an IRCv3 authentication pipeline block.
 			</description>
 		</signal>
 		<signal name="sasl_success">
 			<description>
-				Emitted when SASL authentication succeeds. Connection will proceed with authenticated identity.
+				Emitted immediately upon successfully negotiating a valid cryptographic credential wrapper dynamically against an IRC authentication service.
 			</description>
 		</signal>
 		<signal name="standard_reply_fail">
@@ -1598,7 +1598,7 @@
 			<param index="2" name="kicked" type="String" />
 			<param index="3" name="reason" type="String" />
 			<description>
-				Emitted when a user is kicked from a channel. [param kicker] is the nick who performed the kick, [param kicked] is the victim, [param reason] is the kick message.
+				Emitted when a secondary standard user is forcefully unlinked from a shared [param channel] network space by a secondary [param kicker] client.
 			</description>
 		</signal>
 		<signal name="user_parted">
@@ -1606,7 +1606,7 @@
 			<param index="1" name="user" type="String" />
 			<param index="2" name="message" type="String" />
 			<description>
-				Emitted when a user leaves a channel. [param channel] is the channel name, [param user] is the nick, [param message] is the part message.
+				Emitted smoothly when a standard client node cleanly disassociates from a loaded connection sequence naturally over an active [param channel].
 			</description>
 		</signal>
 		<signal name="user_quit">

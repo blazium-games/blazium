@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="TwitchIRCClientNode" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
+		Node wrapper tailored explicitly for interacting natively over Twitch IRC functionality.
 	</brief_description>
 	<description>
+		A node-based integrated Twitch IRC chat backend built on top of standard generalized IRC pipelines. Effectively binds automated networking pings with secure capabilities directly into Godot loops securely establishing connections with standardized OAuth requirements directly over WSS or raw TLS elements.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -29,7 +31,7 @@
 			<param index="1" name="oauth_token" type="String" />
 			<param index="2" name="use_ssl" type="bool" default="true" />
 			<description>
-				Returns connect to twitch. [param username] - Username. [param oauth_token] - Oauth token. [param use_ssl] - Use ssl.
+				Initiates a secure external web or socket-based handshake actively verifying Twitch backend infrastructure limits utilizing standard credentials and automated Twitch Capability directives seamlessly.
 			</description>
 		</method>
 		<method name="delete_message">

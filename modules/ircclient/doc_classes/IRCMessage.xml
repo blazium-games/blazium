@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="IRCMessage" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
+		Represents a fully parsed raw IRC protocol message.
 	</brief_description>
 	<description>
+		Parses and encapsulates an active IRC protocol line into an isolated structure, splitting it into standardized tags, prefixes, commands, and parameters based on the RFC 1459 and IRCv3 specifications.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -11,7 +13,7 @@
 			<return type="String" />
 			<param index="0" name="value" type="String" />
 			<description>
-				Returns decode base64 string. [param value] - Value.
+				Decodes a base64 string retrieved from an IRCv3 payload or tag sequence. Returns the decoded string.
 			</description>
 		</method>
 		<method name="encode_ctcp" qualifiers="static">
@@ -19,96 +21,96 @@
 			<param index="0" name="command" type="String" />
 			<param index="1" name="params" type="String" default="&quot;&quot;" />
 			<description>
-				Returns encode ctcp. [param command] - Command. [param params] - Params.
+				Wraps a standard payload in CTCP (Client-to-Client Protocol) byte delimiters (\001) for extended IRC interactions such as ACTIONs.
 			</description>
 		</method>
 		<method name="get_ctcp_command" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the ctcp command.
+				Extracts the target CTCP command from the message parameter array if the transmission is a valid CTCP protocol request.
 			</description>
 		</method>
 		<method name="get_ctcp_params" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the ctcp params.
+				Extracts the payload body arguments supplied with a CTCP command.
 			</description>
 		</method>
 		<method name="get_hostname" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the hostname.
+				Extracts the hostname portion from the origin client prefix wrapper.
 			</description>
 		</method>
 		<method name="get_nick" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the nick.
+				Extracts the nickname portion from the origin client prefix wrapper.
 			</description>
 		</method>
 		<method name="get_numeric" qualifiers="const">
 			<return type="int" />
 			<description>
-				Returns the numeric.
+				Returns the numeric reply code from the IRC protocol command, or 0 if the command resolves to a character string.
 			</description>
 		</method>
 		<method name="get_processed_tags" qualifiers="const">
 			<return type="Dictionary" />
 			<description>
-				Returns the processed tags.
+				Returns the IRCv3 metadata tags embedded in the message parsed cleanly into a Godot Dictionary.
 			</description>
 		</method>
 		<method name="get_tag_value" qualifiers="const">
 			<return type="Variant" />
 			<param index="0" name="key" type="String" />
 			<description>
-				Returns the tag value. [param key] - Key.
+				Retrieves the explicit variant value of a specific IRCv3 metadata tag natively by its dictionary key.
 			</description>
 		</method>
 		<method name="get_username" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the username.
+				Extracts the username (ident) portion from the origin client prefix wrapper.
 			</description>
 		</method>
 		<method name="is_base64" qualifiers="static">
 			<return type="bool" />
 			<param index="0" name="value" type="String" />
 			<description>
-				Returns [code]true[/code] if base64. [param value] - Value.
+				Returns [code]true[/code] if the provided string evaluates cleanly as a base64 encoded sequence array.
 			</description>
 		</method>
 		<method name="is_ctcp" qualifiers="const">
 			<return type="bool" />
 			<description>
-				Returns [code]true[/code] if ctcp.
+				Returns [code]true[/code] if the active payload is encapsulated correctly inside standard CTCP data byte markers.
 			</description>
 		</method>
 		<method name="is_json" qualifiers="static">
 			<return type="bool" />
 			<param index="0" name="value" type="String" />
 			<description>
-				Returns [code]true[/code] if json. [param value] - Value.
+				Returns [code]true[/code] if the provided string is capable of being processed flawlessly as a standard JSON payload format.
 			</description>
 		</method>
 		<method name="is_numeric" qualifiers="const">
 			<return type="bool" />
 			<description>
-				Returns [code]true[/code] if numeric.
+				Returns [code]true[/code] if the underlying command identity is a 3-digit numeric server reply.
 			</description>
 		</method>
 		<method name="parse" qualifiers="static">
 			<return type="IRCMessage" />
 			<param index="0" name="raw_message" type="String" />
 			<description>
-				Returns parse. [param raw_message] - Raw message.
+				Accepts a raw IRC sequence line via [param raw_message] and converts it directly into a structurally sound [IRCMessage] object endpoint.
 			</description>
 		</method>
 		<method name="parse_json_string" qualifiers="static">
 			<return type="Variant" />
 			<param index="0" name="value" type="String" />
 			<description>
-				Returns parse json string. [param value] - Value.
+				Attempts to parse a formatted JSON string retrieved directly from an IRCv3 data tag pipeline block natively.
 			</description>
 		</method>
 	</methods>

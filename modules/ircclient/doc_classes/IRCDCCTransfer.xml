@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="IRCDCCTransfer" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
+		Represents an active or pending Direct Client-to-Client file transfer.
 	</brief_description>
 	<description>
+		Handles the status, metrics, tracking, and port mapping logic required to initiate or receive an outgoing DCC SEND block over the networking protocol layer safely utilizing asynchronous connections.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -10,13 +12,13 @@
 		<method name="accept">
 			<return type="int" enum="Error" />
 			<description>
-				Returns accept.
+				Confirms an inbound request connection asynchronously by initializing an available receiver socket and commencing the binary byte stream buffer processing immediately.
 			</description>
 		</method>
 		<method name="cancel">
 			<return type="int" enum="Error" />
 			<description>
-				Returns cancel.
+				Aborts an active byte transmission connection natively, closing underlying stream peers and socket structures to prevent further buffer leaking.
 			</description>
 		</method>
 		<method name="get_error_message" qualifiers="const">
@@ -28,7 +30,7 @@
 		<method name="get_progress" qualifiers="const">
 			<return type="float" />
 			<description>
-				Returns the progress.
+				Returns the calculated progression of the byte payload transition over the active stream, expressed as a generalized percentage.
 			</description>
 		</method>
 		<method name="get_resume_position" qualifiers="const">

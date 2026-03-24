@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="IRCChannel" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
+		Represents an IRC channel and its state.
 	</brief_description>
 	<description>
+		A data container that stores information about an active IRC channel, including its name, topic, and the users currently present in the channel along with their privileges and modes.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -12,48 +14,48 @@
 			<param index="0" name="nick" type="String" />
 			<param index="1" name="modes" type="String" default="&quot;&quot;" />
 			<description>
-				Adds user. [param nick] - Nick. [param modes] - Modes.
+				Adds a user to the internal channel tracker with the specified modes. [param nick] represents the user's nickname, and [param modes] determines their privileges (e.g., '+o').
 			</description>
 		</method>
 		<method name="get_user_modes" qualifiers="const">
 			<return type="String" />
 			<param index="0" name="nick" type="String" />
 			<description>
-				Returns the user modes. [param nick] - Nick.
+				Returns a string representing the modes (e.g., 'o', 'v') of the specified user in the channel. [param nick] is the user's nickname.
 			</description>
 		</method>
 		<method name="get_users" qualifiers="const">
 			<return type="PackedStringArray" />
 			<description>
-				Returns the users.
+				Returns an array of all nicknames currently present in the channel.
 			</description>
 		</method>
 		<method name="has_user" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="nick" type="String" />
 			<description>
-				Returns [code]true[/code] if user exists. [param nick] - Nick.
+				Returns [code]true[/code] if the specified nickname resides within the channel tracking list. [param nick] is the user's nickname.
 			</description>
 		</method>
 		<method name="is_user_operator" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="nick" type="String" />
 			<description>
-				Returns [code]true[/code] if user operator. [param nick] - Nick.
+				Returns [code]true[/code] if the user possesses operator privileges ('o'/'@') within the channel. [param nick] is the user's nickname.
 			</description>
 		</method>
 		<method name="is_user_voiced" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="nick" type="String" />
 			<description>
-				Returns [code]true[/code] if user voiced. [param nick] - Nick.
+				Returns [code]true[/code] if the user possesses voice privileges ('v'/'+') within the channel. [param nick] is the user's nickname.
 			</description>
 		</method>
 		<method name="remove_user">
 			<return type="void" />
 			<param index="0" name="nick" type="String" />
 			<description>
-				Removes user. [param nick] - Nick.
+				Removes a user from the channel tracking list. [param nick] is the user's nickname.
 			</description>
 		</method>
 		<method name="set_user_modes">
@@ -61,7 +63,7 @@
 			<param index="0" name="nick" type="String" />
 			<param index="1" name="modes" type="String" />
 			<description>
-				Sets the user modes. [param nick] - Nick. [param modes] - Modes.
+				Sets the mode tracking strings for a specific user in the channel. [param nick] is the user's nickname, and [param modes] specifies the target modes.
 			</description>
 		</method>
 	</methods>

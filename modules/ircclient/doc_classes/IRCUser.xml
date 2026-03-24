@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="IRCUser" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
+		Represents an IRC user and their connection prefix state.
 	</brief_description>
 	<description>
+		A data container that stores information about an IRC user, including their nickname, username, hostname, account registration, and away status. Typically assembled from IRC origin prefixes (nick!user@host).
 	</description>
 	<tutorials>
 	</tutorials>
@@ -10,7 +12,7 @@
 		<method name="get_prefix" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the prefix.
+				Returns the fully assembled user mask prefix in the format of 'nickname!username@hostname'.
 			</description>
 		</method>
 	</methods>
