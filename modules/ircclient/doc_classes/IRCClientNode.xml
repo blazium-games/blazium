@@ -217,6 +217,11 @@
 				Returns token bucket size (burst capacity for messages).
 			</description>
 		</method>
+		<method name="is_debug_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
 		<method name="is_irc_connected" qualifiers="const">
 			<return type="bool" />
 			<description>
@@ -351,6 +356,12 @@
 			<param index="0" name="ip" type="String" />
 			<description>
 				Manually sets the local IP address for DCC connections. Auto-detected if not set. [param ip] - Ip.
+			</description>
+		</method>
+		<method name="set_debug_enabled">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
 			</description>
 		</method>
 		<method name="set_encoding">
