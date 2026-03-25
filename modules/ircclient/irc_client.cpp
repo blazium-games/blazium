@@ -546,9 +546,9 @@ Error IRCClient::poll() {
 			PackedByteArray data;
 			data.resize(available);
 			int received = 0;
-			Error err = stream->get_partial_data(data.ptrw(), available, received);
+			Error recv_err = stream->get_partial_data(data.ptrw(), available, received);
 
-			if (err == OK && received > 0) {
+			if (recv_err == OK && received > 0) {
 				// Detect encoding if auto-detection enabled
 				String detected_encoding = encoding;
 				if (auto_detect_encoding && encoding == "UTF-8") {
