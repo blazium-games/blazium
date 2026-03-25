@@ -569,7 +569,9 @@ Error IRCClient::poll() {
 					receive_buffer = receive_buffer.substr(line_end + 1);
 
 					if (!line.is_empty()) {
-						print_line("IRC RECV: " + line);
+						if (debug_enabled) {
+							print_line("IRC RECV: " + line);
+						}
 						_process_message(line);
 					}
 				}
@@ -1476,15 +1478,22 @@ void IRCClient::_send_immediate(const String &p_message) {
 #endif
 
 	String message = p_message + "\r\n";
-	print_line("IRC SEND: " + p_message);
+
+	if (debug_enabled) {
+		print_line("IRC SEND: " + p_message);
+	}
 
 	// Convert to configured encoding
 	PackedByteArray encoded_data = _convert_to_encoding(message, encoding);
 	Error err = stream->put_data(encoded_data.ptr(), encoded_data.size());
 	if (err != OK) {
-		print_line(vformat("IRC SEND FAILED! Error code: %d", err));
+		if (debug_enabled) {
+			print_line(vformat("IRC SEND FAILED! Error code: %d", err));
+		}
 	} else {
-		print_line(vformat("IRC SEND SUCCESS! Bytes written: %d", encoded_data.size()));
+		if (debug_enabled) {
+			print_line(vformat("IRC SEND SUCCESS! Bytes written: %d", encoded_data.size()));
+		}
 	}
 
 	// Track metrics
@@ -3196,4 +3205,12 @@ IRCClient::IRCClient() {
 
 IRCClient::~IRCClient() {
 	disconnect_from_server();
+}
+
+void IRCClient::set_debug_enabled(bool p_enabled) {
+	debug_enabled = p_enabled;
+}
+
+bool IRCClient::is_debug_enabled() const {
+	return debug_enabled;
 }

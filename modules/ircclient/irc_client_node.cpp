@@ -109,6 +109,9 @@ void IRCClientNode::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_message_history"), &IRCClientNode::get_message_history);
 	ClassDB::bind_method(D_METHOD("clear_message_history"), &IRCClientNode::clear_message_history);
 
+	ClassDB::bind_method(D_METHOD("set_debug_enabled", "enabled"), &IRCClientNode::set_debug_enabled);
+	ClassDB::bind_method(D_METHOD("is_debug_enabled"), &IRCClientNode::is_debug_enabled);
+
 	// Forward all signals from IRCClient
 	ADD_SIGNAL(MethodInfo("connected"));
 	ADD_SIGNAL(MethodInfo("disconnected", PropertyInfo(Variant::STRING, "reason")));
@@ -884,6 +887,14 @@ void IRCClientNode::send_reaction(const String &p_channel, const String &p_msgid
 
 void IRCClientNode::remove_reaction(const String &p_channel, const String &p_msgid, const String &p_reaction) {
 	client->remove_reaction(p_channel, p_msgid, p_reaction);
+}
+
+void IRCClientNode::set_debug_enabled(bool p_enabled) {
+	client->set_debug_enabled(p_enabled);
+}
+
+bool IRCClientNode::is_debug_enabled() const {
+	return client->is_debug_enabled();
 }
 
 void IRCClientNode::_on_disconnected(const String &p_reason) {

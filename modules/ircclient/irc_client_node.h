@@ -109,6 +109,10 @@ public:
 	// Get the underlying client
 	Ref<IRCClient> get_client();
 
+	// Debug visibility
+	void set_debug_enabled(bool p_enabled);
+	bool is_debug_enabled() const;
+
 	// Forwarded connection methods
 	Error connect_to_server(const String &p_host, int p_port, bool p_use_ssl, const String &p_nick, const String &p_username, const String &p_realname, const String &p_password = "");
 	void disconnect_from_server(const String &p_quit_message = "");

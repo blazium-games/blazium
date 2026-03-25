@@ -91,6 +91,9 @@ private:
 	String encoding = "UTF-8"; // Default encoding
 	bool auto_detect_encoding = true;
 
+	// Debug
+	bool debug_enabled = false;
+
 	// SASL
 	enum SASLMechanism {
 		SASL_PLAIN,
@@ -297,6 +300,9 @@ public:
 	Error poll();
 
 	// Message sending
+	void set_debug_enabled(bool p_enabled);
+	bool is_debug_enabled() const;
+
 	void send_raw(const String &p_message);
 	void send_privmsg(const String &p_target, const String &p_message);
 	void send_notice(const String &p_target, const String &p_message);
