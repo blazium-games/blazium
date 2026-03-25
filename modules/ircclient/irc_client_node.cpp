@@ -179,7 +179,6 @@ void IRCClientNode::_notification(int p_what) {
 				client->connect("disconnected", callable_mp(this, &IRCClientNode::_on_disconnected));
 
 				// Account Registration signals
-
 			}
 		} break;
 
@@ -916,7 +915,7 @@ void IRCClientNode::_on_connected() {
 	emit_signal("connected");
 }
 
-void IRCClientNode::_on_connection_error(const String & p_error) {
+void IRCClientNode::_on_connection_error(const String &p_error) {
 	emit_signal("connection_error", p_error);
 }
 
@@ -928,99 +927,99 @@ void IRCClientNode::_on_message_received(Ref<RefCounted> p_message) {
 	emit_signal("message_received", p_message);
 }
 
-void IRCClientNode::_on_privmsg(const String & p_sender, const String & p_target, const String & p_text, const Dictionary & p_tags) {
+void IRCClientNode::_on_privmsg(const String &p_sender, const String &p_target, const String &p_text, const Dictionary &p_tags) {
 	emit_signal("privmsg", p_sender, p_target, p_text, p_tags);
 }
 
-void IRCClientNode::_on_notice(const String & p_sender, const String & p_target, const String & p_text) {
+void IRCClientNode::_on_notice(const String &p_sender, const String &p_target, const String &p_text) {
 	emit_signal("notice", p_sender, p_target, p_text);
 }
 
-void IRCClientNode::_on_ctcp_received(const String & p_sender, const String & p_command, const String & p_params) {
+void IRCClientNode::_on_ctcp_received(const String &p_sender, const String &p_command, const String &p_params) {
 	emit_signal("ctcp_received", p_sender, p_command, p_params);
 }
 
-void IRCClientNode::_on_ctcp_reply(const String & p_sender, const String & p_command, const String & p_params) {
+void IRCClientNode::_on_ctcp_reply(const String &p_sender, const String &p_command, const String &p_params) {
 	emit_signal("ctcp_reply", p_sender, p_command, p_params);
 }
 
-void IRCClientNode::_on_joined(const String & p_channel) {
+void IRCClientNode::_on_joined(const String &p_channel) {
 	emit_signal("joined", p_channel);
 }
 
-void IRCClientNode::_on_parted(const String & p_channel, const String & p_message) {
+void IRCClientNode::_on_parted(const String &p_channel, const String &p_message) {
 	emit_signal("parted", p_channel, p_message);
 }
 
-void IRCClientNode::_on_kicked(const String & p_channel, const String & p_kicker, const String & p_reason) {
+void IRCClientNode::_on_kicked(const String &p_channel, const String &p_kicker, const String &p_reason) {
 	emit_signal("kicked", p_channel, p_kicker, p_reason);
 }
 
-void IRCClientNode::_on_user_joined(const String & p_channel, const String & p_user, const String & p_account, const String & p_realname) {
+void IRCClientNode::_on_user_joined(const String &p_channel, const String &p_user, const String &p_account, const String &p_realname) {
 	emit_signal("user_joined", p_channel, p_user, p_account, p_realname);
 }
 
-void IRCClientNode::_on_user_parted(const String & p_channel, const String & p_user, const String & p_message) {
+void IRCClientNode::_on_user_parted(const String &p_channel, const String &p_user, const String &p_message) {
 	emit_signal("user_parted", p_channel, p_user, p_message);
 }
 
-void IRCClientNode::_on_user_quit(const String & p_user, const String & p_message) {
+void IRCClientNode::_on_user_quit(const String &p_user, const String &p_message) {
 	emit_signal("user_quit", p_user, p_message);
 }
 
-void IRCClientNode::_on_user_kicked(const String & p_channel, const String & p_kicker, const String & p_kicked, const String & p_reason) {
+void IRCClientNode::_on_user_kicked(const String &p_channel, const String &p_kicker, const String &p_kicked, const String &p_reason) {
 	emit_signal("user_kicked", p_channel, p_kicker, p_kicked, p_reason);
 }
 
-void IRCClientNode::_on_nick_changed(const String & p_old_nick, const String & p_new_nick) {
+void IRCClientNode::_on_nick_changed(const String &p_old_nick, const String &p_new_nick) {
 	emit_signal("nick_changed", p_old_nick, p_new_nick);
 }
 
-void IRCClientNode::_on_mode_changed(const String & p_target, const String & p_modes, const PackedStringArray & p_params) {
+void IRCClientNode::_on_mode_changed(const String &p_target, const String &p_modes, const PackedStringArray &p_params) {
 	emit_signal("mode_changed", p_target, p_modes, p_params);
 }
 
-void IRCClientNode::_on_topic_changed(const String & p_channel, const String & p_topic, const String & p_setter) {
+void IRCClientNode::_on_topic_changed(const String &p_channel, const String &p_topic, const String &p_setter) {
 	emit_signal("topic_changed", p_channel, p_topic, p_setter);
 }
 
-void IRCClientNode::_on_numeric_001_welcome(const String & p_message) {
+void IRCClientNode::_on_numeric_001_welcome(const String &p_message) {
 	emit_signal("numeric_001_welcome", p_message);
 }
 
-void IRCClientNode::_on_numeric_005_isupport(const Dictionary & p_features) {
+void IRCClientNode::_on_numeric_005_isupport(const Dictionary &p_features) {
 	emit_signal("numeric_005_isupport", p_features);
 }
 
-void IRCClientNode::_on_numeric_332_topic(const String & p_channel, const String & p_topic) {
+void IRCClientNode::_on_numeric_332_topic(const String &p_channel, const String &p_topic) {
 	emit_signal("numeric_332_topic", p_channel, p_topic);
 }
 
-void IRCClientNode::_on_numeric_353_names(const String & p_channel, const PackedStringArray & p_names) {
+void IRCClientNode::_on_numeric_353_names(const String &p_channel, const PackedStringArray &p_names) {
 	emit_signal("numeric_353_names", p_channel, p_names);
 }
 
-void IRCClientNode::_on_numeric_366_endofnames(const String & p_channel) {
+void IRCClientNode::_on_numeric_366_endofnames(const String &p_channel) {
 	emit_signal("numeric_366_endofnames", p_channel);
 }
 
-void IRCClientNode::_on_numeric_372_motd(const String & p_line) {
+void IRCClientNode::_on_numeric_372_motd(const String &p_line) {
 	emit_signal("numeric_372_motd", p_line);
 }
 
-void IRCClientNode::_on_numeric_433_nicknameinuse(const String & p_nick) {
+void IRCClientNode::_on_numeric_433_nicknameinuse(const String &p_nick) {
 	emit_signal("numeric_433_nicknameinuse", p_nick);
 }
 
-void IRCClientNode::_on_numeric_received(int p_code, const PackedStringArray & p_params) {
+void IRCClientNode::_on_numeric_received(int p_code, const PackedStringArray &p_params) {
 	emit_signal("numeric_received", p_code, p_params);
 }
 
-void IRCClientNode::_on_numeric_730_mononline(const PackedStringArray & p_nicks) {
+void IRCClientNode::_on_numeric_730_mononline(const PackedStringArray &p_nicks) {
 	emit_signal("numeric_730_mononline", p_nicks);
 }
 
-void IRCClientNode::_on_numeric_731_monoffline(const PackedStringArray & p_nicks) {
+void IRCClientNode::_on_numeric_731_monoffline(const PackedStringArray &p_nicks) {
 	emit_signal("numeric_731_monoffline", p_nicks);
 }
 
@@ -1036,19 +1035,19 @@ void IRCClientNode::_on_dcc_completed(int p_transfer_index) {
 	emit_signal("dcc_completed", p_transfer_index);
 }
 
-void IRCClientNode::_on_dcc_failed(int p_transfer_index, const String & p_error) {
+void IRCClientNode::_on_dcc_failed(int p_transfer_index, const String &p_error) {
 	emit_signal("dcc_failed", p_transfer_index, p_error);
 }
 
-void IRCClientNode::_on_capability_list(const PackedStringArray & p_capabilities) {
+void IRCClientNode::_on_capability_list(const PackedStringArray &p_capabilities) {
 	emit_signal("capability_list", p_capabilities);
 }
 
-void IRCClientNode::_on_capability_acknowledged(const String & p_capability) {
+void IRCClientNode::_on_capability_acknowledged(const String &p_capability) {
 	emit_signal("capability_acknowledged", p_capability);
 }
 
-void IRCClientNode::_on_capability_denied(const String & p_capability) {
+void IRCClientNode::_on_capability_denied(const String &p_capability) {
 	emit_signal("capability_denied", p_capability);
 }
 
@@ -1056,59 +1055,59 @@ void IRCClientNode::_on_sasl_success() {
 	emit_signal("sasl_success");
 }
 
-void IRCClientNode::_on_sasl_failed(const String & p_reason) {
+void IRCClientNode::_on_sasl_failed(const String &p_reason) {
 	emit_signal("sasl_failed", p_reason);
 }
 
-void IRCClientNode::_on_account_registration_success(const String & p_account) {
+void IRCClientNode::_on_account_registration_success(const String &p_account) {
 	emit_signal("account_registration_success", p_account);
 }
 
-void IRCClientNode::_on_account_registration_failed(const String & p_reason) {
+void IRCClientNode::_on_account_registration_failed(const String &p_reason) {
 	emit_signal("account_registration_failed", p_reason);
 }
 
-void IRCClientNode::_on_account_verification_required(const String & p_account, const String & p_method) {
+void IRCClientNode::_on_account_verification_required(const String &p_account, const String &p_method) {
 	emit_signal("account_verification_required", p_account, p_method);
 }
 
-void IRCClientNode::_on_account_verification_success(const String & p_account) {
+void IRCClientNode::_on_account_verification_success(const String &p_account) {
 	emit_signal("account_verification_success", p_account);
 }
 
-void IRCClientNode::_on_account_verification_failed(const String & p_reason) {
+void IRCClientNode::_on_account_verification_failed(const String &p_reason) {
 	emit_signal("account_verification_failed", p_reason);
 }
 
-void IRCClientNode::_on_tag_json_data(const String & p_key, const Dictionary & p_data) {
+void IRCClientNode::_on_tag_json_data(const String &p_key, const Dictionary &p_data) {
 	emit_signal("tag_json_data", p_key, p_data);
 }
 
-void IRCClientNode::_on_tag_base64_data(const String & p_key, const String & p_encoded, const String & p_decoded) {
+void IRCClientNode::_on_tag_base64_data(const String &p_key, const String &p_encoded, const String &p_decoded) {
 	emit_signal("tag_base64_data", p_key, p_encoded, p_decoded);
 }
 
-void IRCClientNode::_on_standard_reply_fail(const String & p_command, const String & p_code, const String & p_context, const String & p_description, const Dictionary & p_tags) {
+void IRCClientNode::_on_standard_reply_fail(const String &p_command, const String &p_code, const String &p_context, const String &p_description, const Dictionary &p_tags) {
 	emit_signal("standard_reply_fail", p_command, p_code, p_context, p_description, p_tags);
 }
 
-void IRCClientNode::_on_standard_reply_warn(const String & p_command, const String & p_code, const String & p_context, const String & p_description, const Dictionary & p_tags) {
+void IRCClientNode::_on_standard_reply_warn(const String &p_command, const String &p_code, const String &p_context, const String &p_description, const Dictionary &p_tags) {
 	emit_signal("standard_reply_warn", p_command, p_code, p_context, p_description, p_tags);
 }
 
-void IRCClientNode::_on_standard_reply_note(const String & p_command, const String & p_code, const String & p_context, const String & p_description, const Dictionary & p_tags) {
+void IRCClientNode::_on_standard_reply_note(const String &p_command, const String &p_code, const String &p_context, const String &p_description, const Dictionary &p_tags) {
 	emit_signal("standard_reply_note", p_command, p_code, p_context, p_description, p_tags);
 }
 
-void IRCClientNode::_on_batch_started(const String & p_ref_tag, const String & p_batch_type, const PackedStringArray & p_params) {
+void IRCClientNode::_on_batch_started(const String &p_ref_tag, const String &p_batch_type, const PackedStringArray &p_params) {
 	emit_signal("batch_started", p_ref_tag, p_batch_type, p_params);
 }
 
-void IRCClientNode::_on_batch_ended(const String & p_ref_tag, const String & p_batch_type, const Array & p_messages) {
+void IRCClientNode::_on_batch_ended(const String &p_ref_tag, const String &p_batch_type, const Array &p_messages) {
 	emit_signal("batch_ended", p_ref_tag, p_batch_type, p_messages);
 }
 
-void IRCClientNode::_on_highlighted(const String & p_channel, const String & p_sender, const String & p_message, const Dictionary & p_tags) {
+void IRCClientNode::_on_highlighted(const String &p_channel, const String &p_sender, const String &p_message, const Dictionary &p_tags) {
 	emit_signal("highlighted", p_channel, p_sender, p_message, p_tags);
 }
 

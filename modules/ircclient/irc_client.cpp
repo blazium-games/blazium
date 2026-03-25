@@ -491,7 +491,7 @@ Error IRCClient::poll() {
 						return tls_err;
 					}
 				}
-				
+
 				tls_connection->poll();
 				StreamPeerTLS::Status tls_status = tls_connection->get_status();
 				if (tls_status == StreamPeerTLS::STATUS_HANDSHAKING) {
