@@ -620,9 +620,10 @@ void RCONServer::_process_source_packet(Client &p_client, const PackedByteArray 
 			_queue_event(Event::EVENT_COMMAND_RECEIVED, p_client.id, cmd_data);
 		}
 	} else {
-		Dictionary raw_data;
-		raw_data["packet"] = p_packet;
-		_queue_event(Event::EVENT_RAW_PACKET_RECEIVED, p_client.id, raw_data);
+		// Event already queued at the top of the function, but leaving this for explicit unhandled case
+		Dictionary unhandled_raw;
+		unhandled_raw["packet"] = p_packet;
+		_queue_event(Event::EVENT_RAW_PACKET_RECEIVED, p_client.id, unhandled_raw);
 	}
 }
 
@@ -671,18 +672,18 @@ void RCONServer::_process_battleye_packet(const IPAddress &p_address, int p_port
 			response.push_back('B');
 			response.push_back('E');
 
-			PackedByteArray payload;
-			payload.push_back(RCONPacket::BATTLEYE_LOGIN);
-			payload.push_back(0x01); // Success
+			PackedByteArray response_payload;
+			response_payload.push_back(RCONPacket::BATTLEYE_LOGIN);
+			response_payload.push_back(0x01); // Success
 
-			uint32_t crc = RCONPacket::_calculate_crc32(payload);
+			uint32_t crc = RCONPacket::_calculate_crc32(response_payload);
 
 			response.push_back((crc) & 0xFF);
 			response.push_back((crc >> 8) & 0xFF);
 			response.push_back((crc >> 16) & 0xFF);
 			response.push_back((crc >> 24) & 0xFF);
 			response.push_back(0xFF);
-			response.append_array(payload);
+			response.append_array(response_payload);
 
 			udp_peer->set_dest_address(p_address, p_port);
 			udp_peer->put_packet(response.ptr(), response.size());
@@ -694,18 +695,18 @@ void RCONServer::_process_battleye_packet(const IPAddress &p_address, int p_port
 			response.push_back('B');
 			response.push_back('E');
 
-			PackedByteArray payload;
-			payload.push_back(RCONPacket::BATTLEYE_LOGIN);
-			payload.push_back(0x00); // Fail
+			PackedByteArray response_payload;
+			response_payload.push_back(RCONPacket::BATTLEYE_LOGIN);
+			response_payload.push_back(0x00); // Fail
 
-			uint32_t crc = RCONPacket::_calculate_crc32(payload);
+			uint32_t crc = RCONPacket::_calculate_crc32(response_payload);
 
 			response.push_back((crc) & 0xFF);
 			response.push_back((crc >> 8) & 0xFF);
 			response.push_back((crc >> 16) & 0xFF);
 			response.push_back((crc >> 24) & 0xFF);
 			response.push_back(0xFF);
-			response.append_array(payload);
+			response.append_array(response_payload);
 
 			udp_peer->set_dest_address(client->udp_address, client->udp_port);
 			udp_peer->put_packet(response.ptr(), response.size());
