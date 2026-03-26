@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RCONPacket" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Low-level packet utility for RCON protocol handling.
+	</brief_description>
+	<description>
+		RCONPacket provides static methods for creating and parsing RCON packets for both Source RCON (TCP) and BattlEye RCON (UDP) protocols. This class is useful for advanced users who need direct control over packet construction and parsing.
+		For most use cases, [RCONServer] and [RCONClient] provide higher-level abstractions that handle packets automatically.
+		[b]Note:[/b] This class only provides static utility methods and does not need to be instantiated.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="create_battleye_command" qualifiers="static">
+			<return type="PackedByteArray" />
+			<param index="0" name="seq" type="int" />
+			<param index="1" name="command" type="String" />
+			<description>
+				Creates a BattlEye RCON command packet with the given sequence number and command string. The packet includes proper header, CRC32 checksum, and payload formatting.
+				The [param seq] value should increment for each command (0-255, wrapping around).
+				[codeblock]
+				var packet = RCONPacket.create_battleye_command(5, "players")
+				# Send packet via UDP
+				[/codeblock]
+			</description>
+		</method>
+		<method name="create_battleye_login" qualifiers="static">
+			<return type="PackedByteArray" />
+			<param index="0" name="password" type="String" />
+			<description>
+				Creates a BattlEye RCON login packet with the given password. This packet must be sent first to authenticate with a BattlEye RCON server.
+				[codeblock]
+				var packet = RCONPacket.create_battleye_login("mypassword")
+				# Send packet via UDP
+				[/codeblock]
+			</description>
+		</method>
+		<method name="create_battleye_message_ack" qualifiers="static">
+			<return type="PackedByteArray" />
+			<param index="0" name="seq" type="int" />
+			<description>
+				Creates a BattlEye RCON server message acknowledgment packet. When the server sends a message, clients must acknowledge it within 10 seconds or risk disconnection.
+				The [param seq] value should match the sequence number from the server message.
+				[codeblock]
+				# When receiving server message with seq=3
+				var ack = RCONPacket.create_battleye_message_ack(3)
+				# Send acknowledgment
+				[/codeblock]
+			</description>
+		</method>
+		<method name="create_source_auth" qualifiers="static">
+			<return type="PackedByteArray" />
+			<param index="0" name="id" type="int" />
+			<param index="1" name="password" type="String" />
+			<description>
+				Creates a Source RCON authentication packet with the given request ID and password. This packet must be sent first to authenticate with a Source RCON server.
+				The [param id] should be a unique identifier (typically 0 for auth packets).
+				[codeblock]
+				var packet = RCONPacket.create_source_auth(0, "admin123")
+				# Send packet via TCP
+				[/codeblock]
+			</description>
+		</method>
+		<method name="create_source_command" qualifiers="static">
+			<return type="PackedByteArray" />
+			<param index="0" name="id" type="int" />
+			<param index="1" name="command" type="String" />
+			<description>
+				Creates a Source RCON command execution packet with the given request ID and command string. The server will echo the [param id] in its response, allowing you to match responses to requests.
+				[codeblock]
+				var packet = RCONPacket.create_source_command(1, "status")
+				# Send packet via TCP
+				[/codeblock]
+			</description>
+		</method>
+		<method name="parse_battleye_packet" qualifiers="static">
+			<return type="Dictionary" />
+			<param index="0" name="data" type="PackedByteArray" />
+			<description>
+				Parses a BattlEye RCON packet and returns a Dictionary with the packet contents. Returns a Dictionary with [code]valid[/code] set to [code]false[/code] if the packet is malformed or has an invalid CRC32.
+				The returned Dictionary contains:
+				- [code]valid[/code]: bool - Whether the packet is valid
+				- [code]type[/code]: int - Packet type (BATTLEYE_LOGIN, BATTLEYE_COMMAND, or BATTLEYE_MESSAGE)
+				- [code]seq[/code]: int - Sequence number (for commands and messages)
+				- [code skip-lint]data[/code]: String - Command response data
+				- [code]message[/code]: String - Server message (for MESSAGE packets)
+				- [code]success[/code]: bool - Authentication result (for LOGIN responses)
+				- [code]multi_packet[/code]: bool - Whether this is part of a multi-packet response
+				- [code]total_packets[/code]: int - Total packets in multi-packet response
+				- [code]packet_index[/code]: int - Index of this packet in multi-packet response
+				[codeblock]
+				var parsed = RCONPacket.parse_battleye_packet(received_data)
+				if parsed.valid:
+				    print("Type: ", parsed.type)
+				    print("Data: ", parsed.get("data", ""))
+				[/codeblock]
+			</description>
+		</method>
+		<method name="parse_source_packet" qualifiers="static">
+			<return type="Dictionary" />
+			<param index="0" name="data" type="PackedByteArray" />
+			<description>
+				Parses a Source RCON packet and returns a Dictionary with the packet contents. Returns a Dictionary with [code]valid[/code] set to [code]false[/code] if the packet is malformed.
+				The returned Dictionary contains:
+				- [code]valid[/code]: bool - Whether the packet is valid
+				- [code]size[/code]: int - Packet size
+				- [code]id[/code]: int - Request ID
+				- [code]type[/code]: int - Packet type (SOURCE_SERVERDATA_AUTH, SOURCE_SERVERDATA_EXECCOMMAND, etc.)
+				- [code]body[/code]: String - Packet body/payload
+				[codeblock]
+				var parsed = RCONPacket.parse_source_packet(received_data)
+				if parsed.valid:
+				    print("ID: ", parsed.id)
+				    print("Body: ", parsed.body)
+				[/codeblock]
+			</description>
+		</method>
+		<method name="verify_battleye_crc32" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="packet" type="PackedByteArray" />
+			<description>
+				Verifies the CRC32 checksum of a BattlEye RCON packet. Returns [code]true[/code] if the checksum is valid, [code]false[/code] otherwise.
+				This is automatically checked by [method parse_battleye_packet], but can be used separately for validation.
+				[codeblock]
+				if RCONPacket.verify_battleye_crc32(packet):
+				    print("Packet checksum valid")
+				else:
+				    print("Corrupted packet!")
+				[/codeblock]
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="SOURCE_SERVERDATA_AUTH" value="3" enum="SourcePacketType">
+			Source RCON authentication request packet type.
+		</constant>
+		<constant name="SOURCE_SERVERDATA_AUTH_RESPONSE" value="2" enum="SourcePacketType">
+			Source RCON authentication response packet type. Also used for command execution packets.
+		</constant>
+		<constant name="SOURCE_SERVERDATA_EXECCOMMAND" value="2" enum="SourcePacketType">
+			Source RCON command execution packet type. Shares the same value as AUTH_RESPONSE.
+		</constant>
+		<constant name="SOURCE_SERVERDATA_RESPONSE_VALUE" value="0" enum="SourcePacketType">
+			Source RCON response value packet type (server response to commands).
+		</constant>
+		<constant name="BATTLEYE_LOGIN" value="0" enum="BattlEyePacketType">
+			BattlEye RCON login/authentication packet type.
+		</constant>
+		<constant name="BATTLEYE_COMMAND" value="1" enum="BattlEyePacketType">
+			BattlEye RCON command packet type (both request and response).
+		</constant>
+		<constant name="BATTLEYE_MESSAGE" value="2" enum="BattlEyePacketType">
+			BattlEye RCON server message packet type (server-pushed messages).
+		</constant>
+	</constants>
+</class>

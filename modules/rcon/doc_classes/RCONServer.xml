@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RCONServer" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		RCON server for accepting remote management connections to game servers.
+	</brief_description>
+	<description>
+		RCONServer provides a complete server implementation for accepting RCON connections using either Source RCON (TCP) or BattlEye RCON (UDP) protocols. It handles multiple simultaneous clients, authentication, command registration with callbacks, and protocol-specific features.
+		[b]Availability:[/b] This class is available in:
+		- Editor builds (all platforms, for testing/development)
+		- Exported games with [code]dedicated_server[/code] custom feature tag ([b]Windows and Linux only[/b])
+		Check with [code]ClassDB.class_exists("RCONServer")[/code] before use in templates.
+		The server runs network operations on a background thread and provides thread-safe access through the [method poll] method, which must be called regularly (typically in [code]_process[/code]) to dispatch events and callbacks.
+		When you register a command using [method register_command], a dynamic signal is automatically created with the name [code]command_&lt;command_name&gt;[/code] that emits alongside the callback.
+		[codeblocks]
+		[gdscript]
+		var server = RCONServer.new()
+
+		func _ready():
+		    server.client_authenticated.connect(_on_client_auth)
+		    server.register_command("status", _handle_status)
+		    server.register_command("kick", _handle_kick)
+
+		    # Dynamic signals are created automatically
+		    server.command_status.connect(_on_status_cmd)
+
+		    server.start_server(27015, "admin123", RCONServer.PROTOCOL_SOURCE)
+
+		func _process(_delta):
+		    server.poll()  # Dispatch events
+
+		func _handle_status(client_id: int, args: String, request_id: int):
+		    server.send_response(client_id, request_id, "Server: Online")
+
+		func _on_status_cmd(client_id: int, args: String, request_id: int):
+		    print("Status command from client %d" % client_id)
+		[/gdscript]
+		[/codeblocks]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_connected_clients" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns an Array of client IDs for all currently connected clients.
+				[codeblock]
+				var clients = server.get_connected_clients()
+				print("Connected clients: ", clients.size())
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_protocol" qualifiers="const">
+			<return type="int" enum="RCONServer.Protocol" />
+			<description>
+				Returns the protocol being used by this server ([constant PROTOCOL_SOURCE] or [constant PROTOCOL_BATTLEYE]).
+			</description>
+		</method>
+		<method name="get_state" qualifiers="const">
+			<return type="int" enum="RCONServer.State" />
+			<description>
+				Returns the current server state. Possible values are:
+				- [constant STATE_STOPPED]: Server is not running
+				- [constant STATE_STARTING]: Server is starting up
+				- [constant STATE_LISTENING]: Server is listening for connections
+				- [constant STATE_ERROR]: An error occurred
+			</description>
+		</method>
+		<method name="is_running" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the server is currently running and listening for connections.
+			</description>
+		</method>
+		<method name="poll">
+			<return type="void" />
+			<description>
+				Processes pending events from the network thread and dispatches signals and callbacks. This method must be called regularly (typically in [code]_process[/code]) for the server to function properly.
+				[codeblock]
+				func _process(_delta):
+				    server.poll()
+				[/codeblock]
+			</description>
+		</method>
+		<method name="register_command">
+			<return type="void" />
+			<param index="0" name="command" type="String" />
+			<param index="1" name="callback" type="Callable" />
+			<description>
+				Registers a command handler. When a client sends this command, the [param callback] will be invoked with the signature [code]func(client_id: int, args: String, request_id: int)[/code].
+				Additionally, a dynamic signal named [code]command_&lt;command_name&gt;[/code] is automatically created and emitted alongside the callback.
+				[codeblock]
+				# Register command
+				server.register_command("kick", _handle_kick)
+
+				# Connect to dynamic signal
+				server.command_kick.connect(_on_kick_command)
+
+				func _handle_kick(client_id: int, args: String, request_id: int):
+				    var player_name = args.strip_edges()
+				    # Kick logic...
+				    server.send_response(client_id, request_id, "Kicked: " + player_name)
+				[/codeblock]
+			</description>
+		</method>
+		<method name="send_raw_packet">
+			<return type="void" />
+			<param index="0" name="client_id" type="int" />
+			<param index="1" name="packet" type="PackedByteArray" />
+			<description>
+				Sends a raw packet to a specific client. Use [RCONPacket] methods to construct packets manually for low-level protocol control.
+				[codeblock]
+				var packet = RCONPacket.create_source_command(1, "Custom response")
+				server.send_raw_packet(client_id, packet)
+				[/codeblock]
+			</description>
+		</method>
+		<method name="send_response">
+			<return type="void" />
+			<param index="0" name="client_id" type="int" />
+			<param index="1" name="request_id" type="int" />
+			<param index="2" name="response" type="String" />
+			<description>
+				Sends a response to a command from a specific client. The [param request_id] should match the request_id provided in the command callback.
+				[codeblock]
+				func _handle_status(client_id: int, args: String, request_id: int):
+				    var status = "Server: Online, Players: 5/10"
+				    server.send_response(client_id, request_id, status)
+				[/codeblock]
+			</description>
+		</method>
+		<method name="start_server">
+			<return type="int" enum="Error" />
+			<param index="0" name="port" type="int" />
+			<param index="1" name="password" type="String" />
+			<param index="2" name="protocol" type="int" enum="RCONServer.Protocol" />
+			<description>
+				Starts the RCON server on the specified [param port] with the given [param password] and [param protocol].
+				Returns [constant OK] if the server started successfully, or an error code otherwise.
+				[b]Security Warning:[/b] RCON passwords are transmitted in plain text. Use strong passwords and consider VPN/SSH tunneling for remote access.
+				[codeblock]
+				var err = server.start_server(27015, "secure_password", RCONServer.PROTOCOL_SOURCE)
+				if err != OK:
+				    print("Failed to start server: ", err)
+				[/codeblock]
+			</description>
+		</method>
+		<method name="stop_server">
+			<return type="void" />
+			<description>
+				Stops the RCON server and disconnects all clients. Emits the [signal server_stopped] signal.
+				[codeblock]
+				server.stop_server()
+				[/codeblock]
+			</description>
+		</method>
+		<method name="unregister_command">
+			<return type="void" />
+			<param index="0" name="command" type="String" />
+			<description>
+				Unregisters a previously registered command handler. The command will no longer trigger callbacks or signals.
+				[codeblock]
+				server.unregister_command("status")
+				[/codeblock]
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="authentication_failed">
+			<param index="0" name="client_id" type="int" />
+			<param index="1" name="address" type="String" />
+			<description>
+				Emitted when a client fails authentication (incorrect password). The [param address] parameter contains the client's IP address.
+			</description>
+		</signal>
+		<signal name="client_authenticated">
+			<param index="0" name="client_id" type="int" />
+			<description>
+				Emitted when a client successfully authenticates with the server.
+			</description>
+		</signal>
+		<signal name="client_connected">
+			<param index="0" name="client_id" type="int" />
+			<param index="1" name="address" type="String" />
+			<description>
+				Emitted when a new client connects to the server. Authentication may still be in progress.
+			</description>
+		</signal>
+		<signal name="client_disconnected">
+			<param index="0" name="client_id" type="int" />
+			<description>
+				Emitted when a client disconnects from the server.
+			</description>
+		</signal>
+		<signal name="client_timeout_warning">
+			<param index="0" name="client_id" type="int" />
+			<param index="1" name="seconds_remaining" type="int" />
+			<description>
+				Emitted when a BattlEye RCON client is approaching timeout (at 35 seconds, 10 seconds before the 45-second timeout). The [param seconds_remaining] parameter indicates how many seconds until timeout.
+			</description>
+		</signal>
+		<signal name="command_received">
+			<param index="0" name="client_id" type="int" />
+			<param index="1" name="command" type="String" />
+			<param index="2" name="request_id" type="int" />
+			<description>
+				Emitted when a command is received from any client. This is a catch-all signal that fires for all commands, including those with registered handlers.
+			</description>
+		</signal>
+		<signal name="keep_alive_sent">
+			<param index="0" name="client_id" type="int" />
+			<description>
+				Emitted when a keep-alive packet is received from a BattlEye RCON client (empty command packet).
+			</description>
+		</signal>
+		<signal name="keep_alive_timeout">
+			<param index="0" name="client_id" type="int" />
+			<description>
+				Emitted when a BattlEye RCON client times out (no packets received for 45 seconds). The client is automatically disconnected.
+			</description>
+		</signal>
+		<signal name="packet_send_failed">
+			<param index="0" name="client_id" type="int" />
+			<param index="1" name="error" type="String" />
+			<description>
+				Emitted when sending a packet to a client fails. The [param error] parameter contains a description of the failure.
+			</description>
+		</signal>
+		<signal name="packet_sent">
+			<param index="0" name="client_id" type="int" />
+			<param index="1" name="packet" type="PackedByteArray" />
+			<description>
+				Emitted when a packet is successfully sent to a client. Useful for low-level monitoring and debugging.
+			</description>
+		</signal>
+		<signal name="raw_packet_received">
+			<param index="0" name="client_id" type="int" />
+			<param index="1" name="packet" type="PackedByteArray" />
+			<description>
+				Emitted when a raw packet is received from a client. Useful for low-level protocol debugging or custom packet handling.
+			</description>
+		</signal>
+		<signal name="server_error">
+			<param index="0" name="error" type="String" />
+			<description>
+				Emitted when a server error occurs. The [param error] parameter contains a description of the error.
+			</description>
+		</signal>
+		<signal name="server_started">
+			<description>
+				Emitted when the server successfully starts and begins listening for connections.
+			</description>
+		</signal>
+		<signal name="server_stopped">
+			<description>
+				Emitted when the server stops.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="PROTOCOL_SOURCE" value="0" enum="Protocol">
+			Use Source RCON protocol (TCP-based). Default port is 27015.
+		</constant>
+		<constant name="PROTOCOL_BATTLEYE" value="1" enum="Protocol">
+			Use BattlEye RCON protocol (UDP-based). Default ports are 2302-2305.
+		</constant>
+		<constant name="STATE_STOPPED" value="0" enum="State">
+			Server is not running.
+		</constant>
+		<constant name="STATE_STARTING" value="1" enum="State">
+			Server is starting up.
+		</constant>
+		<constant name="STATE_LISTENING" value="2" enum="State">
+			Server is listening for client connections.
+		</constant>
+		<constant name="STATE_ERROR" value="3" enum="State">
+			An error occurred during server operation.
+		</constant>
+	</constants>
+</class>

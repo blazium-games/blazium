@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RCONClient" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		RCON client for connecting to and managing remote game servers.
+	</brief_description>
+	<description>
+		RCONClient provides a complete client implementation for connecting to RCON servers using either Source RCON (TCP) or BattlEye RCON (UDP) protocols. It handles authentication, command execution, and protocol-specific features like BattlEye keep-alive packets.
+		[b]Availability:[/b] This class is available in:
+		- Editor builds (all platforms, for testing/development)
+		- Exported games without [code]dedicated_server[/code] custom feature tag (all platforms)
+		It is not available in dedicated server builds with the [code]dedicated_server[/code] feature tag.
+		The client runs network operations on a background thread and provides thread-safe access through the [method poll] method, which must be called regularly (typically in [code]_process[/code]) to dispatch events and callbacks.
+		[codeblocks]
+		[gdscript]
+		var client = RCONClient.new()
+
+		func _ready():
+		    client.connected.connect(_on_connected)
+		    client.connect_to_server("127.0.0.1", 27015, "password", RCONClient.PROTOCOL_SOURCE)
+
+		func _process(_delta):
+		    client.poll()  # Dispatch events
+
+		func _on_connected():
+		    client.send_command("status", func(response):
+		        print("Server: ", response)
+		    )
+		[/gdscript]
+		[/codeblocks]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="connect_to_server">
+			<return type="int" enum="Error" />
+			<param index="0" name="host" type="String" />
+			<param index="1" name="port" type="int" />
+			<param index="2" name="password" type="String" />
+			<param index="3" name="protocol" type="int" enum="RCONClient.Protocol" />
+			<description>
+				Connects to an RCON server at the given [param host] and [param port] using the specified [param password] and [param protocol].
+				Returns [constant OK] if the connection was initiated successfully. The actual connection and authentication happen asynchronously - use the [signal connected] and [signal authenticated] signals to know when the connection is ready.
+				[codeblock]
+				var err = client.connect_to_server("127.0.0.1", 27015, "admin123", RCONClient.PROTOCOL_SOURCE)
+				if err != OK:
+				    print("Failed to initiate connection: ", err)
+				[/codeblock]
+			</description>
+		</method>
+		<method name="disconnect_from_server">
+			<return type="void" />
+			<description>
+				Disconnects from the RCON server and stops the network thread. Emits the [signal disconnected] signal.
+				[codeblock]
+				client.disconnect_from_server()
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_protocol" qualifiers="const">
+			<return type="int" enum="RCONClient.Protocol" />
+			<description>
+				Returns the protocol being used by this client ([constant PROTOCOL_SOURCE] or [constant PROTOCOL_BATTLEYE]).
+			</description>
+		</method>
+		<method name="get_state" qualifiers="const">
+			<return type="int" enum="RCONClient.State" />
+			<description>
+				Returns the current connection state. Possible values are:
+				- [constant STATE_DISCONNECTED]: Not connected
+				- [constant STATE_CONNECTING]: Connection in progress
+				- [constant STATE_AUTHENTICATING]: Authenticating with server
+				- [constant STATE_CONNECTED]: Connected and authenticated
+				- [constant STATE_ERROR]: Connection error occurred
+			</description>
+		</method>
+		<method name="is_authenticated" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the client is connected and authenticated with the server.
+			</description>
+		</method>
+		<method name="poll">
+			<return type="void" />
+			<description>
+				Processes pending events from the network thread and dispatches signals and callbacks. This method must be called regularly (typically in [code]_process[/code]) for the client to function properly.
+				[codeblock]
+				func _process(_delta):
+				    client.poll()
+				[/codeblock]
+			</description>
+		</method>
+		<method name="send_command">
+			<return type="void" />
+			<param index="0" name="command" type="String" />
+			<param index="1" name="callback" type="Callable" default="Callable()" />
+			<description>
+				Sends a command to the RCON server. The response will be provided via the [signal command_response] signal and the optional [param callback].
+				The callback should accept one String parameter (the response).
+				[codeblock]
+				# With callback
+				client.send_command("status", func(response):
+				    print("Status: ", response)
+				)
+
+				# Without callback (use signal instead)
+				client.send_command("players")
+				[/codeblock]
+			</description>
+		</method>
+		<method name="send_command_sync">
+			<return type="String" />
+			<param index="0" name="command" type="String" />
+			<param index="1" name="timeout" type="float" default="5.0" />
+			<description>
+				Sends a command and blocks until a response is received or the timeout expires. Returns the response string, or an empty string if the command times out.
+				[b]Warning:[/b] This is a blocking call that will freeze your game until the response is received. Use [method send_command] with a callback for non-blocking operations.
+				[codeblock]
+				var status = client.send_command_sync("status", 5.0)
+				print("Server status: ", status)
+				[/codeblock]
+			</description>
+		</method>
+		<method name="send_raw_packet">
+			<return type="void" />
+			<param index="0" name="packet" type="PackedByteArray" />
+			<description>
+				Sends a raw packet to the server. Use [RCONPacket] methods to construct packets manually for low-level protocol control.
+				[codeblock]
+				var packet = RCONPacket.create_source_command(1, "custom")
+				client.send_raw_packet(packet)
+				[/codeblock]
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="authenticated">
+			<description>
+				Emitted when the client has successfully authenticated with the server. You can now send commands.
+			</description>
+		</signal>
+		<signal name="authentication_failed">
+			<description>
+				Emitted when authentication fails (incorrect password). The connection will be closed.
+			</description>
+		</signal>
+		<signal name="command_response">
+			<param index="0" name="command" type="String" />
+			<param index="1" name="response" type="String" />
+			<description>
+				Emitted when a command response is received from the server. The [param command] parameter contains the original command that was sent, and [param response] contains the server's response.
+			</description>
+		</signal>
+		<signal name="connected">
+			<description>
+				Emitted when the TCP/UDP connection is established. Authentication may still be in progress.
+			</description>
+		</signal>
+		<signal name="connection_error">
+			<param index="0" name="error" type="String" />
+			<description>
+				Emitted when a connection error occurs. The [param error] parameter contains a description of the error.
+			</description>
+		</signal>
+		<signal name="disconnected">
+			<description>
+				Emitted when the client disconnects from the server (either intentionally or due to connection loss).
+			</description>
+		</signal>
+		<signal name="raw_packet_received">
+			<param index="0" name="packet" type="PackedByteArray" />
+			<description>
+				Emitted when a raw packet is received from the server. Useful for low-level protocol debugging or custom packet handling.
+			</description>
+		</signal>
+		<signal name="server_message">
+			<param index="0" name="message" type="String" />
+			<description>
+				Emitted when a server-pushed message is received (BattlEye RCON only). These are asynchronous messages from the server that are not responses to commands.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="PROTOCOL_SOURCE" value="0" enum="Protocol">
+			Use Source RCON protocol (TCP-based).
+		</constant>
+		<constant name="PROTOCOL_BATTLEYE" value="1" enum="Protocol">
+			Use BattlEye RCON protocol (UDP-based).
+		</constant>
+		<constant name="STATE_DISCONNECTED" value="0" enum="State">
+			Client is not connected to any server.
+		</constant>
+		<constant name="STATE_CONNECTING" value="1" enum="State">
+			Client is establishing a connection to the server.
+		</constant>
+		<constant name="STATE_AUTHENTICATING" value="2" enum="State">
+			Client is authenticating with the server.
+		</constant>
+		<constant name="STATE_CONNECTED" value="3" enum="State">
+			Client is connected and authenticated. Commands can be sent.
+		</constant>
+		<constant name="STATE_ERROR" value="4" enum="State">
+			An error occurred during connection or operation.
+		</constant>
+	</constants>
+</class>

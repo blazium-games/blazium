@@ -31,7 +31,7 @@
 		</member>
 		<member name="primary_key" type="bool" setter="set_primary_key" getter="is_primary_key" default="false">
 		</member>
-		<member name="type" type="int" setter="set_type" getter="get_type" enum="Variant.Type" default="0">
+		<member name="type" type="int" setter="set_type" getter="get_type" enum="Variant.Type" default="-71153280">
 		</member>
 		<member name="unique" type="bool" setter="set_unique" getter="is_unique" default="false">
 		</member>
