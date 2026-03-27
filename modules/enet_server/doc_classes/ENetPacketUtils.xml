@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ENetPacketUtils" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Utility singleton for encoding and decoding network packets in multiple formats.
+	</brief_description>
+	<description>
+		ENetPacketUtils provides utilities for encoding and decoding data in various formats for network transmission. It supports automatic type detection, Dictionary serialization, JSON, raw bytes, Variant encoding, and Node serialization with multiple modes.
+		This singleton is used internally by [ENetServer] and [ENetClient] but can also be used directly for custom packet handling.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="decode_auto">
+			<return type="Variant" />
+			<param index="0" name="data" type="PackedByteArray" />
+			<description>
+				Automatically detects the packet type from the header and decodes it to the appropriate Variant type. This is the recommended method for most use cases.
+			</description>
+		</method>
+		<method name="decode_dictionary">
+			<return type="Dictionary" />
+			<param index="0" name="data" type="PackedByteArray" />
+			<description>
+				Decodes a PackedByteArray that was encoded with [method encode_dictionary] back into a Dictionary.
+			</description>
+		</method>
+		<method name="decode_json">
+			<return type="String" />
+			<param index="0" name="data" type="PackedByteArray" />
+			<description>
+				Decodes a PackedByteArray that was encoded with [method encode_json] back into a JSON String.
+			</description>
+		</method>
+		<method name="decode_node_metadata">
+			<return type="Dictionary" />
+			<param index="0" name="data" type="PackedByteArray" />
+			<description>
+				Decodes a PackedByteArray containing serialized node data back into a Dictionary with node metadata.
+			</description>
+		</method>
+		<method name="decode_string">
+			<return type="String" />
+			<param index="0" name="data" type="PackedByteArray" />
+			<description>
+				Decodes a PackedByteArray that was encoded with [method encode_string] back into a String.
+			</description>
+		</method>
+		<method name="decode_variant">
+			<return type="Variant" />
+			<param index="0" name="data" type="PackedByteArray" />
+			<description>
+				Decodes a PackedByteArray that was encoded with [method encode_variant] back into a Variant.
+			</description>
+		</method>
+		<method name="encode_auto">
+			<return type="PackedByteArray" />
+			<param index="0" name="variant" type="Variant" />
+			<description>
+				Automatically detects the best encoding method for the given Variant and returns encoded data with a type header. This is the recommended method for most use cases.
+			</description>
+		</method>
+		<method name="encode_dictionary">
+			<return type="PackedByteArray" />
+			<param index="0" name="dictionary" type="Dictionary" />
+			<description>
+				Encodes a Dictionary into a PackedByteArray for network transmission.
+			</description>
+		</method>
+		<method name="encode_json">
+			<return type="PackedByteArray" />
+			<param index="0" name="json" type="String" />
+			<description>
+				Encodes a JSON String into a PackedByteArray for network transmission.
+			</description>
+		</method>
+		<method name="encode_node">
+			<return type="PackedByteArray" />
+			<param index="0" name="node" type="Node" />
+			<param index="1" name="flags" type="int" />
+			<description>
+				Encodes a Node into a PackedByteArray using the specified flags. See [enum NodeSyncFlags] for available options.
+			</description>
+		</method>
+		<method name="encode_string">
+			<return type="PackedByteArray" />
+			<param index="0" name="string" type="String" />
+			<description>
+				Encodes a String into a PackedByteArray for network transmission.
+			</description>
+		</method>
+		<method name="encode_variant">
+			<return type="PackedByteArray" />
+			<param index="0" name="variant" type="Variant" />
+			<description>
+				Encodes a Variant into a PackedByteArray for network transmission using Godot's built-in serialization.
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="PACKET_TYPE_RAW" value="0" enum="PacketType">
+			Raw byte data without additional encoding.
+		</constant>
+		<constant name="PACKET_TYPE_VARIANT" value="1" enum="PacketType">
+			Variant data encoded using Godot's serialization.
+		</constant>
+		<constant name="PACKET_TYPE_DICTIONARY" value="2" enum="PacketType">
+			Dictionary data.
+		</constant>
+		<constant name="PACKET_TYPE_JSON" value="3" enum="PacketType">
+			JSON string data.
+		</constant>
+		<constant name="PACKET_TYPE_STRING" value="4" enum="PacketType">
+			UTF-8 string data.
+		</constant>
+		<constant name="PACKET_TYPE_NODE" value="5" enum="PacketType">
+			Serialized node data.
+		</constant>
+		<constant name="SYNC_PROPERTIES" value="1" enum="NodeSyncFlags">
+			Serialize all exported properties of the node.
+		</constant>
+		<constant name="SYNC_METADATA_ONLY" value="2" enum="NodeSyncFlags">
+			Only serialize node metadata (path, type, name).
+		</constant>
+		<constant name="SYNC_TRANSFORM_ONLY" value="4" enum="NodeSyncFlags">
+			Only serialize transform data (for Node2D/Node3D).
+		</constant>
+		<constant name="SYNC_CUSTOM" value="8" enum="NodeSyncFlags">
+			Use custom serialization via the node's [code]_serialize_for_network()[/code] method.
+		</constant>
+	</constants>
+</class>

@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ENetClient" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		High-level ENet client singleton with automatic threading and packet encoding.
+	</brief_description>
+	<description>
+		ENetClient is a singleton that provides a high-level interface for connecting to game servers using the ENet library. It handles networking on a separate thread, automatically encodes/decodes packets using the same format as [ENetServer], and supports multiple packet types.
+		The client automatically polls for network events on a background thread, ensuring the main game thread is never blocked by network operations. All signals are emitted on the main thread for safe interaction with the scene tree.
+		[b]Example usage:[/b]
+		[codeblock]
+		func _ready():
+		    ENetClient.connected_to_server.connect(_on_connected)
+		    ENetClient.packet_received.connect(_on_packet_received)
+		    ENetClient.connect_to_server("127.0.0.1", 7777, 2)
+
+		func _on_connected():
+		    print("Connected to server!")
+		    ENetClient.send_packet({"type": "login", "username": "Player1"}, 0, true)
+
+		func _on_packet_received(packet: Variant, channel: int):
+		    if packet is Dictionary:
+		        match packet.get("type"):
+		            "welcome":
+		                print("Server says: ", packet.get("message"))
+		            "chat":
+		                print(packet.get("from"), ": ", packet.get("message"))
+		[/codeblock]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="connect_to_server">
+			<return type="int" enum="Error" />
+			<param index="0" name="address" type="String" />
+			<param index="1" name="port" type="int" />
+			<param index="2" name="channels" type="int" default="2" />
+			<description>
+				Initiates a connection to the server at the specified address and port. The connection process is asynchronous; listen for the [signal connected_to_server] or [signal connection_failed] signals.
+				Returns [constant OK] if the connection attempt started successfully, or an error code if it failed to start.
+			</description>
+		</method>
+		<method name="disconnect_from_server">
+			<return type="void" />
+			<param index="0" name="reason" type="String" default="&quot;&quot;" />
+			<description>
+				Disconnects from the server with an optional reason.
+			</description>
+		</method>
+		<method name="get_connection_status" qualifiers="const">
+			<return type="int" enum="ENetClient.ConnectionStatus" />
+			<description>
+				Returns the current connection status.
+			</description>
+		</method>
+		<method name="get_ping" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the current round-trip time (ping) to the server in milliseconds.
+			</description>
+		</method>
+		<method name="get_poll_rate" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the current polling rate in milliseconds.
+			</description>
+		</method>
+		<method name="get_server_address" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the address of the server we're connected to (or attempting to connect to).
+			</description>
+		</method>
+		<method name="get_server_port" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the port of the server we're connected to (or attempting to connect to).
+			</description>
+		</method>
+		<method name="get_statistic">
+			<return type="float" />
+			<param index="0" name="statistic" type="int" enum="ENetPacketPeer.PeerStatistic" />
+			<description>
+				Returns the specified network statistic. See [enum ENetPacketPeer.PeerStatistic].
+			</description>
+		</method>
+		<method name="has_event" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="event_name" type="String" />
+			<description>
+				Returns [code]true[/code] if a custom event handler is registered for the specified event name.
+			</description>
+		</method>
+		<method name="is_connected_to_server" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if currently connected to a server.
+			</description>
+		</method>
+		<method name="register_event">
+			<return type="void" />
+			<param index="0" name="event_name" type="String" />
+			<param index="1" name="callback" type="Callable" />
+			<description>
+				Registers a custom event callback. The callable will be executed whenever a custom event packet with the matching [param event_name] is received.
+			</description>
+		</method>
+		<method name="send_node_state">
+			<return type="int" enum="Error" />
+			<param index="0" name="node" type="Node" />
+			<param index="1" name="flags" type="int" />
+			<param index="2" name="channel" type="int" default="0" />
+			<description>
+				Sends a serialized node state to the server. The [param flags] parameter controls what data is sent. See [enum ENetPacketUtils.NodeSyncFlags].
+			</description>
+		</method>
+		<method name="send_packet">
+			<return type="int" enum="Error" />
+			<param index="0" name="packet" type="Variant" />
+			<param index="1" name="channel" type="int" default="0" />
+			<param index="2" name="reliable" type="bool" default="true" />
+			<description>
+				Sends a packet to the server. The packet can be of any type (Dictionary, String, int, etc.) and will be automatically encoded using the same format as [ENetServer].
+			</description>
+		</method>
+		<method name="send_raw_packet">
+			<return type="int" enum="Error" />
+			<param index="0" name="data" type="PackedByteArray" />
+			<param index="1" name="channel" type="int" default="0" />
+			<param index="2" name="reliable" type="bool" default="true" />
+			<description>
+				Sends raw byte data directly to the server without ENet packet type headers or serialization.
+			</description>
+		</method>
+		<method name="set_compression_mode">
+			<return type="void" />
+			<param index="0" name="mode" type="int" enum="ENetConnection.CompressionMode" />
+			<description>
+				Sets the compression mode for network packets. Must match the server's compression mode. See [enum ENetConnection.CompressionMode].
+			</description>
+		</method>
+		<method name="set_poll_rate">
+			<return type="void" />
+			<param index="0" name="rate_ms" type="int" />
+			<description>
+				Sets how often (in milliseconds) the polling thread checks for network events. Lower values mean lower latency but higher CPU usage. Default is 10ms.
+			</description>
+		</method>
+		<method name="trigger_event">
+			<return type="int" enum="Error" />
+			<param index="0" name="event_name" type="String" />
+			<param index="1" name="payload" type="Dictionary" />
+			<param index="2" name="channel" type="int" default="0" />
+			<param index="3" name="reliable" type="bool" default="true" />
+			<description>
+				Triggers a custom event on the server side by sending a specially formatted packet containing the [param event_name] and [param payload].
+			</description>
+		</method>
+		<method name="unregister_event">
+			<return type="void" />
+			<param index="0" name="event_name" type="String" />
+			<description>
+				Unregisters a previously registered custom event handler.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="connected_to_server">
+			<description>
+				Emitted when successfully connected to the server.
+			</description>
+		</signal>
+		<signal name="connection_failed">
+			<param index="0" name="reason" type="String" />
+			<description>
+				Emitted when the connection attempt fails.
+			</description>
+		</signal>
+		<signal name="custom_event_received">
+			<param index="0" name="event_name" type="String" />
+			<param index="1" name="payload" type="Variant" />
+			<param index="2" name="channel" type="int" />
+			<description>
+				Emitted when a custom event packet is received and successfully routed to a registered handler.
+			</description>
+		</signal>
+		<signal name="disconnected_from_server">
+			<param index="0" name="reason" type="String" />
+			<description>
+				Emitted when disconnected from the server, either intentionally or due to connection loss.
+			</description>
+		</signal>
+		<signal name="packet_received">
+			<param index="0" name="packet" type="Variant" />
+			<param index="1" name="channel" type="int" />
+			<description>
+				Emitted when a packet is received from the server. The packet is automatically decoded.
+			</description>
+		</signal>
+		<signal name="raw_packet_received">
+			<param index="0" name="data" type="PackedByteArray" />
+			<param index="1" name="channel" type="int" />
+			<description>
+				Emitted when a packet is received, providing the raw byte data before decoding.
+			</description>
+		</signal>
+		<signal name="unknown_event_received">
+			<param index="0" name="event_name" type="String" />
+			<param index="1" name="payload" type="Variant" />
+			<param index="2" name="channel" type="int" />
+			<description>
+				Emitted when a custom event packet is received but no matching event handler is registered locally.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="STATUS_DISCONNECTED" value="0" enum="ConnectionStatus">
+			Not connected to any server.
+		</constant>
+		<constant name="STATUS_CONNECTING" value="1" enum="ConnectionStatus">
+			Currently attempting to connect to a server.
+		</constant>
+		<constant name="STATUS_CONNECTED" value="2" enum="ConnectionStatus">
+			Successfully connected to a server.
+		</constant>
+	</constants>
+</class>

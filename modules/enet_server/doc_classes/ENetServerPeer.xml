@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ENetServerPeer" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Represents a connected peer on the server side.
+	</brief_description>
+	<description>
+		ENetServerPeer represents a client connection to an [ENetServer]. It provides methods to send packets to the specific peer, disconnect them, and manage authentication state.
+		Each peer goes through a connection lifecycle: connecting → prelogin (if authentication is enabled) → authenticated → disconnecting.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="authenticate">
+			<return type="void" />
+			<description>
+				Marks the peer as authenticated and moves them to the [constant STATE_AUTHENTICATED] state. Can only be called when the peer is in [constant STATE_PRELOGIN] state.
+			</description>
+		</method>
+		<method name="disconnect_peer">
+			<return type="void" />
+			<param index="0" name="reason" type="String" default="&quot;&quot;" />
+			<description>
+				Disconnects the peer from the server with an optional reason. The peer will be removed after the disconnection is complete.
+			</description>
+		</method>
+		<method name="get_connection_time" qualifiers="const">
+			<return type="float" />
+			<description>
+				Returns the time in seconds since the peer connected.
+			</description>
+		</method>
+		<method name="get_ping" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the current round-trip time (ping) to the peer in milliseconds.
+			</description>
+		</method>
+		<method name="get_statistic">
+			<return type="float" />
+			<param index="0" name="statistic" type="int" enum="ENetPacketPeer.PeerStatistic" />
+			<description>
+				Returns the specified statistic for this peer. See [enum ENetPacketPeer.PeerStatistic].
+			</description>
+		</method>
+		<method name="reject">
+			<return type="void" />
+			<param index="0" name="reason" type="String" default="&quot;&quot;" />
+			<description>
+				Rejects the peer's connection attempt and disconnects them. Can only be called when the peer is in [constant STATE_CONNECTING] or [constant STATE_PRELOGIN] state.
+			</description>
+		</method>
+		<method name="send_packet">
+			<return type="int" enum="Error" />
+			<param index="0" name="packet" type="Variant" />
+			<param index="1" name="channel" type="int" />
+			<param index="2" name="reliable" type="bool" />
+			<description>
+				Sends a packet to this peer. The packet will be automatically encoded using [ENetPacketUtils].
+			</description>
+		</method>
+		<method name="send_raw_packet">
+			<return type="int" enum="Error" />
+			<param index="0" name="data" type="PackedByteArray" />
+			<param index="1" name="channel" type="int" />
+			<param index="2" name="reliable" type="bool" />
+			<description>
+				Sends raw byte data directly to the peer without ENet packet type headers or serialization. Returns [constant OK] on success, or an error code on failure.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="auth_state" type="int" setter="" getter="get_auth_state" enum="ENetServerPeer.AuthState" default="0">
+			The current authentication state of the peer.
+		</member>
+		<member name="connection_state" type="int" setter="" getter="get_connection_state" enum="ENetServerPeer.ConnectionState" default="0">
+			The current connection state of the peer.
+		</member>
+		<member name="custom_data" type="Dictionary" setter="set_custom_data" getter="get_custom_data" default="{}">
+			Custom data Dictionary for storing arbitrary information about the peer.
+		</member>
+		<member name="peer_id" type="int" setter="" getter="get_peer_id" default="0">
+			The unique peer ID assigned by the server.
+		</member>
+		<member name="remote_address" type="String" setter="" getter="get_remote_address" default="&quot;&quot;">
+			The IP address of the peer.
+		</member>
+		<member name="remote_port" type="int" setter="" getter="get_remote_port" default="0">
+			The port number of the peer.
+		</member>
+	</members>
+	<constants>
+		<constant name="STATE_CONNECTING" value="0" enum="ConnectionState">
+			The peer is in the process of connecting.
+		</constant>
+		<constant name="STATE_PRELOGIN" value="1" enum="ConnectionState">
+			The peer is awaiting authentication (if authentication mode is enabled).
+		</constant>
+		<constant name="STATE_AUTHENTICATED" value="2" enum="ConnectionState">
+			The peer is fully connected and authenticated.
+		</constant>
+		<constant name="STATE_DISCONNECTING" value="3" enum="ConnectionState">
+			The peer is in the process of disconnecting.
+		</constant>
+		<constant name="AUTH_PENDING" value="0" enum="AuthState">
+			Authentication is pending.
+		</constant>
+		<constant name="AUTH_APPROVED" value="1" enum="AuthState">
+			The peer has been approved and authenticated.
+		</constant>
+		<constant name="AUTH_REJECTED" value="2" enum="AuthState">
+			The peer's authentication has been rejected.
+		</constant>
+	</constants>
+</class>

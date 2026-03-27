@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ENetServer" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		High-level ENet server singleton with automatic threading and packet encoding.
+	</brief_description>
+	<description>
+		ENetServer is a singleton that provides a high-level interface for creating game servers using the ENet library. It handles networking on a separate thread, automatically encodes/decodes packets, supports multiple packet formats, node serialization, and configurable authentication.
+		The server automatically polls for network events on a background thread, ensuring the main game thread is never blocked by network operations. All signals are emitted on the main thread for safe interaction with the scene tree.
+		[b]Example usage:[/b]
+		[codeblock]
+		func _ready():
+		    ENetServer.peer_authenticated.connect(_on_peer_authenticated)
+		    ENetServer.packet_received.connect(_on_packet_received)
+		    ENetServer.create_server(7777, 32, 2)
+
+		func _on_peer_authenticated(peer: ENetServerPeer):
+		    print("Player connected: ", peer.peer_id)
+		    ENetServer.send_packet(peer.peer_id, {"type": "welcome"}, 0, true)
+
+		func _on_packet_received(peer: ENetServerPeer, packet: Variant, channel: int):
+		    if packet is Dictionary and packet.get("type") == "chat":
+		        ENetServer.send_packet_to_all(packet, 0, true, [peer.peer_id])
+		[/codeblock]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="broadcast_packet">
+			<return type="void" />
+			<param index="0" name="packet" type="Variant" />
+			<param index="1" name="channel" type="int" default="0" />
+			<param index="2" name="reliable" type="bool" default="true" />
+			<description>
+				Broadcasts a packet to all connected peers. Equivalent to [method send_packet_to_all] with no exclusions.
+			</description>
+		</method>
+		<method name="create_server">
+			<return type="int" enum="Error" />
+			<param index="0" name="port" type="int" />
+			<param index="1" name="max_peers" type="int" default="32" />
+			<param index="2" name="max_channels" type="int" default="2" />
+			<description>
+				Creates and starts the server on the specified port. The server will listen for connections and automatically start the polling thread.
+				Returns [constant OK] on success, or an error code on failure.
+			</description>
+		</method>
+		<method name="get_authenticated_peer_count" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the number of peers that are fully authenticated ([constant ENetServerPeer.STATE_AUTHENTICATED]).
+			</description>
+		</method>
+		<method name="get_authentication_mode" qualifiers="const">
+			<return type="int" enum="ENetServer.AuthMode" />
+			<description>
+				Returns the current authentication mode.
+			</description>
+		</method>
+		<method name="get_authentication_timeout" qualifiers="const">
+			<return type="float" />
+			<description>
+				Returns the authentication timeout in seconds.
+			</description>
+		</method>
+		<method name="get_local_port" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the local port the server is bound to.
+			</description>
+		</method>
+		<method name="get_peer">
+			<return type="ENetServerPeer" />
+			<param index="0" name="peer_id" type="int" />
+			<description>
+				Returns the peer with the specified ID, or null if no such peer exists.
+			</description>
+		</method>
+		<method name="get_peer_count" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the total number of connected peers.
+			</description>
+		</method>
+		<method name="get_peers">
+			<return type="ENetServerPeer[]" />
+			<description>
+				Returns an array of all connected peers.
+			</description>
+		</method>
+		<method name="get_poll_rate" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the current polling rate in milliseconds.
+			</description>
+		</method>
+		<method name="has_event" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="event_name" type="String" />
+			<description>
+				Returns [code]true[/code] if a custom event handler is registered for the specified event name.
+			</description>
+		</method>
+		<method name="is_server_active" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the server is currently active.
+			</description>
+		</method>
+		<method name="kick_peer">
+			<return type="void" />
+			<param index="0" name="peer_id" type="int" />
+			<param index="1" name="reason" type="String" default="&quot;&quot;" />
+			<description>
+				Disconnects the specified peer with an optional reason.
+			</description>
+		</method>
+		<method name="register_event">
+			<return type="void" />
+			<param index="0" name="event_name" type="String" />
+			<param index="1" name="callback" type="Callable" />
+			<description>
+				Registers a custom event callback. The callable will be executed whenever a custom event packet with the matching [param event_name] is received from any client.
+			</description>
+		</method>
+		<method name="send_node_state">
+			<return type="int" enum="Error" />
+			<param index="0" name="peer_id" type="int" />
+			<param index="1" name="node" type="Node" />
+			<param index="2" name="flags" type="int" />
+			<param index="3" name="channel" type="int" default="0" />
+			<description>
+				Sends a serialized node state to the specified peer. The [param flags] parameter controls what data is sent. See [enum ENetPacketUtils.NodeSyncFlags].
+			</description>
+		</method>
+		<method name="send_node_to_all">
+			<return type="void" />
+			<param index="0" name="node" type="Node" />
+			<param index="1" name="flags" type="int" />
+			<param index="2" name="channel" type="int" default="0" />
+			<description>
+				Sends a serialized node state to all connected peers.
+			</description>
+		</method>
+		<method name="send_packet">
+			<return type="int" enum="Error" />
+			<param index="0" name="peer_id" type="int" />
+			<param index="1" name="packet" type="Variant" />
+			<param index="2" name="channel" type="int" default="0" />
+			<param index="3" name="reliable" type="bool" default="true" />
+			<description>
+				Sends a packet to the specified peer. The packet can be of any type (Dictionary, String, int, etc.) and will be automatically encoded.
+			</description>
+		</method>
+		<method name="send_packet_to_all">
+			<return type="void" />
+			<param index="0" name="packet" type="Variant" />
+			<param index="1" name="channel" type="int" default="0" />
+			<param index="2" name="reliable" type="bool" default="true" />
+			<param index="3" name="exclude" type="int[]" default="[]" />
+			<description>
+				Sends a packet to all connected peers, optionally excluding specific peer IDs.
+			</description>
+		</method>
+		<method name="send_packet_to_multiple">
+			<return type="void" />
+			<param index="0" name="peer_ids" type="int[]" />
+			<param index="1" name="packet" type="Variant" />
+			<param index="2" name="channel" type="int" default="0" />
+			<param index="3" name="reliable" type="bool" default="true" />
+			<description>
+				Sends a packet to multiple specified peers.
+			</description>
+		</method>
+		<method name="set_authentication_mode">
+			<return type="void" />
+			<param index="0" name="mode" type="int" enum="ENetServer.AuthMode" />
+			<description>
+				Sets the authentication mode for the server. This controls how new connections are handled.
+			</description>
+		</method>
+		<method name="set_authentication_timeout">
+			<return type="void" />
+			<param index="0" name="timeout" type="float" />
+			<description>
+				Sets the timeout in seconds for authentication. Peers that don't authenticate within this time will be disconnected.
+			</description>
+		</method>
+		<method name="set_compression_mode">
+			<return type="void" />
+			<param index="0" name="mode" type="int" enum="ENetConnection.CompressionMode" />
+			<description>
+				Sets the compression mode for network packets. See [enum ENetConnection.CompressionMode].
+			</description>
+		</method>
+		<method name="set_custom_authenticator">
+			<return type="void" />
+			<param index="0" name="callable" type="Callable" />
+			<description>
+				Sets a custom authentication callable that will be invoked for each peer during the prelogin phase.
+			</description>
+		</method>
+		<method name="set_poll_rate">
+			<return type="void" />
+			<param index="0" name="rate_ms" type="int" />
+			<description>
+				Sets how often (in milliseconds) the polling thread checks for network events. Lower values mean lower latency but higher CPU usage. Default is 10ms.
+			</description>
+		</method>
+		<method name="stop_server">
+			<return type="void" />
+			<description>
+				Stops the server, disconnects all peers, and stops the polling thread.
+			</description>
+		</method>
+		<method name="trigger_event">
+			<return type="int" enum="Error" />
+			<param index="0" name="peer_id" type="int" />
+			<param index="1" name="event_name" type="String" />
+			<param index="2" name="payload" type="Dictionary" />
+			<param index="3" name="channel" type="int" default="0" />
+			<param index="4" name="reliable" type="bool" default="true" />
+			<description>
+				Triggers a custom event on the specified peer by sending a specially formatted packet containing the [param event_name] and [param payload].
+			</description>
+		</method>
+		<method name="trigger_event_to_all">
+			<return type="void" />
+			<param index="0" name="event_name" type="String" />
+			<param index="1" name="payload" type="Dictionary" />
+			<param index="2" name="channel" type="int" default="0" />
+			<param index="3" name="reliable" type="bool" default="true" />
+			<param index="4" name="exclude" type="int[]" default="[]" />
+			<description>
+				Triggers a custom event on all connected peers, optionally excluding specific peer IDs.
+			</description>
+		</method>
+		<method name="unregister_event">
+			<return type="void" />
+			<param index="0" name="event_name" type="String" />
+			<description>
+				Unregisters a previously registered custom event handler.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="custom_event_received">
+			<param index="0" name="peer" type="ENetServerPeer" />
+			<param index="1" name="event_name" type="String" />
+			<param index="2" name="payload" type="Variant" />
+			<param index="3" name="channel" type="int" />
+			<description>
+				Emitted when a custom event packet is received from a peer and successfully routed to a registered handler.
+			</description>
+		</signal>
+		<signal name="packet_received">
+			<param index="0" name="peer" type="ENetServerPeer" />
+			<param index="1" name="packet" type="Variant" />
+			<param index="2" name="channel" type="int" />
+			<description>
+				Emitted when a packet is received from a peer. The packet is automatically decoded.
+			</description>
+		</signal>
+		<signal name="peer_authenticated">
+			<param index="0" name="peer" type="ENetServerPeer" />
+			<description>
+				Emitted when a peer is fully authenticated and ready for game data.
+			</description>
+		</signal>
+		<signal name="peer_connecting">
+			<param index="0" name="peer" type="ENetServerPeer" />
+			<param index="1" name="data" type="int" />
+			<description>
+				Emitted when a peer first connects. You can call [method ENetServerPeer.reject] during this signal to reject the connection.
+			</description>
+		</signal>
+		<signal name="peer_disconnected">
+			<param index="0" name="peer" type="ENetServerPeer" />
+			<param index="1" name="reason" type="String" />
+			<description>
+				Emitted when a peer disconnects.
+			</description>
+		</signal>
+		<signal name="peer_prelogin">
+			<param index="0" name="peer" type="ENetServerPeer" />
+			<param index="1" name="login_data" type="Dictionary" />
+			<description>
+				Emitted when a peer enters the prelogin phase (if authentication is enabled). You should call either [method ENetServerPeer.authenticate] or [method ENetServerPeer.reject] during this signal.
+			</description>
+		</signal>
+		<signal name="raw_packet_received">
+			<param index="0" name="peer" type="ENetServerPeer" />
+			<param index="1" name="data" type="PackedByteArray" />
+			<param index="2" name="channel" type="int" />
+			<description>
+				Emitted when a packet is received, providing the raw byte data before decoding.
+			</description>
+		</signal>
+		<signal name="server_started">
+			<param index="0" name="port" type="int" />
+			<description>
+				Emitted when the server successfully starts.
+			</description>
+		</signal>
+		<signal name="server_stopped">
+			<description>
+				Emitted when the server stops.
+			</description>
+		</signal>
+		<signal name="unknown_event_received">
+			<param index="0" name="peer" type="ENetServerPeer" />
+			<param index="1" name="event_name" type="String" />
+			<param index="2" name="payload" type="Variant" />
+			<param index="3" name="channel" type="int" />
+			<description>
+				Emitted when a custom event packet is received from a peer but no matching event handler is registered locally.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="AUTH_NONE" value="0" enum="AuthMode">
+			No authentication required. Peers are immediately authenticated upon connection.
+		</constant>
+		<constant name="AUTH_PRELOGIN_ONLY" value="1" enum="AuthMode">
+			Peers must be manually authenticated via the [signal peer_prelogin] signal.
+		</constant>
+		<constant name="AUTH_CUSTOM" value="2" enum="AuthMode">
+			Custom authentication using the callable set with [method set_custom_authenticator].
+		</constant>
+	</constants>
+</class>
