@@ -539,6 +539,10 @@ void ENetServer::_emit_event(const QueuedEvent &p_event) {
 			}
 		} break;
 
+		case EVENT_PEER_PRELOGIN: {
+			// Unused internally; prelogin signaling is routed through packet reception
+		} break;
+
 		case EVENT_PEER_AUTHENTICATED: {
 			emit_signal("peer_authenticated", peer);
 		} break;
