@@ -331,6 +331,11 @@ private:
 	Control *right_menu_spacer = nullptr;
 	EditorTitleBar *title_bar = nullptr;
 	EditorRunBar *project_run_bar = nullptr;
+	HBoxContainer *debug_target_hb = nullptr;
+	Button *debug_target_label = nullptr;
+	Button *debug_target_status = nullptr;
+	bool debug_target_last_connected_state = false;
+	String debug_target_last_ip = "";
 	HBoxContainer *right_menu_hb = nullptr;
 
 	// Spacers to center 2D / 3D / Script buttons.
@@ -719,6 +724,8 @@ private:
 
 	void _update_main_menu_type();
 	void _add_to_main_menu(const String &p_name, PopupMenu *p_menu);
+
+	void _update_debug_target_status();
 
 protected:
 	friend class FileSystemDock;

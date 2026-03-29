@@ -1379,6 +1379,21 @@ void ScriptEditorDebugger::_resources_reimported(const PackedStringArray &p_reso
 	_put_msg("scene:reload_cached_files", msg);
 }
 
+String ScriptEditorDebugger::get_connected_host_ip() {
+	if (!peer.is_valid() || !peer->is_peer_connected()) {
+		return "";
+	}
+
+	// Try to cast to TCP peer to get the IP address
+	Ref<RemoteDebuggerPeerTCP> tcp_peer = peer;
+	if (tcp_peer.is_valid()) {
+		return tcp_peer->get_peer_host();
+	}
+
+	// For non-TCP peers (e.g., WebSocket), return a generic message
+	return "Connected";
+}
+
 int ScriptEditorDebugger::_get_node_path_cache(const NodePath &p_path) {
 	const int *r = node_path_cache.getptr(p_path);
 	if (r) {

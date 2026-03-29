@@ -689,6 +689,16 @@ void EditorNode::_update_theme(bool p_skip_creation) {
 		help_menu->set_item_icon(help_menu->get_item_index(HELP_ABOUT), _get_editor_theme_native_menu_icon(SNAME("Godot"), global_menu, dark_mode));
 		help_menu->set_item_icon(help_menu->get_item_index(HELP_SUPPORT_GODOT_DEVELOPMENT), _get_editor_theme_native_menu_icon(SNAME("Heart"), global_menu, dark_mode));
 
+		// Initialize debug target status icon
+		if (debug_target_status && (bool)EDITOR_GET("interface/editor/show_remote_debug_connection_status") == true) {
+			Ref<Texture2D> icon = theme->get_icon(SNAME("GuiSliderGrabber"), EditorStringName(EditorIcons));
+			debug_target_status->set_button_icon(icon);
+			debug_target_status->add_theme_color_override("icon_normal_color", Color(0.94, 0.44, 0.56, 1.0)); // Red is for disconnected
+			debug_target_status->add_theme_color_override("icon_pressed_color", Color(0.94, 0.44, 0.56, 1.0));
+			debug_target_status->add_theme_color_override("icon_hover_color", Color(0.94, 0.44, 0.56, 1.0));
+			debug_target_status->set_self_modulate(Color(1, 1, 1, 0.95)); // 95% opacity for icon and text
+		}
+
 		_update_renderer_color();
 	}
 
@@ -801,6 +811,9 @@ void EditorNode::_notification(int p_what) {
 			if (editor_data.is_scene_changed(-1)) {
 				scene_tabs->update_scene_tabs();
 			}
+
+			// Update debug target status
+			_update_debug_target_status();
 
 			// Update the animation frame of the update spinner.
 			uint64_t frame = Engine::get_singleton()->get_frames_drawn();
@@ -7809,6 +7822,73 @@ HashMap<String, Variant> EditorNode::get_initial_settings() {
 	return settings;
 }
 
+void EditorNode::_update_debug_target_status() {
+	if (!debug_target_status) {
+		return;
+	}
+
+	// Get the current debugger
+	EditorDebuggerNode *debugger_node = EditorDebuggerNode::get_singleton();
+	if (!debugger_node) {
+		return;
+	}
+
+	ScriptEditorDebugger *debugger = debugger_node->get_default_debugger();
+	if (!debugger) {
+		return;
+	}
+
+	// Check if session is active
+	bool is_connected = debugger->is_session_active();
+
+	// Only update the ui if state has changed
+	if (is_connected != debug_target_last_connected_state) {
+		// Connection state changed, update everything
+		debug_target_last_connected_state = is_connected;
+
+		if (is_connected) {
+			// Connected state: green icon + stringified IP address
+			String ip_address = debugger->get_connected_host_ip();
+			if (ip_address.is_empty()) {
+				ip_address = "Connected";
+			}
+			debug_target_last_ip = ip_address;
+
+			Ref<Texture2D> icon = theme->get_icon(SNAME("GuiSliderGrabber"), EditorStringName(EditorIcons));
+			debug_target_status->set_button_icon(icon);
+			debug_target_status->add_theme_color_override("icon_normal_color", Color(0.46, 0.85, 0.69, 1.0));
+			debug_target_status->add_theme_color_override("icon_pressed_color", Color(0.46, 0.85, 0.69, 1.0));
+			debug_target_status->add_theme_color_override("icon_hover_color", Color(0.46, 0.85, 0.69, 1.0));
+			debug_target_status->add_theme_color_override("font_color", Color(1, 1, 1, 0.95));
+			debug_target_status->set_tooltip_text(vformat("Connected to: %s", ip_address));
+			debug_target_label->set_tooltip_text(vformat("Connected to: %s", ip_address));
+		} else {
+			// Disconnected state: red icon + "No Connection"
+			debug_target_last_ip = "";
+
+			Ref<Texture2D> icon = theme->get_icon(SNAME("GuiSliderGrabber"), EditorStringName(EditorIcons));
+			debug_target_status->set_button_icon(icon);
+			debug_target_status->add_theme_color_override("icon_normal_color", Color(0.94, 0.44, 0.56, 1.0));
+			debug_target_status->add_theme_color_override("icon_pressed_color", Color(0.94, 0.44, 0.56, 1.0));
+			debug_target_status->add_theme_color_override("icon_hover_color", Color(0.94, 0.44, 0.56, 1.0));
+			debug_target_status->add_theme_color_override("font_color", Color(1, 1, 1, 0.95));
+			debug_target_status->set_tooltip_text("No Connection");
+			debug_target_label->set_tooltip_text("No Connection");
+		}
+	} else if (is_connected) {
+		// Connected state hasn't changed, but IP might have
+		String ip_address = debugger->get_connected_host_ip();
+		if (ip_address.is_empty()) {
+			ip_address = "Connected";
+		}
+		if (ip_address != debug_target_last_ip) {
+			debug_target_last_ip = ip_address;
+			debug_target_status->set_tooltip_text(vformat("Connected to: %s", ip_address));
+			debug_target_label->set_tooltip_text(vformat("Connected to: %s", ip_address));
+		}
+	}
+}
+
 EditorNode::EditorNode() {
 	DEV_ASSERT(!singleton);
 	singleton = this;
@@ -8588,6 +8668,58 @@ EditorNode::EditorNode() {
 	title_bar->add_child(project_run_bar);
 	project_run_bar->connect("play_pressed", callable_mp(this, &EditorNode::_project_run_started));
 	project_run_bar->connect("stop_pressed", callable_mp(this, &EditorNode::_project_run_stopped));
+
+	if ((bool)EDITOR_GET("interface/editor/show_remote_debug_connection_status") == true) {
+		// Transparent non-interactive label spacer for debug target section (left side)
+		Label *debug_target_spacer_left = memnew(Label);
+		debug_target_spacer_left->set_text(" | ");
+		debug_target_spacer_left->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
+		debug_target_spacer_left->add_theme_color_override("font_color", Color(1, 1, 1, .2));
+		title_bar->add_child(debug_target_spacer_left);
+
+		// Debug target section
+		debug_target_hb = memnew(HBoxContainer);
+		title_bar->add_child(debug_target_hb);
+
+		// "Debug Client:" label
+		debug_target_label = memnew(Button);
+		debug_target_label->set_text("Debug Client:");
+		debug_target_label->set_flat(true);
+		debug_target_label->set_focus_mode(Control::FOCUS_NONE);
+		debug_target_label->set_mouse_filter(Control::MOUSE_FILTER_PASS);
+		debug_target_label->add_theme_color_override("font_color", Color(1, 1, 1, 0.5));
+		//debug_target_label->add_theme_font_size_override(SceneStringName(font_size), 11);
+		Ref<StyleBoxEmpty> label_empty_style;
+		label_empty_style.instantiate();
+		debug_target_label->set_tooltip_text("No Connection");
+		debug_target_label->add_theme_style_override("normal", label_empty_style);
+		debug_target_label->add_theme_style_override("hover", label_empty_style);
+		debug_target_label->add_theme_style_override("pressed", label_empty_style);
+		debug_target_label->add_theme_style_override("focus", label_empty_style);
+		debug_target_hb->add_child(debug_target_label);
+		// Connection status button
+		debug_target_status = memnew(Button);
+		debug_target_status->set_flat(true);
+		debug_target_status->set_focus_mode(Control::FOCUS_NONE);
+		debug_target_status->set_mouse_filter(Control::MOUSE_FILTER_PASS);
+		Ref<StyleBoxEmpty> status_empty_style;
+		status_empty_style.instantiate();
+		debug_target_status->add_theme_style_override("normal", status_empty_style);
+		debug_target_status->add_theme_style_override("hover", status_empty_style);
+		debug_target_status->add_theme_style_override("pressed", status_empty_style);
+		debug_target_status->add_theme_style_override("focus", status_empty_style);
+		// Set initial disconnected state
+		debug_target_status->set_tooltip_text("No Connection");
+		debug_target_status->add_theme_color_override("font_color", Color(1, 1, 1, 0.85));
+		debug_target_hb->add_child(debug_target_status);
+
+		// Transparent non-interactive label spacer for debug target section (right side)
+		Label *debug_target_spacer_right = memnew(Label);
+		debug_target_spacer_right->set_text(" | ");
+		debug_target_spacer_right->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
+		debug_target_spacer_right->add_theme_color_override("font_color", Color(1, 1, 1, .2));
+		title_bar->add_child(debug_target_spacer_right);
+	}
 
 	right_menu_hb = memnew(HBoxContainer);
 	right_menu_hb->set_mouse_filter(Control::MOUSE_FILTER_STOP);

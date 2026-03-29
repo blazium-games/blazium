@@ -61,6 +61,13 @@ bool RemoteDebuggerPeerWebSocket::is_peer_connected() {
 	return ws_peer.is_valid() && (ws_peer->get_ready_state() == WebSocketPeer::STATE_OPEN || ws_peer->get_ready_state() == WebSocketPeer::STATE_CONNECTING);
 }
 
+String RemoteDebuggerPeerWebSocket::get_peer_host() {
+	if (ws_peer.is_valid() && ws_peer->get_ready_state() == WebSocketPeer::STATE_OPEN) {
+		return String(ws_peer->get_connected_host());
+	}
+	return "";
+}
+
 void RemoteDebuggerPeerWebSocket::poll() {
 	ERR_FAIL_COND(ws_peer.is_null());
 	ws_peer->poll();
