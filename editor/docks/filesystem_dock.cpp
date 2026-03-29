@@ -2228,6 +2228,7 @@ void FileSystemDock::_file_option(int p_option, const Vector<String> &p_selected
 				// Try terminal emulators that ship with common Linux distributions first.
 				terminal_emulators.push_back("gnome-terminal");
 				terminal_emulators.push_back("konsole");
+				terminal_emulators.push_back("qterminal");
 				terminal_emulators.push_back("xfce4-terminal");
 				terminal_emulators.push_back("lxterminal");
 				terminal_emulators.push_back("kitty");
@@ -2281,6 +2282,8 @@ void FileSystemDock::_file_option(int p_option, const Vector<String> &p_selected
 					terminal_emulator_args.push_back("--workdir");
 				} else if (chosen_terminal_emulator.ends_with("gnome-terminal")) {
 					terminal_emulator_args.push_back("--working-directory");
+				} else if (chosen_terminal_emulator.ends_with("qterminal")) {
+					terminal_emulator_args.push_back("--workdir");
 				} else if (chosen_terminal_emulator.ends_with("urxvt")) {
 					terminal_emulator_args.push_back("-cd");
 				} else if (chosen_terminal_emulator.ends_with("xfce4-terminal")) {
