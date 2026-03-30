@@ -621,8 +621,38 @@ void EditorThemeManager::_create_shared_styles(const Ref<EditorTheme> &p_theme, 
 
 			p_config.button_style_focus = p_config.button_style->duplicate();
 			p_config.button_style_focus->set_draw_center(false);
-			p_config.button_style_focus->set_border_width_all(Math::round(2 * MAX(1, EDSCALE)));
-			p_config.button_style_focus->set_border_color(p_config.accent_color);
+
+			int focus_border_type = (int)EDITOR_GET("interface/editor/focus_border_type");
+			int focus_border_width_on = Math::round(2 * MAX(1, EDSCALE));
+			int focus_border_width_thin = Math::round(1 * MAX(1, EDSCALE));
+			Color focus_border_color_translucent = Color(p_config.accent_color.r, p_config.accent_color.g, p_config.accent_color.b, 0.5);
+
+			switch (focus_border_type) {
+				case 0: // Off
+					p_config.button_style_focus->set_border_width_all(0);
+					p_config.button_style_focus->set_border_color(p_config.accent_color);
+					break;
+				case 1: // On (default)
+					p_config.button_style_focus->set_border_width_all(focus_border_width_on);
+					p_config.button_style_focus->set_border_color(p_config.accent_color);
+					break;
+				case 2: // Translucent
+					p_config.button_style_focus->set_border_width_all(focus_border_width_on);
+					p_config.button_style_focus->set_border_color(focus_border_color_translucent);
+					break;
+				case 3: // On - Thin
+					p_config.button_style_focus->set_border_width_all(focus_border_width_thin);
+					p_config.button_style_focus->set_border_color(p_config.accent_color);
+					break;
+				case 4: // Translucent - Thin
+					p_config.button_style_focus->set_border_width_all(focus_border_width_thin);
+					p_config.button_style_focus->set_border_color(focus_border_color_translucent);
+					break;
+				default: // In case of invalid value, set to On (case 1).
+					p_config.button_style_focus->set_border_width_all(focus_border_width_on);
+					p_config.button_style_focus->set_border_color(p_config.accent_color);
+					break;
+			}
 
 			p_config.button_style_pressed = p_config.button_style->duplicate();
 			p_config.button_style_pressed->set_bg_color(p_config.dark_color_1.darkened(0.125));
@@ -1159,6 +1189,10 @@ void EditorThemeManager::_populate_standard_styles(const Ref<EditorTheme> &p_the
 		style_tab_disabled->set_border_color(p_config.disabled_bg_color);
 
 		Ref<StyleBoxFlat> style_tab_focus = p_config.button_style_focus->duplicate();
+		if ((bool)EDITOR_GET("interface/editor/focus_border_on_tabs") == false) { // Off
+			style_tab_focus->set_border_width_all(0);
+			style_tab_focus->set_border_color(p_config.accent_color);
+		}
 
 		Ref<StyleBoxFlat> style_tabbar_background = make_flat_stylebox(p_config.dark_color_1, 0, 0, 0, 0, p_config.corner_radius);
 		style_tabbar_background->set_corner_radius(CORNER_BOTTOM_LEFT, 0);
@@ -2945,6 +2979,8 @@ bool EditorThemeManager::is_generated_theme_outdated() {
 				EditorSettings::get_singleton()->check_changed_settings_in_group("interface/editor/font") ||
 				EditorSettings::get_singleton()->check_changed_settings_in_group("interface/editor/main_font") ||
 				EditorSettings::get_singleton()->check_changed_settings_in_group("interface/editor/code_font") ||
+				EditorSettings::get_singleton()->check_changed_settings_in_group("interface/editor/focus_border_type") ||
+				EditorSettings::get_singleton()->check_changed_settings_in_group("interface/editor/focus_border_on_tabs") ||
 				EditorSettings::get_singleton()->check_changed_settings_in_group("editors/visual_editors") ||
 				EditorSettings::get_singleton()->check_changed_settings_in_group("text_editor/theme") ||
 				EditorSettings::get_singleton()->check_changed_settings_in_group("text_editor/help/help") ||
