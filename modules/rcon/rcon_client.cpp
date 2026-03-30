@@ -177,20 +177,81 @@ String RCONClient::send_command_sync(const String &p_command, float p_timeout) {
 
 	// Wait for response via signal
 	while (true) {
-		poll();
+		// Must preserve events temporarily to find the response.
+		// poll() will emit them immediately without giving us a chance to inspect locally,
+		// so we intercept them manually.
+		List<Event> events_to_process;
+		{
+			MutexLock lock(mutex);
+			events_to_process = event_queue;
+			event_queue.clear();
+		}
 
-		// Check if we got a response (simplified - checks event queue)
-		// In a production implementation, you'd want a more robust tracking mechanism
+		bool response_found = false;
+
+		for (const Event &event : events_to_process) {
+			if (event.type == Event::EVENT_COMMAND_RESPONSE) {
+				String ev_command = event.data.get("command", "");
+				if (ev_command == p_command) {
+					result = event.data.get("response", "");
+					response_found = true;
+				} else {
+					print_line(vformat("MISMATCH! ev_command: '%s', p_command: '%s'", ev_command, p_command));
+				}
+			}
+			// Push it back to queue so poll() can still trigger signals securely?
+			// But sync commands shouldn't fire async callbacks typically.
+			// However for safety, we push them back. Or better: we emit immediately just like poll().
+			switch (event.type) {
+				case Event::EVENT_CONNECTED:
+					emit_signal("connected");
+					break;
+				case Event::EVENT_DISCONNECTED:
+					emit_signal("disconnected");
+					break;
+				case Event::EVENT_AUTHENTICATED:
+					emit_signal("authenticated");
+					break;
+				case Event::EVENT_AUTH_FAILED:
+					emit_signal("authentication_failed");
+					break;
+				case Event::EVENT_COMMAND_RESPONSE: {
+					String command = event.data.get("command", "");
+					String response = event.data.get("response", "");
+					emit_signal("command_response", command, response);
+					Callable callback = event.data.get("callback", Callable());
+					if (callback.is_valid()) {
+						callback.call(response);
+					}
+				} break;
+				case Event::EVENT_SERVER_MESSAGE:
+					emit_signal("server_message", event.data.get("message", ""));
+					break;
+				case Event::EVENT_RAW_PACKET:
+					emit_signal("raw_packet_received", event.data.get("packet", PackedByteArray()));
+					break;
+				case Event::EVENT_ERROR:
+					emit_signal("connection_error", event.data.get("error", "Unknown error"));
+					break;
+			}
+		}
+
+		if (response_found) {
+			break;
+		}
+
 		{
 			MutexLock lock(mutex);
 			if (!pending_commands.is_empty()) {
 				// Still waiting for response
 				OS::get_singleton()->delay_usec(10000); // 10ms
-			} else {
-				// Command completed, but we need to capture the response
-				// This is a limitation of the sync API - better to use async
+			} else if (event_queue.is_empty()) {
+				// If commands are completely empty AND event_queue is empty,
+				// it means the event was already processed or lost
 				break;
 			}
+			// If pending_commands are empty BUT event_queue has items,
+			// DO NOT BREAK! Loop again to process the EVENT_COMMAND_RESPONSE!
 		}
 
 		if (OS::get_singleton()->get_ticks_msec() - start_time > timeout_ms) {
@@ -199,8 +260,6 @@ String RCONClient::send_command_sync(const String &p_command, float p_timeout) {
 		}
 	}
 
-	// Note: This implementation has limitations. For proper sync support,
-	// consider using a dedicated response tracking mechanism.
 	return result;
 }
 
@@ -235,7 +294,14 @@ void RCONClient::poll() {
 		event_queue.clear();
 	}
 
+#include <stdio.h>
 	for (const Event &event : events_to_process) {
+		FILE *f = fopen("rcon_trace.txt", "a");
+		if (f) {
+			fprintf(f, "RCONClient::poll event %d\n", (int)event.type);
+			fclose(f);
+		}
+		print_line(vformat("RCONClient::poll event %d", (int)event.type));
 		switch (event.type) {
 			case Event::EVENT_CONNECTED:
 				emit_signal("connected");

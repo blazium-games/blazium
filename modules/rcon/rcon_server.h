@@ -116,6 +116,7 @@ private:
 			EVENT_KEEPALIVE_TIMEOUT,
 			EVENT_CLIENT_TIMEOUT_WARNING,
 			EVENT_SERVER_ERROR,
+			EVENT_ECHO_REQUEST,
 		};
 		Type type;
 		int client_id = 0;

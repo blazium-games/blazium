@@ -171,7 +171,7 @@ void RCONServer::register_command(const String &p_command, const Callable &p_cal
 	// Add dynamic signal for this command
 	String signal_name = "command_" + p_command;
 	if (!has_signal(signal_name)) {
-		ADD_SIGNAL(MethodInfo(signal_name,
+		add_user_signal(MethodInfo(signal_name,
 				PropertyInfo(Variant::INT, "client_id"),
 				PropertyInfo(Variant::STRING, "args"),
 				PropertyInfo(Variant::INT, "request_id")));
@@ -235,7 +235,14 @@ void RCONServer::poll() {
 		event_queue.clear();
 	}
 
+#include <stdio.h>
 	for (const Event &event : events_to_process) {
+		FILE *f = fopen("rcon_trace.txt", "a");
+		if (f) {
+			fprintf(f, "RCONServer::poll event %d\n", (int)event.type);
+			fclose(f);
+		}
+		print_line(vformat("RCONServer::poll event %d", (int)event.type));
 		switch (event.type) {
 			case Event::EVENT_SERVER_STARTED:
 				emit_signal("server_started");
@@ -280,23 +287,38 @@ void RCONServer::poll() {
 				}
 
 				// Check for registered command
-				MutexLock lock(mutex);
-				if (registered_commands.has(cmd_name)) {
-					RegisteredCommand &reg_cmd = registered_commands[cmd_name];
-					Callable callback = reg_cmd.callback;
-					mutex.unlock();
-
-					// Call the callback
-					if (callback.is_valid()) {
-						callback.call(event.client_id, args, request_id);
+				Callable callback;
+				{
+					MutexLock lock(mutex);
+					if (registered_commands.has(cmd_name)) {
+						RegisteredCommand &reg_cmd = registered_commands[cmd_name];
+						callback = reg_cmd.callback;
 					}
+				}
+
+				if (callback.is_valid()) {
+					print_line("Executing callback via callv() for " + cmd_name);
+					// Call the callback
+					Array cb_args;
+					cb_args.push_back(event.client_id);
+					cb_args.push_back(args);
+					cb_args.push_back(request_id);
+					callback.callv(cb_args);
+					print_line("Finished callv() for " + cmd_name);
 
 					// Emit per-command signal
 					String signal_name = "command_" + cmd_name;
 					if (has_signal(signal_name)) {
+						print_line("Emitting dynamic signal " + signal_name);
 						emit_signal(signal_name, event.client_id, args, request_id);
+						print_line("Finished dynamic signal " + signal_name);
 					}
 				}
+			} break;
+
+			case Event::EVENT_ECHO_REQUEST: {
+				int request_id = event.data.get("request_id", -1);
+				_send_response_to_client(event.client_id, request_id, "");
 			} break;
 
 			case Event::EVENT_RAW_PACKET_RECEIVED: {
@@ -362,6 +384,13 @@ void RCONServer::_process_network_source() {
 			client_ids.push_back(E.key);
 		}
 		mutex.unlock();
+		{
+			FILE *f = fopen("rcon_trace_thread.txt", "a");
+			if (f) {
+				fprintf(f, "RCONServer thread clients unlock\n");
+				fclose(f);
+			}
+		}
 
 		for (int id : client_ids) {
 			mutex.lock();
@@ -619,6 +648,12 @@ void RCONServer::_process_source_packet(Client &p_client, const PackedByteArray 
 			cmd_data["request_id"] = id;
 			_queue_event(Event::EVENT_COMMAND_RECEIVED, p_client.id, cmd_data);
 		}
+	} else if (type == RCONPacket::SOURCE_SERVERDATA_RESPONSE_VALUE) {
+		// Client sending us an empty packet (multi-packet response trick)
+		// We queue it so it echoes back from the main thread staying chronologically ordered after command execution!
+		Dictionary data;
+		data["request_id"] = id;
+		_queue_event(Event::EVENT_ECHO_REQUEST, p_client.id, data);
 	} else {
 		// Event already queued at the top of the function, but leaving this for explicit unhandled case
 		Dictionary unhandled_raw;
