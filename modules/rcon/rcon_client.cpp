@@ -294,14 +294,7 @@ void RCONClient::poll() {
 		event_queue.clear();
 	}
 
-#include <stdio.h>
 	for (const Event &event : events_to_process) {
-		FILE *f = fopen("rcon_trace.txt", "a");
-		if (f) {
-			fprintf(f, "RCONClient::poll event %d\n", (int)event.type);
-			fclose(f);
-		}
-		print_line(vformat("RCONClient::poll event %d", (int)event.type));
 		switch (event.type) {
 			case Event::EVENT_CONNECTED:
 				emit_signal("connected");

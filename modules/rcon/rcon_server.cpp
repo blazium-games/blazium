@@ -235,14 +235,7 @@ void RCONServer::poll() {
 		event_queue.clear();
 	}
 
-#include <stdio.h>
 	for (const Event &event : events_to_process) {
-		FILE *f = fopen("rcon_trace.txt", "a");
-		if (f) {
-			fprintf(f, "RCONServer::poll event %d\n", (int)event.type);
-			fclose(f);
-		}
-		print_line(vformat("RCONServer::poll event %d", (int)event.type));
 		switch (event.type) {
 			case Event::EVENT_SERVER_STARTED:
 				emit_signal("server_started");
@@ -384,13 +377,6 @@ void RCONServer::_process_network_source() {
 			client_ids.push_back(E.key);
 		}
 		mutex.unlock();
-		{
-			FILE *f = fopen("rcon_trace_thread.txt", "a");
-			if (f) {
-				fprintf(f, "RCONServer thread clients unlock\n");
-				fclose(f);
-			}
-		}
 
 		for (int id : client_ids) {
 			mutex.lock();
