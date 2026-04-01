@@ -429,12 +429,16 @@ uint64_t FileAccessPack::get_buffer(uint8_t *p_dst, uint64_t p_length) const {
 		to_read = (int64_t)pf.size - (int64_t)pos;
 	}
 
+	uint64_t xor_offset = pos; // Save position for XOR de-obfuscation
 	pos += to_read;
 
 	if (to_read <= 0) {
 		return 0;
 	}
 	f->get_buffer(p_dst, to_read);
+
+	// Apply XOR de-obfuscation to file data using pack_xor_process (defined in file_access_pack.h).
+	pack_xor_process(p_dst, to_read, xor_offset);
 
 	return to_read;
 }

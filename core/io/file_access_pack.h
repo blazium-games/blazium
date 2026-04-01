@@ -36,6 +36,44 @@
 #include "core/templates/hash_set.h"
 #include "core/templates/list.h"
 
+// XOR obfuscation is only enabled if BLAZIUM_XOR_KEY is defined and non-empty
+// in version.py. This allows disabling XOR obfuscation by not setting
+// blazium_xor_key in version.py.
+#ifdef BLAZIUM_XOR_KEY
+
+// XOR obfuscation key size (1024 bytes).
+#define PACK_XOR_KEY_SIZE 1024
+
+// XOR obfuscation key from BLAZIUM_XOR_KEY.
+// Used to obfuscate/de-obfuscate PCK asset data (file data only, not header).
+// This makes extraction by unofficial PCK unpackers more difficult.
+// Using fixed-size array ensures compile-time validation of key size.
+static const char pack_xor_key[PACK_XOR_KEY_SIZE + 1] = BLAZIUM_XOR_KEY;
+
+// XOR obfuscation/de-obfuscation helper function.
+// Applies XOR to buffer using key cycling: data[i] ^ key[(offset + i) % key_size].
+// XOR is symmetric, so the same function works for both obfuscation and de-obfuscation.
+// p_buffer: Buffer to process (modified in place).
+// p_length: Number of bytes to process.
+// p_offset: Offset for key cycling (typically the position within the file).
+static _FORCE_INLINE_ void pack_xor_process(uint8_t *p_buffer, uint64_t p_length, uint64_t p_offset) {
+	for (uint64_t i = 0; i < p_length; i++) {
+		p_buffer[i] ^= (uint8_t)pack_xor_key[(p_offset + i) % PACK_XOR_KEY_SIZE];
+	}
+}
+
+#else
+
+// XOR obfuscation disabled - pack_xor_process is a no-op.
+static _FORCE_INLINE_ void pack_xor_process(uint8_t *p_buffer, uint64_t p_length, uint64_t p_offset) {
+	// No-op: XOR obfuscation is disabled (blazium_xor_key not set in version.py)
+	(void)p_buffer;
+	(void)p_length;
+	(void)p_offset;
+}
+
+#endif // BLAZIUM_XOR_KEY
+
 // Godot's packed file magic header ("GDPC" in ASCII).
 #define PACK_HEADER_MAGIC 0x43504447
 

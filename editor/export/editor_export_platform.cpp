@@ -37,7 +37,7 @@
 #include "core/extension/gdextension.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access_encrypted.h"
-#include "core/io/file_access_pack.h" // PACK_HEADER_MAGIC, PACK_FORMAT_VERSION
+#include "core/io/file_access_pack.h" // PACK_HEADER_MAGIC, PACK_FORMAT_VERSION, pack_xor_process
 #include "core/io/image.h"
 #include "core/io/image_loader.h"
 #include "core/io/resource_uid.h"
@@ -300,8 +300,15 @@ Error EditorExportPlatform::_encrypt_and_store_data(Ref<FileAccess> p_fd, const 
 		ftmp = fae;
 	}
 
+	// Apply XOR obfuscation to file data before writing.
+	// Make a copy since pack_xor_process modifies in-place.
+	Vector<uint8_t> data_to_write;
+	data_to_write.resize(p_data.size());
+	memcpy(data_to_write.ptrw(), p_data.ptr(), p_data.size());
+	pack_xor_process(data_to_write.ptrw(), data_to_write.size(), 0);
+
 	// Store file content.
-	ftmp->store_buffer(p_data.ptr(), p_data.size());
+	ftmp->store_buffer(data_to_write.ptr(), data_to_write.size());
 
 	if (fae.is_valid()) {
 		ftmp.unref();

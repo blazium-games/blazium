@@ -39,6 +39,18 @@ def version_info_builder(target, source, env):
 """.format(**source[0].read())
         )
 
+        # Only define BLAZIUM_XOR_KEY if it's set and non-empty (enables XOR obfuscation)
+        version_data = source[0].read()
+        if version_data.get("blazium_xor_key"):
+            xor_key = version_data["blazium_xor_key"]
+            # Validate key length (must be exactly 1024 characters)
+            if len(xor_key) != 1024:
+                from SCons.Script import Exit
+
+                print(f"ERROR: blazium_xor_key must be exactly 1024 characters (got {len(xor_key)})")
+                Exit(1)
+            file.write('#define BLAZIUM_XOR_KEY "{}"\n'.format(xor_key))
+
 
 def version_hash_builder(target, source, env):
     with methods.generated_wrapper(str(target[0])) as file:

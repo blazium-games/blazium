@@ -33,7 +33,7 @@
 #include "core/crypto/crypto_core.h"
 #include "core/io/file_access.h"
 #include "core/io/file_access_encrypted.h"
-#include "core/io/file_access_pack.h" // PACK_HEADER_MAGIC, PACK_FORMAT_VERSION
+#include "core/io/file_access_pack.h" // PACK_HEADER_MAGIC, PACK_FORMAT_VERSION, pack_xor_process
 #include "core/version.h"
 
 static int _get_pad(int p_alignment, int p_n) {
@@ -184,7 +184,12 @@ Error PCKPacker::add_file(const String &p_target_path, const String &p_source_pa
 		ftmp = fae;
 	}
 
-	ftmp->store_buffer(data);
+	// Apply XOR obfuscation to file data before writing.
+	// Make a copy since pack_xor_process modifies in-place.
+	Vector<uint8_t> data_to_write = data;
+	pack_xor_process(data_to_write.ptrw(), data_to_write.size(), 0);
+
+	ftmp->store_buffer(data_to_write);
 
 	if (fae.is_valid()) {
 		ftmp.unref();

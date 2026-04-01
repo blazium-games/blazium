@@ -892,7 +892,7 @@ Error ProjectSettings::_load_settings_binary(const String &p_path) {
 
 	uint8_t hdr[4];
 	f->get_buffer(hdr, 4);
-	ERR_FAIL_COND_V_MSG((hdr[0] != 'E' || hdr[1] != 'C' || hdr[2] != 'F' || hdr[3] != 'G'), ERR_FILE_CORRUPT, "Corrupted header in binary project.binary (not ECFG).");
+	ERR_FAIL_COND_V_MSG((hdr[0] != 'E' || hdr[1] != 'C' || hdr[2] != 'F' || hdr[3] != 'G'), ERR_FILE_CORRUPT, "Corrupted header in binary project.binary (PACK_HEADER_MAGIC mismatch).");
 
 	uint32_t count = f->get_32();
 
