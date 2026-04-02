@@ -3,12 +3,15 @@
 #include "vector2fi.h"
 #include "trigfi_allocator.h"
 
+//TODO: Complete this
+
 //TODO: FBM (me) make it inspired by your other
 //convex code, that is:
 //https://github.com/FireBrandMint/FHAL-DETERMINISTIC/blob/main/Code/Libraries/GJP2/Shapes/Shape.cs
 //But not to the point of making it as if it'll store the position
 //of the whole entity, that was a dumb decision.
 
+/*
 enum FIPolyType : uint8_t
 {
     CONVEX = 1,
@@ -279,3 +282,5 @@ struct [[nodiscard]] AABBFI {
         (MathFI::abs(atl.y - btl.y) * 2 < (ahei + bhei));
     }
 };
+
+*/

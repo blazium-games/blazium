@@ -6,7 +6,10 @@
 #include "fint.h"
 #include "vector2fi.h"
 
+//TODO: complete this.
+
 //Deterministic trigonometry allocator
+/*
 namespace DtrmnTrigAllocator {
     
     static bool initialized = false;
@@ -149,3 +152,4 @@ namespace DtrmnTrigAllocator {
     };
     
 }
+*/
