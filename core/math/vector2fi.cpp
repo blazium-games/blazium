@@ -3,23 +3,20 @@
 #include "core/math/vector2i.h"
 #include "core/string/ustring.h"
 
-const Vector2FI Vector2FI::ZERO = Vector2FI{FInt(0), FInt(0)};
+const Vector2FI Vector2FI::ZERO = Vector2FI{ FInt(0), FInt(0) };
 
-Vector2FI Vector2FI::get_normal_clockwise(Vector2FI p_other)
-{
+Vector2FI Vector2FI::get_normal_clockwise(Vector2FI p_other) {
 	return Vector2FI::from_angle_r((p_other - *this).angle_r()).inverted_xy();
 }
 
-void Vector2FI::invert_xy()
-{
+void Vector2FI::invert_xy() {
 	FInt f_x = y;
 	FInt f_y = x;
 	x = f_x;
 	y = f_y;
 }
 
-Vector2FI Vector2FI::inverted_xy()
-{
+Vector2FI Vector2FI::inverted_xy() {
 	Vector2FI f = *this;
 	f.invert_xy();
 
@@ -211,7 +208,7 @@ Vector2FI Vector2FI::limit_length(FInt p_len) const {
 		q16_y = MathFI::Q16Div(q16_y, q16_l);
 		q16_x = MathFI::Q16Mul(q16_x, q16_p_len);
 		q16_y = MathFI::Q16Mul(q16_y, q16_p_len);
-		v = Vector2FI(FInt{q16_x >> 4}, FInt{q16_y >> 4});
+		v = Vector2FI(FInt{ q16_x >> 4 }, FInt{ q16_y >> 4 });
 	}
 
 	return v;
@@ -227,9 +224,9 @@ Vector2FI Vector2FI::move_toward(const Vector2FI &p_to, FInt p_delta) const {
 
 // slide returns the component of the vector along the given plane, specified by its normal vector.
 Vector2FI Vector2FI::slide(const Vector2FI &p_normal) const {
-	#ifdef MATH_CHECKS
-		ERR_FAIL_COND_V_MSG(!p_normal.is_normalized(), Vector2FI::ZERO, "The normal Vector2FI " + p_normal.operator String() + "must be normalized.");
-	#endif
+#ifdef MATH_CHECKS
+	ERR_FAIL_COND_V_MSG(!p_normal.is_normalized(), Vector2FI::ZERO, "The normal Vector2FI " + p_normal.operator String() + "must be normalized.");
+#endif
 
 	return *this - p_normal * dot(p_normal);
 }

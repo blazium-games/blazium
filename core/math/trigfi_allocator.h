@@ -1,155 +1,155 @@
-#include <vector>
-#include <stdexcept>
-#include <climits>
-#include <iostream>
-#include <string>
 #include "fint.h"
 #include "vector2fi.h"
+#include <climits>
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 //TODO: complete this.
 
 //Deterministic trigonometry allocator
 /*
 namespace DtrmnTrigAllocator {
-    
-    static bool initialized = false;
-    const static int start_amount = 512;
-    const static int increment = 256;
-    static std::vector<TrigMemoryBlock> free_index;
-    static std::vector<FInt> data;
 
-    constexpr static FInt* allocate_vector2s(uint32_t vector_amount) {
-        DtrmnTrigAllocator::allocate_numbers(vector_amount * 2);
-    }
+	static bool initialized = false;
+	const static int start_amount = 512;
+	const static int increment = 256;
+	static std::vector<TrigMemoryBlock> free_index;
+	static std::vector<FInt> data;
 
-    constexpr static TrigMemoryBlock allocate_numbers(uint32_t number_amount) {
-        ensure_initialized(number_amount);
+	constexpr static FInt* allocate_vector2s(uint32_t vector_amount) {
+		DtrmnTrigAllocator::allocate_numbers(vector_amount * 2);
+	}
 
-        //try to get memory in the pool
-        TrigMemoryBlock data = retrieve_data(number_amount);
+	constexpr static TrigMemoryBlock allocate_numbers(uint32_t number_amount) {
+		ensure_initialized(number_amount);
 
-        if(data.length == 0)
-        {
-            //if no memory, do default allocation by increment
-            //and retrieve a piece with the size desired.
-            data = d_allocate_and_retrieve_data(number_amount);
-        }
+		//try to get memory in the pool
+		TrigMemoryBlock data = retrieve_data(number_amount);
 
-        return data;
-    }
+		if(data.length == 0)
+		{
+			//if no memory, do default allocation by increment
+			//and retrieve a piece with the size desired.
+			data = d_allocate_and_retrieve_data(number_amount);
+		}
 
-    constexpr static void ensure_initialized(uint32_t amount)
-    {
-        if(unlikely(!initialized))
-        {
-            int real_start_amount = start_amount;
-            if(amount > start_amount)
-            {
-                int amount_mod = amount % increment;
-                real_start_amount = amount - amount_mod;
-                amount_mod += amount_mod > 0 ? increment : 0;
-            }
+		return data;
+	}
 
-            data.reserve(real_start_amount);
-            free_index.push_back(TrigMemoryBlock(0, real_start_amount));
+	constexpr static void ensure_initialized(uint32_t amount)
+	{
+		if(unlikely(!initialized))
+		{
+			int real_start_amount = start_amount;
+			if(amount > start_amount)
+			{
+				int amount_mod = amount % increment;
+				real_start_amount = amount - amount_mod;
+				amount_mod += amount_mod > 0 ? increment : 0;
+			}
 
-            initialized = true;
+			data.reserve(real_start_amount);
+			free_index.push_back(TrigMemoryBlock(0, real_start_amount));
 
-            return;
-        }
-    }
+			initialized = true;
 
-    constexpr static TrigMemoryBlock retrieve_data(uint32_t amount)
-    {
+			return;
+		}
+	}
 
-    }
+	constexpr static TrigMemoryBlock retrieve_data(uint32_t amount)
+	{
 
-    constexpr static TrigMemoryBlock d_allocate_and_retrieve_data(uint32_t amount)
-    {
+	}
 
-    }
+	constexpr static TrigMemoryBlock d_allocate_and_retrieve_data(uint32_t amount)
+	{
 
-    struct TrigMemoryBlock
-    {
-        public:
+	}
 
-        uint32_t index;
-        uint32_t length;
+	struct TrigMemoryBlock
+	{
+		public:
 
-        FInt& operator[](int idx)
-        {
-            return TrigMemoryBlock::get(idx);
-        }
+		uint32_t index;
+		uint32_t length;
 
-        constexpr TrigMemoryBlock(uint32_t idx, uint32_t len) : index(idx), length(len) {}
+		FInt& operator[](int idx)
+		{
+			return TrigMemoryBlock::get(idx);
+		}
 
-        constexpr FInt& get(int idx)
-        {
-            if(unlikely(idx < 0 || index >= length))
-            {
-                throw_idx(idx);
-            }
+		constexpr TrigMemoryBlock(uint32_t idx, uint32_t len) : index(idx), length(len) {}
 
-            return DtrmnTrigAllocator::data[index + idx];
-        }
+		constexpr FInt& get(int idx)
+		{
+			if(unlikely(idx < 0 || index >= length))
+			{
+				throw_idx(idx);
+			}
 
-        constexpr Vector2FI get_vec2(int idx) { return Vector2FI(this->get(idx << 1), this->get((idx << 1)+1)); }
-        constexpr void set_vec2(int idx, Vector2FI value) {
-            this->get(idx << 1) = value.x;
-            this->get((idx << 1)+1) = value.y;
-        }
+			return DtrmnTrigAllocator::data[index + idx];
+		}
 
-        constexpr TrigMemoryBlock take_piece_start(uint32_t amount)
-        {
-            if(unlikely(amount > length))
-                throw_split(amount);
+		constexpr Vector2FI get_vec2(int idx) { return Vector2FI(this->get(idx << 1), this->get((idx << 1)+1)); }
+		constexpr void set_vec2(int idx, Vector2FI value) {
+			this->get(idx << 1) = value.x;
+			this->get((idx << 1)+1) = value.y;
+		}
 
-            uint32_t result_idx = index;
-            uint32_t result_len = amount;
+		constexpr TrigMemoryBlock take_piece_start(uint32_t amount)
+		{
+			if(unlikely(amount > length))
+				throw_split(amount);
 
-            index += amount;
-            length -= amount;
+			uint32_t result_idx = index;
+			uint32_t result_len = amount;
 
-            return TrigMemoryBlock(result_idx, result_len);
-        }
+			index += amount;
+			length -= amount;
 
-        constexpr TrigMemoryBlock take_piece_end(uint32_t amount)
-        {
-            if(unlikely(amount > length))
-                throw_split(amount);
+			return TrigMemoryBlock(result_idx, result_len);
+		}
 
-            uint32_t result_idx = length - amount;
-            uint32_t result_len = amount;
+		constexpr TrigMemoryBlock take_piece_end(uint32_t amount)
+		{
+			if(unlikely(amount > length))
+				throw_split(amount);
 
-            length -= amount;
+			uint32_t result_idx = length - amount;
+			uint32_t result_len = amount;
 
-            return TrigMemoryBlock(result_idx, result_len);
-        }
+			length -= amount;
 
-        private:
+			return TrigMemoryBlock(result_idx, result_len);
+		}
 
-        constexpr void throw_idx(int idx)
-        {
-            throw std::out_of_range(
-                "Index "
-                + std::to_string(idx)
-                + " out of range in trigonometry memory block["
-                + std::to_string(index)
-                + ", "
-                + std::to_string(length)
-                + "]."
-            );
-        }
+		private:
 
-        constexpr void throw_split(int amount)
-        {
-            throw std::out_of_range("Tried to split "
-                + std::to_string(amount)
-                + " out of a memory block of "
-                + std::to_string(length)
-            );
-        }
-    };
-    
+		constexpr void throw_idx(int idx)
+		{
+			throw std::out_of_range(
+				"Index "
+				+ std::to_string(idx)
+				+ " out of range in trigonometry memory block["
+				+ std::to_string(index)
+				+ ", "
+				+ std::to_string(length)
+				+ "]."
+			);
+		}
+
+		constexpr void throw_split(int amount)
+		{
+			throw std::out_of_range("Tried to split "
+				+ std::to_string(amount)
+				+ " out of a memory block of "
+				+ std::to_string(length)
+			);
+		}
+	};
+
 }
 */
