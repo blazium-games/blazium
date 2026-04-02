@@ -20,6 +20,10 @@ struct [[nodiscard]] FInt {
 
     int64_t raw_value;
 
+	constexpr FInt(const FInt& other)
+        : raw_value(other.raw_value)
+    {}
+
     constexpr FInt() :
 			raw_value(0) {}
 	//Initializes with a whole number.
@@ -28,11 +32,21 @@ struct [[nodiscard]] FInt {
 	//Initializes number with interger being the whole part and decimals_x10000 being the decimals * 10000.
 	// FInt(4, 1000) = 4.1 = 4.09985...
 	//Optimized into unreadability.
+
+	
     constexpr FInt(int64_t interger, short decimals_x10000) :
 			raw_value (
 				(interger << FInt::SHIFT_AMOUNT)
 				+ (((uint64_t)decimals_x10000 << FInt::SHIFT_AMOUNT) / 10000 + (decimals_x10000 < 3)) * (((interger < 0) * -1 ) | 1)
 			) {}
+
+	constexpr static FInt from(const int64_t raw_value)
+	{
+		FInt fodder;
+		fodder.raw_value = raw_value;
+		return fodder;
+	}
+
     constexpr FInt operator+(const FInt p_d) const;
 	constexpr FInt &operator+=(const FInt p_d);
 	constexpr FInt operator-(const FInt p_d) const;
@@ -128,7 +142,7 @@ _FORCE_INLINE_ constexpr FInt &FInt::operator/=(const FInt p_d) {
 }
 
 _FORCE_INLINE_ constexpr FInt FInt::operator/(const FInt p_d) const {
-	return FInt { (raw_value << SHIFT_AMOUNT) / p_d.raw_value };
+	return FInt::from((raw_value << SHIFT_AMOUNT) / p_d.raw_value);
 }
 
 //Foreign addition.
@@ -144,11 +158,11 @@ _FORCE_INLINE_ constexpr FInt &FInt::operator+=(int32_t p_ot) {
 }
 
 _FORCE_INLINE_ constexpr FInt FInt::operator+(int64_t p_ot) const {
-	return FInt { raw_value + (p_ot << FInt::SHIFT_AMOUNT) };
+	return FInt::from(raw_value + (p_ot << FInt::SHIFT_AMOUNT));
 }
 
 _FORCE_INLINE_ constexpr FInt FInt::operator+(int32_t p_ot) const {
-	return FInt { raw_value + (p_ot << FInt::SHIFT_AMOUNT) };
+	return FInt::from(raw_value + (p_ot << FInt::SHIFT_AMOUNT));
 }
 
 _FORCE_INLINE_ constexpr FInt operator+(int32_t p_ot, const FInt &p_det) {
@@ -172,11 +186,11 @@ _FORCE_INLINE_ constexpr FInt &FInt::operator-=(int32_t p_ot) {
 }
 
 _FORCE_INLINE_ constexpr FInt FInt::operator-(int64_t p_ot) const {
-	return FInt { raw_value - (p_ot << FInt::SHIFT_AMOUNT) };
+	return FInt::from(raw_value - (p_ot << FInt::SHIFT_AMOUNT));
 }
 
 _FORCE_INLINE_ constexpr FInt FInt::operator-(int32_t p_ot) const {
-	return FInt { raw_value - (p_ot << FInt::SHIFT_AMOUNT) };
+	return FInt::from(raw_value - (p_ot << FInt::SHIFT_AMOUNT));
 }
 
 _FORCE_INLINE_ constexpr FInt operator-(int32_t p_ot, const FInt &p_det) {
@@ -200,11 +214,11 @@ _FORCE_INLINE_ constexpr FInt &FInt::operator*=(int32_t p_ot) {
 }
 
 _FORCE_INLINE_ constexpr FInt FInt::operator*(int64_t p_ot) const {
-	return FInt { raw_value * p_ot };
+	return FInt::from(raw_value * p_ot);
 }
 
 _FORCE_INLINE_ constexpr FInt FInt::operator*(int32_t p_ot) const {
-	return FInt { raw_value * p_ot };
+	return FInt::from(raw_value * p_ot);
 }
 
 _FORCE_INLINE_ constexpr FInt operator*(int32_t p_ot, const FInt &p_det) {
@@ -222,7 +236,7 @@ _FORCE_INLINE_ constexpr FInt &FInt::operator/=(int64_t p_ot) {
 	return *this;
 }
 _FORCE_INLINE_ constexpr FInt FInt::operator/(int64_t p_ot) const {
-	return FInt { raw_value / p_ot };
+	return FInt::from(raw_value / p_ot);
 }
 
 _FORCE_INLINE_ constexpr FInt &FInt::operator/=(int32_t p_ot) {
@@ -231,7 +245,7 @@ _FORCE_INLINE_ constexpr FInt &FInt::operator/=(int32_t p_ot) {
 }
 
 _FORCE_INLINE_ constexpr FInt FInt::operator/(int32_t p_ot) const {
-	return FInt { raw_value / p_ot };
+	return FInt::from(raw_value / p_ot);
 }
 
 _FORCE_INLINE_ constexpr FInt FInt::operator%(const FInt &p_v1) const {

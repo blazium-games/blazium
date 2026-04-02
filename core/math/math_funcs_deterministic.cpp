@@ -16,7 +16,7 @@
 //If input is less than 0 returns -1.
 int64_t MathFI::binary_sign(int64_t input)
 {
-    return ((int64_t)(input < 0) * -1) | 1;
+    return (-(int64_t)(input < 0)) | 1;
 }
 
 //Determines if v1 is close enough to v2 with a tolerance of max_approx.
@@ -30,35 +30,68 @@ bool MathFI::is_equal_approx(const FInt v1, const FInt v2, FInt max_approx)
 FInt MathFI::min( const FInt v1, const FInt v2 )
 {
     int64_t first = -((int64_t)(v1 < v2));
-    int64_t last = -((int64_t)(first == 0));
+    int64_t last = ~first;
 
-    return FInt{(v1.raw_value & first) | (v2.raw_value & last)};
+    return FInt::from((v1.raw_value & first) | (v2.raw_value & last));
 }
 
 //Returns the highest number between the two.
 FInt MathFI::max( const FInt v1, const FInt v2 )
 {
     int64_t first = -((int64_t)(v1 > v2));
-    int64_t last = -((int64_t)(first == 0));
+    int64_t last = ~first;
 
-    return FInt{(v1.raw_value & first) | (v2.raw_value & last)};
+    return FInt::from((v1.raw_value & first) | (v2.raw_value & last));
 }
 
 FInt MathFI::lerp( const FInt start, const FInt end, const FInt progress )
 {
-    return (Q13Mul(start.raw_value << 1, 8192 - (progress.raw_value << 1)) + Q13Mul(end.raw_value << 1, progress.raw_value << 1)) >> 1;
+    FInt diff = (end - start) << 1;
+
+    return start + diff * progress;
 }
 
 //Limits subj to not being lower than min or higher than max.
 FInt MathFI::clamp(const FInt subj, const FInt min, const FInt max) {
-	return subj < min ? min : (subj > max ? max : subj);
+    int64_t result = 0;
+    int64_t is_min = -(int64_t)(subj < min);
+    int64_t is_max = -(int64_t)(subj > max);
+    //Bit flip magic lel
+    int64_t is_none = ~(is_min | is_max);
+
+    return FInt::from((min.raw_value | is_min) | (max.raw_value | is_max) | (subj.raw_value | is_none));
+}
+
+FInt MathFI::abs(const FInt subj, int64_t condition)
+{
+    return FInt::from((subj.raw_value ^ condition) - condition);
 }
 
 //Returns the number removing the negative sign
 //if it's there.
 FInt MathFI::abs(const FInt subj)
 {
-    return subj * ((-1LL * (subj.raw_value < 0)) | 1);
+    return MathFI::abs(subj, subj.raw_value >> 63);
+}
+
+FInt MathFI::abs(const FInt subj, bool cond)
+{
+    return MathFI::abs(subj, cond);
+}
+
+FInt MathFI::flip_sign(const FInt subj, int64_t condition)
+{
+    return FInt::from((subj.raw_value ^ -condition) + condition);
+}
+
+FInt MathFI::flip_sign(const FInt subj, bool condition)
+{
+    return MathFI::flip_sign(subj, (int64_t) condition);
+}
+
+FInt MathFI::flip_sign(const FInt subj)
+{
+    return MathFI::flip_sign(subj, subj.raw_value >> 63);
 }
 
 //Rounds subj to the lowest whole number.
@@ -93,7 +126,7 @@ FInt MathFI::snapped(FInt p_value, FInt p_step) {
         int64_t mod = p_value.raw_value % p_step.raw_value;
         int64_t sided_add = (int64_t)(mod >= (p_step.raw_value >> 1));
 
-        return FInt{p_value.raw_value - mod + p_step * sided_add};
+        return FInt::from(p_value.raw_value - mod + p_step.raw_value * sided_add);
 	}
 	return result;
 }
@@ -118,14 +151,14 @@ int64_t MathFI::Q16Div(const int64_t v1, const int64_t v2)
 //Highly precise conversion of Q12 radians to Q12 degrees by FBM.
 FInt MathFI::radians_to_degrees(FInt radians)
 {
-    return FInt{(((radians.raw_value << 13) + (radians.raw_value << 12)) * 45) / 9651};
+    return FInt::from((((radians.raw_value << 13) + (radians.raw_value << 12)) * 45) / 9651);
 }
 
 //Highly precise conversion of Q12 degrees to Q12 radians by FBM.
 FInt MathFI::degrees_to_radians(FInt degrees)
 {
     //Compiler has once again made this a big multiplication, god help the CPU.
-    return FInt{degrees.raw_value * 9651 / 552960};
+    return FInt::from(degrees.raw_value * 9651 / 552960);
 }
 
 //Sqrt that can process any number.
@@ -258,7 +291,7 @@ FInt MathFI::sin_d(const FInt degrees_arg)
 {
     FInt degrees = degrees_arg;
 
-    int64_t is_negative = degrees < 0;
+    int64_t is_negative = -((int64_t)(degrees < 0));
 
     //If the angle is higher than 360, correct it. For example, 366 becomes 6.
     degrees = degrees % MathFI::NUM_360;
@@ -326,7 +359,7 @@ FInt MathFI::atan_r(const FInt p)
         return MathFI::PI_DIV_2 - MathFI::atan_sanitized(4294967296 / ((p.raw_value << 4) * flip));
     }
 
-    return FInt{MathFI::atan_sanitized(p.raw_value << 4) * flip};
+    return FInt::from(MathFI::atan_sanitized(p.raw_value << 4) * flip);
 }
 
 // Arctangent that returns in degrees.
@@ -349,23 +382,25 @@ FInt MathFI::atan2_r(const FInt in_arg, const FInt inX_arg) {
     int64_t in_zero = in == 0 ? 1 : 0;
     int64_t inx_zero = inX == 0 ? 1 : 0;
 
+    //Impossible to optimize branch, optimizing it actually kills performance.
     if ((in_zero | inx_zero) != 0)
     {
         int64_t inx_lzero = inX < 0;
         int64_t in_leqzero = (int64_t)(in < 0) | in_zero;
 
-        return
-            (12868 & -(int64_t)(in_zero & inx_lzero))
-            | (((6434LL ^ in_leqzero) - in_leqzero) & ((int64_t)in_zero - 1LL));
+        return FInt::from(
+            (MathFI::PI.raw_value & -(int64_t)(in_zero & inx_lzero))
+            | (MathFI::flip_sign(MathFI::PI_DIV_2, in_leqzero).raw_value & -inx_zero)
+        );
     }
 
     int64_t flip_pi = in >> 63;
 
-	int64_t adiv_ret = atan_div(FInt{in}, FInt{inX}).raw_value;
+	int64_t adiv_ret = atan_div(FInt::from(in), FInt::from(inX)).raw_value;
 
-    int64_t ret = adiv_ret + (((12868LL ^ flip_pi) - flip_pi) & -(int64_t)(inX >> 63));
+    int64_t ret = adiv_ret + (MathFI::flip_sign(MathFI::PI, flip_pi).raw_value & -(int64_t)(inX >> 63));
 
-	return FInt{ret};
+	return FInt::from(ret);
 }
 
 // 2-argument arctangent that returns in degrees.
@@ -384,12 +419,12 @@ FInt MathFI::atan_div(const FInt p_y, const FInt p_x) {
 
     int64_t y_lzero = p_y.raw_value >> 63;
     int64_t x_lzero = p_x.raw_value >> 63;
-    int64_t x_y_discronguous = (y_lzero | x_lzero) & (y_lzero ^ x_lzero);
+    int64_t x_y_discronguous = (y_lzero | x_lzero) & (y_lzero ^ x_lzero) & 1;
 
     // f is for 'final'
-    // Flips p_coordinate according to the condition.
-    int64_t f_y = (p_y.raw_value ^ y_lzero) - y_lzero;
-    int64_t f_x = (p_x.raw_value ^ x_lzero) - x_lzero;
+    // Abs p_coordinate according to the condition.
+    int64_t f_y = MathFI::abs(p_y, y_lzero).raw_value;
+    int64_t f_x = MathFI::abs(p_x, x_lzero).raw_value;
 
     bool x_first = p_y > p_x;
     //y first
@@ -404,7 +439,7 @@ FInt MathFI::atan_div(const FInt p_y, const FInt p_x) {
 
     int64_t result = (6434LL & x_f) + (atan_sani * (x_f | 1LL));
 
-	return FInt{(result ^ x_y_discronguous) - x_y_discronguous};
+	return MathFI::flip_sign(FInt::from(result), x_y_discronguous);
 }
 
 
@@ -433,7 +468,7 @@ FInt MathFI::fp_sin_d( const FInt degrees )
     int64_t semiConverted = degrees.raw_value / 45;
     int16_t i = (int16_t)semiConverted;
 
-    return FInt{MathFI::fp_sin(i)};
+    return MathFI::fp_sin(i);
 }
 
 //Sine for radians.
@@ -446,7 +481,7 @@ FInt MathFI::fp_sin_r( const FInt radians )
     int64_t semiConverted = ((radians.raw_value << 13) + (radians.raw_value << 12)) / 9651;
     int16_t i = (int16_t)semiConverted;
 
-    return FInt{MathFI::fp_sin(i)};
+    return FInt::from(MathFI::fp_sin(i));
 }
 
 //https://www.nullhardware.com/blog/fixed-point-sine-and-cosine-for-embedded-systems/

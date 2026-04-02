@@ -5,12 +5,12 @@
 #include "core/math/math_funcs.h"
 
 namespace MathFI {
-    constexpr static const FInt NUM_360 = FInt{1474560};
+    constexpr static const FInt NUM_360 = FInt::from(1474560);
     
-    constexpr static const FInt PI = FInt{12868};
-    constexpr static const FInt PI_X2 = FInt{25736};
+    constexpr static const FInt PI = FInt::from(12868);
+    constexpr static const FInt PI_X2 = FInt::from(25736);
 
-    constexpr static const FInt PI_DIV_2 = FInt{6434};
+    constexpr static const FInt PI_DIV_2 = FInt::from(6434);
 
 	int64_t binary_sign(int64_t input);
 
@@ -24,7 +24,14 @@ namespace MathFI {
 
 	FInt clamp(const FInt m_a, const FInt m_min, const FInt m_max);
 
+
+	FInt abs(const FInt flip, int64_t condition);
 	FInt abs(const FInt subj);
+	FInt abs(const FInt flip, bool condition);
+
+	FInt flip_sign(const FInt flip, int64_t condition);
+	FInt flip_sign(const FInt flip);
+	FInt flip_sign(const FInt flip, bool condition);
 
 	FInt floor(const FInt subj);
 
@@ -78,5 +85,5 @@ namespace MathFI {
 
     FInt MathFI::fp_sin_r( const FInt radians );
 
-    FInt MathFI::fp_sin(const int16_t value);
+    int64_t MathFI::fp_sin(const int16_t value);
 }
