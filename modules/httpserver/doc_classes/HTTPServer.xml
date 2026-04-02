@@ -27,6 +27,7 @@
 		[/codeblocks]
 	</description>
 	<tutorials>
+		<link title="HTTPServer Developer Examples">https://github.com/blazium-games/httpserver_module_tests</link>
 	</tutorials>
 	<methods>
 		<method name="clear_routes">
@@ -108,6 +109,10 @@
 				Starts the HTTP server on the specified [param port] and [param bind_address]. Returns [constant OK] on success.
 				If [param use_tls] is [code]true[/code], the server will use HTTPS. In this case, [param tls_key] and [param tls_cert] must point to valid key and certificate files.
 				The [param bind_address] can be "*" to bind to all interfaces, "0.0.0.0" for IPv4, or a specific IP address.
+				[codeblock]
+				# Start an HTTP server on port 8081
+				HTTPServer.listen(8081, "*", false, "", "")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="register_route">
@@ -119,6 +124,9 @@
 				Registers a route handler for the given HTTP [param method] and [param path] pattern. The [param callback] will be called with two arguments: [HTTPRequestContext] and [HTTPResponse].
 				The path can include parameters using the [code]{variable}[/code] syntax. For example: [code]"/api/users/{id}/posts/{post_id}"[/code].
 				Supported methods: GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD.
+				[codeblock]
+				HTTPServer.register_route("GET", "/user/{id}", Callable(self, "_on_user_route"))
+				[/codeblock]
 			</description>
 		</method>
 		<method name="send_sse_data">

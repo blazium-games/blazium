@@ -8,6 +8,7 @@
 	</description>
 	<tutorials>
 		<link title="Twitch API documentation">https://dev.twitch.tv/docs/api/reference</link>
+		<link title="TwitchAPI Developer Examples">https://github.com/blazium-games/twitchapi_module_tests</link>
 	</tutorials>
 	<methods>
 		<method name="get_extension_analytics">

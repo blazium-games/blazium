@@ -26,6 +26,7 @@
 		[/codeblocks]
 	</description>
 	<tutorials>
+		<link title="HTTPServer Developer Examples">https://github.com/blazium-games/httpserver_module_tests</link>
 	</tutorials>
 	<methods>
 		<method name="add_header">
@@ -67,6 +68,11 @@
 			<return type="void" />
 			<description>
 				Configures the response as a Server-Sent Events stream. This sets the appropriate headers (Content-Type: text/event-stream) and keeps the connection open for streaming events. After calling this, use [method HTTPServer.send_sse_event] to send events to the client.
+				[codeblock]
+				func _on_sse(ctx: HTTPRequestContext, res: HTTPResponse):
+				    res.start_sse()
+				    # Target the new stream externally via HTTPServer.send_sse_event()
+				[/codeblock]
 			</description>
 		</method>
 	</methods>

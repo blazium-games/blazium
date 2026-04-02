@@ -152,6 +152,9 @@ void HTTPServer::_poll() {
 			client.req_pos = 0;
 			client.is_sse = false;
 			client.sse_connection_id = 0;
+			client.headers_parsed = false;
+			client.header_length = 0;
+			client.body_length = 0;
 			clients[client_id] = client;
 		}
 	}
@@ -214,25 +217,46 @@ void HTTPServer::_poll_client(int p_client_id, ClientConnection &p_client) {
 			return;
 		}
 
+		// Ensure buffer is large enough
+		if (p_client.req_buf.size() <= p_client.req_pos) {
+			p_client.req_buf.resize(MAX(p_client.req_buf.size() * 2, 8192));
+		}
+
 		int read = 0;
-		Error err = p_client.peer->get_partial_data(&p_client.req_buf[p_client.req_pos], 1, read);
+		Error err = p_client.peer->get_partial_data(&p_client.req_buf.ptrw()[p_client.req_pos], p_client.req_buf.size() - p_client.req_pos, read);
 
 		if (err != OK) {
 			_clear_client(p_client_id);
 			return;
 		}
 
-		if (read != 1) {
+		if (read == 0) {
 			return; // No data available
 		}
 
 		p_client.req_pos += read;
 
-		// Check for complete request (ends with \r\n\r\n)
-		if (p_client.req_pos > 3) {
-			char *r = (char *)p_client.req_buf;
-			int l = p_client.req_pos - 1;
-			if (r[l] == '\n' && r[l - 1] == '\r' && r[l - 2] == '\n' && r[l - 3] == '\r') {
+		if (!p_client.headers_parsed) {
+			for (int i = 3; i < p_client.req_pos; i++) {
+				if (p_client.req_buf[i] == '\n' && p_client.req_buf[i - 1] == '\r' && p_client.req_buf[i - 2] == '\n' && p_client.req_buf[i - 3] == '\r') {
+					p_client.headers_parsed = true;
+					p_client.header_length = i + 1;
+
+					String header_str = String((const char *)p_client.req_buf.ptr(), p_client.header_length);
+					Vector<String> lines = header_str.split("\r\n");
+					for (int j = 1; j < lines.size(); j++) {
+						if (lines[j].to_lower().begins_with("content-length:")) {
+							p_client.body_length = lines[j].substr(15).strip_edges().to_int();
+							break;
+						}
+					}
+					break;
+				}
+			}
+		}
+
+		if (p_client.headers_parsed) {
+			if (p_client.req_pos - p_client.header_length >= p_client.body_length) {
 				_parse_and_dispatch_request(p_client_id, p_client);
 				return;
 			}
@@ -241,7 +265,8 @@ void HTTPServer::_poll_client(int p_client_id, ClientConnection &p_client) {
 }
 
 void HTTPServer::_parse_and_dispatch_request(int p_client_id, ClientConnection &p_client) {
-	Vector<String> lines = String((char *)p_client.req_buf, p_client.req_pos).split("\r\n");
+	String header_str = String((const char *)p_client.req_buf.ptr(), p_client.header_length);
+	Vector<String> lines = header_str.split("\r\n");
 
 	if (lines.size() < 2) {
 		_send_error(p_client_id, p_client, 400, "Bad Request");
@@ -273,10 +298,8 @@ void HTTPServer::_parse_and_dispatch_request(int p_client_id, ClientConnection &
 
 	// Parse headers
 	Dictionary headers;
-	int body_start = 1;
 	for (int i = 1; i < lines.size(); i++) {
 		if (lines[i].is_empty()) {
-			body_start = i + 1;
 			break;
 		}
 
@@ -292,12 +315,8 @@ void HTTPServer::_parse_and_dispatch_request(int p_client_id, ClientConnection &
 
 	// Parse body (if any)
 	String body;
-	if (body_start < lines.size()) {
-		Vector<String> body_lines;
-		for (int i = body_start; i < lines.size(); i++) {
-			body_lines.push_back(lines[i]);
-		}
-		body = String("\r\n").join(body_lines);
+	if (p_client.body_length > 0) {
+		body = String::utf8((const char *)&p_client.req_buf.ptr()[p_client.header_length], p_client.body_length);
 	}
 
 	// Create request context

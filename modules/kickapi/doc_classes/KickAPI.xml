@@ -48,6 +48,7 @@
 		The API automatically polls for responses each frame. You can also manually call [method poll] if needed.
 	</description>
 	<tutorials>
+		<link title="KickAPI Developer Examples">https://github.com/blazium-games/kickapi_module_tests</link>
 	</tutorials>
 	<methods>
 		<method name="configure">
@@ -55,6 +56,9 @@
 			<param index="0" name="access_token" type="String" />
 			<description>
 				Configures the API with your access token. This must be called before making any API requests.
+				[codeblock]
+				KickAPI.configure("your_access_token_here")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="get_categories">
@@ -79,6 +83,11 @@
 			<return type="KickEventsRequests" />
 			<description>
 				Returns the events request handler for managing event subscriptions (webhooks).
+			</description>
+		</method>
+		<method name="get_http_client" qualifiers="const">
+			<return type="KickHTTPClient" />
+			<description>
 			</description>
 		</method>
 		<method name="get_livestreams">

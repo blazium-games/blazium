@@ -24,7 +24,7 @@ runs:
       uses: actions/checkout@v4
       with:
         submodules: recursive
-        repository: blazium-engine/blazium-cpp
+        repository: blazium-games/blazium-cpp
         ref: ${{ env.BLAZIUM_CPP_BRANCH }}
         path: blazium-cpp
 

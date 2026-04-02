@@ -9,7 +9,7 @@
     <PackageId>Blazium.NET.Sdk</PackageId>
     <Version>4.3.0</Version>
     <PackageVersion>$(PackageVersion_Godot_NET_Sdk)</PackageVersion>
-    <RepositoryUrl>https://github.com/blazium-engine/blazium/tree/master/modules/mono/editor/Godot.NET.Sdk</RepositoryUrl>
+    <RepositoryUrl>https://github.com/blazium-games/blazium/tree/master/modules/mono/editor/Godot.NET.Sdk</RepositoryUrl>
     <PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
     <PackageType>MSBuildSdk</PackageType>
     <PackageTags>MSBuildSdk</PackageTags>

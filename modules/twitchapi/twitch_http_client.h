@@ -50,6 +50,7 @@ private:
 	String base_url;
 	String client_id;
 	String access_token;
+	Ref<TLSOptions> custom_tls_options;
 
 	// Rate limiting
 	int rate_limit_remaining = -1;
@@ -88,6 +89,7 @@ public:
 	void set_credentials(const String &p_client_id, const String &p_access_token);
 	void set_access_token(const String &p_token);
 	void set_client_id(const String &p_client_id);
+	void set_tls_options(Ref<TLSOptions> p_options);
 
 	// Response callback
 	void set_response_callback(const Callable &p_callback);

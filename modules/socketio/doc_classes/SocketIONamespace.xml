@@ -40,6 +40,7 @@
 		[/codeblocks]
 	</description>
 	<tutorials>
+		<link title="Socket.IO Developer Examples">https://github.com/blazium-games/socketio_module_tests</link>
 	</tutorials>
 	<methods>
 		<method name="connect_to_namespace">

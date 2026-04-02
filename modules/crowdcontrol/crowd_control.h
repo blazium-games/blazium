@@ -31,6 +31,7 @@
 
 #include "core/object/class_db.h"
 #include "core/object/object.h"
+#include "crowd_control_http_client.h"
 #include "modules/websocket/websocket_peer.h"
 
 class CrowdControl : public Object {
@@ -58,19 +59,27 @@ public:
 
 private:
 	Ref<WebSocketPeer> ws;
+	Ref<CrowdControlHTTPClient> http_client;
 	String auth_token;
+	String refresh_token_str;
 	String cc_uid;
 	String username;
+	String application_id;
+	String application_secret;
 	String connection_id;
 	String game_session_id;
 	String game_pack_id;
 	uint64_t rpc_id_counter = 0;
 	bool authenticated = false;
 	bool connection_signal_emitted = false;
+	String auth_code;
+	bool polling_auth = false;
+	uint64_t last_auth_poll_time = 0;
 
 	// Internal helper methods
 	void _process_messages();
 	void _handle_message(const String &p_message);
+	void _handle_http_response(const String &p_signal_name, int p_response_code, const Dictionary &p_response_data);
 	void _handle_direct_event(const String &p_type, const Dictionary &p_payload);
 	void _handle_pub_event(const String &p_type, const Dictionary &p_payload);
 	void _send_rpc(const String &p_method, const Array &p_args);
@@ -87,14 +96,19 @@ public:
 	static CrowdControl *get_singleton();
 
 	// Connection Management
-	Error connect_to_crowdcontrol();
+	Error connect_to_crowdcontrol(const String &p_url = "wss://pubsub.crowdcontrol.live/");
+	void set_http_base_url(const String &p_url);
 	void close();
 	void poll();
 	bool is_websocket_connected() const;
 	bool is_authenticated() const;
 
 	// Authentication Flow
-	Error request_authentication();
+	void set_credentials(const String &p_app_id, const String &p_secret);
+	void set_auth_token(const String &p_token, const String &p_refresh_token = "");
+	Error request_authentication_websocket(const Array &p_scopes = Array(), const Array &p_packs = Array());
+	Error request_authentication_http(const Array &p_scopes = Array(), const Array &p_packs = Array());
+	Error refresh_token(const String &p_refresh_token = "");
 	String get_authentication_url() const;
 
 	// Session Management
@@ -115,7 +129,9 @@ public:
 	String get_username() const;
 	String get_connection_id() const;
 	String get_auth_token() const;
+	String get_refresh_token() const;
 
+	CrowdControl();
 	~CrowdControl();
 };
 

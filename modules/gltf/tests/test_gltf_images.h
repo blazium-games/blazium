@@ -105,8 +105,7 @@ TEST_CASE("[SceneTree][Node] Export GLTF with external texture and import") {
 TEST_CASE("[SceneTree][Node][Editor] Import GLTF from .godot/imported folder with external texture") {
 	init("gltf_placed_in_dot_godot_imported", "res://.godot/imported");
 
-	EditorFileSystem *efs = memnew(EditorFileSystem);
-	EditorResourcePreview *erp = memnew(EditorResourcePreview);
+	EditorTestEnvironment env;
 
 	Node *loaded = gltf_import("res://.godot/imported/gltf_placed_in_dot_godot_imported.gltf");
 	Ref<Texture2D> texture = _check_texture(loaded);
@@ -115,15 +114,12 @@ TEST_CASE("[SceneTree][Node][Editor] Import GLTF from .godot/imported folder wit
 	CHECK_MESSAGE(texture->get_path() == "res://gltf_placed_in_dot_godot_imported_material_albedo000.png", "Texture not parsed as resource.");
 
 	memdelete(loaded);
-	memdelete(erp);
-	memdelete(efs);
 }
 
 TEST_CASE("[SceneTree][Node][Editor] Import GLTF with texture outside of res:// directory") {
 	init("gltf_pointing_to_texture_outside_of_res_folder", "res://");
 
-	EditorFileSystem *efs = memnew(EditorFileSystem);
-	EditorResourcePreview *erp = memnew(EditorResourcePreview);
+	EditorTestEnvironment env;
 
 	// Copy texture to the parent folder of res:// - i.e. to res://.. where we can't import from.
 	String oneup = TestUtils::get_temp_path("texture.png");
@@ -140,15 +136,12 @@ TEST_CASE("[SceneTree][Node][Editor] Import GLTF with texture outside of res:// 
 	CHECK_MESSAGE(texture->get_path() == "res://gltf_pointing_to_texture_outside_of_res_folder_material_albedo000.png", "Texture not parsed as resource.");
 
 	memdelete(loaded);
-	memdelete(erp);
-	memdelete(efs);
 }
 
 TEST_CASE("[SceneTree][Node][Editor] Import GLTF with embedded texture, check how it got extracted") {
 	init("gltf_embedded_texture", "res://");
 
-	EditorFileSystem *efs = memnew(EditorFileSystem);
-	EditorResourcePreview *erp = memnew(EditorResourcePreview);
+	EditorTestEnvironment env;
 
 	Node *loaded = gltf_import("res://embedded_texture.gltf");
 	Ref<Texture2D> texture = _check_texture(loaded);
@@ -157,8 +150,6 @@ TEST_CASE("[SceneTree][Node][Editor] Import GLTF with embedded texture, check ho
 	CHECK_MESSAGE(texture->get_path() == "res://embedded_texture_material_albedo000.png", "Texture not parsed as resource.");
 
 	memdelete(loaded);
-	memdelete(erp);
-	memdelete(efs);
 }
 
 } //namespace TestGltf

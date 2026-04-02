@@ -73,6 +73,9 @@
 				[param username] is the username for the connection.
 				[param realname] is the real name or description.
 				[param password] is optional server password (not NickServ).
+				[codeblock]
+				$IRCClientNode.connect_to_server("irc.libera.chat", 6697, true, "BlazeBot", "bot", "Blazium Test Bot")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="disable_sasl">
@@ -217,6 +220,11 @@
 				Returns token bucket size (burst capacity for messages).
 			</description>
 		</method>
+		<method name="is_debug_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
 		<method name="is_irc_connected" qualifiers="const">
 			<return type="bool" />
 			<description>
@@ -229,6 +237,9 @@
 			<param index="1" name="key" type="String" default="&quot;&quot;" />
 			<description>
 				Joins an IRC channel. Optionally provide a [param key] for password-protected channels.
+				[codeblock]
+				$IRCClientNode.join_channel("#blazium")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="monitor_add">
@@ -276,6 +287,9 @@
 			<param index="1" name="message" type="String" default="&quot;&quot;" />
 			<description>
 				Leaves an IRC channel with an optional part message.
+				[codeblock]
+				$IRCClientNode.part_channel("#blazium", "Goodbye everyone!")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="reject_dcc_transfer">
@@ -299,6 +313,9 @@
 			<description>
 				Sends a CTCP ACTION message (like /me in IRC clients).
 				Example: [code]irc.send_action("#channel", "waves hello")[/code]
+				[codeblock]
+				$IRCClientNode.send_action("#blazium", "waves to the channel")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="send_dcc_file">
@@ -315,6 +332,9 @@
 			<param index="1" name="message" type="String" />
 			<description>
 				Sends a notice to a channel or user. Notices are like messages but should not trigger automatic responses.
+				[codeblock]
+				$IRCClientNode.send_notice("TargetUser", "This is an automated notice")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="send_privmsg">
@@ -323,6 +343,9 @@
 			<param index="1" name="message" type="String" />
 			<description>
 				Sends a message to a channel or user. [param target] can be a channel name (starting with #) or a nickname.
+				[codeblock]
+				$IRCClientNode.send_privmsg("#blazium", "Hello world!")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="send_raw">
@@ -351,6 +374,12 @@
 			<param index="0" name="ip" type="String" />
 			<description>
 				Manually sets the local IP address for DCC connections. Auto-detected if not set. [param ip] - Ip.
+			</description>
+		</method>
+		<method name="set_debug_enabled">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
 			</description>
 		</method>
 		<method name="set_encoding">
@@ -415,14 +444,14 @@
 			<return type="void" />
 			<param index="0" name="options" type="TLSOptions" />
 			<description>
-				Sets the tls options. [param options] - Options.
+				Binds specific TLS handshake parameters and security configurations mapped via [param options] to the underlying [StreamPeerTLS] authentication module handler.
 			</description>
 		</method>
 		<method name="set_token_bucket_size">
 			<return type="void" />
 			<param index="0" name="size" type="int" />
 			<description>
-				Sets the token bucket size. [param size] - Size.
+				Constrains the automated outgoing payload limiter to a sequence maximum governed by [param size] to effectively resolve connection aborts resulting from network spam protocols.
 			</description>
 		</method>
 		<method name="set_topic">
@@ -430,7 +459,10 @@
 			<param index="0" name="channel" type="String" />
 			<param index="1" name="topic" type="String" />
 			<description>
-				Sets the topic. [param channel] - Channel. [param topic] - Topic.
+				Generates and launches a `TOPIC` adjustment payload mapped accurately against [param channel] dynamically altering the channel's standard display sequence with [param topic].
+				[codeblock]
+				$IRCClientNode.set_topic("#blazium", "Welcome to the official Blazium channel!")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="strip_formatting">
@@ -573,7 +605,7 @@
 			<param index="2" name="message" type="String" />
 			<param index="3" name="tags" type="Dictionary" />
 			<description>
-				Emitted when highlighted.
+				Emitted directly when the sequence identifies an inclusion of the user's nickname wrapped securely in an external message from a known [param sender] inside a specific [param channel].
 			</description>
 		</signal>
 		<signal name="joined">
@@ -587,19 +619,19 @@
 			<param index="1" name="kicker" type="String" />
 			<param index="2" name="reason" type="String" />
 			<description>
-				Emitted when kicked.
+				Emitted securely when the client is forcefully disconnected from a target [param channel] by an external [param kicker] providing an underlying operational [param reason].
 			</description>
 		</signal>
 		<signal name="latency_measured">
 			<param index="0" name="latency_ms" type="int" />
 			<description>
-				Emitted when latency measured.
+				Emitted accurately tracking internal engine millisecond fluctuations across ping requests sequentially against a target network pipeline natively via [param latency_ms].
 			</description>
 		</signal>
 		<signal name="message_received">
 			<param index="0" name="message" type="IRCMessage" />
 			<description>
-				Emitted when message received.
+				Emitted whenever the core socket pipeline finishes decrypting an unformatted network object successfully against an external `IRCMessage` structural payload wrapper.
 			</description>
 		</signal>
 		<signal name="mode_changed">
@@ -622,7 +654,7 @@
 			<param index="1" name="target" type="String" />
 			<param index="2" name="text" type="String" />
 			<description>
-				Emitted when notice.
+				Emitted natively whenever a `NOTICE` directive reaches the stream wrapper bypassing active automation processing elements over a specific [param target].
 			</description>
 		</signal>
 		<signal name="numeric_001_welcome">
@@ -692,7 +724,7 @@
 			<param index="0" name="channel" type="String" />
 			<param index="1" name="message" type="String" />
 			<description>
-				Emitted when parted.
+				Emitted successfully following a channel disconnection event natively over an available localized [param channel] namespace string hook wrapper.
 			</description>
 		</signal>
 		<signal name="privmsg">
@@ -707,12 +739,12 @@
 		<signal name="sasl_failed">
 			<param index="0" name="reason" type="String" />
 			<description>
-				Emitted when sasl failed.
+				Emitted cleanly if an internal `SASL` credential wrapper triggers a denial response directly from an IRCv3 authentication pipeline block.
 			</description>
 		</signal>
 		<signal name="sasl_success">
 			<description>
-				Emitted when sasl success.
+				Emitted immediately upon successfully negotiating a valid cryptographic credential wrapper dynamically against an IRC authentication service.
 			</description>
 		</signal>
 		<signal name="standard_reply_fail">
@@ -789,7 +821,7 @@
 			<param index="2" name="kicked" type="String" />
 			<param index="3" name="reason" type="String" />
 			<description>
-				Emitted when user kicked.
+				Emitted when a secondary standard user is forcefully unlinked from a shared [param channel] network space by a secondary [param kicker] client.
 			</description>
 		</signal>
 		<signal name="user_parted">
@@ -797,7 +829,7 @@
 			<param index="1" name="user" type="String" />
 			<param index="2" name="message" type="String" />
 			<description>
-				Emitted when user parted.
+				Emitted smoothly when a standard client node cleanly disassociates from a loaded connection sequence naturally over an active [param channel].
 			</description>
 		</signal>
 		<signal name="user_quit">

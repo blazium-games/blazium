@@ -1,4 +1,4 @@
 [submodule "modules/blazium_sdk"]
 	path = modules/blazium_sdk
-	url = https://github.com/blazium-engine/blazium-sdk-module
+	url = https://github.com/blazium-games/blazium-sdk-module
 	branch = 4.3

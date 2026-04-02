@@ -8,6 +8,7 @@
 	</description>
 	<tutorials>
 		<link title="Twitch API documentation">https://dev.twitch.tv/docs/api/reference</link>
+		<link title="TwitchAPI Developer Examples">https://github.com/blazium-games/twitchapi_module_tests</link>
 	</tutorials>
 	<methods>
 		<method name="get_queue_size" qualifiers="const">
@@ -92,6 +93,12 @@
 			<param index="0" name="callback" type="Callable" />
 			<description>
 				Sets the callback function invoked when HTTP responses are received. Used internally by [TwitchAPI].
+			</description>
+		</method>
+		<method name="set_tls_options">
+			<return type="void" />
+			<param index="0" name="options" type="TLSOptions" />
+			<description>
 			</description>
 		</method>
 	</methods>

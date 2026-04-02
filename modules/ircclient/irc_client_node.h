@@ -37,6 +37,57 @@ class IRCClientNode : public Node {
 	GDCLASS(IRCClientNode, Node);
 
 private:
+	void _on_connected();
+	void _on_connection_error(const String &p_error);
+	void _on_status_changed(int p_status);
+	void _on_message_received(Ref<RefCounted> p_message);
+	void _on_privmsg(const String &p_sender, const String &p_target, const String &p_text, const Dictionary &p_tags);
+	void _on_notice(const String &p_sender, const String &p_target, const String &p_text);
+	void _on_ctcp_received(const String &p_sender, const String &p_command, const String &p_params);
+	void _on_ctcp_reply(const String &p_sender, const String &p_command, const String &p_params);
+	void _on_joined(const String &p_channel);
+	void _on_parted(const String &p_channel, const String &p_message);
+	void _on_kicked(const String &p_channel, const String &p_kicker, const String &p_reason);
+	void _on_user_joined(const String &p_channel, const String &p_user, const String &p_account, const String &p_realname);
+	void _on_user_parted(const String &p_channel, const String &p_user, const String &p_message);
+	void _on_user_quit(const String &p_user, const String &p_message);
+	void _on_user_kicked(const String &p_channel, const String &p_kicker, const String &p_kicked, const String &p_reason);
+	void _on_nick_changed(const String &p_old_nick, const String &p_new_nick);
+	void _on_mode_changed(const String &p_target, const String &p_modes, const PackedStringArray &p_params);
+	void _on_topic_changed(const String &p_channel, const String &p_topic, const String &p_setter);
+	void _on_numeric_001_welcome(const String &p_message);
+	void _on_numeric_005_isupport(const Dictionary &p_features);
+	void _on_numeric_332_topic(const String &p_channel, const String &p_topic);
+	void _on_numeric_353_names(const String &p_channel, const PackedStringArray &p_names);
+	void _on_numeric_366_endofnames(const String &p_channel);
+	void _on_numeric_372_motd(const String &p_line);
+	void _on_numeric_433_nicknameinuse(const String &p_nick);
+	void _on_numeric_received(int p_code, const PackedStringArray &p_params);
+	void _on_numeric_730_mononline(const PackedStringArray &p_nicks);
+	void _on_numeric_731_monoffline(const PackedStringArray &p_nicks);
+	void _on_dcc_request(Ref<RefCounted> p_transfer);
+	void _on_dcc_progress(int p_transfer_index, int p_bytes, int p_total);
+	void _on_dcc_completed(int p_transfer_index);
+	void _on_dcc_failed(int p_transfer_index, const String &p_error);
+	void _on_capability_list(const PackedStringArray &p_capabilities);
+	void _on_capability_acknowledged(const String &p_capability);
+	void _on_capability_denied(const String &p_capability);
+	void _on_sasl_success();
+	void _on_sasl_failed(const String &p_reason);
+	void _on_account_registration_success(const String &p_account);
+	void _on_account_registration_failed(const String &p_reason);
+	void _on_account_verification_required(const String &p_account, const String &p_method);
+	void _on_account_verification_success(const String &p_account);
+	void _on_account_verification_failed(const String &p_reason);
+	void _on_tag_json_data(const String &p_key, const Dictionary &p_data);
+	void _on_tag_base64_data(const String &p_key, const String &p_encoded, const String &p_decoded);
+	void _on_standard_reply_fail(const String &p_command, const String &p_code, const String &p_context, const String &p_description, const Dictionary &p_tags);
+	void _on_standard_reply_warn(const String &p_command, const String &p_code, const String &p_context, const String &p_description, const Dictionary &p_tags);
+	void _on_standard_reply_note(const String &p_command, const String &p_code, const String &p_context, const String &p_description, const Dictionary &p_tags);
+	void _on_batch_started(const String &p_ref_tag, const String &p_batch_type, const PackedStringArray &p_params);
+	void _on_batch_ended(const String &p_ref_tag, const String &p_batch_type, const Array &p_messages);
+	void _on_highlighted(const String &p_channel, const String &p_sender, const String &p_message, const Dictionary &p_tags);
+	void _on_latency_measured(int p_latency_ms);
 	Ref<IRCClient> client;
 
 	// Reconnection info
@@ -57,6 +108,10 @@ protected:
 public:
 	// Get the underlying client
 	Ref<IRCClient> get_client();
+
+	// Debug visibility
+	void set_debug_enabled(bool p_enabled);
+	bool is_debug_enabled() const;
 
 	// Forwarded connection methods
 	Error connect_to_server(const String &p_host, int p_port, bool p_use_ssl, const String &p_nick, const String &p_username, const String &p_realname, const String &p_password = "");

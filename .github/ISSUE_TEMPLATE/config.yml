@@ -2,7 +2,7 @@ blank_issues_enabled: true
 
 contact_links:
   - name: Blazium documentation repository
-    url: https://github.com/blazium-engine/blazium-docs
+    url: https://github.com/blazium-games/blazium-docs
     about: Please report issues with documentation on the Blazium documentation repository, not here.
 
   - name: Blazium community

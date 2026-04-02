@@ -1565,6 +1565,15 @@
 		<member name="ENV" type="ENV" setter="" getter="">
 			The [ENV] singleton.
 		</member>
+		<member name="ENetClient" type="ENetClient" setter="" getter="">
+			The [ENetClient] singleton.
+		</member>
+		<member name="ENetPacketUtils" type="ENetPacketUtils" setter="" getter="">
+			The [ENetPacketUtils] singleton.
+		</member>
+		<member name="ENetServer" type="ENetServer" setter="" getter="">
+			The [ENetServer] singleton.
+		</member>
 		<member name="EditorInterface" type="EditorInterface" setter="" getter="">
 			The [EditorInterface] singleton.
 			[b]Note:[/b] Only available in editor builds.
@@ -1664,9 +1673,6 @@
 		</member>
 		<member name="SocketIOClient" type="SocketIOClient" setter="" getter="">
 			The [SocketIOClient] singleton.
-		</member>
-		<member name="Steam" type="Steam" setter="" getter="">
-			The [Steam] singleton.
 		</member>
 		<member name="TextServerManager" type="TextServerManager" setter="" getter="">
 			The [TextServerManager] singleton.
@@ -2787,7 +2793,7 @@
 		</constant>
 		<constant name="ERR_BUG" value="47" enum="Error">
 			Bug error, caused by an implementation issue in the method.
-			[b]Note:[/b] If a built-in method returns this code, please open an issue on [url=https://github.com/blazium-engine/blazium/issues]the GitHub Issue Tracker[/url].
+			[b]Note:[/b] If a built-in method returns this code, please open an issue on [url=https://github.com/blazium-games/blazium/issues]the GitHub Issue Tracker[/url].
 		</constant>
 		<constant name="ERR_PRINTER_ON_FIRE" value="48" enum="Error">
 			Printer on fire error (This is an easter egg, no built-in methods return this error code).

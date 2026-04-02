@@ -2839,6 +2839,9 @@ void ResourceImporterScene::_generate_editor_preview_for_scene(const String &p_p
 	if (!Engine::get_singleton()->is_editor_hint()) {
 		return;
 	}
+	if (!EditorNode::get_singleton()) {
+		return;
+	}
 	ERR_FAIL_COND_MSG(p_path.is_empty(), "Path is empty, cannot generate preview.");
 	ERR_FAIL_NULL_MSG(p_scene, "Scene is null, cannot generate preview.");
 	EditorInterface::get_singleton()->make_scene_preview(p_path, p_scene, 1024);

@@ -54,6 +54,23 @@
 
 namespace TestGltf {
 
+struct EditorTestEnvironment {
+	EditorFileSystem *efs = nullptr;
+	EditorResourcePreview *erp = nullptr;
+	EditorTestEnvironment() {
+		efs = memnew(EditorFileSystem);
+		erp = memnew(EditorResourcePreview);
+	}
+	~EditorTestEnvironment() {
+		if (erp) {
+			memdelete(erp);
+		}
+		if (efs) {
+			memdelete(efs);
+		}
+	}
+};
+
 static Node *gltf_import(const String &p_file) {
 	// Setting up importers.
 	Ref<ResourceImporterScene> import_scene;
@@ -100,7 +117,8 @@ static Node *gltf_import(const String &p_file) {
 	CHECK_MESSAGE(err == OK, "GLTF import failed.");
 
 	Ref<PackedScene> packed_scene = ResourceLoader::load(scene_file + ".scn", "", ResourceFormatLoader::CACHE_MODE_REPLACE, &err);
-	CHECK_MESSAGE(err == OK, "Loading scene failed.");
+	REQUIRE_MESSAGE(err == OK, "Loading scene failed.");
+	REQUIRE_MESSAGE(packed_scene.is_valid(), "Loaded packed_scene is invalid.");
 	Node *p_scene = packed_scene->instantiate();
 
 	ResourceImporterScene::remove_scene_importer(import_gltf);

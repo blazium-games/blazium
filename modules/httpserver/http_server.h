@@ -58,10 +58,13 @@ class HTTPServer : public Object {
 		Ref<StreamPeerTLS> tls;
 		Ref<StreamPeer> peer;
 		uint64_t time = 0;
-		uint8_t req_buf[8192];
+		Vector<uint8_t> req_buf;
 		int req_pos = 0;
 		bool is_sse = false;
 		int sse_connection_id = 0;
+		bool headers_parsed = false;
+		int header_length = 0;
+		int body_length = 0;
 	};
 
 private:

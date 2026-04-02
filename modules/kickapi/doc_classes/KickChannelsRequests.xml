@@ -66,6 +66,7 @@
 		[/codeblocks]
 	</description>
 	<tutorials>
+		<link title="KickAPI Developer Examples">https://github.com/blazium-games/kickapi_module_tests</link>
 	</tutorials>
 	<methods>
 		<method name="get_channels">
@@ -77,6 +78,9 @@
 				- [code]slug[/code]: Array of channel slugs (up to 50)
 				If no parameters are provided, returns information for the authenticated user.
 				Results are returned via the [signal KickAPI.request_completed] signal with signal_name [code]"channels_received"[/code].
+				[codeblock]
+				KickAPI.get_channels().get_channels({"slug": ["channelname"]})
+				[/codeblock]
 			</description>
 		</method>
 		<method name="update_channel">

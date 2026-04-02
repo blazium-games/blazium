@@ -2128,6 +2128,8 @@ static String _resource_get_class(Ref<Resource> p_resource) {
 Error ResourceFormatSaverBinaryInstance::save(const String &p_path, const Ref<Resource> &p_resource, uint32_t p_flags) {
 	Resource::seed_scene_unique_id(p_path.hash());
 
+	ResourceUID::ID uid = ResourceSaver::get_resource_id_for_path(p_path, true);
+
 	Error err;
 	Ref<FileAccess> f;
 	if (p_flags & ResourceSaver::FLAG_COMPRESS) {
@@ -2200,7 +2202,6 @@ Error ResourceFormatSaverBinaryInstance::save(const String &p_path, const Ref<Re
 
 		f->store_32(format_flags);
 	}
-	ResourceUID::ID uid = ResourceSaver::get_resource_id_for_path(p_path, true);
 	f->store_64(uint64_t(uid));
 	if (!script_class.is_empty()) {
 		save_unicode_string(f, script_class);

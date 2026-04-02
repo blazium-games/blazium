@@ -480,14 +480,27 @@ Error IRCClient::poll() {
 		if (tcp_status == StreamPeerTCP::STATUS_CONNECTED) {
 #ifdef MODULE_MBEDTLS_ENABLED
 			if (use_tls) {
-				tls_connection = Ref<StreamPeerTLS>(StreamPeerTLS::create());
-				Ref<TLSOptions> tls_opts = tls_options.is_valid() ? tls_options : TLSOptions::client();
-				Error tls_err = tls_connection->connect_to_stream(tcp_connection, current_server, tls_opts);
-				if (tls_err != OK) {
+				if (tls_connection.is_null()) {
+					tls_connection = Ref<StreamPeerTLS>(StreamPeerTLS::create());
+					Ref<TLSOptions> tls_opts = tls_options.is_valid() ? tls_options : TLSOptions::client();
+					Error tls_err = tls_connection->connect_to_stream(tcp_connection, current_server, tls_opts);
+					if (tls_err != OK) {
+						disconnect_from_server();
+						emit_signal("connection_error", "TLS handshake failed");
+						status = STATUS_ERROR;
+						return tls_err;
+					}
+				}
+
+				tls_connection->poll();
+				StreamPeerTLS::Status tls_status = tls_connection->get_status();
+				if (tls_status == StreamPeerTLS::STATUS_HANDSHAKING) {
+					return OK;
+				} else if (tls_status != StreamPeerTLS::STATUS_CONNECTED) {
 					disconnect_from_server();
-					emit_signal("connection_error", "TLS handshake failed");
+					emit_signal("connection_error", "TLS Error");
 					status = STATUS_ERROR;
-					return tls_err;
+					return FAILED;
 				}
 			}
 #endif
@@ -515,6 +528,15 @@ Error IRCClient::poll() {
 		StreamPeer *stream = tcp_connection.ptr();
 #ifdef MODULE_MBEDTLS_ENABLED
 		if (use_tls && tls_connection.is_valid()) {
+			StreamPeerTLS::Status tls_status = tls_connection->get_status();
+			if (tls_status == StreamPeerTLS::STATUS_HANDSHAKING) {
+				return OK; // Wait for handshake
+			} else if (tls_status != StreamPeerTLS::STATUS_CONNECTED) {
+				disconnect_from_server();
+				emit_signal("connection_error", "TLS error");
+				status = STATUS_ERROR;
+				return FAILED;
+			}
 			stream = tls_connection.ptr();
 		}
 #endif
@@ -523,9 +545,10 @@ Error IRCClient::poll() {
 		if (available > 0) {
 			PackedByteArray data;
 			data.resize(available);
-			int received = stream->get_data(data.ptrw(), available);
+			int received = 0;
+			Error recv_err = stream->get_partial_data(data.ptrw(), available, received);
 
-			if (received > 0) {
+			if (recv_err == OK && received > 0) {
 				// Detect encoding if auto-detection enabled
 				String detected_encoding = encoding;
 				if (auto_detect_encoding && encoding == "UTF-8") {
@@ -546,6 +569,9 @@ Error IRCClient::poll() {
 					receive_buffer = receive_buffer.substr(line_end + 1);
 
 					if (!line.is_empty()) {
+						if (debug_enabled) {
+							print_line("IRC RECV: " + line);
+						}
 						_process_message(line);
 					}
 				}
@@ -1453,9 +1479,22 @@ void IRCClient::_send_immediate(const String &p_message) {
 
 	String message = p_message + "\r\n";
 
+	if (debug_enabled) {
+		print_line("IRC SEND: " + p_message);
+	}
+
 	// Convert to configured encoding
 	PackedByteArray encoded_data = _convert_to_encoding(message, encoding);
-	stream->put_data(encoded_data.ptr(), encoded_data.size());
+	Error err = stream->put_data(encoded_data.ptr(), encoded_data.size());
+	if (err != OK) {
+		if (debug_enabled) {
+			print_line(vformat("IRC SEND FAILED! Error code: %d", err));
+		}
+	} else {
+		if (debug_enabled) {
+			print_line(vformat("IRC SEND SUCCESS! Bytes written: %d", encoded_data.size()));
+		}
+	}
 
 	// Track metrics
 	metrics.messages_sent++;
@@ -1532,7 +1571,12 @@ void IRCClient::_start_capability_negotiation() {
 	cap_negotiation_active = true;
 	_send_immediate("CAP LS 302");
 
-	// Don't send NICK/USER yet - wait for capability negotiation to complete
+	// Send registration immediately (IRCds wait for this before responding to CAP)
+	if (!password.is_empty()) {
+		_send_immediate("PASS " + password);
+	}
+	_send_immediate("NICK " + current_nick);
+	_send_immediate("USER " + username + " 0 * :" + realname);
 }
 
 void IRCClient::_handle_capability_response(Ref<IRCMessage> p_message) {
@@ -1648,13 +1692,6 @@ void IRCClient::_end_capability_negotiation() {
 	if (cap_negotiation_active) {
 		cap_negotiation_active = false;
 		_send_immediate("CAP END");
-
-		// Now send registration
-		if (!password.is_empty()) {
-			_send_immediate("PASS " + password);
-		}
-		_send_immediate("NICK " + current_nick);
-		_send_immediate("USER " + username + " 0 * :" + realname);
 	}
 }
 
@@ -3168,4 +3205,12 @@ IRCClient::IRCClient() {
 
 IRCClient::~IRCClient() {
 	disconnect_from_server();
+}
+
+void IRCClient::set_debug_enabled(bool p_enabled) {
+	debug_enabled = p_enabled;
+}
+
+bool IRCClient::is_debug_enabled() const {
+	return debug_enabled;
 }

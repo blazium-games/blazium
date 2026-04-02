@@ -49,6 +49,7 @@ private:
 	Ref<HTTPClient> http;
 	String base_url;
 	String access_token;
+	Ref<TLSOptions> custom_tls_options;
 
 	// Rate limiting
 	int rate_limit_remaining = -1;
@@ -85,6 +86,7 @@ public:
 	// Configuration
 	void set_base_url(const String &p_url);
 	void set_access_token(const String &p_token);
+	void set_tls_options(const Ref<TLSOptions> &p_tls_options);
 
 	// Response callback
 	void set_response_callback(const Callable &p_callback);

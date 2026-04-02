@@ -34,6 +34,7 @@
 void KickHTTPClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_base_url", "url"), &KickHTTPClient::set_base_url);
 	ClassDB::bind_method(D_METHOD("set_access_token", "token"), &KickHTTPClient::set_access_token);
+	ClassDB::bind_method(D_METHOD("set_tls_options", "tls_options"), &KickHTTPClient::set_tls_options);
 	ClassDB::bind_method(D_METHOD("set_response_callback", "callback"), &KickHTTPClient::set_response_callback);
 	ClassDB::bind_method(D_METHOD("queue_request", "signal_name", "method", "path", "query_params", "body"),
 			&KickHTTPClient::queue_request, DEFVAL(Dictionary()), DEFVAL(String()));
@@ -65,6 +66,10 @@ void KickHTTPClient::set_access_token(const String &p_token) {
 	access_token = p_token;
 }
 
+void KickHTTPClient::set_tls_options(const Ref<TLSOptions> &p_tls_options) {
+	custom_tls_options = p_tls_options;
+}
+
 void KickHTTPClient::set_response_callback(const Callable &p_callback) {
 	response_callback = p_callback;
 }
@@ -87,14 +92,20 @@ void KickHTTPClient::poll() {
 		return;
 	}
 
-	Error err = http->poll();
-	if (err != OK) {
-		ERR_PRINT(vformat("HTTP poll error: %d", err));
-		state = STATE_IDLE;
+	_process_queue();
+
+	HTTPClient::Status status = http->get_status();
+	if (status == HTTPClient::STATUS_DISCONNECTED && state == STATE_IDLE && request_queue.is_empty()) {
 		return;
 	}
 
-	_process_queue();
+	if (status != HTTPClient::STATUS_DISCONNECTED) {
+		Error err = http->poll();
+		if (err != OK) {
+			ERR_PRINT(vformat("HTTP poll error: %d", err));
+			state = STATE_IDLE;
+		}
+	}
 }
 
 void KickHTTPClient::_process_queue() {
@@ -226,7 +237,11 @@ Error KickHTTPClient::_connect_to_host() {
 	// Connect
 	Ref<TLSOptions> tls_opts;
 	if (use_tls) {
-		tls_opts = TLSOptions::client();
+		if (custom_tls_options.is_valid()) {
+			tls_opts = custom_tls_options;
+		} else {
+			tls_opts = TLSOptions::client();
+		}
 	}
 
 	Error err = http->connect_to_host(host, port, tls_opts);
@@ -246,8 +261,16 @@ void KickHTTPClient::_send_request() {
 		return;
 	}
 
+	// Extract base path from base_url
+	String host = base_url.replace("https://", "").replace("http://", "");
+	String base_path = "";
+	int slash_pos = host.find("/");
+	if (slash_pos != -1) {
+		base_path = host.substr(slash_pos);
+	}
+
 	// Build full path with query string
-	String full_path = current_request.path;
+	String full_path = base_path + current_request.path;
 	if (!current_request.query_params.is_empty()) {
 		String query = _build_query_string(current_request.query_params);
 		if (!query.is_empty()) {
@@ -342,7 +365,7 @@ void KickHTTPClient::_handle_response() {
 			error_msg = response_data["error"];
 		}
 
-		ERR_PRINT(vformat("HTTP %d: %s", response_code, error_msg));
+		print_verbose(vformat("HTTP %d: %s", response_code, error_msg));
 	}
 
 	// Emit rate limit warning

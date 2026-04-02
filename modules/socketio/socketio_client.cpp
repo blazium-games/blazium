@@ -155,17 +155,7 @@ void SocketIOClient::poll() {
 			break;
 
 		case WebSocketPeer::STATE_OPEN: {
-			if (connection_state == STATE_CONNECTING) {
-				// Just connected - send CONNECT packet for main namespace
-				connection_state = STATE_CONNECTED;
-
-				// In Socket.IO v5, we must send CONNECT packet
-				Ref<SocketIONamespace> main_ns = namespaces["/"];
-				if (main_ns.is_valid()) {
-					Dictionary auth;
-					_send_connect_packet("/", auth);
-				}
-			}
+			// Engine.IO handles connection timing via packets
 
 			// Process incoming messages
 			_process_websocket_messages();
@@ -297,13 +287,49 @@ void SocketIOClient::_process_websocket_messages() {
 		}
 
 		if (ws->was_string_packet()) {
-			// Text packet - Socket.IO packet
 			String packet_str;
 			packet_str.parse_utf8((const char *)buffer, buffer_size);
 
-			// Socket.IO packets are sent directly (no Engine.IO wrapper in WebSocket mode)
-			SocketIOPacket packet = SocketIOPacket::decode(packet_str);
-			_process_packet(packet);
+			if (packet_str.is_empty()) {
+				continue;
+			}
+
+			char32_t eio_type = packet_str[0];
+
+			if (eio_type == '0') {
+				// Engine.IO OPEN
+				String json_str = packet_str.substr(1);
+				Ref<JSON> json;
+				json.instantiate();
+				if (json->parse(json_str) == OK) {
+					Variant data_parsed = json->get_data();
+					if (data_parsed.get_type() == Variant::DICTIONARY) {
+						Dictionary data = data_parsed;
+						if (data.has("sid")) {
+							engine_io_session_id = data["sid"];
+						}
+					}
+				}
+
+				if (connection_state == STATE_CONNECTING) {
+					connection_state = STATE_CONNECTED;
+					Ref<SocketIONamespace> main_ns = namespaces["/"];
+					if (main_ns.is_valid()) {
+						Dictionary auth;
+						_send_connect_packet("/", auth);
+					}
+				}
+			} else if (eio_type == '2') {
+				// Engine.IO PING -> Send PONG
+				ws->send_text("3");
+			} else if (eio_type == '3') {
+				// Engine.IO PONG
+			} else if (eio_type == '4') {
+				// Engine.IO MESSAGE -> Socket.IO packet
+				String sio_str = packet_str.substr(1);
+				SocketIOPacket packet = SocketIOPacket::decode(sio_str);
+				_process_packet(packet);
+			}
 		} else {
 			// Binary packet - attachment for previous packet
 			PackedByteArray binary_data;
@@ -480,9 +506,10 @@ void SocketIOClient::_send_packet(const SocketIOPacket &p_packet) {
 
 	// Encode packet
 	String packet_str = p_packet.encode();
+	String final_packet = "4" + packet_str; // Wrap with Engine.IO MESSAGE type
 
 	// Send text packet
-	Error err = ws->send_text(packet_str);
+	Error err = ws->send_text(final_packet);
 	if (err != OK) {
 		ERR_PRINT(vformat("Failed to send Socket.IO packet: %d", err));
 		return;

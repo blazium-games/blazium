@@ -35,6 +35,7 @@ void KickAPI::_bind_methods() {
 	// Configuration
 	ClassDB::bind_method(D_METHOD("configure", "access_token"), &KickAPI::configure);
 	ClassDB::bind_method(D_METHOD("set_access_token", "token"), &KickAPI::set_access_token);
+	ClassDB::bind_method(D_METHOD("get_http_client"), &KickAPI::get_http_client);
 	ClassDB::bind_method(D_METHOD("poll"), &KickAPI::poll);
 
 	// Utility methods

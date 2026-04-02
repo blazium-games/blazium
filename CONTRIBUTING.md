@@ -174,12 +174,12 @@ To communicate with developers (e.g. to discuss a feature you want to implement
 or a bug you want to fix), the following channels can be used:
 
 - [Blazium Discord](https://chat.blazium.app): General community chat and development can all be found here.
-- [Bug tracker](https://github.com/Blazium-Engine/blazium-engine/issues): If there is an
+- [Bug tracker](https://github.com/blazium-games/blazium-games/issues): If there is an
   existing issue about a topic you want to discuss, you can participate directly.
   If not, you can open a new issue. Please mind the guidelines outlined above
   for bug reporting.
 - Feature Proposals should be made on the [Blazium Discord](https://chat.blazium.app) for now.
-- [Blazium](https://github.com/blazium-engine/) on [X (Twitter)](https://x.com/BlaziumEngine)
+- [Blazium](https://github.com/blazium-games/) on [X (Twitter)](https://x.com/BlaziumEngine)
 
 Thanks for your interest in contributing!
 

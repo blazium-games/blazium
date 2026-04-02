@@ -24,6 +24,7 @@
 		[/codeblocks]
 	</description>
 	<tutorials>
+		<link title="HTTPServer Developer Examples">https://github.com/blazium-games/httpserver_module_tests</link>
 	</tutorials>
 	<methods>
 		<method name="get_header" qualifiers="const">
@@ -40,6 +41,11 @@
 			<param index="1" name="default_value" type="String" default="&quot;&quot;" />
 			<description>
 				Returns the value of a path parameter extracted from the route pattern. For example, with pattern "/api/users/{id}" and request "/api/users/123", calling [code]get_path_param("id")[/code] returns "123".
+				[codeblock]
+				var route_params = {}
+				route_params = ctx.get_path_params()
+				var user_id = route_params.get("id", "")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="get_query_param" qualifiers="const">

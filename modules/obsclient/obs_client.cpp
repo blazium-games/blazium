@@ -207,6 +207,11 @@ void OBSClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("open_video_mix_projector", "video_mix_type", "monitor_index", "projector_geometry"), &OBSClient::open_video_mix_projector, DEFVAL(-1), DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("open_source_projector", "source_name", "monitor_index", "projector_geometry"), &OBSClient::open_source_projector, DEFVAL(-1), DEFVAL(String()));
 
+	// Signals - Connection Events
+	ADD_SIGNAL(MethodInfo("connected"));
+	ADD_SIGNAL(MethodInfo("disconnected", PropertyInfo(Variant::STRING, "reason")));
+	ADD_SIGNAL(MethodInfo("connection_error", PropertyInfo(Variant::STRING, "error_message")));
+
 	// Signals - General Events
 	ADD_SIGNAL(MethodInfo("exit_started"));
 	ADD_SIGNAL(MethodInfo("vendor_event", PropertyInfo(Variant::STRING, "vendor_name"), PropertyInfo(Variant::STRING, "event_type"), PropertyInfo(Variant::DICTIONARY, "event_data")));
@@ -437,7 +442,10 @@ void OBSClient::disconnect_from_obs() {
 		ws.unref();
 	}
 
-	connection_state = STATE_DISCONNECTED;
+	if (connection_state != STATE_DISCONNECTED) {
+		connection_state = STATE_DISCONNECTED;
+		emit_signal("disconnected", "Client disconnect");
+	}
 	pending_requests.clear();
 	auth_salt = String();
 	auth_challenge = String();
@@ -461,7 +469,7 @@ void OBSClient::poll() {
 
 		case WebSocketPeer::STATE_OPEN:
 			// Process incoming messages
-			while (ws->get_available_packet_count() > 0) {
+			while (ws.is_valid() && ws->get_available_packet_count() > 0) {
 				const uint8_t *buffer;
 				int buffer_size;
 
@@ -479,13 +487,18 @@ void OBSClient::poll() {
 			// Closing handshake in progress
 			break;
 
-		case WebSocketPeer::STATE_CLOSED:
+		case WebSocketPeer::STATE_CLOSED: {
 			// Connection closed
 			int code = ws->get_close_code();
 			String reason = ws->get_close_reason();
 			print_line(vformat("OBS WebSocket closed: %d - %s", code, reason));
-			connection_state = STATE_DISCONNECTED;
+			if (connection_state != STATE_DISCONNECTED) {
+				connection_state = STATE_DISCONNECTED;
+				emit_signal("disconnected", reason);
+			}
+			ws.unref();
 			break;
+		}
 	}
 }
 
@@ -610,6 +623,7 @@ void OBSClient::handle_hello(const Dictionary &p_data) {
 			identify_data["authentication"] = auth_string;
 		} else {
 			ERR_PRINT("OBS requires authentication but no password provided");
+			emit_signal("connection_error", "Authentication required but no password provided");
 			disconnect_from_obs();
 			return;
 		}
@@ -626,6 +640,7 @@ void OBSClient::handle_identified(const Dictionary &p_data) {
 
 	negotiated_rpc_version = p_data.get("negotiatedRpcVersion", 1);
 	connection_state = STATE_CONNECTED;
+	emit_signal("connected");
 	print_line("Successfully connected to OBS WebSocket");
 }
 

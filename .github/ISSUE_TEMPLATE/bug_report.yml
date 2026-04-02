@@ -2,7 +2,7 @@ name: Bug report
 description: Report a bug in Blazium
 title: "[Bug]: "
 labels: ["bug"]
-projects: ["blazium-engine/2"]
+projects: ["blazium-games/2"]
 body:
 - type: markdown
   attributes:
@@ -10,7 +10,7 @@ body:
       When reporting bugs, please follow the guidelines in this template. This helps identify the problem precisely and thus enables contributors to fix it faster.
       - Write a descriptive issue title above.
       - The golden rule is to **always open *one* issue for *one* bug**. If you notice several bugs and want to report them, make sure to create one new issue for each of them.
-      - Search [open](https://github.com/blazium-engine/blazium/issues?q=is%3Aissue%20state%3Aopen%20label%3Abug) and [closed](https://github.com/blazium-engine/blazium/issues?q=is%3Aissue%20state%3Aclosed%20label%3Abug) issues to ensure it has not already been reported. If you don't find a relevant match or if you're unsure, don't hesitate to **open a new issue**. The bugsquad will handle it from there if it's a duplicate.
+      - Search [open](https://github.com/blazium-games/blazium/issues?q=is%3Aissue%20state%3Aopen%20label%3Abug) and [closed](https://github.com/blazium-games/blazium/issues?q=is%3Aissue%20state%3Aclosed%20label%3Abug) issues to ensure it has not already been reported. If you don't find a relevant match or if you're unsure, don't hesitate to **open a new issue**. The bugsquad will handle it from there if it's a duplicate.
       - Verify that you are using a supported Blazium version. Please always check if your issue is reproducible in the latest version – it may already have been fixed!
       - If you use a custom build, please test if your issue is reproducible in official builds too. Likewise if you use any C++ modules, GDExtensions, or editor plugins, you should check if the bug is reproducible in a project without these.
 

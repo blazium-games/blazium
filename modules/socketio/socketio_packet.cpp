@@ -44,7 +44,10 @@ String SocketIOPacket::encode() const {
 
 	// 3. Namespace (only if not main namespace)
 	if (namespace_path != "/") {
-		result += namespace_path + ",";
+		result += namespace_path;
+		if (!data.is_empty()) {
+			result += ",";
+		}
 	}
 
 	// 4. Acknowledgment ID (optional)
@@ -55,7 +58,7 @@ String SocketIOPacket::encode() const {
 	// 5. Data payload (JSON)
 	if (type == PACKET_CONNECT || type == PACKET_CONNECT_ERROR || type == PACKET_EVENT ||
 			type == PACKET_ACK || type == PACKET_BINARY_EVENT || type == PACKET_BINARY_ACK) {
-		if (!data.is_empty() || type == PACKET_CONNECT || type == PACKET_CONNECT_ERROR) {
+		if (!data.is_empty()) {
 			Variant payload;
 			if (data.size() == 1 && (type == PACKET_CONNECT || type == PACKET_CONNECT_ERROR)) {
 				// For CONNECT/CONNECT_ERROR, use object directly

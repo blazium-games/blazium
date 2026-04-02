@@ -18,6 +18,7 @@
 	</description>
 	<tutorials>
 		<link title="Twitch API documentation">https://dev.twitch.tv/docs/api/reference</link>
+		<link title="TwitchAPI Developer Examples">https://github.com/blazium-games/twitchapi_module_tests</link>
 	</tutorials>
 	<methods>
 		<method name="configure">
@@ -74,6 +75,11 @@
 			<return type="TwitchGamesRequests" />
 			<description>
 				Returns the Games API category handler for accessing game information and top games by viewer count.
+			</description>
+		</method>
+		<method name="get_http_client" qualifiers="const">
+			<return type="TwitchHTTPClient" />
+			<description>
 			</description>
 		</method>
 		<method name="get_moderation">

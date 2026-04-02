@@ -37,6 +37,7 @@ void TwitchAPI::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_access_token", "token"), &TwitchAPI::set_access_token);
 	ClassDB::bind_method(D_METHOD("set_client_id", "client_id"), &TwitchAPI::set_client_id);
 	ClassDB::bind_method(D_METHOD("poll"), &TwitchAPI::poll);
+	ClassDB::bind_method(D_METHOD("get_http_client"), &TwitchAPI::get_http_client);
 
 	// Utility methods
 	ClassDB::bind_method(D_METHOD("query_string_from_dict", "params"), &TwitchAPI::query_string_from_dict);

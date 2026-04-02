@@ -45,7 +45,8 @@
 		[b]Note:[/b] You must call [method poll] regularly to process messages. For automatic polling, use [IRCClientNode] instead.
 	</description>
 	<tutorials>
-		<link title="IRC Client README">https://github.com/blazium-engine/blazium/blob/main/modules/ircclient/README.md</link>
+		<link title="IRC Client README">https://github.com/blazium-games/blazium/blob/main/modules/ircclient/README.md</link>
+		<link title="IRCClient Developer Examples">https://github.com/blazium-games/irc_module_tests</link>
 	</tutorials>
 	<methods>
 		<method name="accept_dcc_transfer">
@@ -191,6 +192,9 @@
 				[param realname] - Your real name or description.
 				[param password] - Optional server password (PASS command). For SASL, use [method enable_sasl] instead.
 				[b]Note:[/b] You must call [method poll] regularly after connecting to process IRC messages.
+				[codeblock]
+				irc.connect_to_server("irc.libera.chat", 6697, true, "BlaziumBot", "bot", "Blazium Test Bot")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="deop_user">
@@ -220,6 +224,9 @@
 			<param index="0" name="quit_message" type="String" default="&quot;&quot;" />
 			<description>
 				Disconnects from the IRC server with an optional quit message. Disables auto-reconnect for manual disconnects.
+				[codeblock]
+				irc.disconnect_from_server("Shutting down bot")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="enable_auto_reconnect">
@@ -528,6 +535,9 @@
 			<param index="1" name="password" type="String" />
 			<description>
 				Disconnects a ghost session using NickServ GHOST command. [param nick] - Nick. [param password] - Password.
+				[codeblock]
+				irc.ghost_nick("MyNick", "secret_password")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="group_nick">
@@ -564,6 +574,9 @@
 			<param index="0" name="mask" type="String" />
 			<description>
 				Adds user/mask to client-side ignore list. Supports wildcards (* and ?). Ignored users' PRIVMSG are automatically filtered. [param mask] - Mask.
+				[codeblock]
+				irc.ignore_user("*!*@spam.host.com")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="invite_user">
@@ -613,6 +626,9 @@
 			<param index="1" name="key" type="String" default="&quot;&quot;" />
 			<description>
 				Joins an IRC channel. Use [param key] for password-protected channels. Emits [signal joined] when successful.
+				[codeblock]
+				irc.join_channel("#blazium")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="kick_user">
@@ -622,6 +638,9 @@
 			<param index="2" name="reason" type="String" default="&quot;&quot;" />
 			<description>
 				Kicks a user from a channel. Requires channel operator status. [param reason] is the optional kick message.
+				[codeblock]
+				irc.kick_user("#blazium", "SpammerNick", "No spamming allowed")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="kickban_user">
@@ -694,6 +713,9 @@
 			<param index="1" name="nick" type="String" />
 			<description>
 				Gives channel operator status (+o) to a user. Requires channel operator status yourself.
+				[codeblock]
+				irc.op_user("#blazium", "TrustedUser")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="parse_formatting">
@@ -709,6 +731,9 @@
 			<param index="1" name="message" type="String" default="&quot;&quot;" />
 			<description>
 				Leaves an IRC channel with an optional part message. Emits [signal parted] when successful.
+				[codeblock]
+				irc.part_channel("#blazium", "Goodbye everyone!")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="poll">
@@ -747,6 +772,9 @@
 			<param index="1" name="password" type="String" />
 			<description>
 				Registers your nickname with NickServ. [param email] and [param password] are registration credentials.
+				[codeblock]
+				irc.register_nick("email@example.com", "secure_password")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="reject_dcc_transfer">
@@ -902,6 +930,9 @@
 			<param index="1" name="message" type="String" />
 			<description>
 				Sends a NOTICE message to a channel or user. NOTICEs should not trigger automated responses.
+				[codeblock]
+				irc.send_notice("TargetUser", "This is an automated notice")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="send_oper">
@@ -918,6 +949,9 @@
 			<param index="1" name="message" type="String" />
 			<description>
 				Sends a PRIVMSG to a channel or user. Messages are automatically queued and flood-protected. For multi-line messages, see [method send_multiline_privmsg].
+				[codeblock]
+				irc.send_privmsg("#blazium", "Hello world!")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="send_raw">
@@ -996,12 +1030,18 @@
 			<param index="0" name="message" type="String" />
 			<description>
 				Sets away status with a message using AWAY command. [param message] - Message.
+				[codeblock]
+				irc.set_away("Currently away for testing")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="set_back">
 			<return type="void" />
 			<description>
 				Removes away status by sending AWAY with no message.
+				[codeblock]
+				irc.set_back()
+				[/codeblock]
 			</description>
 		</method>
 		<method name="set_ban">
@@ -1017,6 +1057,9 @@
 			<param index="0" name="enabled" type="bool" />
 			<description>
 				Sets bot mode (+B) to identify client as a bot (IRCv3). Automatically sends MODE command after connection if enabled. [param enabled] - Enabled.
+				[codeblock]
+				irc.set_bot_mode(true)
+				[/codeblock]
 			</description>
 		</method>
 		<method name="set_channel_key">
@@ -1140,7 +1183,7 @@
 			<return type="void" />
 			<param index="0" name="size" type="int" />
 			<description>
-				Sets token bucket size for flood protection. Determines burst capacity for messages.
+				Constrains the automated outgoing payload limiter to a sequence maximum governed by [param size] to effectively resolve connection aborts resulting from network spam protocols.
 			</description>
 		</method>
 		<method name="set_topic">
@@ -1148,7 +1191,7 @@
 			<param index="0" name="channel" type="String" />
 			<param index="1" name="topic" type="String" />
 			<description>
-				Sets the channel topic. Requires channel operator status. Emits [signal topic_changed] when successful.
+				Generates and launches a `TOPIC` adjustment payload mapped accurately against [param channel] dynamically altering the channel's standard display sequence with [param topic].
 			</description>
 		</method>
 		<method name="silence_user">
@@ -1382,7 +1425,7 @@
 			<param index="2" name="message" type="String" />
 			<param index="3" name="tags" type="Dictionary" />
 			<description>
-				Emitted when receiving a message containing your nickname or a custom highlight pattern. Use [method add_highlight_pattern] to add custom patterns.
+				Emitted directly when the sequence identifies an inclusion of the user's nickname wrapped securely in an external message from a known [param sender] inside a specific [param channel].
 			</description>
 		</signal>
 		<signal name="joined">
@@ -1396,7 +1439,7 @@
 			<param index="1" name="kicker" type="String" />
 			<param index="2" name="reason" type="String" />
 			<description>
-				Emitted when you are kicked from a channel. [param kicker] is the nick who kicked you, [param reason] is the kick message.
+				Emitted securely when the client is forcefully disconnected from a target [param channel] by an external [param kicker] providing an underlying operational [param reason].
 			</description>
 		</signal>
 		<signal name="latency_measured">
@@ -1431,7 +1474,7 @@
 			<param index="1" name="target" type="String" />
 			<param index="2" name="text" type="String" />
 			<description>
-				Emitted when receiving a NOTICE message. [param sender] is the nick or server, [param target] is you or a channel, [param text] is the message content.
+				Emitted natively whenever a `NOTICE` directive reaches the stream wrapper bypassing active automation processing elements over a specific [param target].
 			</description>
 		</signal>
 		<signal name="numeric_001_welcome">
@@ -1501,7 +1544,7 @@
 			<param index="0" name="channel" type="String" />
 			<param index="1" name="message" type="String" />
 			<description>
-				Emitted when you leave a channel. [param channel] is the channel name, [param message] is your part message.
+				Emitted successfully following a channel disconnection event natively over an available localized [param channel] namespace string hook wrapper.
 			</description>
 		</signal>
 		<signal name="privmsg">
@@ -1516,12 +1559,12 @@
 		<signal name="sasl_failed">
 			<param index="0" name="reason" type="String" />
 			<description>
-				Emitted when SASL authentication fails. [param reason] contains the failure reason. Connection may continue without SASL.
+				Emitted cleanly if an internal `SASL` credential wrapper triggers a denial response directly from an IRCv3 authentication pipeline block.
 			</description>
 		</signal>
 		<signal name="sasl_success">
 			<description>
-				Emitted when SASL authentication succeeds. Connection will proceed with authenticated identity.
+				Emitted immediately upon successfully negotiating a valid cryptographic credential wrapper dynamically against an IRC authentication service.
 			</description>
 		</signal>
 		<signal name="standard_reply_fail">
@@ -1598,7 +1641,7 @@
 			<param index="2" name="kicked" type="String" />
 			<param index="3" name="reason" type="String" />
 			<description>
-				Emitted when a user is kicked from a channel. [param kicker] is the nick who performed the kick, [param kicked] is the victim, [param reason] is the kick message.
+				Emitted when a secondary standard user is forcefully unlinked from a shared [param channel] network space by a secondary [param kicker] client.
 			</description>
 		</signal>
 		<signal name="user_parted">
@@ -1606,7 +1649,7 @@
 			<param index="1" name="user" type="String" />
 			<param index="2" name="message" type="String" />
 			<description>
-				Emitted when a user leaves a channel. [param channel] is the channel name, [param user] is the nick, [param message] is the part message.
+				Emitted smoothly when a standard client node cleanly disassociates from a loaded connection sequence naturally over an active [param channel].
 			</description>
 		</signal>
 		<signal name="user_quit">

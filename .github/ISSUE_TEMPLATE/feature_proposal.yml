@@ -2,13 +2,13 @@ name: Feature proposal
 description: Propose a feature to solve an engine limitation
 title: "[Feature]: "
 labels: [""]
-projects: ["blazium-engine/2"]
+projects: ["blazium-games/2"]
 body:
 - type: markdown
   attributes:
     value: |
       - Write a descriptive proposal title above.
-      - Search [open](https://github.com/blazium-engine/blazium/issues?q=is%3Aissue%20state%3Aopen%20%5BFeature%5D%3A) and [closed](https://github.com/blazium-engine/blazium/issues?q=is%3Aissue%20state%3Aclosed%20%5BFeature%5D%3A) proposals to ensure the feature has not already been suggested.
+      - Search [open](https://github.com/blazium-games/blazium/issues?q=is%3Aissue%20state%3Aopen%20%5BFeature%5D%3A) and [closed](https://github.com/blazium-games/blazium/issues?q=is%3Aissue%20state%3Aclosed%20%5BFeature%5D%3A) proposals to ensure the feature has not already been suggested.
 
 - type: textarea
   attributes:

@@ -33,6 +33,7 @@
 		[/codeblocks]
 	</description>
 	<tutorials>
+		<link title="KickAPI Developer Examples">https://github.com/blazium-games/kickapi_module_tests</link>
 	</tutorials>
 	<methods>
 		<method name="get_queue_size" qualifiers="const">
@@ -102,6 +103,12 @@
 			<param index="0" name="callback" type="Callable" />
 			<description>
 				Sets the callback function that will be called when a response is received.
+			</description>
+		</method>
+		<method name="set_tls_options">
+			<return type="void" />
+			<param index="0" name="tls_options" type="TLSOptions" />
+			<description>
 			</description>
 		</method>
 	</methods>

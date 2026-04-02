@@ -41,6 +41,7 @@
 		For more information about the Socket.IO protocol, see: https://socket.io/docs/v4/socket-io-protocol/
 	</description>
 	<tutorials>
+		<link title="Socket.IO Developer Examples">https://github.com/blazium-games/socketio_module_tests</link>
 	</tutorials>
 	<methods>
 		<method name="close">

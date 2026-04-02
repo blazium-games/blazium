@@ -45,6 +45,7 @@
 		[/codeblocks]
 	</description>
 	<tutorials>
+		<link title="KickAPI Developer Examples">https://github.com/blazium-games/kickapi_module_tests</link>
 	</tutorials>
 	<methods>
 		<method name="send_message">

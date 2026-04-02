@@ -52,6 +52,7 @@
 		[/codeblocks]
 	</description>
 	<tutorials>
+		<link title="KickAPI Developer Examples">https://github.com/blazium-games/kickapi_module_tests</link>
 	</tutorials>
 	<methods>
 		<method name="get_livestreams">
@@ -63,6 +64,9 @@
 				- [code]slug[/code]: Array of channel slugs (up to 50)
 				You cannot mix [code]broadcaster_user_id[/code] and [code]slug[/code] parameters.
 				Results are returned via the [signal KickAPI.request_completed] signal with signal_name [code]"livestreams_received"[/code].
+				[codeblock]
+				KickAPI.get_livestreams().get_livestreams({"slug": ["streamer123"]})
+				[/codeblock]
 			</description>
 		</method>
 	</methods>

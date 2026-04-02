@@ -7,5 +7,6 @@
 		KickRequestBase provides common functionality for all Kick API request handlers. This class is not used directly but is inherited by specific request category classes like [KickCategoriesRequests], [KickChannelsRequests], etc.
 	</description>
 	<tutorials>
+		<link title="KickAPI Developer Examples">https://github.com/blazium-games/kickapi_module_tests</link>
 	</tutorials>
 </class>

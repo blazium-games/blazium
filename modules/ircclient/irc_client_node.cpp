@@ -109,6 +109,9 @@ void IRCClientNode::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_message_history"), &IRCClientNode::get_message_history);
 	ClassDB::bind_method(D_METHOD("clear_message_history"), &IRCClientNode::clear_message_history);
 
+	ClassDB::bind_method(D_METHOD("set_debug_enabled", "enabled"), &IRCClientNode::set_debug_enabled);
+	ClassDB::bind_method(D_METHOD("is_debug_enabled"), &IRCClientNode::is_debug_enabled);
+
 	// Forward all signals from IRCClient
 	ADD_SIGNAL(MethodInfo("connected"));
 	ADD_SIGNAL(MethodInfo("disconnected", PropertyInfo(Variant::STRING, "reason")));
@@ -170,63 +173,12 @@ void IRCClientNode::_bind_methods() {
 void IRCClientNode::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_READY: {
+			set_process(true);
 			// Connect signals from client to node
 			if (client.is_valid()) {
-				client->connect("connected", Callable(this, "emit_signal").bind("connected"));
 				client->connect("disconnected", callable_mp(this, &IRCClientNode::_on_disconnected));
-				client->connect("connection_error", Callable(this, "emit_signal").bind("connection_error"));
-				client->connect("status_changed", Callable(this, "emit_signal").bind("status_changed"));
-				client->connect("message_received", Callable(this, "emit_signal").bind("message_received"));
-				client->connect("privmsg", Callable(this, "emit_signal").bind("privmsg"));
-				client->connect("notice", Callable(this, "emit_signal").bind("notice"));
-				client->connect("ctcp_received", Callable(this, "emit_signal").bind("ctcp_received"));
-				client->connect("ctcp_reply", Callable(this, "emit_signal").bind("ctcp_reply"));
-				client->connect("joined", Callable(this, "emit_signal").bind("joined"));
-				client->connect("parted", Callable(this, "emit_signal").bind("parted"));
-				client->connect("kicked", Callable(this, "emit_signal").bind("kicked"));
-				client->connect("user_joined", Callable(this, "emit_signal").bind("user_joined"));
-				client->connect("user_parted", Callable(this, "emit_signal").bind("user_parted"));
-				client->connect("user_quit", Callable(this, "emit_signal").bind("user_quit"));
-				client->connect("user_kicked", Callable(this, "emit_signal").bind("user_kicked"));
-				client->connect("nick_changed", Callable(this, "emit_signal").bind("nick_changed"));
-				client->connect("mode_changed", Callable(this, "emit_signal").bind("mode_changed"));
-				client->connect("topic_changed", Callable(this, "emit_signal").bind("topic_changed"));
-				client->connect("numeric_001_welcome", Callable(this, "emit_signal").bind("numeric_001_welcome"));
-				client->connect("numeric_005_isupport", Callable(this, "emit_signal").bind("numeric_005_isupport"));
-				client->connect("numeric_332_topic", Callable(this, "emit_signal").bind("numeric_332_topic"));
-				client->connect("numeric_353_names", Callable(this, "emit_signal").bind("numeric_353_names"));
-				client->connect("numeric_366_endofnames", Callable(this, "emit_signal").bind("numeric_366_endofnames"));
-				client->connect("numeric_372_motd", Callable(this, "emit_signal").bind("numeric_372_motd"));
-				client->connect("numeric_433_nicknameinuse", Callable(this, "emit_signal").bind("numeric_433_nicknameinuse"));
-				client->connect("numeric_received", Callable(this, "emit_signal").bind("numeric_received"));
-				client->connect("dcc_request", Callable(this, "emit_signal").bind("dcc_request"));
-				client->connect("dcc_progress", Callable(this, "emit_signal").bind("dcc_progress"));
-				client->connect("dcc_completed", Callable(this, "emit_signal").bind("dcc_completed"));
-				client->connect("dcc_failed", Callable(this, "emit_signal").bind("dcc_failed"));
-				client->connect("capability_list", Callable(this, "emit_signal").bind("capability_list"));
-				client->connect("capability_acknowledged", Callable(this, "emit_signal").bind("capability_acknowledged"));
-				client->connect("capability_denied", Callable(this, "emit_signal").bind("capability_denied"));
-				client->connect("sasl_success", Callable(this, "emit_signal").bind("sasl_success"));
-				client->connect("sasl_failed", Callable(this, "emit_signal").bind("sasl_failed"));
 
 				// Account Registration signals
-				client->connect("account_registration_success", Callable(this, "emit_signal").bind("account_registration_success"));
-				client->connect("account_registration_failed", Callable(this, "emit_signal").bind("account_registration_failed"));
-				client->connect("account_verification_required", Callable(this, "emit_signal").bind("account_verification_required"));
-				client->connect("account_verification_success", Callable(this, "emit_signal").bind("account_verification_success"));
-				client->connect("account_verification_failed", Callable(this, "emit_signal").bind("account_verification_failed"));
-
-				client->connect("tag_json_data", Callable(this, "emit_signal").bind("tag_json_data"));
-				client->connect("tag_base64_data", Callable(this, "emit_signal").bind("tag_base64_data"));
-				client->connect("numeric_730_mononline", Callable(this, "emit_signal").bind("numeric_730_mononline"));
-				client->connect("numeric_731_monoffline", Callable(this, "emit_signal").bind("numeric_731_monoffline"));
-				client->connect("standard_reply_fail", Callable(this, "emit_signal").bind("standard_reply_fail"));
-				client->connect("standard_reply_warn", Callable(this, "emit_signal").bind("standard_reply_warn"));
-				client->connect("standard_reply_note", Callable(this, "emit_signal").bind("standard_reply_note"));
-				client->connect("batch_started", Callable(this, "emit_signal").bind("batch_started"));
-				client->connect("batch_ended", Callable(this, "emit_signal").bind("batch_ended"));
-				client->connect("highlighted", Callable(this, "emit_signal").bind("highlighted"));
-				client->connect("latency_measured", Callable(this, "emit_signal").bind("latency_measured"));
 			}
 		} break;
 
@@ -936,6 +888,14 @@ void IRCClientNode::remove_reaction(const String &p_channel, const String &p_msg
 	client->remove_reaction(p_channel, p_msgid, p_reaction);
 }
 
+void IRCClientNode::set_debug_enabled(bool p_enabled) {
+	client->set_debug_enabled(p_enabled);
+}
+
+bool IRCClientNode::is_debug_enabled() const {
+	return client->is_debug_enabled();
+}
+
 void IRCClientNode::_on_disconnected(const String &p_reason) {
 	emit_signal("disconnected", p_reason);
 }
@@ -949,4 +909,208 @@ IRCClientNode::~IRCClientNode() {
 	if (client.is_valid()) {
 		client->disconnect_from_server();
 	}
+}
+
+void IRCClientNode::_on_connected() {
+	emit_signal("connected");
+}
+
+void IRCClientNode::_on_connection_error(const String &p_error) {
+	emit_signal("connection_error", p_error);
+}
+
+void IRCClientNode::_on_status_changed(int p_status) {
+	emit_signal("status_changed", p_status);
+}
+
+void IRCClientNode::_on_message_received(Ref<RefCounted> p_message) {
+	emit_signal("message_received", p_message);
+}
+
+void IRCClientNode::_on_privmsg(const String &p_sender, const String &p_target, const String &p_text, const Dictionary &p_tags) {
+	emit_signal("privmsg", p_sender, p_target, p_text, p_tags);
+}
+
+void IRCClientNode::_on_notice(const String &p_sender, const String &p_target, const String &p_text) {
+	emit_signal("notice", p_sender, p_target, p_text);
+}
+
+void IRCClientNode::_on_ctcp_received(const String &p_sender, const String &p_command, const String &p_params) {
+	emit_signal("ctcp_received", p_sender, p_command, p_params);
+}
+
+void IRCClientNode::_on_ctcp_reply(const String &p_sender, const String &p_command, const String &p_params) {
+	emit_signal("ctcp_reply", p_sender, p_command, p_params);
+}
+
+void IRCClientNode::_on_joined(const String &p_channel) {
+	emit_signal("joined", p_channel);
+}
+
+void IRCClientNode::_on_parted(const String &p_channel, const String &p_message) {
+	emit_signal("parted", p_channel, p_message);
+}
+
+void IRCClientNode::_on_kicked(const String &p_channel, const String &p_kicker, const String &p_reason) {
+	emit_signal("kicked", p_channel, p_kicker, p_reason);
+}
+
+void IRCClientNode::_on_user_joined(const String &p_channel, const String &p_user, const String &p_account, const String &p_realname) {
+	emit_signal("user_joined", p_channel, p_user, p_account, p_realname);
+}
+
+void IRCClientNode::_on_user_parted(const String &p_channel, const String &p_user, const String &p_message) {
+	emit_signal("user_parted", p_channel, p_user, p_message);
+}
+
+void IRCClientNode::_on_user_quit(const String &p_user, const String &p_message) {
+	emit_signal("user_quit", p_user, p_message);
+}
+
+void IRCClientNode::_on_user_kicked(const String &p_channel, const String &p_kicker, const String &p_kicked, const String &p_reason) {
+	emit_signal("user_kicked", p_channel, p_kicker, p_kicked, p_reason);
+}
+
+void IRCClientNode::_on_nick_changed(const String &p_old_nick, const String &p_new_nick) {
+	emit_signal("nick_changed", p_old_nick, p_new_nick);
+}
+
+void IRCClientNode::_on_mode_changed(const String &p_target, const String &p_modes, const PackedStringArray &p_params) {
+	emit_signal("mode_changed", p_target, p_modes, p_params);
+}
+
+void IRCClientNode::_on_topic_changed(const String &p_channel, const String &p_topic, const String &p_setter) {
+	emit_signal("topic_changed", p_channel, p_topic, p_setter);
+}
+
+void IRCClientNode::_on_numeric_001_welcome(const String &p_message) {
+	emit_signal("numeric_001_welcome", p_message);
+}
+
+void IRCClientNode::_on_numeric_005_isupport(const Dictionary &p_features) {
+	emit_signal("numeric_005_isupport", p_features);
+}
+
+void IRCClientNode::_on_numeric_332_topic(const String &p_channel, const String &p_topic) {
+	emit_signal("numeric_332_topic", p_channel, p_topic);
+}
+
+void IRCClientNode::_on_numeric_353_names(const String &p_channel, const PackedStringArray &p_names) {
+	emit_signal("numeric_353_names", p_channel, p_names);
+}
+
+void IRCClientNode::_on_numeric_366_endofnames(const String &p_channel) {
+	emit_signal("numeric_366_endofnames", p_channel);
+}
+
+void IRCClientNode::_on_numeric_372_motd(const String &p_line) {
+	emit_signal("numeric_372_motd", p_line);
+}
+
+void IRCClientNode::_on_numeric_433_nicknameinuse(const String &p_nick) {
+	emit_signal("numeric_433_nicknameinuse", p_nick);
+}
+
+void IRCClientNode::_on_numeric_received(int p_code, const PackedStringArray &p_params) {
+	emit_signal("numeric_received", p_code, p_params);
+}
+
+void IRCClientNode::_on_numeric_730_mononline(const PackedStringArray &p_nicks) {
+	emit_signal("numeric_730_mononline", p_nicks);
+}
+
+void IRCClientNode::_on_numeric_731_monoffline(const PackedStringArray &p_nicks) {
+	emit_signal("numeric_731_monoffline", p_nicks);
+}
+
+void IRCClientNode::_on_dcc_request(Ref<RefCounted> p_transfer) {
+	emit_signal("dcc_request", p_transfer);
+}
+
+void IRCClientNode::_on_dcc_progress(int p_transfer_index, int p_bytes, int p_total) {
+	emit_signal("dcc_progress", p_transfer_index, p_bytes, p_total);
+}
+
+void IRCClientNode::_on_dcc_completed(int p_transfer_index) {
+	emit_signal("dcc_completed", p_transfer_index);
+}
+
+void IRCClientNode::_on_dcc_failed(int p_transfer_index, const String &p_error) {
+	emit_signal("dcc_failed", p_transfer_index, p_error);
+}
+
+void IRCClientNode::_on_capability_list(const PackedStringArray &p_capabilities) {
+	emit_signal("capability_list", p_capabilities);
+}
+
+void IRCClientNode::_on_capability_acknowledged(const String &p_capability) {
+	emit_signal("capability_acknowledged", p_capability);
+}
+
+void IRCClientNode::_on_capability_denied(const String &p_capability) {
+	emit_signal("capability_denied", p_capability);
+}
+
+void IRCClientNode::_on_sasl_success() {
+	emit_signal("sasl_success");
+}
+
+void IRCClientNode::_on_sasl_failed(const String &p_reason) {
+	emit_signal("sasl_failed", p_reason);
+}
+
+void IRCClientNode::_on_account_registration_success(const String &p_account) {
+	emit_signal("account_registration_success", p_account);
+}
+
+void IRCClientNode::_on_account_registration_failed(const String &p_reason) {
+	emit_signal("account_registration_failed", p_reason);
+}
+
+void IRCClientNode::_on_account_verification_required(const String &p_account, const String &p_method) {
+	emit_signal("account_verification_required", p_account, p_method);
+}
+
+void IRCClientNode::_on_account_verification_success(const String &p_account) {
+	emit_signal("account_verification_success", p_account);
+}
+
+void IRCClientNode::_on_account_verification_failed(const String &p_reason) {
+	emit_signal("account_verification_failed", p_reason);
+}
+
+void IRCClientNode::_on_tag_json_data(const String &p_key, const Dictionary &p_data) {
+	emit_signal("tag_json_data", p_key, p_data);
+}
+
+void IRCClientNode::_on_tag_base64_data(const String &p_key, const String &p_encoded, const String &p_decoded) {
+	emit_signal("tag_base64_data", p_key, p_encoded, p_decoded);
+}
+
+void IRCClientNode::_on_standard_reply_fail(const String &p_command, const String &p_code, const String &p_context, const String &p_description, const Dictionary &p_tags) {
+	emit_signal("standard_reply_fail", p_command, p_code, p_context, p_description, p_tags);
+}
+
+void IRCClientNode::_on_standard_reply_warn(const String &p_command, const String &p_code, const String &p_context, const String &p_description, const Dictionary &p_tags) {
+	emit_signal("standard_reply_warn", p_command, p_code, p_context, p_description, p_tags);
+}
+
+void IRCClientNode::_on_standard_reply_note(const String &p_command, const String &p_code, const String &p_context, const String &p_description, const Dictionary &p_tags) {
+	emit_signal("standard_reply_note", p_command, p_code, p_context, p_description, p_tags);
+}
+
+void IRCClientNode::_on_batch_started(const String &p_ref_tag, const String &p_batch_type, const PackedStringArray &p_params) {
+	emit_signal("batch_started", p_ref_tag, p_batch_type, p_params);
+}
+
+void IRCClientNode::_on_batch_ended(const String &p_ref_tag, const String &p_batch_type, const Array &p_messages) {
+	emit_signal("batch_ended", p_ref_tag, p_batch_type, p_messages);
+}
+
+void IRCClientNode::_on_highlighted(const String &p_channel, const String &p_sender, const String &p_message, const Dictionary &p_tags) {
+	emit_signal("highlighted", p_channel, p_sender, p_message, p_tags);
+}
+
+void IRCClientNode::_on_latency_measured(int p_latency_ms) {
+	emit_signal("latency_measured", p_latency_ms);
 }

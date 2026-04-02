@@ -81,6 +81,7 @@ public:
 	void set_access_token(const String &p_token);
 	void set_client_id(const String &p_client_id);
 	void poll(); // Manual poll (optional - automatic polling is enabled by default)
+	Ref<TwitchHTTPClient> get_http_client() const { return http_client; }
 
 	// Utility methods
 	String query_string_from_dict(const Dictionary &p_params) const;

@@ -50,6 +50,7 @@
 		[/codeblocks]
 	</description>
 	<tutorials>
+		<link title="KickAPI Developer Examples">https://github.com/blazium-games/kickapi_module_tests</link>
 	</tutorials>
 	<methods>
 		<method name="get_users">
@@ -62,6 +63,9 @@
 				If no parameters are provided, returns information for the authenticated user.
 				You cannot mix [code]user_id[/code] and [code]username[/code] parameters.
 				Results are returned via the [signal KickAPI.request_completed] signal with signal_name [code]"users_received"[/code].
+				[codeblock]
+				KickAPI.get_users().get_users({"username": ["streamer123"]})
+				[/codeblock]
 			</description>
 		</method>
 	</methods>

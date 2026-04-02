@@ -6,8 +6,6 @@
   </a>
 </p>
 
-[![Code Triagers Badge](https://www.codetriage.com/blazium-engine/blazium/badges/users.svg)](https://www.codetriage.com/blazium-engine/blazium)
-
 ## 2D and 3D cross-platform game engine
 
 **[Blazium Engine](https://blazium.app) is a feature-packed, cross-platform
@@ -31,7 +29,7 @@ Godot had been developed by [Juan Linietsky](https://github.com/reduz) and
 [Ariel Manzur](https://github.com/punto-) for several years as an in-house engine, used to publish several work-for-hire
 titles.
 
-Blazium was forked from Godot in [October 2024](https://github.com/blazium-engine/blazium/commit/e86a91030a60be7d37e99c7a6069d75181d5138c),
+Blazium was forked from Godot in [October 2024](https://github.com/blazium-games/blazium/commit/e86a91030a60be7d37e99c7a6069d75181d5138c),
 intending to improve upon Godot in order to fulfill its potential and contribute to the shared
 codebase of both through a more genuinely community-driven model.
 
@@ -66,7 +64,7 @@ This document also includes guidelines for reporting bugs.
 ## Documentation and demos
 <!--
 The official documentation is hosted on [DigitalOcean](https://docs.blazium.app).
-It is maintained by the Blazium community in its own [GitHub repository](https://github.com/blazium-engine/blazium-docs).
+It is maintained by the Blazium community in its own [GitHub repository](https://github.com/blazium-games/blazium-docs).
 -->
 
 The [class reference](docs.godotengine.org/en/stable/classes/index.html)

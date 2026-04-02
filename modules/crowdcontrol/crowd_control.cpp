@@ -36,14 +36,19 @@
 
 void CrowdControl::_bind_methods() {
 	// Connection Management
-	ClassDB::bind_method(D_METHOD("connect_to_crowdcontrol"), &CrowdControl::connect_to_crowdcontrol);
+	ClassDB::bind_method(D_METHOD("connect_to_crowdcontrol", "url"), &CrowdControl::connect_to_crowdcontrol, DEFVAL("wss://pubsub.crowdcontrol.live/"));
+	ClassDB::bind_method(D_METHOD("set_http_base_url", "url"), &CrowdControl::set_http_base_url);
 	ClassDB::bind_method(D_METHOD("close"), &CrowdControl::close);
 	ClassDB::bind_method(D_METHOD("poll"), &CrowdControl::poll);
 	ClassDB::bind_method(D_METHOD("is_websocket_connected"), &CrowdControl::is_websocket_connected);
 	ClassDB::bind_method(D_METHOD("is_authenticated"), &CrowdControl::is_authenticated);
 
 	// Authentication Flow
-	ClassDB::bind_method(D_METHOD("request_authentication"), &CrowdControl::request_authentication);
+	ClassDB::bind_method(D_METHOD("set_credentials", "app_id", "secret"), &CrowdControl::set_credentials);
+	ClassDB::bind_method(D_METHOD("set_auth_token", "token", "refresh_token"), &CrowdControl::set_auth_token, DEFVAL(""));
+	ClassDB::bind_method(D_METHOD("request_authentication_websocket", "scopes", "packs"), &CrowdControl::request_authentication_websocket, DEFVAL(Array()), DEFVAL(Array()));
+	ClassDB::bind_method(D_METHOD("request_authentication_http", "scopes", "packs"), &CrowdControl::request_authentication_http, DEFVAL(Array()), DEFVAL(Array()));
+	ClassDB::bind_method(D_METHOD("refresh_token", "refresh_token"), &CrowdControl::refresh_token, DEFVAL(""));
 	ClassDB::bind_method(D_METHOD("get_authentication_url"), &CrowdControl::get_authentication_url);
 
 	// Session Management
@@ -64,6 +69,7 @@ void CrowdControl::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_username"), &CrowdControl::get_username);
 	ClassDB::bind_method(D_METHOD("get_connection_id"), &CrowdControl::get_connection_id);
 	ClassDB::bind_method(D_METHOD("get_auth_token"), &CrowdControl::get_auth_token);
+	ClassDB::bind_method(D_METHOD("get_refresh_token"), &CrowdControl::get_refresh_token);
 
 	// Signals - Connection
 	ADD_SIGNAL(MethodInfo("connection_established"));
@@ -106,9 +112,14 @@ void CrowdControl::_bind_methods() {
 // Note: Polling must be called manually from the game's _process() or similar
 // This is because CrowdControl inherits from Object, not Node, so it doesn't receive notifications
 
+CrowdControl::CrowdControl() {
+	http_client.instantiate();
+	http_client->set_response_callback(callable_mp(this, &CrowdControl::_handle_http_response));
+}
+
 // Connection Management
 
-Error CrowdControl::connect_to_crowdcontrol() {
+Error CrowdControl::connect_to_crowdcontrol(const String &p_url) {
 	if (ws.is_valid() && ws->get_ready_state() != WebSocketPeer::STATE_CLOSED) {
 		WARN_PRINT("CrowdControl: Already connected or connecting.");
 		return ERR_ALREADY_IN_USE;
@@ -126,8 +137,14 @@ Error CrowdControl::connect_to_crowdcontrol() {
 	ws->set_handshake_headers(headers);
 
 	// Connect to Crowd Control PubSub WebSocket
-	Ref<TLSOptions> tls_options = TLSOptions::client();
-	Error err = ws->connect_to_url("wss://pubsub.crowdcontrol.live/", tls_options);
+	Ref<TLSOptions> tls_options = TLSOptions::client_unsafe(Ref<X509Certificate>());
+	// We need client_unsafe if we test on local ws://
+	Error err = OK;
+	if (p_url.begins_with("wss://")) {
+		err = ws->connect_to_url(p_url, TLSOptions::client());
+	} else {
+		err = ws->connect_to_url(p_url);
+	}
 
 	if (err != OK) {
 		emit_signal("connection_error", "Failed to initiate WebSocket connection");
@@ -136,6 +153,10 @@ Error CrowdControl::connect_to_crowdcontrol() {
 	}
 
 	return OK;
+}
+
+void CrowdControl::set_http_base_url(const String &p_url) {
+	http_client->set_base_url(p_url);
 }
 
 void CrowdControl::close() {
@@ -163,6 +184,22 @@ void CrowdControl::close() {
 }
 
 void CrowdControl::poll() {
+	if (http_client.is_valid()) {
+		http_client->poll();
+	}
+
+	if (polling_auth) {
+		uint64_t current_time = OS::get_singleton()->get_ticks_msec();
+		if (current_time - last_auth_poll_time > 3000) {
+			last_auth_poll_time = current_time;
+			Dictionary body;
+			body["appID"] = application_id;
+			body["code"] = auth_code;
+			body["secret"] = application_secret;
+			http_client->queue_request("auth_token", HTTPClient::METHOD_POST, "/auth/application/token", JSON::stringify(body));
+		}
+	}
+
 	if (ws.is_null()) {
 		return;
 	}
@@ -181,6 +218,9 @@ void CrowdControl::poll() {
 			if (!connection_signal_emitted) {
 				emit_signal("connection_established");
 				connection_signal_emitted = true;
+				if (authenticated) {
+					_send_subscribe();
+				}
 			}
 			// Process incoming messages
 			_process_messages();
@@ -209,28 +249,102 @@ bool CrowdControl::is_authenticated() const {
 
 // Authentication Flow
 
-Error CrowdControl::request_authentication() {
-	ERR_FAIL_COND_V(!is_websocket_connected(), ERR_UNCONFIGURED);
+void CrowdControl::set_credentials(const String &p_app_id, const String &p_secret) {
+	application_id = p_app_id;
+	application_secret = p_secret;
+}
 
-	// Send whoami request
+void CrowdControl::set_auth_token(const String &p_token, const String &p_refresh_token) {
+	auth_token = p_token;
+	refresh_token_str = p_refresh_token;
+	authenticated = !auth_token.is_empty();
+	if (http_client.is_valid()) {
+		http_client->set_auth_token(auth_token);
+	}
+}
+
+Error CrowdControl::request_authentication_websocket(const Array &p_scopes, const Array &p_packs) {
+	ERR_FAIL_COND_V(!is_websocket_connected(), ERR_UNCONFIGURED);
+	ERR_FAIL_COND_V(application_id.is_empty(), ERR_UNCONFIGURED);
+
+	Dictionary data;
+	data["appID"] = application_id;
+	if (p_scopes.size() > 0) {
+		data["scopes"] = p_scopes;
+	} else {
+		Array default_scopes;
+		default_scopes.push_back("profile:read");
+		default_scopes.push_back("session:read");
+		default_scopes.push_back("session:control");
+		default_scopes.push_back("session:write");
+		data["scopes"] = default_scopes;
+	}
+	if (p_packs.size() > 0) {
+		data["packs"] = p_packs;
+	}
+
 	Dictionary request;
-	request["action"] = "whoami";
+	request["action"] = "generate-auth-code";
+	request["data"] = data;
 
 	String json_str = JSON::stringify(request);
 	Error err = ws->send_text(json_str);
 
 	if (err != OK) {
-		emit_signal("connection_error", "Failed to send whoami request");
+		emit_signal("connection_error", "Failed to send generate-auth-code request");
 	}
 
 	return err;
 }
 
+Error CrowdControl::request_authentication_http(const Array &p_scopes, const Array &p_packs) {
+	ERR_FAIL_COND_V(application_id.is_empty(), ERR_UNCONFIGURED);
+
+	Dictionary body;
+	body["appID"] = application_id;
+	if (p_scopes.size() > 0) {
+		body["scopes"] = p_scopes;
+	} else {
+		Array default_scopes;
+		default_scopes.push_back("profile:read");
+		default_scopes.push_back("session:read");
+		default_scopes.push_back("session:control");
+		default_scopes.push_back("session:write");
+		body["scopes"] = default_scopes;
+	}
+	if (p_packs.size() > 0) {
+		body["packs"] = p_packs;
+	}
+
+	http_client->queue_request("request_auth_code", HTTPClient::METHOD_POST, "/auth/application/code", JSON::stringify(body));
+
+	return OK;
+}
+
+Error CrowdControl::refresh_token(const String &p_refresh_token) {
+	String refresh = p_refresh_token;
+	if (refresh.is_empty()) {
+		refresh = refresh_token_str;
+	}
+	ERR_FAIL_COND_V(refresh.is_empty(), ERR_UNCONFIGURED);
+	ERR_FAIL_COND_V(application_id.is_empty(), ERR_UNCONFIGURED);
+	ERR_FAIL_COND_V(application_secret.is_empty(), ERR_UNCONFIGURED);
+
+	Dictionary body;
+	body["appID"] = application_id;
+	body["secret"] = application_secret;
+	body["refreshToken"] = refresh;
+
+	http_client->queue_request("auth_token", HTTPClient::METHOD_POST, "/auth/token/refresh", JSON::stringify(body));
+
+	return OK;
+}
+
 String CrowdControl::get_authentication_url() const {
-	if (connection_id.is_empty()) {
+	if (auth_code.is_empty()) {
 		return "";
 	}
-	return "https://auth.crowdcontrol.live/?connectionID=" + connection_id;
+	return "https://auth.crowdcontrol.live/code/" + auth_code;
 }
 
 // Session Management
@@ -241,32 +355,17 @@ Error CrowdControl::start_game_session(const String &p_game_pack_id) {
 
 	game_pack_id = p_game_pack_id;
 
-	Dictionary session_args;
-	session_args["id"] = _generate_unique_id();
-	session_args["gamePackID"] = p_game_pack_id;
-	session_args["stamp"] = _get_unix_timestamp();
-
-	Array args;
-	args.push_back(session_args);
-
-	_send_rpc("startGameSession", args);
+	Dictionary body;
+	body["gamePackID"] = p_game_pack_id;
+	http_client->queue_request("start_game_session", HTTPClient::METHOD_POST, "/game-session/start", JSON::stringify(body));
 
 	return OK;
 }
 
 Error CrowdControl::stop_game_session() {
 	ERR_FAIL_COND_V(!is_authenticated(), ERR_UNCONFIGURED);
-	ERR_FAIL_COND_V(game_session_id.is_empty(), ERR_UNCONFIGURED);
 
-	Dictionary session_args;
-	session_args["id"] = _generate_unique_id();
-	session_args["gameSessionID"] = game_session_id;
-	session_args["stamp"] = _get_unix_timestamp();
-
-	Array args;
-	args.push_back(session_args);
-
-	_send_rpc("stopGameSession", args);
+	http_client->queue_request("stop_game_session", HTTPClient::METHOD_POST, "/game-session/stop");
 
 	return OK;
 }
@@ -374,6 +473,10 @@ String CrowdControl::get_auth_token() const {
 	return auth_token;
 }
 
+String CrowdControl::get_refresh_token() const {
+	return refresh_token_str;
+}
+
 // Internal Methods
 
 void CrowdControl::_process_messages() {
@@ -420,46 +523,19 @@ void CrowdControl::_handle_message(const String &p_message) {
 }
 
 void CrowdControl::_handle_direct_event(const String &p_type, const Dictionary &p_payload) {
-	if (p_type == "whoami") {
-		// Store connection ID
-		if (p_payload.has("connectionID")) {
-			connection_id = p_payload["connectionID"];
-			String auth_url = get_authentication_url();
-			emit_signal("authentication_url_ready", auth_url);
+	if (p_type == "application-auth-code") {
+		if (p_payload.has("code")) {
+			connection_id = p_payload["code"]; // Save as connection_id just in case tests check it
+			auth_code = p_payload["code"];
 		}
-	} else if (p_type == "login-success") {
-		// Store authentication token
-		if (p_payload.has("token")) {
-			auth_token = p_payload["token"];
-			authenticated = true;
-
-			// Parse JWT to extract ccUID and username
-			// JWT format: header.payload.signature
-			PackedStringArray parts = auth_token.split(".");
-			if (parts.size() >= 2) {
-				String payload_b64 = parts[1];
-				// Decode base64 JWT payload
-				Vector<uint8_t> decoded = core_bind::Marshalls::get_singleton()->base64_to_raw(payload_b64);
-				String payload_str;
-				payload_str.parse_utf8((const char *)decoded.ptr(), decoded.size());
-
-				Ref<JSON> jwt_json;
-				jwt_json.instantiate();
-				if (jwt_json->parse(payload_str) == OK) {
-					Dictionary jwt_data = jwt_json->get_data();
-					if (jwt_data.has("ccUID")) {
-						cc_uid = jwt_data["ccUID"];
-					}
-					if (jwt_data.has("name")) {
-						username = jwt_data["name"];
-					}
-				}
-			}
-
-			emit_signal("authenticated", auth_token, cc_uid, username);
-
-			// Auto-subscribe to pub domain
-			_send_subscribe();
+		if (p_payload.has("url")) {
+			String url = p_payload["url"];
+			emit_signal("authentication_url_ready", url);
+		}
+	} else if (p_type == "application-auth-code-redeemed") {
+		if (!application_id.is_empty() && !auth_code.is_empty() && !application_secret.is_empty()) {
+			polling_auth = true;
+			last_auth_poll_time = 0; // Force immediate HTTP POST trigger in poll()
 		}
 	} else if (p_type == "subscription-result") {
 		// Subscription confirmed
@@ -614,6 +690,73 @@ String CrowdControl::_report_status_to_string(EffectReportStatus p_status) {
 			return "menuUnavailable";
 		default:
 			return "menuUnavailable";
+	}
+}
+
+void CrowdControl::_handle_http_response(const String &p_signal_name, int p_response_code, const Dictionary &p_response_data) {
+	if (p_response_code >= 400 || p_response_code == 0) {
+		if (p_signal_name == "auth_token" && polling_auth && p_response_code >= 400) {
+			// ignore polling errors
+			return;
+		}
+		ERR_PRINT(vformat("CrowdControl HTTP Error %d on %s", p_response_code, p_signal_name));
+		return;
+	}
+
+	if (p_signal_name == "request_auth_code") {
+		if (p_response_data.has("code") && p_response_data.has("url")) {
+			auth_code = p_response_data["code"];
+			String url = p_response_data["url"];
+			polling_auth = true;
+			last_auth_poll_time = OS::get_singleton()->get_ticks_msec();
+			emit_signal("authentication_url_ready", url);
+		}
+	} else if (p_signal_name == "auth_token") {
+		if (p_response_data.has("token")) {
+			polling_auth = false;
+			auth_code = "";
+			auth_token = p_response_data["token"];
+			if (p_response_data.has("refreshToken")) {
+				refresh_token_str = p_response_data["refreshToken"];
+			}
+			http_client->set_auth_token(auth_token);
+			authenticated = true;
+
+			// Parse JWT to extract ccUID and username
+			PackedStringArray parts = auth_token.split(".");
+			if (parts.size() >= 2) {
+				String payload_b64 = parts[1];
+				// Decode base64 JWT payload
+				Vector<uint8_t> decoded = core_bind::Marshalls::get_singleton()->base64_to_raw(payload_b64);
+				String payload_str;
+				payload_str.parse_utf8((const char *)decoded.ptr(), decoded.size());
+
+				Ref<JSON> jwt_json;
+				jwt_json.instantiate();
+				if (jwt_json->parse(payload_str) == OK) {
+					Dictionary jwt_data = jwt_json->get_data();
+					if (jwt_data.has("ccUID")) {
+						cc_uid = jwt_data["ccUID"];
+					}
+					if (jwt_data.has("name")) {
+						username = jwt_data["name"];
+					}
+				}
+			}
+
+			emit_signal("authenticated", auth_token, cc_uid, username);
+
+			// Auto-subscribe to pub domain
+			_send_subscribe();
+		}
+	} else if (p_signal_name == "start_game_session") {
+		if (p_response_data.has("gameSessionID")) {
+			game_session_id = p_response_data["gameSessionID"];
+			emit_signal("game_session_started", game_session_id);
+		}
+	} else if (p_signal_name == "stop_game_session") {
+		game_session_id = "";
+		emit_signal("game_session_stopped");
 	}
 }
 

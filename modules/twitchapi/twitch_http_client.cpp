@@ -37,6 +37,7 @@ void TwitchHTTPClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_access_token", "token"), &TwitchHTTPClient::set_access_token);
 	ClassDB::bind_method(D_METHOD("set_client_id", "client_id"), &TwitchHTTPClient::set_client_id);
 	ClassDB::bind_method(D_METHOD("set_response_callback", "callback"), &TwitchHTTPClient::set_response_callback);
+	ClassDB::bind_method(D_METHOD("set_tls_options", "options"), &TwitchHTTPClient::set_tls_options);
 	ClassDB::bind_method(D_METHOD("queue_request", "signal_name", "method", "path", "query_params", "body"),
 			&TwitchHTTPClient::queue_request, DEFVAL(Dictionary()), DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("poll"), &TwitchHTTPClient::poll);
@@ -80,6 +81,10 @@ void TwitchHTTPClient::set_response_callback(const Callable &p_callback) {
 	response_callback = p_callback;
 }
 
+void TwitchHTTPClient::set_tls_options(Ref<TLSOptions> p_options) {
+	custom_tls_options = p_options;
+}
+
 void TwitchHTTPClient::queue_request(const String &p_signal_name, HTTPClient::Method p_method,
 		const String &p_path, const Dictionary &p_query_params, const String &p_body) {
 	RequestData req;
@@ -98,11 +103,13 @@ void TwitchHTTPClient::poll() {
 		return;
 	}
 
-	Error err = http->poll();
-	if (err != OK) {
-		ERR_PRINT(vformat("HTTP poll error: %d", err));
-		state = STATE_IDLE;
-		return;
+	if (http->get_status() != HTTPClient::STATUS_DISCONNECTED) {
+		Error err = http->poll();
+		if (err != OK) {
+			ERR_PRINT(vformat("HTTP poll error: %d", err));
+			state = STATE_IDLE;
+			return;
+		}
 	}
 
 	_process_queue();
@@ -228,6 +235,11 @@ Error TwitchHTTPClient::_connect_to_host() {
 		use_tls = false;
 	}
 
+	int slash_idx = host.find("/");
+	if (slash_idx != -1) {
+		host = host.substr(0, slash_idx);
+	}
+
 	// Remove trailing slash
 	if (host.ends_with("/")) {
 		host = host.substr(0, host.length() - 1);
@@ -236,7 +248,11 @@ Error TwitchHTTPClient::_connect_to_host() {
 	// Connect
 	Ref<TLSOptions> tls_opts;
 	if (use_tls) {
-		tls_opts = TLSOptions::client();
+		if (custom_tls_options.is_valid()) {
+			tls_opts = custom_tls_options;
+		} else {
+			tls_opts = TLSOptions::client();
+		}
 	}
 
 	Error err = http->connect_to_host(host, port, tls_opts);
@@ -256,8 +272,23 @@ void TwitchHTTPClient::_send_request() {
 		return;
 	}
 
+	String actual_base_path = "";
+	String host = base_url;
+	if (host.begins_with("https://")) {
+		host = host.substr(8);
+	} else if (host.begins_with("http://")) {
+		host = host.substr(7);
+	}
+	int slash_idx = host.find("/");
+	if (slash_idx != -1) {
+		actual_base_path = host.substr(slash_idx);
+		if (actual_base_path.ends_with("/")) {
+			actual_base_path = actual_base_path.substr(0, actual_base_path.length() - 1);
+		}
+	}
+
 	// Build full path with query string
-	String full_path = current_request.path;
+	String full_path = actual_base_path + current_request.path;
 	if (!current_request.query_params.is_empty()) {
 		String query = _build_query_string(current_request.query_params);
 		if (!query.is_empty()) {

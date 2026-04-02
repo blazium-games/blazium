@@ -1686,12 +1686,13 @@ Error ResourceFormatSaverTextInstance::save(const String &p_path, const Ref<Reso
 		packed_scene = p_resource;
 	}
 
+	local_path = ProjectSettings::get_singleton()->localize_path(p_path);
+	ResourceUID::ID uid = ResourceSaver::get_resource_id_for_path(local_path, true);
+
 	Error err;
 	Ref<FileAccess> f = FileAccess::open(p_path, FileAccess::WRITE, &err);
 	ERR_FAIL_COND_V_MSG(err, ERR_CANT_OPEN, "Cannot save file '" + p_path + "'.");
 	Ref<FileAccess> _fref(f);
-
-	local_path = ProjectSettings::get_singleton()->localize_path(p_path);
 
 	relative_paths = p_flags & ResourceSaver::FLAG_RELATIVE_PATHS;
 	skip_editor = p_flags & ResourceSaver::FLAG_OMIT_EDITOR_PROPERTIES;
@@ -1736,8 +1737,6 @@ Error ResourceFormatSaverTextInstance::save(const String &p_path, const Ref<Reso
 			title += "load_steps=" + itos(load_steps) + " ";
 		}
 		title += "format=" + itos(use_compat ? ResourceLoaderText::FORMAT_VERSION_COMPAT : ResourceLoaderText::FORMAT_VERSION) + "";
-
-		ResourceUID::ID uid = ResourceSaver::get_resource_id_for_path(local_path, true);
 
 		if (uid != ResourceUID::INVALID_ID) {
 			title += " uid=\"" + ResourceUID::get_singleton()->id_to_text(uid) + "\"";
@@ -1809,9 +1808,9 @@ Error ResourceFormatSaverTextInstance::save(const String &p_path, const Ref<Reso
 
 		String s = "[ext_resource type=\"" + sorted_er[i].resource->get_save_class() + "\"";
 
-		ResourceUID::ID uid = ResourceSaver::get_resource_id_for_path(p, false);
-		if (uid != ResourceUID::INVALID_ID) {
-			s += " uid=\"" + ResourceUID::get_singleton()->id_to_text(uid) + "\"";
+		ResourceUID::ID ext_uid = ResourceSaver::get_resource_id_for_path(p, false);
+		if (ext_uid != ResourceUID::INVALID_ID) {
+			s += " uid=\"" + ResourceUID::get_singleton()->id_to_text(ext_uid) + "\"";
 		}
 		s += " path=\"" + p + "\" id=\"" + sorted_er[i].id + "\"]\n";
 		f->store_string(s); // Bundled.

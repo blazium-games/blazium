@@ -18,6 +18,7 @@
 		[/codeblocks]
 	</description>
 	<tutorials>
+		<link title="HTTPServer Developer Examples">https://github.com/blazium-games/httpserver_module_tests</link>
 	</tutorials>
 	<methods>
 		<method name="close_connection">

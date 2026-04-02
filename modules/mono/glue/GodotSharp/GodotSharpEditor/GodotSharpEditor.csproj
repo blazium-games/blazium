@@ -17,7 +17,7 @@
     <PackageId>BlaziumSharpEditor</PackageId>
     <Version>4.3.0</Version>
     <PackageVersion>$(PackageVersion_GodotSharp)</PackageVersion>
-    <RepositoryUrl>https://github.com/blazium-engine/blazium/tree/master/modules/mono/glue/GodotSharp/GodotSharpEditor</RepositoryUrl>
+    <RepositoryUrl>https://github.com/blazium-games/blazium/tree/master/modules/mono/glue/GodotSharp/GodotSharpEditor</RepositoryUrl>
     <PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Copyright>Copyright (c) Godot Engine contributors and Blazium Engine contributors</Copyright>

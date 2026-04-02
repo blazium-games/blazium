@@ -24,7 +24,7 @@ afterEvaluate {
                     licenses {
                         license {
                             name = 'MIT License'
-                            url = 'https://github.com/blazium-engine/blazium/blob/master/LICENSE.txt'
+                            url = 'https://github.com/blazium-games/blazium/blob/master/LICENSE.txt'
                         }
                     }
                     developers {
@@ -54,9 +54,9 @@ afterEvaluate {
                     // Version control info - if you're using GitHub, follow the
                     // format as seen here
                     scm {
-                        connection = 'scm:git:github.com/blazium-engine/blazium.git'
-                        developerConnection = 'scm:git:ssh://github.com/blazium-engine/blazium.git'
-                        url = 'https://github.com/blazium-engine/blazium/tree/master'
+                        connection = 'scm:git:github.com/blazium-games/blazium.git'
+                        developerConnection = 'scm:git:ssh://github.com/blazium-games/blazium.git'
+                        url = 'https://github.com/blazium-games/blazium/tree/master'
                     }
                 }
             }

@@ -73,6 +73,7 @@ public:
 	// Configuration
 	void configure(const String &p_access_token);
 	void set_access_token(const String &p_token);
+	Ref<KickHTTPClient> get_http_client() const { return http_client; }
 	void poll(); // Manual poll (optional - automatic polling is enabled by default)
 
 	// Utility methods
