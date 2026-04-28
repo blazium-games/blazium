@@ -35,7 +35,6 @@
 #include "core/io/resource_saver.h"
 #include "core/object/class_db.h"
 #include "godot_sqlite.h"
-#include "node_sqlite.h"
 #include "resource_loader_sqlite.h"
 #include "resource_saver_sqlite.h"
 #include "resource_sqlite.h"
@@ -58,7 +57,6 @@ void initialize_sqlite3_module(ModuleInitializationLevel p_level) {
 	ClassDB::register_class<SQLiteBackup>();
 	ClassDB::register_class<SQLiteBlob>();
 	ClassDB::register_class<SQLiteColumnSchema>();
-	ClassDB::register_class<SQLite>();
 }
 
 void uninitialize_sqlite3_module(ModuleInitializationLevel p_level) {

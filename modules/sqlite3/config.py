@@ -13,7 +13,6 @@ def get_doc_classes():
         "SQLiteQueryResult",
         "SQLiteDatabase",
         "SQLiteColumnSchema",
-        "SQLite",
         "SQLiteBackup",
         "SQLiteBlob",
     ]
