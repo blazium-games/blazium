@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MultiuserEditorPlugin" inherits="EditorPlugin" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Editor plugin that coordinates native multiuser editing sessions.
+	</brief_description>
+	<description>
+		[MultiuserEditorPlugin] is the editor-side coordinator for the Multiuser Editor module. It manages ENet session hosting and joining, routes collaboration packets, tracks connected peers, and wires the editor UI to the scene, script, lock, and cursor synchronization subsystems.
+		When enabled through the [b]Blazium/Multiuser Editor[/b] editor settings, the plugin can host a local collaboration session or join a remote host. It synchronizes supported scene changes, selected-node locks, script attach and detach operations, CRDT-backed script edits, and remote script cursor positions. The plugin is intended for editor use and is registered so its generated documentation can describe the module surface.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="can_host_sessions" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when the local editor is configured to host Multiuser Editor sessions, taking into account the [code]blazium/multiuser_editor/enabled[/code] killswitch, the [code]blazium/multiuser_editor/role[/code] setting (must be [code]Host[/code]), and the access-list configuration. Returns [code]false[/code] when hosting is disabled or when the editor is currently connected as a client.
+			</description>
+		</method>
+		<method name="create_checkpoint">
+			<return type="void" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Captures a labeled snapshot of the current scene/script replication state and stores it in the in-memory checkpoint list. The captured state is built from the action interceptor's [code]build_initial_state_actions[/code] output and is truncated to the [code]blazium/multiuser_editor/limits/checkpoint_state_max[/code] entry cap when larger; a warning is logged when truncation occurs. [param name] is stored alongside the snapshot's UNIX timestamp so users can later identify and restore the checkpoint via [method load_checkpoint].
+			</description>
+		</method>
+		<method name="get_local_peer_id" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the stable per-installation peer identifier used by the Multiuser Editor module to identify this editor on the wire. The value is generated locally and is independent of the transport-level network id assigned by ENet, so it survives reconnects and is shared across host/join sessions. Returns an empty string when no session has been initialized yet.
+			</description>
+		</method>
+		<method name="get_recent_security_events_snapshot" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="max" type="int" default="32" />
+			<description>
+				Returns up to [param max] of the most recent security events captured by the Multiuser Editor dock as an [Array] of [Dictionary]. Each dictionary contains the keys [code]when_msec[/code] (uint64 timestamp in milliseconds), [code]severity[/code] (int) and its alias [code]level[/code] (same int value, exposed for parity with the [code]SecuritySink[/code] callback signature), [code]category[/code] (int log category), [code]kind[/code] (int matching the [code]MultiuserEditorDock.KIND_*[/code] family), and [code]message[/code] ([String]). The buffer is bounded by [code]blazium/multiuser_editor/limits/security_events_max[/code] and is intended for tooling, MCP integrations, and automated diagnostics.
+			</description>
+		</method>
+		<method name="get_status_text" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the human-readable status string the Multiuser Editor dock displays in its header (e.g. [code]"Hosting on port 8910"[/code], [code]"Connected to host:port as Editor"[/code], [code]"Disconnected"[/code]). Useful for surfacing the current session state to GDScript-driven tooling, custom UIs, or MCP probes without needing to inspect individual settings or peer state.
+			</description>
+		</method>
+		<method name="host_from_settings">
+			<return type="void" />
+			<description>
+				Convenience wrapper that starts hosting a Multiuser Editor session using the persisted editor settings ([code]blazium/multiuser_editor/default_port[/code], [code]blazium/multiuser_editor/jwt_secret_key[/code] and friends) instead of explicit arguments. Equivalent to [method host_session] but reads the port and password from the registered editor settings; intended for the [code]Begin Hosting[/code] dock action and for automation that respects user preferences.
+			</description>
+		</method>
+		<method name="host_session">
+			<return type="void" />
+			<param index="0" name="port" type="int" />
+			<param index="1" name="password" type="String" default="&quot;&quot;" />
+			<description>
+				Starts a new collaboration session as the host on the given UDP [param port]. [param port] must be in the range [code]1024[/code] to [code]65535[/code]; out-of-range values are refused and logged. The optional [param password] is used by the handshake to authenticate joining peers and is treated as opaque bytes by the transport.
+				The host enforces the [b]inside-loaded-project[/b] and [b]safe-branch[/b] guards before binding the port: if [code]blazium/multiuser_editor/git_auto_branching[/code] is enabled, both the configured session branch and merge target branch must pass the internal [code]MultiuserEditorActionInterceptor::is_safe_branch_name[/code] check or hosting is refused. On success, the local role becomes [code]Admin[/code], the project settings replication cache is seeded, and (when [code]blazium/multiuser_editor/file_sync/enabled[/code] is true) the [code]res://[/code] snapshot is captured and the include/exclude patterns become active. Hosting is unavailable in web client-only builds; in that case the call is a no-op with a warning.
+			</description>
+		</method>
+		<method name="is_local_admin" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when the local editor's effective role in the active session is [code]Admin[/code]. The host always assumes the [code]Admin[/code] role on successful [method host_session]; clients receive their role through the authentication handshake and the access list. Useful for gating editor UI such as kick controls, force-push, and other host-only operations.
+			</description>
+		</method>
+		<method name="is_session_connected" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when the underlying ENet transport reports an active connection [b]and[/b] the local peer has completed the Multiuser Editor authentication handshake (HMAC or JWT, depending on the [code]blazium/multiuser_editor/require_jwt[/code] setting). A peer that is mid-handshake or stalled in the pending-challenge state returns [code]false[/code].
+			</description>
+		</method>
+		<method name="join_from_settings">
+			<return type="void" />
+			<description>
+				Convenience wrapper that joins a Multiuser Editor session using the persisted editor settings ([code]blazium/multiuser_editor/default_host[/code], [code]blazium/multiuser_editor/default_port[/code], [code]blazium/multiuser_editor/client_jwt[/code]) instead of explicit arguments. Equivalent to [method join_session] but reads the host, port, and password/JWT from the registered editor settings; intended for the [code]Connect[/code] dock action and for automation that respects user preferences.
+			</description>
+		</method>
+		<method name="join_session">
+			<return type="void" />
+			<param index="0" name="host" type="String" />
+			<param index="1" name="port" type="int" />
+			<param index="2" name="password" type="String" default="&quot;&quot;" />
+			<description>
+				Connects to a remote multiuser session at [param host]:[param port]. The connection is refused (with an error log) when the call is made outside a loaded Godot project, when [param port] is outside [code]1024[/code]-[code]65535[/code], when [param host] is empty or longer than 253 characters, or when [param password] exceeds the [code]blazium/multiuser_editor/limits/multiuser_uri_password_max_chars[/code] cap. Any prior session is torn down before the join attempt.
+				After the transport connects, the editor must complete the authentication handshake before receiving its role; until then [method is_session_connected] returns [code]false[/code]. The optional [param password] is forwarded to the host's challenge/response authenticator.
+			</description>
+		</method>
+		<method name="jump_to_peer">
+			<return type="void" />
+			<param index="0" name="peer_id" type="String" />
+			<description>
+				Snaps the local editor camera (3D viewport or 2D canvas) to the last reported position of the peer identified by the stable Multiuser Editor [param peer_id] (the same identifier returned by [method get_local_peer_id] on each peer). Single-shot equivalent of [method toggle_follow_peer]: the local view jumps once and does not continue tracking. The call is silently ignored when [param peer_id] is unknown or has not yet broadcast telemetry.
+			</description>
+		</method>
+		<method name="kick_peer">
+			<return type="void" />
+			<param index="0" name="peer_id" type="String" />
+			<description>
+				Disconnects the peer identified by the stable Multiuser Editor [param peer_id] (the same identifier returned by [method get_local_peer_id] on each peer). The call is silently ignored when the local editor is not the host, when [param peer_id] is unknown, or when the resolved network id is reserved for the host itself ([code]1[/code]). Kicking a peer immediately closes the underlying ENet connection; the kicked client receives the standard disconnect notification.
+			</description>
+		</method>
+		<method name="load_checkpoint">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+				Restores the edited scene to the state captured by the [param index]th checkpoint (zero-based) previously created via [method create_checkpoint]. Out-of-range indices are silently ignored. The restore is broadcast to all peers when invoked on the host so that the entire session converges to the checkpoint state; on a client this method is a no-op.
+			</description>
+		</method>
+		<method name="load_session">
+			<return type="void" />
+			<description>
+				Restores a previously saved Multiuser Editor session snapshot from disk (the file produced by [method save_session]) and re-applies it to the editor. Includes saved scene state, chat history, checkpoint list, and replicated project settings. Used by the dock's [code]Load Session[/code] action and intended for resuming a collaborative session after editor restart.
+			</description>
+		</method>
+		<method name="reload_access_list">
+			<return type="void" />
+			<description>
+				Reloads the local access list (codename, password hash, and role entries) from the file pointed to by [code]blazium/multiuser_editor/access_list/path[/code]. The maximum number of entries is bounded by [code]blazium/multiuser_editor/access_list/max_entries[/code]. When [code]blazium/multiuser_editor/access_list/enabled[/code] is [code]false[/code], the in-memory list is cleared instead of read from disk. After reloading, the access-list file is re-marked as a protected path so it cannot be replicated through file sync.
+			</description>
+		</method>
+		<method name="request_git_op">
+			<return type="void" />
+			<param index="0" name="op" type="String" />
+			<description>
+				Convenience wrapper around [method request_git_op_with_branch] that issues the git operation [param op] without an explicit branch argument. Supported operations include [code]pull[/code], [code]pull_rebase[/code], [code]push[/code], [code]force_push[/code], [code]status[/code], and [code]current_branch[/code]. When called on the host, the request is validated and executed locally and the result is broadcast to peers; when called on a client, the request is sent to the host as a [code]git_request[/code] action. Operations require [code]blazium/multiuser_editor/git_remote_actions_enabled[/code] to be enabled, and [code]force_push[/code] additionally requires [method is_local_admin] (or [code]blazium/multiuser_editor/allow_editor_force_push[/code]).
+			</description>
+		</method>
+		<method name="request_git_op_commit">
+			<return type="void" />
+			<param index="0" name="message" type="String" />
+			<description>
+				Issues a [code]git add . &amp;&amp; git commit -m "message"[/code] sequence through the multiuser git pipeline using [param message] as the commit message. On the host, the request is validated, throttled, and executed asynchronously by the git worker; on clients, the request is forwarded to the host as a [code]git_request[/code] action. As with other git operations, [code]blazium/multiuser_editor/git_remote_actions_enabled[/code] must be true, and any failure (validation, throttle, or git unavailability) is reported back through a broadcast [code]git_response[/code] action.
+			</description>
+		</method>
+		<method name="request_git_op_with_branch">
+			<return type="void" />
+			<param index="0" name="op" type="String" />
+			<param index="1" name="branch" type="String" />
+			<description>
+				Issues a git operation [param op] with an explicit [param branch] argument. Used by branch-aware operations such as [code]branch_create[/code] and [code]branch_switch[/code]; pass an empty string for [param branch] when the operation does not need one (equivalent to calling [method request_git_op]). The remote name is taken from [code]blazium/multiuser_editor/git_default_remote[/code] (defaulting to [code]origin[/code]). On the host, the request is validated against the action permission matrix and the safe-branch-name rule before execution; on clients, the request is wrapped in a [code]git_request[/code] action and sent to the host.
+			</description>
+		</method>
+		<method name="request_magic_repair">
+			<return type="void" />
+			<description>
+				Sends a [code]magic_repair_request[/code] action to the host containing the local scene's content hash. If the host detects a divergence from its own scene hash it responds with [code]magic_repair_start[/code] and re-broadcasts an authoritative initial-state snapshot to this client, wiping and rebuilding the local edited scene. Used by the dock's [code]Repair[/code] action when peers detect that they have drifted out of sync.
+			</description>
+		</method>
+		<method name="save_session">
+			<return type="void" />
+			<description>
+				Serializes the current Multiuser Editor session (active scene, chat history, checkpoint list, replicated project settings) to the on-disk session file. The companion of [method load_session]; used by the dock's [code]Save Session[/code] action and by automated CI flows that want to capture a session state before disconnecting.
+			</description>
+		</method>
+		<method name="send_chat">
+			<return type="void" />
+			<param index="0" name="message" type="String" />
+			<description>
+				Broadcasts a text message to all connected peers in the active multiuser session. The message will be formatted and displayed in the shared chat interface of the Multiuser Dock across all clients.
+			</description>
+		</method>
+		<method name="stop_session">
+			<return type="void" />
+			<description>
+				Tears down the active multiuser session, closing the ENet host or client, releasing all peer locks, clearing the per-peer cursor overlay, draining the git worker, and resetting the local role and authentication state. Safe to call when no session is active; in that case the call is a no-op. After stopping, [method is_session_connected] returns [code]false[/code] and the dock UI returns to its idle state.
+			</description>
+		</method>
+		<method name="toggle_follow_peer">
+			<return type="void" />
+			<param index="0" name="peer_id" type="String" />
+			<description>
+				Toggles the editor's viewport camera tracking for a specific peer. When tracking is enabled, the local editor view will continuously align and jump to match the target peer's 3D/2D camera perspective. Calling this method again with the same [param peer_id] disables the tracking behavior.
+			</description>
+		</method>
+		<method name="trigger_autowork">
+			<return type="void" />
+			<description>
+				Dispatches a network broadcast commanding external listeners or AI orchestration layers (such as JustAMCP) to evaluate and automatically resolve issues or fulfill requests regarding the current selection or environment state.
+			</description>
+		</method>
+		<method name="validate_jwt_static" qualifiers="static">
+			<return type="Dictionary" />
+			<param index="0" name="jwt" type="String" />
+			<param index="1" name="secret" type="String" />
+			<param index="2" name="config" type="Dictionary" />
+			<description>
+				Statically validates a Multiuser Editor JWT [param jwt] against the shared HMAC [param secret] using the validation parameters supplied in [param config]. The [param config] dictionary accepts the optional keys [code]algorithms_csv[/code] (default [code]"HS256"[/code]), [code]expected_audience[/code], [code]expected_issuer[/code], [code]leeway_sec[/code] (float, default [code]30.0[/code]), [code]max_token_age_sec[/code] (int, default [code]3600[/code]), [code]require_jti[/code] (bool, default [code]false[/code]), and [code]jti_cache_max[/code] (int, default [code]4096[/code]). Returns a dictionary with the keys [code]valid[/code] (bool), [code]reason[/code] (String, set when [code]valid[/code] is false), [code]role[/code] (String role claim from the token), and [code]jti[/code] (String JWT id, when present). The static form is intentionally side-effect-free and does not consult or update the running plugin's JTI replay cache.
+			</description>
+		</method>
+	</methods>
+</class>

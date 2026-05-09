@@ -22,6 +22,7 @@ def get_doc_classes():
         "JustAMCPDocumentationTools",
         "JustAMCPExportTools",
         "JustAMCPInputTools",
+        "JustAMCPMultiuserTools",
         "JustAMCPNodeTools",
         "JustAMCPParticleTools",
         "JustAMCPPhysicsTools",

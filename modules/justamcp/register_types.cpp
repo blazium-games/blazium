@@ -44,6 +44,9 @@
 #include "tools/justamcp_documentation_tools.h"
 #include "tools/justamcp_export_tools.h"
 #include "tools/justamcp_input_tools.h"
+#ifdef MODULE_MULTIUSER_EDITOR_ENABLED
+#include "tools/justamcp_multiuser_tools.h"
+#endif
 #include "tools/justamcp_node_tools.h"
 #include "tools/justamcp_particle_tools.h"
 #include "tools/justamcp_physics_tools.h"
@@ -143,6 +146,9 @@ void initialize_justamcp_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(JustAMCPDocumentationTools);
 		GDREGISTER_CLASS(JustAMCPExportTools);
 		GDREGISTER_CLASS(JustAMCPInputTools);
+#ifdef MODULE_MULTIUSER_EDITOR_ENABLED
+		GDREGISTER_CLASS(JustAMCPMultiuserTools);
+#endif
 		GDREGISTER_CLASS(JustAMCPNodeTools);
 		GDREGISTER_CLASS(JustAMCPParticleTools);
 		GDREGISTER_CLASS(JustAMCPPhysicsTools);

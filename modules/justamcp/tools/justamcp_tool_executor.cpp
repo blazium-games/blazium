@@ -75,6 +75,10 @@
 #include "justamcp_autowork_tools.h"
 #endif
 
+#ifdef MODULE_MULTIUSER_EDITOR_ENABLED
+#include "justamcp_multiuser_tools.h"
+#endif
+
 void JustAMCPToolExecutor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("execute_tool", "tool_name", "args"), &JustAMCPToolExecutor::execute_tool);
 	ClassDB::bind_static_method("JustAMCPToolExecutor", D_METHOD("get_tool_schemas", "register_only", "ignore_settings"), &JustAMCPToolExecutor::get_tool_schemas, DEFVAL(false), DEFVAL(false));
@@ -291,6 +295,11 @@ JustAMCPToolExecutor::~JustAMCPToolExecutor() {
 		memdelete(autowork_tools);
 	}
 #endif
+#ifdef MODULE_MULTIUSER_EDITOR_ENABLED
+	if (multiuser_tools) {
+		memdelete(multiuser_tools);
+	}
+#endif
 	if (asset_tools) {
 		memdelete(asset_tools);
 	}
@@ -376,6 +385,11 @@ void JustAMCPToolExecutor::set_editor_plugin(JustAMCPEditorPlugin *p_plugin) {
 		autowork_tools->set_editor_plugin(p_plugin);
 	}
 #endif
+#ifdef MODULE_MULTIUSER_EDITOR_ENABLED
+	if (multiuser_tools) {
+		multiuser_tools->set_editor_plugin(p_plugin);
+	}
+#endif
 	if (asset_tools) {
 		asset_tools->set_editor_plugin(p_plugin);
 	}
@@ -426,6 +440,9 @@ void JustAMCPToolExecutor::_init_tools() {
 
 #ifdef MODULE_AUTOWORK_ENABLED
 	autowork_tools = memnew(JustAMCPAutoworkTools);
+#endif
+#ifdef MODULE_MULTIUSER_EDITOR_ENABLED
+	multiuser_tools = memnew(JustAMCPMultiuserTools);
 #endif
 
 	if (editor_plugin) {
@@ -626,6 +643,20 @@ Array JustAMCPToolExecutor::get_tool_schemas(bool p_register_only, bool p_ignore
 			Vector<String>{ "parent_path", "string", "name", "string", "properties", "array" }, Vector<String>{ "parent_path", "properties" });
 	add_schema("networking_get_info", "Returns current multiplayer peer and connection information.",
 			Vector<String>{}, Vector<String>{});
+
+#ifdef MODULE_MULTIUSER_EDITOR_ENABLED
+	// Multiuser Collaborative Teams Orchestration Tools
+	current_category = "multiuser_tools";
+	is_core = false;
+	add_schema("multiuser_get_status", "Returns the active collaborative session status, including the local peer ID and connection state natively out of the Multiplayer network node.",
+			Vector<String>{}, Vector<String>{});
+	add_schema("multiuser_send_chat", "Dispatches a global text string natively to all uniquely connected remote peer instances across the Editor environment.",
+			Vector<String>{ "message", "string" }, Vector<String>{ "message" });
+	add_schema("multiuser_kick_peer", "Removes a target user peer explicitly from the host environment by ID (Action is silently ignored if the AI host agent lacks active networking privileges).",
+			Vector<String>{ "peer_id", "string" }, Vector<String>{ "peer_id" });
+	add_schema("multiuser_trigger_autowork", "Issues a distributed RPC signaling all securely connected peers to automatically boot Godot's Autowork pipeline evaluating unit tests concurrently traversing the network.",
+			Vector<String>{}, Vector<String>{});
+#endif
 
 	// Spatial Tools
 	current_category = "spatial_tools";
@@ -2782,6 +2813,23 @@ Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const D
 			return editor_tools->editor_get_signals(p_args);
 		}
 	}
+
+#ifdef MODULE_MULTIUSER_EDITOR_ENABLED
+	if (multiuser_tools) {
+		if (internal_name == "multiuser_get_status") {
+			return multiuser_tools->multiuser_get_status(p_args);
+		}
+		if (internal_name == "multiuser_send_chat") {
+			return multiuser_tools->multiuser_send_chat(p_args);
+		}
+		if (internal_name == "multiuser_kick_peer") {
+			return multiuser_tools->multiuser_kick_peer(p_args);
+		}
+		if (internal_name == "multiuser_trigger_autowork") {
+			return multiuser_tools->multiuser_trigger_autowork(p_args);
+		}
+	}
+#endif
 
 	result["ok"] = false;
 	result["error"] = "Unknown tool: " + p_tool_name;
