@@ -193,7 +193,7 @@ License: BSD-3-clause
 
 Files: thirdparty/astcenc/*
 Comment: Arm ASTC Encoder
-Copyright: 2011-2024, Arm Limited
+Copyright: 2011-2025, Arm Limited
 License: Apache-2.0
 
 Files: thirdparty/basis_universal/*
@@ -211,7 +211,7 @@ Comment: Brotli
 Copyright: 2009, 2010, 2013-2016 by the Brotli Authors.
 License: Expat
 
-Files: thirdparty/certs/ca-certificates.crt
+Files: thirdparty/certs/ca-bundle.crt
 Comment: CA certificates
 Copyright: Mozilla Contributors
 License: MPL-2.0
@@ -359,8 +359,8 @@ License: BSD-3-clause
 
 Files: thirdparty/libpng/*
 Comment: libpng
-Copyright: 1995-2025, The PNG Reference Library Authors.
- 2018-2025, Cosmin Truta.
+Copyright: 1995-2026, The PNG Reference Library Authors.
+ 2018-2026, Cosmin Truta.
  2000-2002, 2004, 2006-2018 Glenn Randers-Pehrson.
  1996-1997, Andreas Dilger.
  1995-1996, Guy Eric Schalnat, Group 42, Inc.
@@ -413,7 +413,7 @@ License: BSD-3-clause
 
 Files: thirdparty/minizip/*
 Comment: MiniZip
-Copyright: 1998-2010, Gilles Vollant
+Copyright: 1998-2026, Gilles Vollant
  2007-2008, Even Rouault
  2009-2010, Mathias Svensson
 License: Zlib
@@ -621,7 +621,7 @@ License: Expat
 
 Files: thirdparty/zlib/*
 Comment: zlib
-Copyright: 1995-2024, Jean-loup Gailly and Mark Adler
+Copyright: 1995-2025, Jean-loup Gailly and Mark Adler
 License: Zlib
 
 Files: thirdparty/zstd/*
