@@ -989,6 +989,89 @@ void EditorNode::_resources_changed(const Vector<String> &p_resources) {
 	}
 }
 
+void EditorNode::_on_csv_import_choice_needed(const String &p_path) {
+	csv_pending_paths.push_back(p_path);
+	if (!csv_choice_dialog) {
+		csv_choice_dialog = memnew(ConfirmationDialog);
+		csv_choice_dialog->set_title(TTR("CSV File Detected"));
+
+		VBoxContainer *vb = memnew(VBoxContainer);
+		csv_choice_dialog->add_child(vb);
+
+		csv_choice_label = memnew(Label);
+		vb->add_child(csv_choice_label);
+
+		csv_choice_option = memnew(OptionButton);
+		csv_choice_option->add_item(TTR("Import as Translation (.translation files)"), 0);
+		csv_choice_option->add_item(TTR("Import as generic CSV resource"), 1);
+		csv_choice_option->add_item(TTR("Keep file as-is (no import)"), 2);
+		csv_choice_option->add_item(TTR("Skip / ignore this file"), 3);
+		vb->add_child(csv_choice_option);
+
+		csv_choice_remember = memnew(CheckBox);
+		csv_choice_remember->set_text(TTR("Apply to all CSV files in this scan"));
+		vb->add_child(csv_choice_remember);
+
+		csv_choice_dialog->connect("confirmed",
+				callable_mp(this, &EditorNode::_on_csv_choice_confirmed));
+		add_child(csv_choice_dialog);
+	}
+	if (!csv_choice_dialog->is_visible()) {
+		_show_next_csv_choice();
+	}
+}
+
+void EditorNode::_show_next_csv_choice() {
+	if (csv_pending_paths.is_empty()) {
+		return;
+	}
+	String path = csv_pending_paths[0];
+	csv_choice_label->set_text(vformat(TTR("How should '%s' be handled?"), path.get_file()));
+	csv_choice_dialog->popup_centered();
+}
+
+void EditorNode::_on_csv_choice_confirmed() {
+	if (csv_pending_paths.is_empty()) {
+		return;
+	}
+
+	String path = csv_pending_paths[0];
+	csv_pending_paths.remove_at(0);
+
+	int choice = csv_choice_option->get_selected_id();
+	String importer_name;
+	switch (choice) {
+		case 0:
+			importer_name = "csv_translation";
+			break;
+		case 1:
+			importer_name = "csv";
+			break;
+		case 2:
+			importer_name = "keep";
+			break;
+		case 3:
+			importer_name = "skip";
+			break;
+	}
+
+	Vector<String> batch;
+	batch.push_back(path);
+	if (csv_choice_remember->is_pressed()) {
+		batch.append_array(csv_pending_paths);
+		csv_pending_paths.clear();
+	}
+
+	for (const String &p : batch) {
+		EditorFileSystem::get_singleton()->reimport_file_with_custom_parameters(
+				p, importer_name, HashMap<StringName, Variant>());
+	}
+
+	if (!csv_pending_paths.is_empty()) {
+		call_deferred(SNAME("_show_next_csv_choice"));
+	}
+}
+
 void EditorNode::_fs_changed() {
 	for (FileDialog *E : file_dialogs) {
 		E->invalidate();
@@ -8063,6 +8146,7 @@ EditorNode::EditorNode() {
 	EditorFileSystem::get_singleton()->connect("resources_reimporting", callable_mp(this, &EditorNode::_resources_reimporting));
 	EditorFileSystem::get_singleton()->connect("resources_reimported", callable_mp(this, &EditorNode::_resources_reimported));
 	EditorFileSystem::get_singleton()->connect("resources_reload", callable_mp(this, &EditorNode::_resources_changed));
+	EditorFileSystem::get_singleton()->connect("csv_import_choice_needed", callable_mp(this, &EditorNode::_on_csv_import_choice_needed));
 
 	_build_icon_type_cache();
 

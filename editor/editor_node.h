@@ -35,6 +35,7 @@
 #include "editor/editor_data.h"
 #include "editor/editor_folding.h"
 #include "editor/plugins/editor_plugin.h"
+#include "scene/gui/check_box.h"
 
 typedef void (*EditorNodeInitCallback)();
 typedef void (*EditorPluginInitializeCallback)();
@@ -462,6 +463,13 @@ private:
 	HashMap<String, Ref<Texture2D>> icon_type_cache;
 
 	ProjectUpgradeTool *project_upgrade_tool = nullptr;
+
+	ConfirmationDialog *csv_choice_dialog = nullptr;
+	Label *csv_choice_label = nullptr;
+	OptionButton *csv_choice_option = nullptr;
+	CheckBox *csv_choice_remember = nullptr;
+	Vector<String> csv_pending_paths;
+
 	bool run_project_upgrade_tool = false;
 
 	bool was_window_windowed_last = false;
@@ -669,6 +677,10 @@ private:
 	void _load_error_dialog_visibility_changed();
 
 	void _execute_upgrades();
+
+	void _on_csv_import_choice_needed(const String &p_path);
+	void _on_csv_choice_confirmed();
+	void _show_next_csv_choice();
 
 protected:
 	friend class FileSystemDock;
