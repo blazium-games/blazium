@@ -68,6 +68,14 @@ public:
 
 private:
 	static MultiuserEditorPlugin *singleton;
+	static bool s_cli_join_pending;
+	static uint64_t s_cli_join_after_usec;
+	static uint64_t s_cli_editor_ready_since_usec;
+	static bool s_server_host_pending;
+	static int s_server_host_port;
+	static String s_server_host_password;
+	static uint64_t s_server_host_after_usec;
+	static uint64_t s_server_host_ready_since_usec;
 
 	MultiuserEditorNetwork network;
 	MultiuserEditorLockManager lock_manager;
@@ -141,6 +149,7 @@ public:
 
 private:
 	void _log(const String &p_message) const;
+	void _log_connection(const String &p_msg) const;
 	void _log_cat(LogLevel p_level, LogCategory p_cat, const String &p_msg) const;
 	void _record_security_event(LogLevel p_level, LogCategory p_cat, const String &p_msg) const;
 
@@ -219,6 +228,9 @@ private:
 	void _on_fs_debounce_timeout();
 	void _wipe_edited_scene();
 	void _handle_uri_join();
+	void _handle_cli_multiuser_join();
+	void _poll_cli_auto_join();
+	void _poll_server_auto_host();
 	void _stop();
 	void _async_git_execute(const List<String> &p_args);
 

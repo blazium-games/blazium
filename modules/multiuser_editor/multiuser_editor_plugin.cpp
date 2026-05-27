@@ -44,6 +44,7 @@
 #include "core/os/os.h"
 #include "editor/editor_file_system.h"
 #include "editor/editor_interface.h"
+#include "editor/editor_node.h"
 #include "editor/editor_settings.h"
 #include "editor/editor_undo_redo_manager.h"
 #include "editor/plugins/script_editor_plugin.h"
@@ -139,6 +140,14 @@ static CodeEdit *multiuser_find_code_edit(Node *p_node) {
 }
 
 MultiuserEditorPlugin *MultiuserEditorPlugin::singleton = nullptr;
+bool MultiuserEditorPlugin::s_cli_join_pending = false;
+uint64_t MultiuserEditorPlugin::s_cli_join_after_usec = 0;
+uint64_t MultiuserEditorPlugin::s_cli_editor_ready_since_usec = 0;
+bool MultiuserEditorPlugin::s_server_host_pending = false;
+int MultiuserEditorPlugin::s_server_host_port = 0;
+String MultiuserEditorPlugin::s_server_host_password;
+uint64_t MultiuserEditorPlugin::s_server_host_after_usec = 0;
+uint64_t MultiuserEditorPlugin::s_server_host_ready_since_usec = 0;
 
 MultiuserEditorPlugin *MultiuserEditorPlugin::get_singleton() {
 	return singleton;
@@ -188,9 +197,6 @@ void MultiuserEditorPlugin::_bind_methods() {
 }
 
 MultiuserEditorPlugin::MultiuserEditorPlugin() {
-	if (!singleton) {
-		singleton = this;
-	}
 	print_line("[Multiuser Editor] Native Plugin Instantiated Successfully in C++ Engine Module.");
 	uint64_t seed = uint64_t(OS::get_singleton()->get_unix_time()) ^ OS::get_singleton()->get_ticks_usec();
 	local_peer_id = "peer_" + String::num_uint64(seed, 16).sha256_text().substr(0, 8);
@@ -211,6 +217,7 @@ MultiuserEditorPlugin::~MultiuserEditorPlugin() {
 void MultiuserEditorPlugin::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE: {
+			singleton = this;
 			{
 				multiuser_editor::SecuritySink sink;
 				sink.fn = &MultiuserEditorPlugin::_security_sink_thunk;
@@ -602,9 +609,19 @@ void MultiuserEditorPlugin::_notification(int p_what) {
 						EditorSettings::get_singleton()->set("blazium/multiuser_editor/jwt/require_jti", true);
 					}
 
-					host_session(port, password);
+					EditorSettings::get_singleton()->set("blazium/multiuser_editor/enabled", true);
+					if (!s_server_host_pending) {
+						s_server_host_pending = true;
+						s_server_host_port = port;
+						s_server_host_password = password;
+						s_server_host_after_usec = OS::get_singleton()->get_ticks_usec() + 3'000'000;
+						s_server_host_ready_since_usec = 0;
+						_log_connection(vformat("Server auto-host scheduled on port %d (poll deferred)", port));
+					}
 				}
 			}
+
+			_handle_cli_multiuser_join();
 
 		} break;
 		case NOTIFICATION_EXIT_TREE: {
@@ -1686,6 +1703,7 @@ void MultiuserEditorPlugin::_route_action(int p_sender_net_id, const Dictionary 
 			hs_data["jwt"] = client_jwt;
 		}
 
+		_log_connection(vformat("Received auth_challenge, sending handshake (jwt=%s)", client_jwt.is_empty() ? "no" : "yes"));
 		network.send_action_to(p_sender_net_id, _make_action(multiuser_editor::kActionHandshake, hs_data));
 
 	} else if (type == "handshake") {
@@ -1712,11 +1730,13 @@ void MultiuserEditorPlugin::_route_action(int p_sender_net_id, const Dictionary 
 			const bool have_challenge = _consume_pending_challenge(p_sender_net_id, per_peer_challenge);
 			if (!have_challenge) {
 				_log_cat(LOG_WARN, LOG_PERMISSIONS, vformat("handshake rejected: no pending challenge for net_id=%d", p_sender_net_id));
+				_log_connection(vformat("Auth failed: no pending challenge for net_id=%d", p_sender_net_id));
 				_record_security_event_kind(MultiuserEditorDock::KIND_AUTH_FAIL, LOG_WARN, LOG_PERMISSIONS, vformat("auth fail: no challenge sender=%d", p_sender_net_id));
 			} else if (bool(MULTIUSER_GET("blazium/multiuser_editor/require_jwt", false))) {
 				String jwt_secret = String(MULTIUSER_GET("blazium/multiuser_editor/jwt_secret_key", ""));
 				if (remote_jwt.is_empty()) {
 					_log_cat(LOG_WARN, LOG_PERMISSIONS, vformat("JWT auth failed: reason=missing_token sender_net_id=%d", p_sender_net_id));
+					_log_connection(vformat("JWT auth failed: missing token from net_id=%d", p_sender_net_id));
 
 					_record_security_event_kind(MultiuserEditorDock::KIND_AUTH_FAIL, LOG_WARN, LOG_PERMISSIONS, vformat("auth fail: jwt missing sender=%d", p_sender_net_id));
 				} else {
@@ -1724,8 +1744,10 @@ void MultiuserEditorPlugin::_route_action(int p_sender_net_id, const Dictionary 
 					if (vr.valid) {
 						auth_success = true;
 						incoming_role = vr.role;
+						_log_connection(vformat("JWT auth ok for net_id=%d role=%s", p_sender_net_id, incoming_role));
 					} else {
 						_log_cat(LOG_WARN, LOG_PERMISSIONS, vformat("JWT auth failed: reason=%s jti_fp=%s sender_net_id=%d", vr.reason, _jwt_jti_fingerprint(vr.jti), p_sender_net_id));
+						_log_connection(vformat("JWT auth failed: %s from net_id=%d", vr.reason, p_sender_net_id));
 						_record_security_event_kind(MultiuserEditorDock::KIND_AUTH_FAIL, LOG_WARN, LOG_PERMISSIONS, vformat("auth fail: jwt %s sender=%d", vr.reason, p_sender_net_id));
 					}
 				}
@@ -1873,6 +1895,10 @@ void MultiuserEditorPlugin::_route_action(int p_sender_net_id, const Dictionary 
 		}
 		if (bool(MULTIUSER_GET("blazium/multiuser_editor/server_log_connections", true))) {
 			print_line(vformat("[Multiuser Authenticated] Successfully connected to Host as %s", local_role));
+			print_line(vformat("[Multiuser Connect] Session open: authenticated as %s", local_role));
+		}
+		if (s_cli_join_pending) {
+			s_cli_join_pending = false;
 		}
 	} else if (type == multiuser_editor::kActionChat) {
 		const int min_chat_ms = MAX(0, int(MULTIUSER_GET("blazium/multiuser_editor/limits/chat_min_interval_ms", 250)));
@@ -2064,6 +2090,8 @@ void MultiuserEditorPlugin::_poll_runtime() {
 		}
 		return;
 	}
+	_poll_cli_auto_join();
+	_poll_server_auto_host();
 	if (!followed_peer_id.is_empty()) {
 		jump_to_peer(followed_peer_id);
 	}
@@ -2454,6 +2482,12 @@ static int _mu_level_from_string(const String &p_value) {
 
 void MultiuserEditorPlugin::_log(const String &p_message) const {
 	_log_cat(LOG_INFO, LOG_GENERAL, p_message);
+}
+
+void MultiuserEditorPlugin::_log_connection(const String &p_msg) const {
+	if (bool(MULTIUSER_GET("blazium/multiuser_editor/server_log_connections", true))) {
+		print_line(vformat("[Multiuser Connect] %s", p_msg));
+	}
 }
 
 void MultiuserEditorPlugin::_log_cat(LogLevel p_level, LogCategory p_cat, const String &p_msg) const {
@@ -3667,6 +3701,7 @@ void MultiuserEditorPlugin::_issue_pending_challenge(int p_net_id) {
 	Dictionary act_data;
 	act_data["challenge"] = rec.challenge;
 	network.send_action_to(p_net_id, _make_action(multiuser_editor::kActionAuthChallenge, act_data));
+	_log_connection(vformat("Issued auth_challenge to net_id=%d", p_net_id));
 }
 
 void MultiuserEditorPlugin::_expire_stale_pending_challenges() {
@@ -3703,7 +3738,7 @@ void MultiuserEditorPlugin::_on_network_peer_disconnected(int p_net_id) {
 	String peer_id = network.get_peer_id(p_net_id);
 	if (!peer_id.is_empty()) {
 		if (bool(MULTIUSER_GET("blazium/multiuser_editor/server_log_connections", true))) {
-			print_line(vformat("[Multiuser Disconnect] Peer Dropped Connection: %s (%d)", peer_id, p_net_id));
+			print_line(vformat("[Multiuser Connect] Connection closed: peer %s (%d)", peer_id, p_net_id));
 		}
 		lock_manager.release_peer(peer_id);
 		if (ghost_overlay) {
@@ -4419,6 +4454,10 @@ void MultiuserEditorPlugin::host_session(int p_port, const String &p_password) {
 	if (network.host(p_port, p_password) == OK) {
 		local_role = "Admin";
 		session_authenticated = true;
+		_log_connection(vformat("Host session started on port %d", p_port));
+		if (s_server_host_pending && s_server_host_port == p_port) {
+			s_server_host_pending = false;
+		}
 
 		if (dock) {
 			const bool require_jwt = bool(MULTIUSER_GET("blazium/multiuser_editor/require_jwt", false));
@@ -4446,6 +4485,8 @@ void MultiuserEditorPlugin::host_session(int p_port, const String &p_password) {
 			filesystem_sync.clear_snapshot();
 			filesystem_sync.capture_snapshot_from_res(inc_imp, inc, exc);
 		}
+	} else {
+		_log_connection(vformat("Failed to host session on port %d", p_port));
 	}
 
 	_update_ui();
@@ -4492,10 +4533,13 @@ void MultiuserEditorPlugin::join_session(const String &p_host, int p_port, const
 	if (network.join(p_host, p_port, p_password) == OK) {
 		local_role = "Editor";
 		session_authenticated = false;
+		_log_connection(vformat("Joining session at %s:%d", p_host, p_port));
 		print_line(vformat("[Multiuser Editor] Successfully joining session at %s:%d...", p_host, p_port));
 		_connect_network_signals();
 		script_sync.clear_all_buffers();
 		script_sync.set_sync_pending(true);
+	} else {
+		_log_connection(vformat("Failed to join session at %s:%d", p_host, p_port));
 	}
 	_update_ui();
 }
@@ -4857,6 +4901,124 @@ void MultiuserEditorPlugin::_handle_uri_join() {
 			break;
 		}
 	}
+}
+
+void MultiuserEditorPlugin::_handle_cli_multiuser_join() {
+	List<String> args_list = OS::get_singleton()->get_cmdline_args();
+	Vector<String> args;
+	for (const String &s : args_list) {
+		args.push_back(s);
+	}
+
+	if (args.has("--multiuser-server")) {
+		return;
+	}
+
+	if (args.has("--multiuser-debug")) {
+		EditorSettings::get_singleton()->set("blazium/multiuser_editor/enable_debug_logging", true);
+		EditorSettings::get_singleton()->set("blazium/multiuser_editor/logging/log_network", true);
+		_log_connection("Debug logging enabled via --multiuser-debug");
+	}
+
+	for (int i = 0; i < args.size(); i++) {
+		if (args[i] == "--multiuser-jwt" && i + 1 < args.size()) {
+			EditorSettings::get_singleton()->set("blazium/multiuser_editor/client_jwt", args[i + 1]);
+		}
+	}
+
+	int host_idx = args.find("--multiuser-host");
+	if (host_idx != -1 && host_idx + 1 < args.size()) {
+		EditorSettings::get_singleton()->set("blazium/multiuser_editor/default_host", args[host_idx + 1]);
+	}
+
+	int port_idx = args.find("--multiuser-port");
+	if (port_idx != -1 && port_idx + 1 < args.size()) {
+		const int port = args[port_idx + 1].to_int();
+		if (port >= multiuser_editor::kPortMin && port <= multiuser_editor::kPortMax) {
+			EditorSettings::get_singleton()->set("blazium/multiuser_editor/default_port", port);
+		}
+	}
+
+	if (args.has("--multiuser-join")) {
+		EditorSettings::get_singleton()->set("blazium/multiuser_editor/enabled", true);
+		if (!s_cli_join_pending) {
+			s_cli_join_pending = true;
+			s_cli_join_after_usec = OS::get_singleton()->get_ticks_usec() + 5'000'000;
+			const String host = String(MULTIUSER_GET("blazium/multiuser_editor/default_host", "127.0.0.1"));
+			const int port = int(MULTIUSER_GET("blazium/multiuser_editor/default_port", multiuser_editor::kDefaultPort));
+			_log_connection(vformat("CLI auto-join scheduled for %s:%d (poll deferred, 5s)", host, port));
+		}
+	}
+}
+
+void MultiuserEditorPlugin::_poll_cli_auto_join() {
+	if (singleton != this) {
+		return;
+	}
+	if (!s_cli_join_pending) {
+		return;
+	}
+	if (OS::get_singleton()->get_ticks_usec() < s_cli_join_after_usec) {
+		return;
+	}
+	String reason;
+	if (!_is_inside_loaded_project(&reason)) {
+		return;
+	}
+	EditorNode *editor_node = EditorNode::get_singleton();
+	if (!editor_node || !editor_node->is_editor_ready()) {
+		s_cli_editor_ready_since_usec = 0;
+		return;
+	}
+	if (s_cli_editor_ready_since_usec == 0) {
+		s_cli_editor_ready_since_usec = OS::get_singleton()->get_ticks_usec();
+		_log_connection("CLI auto-join waiting for editor settle (10s after ready)");
+		return;
+	}
+	if (OS::get_singleton()->get_ticks_usec() - s_cli_editor_ready_since_usec < 10'000'000) {
+		return;
+	}
+	if (network.get_mode() != MultiuserEditorNetwork::MODE_OFF) {
+		return;
+	}
+	const String host = String(MULTIUSER_GET("blazium/multiuser_editor/default_host", "127.0.0.1"));
+	const int port = int(MULTIUSER_GET("blazium/multiuser_editor/default_port", multiuser_editor::kDefaultPort));
+	_log_connection(vformat("CLI auto-join executing for %s:%d", host, port));
+	join_session(host, port, "");
+}
+
+void MultiuserEditorPlugin::_poll_server_auto_host() {
+	if (singleton != this) {
+		return;
+	}
+	if (!s_server_host_pending) {
+		return;
+	}
+	if (OS::get_singleton()->get_ticks_usec() < s_server_host_after_usec) {
+		return;
+	}
+	String reason;
+	if (!_is_inside_loaded_project(&reason)) {
+		return;
+	}
+	EditorNode *editor_node = EditorNode::get_singleton();
+	if (!editor_node || !editor_node->is_editor_ready()) {
+		s_server_host_ready_since_usec = 0;
+		return;
+	}
+	if (s_server_host_ready_since_usec == 0) {
+		s_server_host_ready_since_usec = OS::get_singleton()->get_ticks_usec();
+		_log_connection("Server auto-host waiting for editor settle (5s after ready)");
+		return;
+	}
+	if (OS::get_singleton()->get_ticks_usec() - s_server_host_ready_since_usec < 5'000'000) {
+		return;
+	}
+	if (network.get_mode() != MultiuserEditorNetwork::MODE_OFF) {
+		return;
+	}
+	_log_connection(vformat("Server auto-host executing on port %d", s_server_host_port));
+	host_session(s_server_host_port, s_server_host_password);
 }
 
 void MultiuserEditorPlugin::request_magic_repair() {

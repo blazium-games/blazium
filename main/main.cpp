@@ -707,6 +707,9 @@ void Main::print_help(const char *p_binary) {
 	print_help_option("--multiuser-jwt-auth", "Enable JWT authentication for the multiuser server.\n");
 	print_help_option("--multiuser-jwt-secret <secret>", "Set the JWT secret used for generating and verifying tokens.\n");
 	print_help_option("--multiuser-jwt <token>", "Connect to a multiuser server using the provided JWT token.\n");
+	print_help_option("--multiuser-host <ip>", "Set the default multiuser host for client auto-join.\n");
+	print_help_option("--multiuser-join", "Auto-join a multiuser session using default host/port and client JWT.\n");
+	print_help_option("--multiuser-debug", "Enable verbose multiuser editor network and debug logging.\n");
 #endif
 
 	OS::get_singleton()->print("\n");

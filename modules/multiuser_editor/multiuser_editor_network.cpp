@@ -87,6 +87,7 @@ Error MultiuserEditorNetwork::host(int p_port, const String &p_password) {
 	Error err = peer.is_valid() ? Error(int(peer->call("create_server", p_port, clamped_max_clients))) : ERR_CANT_CREATE;
 	if (err != OK) {
 		ERR_PRINT(vformat("Multiuser Editor Network Failed to Host: ENet create_server returned native Error %d", err));
+		print_line(vformat("[Multiuser Connect] Failed to open host on port %d (error=%d)", p_port, err));
 		peer.unref();
 		return err;
 	}
@@ -94,6 +95,7 @@ Error MultiuserEditorNetwork::host(int p_port, const String &p_password) {
 	_apply_max_packet_size_to_peer();
 	session_password = p_password;
 	mode = MODE_HOST;
+	print_line(vformat("[Multiuser Connect] Opening host on port %d (max_clients=%d)", p_port, clamped_max_clients));
 	return OK;
 #endif
 }
@@ -107,6 +109,7 @@ Error MultiuserEditorNetwork::join(const String &p_host, int p_port, const Strin
 	Error err = peer.is_valid() ? Error(int(peer->call("create_client", host, p_port))) : ERR_CANT_CREATE;
 	if (err != OK) {
 		ERR_PRINT(vformat("Multiuser Editor Network Failed to Join: ENet create_client returned native Error %d", err));
+		print_line(vformat("[Multiuser Connect] Failed to open client connection to %s:%d (error=%d)", host, p_port, err));
 		peer.unref();
 		return err;
 	}
@@ -114,6 +117,7 @@ Error MultiuserEditorNetwork::join(const String &p_host, int p_port, const Strin
 	_apply_max_packet_size_to_peer();
 	session_password = p_password;
 	mode = MODE_JOIN;
+	print_line(vformat("[Multiuser Connect] Opening client connection to %s:%d", host, p_port));
 	return OK;
 }
 
