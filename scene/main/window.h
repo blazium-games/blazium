@@ -246,6 +246,7 @@ private:
 	static int root_layout_direction;
 
 protected:
+	virtual void _pre_popup() {} // Called after "about_to_popup", but before window is shown.
 	virtual Rect2i _popup_adjust_rect() const { return Rect2i(); }
 	virtual void _post_popup() {}
 
@@ -400,6 +401,7 @@ public:
 
 	void grab_focus();
 	bool has_focus() const;
+	bool has_focus_or_active_popup() const;
 
 	void start_drag();
 	void start_resize(DisplayServer::WindowResizeEdge p_edge);
@@ -482,6 +484,7 @@ public:
 	virtual Transform2D get_final_transform() const override;
 	virtual Transform2D get_screen_transform_internal(bool p_absolute_position = false) const override;
 	virtual Transform2D get_popup_base_transform() const override;
+	virtual Transform2D get_popup_base_transform_native() const override;
 	virtual Viewport *get_section_root_viewport() const override;
 	virtual bool is_attached_in_viewport() const override;
 

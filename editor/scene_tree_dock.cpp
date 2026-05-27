@@ -1266,7 +1266,7 @@ void SceneTreeDock::_tool_selected(int p_tool, bool p_confirm_override) {
 					bool editable = EditorNode::get_singleton()->get_edited_scene()->is_editable_instance(node);
 
 					if (editable) {
-						editable_instance_remove_dialog->set_text(TTR("Disabling \"editable_instance\" will cause all properties of the node to be reverted to their default."));
+						editable_instance_remove_dialog->set_text(TTR("Disabling \"Editable Children\" will cause all properties of this subscene's descendant nodes to be reverted to their default."));
 						editable_instance_remove_dialog->popup_centered();
 						break;
 					}
@@ -1680,6 +1680,9 @@ void SceneTreeDock::_notification(int p_what) {
 				scene_tree->set_auto_expand_selected(EDITOR_GET("docks/scene_tree/auto_expand_to_selected"), false);
 				scene_tree->set_hide_filtered_out_parents(EDITOR_GET("docks/scene_tree/hide_filtered_out_parents"), false);
 			}
+			if (EditorSettings::get_singleton()->check_changed_settings_in_group("interface/editor")) {
+				inspect_hovered_node_delay->set_wait_time(EDITOR_GET("interface/editor/dragging_hover_wait_seconds"));
+			}
 		} break;
 
 		case NOTIFICATION_THEME_CHANGED: {
@@ -1691,11 +1694,6 @@ void SceneTreeDock::_notification(int p_what) {
 			button_tree_menu->set_button_icon(get_editor_theme_icon(SNAME("GuiTabMenuHl")));
 
 			filter->set_right_icon(get_editor_theme_icon(SNAME("Search")));
-
-			PopupMenu *filter_menu = filter->get_menu();
-			filter_menu->set_item_icon(filter_menu->get_item_idx_from_text(TTR("Filters")), get_editor_theme_icon(SNAME("Search")));
-			filter_menu->set_item_icon(filter_menu->get_item_index(FILTER_BY_TYPE), get_editor_theme_icon(SNAME("Node")));
-			filter_menu->set_item_icon(filter_menu->get_item_index(FILTER_BY_GROUP), get_editor_theme_icon(SNAME("Groups")));
 
 			// These buttons are created on READY, because reasons...
 			if (button_2d) {
@@ -3957,9 +3955,6 @@ void SceneTreeDock::_update_tree_menu() {
 	PopupMenu *tree_menu = button_tree_menu->get_popup();
 	tree_menu->clear();
 
-	_append_filter_options_to(tree_menu);
-
-	tree_menu->add_separator();
 	tree_menu->add_check_item(TTR("Auto Expand to Selected"), TOOL_AUTO_EXPAND);
 	tree_menu->set_item_checked(-1, EDITOR_GET("docks/scene_tree/auto_expand_to_selected"));
 
@@ -3976,6 +3971,8 @@ void SceneTreeDock::_update_tree_menu() {
 	resource_list->connect("about_to_popup", callable_mp(this, &SceneTreeDock::_list_all_subresources).bind(resource_list));
 	resource_list->connect("index_pressed", callable_mp(this, &SceneTreeDock::_edit_subresource).bind(resource_list));
 	tree_menu->add_submenu_node_item(TTR("All Scene Sub-Resources"), resource_list);
+
+	_append_filter_options_to(tree_menu);
 }
 
 void SceneTreeDock::_filter_changed(const String &p_filter) {
@@ -3998,9 +3995,14 @@ void SceneTreeDock::_filter_gui_input(const Ref<InputEvent> &p_event) {
 	}
 
 	if (mb->is_pressed() && mb->get_button_index() == MouseButton::MIDDLE) {
-		filter_quick_menu->clear();
+		if (filter_quick_menu == nullptr) {
+			filter_quick_menu = memnew(PopupMenu);
+			filter_quick_menu->set_theme_type_variation("FlatMenuButton");
+			_append_filter_options_to(filter_quick_menu);
+			filter_quick_menu->connect(SceneStringName(id_pressed), callable_mp(this, &SceneTreeDock::_filter_option_selected));
+			filter->add_child(filter_quick_menu);
+		}
 
-		_append_filter_options_to(filter_quick_menu, false);
 		filter_quick_menu->set_position(get_screen_position() + get_local_mouse_position());
 		filter_quick_menu->reset_size();
 		filter_quick_menu->popup();
@@ -4027,15 +4029,16 @@ void SceneTreeDock::_filter_option_selected(int p_option) {
 	}
 }
 
-void SceneTreeDock::_append_filter_options_to(PopupMenu *p_menu, bool p_include_separator) {
-	if (p_include_separator) {
-		p_menu->add_separator(TTR("Filters"));
+void SceneTreeDock::_append_filter_options_to(PopupMenu *p_menu) {
+	if (p_menu->get_item_count() > 0) {
+		p_menu->add_separator();
 	}
 
-	p_menu->add_item(TTR("Filter by Type"), FILTER_BY_TYPE);
-	p_menu->add_item(TTR("Filter by Group"), FILTER_BY_GROUP);
-	p_menu->set_item_tooltip(p_menu->get_item_index(FILTER_BY_TYPE), TTR("Selects all Nodes of the given type."));
-	p_menu->set_item_tooltip(p_menu->get_item_index(FILTER_BY_GROUP), TTR("Selects all Nodes belonging to the given group.\nIf empty, selects any Node belonging to any group."));
+	p_menu->add_item(TTRC("Filter by Type"), FILTER_BY_TYPE);
+	p_menu->set_item_tooltip(-1, TTRC("Selects all Nodes of the given type.\nInserts \"type:\". You can also use the shorthand \"t:\"."));
+
+	p_menu->add_item(TTRC("Filter by Group"), FILTER_BY_GROUP);
+	p_menu->set_item_tooltip(-1, TTRC("Selects all Nodes belonging to the given group.\nIf empty, selects any Node belonging to any group.\nInserts \"group:\". You can also use the shorthand \"g:\"."));
 }
 
 String SceneTreeDock::get_filter() {
@@ -4675,19 +4678,14 @@ SceneTreeDock::SceneTreeDock(Node *p_scene_root, EditorSelection *p_editor_selec
 	// The "Filter Nodes" text input above the Scene Tree Editor.
 	filter = memnew(LineEdit);
 	filter->set_h_size_flags(SIZE_EXPAND_FILL);
-	filter->set_placeholder(TTR("Filter: name, t:type, g:group"));
-	filter->set_tooltip_text(TTR("Filter nodes by entering a part of their name, type (if prefixed with \"type:\" or \"t:\")\nor group (if prefixed with \"group:\" or \"g:\"). Filtering is case-insensitive."));
+	filter->set_placeholder(TTRC("Filter Nodes"));
+	filter->set_tooltip_text(TTRC("Filter nodes by entering a part of their name, type (if prefixed with \"type:\" or \"t:\")\nor group (if prefixed with \"group:\" or \"g:\"). Filtering is case-insensitive."));
 	filter_hbc->add_child(filter);
 	filter->add_theme_constant_override("minimum_character_width", 0);
 	filter->connect(SceneStringName(text_changed), callable_mp(this, &SceneTreeDock::_filter_changed));
 	filter->connect(SceneStringName(gui_input), callable_mp(this, &SceneTreeDock::_filter_gui_input));
 	filter->get_menu()->connect(SceneStringName(id_pressed), callable_mp(this, &SceneTreeDock::_filter_option_selected));
 	_append_filter_options_to(filter->get_menu());
-
-	filter_quick_menu = memnew(PopupMenu);
-	filter_quick_menu->set_theme_type_variation("FlatMenuButton");
-	filter_quick_menu->connect(SceneStringName(id_pressed), callable_mp(this, &SceneTreeDock::_filter_option_selected));
-	filter->add_child(filter_quick_menu);
 
 	button_create_script = memnew(Button);
 	button_create_script->set_theme_type_variation("FlatMenuButton");

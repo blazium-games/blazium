@@ -756,6 +756,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const 
 	theme->set_icon("radio_unchecked_disabled", "PopupMenu", icons["radio_unchecked_disabled"]);
 	theme->set_icon("submenu", "PopupMenu", icons["popup_menu_arrow_right"]);
 	theme->set_icon("submenu_mirrored", "PopupMenu", icons["popup_menu_arrow_left"]);
+	theme->set_icon("search", "PopupMenu", icons["search"]);
 
 	theme->set_font(SceneStringName(font), "PopupMenu", Ref<Font>());
 	theme->set_font("font_separator", "PopupMenu", Ref<Font>());
@@ -773,11 +774,13 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const 
 	theme->set_constant("indent", "PopupMenu", Math::round(10 * scale));
 	theme->set_constant("h_separation", "PopupMenu", Math::round(4 * scale));
 	theme->set_constant("v_separation", "PopupMenu", Math::round(4 * scale));
+	theme->set_constant("search_bar_separation", "PopupMenu", Math::round(4 * scale));
 	theme->set_constant("outline_size", "PopupMenu", 0);
 	theme->set_constant("separator_outline_size", "PopupMenu", 0);
 	theme->set_constant("item_start_padding", "PopupMenu", Math::round(2 * scale));
 	theme->set_constant("item_end_padding", "PopupMenu", Math::round(2 * scale));
 	theme->set_constant("icon_max_width", "PopupMenu", 0);
+	theme->set_constant("gutter_compact", "PopupMenu", 1);
 
 	// GraphNode
 
@@ -905,6 +908,8 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const 
 	theme->set_constant("inner_item_margin_left", "Tree", 0);
 	theme->set_constant("inner_item_margin_right", "Tree", 0);
 	theme->set_constant("inner_item_margin_top", "Tree", 0);
+	theme->set_constant("check_h_separation", "Tree", Math::round(4 * scale));
+	theme->set_constant("icon_h_separation", "Tree", Math::round(4 * scale));
 	theme->set_constant("button_margin", "Tree", Math::round(4 * scale));
 	theme->set_constant("draw_relationship_lines", "Tree", 0);
 	theme->set_constant("relationship_line_width", "Tree", 1);
@@ -912,6 +917,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const 
 	theme->set_constant("children_hl_line_width", "Tree", 1);
 	theme->set_constant("parent_hl_line_margin", "Tree", 0);
 	theme->set_constant("draw_guides", "Tree", 1);
+	theme->set_constant("dragging_unfold_wait_msec", "Tree", 500);
 	theme->set_constant("scroll_border", "Tree", Math::round(4 * scale));
 	theme->set_constant("scroll_speed", "Tree", 12);
 	theme->set_constant("outline_size", "Tree", 0);

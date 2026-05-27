@@ -46,7 +46,7 @@ void ItemList::_shape_text(int p_idx) {
 	}
 	item.text_buf->add_string(item.xl_text, theme_cache.font, theme_cache.font_size, item.language);
 	if (icon_mode == ICON_MODE_TOP && max_text_lines > 0) {
-		item.text_buf->set_break_flags(TextServer::BREAK_MANDATORY | TextServer::BREAK_WORD_BOUND | TextServer::BREAK_GRAPHEME_BOUND | TextServer::BREAK_TRIM_EDGE_SPACES);
+		item.text_buf->set_break_flags(TextServer::BREAK_MANDATORY | TextServer::BREAK_WORD_BOUND | TextServer::BREAK_GRAPHEME_BOUND | TextServer::BREAK_TRIM_START_EDGE_SPACES | TextServer::BREAK_TRIM_END_EDGE_SPACES);
 	} else {
 		item.text_buf->set_break_flags(TextServer::BREAK_NONE);
 	}
@@ -559,7 +559,7 @@ void ItemList::set_max_text_lines(int p_lines) {
 		max_text_lines = p_lines;
 		for (int i = 0; i < items.size(); i++) {
 			if (icon_mode == ICON_MODE_TOP && max_text_lines > 0) {
-				items.write[i].text_buf->set_break_flags(TextServer::BREAK_MANDATORY | TextServer::BREAK_WORD_BOUND | TextServer::BREAK_GRAPHEME_BOUND | TextServer::BREAK_TRIM_EDGE_SPACES);
+				items.write[i].text_buf->set_break_flags(TextServer::BREAK_MANDATORY | TextServer::BREAK_WORD_BOUND | TextServer::BREAK_GRAPHEME_BOUND | TextServer::BREAK_TRIM_START_EDGE_SPACES | TextServer::BREAK_TRIM_END_EDGE_SPACES);
 				items.write[i].text_buf->set_max_lines_visible(p_lines);
 			} else {
 				items.write[i].text_buf->set_break_flags(TextServer::BREAK_NONE);
@@ -609,7 +609,7 @@ void ItemList::set_icon_mode(IconMode p_mode) {
 		icon_mode = p_mode;
 		for (int i = 0; i < items.size(); i++) {
 			if (icon_mode == ICON_MODE_TOP && max_text_lines > 0) {
-				items.write[i].text_buf->set_break_flags(TextServer::BREAK_MANDATORY | TextServer::BREAK_WORD_BOUND | TextServer::BREAK_GRAPHEME_BOUND | TextServer::BREAK_TRIM_EDGE_SPACES);
+				items.write[i].text_buf->set_break_flags(TextServer::BREAK_MANDATORY | TextServer::BREAK_WORD_BOUND | TextServer::BREAK_GRAPHEME_BOUND | TextServer::BREAK_TRIM_START_EDGE_SPACES | TextServer::BREAK_TRIM_END_EDGE_SPACES);
 			} else {
 				items.write[i].text_buf->set_break_flags(TextServer::BREAK_NONE);
 			}
@@ -1760,6 +1760,14 @@ String ItemList::get_tooltip(const Point2 &p_pos) const {
 	}
 
 	return Control::get_tooltip(p_pos);
+}
+
+Node::AutoTranslateMode ItemList::get_tooltip_auto_translate_mode_at(const Point2 &p_at) const {
+	int closest = get_item_at_position(p_at, true);
+	if (closest != -1) {
+		return items[closest].auto_translate_mode;
+	}
+	return Control::get_tooltip_auto_translate_mode_at(p_at);
 }
 
 void ItemList::sort_items_by_text() {

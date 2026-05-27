@@ -237,6 +237,13 @@
 				Returns the accelerator of the item at the given [param index]. An accelerator is a keyboard shortcut that can be pressed to trigger the menu button even if it's not currently open. The return value is an integer which is generally a combination of [enum KeyModifierMask]s and [enum Key]s using bitwise OR such as [code]KEY_MASK_CTRL | KEY_A[/code] ([kbd]Ctrl + A[/kbd]). If no accelerator is defined for the specified [param index], [method get_item_accelerator] returns [code]0[/code] (corresponding to [constant @GlobalScope.KEY_NONE]).
 			</description>
 		</method>
+		<method name="get_item_auto_translate_mode" qualifiers="const">
+			<return type="int" enum="Node.AutoTranslateMode" />
+			<param index="0" name="index" type="int" />
+			<description>
+				Returns the auto translate mode of the item at the given [param index].
+			</description>
+		</method>
 		<method name="get_item_icon" qualifiers="const">
 			<return type="Texture2D" />
 			<param index="0" name="index" type="int" />
@@ -262,7 +269,7 @@
 			<return type="int" />
 			<param index="0" name="index" type="int" />
 			<description>
-				Returns the ID of the item at the given [param index]. [code]id[/code] can be manually assigned, while index can not.
+				Returns the ID of the item at the given [param index].
 			</description>
 		</method>
 		<method name="get_item_indent" qualifiers="const">
@@ -276,7 +283,7 @@
 			<return type="int" />
 			<param index="0" name="id" type="int" />
 			<description>
-				Returns the index of the item containing the specified [param id]. Index is automatically assigned to each item by the engine and can not be set manually.
+				Returns the index of the item containing the specified [param id]. The index is automatically assigned to each item by the engine when added and represents the order items will be displayed.
 			</description>
 		</method>
 		<method name="get_item_language" qualifiers="const">
@@ -400,6 +407,12 @@
 				Returns [code]true[/code] if the system native menu is supported and currently used by this [PopupMenu].
 			</description>
 		</method>
+		<method name="is_search_bar_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if search bar is currently enabled.
+			</description>
+		</method>
 		<method name="is_system_menu" qualifiers="const">
 			<return type="bool" />
 			<description>
@@ -462,6 +475,15 @@
 				Mark the item at the given [param index] as a separator, which means that it would be displayed as a line. If [code]false[/code], sets the type of the item to plain text.
 			</description>
 		</method>
+		<method name="set_item_auto_translate_mode">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="mode" type="int" enum="Node.AutoTranslateMode" />
+			<description>
+				Sets the auto translate mode of the item at the given [param index].
+				Items use [constant Node.AUTO_TRANSLATE_MODE_INHERIT] by default, which uses the same auto translate mode as the [PopupMenu] itself.
+			</description>
+		</method>
 		<method name="set_item_checked">
 			<return type="void" />
 			<param index="0" name="index" type="int" />
@@ -517,6 +539,15 @@
 			<param index="1" name="indent" type="int" />
 			<description>
 				Sets the horizontal offset of the item at the given [param index].
+			</description>
+		</method>
+		<method name="set_item_index">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="target_index" type="int" />
+			<description>
+				Changes the index of the item at index [param index] to be at index [param target_index]. This can be used to move an item above other items. The moved item will keep the same ID, even if it was generated from the original index.
+				[b]Note:[/b] The indices of any items between index [param index] and index [param target_index] will be shifted by one.
 			</description>
 		</method>
 		<method name="set_item_language">
@@ -645,8 +676,19 @@
 			If [code]true[/code], [MenuBar] will use native menu when supported.
 			[b]Note:[/b] If [PopupMenu] is linked to [StatusIndicator], [MenuBar], or another [PopupMenu] item it can use native menu regardless of this property, use [method is_native_menu] to check it.
 		</member>
-		<member name="submenu_popup_delay" type="float" setter="set_submenu_popup_delay" getter="get_submenu_popup_delay" default="0.3">
+		<member name="search_bar_enabled_on_item_count" type="int" setter="set_search_bar_enabled_on_item_count" getter="get_search_bar_enabled_on_item_count" default="0">
+			Enables the [PopupMenu] search bar if the item count is greater than [code]0[/code].
+			[b]Note:[/b] When enabled, [member allow_search] is ignored.
+		</member>
+		<member name="shrink_height" type="bool" setter="set_shrink_height" getter="get_shrink_height" default="true">
+			If [code]true[/code], shrinks [PopupMenu] to minimum height when it's shown.
+		</member>
+		<member name="shrink_width" type="bool" setter="set_shrink_width" getter="get_shrink_width" default="true">
+			If [code]true[/code], shrinks [PopupMenu] to minimum width when it's shown.
+		</member>
+		<member name="submenu_popup_delay" type="float" setter="set_submenu_popup_delay" getter="get_submenu_popup_delay" default="0.2">
 			Sets the delay time in seconds for the submenu item to popup on mouse hovering. If the popup menu is added as a child of another (acting as a submenu), it will inherit the delay time of the parent menu item.
+			[b]Note:[/b] If the mouse is exiting a submenu item with an open submenu and enters a different submenu item, the submenu popup delay time is affected by the direction of the mouse movement toward the open submenu. If the mouse is moving toward the submenu, the open submenu will wait approximately [code]0.5[/code] seconds before closing, which then allows the hovered submenu item to open. This additional delay allows the mouse time to move to the open submenu across other menu items without prematurely closing. If the mouse is not moving toward the open submenu, for example in a downward direction, the open submenu will close immediately.
 		</member>
 		<member name="system_menu_id" type="int" setter="set_system_menu" getter="get_system_menu" enum="NativeMenu.SystemMenus" default="0">
 			If set to one of the values of [enum NativeMenu.SystemMenus], this [PopupMenu] is bound to the special system menu. Only one [PopupMenu] can be bound to each special menu at a time.
@@ -702,6 +744,9 @@
 		<theme_item name="font_separator_outline_color" data_type="color" type="Color" default="Color(0, 0, 0, 1)">
 			The tint of text outline of the labeled separator.
 		</theme_item>
+		<theme_item name="gutter_compact" data_type="constant" type="int" default="1">
+			If not [code]0[/code], the icon gutter will be merged with the checkbox gutter when possible. This acts as a boolean.
+		</theme_item>
 		<theme_item name="h_separation" data_type="constant" type="int" default="4">
 			The horizontal space between the item's elements.
 		</theme_item>
@@ -720,6 +765,9 @@
 		<theme_item name="outline_size" data_type="constant" type="int" default="0">
 			The size of the item text outline.
 			[b]Note:[/b] If using a font with [member FontFile.multichannel_signed_distance_field] enabled, its [member FontFile.msdf_pixel_range] must be set to at least [i]twice[/i] the value of [theme_item outline_size] for outline rendering to look correct. Otherwise, the outline may appear to be cut off earlier than intended.
+		</theme_item>
+		<theme_item name="search_bar_separation" data_type="constant" type="int" default="4">
+			The vertical space between search bar and menu items.
 		</theme_item>
 		<theme_item name="separator_outline_size" data_type="constant" type="int" default="0">
 			The size of the labeled separator text outline.
@@ -756,6 +804,9 @@
 		</theme_item>
 		<theme_item name="radio_unchecked_disabled" data_type="icon" type="Texture2D">
 			[Texture2D] icon for the unchecked radio button items when they are disabled.
+		</theme_item>
+		<theme_item name="search" data_type="icon" type="Texture2D">
+			[Texture2D] icon for the search bar's search icon.
 		</theme_item>
 		<theme_item name="submenu" data_type="icon" type="Texture2D">
 			[Texture2D] icon for the submenu arrow (for left-to-right layouts).

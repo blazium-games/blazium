@@ -37,6 +37,9 @@
 #include "scene/resources/text_line.h"
 
 class ScrollContainer;
+class PanelContainer;
+class VBoxContainer;
+class LineEdit;
 class Timer;
 class PanelContainer;
 
@@ -56,8 +59,10 @@ class PopupMenu : public Popup {
 
 		String language;
 		Control::TextDirection text_direction = Control::TEXT_DIRECTION_AUTO;
+		AutoTranslateMode auto_translate_mode = AUTO_TRANSLATE_MODE_INHERIT;
 
 		bool checked = false;
+		bool visible = true;
 		enum {
 			CHECKABLE_TYPE_NONE,
 			CHECKABLE_TYPE_CHECK_BOX,
@@ -112,10 +117,10 @@ class PopupMenu : public Popup {
 	NativeMenu::SystemMenus system_menu_id = NativeMenu::INVALID_MENU_ID;
 	bool prefer_native = false;
 
-	bool close_allowed = false;
 	bool activated_by_keyboard = false;
 
-	Timer *minimum_lifetime_timer = nullptr;
+	Timer *close_suspended_timer = nullptr;
+	bool close_was_suspended = false;
 	Timer *submenu_timer = nullptr;
 	List<Rect2> autohide_areas;
 	mutable Vector<Item> items;
@@ -124,6 +129,16 @@ class PopupMenu : public Popup {
 	bool is_scrolling = false;
 	int mouse_over = -1;
 	int submenu_over = -1;
+	int this_submenu_index = -1; // Always -1 for the parent popup, and always a positive int for every open submenu.
+	int active_submenu_index = -1; // A positive int for the parent popup if any submenu is open.
+	bool is_active_submenu_left = false;
+	Vector<Point2> active_submenu_target_line;
+	Point2 last_submenu_mouse_position;
+	int submenu_mouse_exited_ticks_msec = -1;
+	bool mouse_movement_was_tested = false;
+	Point2 panel_offset_start;
+	float submenu_timer_popup_delay = 0.2;
+	const float CLOSE_SUSPENDED_TIMER_DELAY = 0.5;
 	String _get_accel_text(const Item &p_item) const;
 	int _get_mouse_over(const Point2 &p_over) const;
 	void _mouse_over_update(const Point2 &p_over);
@@ -137,6 +152,9 @@ class PopupMenu : public Popup {
 
 	void _activate_submenu(int p_over, bool p_by_keyboard = false);
 	void _submenu_timeout();
+	bool _is_mouse_moving_toward_submenu(const Vector2 &p_relative, bool p_is_submenu_left, const Vector2 &p_mouse_position, const Vector<Point2> &p_active_submenu_target_line) const;
+	void _close_or_suspend();
+	void _close_suspended_timeout();
 
 	uint64_t popup_time_msec = 0;
 	bool hide_on_item_selection = true;
@@ -155,13 +173,17 @@ class PopupMenu : public Popup {
 	uint64_t search_time_msec = 0;
 	String search_string = "";
 
+	int search_bar_enabled_on_item_count = 0;
 	PanelContainer *panel = nullptr;
+	VBoxContainer *vbox_container = nullptr;
+	LineEdit *search_bar = nullptr;
 	ScrollContainer *scroll_container = nullptr;
 	Control *control = nullptr;
 
 	const float DEFAULT_GAMEPAD_EVENT_DELAY_MS = 0.5;
 	const float GAMEPAD_EVENT_REPEAT_RATE_MS = 1.0 / 20;
 	float gamepad_event_delay_ms = DEFAULT_GAMEPAD_EVENT_DELAY_MS;
+	bool joypad_event_process = false;
 
 	struct ThemeCache {
 		Ref<StyleBox> panel_style;
@@ -173,10 +195,12 @@ class PopupMenu : public Popup {
 
 		int v_separation = 0;
 		int h_separation = 0;
+		int search_bar_separation = 0;
 		int indent = 0;
 		int item_start_padding = 0;
 		int item_end_padding = 0;
 		int icon_max_width = 0;
+		int gutter_compact = 0;
 
 		Ref<Texture2D> checked;
 		Ref<Texture2D> checked_disabled;
@@ -187,6 +211,7 @@ class PopupMenu : public Popup {
 		Ref<Texture2D> radio_unchecked;
 		Ref<Texture2D> radio_unchecked_disabled;
 
+		Ref<Texture2D> search;
 		Ref<Texture2D> submenu;
 		Ref<Texture2D> submenu_mirrored;
 
@@ -208,8 +233,10 @@ class PopupMenu : public Popup {
 	} theme_cache;
 
 	void _draw_items();
+	void _search_bar_input(const Ref<InputEvent> &p_event);
+	void _search_bar_text_changed(const String &p_new_text);
+	void _filter_items(const String &p_query);
 
-	void _minimum_lifetime_timeout();
 	void _close_pressed();
 	void _menu_changed();
 	void _input_from_window_internal(const Ref<InputEvent> &p_event);
@@ -217,8 +244,14 @@ class PopupMenu : public Popup {
 	void _set_item_checkable_type(int p_index, int p_checkable_type);
 	int _get_item_checkable_type(int p_index) const;
 	void _native_popup(const Rect2i &p_rect);
+	String _atr(int p_idx, const String &p_text) const;
+	void _submenu_hidden();
+
+	bool shrink_height = true;
+	bool shrink_width = true;
 
 protected:
+	virtual void _pre_popup() override;
 	virtual Rect2i _popup_adjust_rect() const override;
 
 	virtual void add_child_notify(Node *p_child) override;
@@ -281,6 +314,7 @@ public:
 
 	void set_item_text_direction(int p_idx, Control::TextDirection p_text_direction);
 	void set_item_language(int p_idx, const String &p_language);
+	void set_item_auto_translate_mode(int p_idx, AutoTranslateMode p_mode);
 	void set_item_icon(int p_idx, const Ref<Texture2D> &p_icon);
 	void set_item_icon_max_width(int p_idx, int p_width);
 	void set_item_icon_modulate(int p_idx, const Color &p_modulate);
@@ -301,6 +335,7 @@ public:
 	void set_item_multistate(int p_idx, int p_state);
 	void toggle_item_multistate(int p_idx);
 	void set_item_shortcut_disabled(int p_idx, bool p_disabled);
+	void set_item_index(int p_idx, int p_target_idx);
 
 	void toggle_item_checked(int p_idx);
 
@@ -308,6 +343,7 @@ public:
 	String get_item_xl_text(int p_idx) const;
 	Control::TextDirection get_item_text_direction(int p_idx) const;
 	String get_item_language(int p_idx) const;
+	AutoTranslateMode get_item_auto_translate_mode(int p_idx) const;
 	int get_item_idx_from_text(const String &text) const;
 	Ref<Texture2D> get_item_icon(int p_idx) const;
 	int get_item_icon_max_width(int p_idx) const;
@@ -339,6 +375,11 @@ public:
 
 	void set_prefer_native_menu(bool p_enabled);
 	bool is_prefer_native_menu() const;
+
+	bool is_search_bar_enabled() const;
+
+	void set_search_bar_enabled_on_item_count(int p_count);
+	int get_search_bar_enabled_on_item_count() const;
 
 	bool is_native_menu() const;
 
@@ -381,6 +422,13 @@ public:
 	bool get_allow_search() const;
 
 	virtual void popup(const Rect2i &p_bounds = Rect2i()) override;
+
+	void set_shrink_height(bool p_shrink);
+	bool get_shrink_height() const;
+
+	void set_shrink_width(bool p_shrink);
+	bool get_shrink_width() const;
+
 	virtual void set_visible(bool p_visible) override;
 
 	PopupMenu();

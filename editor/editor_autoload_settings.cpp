@@ -533,6 +533,7 @@ void EditorAutoloadSettings::update_autoload() {
 
 		TreeItem *item = tree->create_item(root);
 		item->set_text(0, name);
+		item->set_auto_translate_mode(0, AUTO_TRANSLATE_MODE_DISABLED); // For tooltip.
 		item->set_editable(0, true);
 
 		item->set_text(1, scr_path);
@@ -953,6 +954,8 @@ EditorAutoloadSettings::EditorAutoloadSettings() {
 
 	SET_DRAG_FORWARDING_GCD(tree, EditorAutoloadSettings);
 
+	tree->set_theme_type_variation("TreeTable");
+	tree->set_hide_folding(true);
 	tree->set_columns(4);
 	tree->set_column_titles_visible(true);
 

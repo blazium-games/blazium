@@ -78,6 +78,8 @@ void Popup::_notification(int p_what) {
 			if (!is_in_edited_scene_root()) {
 				if (is_visible()) {
 					_initialize_visible_parents();
+					popped_up = true;
+					hide_reason = HIDE_REASON_NONE;
 				} else {
 					_deinitialize_visible_parents();
 					if (hide_reason == HIDE_REASON_NONE) {
@@ -85,15 +87,6 @@ void Popup::_notification(int p_what) {
 					}
 					emit_signal(SNAME("popup_hide"));
 					popped_up = false;
-				}
-			}
-		} break;
-
-		case NOTIFICATION_WM_WINDOW_FOCUS_IN: {
-			if (!is_in_edited_scene_root()) {
-				if (has_focus()) {
-					popped_up = true;
-					hide_reason = HIDE_REASON_NONE;
 				}
 			}
 		} break;
@@ -167,7 +160,7 @@ Rect2i Popup::_popup_adjust_rect() const {
 
 	Rect2i current(get_position(), get_size());
 
-	if (DisplayServer::get_singleton()->has_feature(DisplayServer::FEATURE_SELF_FITTING_WINDOWS)) {
+	if (!is_embedded() && DisplayServer::get_singleton()->has_feature(DisplayServer::FEATURE_SELF_FITTING_WINDOWS)) {
 		// We're fine as is, the Display Server will take care of that for us.
 		return current;
 	}
@@ -305,7 +298,7 @@ Rect2i PopupPanel::_popup_adjust_rect() const {
 	_update_child_rects();
 
 	if (is_layout_rtl()) {
-		current.position -= Vector2(Math::abs(panel->get_offset(SIDE_RIGHT)), panel->get_offset(SIDE_TOP)) * get_content_scale_factor();
+		current.position -= Vector2(-panel->get_offset(SIDE_RIGHT), panel->get_offset(SIDE_TOP)) * get_content_scale_factor();
 	} else {
 		current.position -= Vector2(panel->get_offset(SIDE_LEFT), panel->get_offset(SIDE_TOP)) * get_content_scale_factor();
 	}
@@ -335,14 +328,14 @@ void PopupPanel::_update_shadow_offsets() const {
 	// Offset the background panel so it leaves space inside the window for the shadows to be drawn.
 	const Point2 shadow_offset = sb->get_shadow_offset();
 	if (is_layout_rtl()) {
-		panel->set_offset(SIDE_LEFT, shadow_size + shadow_offset.x);
-		panel->set_offset(SIDE_RIGHT, -shadow_size + shadow_offset.x);
+		panel->set_offset(SIDE_LEFT, MAX(0, shadow_size + shadow_offset.x));
+		panel->set_offset(SIDE_RIGHT, MIN(0, -shadow_size + shadow_offset.x));
 	} else {
-		panel->set_offset(SIDE_LEFT, shadow_size - shadow_offset.x);
-		panel->set_offset(SIDE_RIGHT, -shadow_size - shadow_offset.x);
+		panel->set_offset(SIDE_LEFT, MAX(0, shadow_size - shadow_offset.x));
+		panel->set_offset(SIDE_RIGHT, MIN(0, -shadow_size - shadow_offset.x));
 	}
-	panel->set_offset(SIDE_TOP, shadow_size - shadow_offset.y);
-	panel->set_offset(SIDE_BOTTOM, -shadow_size - shadow_offset.y);
+	panel->set_offset(SIDE_TOP, MAX(0, shadow_size - shadow_offset.y));
+	panel->set_offset(SIDE_BOTTOM, MIN(0, -shadow_size - shadow_offset.y));
 }
 
 void PopupPanel::_update_child_rects() const {
@@ -385,6 +378,7 @@ void PopupPanel::_notification(int p_what) {
 #endif
 		} break;
 
+		case Control::NOTIFICATION_TRANSLATION_CHANGED:
 		case Control::NOTIFICATION_LAYOUT_DIRECTION_CHANGED: {
 			if (is_visible()) {
 				_update_shadow_offsets();

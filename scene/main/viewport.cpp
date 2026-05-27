@@ -1540,7 +1540,7 @@ void Viewport::_gui_show_tooltip() {
 		gui.tooltip_label = memnew(Label);
 		gui.tooltip_label->set_theme_type_variation(SNAME("TooltipLabel"));
 		gui.tooltip_label->set_text(gui.tooltip_text);
-		gui.tooltip_label->set_auto_translate_mode(tooltip_owner->get_tooltip_auto_translate_mode());
+		gui.tooltip_label->set_auto_translate_mode(tooltip_owner->get_tooltip_auto_translate_mode_at(tooltip_owner->get_global_transform_with_canvas().affine_inverse().xform(gui.last_mouse_pos)));
 		base_tooltip = gui.tooltip_label;
 		panel->connect(SceneStringName(mouse_entered), callable_mp(this, &Viewport::_gui_cancel_tooltip));
 	}
@@ -1564,20 +1564,19 @@ void Viewport::_gui_show_tooltip() {
 	if (!window) { // Not embedded.
 		window = gui.tooltip_popup->get_parent_visible_window();
 	}
-	float win_scale = window->content_scale_factor;
+	Size2 scale = get_popup_base_transform().get_scale();
+	real_t popup_scale = MIN(scale.x, scale.y);
 	Point2 tooltip_offset = GLOBAL_GET("display/mouse_cursor/tooltip_position_offset");
-	if (!gui.tooltip_popup->is_embedded()) {
-		tooltip_offset *= win_scale;
-	}
+	tooltip_offset *= popup_scale;
 	Rect2 r(gui.tooltip_pos + tooltip_offset, gui.tooltip_popup->get_contents_minimum_size());
 	Rect2i vr;
 	if (gui.tooltip_popup->is_embedded()) {
 		vr = gui.tooltip_popup->get_embedder()->get_visible_rect();
 	} else {
-		panel->content_scale_factor = win_scale;
-		r.size *= win_scale;
 		vr = window->get_usable_parent_rect();
 	}
+	panel->content_scale_factor = popup_scale;
+	r.size *= popup_scale;
 	r.size = r.size.ceil();
 	r.size = r.size.min(panel->get_max_size());
 
@@ -2193,27 +2192,27 @@ void Viewport::_gui_input_event(Ref<InputEvent> p_event) {
 			if (joypadmotion_event.is_valid()) {
 				Input *input = Input::get_singleton();
 
-				if (p_event->is_action_pressed(SNAME("ui_focus_next")) && input->is_action_just_pressed(SNAME("ui_focus_next"))) {
+				if (p_event->is_action_pressed(SNAME("ui_focus_next")) && input->is_action_just_pressed_by_event(SNAME("ui_focus_next"), p_event)) {
 					next = from->find_next_valid_focus();
 				}
 
-				if (p_event->is_action_pressed(SNAME("ui_focus_prev")) && input->is_action_just_pressed(SNAME("ui_focus_prev"))) {
+				if (p_event->is_action_pressed(SNAME("ui_focus_prev")) && input->is_action_just_pressed_by_event(SNAME("ui_focus_prev"), p_event)) {
 					next = from->find_prev_valid_focus();
 				}
 
-				if (p_event->is_action_pressed(SNAME("ui_up")) && input->is_action_just_pressed(SNAME("ui_up"))) {
+				if (p_event->is_action_pressed(SNAME("ui_up")) && input->is_action_just_pressed_by_event(SNAME("ui_up"), p_event)) {
 					next = from->_get_focus_neighbor(SIDE_TOP);
 				}
 
-				if (p_event->is_action_pressed(SNAME("ui_left")) && input->is_action_just_pressed(SNAME("ui_left"))) {
+				if (p_event->is_action_pressed(SNAME("ui_left")) && input->is_action_just_pressed_by_event(SNAME("ui_left"), p_event)) {
 					next = from->_get_focus_neighbor(SIDE_LEFT);
 				}
 
-				if (p_event->is_action_pressed(SNAME("ui_right")) && input->is_action_just_pressed(SNAME("ui_right"))) {
+				if (p_event->is_action_pressed(SNAME("ui_right")) && input->is_action_just_pressed_by_event(SNAME("ui_right"), p_event)) {
 					next = from->_get_focus_neighbor(SIDE_RIGHT);
 				}
 
-				if (p_event->is_action_pressed(SNAME("ui_down")) && input->is_action_just_pressed(SNAME("ui_down"))) {
+				if (p_event->is_action_pressed(SNAME("ui_down")) && input->is_action_just_pressed_by_event(SNAME("ui_down"), p_event)) {
 					next = from->_get_focus_neighbor(SIDE_BOTTOM);
 				}
 			} else {

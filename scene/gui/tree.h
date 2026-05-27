@@ -33,6 +33,7 @@
 #include "scene/gui/control.h"
 #include "scene/resources/text_paragraph.h"
 
+class VBoxContainer;
 class HScrollBar;
 class HSlider;
 class LineEdit;
@@ -48,11 +49,11 @@ class TreeItem : public Object {
 
 public:
 	enum TreeCellMode {
-		CELL_MODE_STRING, ///< just a string
-		CELL_MODE_CHECK, ///< string + check
-		CELL_MODE_RANGE, ///< Contains a range
-		CELL_MODE_ICON, ///< Contains an icon, not editable
-		CELL_MODE_CUSTOM, ///< Contains a custom value, show a string, and an edit button
+		CELL_MODE_STRING,
+		CELL_MODE_CHECK,
+		CELL_MODE_RANGE,
+		CELL_MODE_ICON,
+		CELL_MODE_CUSTOM,
 	};
 
 private:
@@ -95,7 +96,9 @@ private:
 		bool custom_button = false;
 		bool expand_right = false;
 		Color icon_color = Color(1, 1, 1);
+		Ref<StyleBox> custom_stylebox;
 
+		Rect2 focus_rect;
 		Size2i cached_minimum_size;
 		bool cached_minimum_size_dirty = true;
 
@@ -125,26 +128,27 @@ private:
 		}
 
 		Size2 get_icon_size() const;
-		void draw_icon(const RID &p_where, const Point2 &p_pos, const Size2 &p_size = Size2(), const Color &p_color = Color()) const;
+		void draw_icon(const RID &p_where, const Point2 &p_pos, const Size2 &p_size = Size2(), const Rect2i &p_region = Rect2i(), const Color &p_color = Color()) const;
 	};
 
 	Vector<Cell> cells;
 
-	bool collapsed = false; // won't show children
+	Rect2 focus_rect;
+	bool collapsed = false; // Won't show children.
 	bool visible = true;
 	bool parent_visible_in_tree = true;
 	bool disable_folding = false;
 	int custom_min_height = 0;
 
-	TreeItem *parent = nullptr; // parent item
-	TreeItem *prev = nullptr; // previous in list
-	TreeItem *next = nullptr; // next in list
+	TreeItem *parent = nullptr; // Parent item.
+	TreeItem *prev = nullptr; // Previous in list.
+	TreeItem *next = nullptr; // Next in list.
 	TreeItem *first_child = nullptr;
 	TreeItem *last_child = nullptr;
 
-	Vector<TreeItem *> children_cache;
-	bool is_root = false; // for tree root
-	Tree *tree = nullptr; // tree (for reference)
+	LocalVector<TreeItem *> children_cache;
+	bool is_root = false; // For tree root.
+	Tree *tree = nullptr; // Tree (for reference).
 
 	TreeItem(Tree *p_tree);
 
@@ -161,7 +165,7 @@ private:
 		if (children_cache.is_empty()) {
 			TreeItem *c = first_child;
 			while (c) {
-				children_cache.append(c);
+				children_cache.push_back(c);
 				c = c->next;
 			}
 		}
@@ -177,7 +181,7 @@ private:
 		}
 		if (parent) {
 			if (!parent->children_cache.is_empty()) {
-				parent->children_cache.remove_at(get_index());
+				parent->children_cache.erase(this);
 			}
 			if (parent->first_child == this) {
 				parent->first_child = next;
@@ -193,7 +197,7 @@ private:
 protected:
 	static void _bind_methods();
 
-	// Bind helpers
+	// Bind helpers.
 	Dictionary _get_range_config(int p_column) {
 		Dictionary d;
 		double min = 0.0, max = 0.0, step = 0.0;
@@ -209,19 +213,19 @@ protected:
 	void _call_recursive_bind(const Variant **p_args, int p_argcount, Callable::CallError &r_error);
 
 public:
-	/* cell mode */
+	// Cell mode.
 	void set_cell_mode(int p_column, TreeCellMode p_mode);
 	TreeCellMode get_cell_mode(int p_column) const;
 
-	/* auto translate mode */
+	// Auto translate mode.
 	void set_auto_translate_mode(int p_column, Node::AutoTranslateMode p_mode);
 	Node::AutoTranslateMode get_auto_translate_mode(int p_column) const;
 
-	/* multiline editable */
+	// Multiline editable.
 	void set_edit_multiline(int p_column, bool p_multiline);
 	bool is_edit_multiline(int p_column) const;
 
-	/* check mode */
+	// Check mode.
 	void set_checked(int p_column, bool p_checked);
 	void set_indeterminate(int p_column, bool p_indeterminate);
 	bool is_checked(int p_column) const;
@@ -294,8 +298,7 @@ public:
 	void set_button_disabled(int p_column, int p_index, bool p_disabled);
 	bool is_button_disabled(int p_column, int p_index) const;
 
-	/* range works for mode number or mode combo */
-
+	// Range works for mode number or mode combo.
 	void set_range(int p_column, double p_value);
 	double get_range(int p_column) const;
 
@@ -327,10 +330,14 @@ public:
 	void set_custom_minimum_height(int p_height);
 	int get_custom_minimum_height() const;
 
+	void set_custom_stylebox(int p_column, const Ref<StyleBox> &p_stylebox);
+	Ref<StyleBox> get_custom_stylebox(int p_column) const;
+
 	void set_selectable(int p_column, bool p_selectable);
 	bool is_selectable(int p_column) const;
 
 	bool is_selected(int p_column);
+	bool is_any_column_selected() const;
 	void select(int p_column);
 	void deselect(int p_column);
 	void set_as_cursor(int p_column);
@@ -369,8 +376,7 @@ public:
 
 	Size2 get_minimum_size(int p_column);
 
-	/* Item manipulation */
-
+	// Item manipulation.
 	TreeItem *create_child(int p_index = -1);
 	void add_child(TreeItem *p_item);
 	void remove_child(TreeItem *p_item);
@@ -412,8 +418,6 @@ public:
 
 VARIANT_ENUM_CAST(TreeItem::TreeCellMode);
 
-class VBoxContainer;
-
 class Tree : public Control {
 	GDCLASS(Tree, Control);
 
@@ -437,6 +441,7 @@ private:
 	TreeItem *popup_edited_item = nullptr;
 	TreeItem *selected_item = nullptr;
 	TreeItem *edited_item = nullptr;
+	TreeItem *shift_anchor = nullptr;
 
 	TreeItem *popup_pressing_edited_item = nullptr; // Candidate.
 	int popup_pressing_edited_item_column = -1;
@@ -453,7 +458,7 @@ private:
 	Vector2 pressing_pos;
 	Rect2 pressing_item_rect;
 
-	Vector2 hovered_pos;
+	Vector2 hovered_pos = Vector2(-1.0, -1.0);
 	bool is_mouse_hovering = false;
 
 	float range_drag_base = 0.0;
@@ -461,9 +466,7 @@ private:
 	Vector2 range_drag_capture_pos;
 
 	bool propagate_mouse_activated = false;
-
-	//TreeItem *cursor_item;
-	//int cursor_column;
+	float content_scale_factor = 0.0;
 
 	Rect2 custom_popup_rect;
 	int edited_col = -1;
@@ -498,9 +501,9 @@ private:
 
 	bool show_column_titles = false;
 
-	VBoxContainer *popup_editor_vb = nullptr;
-
 	bool popup_edit_committed = true;
+
+	VBoxContainer *popup_editor_vb = nullptr;
 	Popup *popup_editor = nullptr;
 	LineEdit *line_editor = nullptr;
 	TextEdit *text_editor = nullptr;
@@ -518,12 +521,14 @@ private:
 
 	int compute_item_height(TreeItem *p_item) const;
 	int get_item_height(TreeItem *p_item) const;
+	Point2i convert_rtl_position(const Point2i &p_pos, int p_width = 0) const;
+	Point2 convert_rtl_position(const Point2 &p_pos, int p_width = 0) const;
+	Rect2i convert_rtl_rect(const Rect2i &p_rect) const;
 	void _update_all();
 	void update_column(int p_col);
 	void update_item_cell(TreeItem *p_item, int p_col) const;
 	void update_item_cache(TreeItem *p_item) const;
-	//void draw_item_text(String p_text,const Ref<Texture2D>& p_icon,int p_icon_max_w,bool p_tool,Rect2i p_rect,const Color& p_color);
-	void draw_item_rect(TreeItem::Cell &p_cell, const Rect2i &p_rect, const Color &p_color, const Color &p_icon_color, int p_ol_size, const Color &p_ol_color);
+	void draw_item_rect(const TreeItem::Cell &p_cell, const Rect2i &p_rect, const Color &p_color, const Color &p_icon_color, int p_ol_size, const Color &p_ol_color) const;
 	int draw_item(const Point2i &p_pos, const Point2 &p_draw_ofs, const Size2 &p_draw_size, TreeItem *p_item, int &r_self_height);
 	void select_single_item(TreeItem *p_selected, TreeItem *p_current, int p_col, TreeItem *p_prev = nullptr, bool *r_in_range = nullptr, bool p_force_deselect = false);
 	int propagate_mouse_event(const Point2i &p_pos, int x_ofs, int y_ofs, int x_limit, bool p_double_click, TreeItem *p_item, MouseButton p_button, const Ref<InputEventWithModifiers> &p_mod);
@@ -532,6 +537,8 @@ private:
 	void _text_editor_popup_modal_close();
 	void _text_editor_gui_input(const Ref<InputEvent> &p_event);
 	void value_editor_changed(double p_value);
+	void _update_popup_menu(const TreeItem::Cell &p_cell);
+	void _update_value_editor(const TreeItem::Cell &p_cell);
 
 	void popup_select(int p_option);
 
@@ -539,6 +546,7 @@ private:
 	void item_changed(int p_column, TreeItem *p_item);
 	void item_selected(int p_column, TreeItem *p_item);
 	void item_deselected(int p_column, TreeItem *p_item);
+	void update_min_size_for_item_change();
 
 	void propagate_set_columns(TreeItem *p_item);
 
@@ -603,6 +611,8 @@ private:
 		int inner_item_margin_right = 0;
 		int inner_item_margin_top = 0;
 		int item_margin = 0;
+		int check_h_separation = 0;
+		int icon_h_separation = 0;
 		int button_margin = 0;
 		int icon_max_width = 0;
 		Point2 offset;
@@ -613,6 +623,8 @@ private:
 		int children_hl_line_width = 0;
 		int parent_hl_line_margin = 0;
 		int draw_guides = 0;
+
+		int dragging_unfold_wait_msec = 500;
 
 		int scroll_border = 0;
 		int scroll_speed = 0;
@@ -647,6 +659,7 @@ private:
 		int hover_button_index_in_column = -1;
 
 		bool rtl = false;
+		int font_height = -1;
 	} cache;
 
 	int _get_title_button_height() const;
@@ -663,7 +676,6 @@ private:
 	void update_scrollbars();
 
 	Rect2 search_item_rect(TreeItem *p_from, TreeItem *p_item);
-	//Rect2 get_item_rect(TreeItem *p_item);
 	uint64_t last_keypress = 0;
 	String incr_search;
 	bool cursor_can_exit_tree = true;
@@ -685,17 +697,9 @@ private:
 
 	FindColumnButtonResult _find_column_and_button_at_pos(int p_x, const TreeItem *p_item, int p_x_ofs, int p_x_limit) const;
 
-	/*	float drag_speed;
-	float drag_accum;
-
-	float last_drag_accum;
-	float last_drag_time;
-	float time_since_motion;*/
-
 	float drag_speed = 0.0;
 	float drag_from = 0.0;
 	float drag_accum = 0.0;
-	Vector2 last_speed;
 	bool drag_touching = false;
 	bool drag_touching_deaccel = false;
 	bool click_handled = false;
@@ -711,9 +715,16 @@ private:
 
 	bool enable_recursive_folding = true;
 
+	bool enable_drag_unfolding = true;
+	Timer *dropping_unfold_timer = nullptr;
+	void _on_dropping_unfold_timer_timeout();
+	void _reset_drop_mode_over();
+
 	bool enable_auto_tooltip = true;
 
+	bool hovered_update_queued = false;
 	void _determine_hovered_item();
+	void _queue_update_hovered_item();
 
 	int _count_selected_items(TreeItem *p_from) const;
 	bool _is_branch_selected(TreeItem *p_from) const;
@@ -722,6 +733,7 @@ private:
 	void _go_right();
 	void _go_down();
 	void _go_up();
+	void _shift_select_range(TreeItem *new_item);
 
 	bool _scroll(bool p_horizontal, float p_pages);
 
@@ -739,6 +751,7 @@ public:
 	virtual void gui_input(const Ref<InputEvent> &p_event) override;
 
 	virtual String get_tooltip(const Point2 &p_pos) const override;
+	virtual AutoTranslateMode get_tooltip_auto_translate_mode_at(const Point2 &p_at) const override;
 
 	virtual bool can_drop_data(const Point2 &p_point, const Variant &p_data) const override;
 	virtual Variant get_drag_data(const Point2 &p_point) override;
@@ -829,6 +842,9 @@ public:
 
 	void set_enable_recursive_folding(bool p_enable);
 	bool is_recursive_folding_enabled() const;
+
+	void set_enable_drag_unfolding(bool p_enable);
+	bool is_drag_unfolding_enabled() const;
 
 	void set_drop_mode_flags(int p_flags);
 	int get_drop_mode_flags() const;

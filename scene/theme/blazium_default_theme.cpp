@@ -469,6 +469,7 @@ void update_theme_icons(const Ref<Theme> &p_theme, const Color &p_font_color, co
 	p_theme->set_icon("radio_unchecked_disabled", "PopupMenu", icons["radio_unchecked_disabled"]);
 	p_theme->set_icon("submenu", "PopupMenu", icons["popup_menu_arrow_right"]);
 	p_theme->set_icon("submenu_mirrored", "PopupMenu", icons["popup_menu_arrow_left"]);
+	p_theme->set_icon("search", "PopupMenu", icons["search"]);
 
 	p_theme->set_icon("close", "Window", icons["close"]);
 	p_theme->set_icon("close_pressed", "Window", icons["close_hl"]);
@@ -1217,6 +1218,9 @@ void update_theme_scale(const Ref<Theme> &p_theme) {
 	p_theme->set_constant("resize_margin", "Window", x4_scale);
 	p_theme->set_constant("drop_mark_width", "TabContainer", x4_scale);
 	p_theme->set_constant("drop_mark_width", "TabBar", x4_scale);
+	p_theme->set_constant("check_h_separation", "Tree", x4_scale);
+	p_theme->set_constant("icon_h_separation", "Tree", x4_scale);
+	p_theme->set_constant("search_bar_separation", "PopupMenu", x4_scale);
 
 	color_button_normal_style->set_content_margin_all(x6_scale);
 	color_button_hover_style->set_content_margin_all(x6_scale);
@@ -1668,11 +1672,13 @@ void make_default_theme(Ref<Font> p_font, ThemeTemplate &p_template) {
 	t->set_constant("draw_relationship_lines", "Tree", 1);
 	t->set_constant("center_slider_grabbers", "ColorPicker", 1);
 	t->set_constant("colorize_sliders", "ColorPicker", 1);
+	t->set_constant("gutter_compact", "PopupMenu", 1);
 
 	t->set_constant("minimum_character_width", "LineEdit", 4);
 	t->set_constant("completion_scroll_width", "CodeEdit", 6);
 	t->set_constant("completion_lines", "CodeEdit", 7);
 	t->set_constant("wrap_offset", "TextEdit", 10);
+	t->set_constant("dragging_unfold_wait_msec", "Tree", 500);
 
 	t->set_color("font_shadow_color", "Label", Color(0, 0, 0, 0));
 	t->set_color("font_shadow_color", "GraphNodeTitleLabel", Color(0, 0, 0, 0));

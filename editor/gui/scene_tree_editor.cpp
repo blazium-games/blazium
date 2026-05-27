@@ -734,20 +734,24 @@ void SceneTreeEditor::_node_script_changed(Node *p_node) {
 
 void SceneTreeEditor::_move_node_children(HashMap<Node *, CachedNode>::Iterator &p_I) {
 	TreeItem *item = p_I->value.item;
+	TreeItem *previous_item = nullptr;
 	Node *node = p_I->key;
 	int cc = node->get_child_count(false);
 
 	for (int i = 0; i < cc; i++) {
 		HashMap<Node *, CachedNode>::Iterator CI = node_cache.get(node->get_child(i, false));
 		if (CI) {
-			_move_node_item(item, CI);
+			_move_node_item(item, CI, previous_item);
+			previous_item = CI->value.item;
+		} else {
+			previous_item = nullptr;
 		}
 	}
 
 	p_I->value.has_moved_children = false;
 }
 
-void SceneTreeEditor::_move_node_item(TreeItem *p_parent, HashMap<Node *, CachedNode>::Iterator &p_I) {
+void SceneTreeEditor::_move_node_item(TreeItem *p_parent, HashMap<Node *, CachedNode>::Iterator &p_I, TreeItem *p_correct_prev) {
 	if (!p_parent) {
 		return;
 	}
@@ -770,13 +774,19 @@ void SceneTreeEditor::_move_node_item(TreeItem *p_parent, HashMap<Node *, Cached
 	}
 
 	if (p_I->value.index != current_node_index) {
-		// If we just re-parented we know our index.
-		if (current_item_index == -1) {
-			current_item_index = item->get_index();
+		bool already_in_correct_location;
+		if (current_item_index >= 0) {
+			// If we just re-parented we know our index.
+			already_in_correct_location = current_item_index == current_node_index;
+		} else if (p_correct_prev) {
+			// It's cheaper to check if we're set up correctly by checking via correct_prev if we can
+			already_in_correct_location = item->get_prev() == p_correct_prev;
+		} else {
+			already_in_correct_location = item->get_index() == current_node_index;
 		}
 
 		// Are we already in the right place?
-		if (current_node_index == current_item_index) {
+		if (already_in_correct_location) {
 			p_I->value.index = current_node_index;
 			return;
 		}
@@ -784,11 +794,14 @@ void SceneTreeEditor::_move_node_item(TreeItem *p_parent, HashMap<Node *, Cached
 		// Are we the first node?
 		if (current_node_index == 0) {
 			// There has to be at least 1 other node, otherwise we would not have gotten here.
-			TreeItem *neighbor_item = p_parent->get_child(0);
+			TreeItem *neighbor_item = p_parent->get_first_child();
 			item->move_before(neighbor_item);
 		} else {
-			TreeItem *neighbor_item = p_parent->get_child(CLAMP(current_node_index - 1, 0, p_parent->get_child_count() - 1));
-			item->move_after(neighbor_item);
+			TreeItem *prev_item = p_correct_prev;
+			if (!prev_item) {
+				prev_item = p_parent->get_child(CLAMP(current_node_index - 1, 0, p_parent->get_child_count() - 1));
+			}
+			item->move_after(prev_item);
 		}
 
 		p_I->value.index = current_node_index;
@@ -936,6 +949,17 @@ void SceneTreeEditor::_update_tree(bool p_scroll_to_selected) {
 }
 
 bool SceneTreeEditor::_update_filter(TreeItem *p_parent, bool p_scroll_to_selected) {
+	TreeItem *last_selected = nullptr;
+	bool result = _update_filter_helper(p_parent, p_scroll_to_selected, last_selected);
+	if (p_scroll_to_selected && last_selected) {
+		// Scrolling to the first selected in the _update_filter call above followed by the last
+		// selected here is enough to frame all selected items as well as possible.
+		callable_mp(tree, &Tree::scroll_to_item).call_deferred(last_selected, false);
+	}
+	return result;
+}
+
+bool SceneTreeEditor::_update_filter_helper(TreeItem *p_parent, bool p_scroll_to_selected, TreeItem *&r_last_selected) {
 	if (!p_parent) {
 		p_parent = tree->get_root();
 		filter_term_warning.clear();
@@ -990,7 +1014,8 @@ bool SceneTreeEditor::_update_filter(TreeItem *p_parent, bool p_scroll_to_select
 	bool keep_for_children = false;
 	for (TreeItem *child = p_parent->get_first_child(); child; child = child->get_next()) {
 		// Always keep if at least one of the children are kept.
-		keep_for_children = _update_filter(child, p_scroll_to_selected) || keep_for_children;
+		// Only scroll if we haven't already found a child to scroll to.
+		keep_for_children = _update_filter_helper(child, p_scroll_to_selected && !keep_for_children, r_last_selected) || keep_for_children;
 	}
 
 	if (!is_root) {
@@ -1063,17 +1088,48 @@ bool SceneTreeEditor::_update_filter(TreeItem *p_parent, bool p_scroll_to_select
 	if (editor_selection) {
 		Node *n = get_node(p_parent->get_metadata(0));
 		if (selectable) {
-			if (p_scroll_to_selected && n && editor_selection->is_selected(n)) {
-				// Needs to be deferred to account for possible root visibility change.
-				callable_mp(tree, &Tree::scroll_to_item).call_deferred(p_parent, false);
+			if (n && editor_selection->is_selected(n)) {
+				if (p_scroll_to_selected) {
+					// Needs to be deferred to account for possible root visibility change.
+					callable_mp(tree, &Tree::scroll_to_item).call_deferred(p_parent, false);
+				} else {
+					r_last_selected = p_parent;
+				}
 			}
-		} else if (n && p_parent->is_selected(0)) {
+		} else if (n) {
 			editor_selection->remove_node(n);
 			p_parent->deselect(0);
 		}
 	}
 
 	return p_parent->is_visible();
+}
+
+bool SceneTreeEditor::_node_matches_class_term(const Node *p_item_node, const String &p_term) {
+	if (p_term.is_empty()) {
+		// Defend against https://github.com/godotengine/godot/issues/82473
+		return true;
+	}
+	Ref<Script> item_script = p_item_node->get_script();
+	while (item_script.is_valid()) {
+		String global_name = item_script->get_global_name();
+		if (global_name.to_lower().contains(p_term)) {
+			return true;
+		}
+		item_script = item_script->get_base_script();
+	}
+
+	String type = p_item_node->get_class();
+	// Every Node is a Node, duh!
+	while (type != "Node") {
+		if (type.to_lower().contains(p_term)) {
+			return true;
+		}
+
+		type = ClassDB::get_parent_class(type);
+	}
+
+	return false;
 }
 
 bool SceneTreeEditor::_item_matches_all_terms(TreeItem *p_item, const PackedStringArray &p_terms) {
@@ -1091,18 +1147,8 @@ bool SceneTreeEditor::_item_matches_all_terms(TreeItem *p_item, const PackedStri
 
 			if (parameter == "type" || parameter == "t") {
 				// Filter by Type.
-				String type = get_node(p_item->get_metadata(0))->get_class();
-				bool term_in_inherited_class = false;
-				// Every Node is a Node, duh!
-				while (type != "Node") {
-					if (type.to_lower().contains(argument)) {
-						term_in_inherited_class = true;
-						break;
-					}
-
-					type = ClassDB::get_parent_class(type);
-				}
-				if (!term_in_inherited_class) {
+				Node *item_node = get_node(p_item->get_metadata(0));
+				if (!_node_matches_class_term(item_node, argument)) {
 					return false;
 				}
 			} else if (parameter == "group" || parameter == "g") {
@@ -1303,6 +1349,8 @@ void SceneTreeEditor::_notification(int p_what) {
 		} break;
 
 		case NOTIFICATION_THEME_CHANGED: {
+			// Wait for the node to be inspected before triggering the unfolding.
+			tree->add_theme_constant_override("dragging_unfold_wait_msec", (float)EDITOR_GET("interface/editor/dragging_hover_wait_seconds") * 1000 * 2);
 			tree->add_theme_constant_override("icon_max_width", get_theme_constant(SNAME("class_icon_size"), EditorStringName(Editor)));
 
 			// When we change theme we need to re-do everything.

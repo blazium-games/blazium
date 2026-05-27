@@ -982,7 +982,10 @@ void EditorThemeManager::_populate_standard_styles(const Ref<EditorTheme> &p_the
 			p_theme->set_constant("inner_item_margin_bottom", "Tree", p_config.separation_margin);
 			p_theme->set_constant("inner_item_margin_left", "Tree", p_config.increased_margin * EDSCALE);
 			p_theme->set_constant("inner_item_margin_right", "Tree", p_config.increased_margin * EDSCALE);
+			p_theme->set_constant("check_h_separation", "Tree", (p_config.increased_margin + 2) * EDSCALE);
+			p_theme->set_constant("icon_h_separation", "Tree", (p_config.increased_margin + 2) * EDSCALE);
 			p_theme->set_constant("button_margin", "Tree", p_config.base_margin * EDSCALE);
+			p_theme->set_constant("dragging_unfold_wait_msec", "Tree", (float)EDITOR_GET("interface/editor/dragging_hover_wait_seconds") * 1000);
 			p_theme->set_constant("scroll_border", "Tree", 40 * EDSCALE);
 			p_theme->set_constant("scroll_speed", "Tree", 12);
 			p_theme->set_constant("outline_size", "Tree", 0);
@@ -1445,8 +1448,10 @@ void EditorThemeManager::_populate_standard_styles(const Ref<EditorTheme> &p_the
 			p_theme->set_icon("visibility_hidden", "PopupMenu", p_theme->get_icon(SNAME("GuiVisibilityHidden"), EditorStringName(EditorIcons)));
 			p_theme->set_icon("visibility_visible", "PopupMenu", p_theme->get_icon(SNAME("GuiVisibilityVisible"), EditorStringName(EditorIcons)));
 			p_theme->set_icon("visibility_xray", "PopupMenu", p_theme->get_icon(SNAME("GuiVisibilityXray"), EditorStringName(EditorIcons)));
+			p_theme->set_icon("search", "PopupMenu", p_theme->get_icon(SNAME("Search"), EditorStringName(EditorIcons)));
 
 			p_theme->set_constant("v_separation", "PopupMenu", p_config.forced_even_separation * EDSCALE);
+			p_theme->set_constant("search_bar_separation", "PopupMenu", p_config.separation_margin);
 			p_theme->set_constant("outline_size", "PopupMenu", 0);
 			p_theme->set_constant("item_start_padding", "PopupMenu", p_config.separation_margin);
 			p_theme->set_constant("item_end_padding", "PopupMenu", p_config.separation_margin);

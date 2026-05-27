@@ -448,7 +448,7 @@ float RichTextLabel::_shape_line(ItemFrame *p_frame, int p_line, const Ref<Font>
 		case TextServer::AUTOWRAP_OFF:
 			break;
 	}
-	autowrap_flags = autowrap_flags | TextServer::BREAK_TRIM_EDGE_SPACES;
+	autowrap_flags = autowrap_flags | autowrap_flags_trim;
 
 	// Clear cache.
 	l.text_buf->clear();
@@ -6339,6 +6339,21 @@ TextServer::AutowrapMode RichTextLabel::get_autowrap_mode() const {
 	return autowrap_mode;
 }
 
+void RichTextLabel::set_autowrap_trim_flags(BitField<TextServer::LineBreakFlag> p_flags) {
+	if (autowrap_flags_trim != (p_flags & TextServer::BREAK_TRIM_MASK)) {
+		_stop_thread();
+
+		autowrap_flags_trim = p_flags & TextServer::BREAK_TRIM_MASK;
+		main->first_invalid_line = 0; // Invalidate all lines.
+		_validate_line_caches();
+		queue_redraw();
+	}
+}
+
+BitField<TextServer::LineBreakFlag> RichTextLabel::get_autowrap_trim_flags() const {
+	return autowrap_flags_trim;
+}
+
 void RichTextLabel::set_visible_ratio(float p_ratio) {
 	if (visible_ratio != p_ratio) {
 		_stop_thread();
@@ -6367,10 +6382,8 @@ float RichTextLabel::get_visible_ratio() const {
 }
 
 void RichTextLabel::set_effects(const Array &p_effects) {
-	custom_effects = p_effects;
-	if (!stack_externally_modified && use_bbcode) {
-		parse_bbcode(atr(text));
-	}
+	custom_effects = Array(p_effects);
+	reload_effects();
 }
 
 Array RichTextLabel::get_effects() {
@@ -6383,8 +6396,14 @@ void RichTextLabel::install_effect(const Variant effect) {
 
 	ERR_FAIL_COND_MSG(rteffect.is_null(), "Invalid RichTextEffect resource.");
 	custom_effects.push_back(effect);
+	reload_effects();
+}
+
+void RichTextLabel::reload_effects() {
 	if (!stack_externally_modified && use_bbcode) {
+		internal_stack_editing = true;
 		parse_bbcode(atr(text));
+		internal_stack_editing = false;
 	}
 }
 
@@ -6497,6 +6516,9 @@ void RichTextLabel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_autowrap_mode", "autowrap_mode"), &RichTextLabel::set_autowrap_mode);
 	ClassDB::bind_method(D_METHOD("get_autowrap_mode"), &RichTextLabel::get_autowrap_mode);
 
+	ClassDB::bind_method(D_METHOD("set_autowrap_trim_flags", "autowrap_trim_flags"), &RichTextLabel::set_autowrap_trim_flags);
+	ClassDB::bind_method(D_METHOD("get_autowrap_trim_flags"), &RichTextLabel::get_autowrap_trim_flags);
+
 	ClassDB::bind_method(D_METHOD("set_meta_underline", "enable"), &RichTextLabel::set_meta_underline);
 	ClassDB::bind_method(D_METHOD("is_meta_underlined"), &RichTextLabel::is_meta_underlined);
 
@@ -6594,6 +6616,7 @@ void RichTextLabel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_effects", "effects"), &RichTextLabel::set_effects);
 	ClassDB::bind_method(D_METHOD("get_effects"), &RichTextLabel::get_effects);
 	ClassDB::bind_method(D_METHOD("install_effect", "effect"), &RichTextLabel::install_effect);
+	ClassDB::bind_method(D_METHOD("reload_effects"), &RichTextLabel::reload_effects);
 
 	ClassDB::bind_method(D_METHOD("get_menu"), &RichTextLabel::get_menu);
 	ClassDB::bind_method(D_METHOD("is_menu_visible"), &RichTextLabel::is_menu_visible);
@@ -6607,6 +6630,7 @@ void RichTextLabel::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "scroll_active"), "set_scroll_active", "is_scroll_active");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "scroll_following"), "set_scroll_follow", "is_scroll_following");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "autowrap_mode", PROPERTY_HINT_ENUM, "Off,Arbitrary,Word,Word (Smart)"), "set_autowrap_mode", "get_autowrap_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "autowrap_trim_flags", PROPERTY_HINT_FLAGS, vformat("Trim Spaces After Break:%d,Trim Spaces Before Break:%d", TextServer::BREAK_TRIM_START_EDGE_SPACES, TextServer::BREAK_TRIM_END_EDGE_SPACES)), "set_autowrap_trim_flags", "get_autowrap_trim_flags");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "tab_size", PROPERTY_HINT_RANGE, "0,24,1"), "set_tab_size", "get_tab_size");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "context_menu_enabled"), "set_context_menu_enabled", "is_context_menu_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "shortcut_keys_enabled"), "set_shortcut_keys_enabled", "is_shortcut_keys_enabled");

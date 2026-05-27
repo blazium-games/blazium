@@ -119,9 +119,9 @@ void OptionButton::_notification(int p_what) {
 
 			Point2 ofs;
 			if (is_layout_rtl()) {
-				ofs = Point2(theme_cache.arrow_margin, int(Math::abs((size.height - theme_cache.arrow_icon->get_height()) / 2)));
+				ofs = Point2(theme_cache.arrow_margin, int(Math::abs(Math::round((size.height - theme_cache.arrow_icon->get_height()) / 2.0))));
 			} else {
-				ofs = Point2(size.width - theme_cache.arrow_icon->get_width() - theme_cache.arrow_margin, int(Math::abs((size.height - theme_cache.arrow_icon->get_height()) / 2)));
+				ofs = Point2(size.width - theme_cache.arrow_icon->get_width() - theme_cache.arrow_margin, int(Math::abs(Math::round((size.height - theme_cache.arrow_icon->get_height()) / 2.0))));
 			}
 			theme_cache.arrow_icon->draw(ci, ofs, clr);
 		} break;
@@ -241,6 +241,21 @@ void OptionButton::set_item_tooltip(int p_idx, const String &p_tooltip) {
 	popup->set_item_tooltip(p_idx, p_tooltip);
 }
 
+void OptionButton::set_item_auto_translate_mode(int p_idx, AutoTranslateMode p_mode) {
+	if (p_idx < 0) {
+		p_idx += get_item_count();
+	}
+	if (popup->get_item_auto_translate_mode(p_idx) == p_mode) {
+		return;
+	}
+	popup->set_item_auto_translate_mode(p_idx, p_mode);
+
+	if (current == p_idx) {
+		set_text(popup->get_item_text(p_idx));
+	}
+	_queue_update_size_cache();
+}
+
 void OptionButton::set_item_disabled(int p_idx, bool p_disabled) {
 	popup->set_item_disabled(p_idx, p_disabled);
 }
@@ -273,6 +288,10 @@ String OptionButton::get_item_tooltip(int p_idx) const {
 	return popup->get_item_tooltip(p_idx);
 }
 
+Node::AutoTranslateMode OptionButton::get_item_auto_translate_mode(int p_idx) const {
+	return popup->get_item_auto_translate_mode(p_idx);
+}
+
 bool OptionButton::is_item_disabled(int p_idx) const {
 	return popup->is_item_disabled(p_idx);
 }
@@ -286,6 +305,10 @@ void OptionButton::set_item_count(int p_count) {
 	int count_old = get_item_count();
 	if (p_count == count_old) {
 		return;
+	}
+
+	if (current > p_count - 1) {
+		_select(p_count - 1, false);
 	}
 
 	popup->set_item_count(p_count);
@@ -355,6 +378,18 @@ void OptionButton::set_allow_reselect(bool p_allow) {
 
 bool OptionButton::get_allow_reselect() const {
 	return allow_reselect;
+}
+
+bool OptionButton::is_search_bar_enabled() const {
+	return popup->is_search_bar_enabled();
+}
+
+void OptionButton::set_search_bar_enabled_on_item_count(int p_count) {
+	popup->set_search_bar_enabled_on_item_count(p_count);
+}
+
+int OptionButton::get_search_bar_enabled_on_item_count() const {
+	return popup->get_search_bar_enabled_on_item_count();
 }
 
 void OptionButton::add_separator(const String &p_text) {
@@ -432,6 +467,25 @@ void OptionButton::_queue_update_size_cache() {
 	callable_mp(this, &OptionButton::_refresh_size_cache).call_deferred();
 }
 
+String OptionButton::_get_translated_text(const String &p_text) const {
+	if (0 <= current && current < popup->get_item_count()) {
+		AutoTranslateMode mode = popup->get_item_auto_translate_mode(current);
+		switch (mode) {
+			case AUTO_TRANSLATE_MODE_INHERIT: {
+				return atr(p_text);
+			} break;
+			case AUTO_TRANSLATE_MODE_ALWAYS: {
+				return tr(p_text);
+			} break;
+			case AUTO_TRANSLATE_MODE_DISABLED: {
+				return p_text;
+			} break;
+		}
+		ERR_FAIL_V_MSG(atr(p_text), "Unexpected auto translate mode: " + itos(mode));
+	}
+	return atr(p_text);
+}
+
 void OptionButton::select(int p_idx) {
 	_select(p_idx, false);
 }
@@ -492,7 +546,12 @@ void OptionButton::show_popup() {
 
 	Rect2 rect = get_screen_rect();
 	rect.position.y += rect.size.height;
+	if (get_viewport()->is_embedding_subwindows() && popup->get_force_native()) {
+		Transform2D xform = get_viewport()->get_popup_base_transform_native();
+		rect = xform.xform(rect);
+	}
 	rect.size.height = 0;
+	popup->set_min_size(Size2(0, 0));
 	popup->popup(rect);
 }
 
@@ -511,14 +570,19 @@ void OptionButton::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_item_id", "idx", "id"), &OptionButton::set_item_id);
 	ClassDB::bind_method(D_METHOD("set_item_metadata", "idx", "metadata"), &OptionButton::set_item_metadata);
 	ClassDB::bind_method(D_METHOD("set_item_tooltip", "idx", "tooltip"), &OptionButton::set_item_tooltip);
+	ClassDB::bind_method(D_METHOD("set_item_auto_translate_mode", "idx", "mode"), &OptionButton::set_item_auto_translate_mode);
+	ClassDB::bind_method(D_METHOD("set_search_bar_enabled_on_item_count", "counts"), &OptionButton::set_search_bar_enabled_on_item_count);
 	ClassDB::bind_method(D_METHOD("get_item_text", "idx"), &OptionButton::get_item_text);
 	ClassDB::bind_method(D_METHOD("get_item_icon", "idx"), &OptionButton::get_item_icon);
 	ClassDB::bind_method(D_METHOD("get_item_id", "idx"), &OptionButton::get_item_id);
 	ClassDB::bind_method(D_METHOD("get_item_index", "id"), &OptionButton::get_item_index);
 	ClassDB::bind_method(D_METHOD("get_item_metadata", "idx"), &OptionButton::get_item_metadata);
 	ClassDB::bind_method(D_METHOD("get_item_tooltip", "idx"), &OptionButton::get_item_tooltip);
+	ClassDB::bind_method(D_METHOD("get_item_auto_translate_mode", "idx"), &OptionButton::get_item_auto_translate_mode);
 	ClassDB::bind_method(D_METHOD("is_item_disabled", "idx"), &OptionButton::is_item_disabled);
 	ClassDB::bind_method(D_METHOD("is_item_separator", "idx"), &OptionButton::is_item_separator);
+	ClassDB::bind_method(D_METHOD("is_search_bar_enabled"), &OptionButton::is_search_bar_enabled);
+	ClassDB::bind_method(D_METHOD("get_search_bar_enabled_on_item_count"), &OptionButton::get_search_bar_enabled_on_item_count);
 	ClassDB::bind_method(D_METHOD("add_separator", "text"), &OptionButton::add_separator, DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("clear"), &OptionButton::clear);
 	ClassDB::bind_method(D_METHOD("select", "idx"), &OptionButton::select);
@@ -544,6 +608,7 @@ void OptionButton::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "selected"), "_select_int", "get_selected");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "fit_to_longest_item"), "set_fit_to_longest_item", "is_fit_to_longest_item");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "allow_reselect"), "set_allow_reselect", "get_allow_reselect");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "enable_search_bar_on_item_count", PROPERTY_HINT_RANGE, "0,20,1,or_greater"), "set_search_bar_enabled_on_item_count", "get_search_bar_enabled_on_item_count");
 	ADD_ARRAY_COUNT("Items", "item_count", "set_item_count", "get_item_count", "popup/item_");
 
 	ADD_SIGNAL(MethodInfo("item_selected", PropertyInfo(Variant::INT, "index")));
@@ -596,6 +661,7 @@ OptionButton::OptionButton(const String &p_text) :
 	set_action_mode(ACTION_MODE_BUTTON_PRESS);
 
 	popup = memnew(PopupMenu);
+	popup->set_shrink_width(false);
 	popup->hide();
 	add_child(popup, false, INTERNAL_MODE_FRONT);
 	popup->connect("index_pressed", callable_mp(this, &OptionButton::_selected));
