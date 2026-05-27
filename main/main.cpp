@@ -698,6 +698,17 @@ void Main::print_help(const char *p_binary) {
 	print_help_option("--aw-e2e-log", "Enable verbose logging for the E2E server.\n");
 #endif
 
+// MULTIUSER EDITOR
+#ifdef MODULE_MULTIUSER_EDITOR_ENABLED
+	print_help_title("Multiuser Editor Options");
+	print_help_option("--multiuser-server", "Force start the multiuser editor session as a dedicated headless server.\n");
+	print_help_option("--multiuser-port <port>", "Bind the multiuser server to a specific local port.\n");
+	print_help_option("--multiuser-password <password>", "Set the multiuser server password for connecting clients.\n");
+	print_help_option("--multiuser-jwt-auth", "Enable JWT authentication for the multiuser server.\n");
+	print_help_option("--multiuser-jwt-secret <secret>", "Set the JWT secret used for generating and verifying tokens.\n");
+	print_help_option("--multiuser-jwt <token>", "Connect to a multiuser server using the provided JWT token.\n");
+#endif
+
 	OS::get_singleton()->print("\n");
 }
 

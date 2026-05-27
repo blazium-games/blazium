@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MultiuserEditorSettingsInspectorPlugin" inherits="EditorInspectorPlugin" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Inspector integration for Multiuser Editor settings controls.
+	</brief_description>
+	<description>
+		[MultiuserEditorSettingsInspectorPlugin] inserts the Multiuser Editor connection controls into the editor settings inspector under the Blazium settings group. It allows users to manage the same host, join, and stop workflow from the module settings page.
+		This class is an editor-only helper owned by [MultiuserEditorPlugin].
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

@@ -74,6 +74,7 @@ class JustAMCPShaderTools;
 class JustAMCPThemeTools;
 class JustAMCPTileMapTools;
 class JustAMCPAutoworkTools;
+class JustAMCPMultiuserTools;
 
 class JustAMCPToolExecutor : public Object {
 	GDCLASS(JustAMCPToolExecutor, Object);
@@ -109,6 +110,7 @@ private:
 	JustAMCPThemeTools *theme_tools = nullptr;
 	JustAMCPTileMapTools *tilemap_tools = nullptr;
 	JustAMCPAutoworkTools *autowork_tools = nullptr;
+	JustAMCPMultiuserTools *multiuser_tools = nullptr;
 
 	bool initialized = false;
 
