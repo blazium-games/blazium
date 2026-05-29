@@ -84,8 +84,8 @@ jobs:
 
       - name: Prepare artifact
         run: |
-          lipo -create ./bin/blazium.macos.${{ matrix.target }}.x86_64 ./bin/blazium.macos.${{ matrix.target }}.arm64 -output ./bin/blazium.macos.${{ matrix.target }}.universal
-          rm ./bin/blazium.macos.${{ matrix.target }}.x86_64 ./bin/blazium.macos.${{ matrix.target }}.arm64
+          lipo -create ./bin/blazium.macos.${{ matrix.target }}.tests.x86_64 ./bin/blazium.macos.${{ matrix.target }}.tests.arm64 -output ./bin/blazium.macos.${{ matrix.target }}.universal
+          rm ./bin/blazium.macos.${{ matrix.target }}.tests.x86_64 ./bin/blazium.macos.${{ matrix.target }}.tests.arm64
           strip bin/blazium.*
           chmod +x bin/blazium.*
 

@@ -29,7 +29,7 @@ jobs:
           - name: Editor (target=editor tests=yes)
             cache-name: linux-editor
             target: editor
-            bin: ./bin/blazium.linuxbsd.editor.x86_64
+            bin: ./bin/blazium.linuxbsd.editor.tests.x86_64
             build-mono: false
             tests: true
             doc-test: true
@@ -58,7 +58,7 @@ jobs:
             target: editor
             # Debug symbols disabled as they're huge on this build and we hit the 14 GB limit for runners.
             sconsflags: dev_build=yes scu_build=yes debug_symbols=no precision=double use_asan=yes use_ubsan=yes linker=gold
-            bin: ./bin/blazium.linuxbsd.editor.dev.double.x86_64.san
+            bin: ./bin/blazium.linuxbsd.editor.dev.tests.double.x86_64.san
             build-mono: false
             tests: true
             proj-test: true
@@ -70,7 +70,7 @@ jobs:
             cache-name: linux-editor-llvm-sanitizers
             target: editor
             sconsflags: dev_build=yes use_asan=yes use_ubsan=yes use_llvm=yes linker=lld
-            bin: ./bin/blazium.linuxbsd.editor.dev.x86_64.llvm.san
+            bin: ./bin/blazium.linuxbsd.editor.dev.tests.x86_64.llvm.san
             build-mono: false
             tests: true
             # Skip 2GiB artifact speeding up action.
@@ -84,7 +84,7 @@ jobs:
             target: editor
             tests: true
             sconsflags: dev_build=yes use_tsan=yes use_llvm=yes linker=lld
-            bin: ./bin/blazium.linuxbsd.editor.dev.x86_64.llvm.san
+            bin: ./bin/blazium.linuxbsd.editor.dev.tests.x86_64.llvm.san
             build-mono: false
             # Skip 2GiB artifact speeding up action.
             artifact: false
@@ -94,7 +94,7 @@ jobs:
             cache-name: linux-template-mono
             target: template_release
             sconsflags: module_mono_enabled=yes tests=yes
-            bin: ./bin/blazium.linuxbsd.template_release.x86_64.mono
+            bin: ./bin/blazium.linuxbsd.template_release.tests.x86_64.mono
             build-mono: false
             tests: true
             artifact: true
@@ -104,7 +104,7 @@ jobs:
             cache-name: linux-template-mono-debug
             target: template_debug
             sconsflags: module_mono_enabled=yes
-            bin: ./bin/blazium.linuxbsd.template_debug.x86_64.mono
+            bin: ./bin/blazium.linuxbsd.template_debug.tests.x86_64.mono
             build-mono: false
             tests: true
             artifact: true
@@ -114,7 +114,7 @@ jobs:
             cache-name: linux-template-minimal
             target: template_release
             sconsflags: modules_enabled_by_default=no disable_3d=yes disable_advanced_gui=yes deprecated=no minizip=no tests=yes
-            bin: ./bin/blazium.linuxbsd.template_release.x86_64
+            bin: ./bin/blazium.linuxbsd.template_release.tests.x86_64
             tests: true
             artifact: true
             cache-limit: 1
