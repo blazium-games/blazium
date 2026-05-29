@@ -666,9 +666,9 @@ TEST_CASE("[DotCSV] CSVAsyncTask reports cancellation and errors") {
 
 	ERR_PRINT_OFF;
 	Ref<CSVAsyncTask> failed = CSVAsyncTask::load_csv("user://missing_async.csv", "::");
-	ERR_PRINT_ON;
 	CHECK(failed->start() == OK);
 	failed->wait_to_finish();
+	ERR_PRINT_ON;
 	CHECK(failed->is_done());
 	CHECK(!failed->is_cancelled());
 	CHECK(!failed->get_error().is_empty());

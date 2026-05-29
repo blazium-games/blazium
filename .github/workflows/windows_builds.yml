@@ -73,8 +73,10 @@ jobs:
             # MinGW takes MUCH longer to compile; save time by only targeting Template.
             target: template_release
             tests: true
-            sconsflags: debug_symbols=no use_mingw=yes
-            bin: ./bin/blazium.windows.template_release.tests.x86_64.console.exe
+            # Build a console binary directly. The GUI + .console.exe wrapper can hang
+            # indefinitely on CI when running --test with the MinGW toolchain.
+            sconsflags: debug_symbols=no use_mingw=yes windows_subsystem=console
+            bin: ./bin/blazium.windows.template_release.tests.x86_64.exe
             compiler: gcc
             cache-limit: 1
 
@@ -143,7 +145,8 @@ jobs:
 
       - name: Unit tests
         if: matrix.tests
+        timeout-minutes: 45
         run: |
           ${{ matrix.bin }} --version
           ${{ matrix.bin }} --help
-          ${{ matrix.bin }} --test --force-colors
+          ${{ matrix.bin }} --headless --test --force-colors
