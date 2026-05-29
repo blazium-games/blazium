@@ -73,6 +73,12 @@
 		</method>
 	</methods>
 	<signals>
+		<signal name="csv_import_choice_needed">
+			<param index="0" name="path" type="String" />
+			<description>
+				Emitted when a CSV file is detected during import and the user must choose how to handle it (translation, generic CSV, keep, or skip).
+			</description>
+		</signal>
 		<signal name="filesystem_changed">
 			<description>
 				Emitted if the filesystem changed.

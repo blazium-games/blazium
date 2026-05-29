@@ -2793,6 +2793,10 @@ Error EditorFileSystem::_reimport_file(const String &p_file, const HashMap<Strin
 	//find the importer
 	if (!importer_name.is_empty()) {
 		importer = ResourceFormatImporter::get_singleton()->get_importer_by_name(importer_name);
+	} else if (p_file.get_extension().to_lower() == "csv") {
+		emit_signal(SNAME("csv_import_choice_needed"), p_file);
+
+		return OK;
 	}
 
 	if (importer.is_null()) {
@@ -3571,6 +3575,7 @@ void EditorFileSystem::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("resources_reimporting", PropertyInfo(Variant::PACKED_STRING_ARRAY, "resources")));
 	ADD_SIGNAL(MethodInfo("resources_reimported", PropertyInfo(Variant::PACKED_STRING_ARRAY, "resources")));
 	ADD_SIGNAL(MethodInfo("resources_reload", PropertyInfo(Variant::PACKED_STRING_ARRAY, "resources")));
+	ADD_SIGNAL(MethodInfo("csv_import_choice_needed", PropertyInfo(Variant::STRING, "path")));
 }
 
 void EditorFileSystem::_update_extensions() {
