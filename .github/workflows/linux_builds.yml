@@ -53,11 +53,11 @@ jobs:
             blazium-cpp: true
             cache-limit: 2
 
-          - name: Editor with doubles and GCC sanitizers (target=editor, tests=yes, dev_build=yes, scu_build=yes, precision=double, use_asan=yes, use_ubsan=yes, linker=gold)
+          - name: Editor with doubles and GCC sanitizers (target=editor, tests=yes, dev_build=yes, scu_build=yes, precision=double, use_asan=yes, use_ubsan=yes, linker=mold)
             cache-name: linux-editor-double-sanitizers
             target: editor
             # Debug symbols disabled as they're huge on this build and we hit the 14 GB limit for runners.
-            sconsflags: dev_build=yes scu_build=yes debug_symbols=no precision=double use_asan=yes use_ubsan=yes linker=gold
+            sconsflags: dev_build=yes scu_build=yes debug_symbols=no precision=double use_asan=yes use_ubsan=yes linker=mold
             bin: ./bin/blazium.linuxbsd.editor.dev.tests.double.x86_64.san
             build-mono: false
             tests: true
@@ -156,6 +156,10 @@ jobs:
           # Sync with Ensure*Version in SConstruct.
           python-version: 3.8
           scons-version: 4.0
+
+      - name: Install mold linker
+        if: matrix.proj-test
+        uses: rui314/setup-mold@v1
 
       - name: Compilation
         uses: ./.github/actions/godot-build
