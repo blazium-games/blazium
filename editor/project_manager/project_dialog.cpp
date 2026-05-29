@@ -38,6 +38,7 @@
 #include "editor/editor_string_names.h"
 #include "editor/editor_vcs_interface.h"
 #include "editor/gui/editor_file_dialog.h"
+#include "editor/project_manager/project_creator.h"
 #include "editor/themes/editor_icons.h"
 #include "editor/themes/editor_scale.h"
 #include "scene/gui/box_container.h"
@@ -511,73 +512,22 @@ void ProjectDialog::ok_pressed() {
 	String path = project_path->get_text();
 
 	if (mode == MODE_NEW) {
-		if (create_dir->is_pressed()) {
-			Ref<DirAccess> d = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
-			if (!d->dir_exists(path) && d->make_dir(path) != OK) {
-				_set_message(TTR("Couldn't create project directory, check permissions."), MESSAGE_ERROR);
-				return;
-			}
+		ProjectCreateOptions options;
+		options.path = path;
+		options.name = project_name->get_text();
+		options.renderer = renderer_button_group->get_pressed_button()->get_meta(SNAME("rendering_method"));
+		options.vcs = EditorVCSInterface::VCSMetadata(vcs_metadata_selection->get_selected());
+		options.allow_nonempty = !is_folder_empty;
+
+		String error_message;
+		Error err = ProjectCreator::create_project(options, &error_message);
+		if (err != OK) {
+			_set_message(error_message, MESSAGE_ERROR);
+			return;
 		}
 
-		PackedStringArray project_features = ProjectSettings::get_required_features();
-		ProjectSettings::CustomMap initial_settings;
-
-		// Be sure to change this code if/when renderers are changed.
-		// Default values are "forward_plus" for the main setting, "mobile" for the mobile override,
-		// and "gl_compatibility" for the web override.
-		String renderer_type = renderer_button_group->get_pressed_button()->get_meta(SNAME("rendering_method"));
-		initial_settings["rendering/renderer/rendering_method"] = renderer_type;
-
-		EditorSettings::get_singleton()->set("project_manager/default_renderer", renderer_type);
+		EditorSettings::get_singleton()->set("project_manager/default_renderer", options.renderer);
 		EditorSettings::get_singleton()->save();
-
-		if (renderer_type == "forward_plus") {
-			project_features.push_back("Forward Plus");
-		} else if (renderer_type == "mobile") {
-			project_features.push_back("Mobile");
-		} else if (renderer_type == "gl_compatibility") {
-			project_features.push_back("GL Compatibility");
-			// Also change the default rendering method for the mobile override.
-			initial_settings["rendering/renderer/rendering_method.mobile"] = "gl_compatibility";
-		} else {
-			WARN_PRINT("Unknown renderer type. Please report this as a bug on GitHub.");
-		}
-
-		project_features.sort();
-		initial_settings["application/config/features"] = project_features;
-		initial_settings["application/config/name"] = project_name->get_text().strip_edges();
-		initial_settings["application/config/icon"] = "res://icon.svg";
-
-		Error err = ProjectSettings::get_singleton()->save_custom(path.path_join("project.godot"), initial_settings, Vector<String>(), false);
-		if (err != OK) {
-			_set_message(TTR("Couldn't create project.godot in project path."), MESSAGE_ERROR);
-			return;
-		}
-
-		// Store default project icon in SVG format.
-		Ref<FileAccess> fa_icon = FileAccess::open(path.path_join("icon.svg"), FileAccess::WRITE, &err);
-		if (err != OK) {
-			_set_message(TTR("Couldn't create icon.svg in project path."), MESSAGE_ERROR);
-			return;
-		}
-		fa_icon->store_string(get_default_project_icon());
-
-		EditorVCSInterface::create_vcs_metadata_files(EditorVCSInterface::VCSMetadata(vcs_metadata_selection->get_selected()), path);
-
-		// Ensures external editors and IDEs use UTF-8 encoding.
-		const String editor_config_path = path.path_join(".editorconfig");
-		Ref<FileAccess> f = FileAccess::open(editor_config_path, FileAccess::WRITE);
-		if (f.is_null()) {
-			// .editorconfig isn't so critical.
-			ERR_PRINT("Couldn't create .editorconfig in project path.");
-		} else {
-			f->store_line("root = true");
-			f->store_line("");
-			f->store_line("[*]");
-			f->store_line("charset = utf-8");
-			f->close();
-			FileAccess::set_hidden_attribute(editor_config_path, true);
-		}
 	}
 
 	// Two cases for importing a ZIP.

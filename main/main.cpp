@@ -108,6 +108,7 @@
 #include "editor/editor_translation.h"
 #include "editor/progress_dialog.h"
 #include "editor/project_manager.h"
+#include "editor/project_manager/project_creator.h"
 #include "editor/register_editor_types.h"
 
 #if defined(TOOLS_ENABLED) && !defined(NO_EDITOR_SPLASH)
@@ -256,6 +257,13 @@ static bool dump_extension_api = false;
 static bool include_docs_in_extension_api_dump = false;
 static bool validate_extension_api = false;
 static String validate_extension_api_file;
+static bool create_project_cli = false;
+static bool create_project_edit = false;
+static bool create_project_force = false;
+static String create_project_path;
+static String create_project_name;
+static String create_project_renderer = "forward_plus";
+static String create_project_vcs = "git";
 #endif
 bool profile_gpu = false;
 
@@ -653,6 +661,12 @@ void Main::print_help(const char *p_binary) {
 	print_help_option("--gdscript-docs <path>", "Rather than dumping the engine API, generate API reference from the inline documentation in the GDScript files found in <path> (used with --doctool).\n", CLI_OPTION_AVAILABILITY_EDITOR);
 #endif
 	print_help_option("--build-solutions", "Build the scripting solutions (e.g. for C# projects). Implies --editor and requires a valid project to edit.\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--create-project <path>", "Create a new project at the given path and exit.\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--name <name>", "Project display name (used with --create-project).\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--renderer <type>", "Renderer: forward_plus, mobile, or gl_compatibility (used with --create-project).\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--vcs <none|git>", "Version control metadata to generate (used with --create-project).\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--force", "Allow creating a project in a non-empty directory (used with --create-project).\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--edit", "Open the newly created project in the editor (used with --create-project).\n", CLI_OPTION_AVAILABILITY_EDITOR);
 	print_help_option("--dump-gdextension-interface", "Generate a GDExtension header file \"gdextension_interface.h\" in the current folder. This file is the base file required to implement a GDExtension.\n", CLI_OPTION_AVAILABILITY_EDITOR);
 	print_help_option("--dump-extension-api", "Generate a JSON dump of the Godot API for GDExtension bindings named \"extension_api.json\" in the current folder.\n", CLI_OPTION_AVAILABILITY_EDITOR);
 	print_help_option("--dump-extension-api-with-docs", "Generate JSON dump of the Godot API like the previous option, but including documentation.\n", CLI_OPTION_AVAILABILITY_EDITOR);
@@ -1543,6 +1557,44 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			cmdline_tool = true;
 			wait_for_import = true;
 			quit_after = 1;
+		} else if (arg == "--create-project") {
+			if (N) {
+				create_project_cli = true;
+				cmdline_tool = true;
+				create_project_path = N->get();
+				N = N->next();
+			} else {
+				OS::get_singleton()->print("Missing path argument after --create-project, aborting.\n");
+				goto error;
+			}
+		} else if (arg == "--name") {
+			if (N) {
+				create_project_name = N->get();
+				N = N->next();
+			} else {
+				OS::get_singleton()->print("Missing name argument after --name, aborting.\n");
+				goto error;
+			}
+		} else if (arg == "--renderer") {
+			if (N) {
+				create_project_renderer = N->get();
+				N = N->next();
+			} else {
+				OS::get_singleton()->print("Missing renderer argument after --renderer, aborting.\n");
+				goto error;
+			}
+		} else if (arg == "--vcs") {
+			if (N) {
+				create_project_vcs = N->get().to_lower();
+				N = N->next();
+			} else {
+				OS::get_singleton()->print("Missing vcs argument after --vcs, aborting.\n");
+				goto error;
+			}
+		} else if (arg == "--force") {
+			create_project_force = true;
+		} else if (arg == "--edit") {
+			create_project_edit = true;
 		} else if (arg == "--export-release" || arg == "--export-debug" ||
 				arg == "--export-pack" || arg == "--export-patch") { // Export project
 			// Actually handling is done in start().
@@ -1883,6 +1935,23 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	}
 
 #ifdef TOOLS_ENABLED
+	if (create_project_cli) {
+		if (create_project_vcs != "none" && create_project_vcs != "git") {
+			OS::get_singleton()->print("Invalid --vcs value. Expected none or git.\n");
+			goto error;
+		}
+
+		if (create_project_edit) {
+			editor = true;
+			cmdline_tool = false;
+		} else {
+			audio_driver = NULL_AUDIO_DRIVER;
+			display_driver = NULL_DISPLAY_DRIVER;
+		}
+	}
+#endif
+
+#ifdef TOOLS_ENABLED
 	if (editor && project_manager) {
 		OS::get_singleton()->print(
 				"Error: Command line arguments implied opening both editor and project manager, which is not possible. Aborting.\n");
@@ -1915,7 +1984,11 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 #endif
 	} else {
 #ifdef TOOLS_ENABLED
-		editor = false;
+		if (create_project_cli && create_project_edit) {
+			editor = true;
+		} else {
+			editor = false;
+		}
 #else
 		const String error_msg = "Error: Couldn't load project data at path \"" + project_path + "\". Is the .pck file missing?\nIf you've renamed the executable, the associated .pck file should also be renamed to match the executable's name (without the extension).\n";
 		OS::get_singleton()->print("%s", error_msg.utf8().get_data());
@@ -2126,7 +2199,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 
 	if (main_args.size() == 0 && String(GLOBAL_GET("application/run/main_scene")) == "") {
 #ifdef TOOLS_ENABLED
-		if (!editor && !project_manager) {
+		if (!editor && !project_manager && !cmdline_tool) {
 #endif
 			const String error_msg = "Error: Can't run project: no main scene defined in the project.\n";
 			OS::get_singleton()->print("%s", error_msg.utf8().get_data());
@@ -3823,6 +3896,47 @@ int Main::start() {
 	}
 
 #ifdef TOOLS_ENABLED
+	if (create_project_cli) {
+		ProjectCreateOptions options;
+		options.path = create_project_path;
+		options.name = create_project_name;
+		options.renderer = create_project_renderer;
+		options.allow_nonempty = create_project_force;
+		if (create_project_vcs == "none") {
+			options.vcs = EditorVCSInterface::VCSMetadata::NONE;
+		} else {
+			options.vcs = EditorVCSInterface::VCSMetadata::GIT;
+		}
+
+		String error_message;
+		Error create_err = ProjectCreator::create_project(options, &error_message);
+		if (create_err != OK) {
+			OS::get_singleton()->printerr("%s\n", error_message.utf8().get_data());
+			return EXIT_FAILURE;
+		}
+
+		String created_path = create_project_path.simplify_path();
+		print_line("Created project at: " + created_path);
+
+		if (!create_project_edit) {
+			return EXIT_SUCCESS;
+		}
+
+		if (OS::get_singleton()->set_cwd(created_path) != OK) {
+			ERR_FAIL_V_MSG(EXIT_FAILURE, "Failed to set working directory to newly created project.");
+		}
+
+		if (globals->setup(created_path, String(), false, true) != OK) {
+			ERR_FAIL_V_MSG(EXIT_FAILURE, "Failed to load newly created project.");
+		}
+
+		found_project = true;
+		editor = true;
+		cmdline_tool = false;
+		OS::get_singleton()->_in_editor = true;
+		Engine::get_singleton()->set_editor_hint(true);
+	}
+
 #ifdef MODULE_GDSCRIPT_ENABLED
 	if (!doc_tool_path.is_empty() && gdscript_docs_path.is_empty()) {
 #else
