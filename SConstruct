@@ -906,6 +906,9 @@ suffix += "." + env["target"]
 if env.dev_build:
     suffix += ".dev"
 
+if env["tests"]:
+    suffix += ".tests"
+
 if env["precision"] == "double":
     suffix += ".double"
 
