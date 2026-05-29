@@ -565,11 +565,13 @@ TEST_CASE("[DotCSV] CSVChunkProcessor splits merges and reports invalid argument
 	REQUIRE(merged.size() == 5);
 	CHECK(Dictionary(merged[4])["name"] == "E");
 
+	ERR_PRINT_OFF;
 	CHECK(CSVChunkProcessor::process_file(csv_path, Callable(), 2, dialect) == ERR_INVALID_PARAMETER);
 	CHECK(CSVChunkProcessor::sample_file(csv_path, -1, dialect).is_empty());
 	CHECK(CSVChunkProcessor::split_file(csv_path, output_dir, 0, dialect, true).is_empty());
 	CHECK(CSVChunkProcessor::merge_files(PackedStringArray(), merged_path, dialect, true) == ERR_INVALID_PARAMETER);
 	CHECK(CSVChunkProcessor::count_rows("user://missing_chunk.csv", dialect) == -1);
+	ERR_PRINT_ON;
 }
 
 TEST_CASE("[DotCSV] CSVAsyncTask loads CSV rows and table results") {
@@ -662,7 +664,9 @@ TEST_CASE("[DotCSV] CSVAsyncTask reports cancellation and errors") {
 	CHECK(cancelled->is_cancelled());
 	CHECK(cancelled->get_error().is_empty());
 
+	ERR_PRINT_OFF;
 	Ref<CSVAsyncTask> failed = CSVAsyncTask::load_csv("user://missing_async.csv", "::");
+	ERR_PRINT_ON;
 	CHECK(failed->start() == OK);
 	failed->wait_to_finish();
 	CHECK(failed->is_done());
