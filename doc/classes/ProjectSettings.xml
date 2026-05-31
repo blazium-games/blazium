@@ -444,11 +444,1163 @@
 		<member name="blazium/autowork/e2e_enabled" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], the Autowork framework will boot its WebSocket E2E server on startup, enabling orchestration from standard web runners (e.g. Playwright, Jest, Cypress).
 		</member>
+		<member name="blazium/justamcp/bind_to_localhost_only" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], the JustAMCP HTTP server listens only on [code]127.0.0.1[/code]. Disable only on trusted networks when remote MCP clients must connect.
+		</member>
+		<member name="blazium/justamcp/client_id" type="String" setter="" getter="" default="&quot;&quot;">
+			OAuth 2.0 client identifier used when [member blazium/justamcp/oauth_enabled] is [code]true[/code]. Can also be supplied via the [code]--mcp-client-id[/code] command-line argument.
+		</member>
+		<member name="blazium/justamcp/client_secret" type="String" setter="" getter="" default="&quot;&quot;">
+			OAuth 2.0 client secret paired with [member blazium/justamcp/client_id]. Can also be supplied via the [code]--mcp-client-secret[/code] command-line argument.
+		</member>
 		<member name="blazium/justamcp/disable_game_mcp" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], disables the Model Context Protocol (MCP) server from running alongside exported builds or game tests. Ensure this is marked true for strict production releases to deny introspection.
 		</member>
+		<member name="blazium/justamcp/enable_debug_logging" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], JustAMCP prints JSON-RPC method names, validation failures, and HTTP payloads to the editor output log.
+		</member>
 		<member name="blazium/justamcp/game_control_enabled" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], allows AI interacting via JustAMCP to natively trigger in-game commands and inputs over the pipeline, granting them orchestration control over gameplay mechanics.
+		</member>
+		<member name="blazium/justamcp/oauth_enabled" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], MCP clients must authenticate with OAuth credentials before calling JustAMCP tools.
+		</member>
+		<member name="blazium/justamcp/override_editor_settings" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], JustAMCP reads server, tool, prompt, and resource toggles from [ProjectSettings] instead of [EditorSettings]. Automatically enabled in headless mode and when using [code]--enable-mcp[/code].
+		</member>
+		<member name="blazium/justamcp/prompts/analyze_autowork_test_failures" type="String" setter="" getter="">
+			Read-only MCP prompt template registered as [code]analyze_autowork_test_failures[/code]. Description: Diagnoses failing Autowork test output or Godot stack traces and returns structured root-cause analysis with corrected GDScript.
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_autowork_fix_loop" type="String" setter="" getter="">
+			Read-only MCP prompt template registered as [code]blazium_autowork_fix_loop[/code]. Description: Runs Autowork tests, reads results, diagnoses failures, patches scripts when requested, validates, and reruns. Template v1.
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_context" type="String" setter="" getter="">
+			Read-only MCP prompt template registered as [code]blazium_context[/code]. Description: Retrieves Blazium Engine JustAMCP context and points users to the richer blazium_project_intake workflow.
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_diagnostics_triage" type="String" setter="" getter="">
+			Read-only MCP prompt template registered as [code]blazium_diagnostics_triage[/code]. Description: Aggregates Blazium logs, runtime status, scene validation, project state, and performance context into a structured diagnosis. Template v1.
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_gdscript_linter" type="String" setter="" getter="">
+			Read-only MCP prompt template registered as [code]blazium_gdscript_linter[/code]. Description: Audits and rewrites a GDScript file enforcing Godot 4.x / Blazium full static typing, typed arrays, @export, @onready, and typed signal conventions.
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_multiplayer_architect" type="String" setter="" getter="">
+			Read-only MCP prompt template registered as [code]blazium_multiplayer_architect[/code]. Description: Produces authoritative Blazium multiplayer networking code using Godot 4 RPCs, MultiplayerSpawner, and MultiplayerSynchronizer nodes.
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_project_intake" type="String" setter="" getter="">
+			Read-only MCP prompt template registered as [code]blazium_project_intake[/code]. Description: Loads Blazium project, scene, selection, and JustAMCP guide context before starting substantial engine work. Template v1.
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_project_optimization" type="String" setter="" getter="">
+			Read-only MCP prompt template registered as [code]blazium_project_optimization[/code]. Description: Scans a GDScript file or scene for Godot performance anti-patterns and returns targeted drop-in fixes with explanations.
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_runtime_test_loop" type="String" setter="" getter="">
+			Read-only MCP prompt template registered as [code]blazium_runtime_test_loop[/code]. Description: Runs and inspects a Blazium scene through the editor/runtime bridge, including screenshots, logs, input, and clean shutdown. Template v1.
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_scene_architect" type="String" setter="" getter="">
+			Read-only MCP prompt template registered as [code]blazium_scene_architect[/code]. Description: Designs a well-structured Godot 4 scene hierarchy using composition, PackedScene encapsulation, and signal-driven communication.
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_scene_build_workflow" type="String" setter="" getter="">
+			Read-only MCP prompt template registered as [code]blazium_scene_build_workflow[/code]. Description: Turns a gameplay feature request into a deterministic scene/script/signal/resource build workflow using JustAMCP tools. Template v1.
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_shader_expert" type="String" setter="" getter="">
+			Read-only MCP prompt template registered as [code]blazium_shader_expert[/code]. Description: Translates a visual effect description into a complete, valid Godot .gdshader file. Strictly uses Godot Shading Language - never raw GLSL.
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_ui_scaffolder" type="String" setter="" getter="">
+			Read-only MCP prompt template registered as [code]blazium_ui_scaffolder[/code]. Description: Generates responsive Godot 4 UI layouts using Container nodes, anchors, and theme overrides. Never outputs hardcoded position or size values.
+		</member>
+		<member name="blazium/justamcp/prompts/editor_state" type="String" setter="" getter="">
+			Read-only MCP prompt template registered as [code]editor_state[/code]. Description: Provides real-time insight into the actively opened Godot Editor environment.
+		</member>
+		<member name="blazium/justamcp/prompts/generate_autowork_test" type="String" setter="" getter="">
+			Read-only MCP prompt template registered as [code]generate_autowork_test[/code]. Description: Generates a complete Autowork test_*.gd suite for a given GDScript target, mapping public methods to TestContext assertion cases.
+		</member>
+		<member name="blazium/justamcp/prompts/project_info" type="String" setter="" getter="">
+			Read-only MCP prompt template registered as [code]project_info[/code]. Description: Retrieves the core Godot Project metadata natively.
+		</member>
+		<member name="blazium/justamcp/resources/Asset Generation Guide" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Asset Generation Guide[/code]. Description: How SVG-to-PNG asset generation works and how sizing options are applied.
+		</member>
+		<member name="blazium/justamcp/resources/Autowork Latest Results" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Autowork Latest Results[/code]. Description: Streams the latest JUnit/JSON test results generated by the Autowork Godot testing framework directly into memory.
+		</member>
+		<member name="blazium/justamcp/resources/Blazium Documentation Classes" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Blazium Documentation Classes[/code]. Description: Internal class documentation summaries from the editor documentation database.
+		</member>
+		<member name="blazium/justamcp/resources/Blazium Project File" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Blazium Project File[/code]. Description: Read any file inside the active res:// Blazium project path.
+		</member>
+		<member name="blazium/justamcp/resources/Class Documentation" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Class Documentation[/code]. Description: Read internal documentation for one Blazium class.
+		</member>
+		<member name="blazium/justamcp/resources/Current Scene" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Current Scene[/code]. Description: Current scene path and play state.
+		</member>
+		<member name="blazium/justamcp/resources/Current Selection" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Current Selection[/code]. Description: Currently selected editor nodes.
+		</member>
+		<member name="blazium/justamcp/resources/Documentation Search" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Documentation Search[/code]. Description: Search internal Blazium class and member documentation.
+		</member>
+		<member name="blazium/justamcp/resources/Editor State" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Editor State[/code]. Description: Current editor play mode, active scene, and selection summary.
+		</member>
+		<member name="blazium/justamcp/resources/Input Map" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Input Map[/code]. Description: Project input actions and their configured events.
+		</member>
+		<member name="blazium/justamcp/resources/Materials" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Materials[/code]. Description: Material resources found under res://.
+		</member>
+		<member name="blazium/justamcp/resources/Member Documentation" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Member Documentation[/code]. Description: Read internal documentation for one method, property, signal, constant, enum, annotation, or theme property.
+		</member>
+		<member name="blazium/justamcp/resources/Node Children" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Node Children[/code]. Description: Direct children for a node path such as blazium://node/Main/children.
+		</member>
+		<member name="blazium/justamcp/resources/Node Groups" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Node Groups[/code]. Description: Groups assigned to a node path such as blazium://node/Main/Enemy/groups.
+		</member>
+		<member name="blazium/justamcp/resources/Node Properties" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Node Properties[/code]. Description: Editor-visible properties for a node path such as blazium://node/Main/Camera3D/properties.
+		</member>
+		<member name="blazium/justamcp/resources/Performance" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code skip-lint]Performance[/code]. Description: [Performance] singleton snapshot.
+		</member>
+		<member name="blazium/justamcp/resources/Project Info" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Project Info[/code]. Description: Project name, engine version, paths, active scene, and play state.
+		</member>
+		<member name="blazium/justamcp/resources/Project Settings" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Project Settings[/code]. Description: Common project settings subset.
+		</member>
+		<member name="blazium/justamcp/resources/Recent Logs" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Recent Logs[/code]. Description: Recent JustAMCP engine log lines.
+		</member>
+		<member name="blazium/justamcp/resources/Scene Editing Guide" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Scene Editing Guide[/code]. Description: How to choose scene, node, resource, signal, and group editing tools.
+		</member>
+		<member name="blazium/justamcp/resources/Scene Hierarchy" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Scene Hierarchy[/code]. Description: Flattened hierarchy for the active edited scene.
+		</member>
+		<member name="blazium/justamcp/resources/Script Source" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Script Source[/code]. Description: Read a script by omitting the res:// prefix, such as blazium://script/scripts/player.gd.
+		</member>
+		<member name="blazium/justamcp/resources/System Logs" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]System Logs[/code]. Description: Recent engine log lines captured by JustAMCP.
+		</member>
+		<member name="blazium/justamcp/resources/Test Results" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Test Results[/code]. Description: Latest Autowork test results when available.
+		</member>
+		<member name="blazium/justamcp/resources/Testing Loop Guide" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Testing Loop Guide[/code]. Description: How to run, drive, inspect, screenshot, and stop a running game through JustAMCP.
+		</member>
+		<member name="blazium/justamcp/resources/Tool Index Guide" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Tool Index Guide[/code]. Description: Goal-oriented guide to the main JustAMCP tool families.
+		</member>
+		<member name="blazium/justamcp/resources/Troubleshooting Guide" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Troubleshooting Guide[/code]. Description: Common failures and recovery steps for runtime, project, and tool workflows.
+		</member>
+		<member name="blazium/justamcp/resources/Video Recordings Cache" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Video Recordings Cache[/code]. Description: Returns an index of all sequential video snapshot frames captured by the runtime recording hook.
+		</member>
+		<member name="blazium/justamcp/server_enabled" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], starts the JustAMCP Model Context Protocol (MCP) HTTP server when the editor loads. Also enabled by the [code]--enable-mcp[/code] command-line flag.
+		</member>
+		<member name="blazium/justamcp/server_port" type="int" setter="" getter="" default="6506">
+			TCP port for the JustAMCP MCP HTTP endpoint ([code]POST /mcp[/code]). Override at launch with [code]--mcp-port[/code].
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Analysis Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/analysis_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_analyze_scene_complexity" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_analyze_scene_complexity[/code] tool from the Analysis Tools family to MCP clients. Counts bounds estimating tree node/logic allocation and depths.
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_analyze_signal_flow" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_analyze_signal_flow[/code] tool from the Analysis Tools family to MCP clients. Dumps all complex recursive callable/signal graphs connecting dynamically natively.
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_detect_circular_dependencies" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_detect_circular_dependencies[/code] tool from the Analysis Tools family to MCP clients. Detects DFS recursion cycles detecting deep graph violations dynamically.
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_find_script_references" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_find_script_references[/code] tool from the Analysis Tools family to MCP clients. Executes strict text boundary parses across source representations verifying usage paths.
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_find_unused_resources" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_find_unused_resources[/code] tool from the Analysis Tools family to MCP clients. Traverses physical file system mapping orphaned godot assets unused by .tscn scenes automatically.
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_get_project_statistics" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_project_statistics[/code] tool from the Analysis Tools family to MCP clients. Calculates physical byte limits checking file distribution and global dependencies.
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_project_advise" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_project_advise[/code] tool from the Analysis Tools family to MCP clients. Returns lightweight native project guidance based on current settings and scene state.
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_project_index" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_project_index[/code] tool from the Analysis Tools family to MCP clients. Builds a lightweight native project index from mapped scripts, scenes, and statistics.
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_project_state" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_project_state[/code] tool from the Analysis Tools family to MCP clients. Aggregates project settings, filesystem statistics, and current scene status.
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_project_symbol_search" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_project_symbol_search[/code] tool from the Analysis Tools family to MCP clients. Searches project scripts for classes, functions, variables, and signal symbols.
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_runtime_diagnose" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_runtime_diagnose[/code] tool from the Analysis Tools family to MCP clients. Aggregates runtime status, recent errors, and performance logs for diagnosis.
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_scene_analyze" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_scene_analyze[/code] tool from the Analysis Tools family to MCP clients. Aggregates scene complexity and scene tree dump information.
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_scene_dependency_graph" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_scene_dependency_graph[/code] tool from the Analysis Tools family to MCP clients. Returns scene dependency information using the existing batch scene dependency analyzer.
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_scene_validate" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_scene_validate[/code] tool from the Analysis Tools family to MCP clients. Validates the current scene for common missing scripts, owners, and empty root issues.
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_script_analyze" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_script_analyze[/code] tool from the Analysis Tools family to MCP clients. Searches scripts and returns script-level diagnostics for a query.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Animation Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/animation_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_add_animation_state" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_animation_state[/code] tool from the Animation Tools family to MCP clients. Injects structural states to node graphs natively.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_add_animation_track" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_animation_track[/code] tool from the Animation Tools family to MCP clients. Injects animation tracks into an existing track layout.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_connect_animation_states" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_connect_animation_states[/code] tool from the Animation Tools family to MCP clients. Binds state machine states together via transitions.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_create_animation" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_animation[/code] tool from the Animation Tools family to MCP clients. Creates an animation data resource natively.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_create_animation_tree" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_animation_tree[/code] tool from the Animation Tools family to MCP clients. Creates an animation tree container.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_create_navigation_agent" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_navigation_agent[/code] tool from the Animation Tools family to MCP clients. Injects a navigation agent node natively.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_create_navigation_region" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_navigation_region[/code] tool from the Animation Tools family to MCP clients. Injects a navigation region structurally natively.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_get_animation_info" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_animation_info[/code] tool from the Animation Tools family to MCP clients. Lists AnimationPlayer animations and track metadata.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_get_animation_tree_structure" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_animation_tree_structure[/code] tool from the Animation Tools family to MCP clients. Reads an AnimationTree state machine or blend tree structure.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_list_animations" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_list_animations[/code] tool from the Animation Tools family to MCP clients. Lists animation names and metadata from an AnimationPlayer.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_remove_animation" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_remove_animation[/code] tool from the Animation Tools family to MCP clients. Removes an animation from an AnimationPlayer's default library.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_remove_animation_state" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_remove_animation_state[/code] tool from the Animation Tools family to MCP clients. Removes a state from an AnimationTree state machine.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_remove_animation_transition" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_remove_animation_transition[/code] tool from the Animation Tools family to MCP clients. Removes an AnimationTree state machine transition by index or endpoint states.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_set_animation_keyframe" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_animation_keyframe[/code] tool from the Animation Tools family to MCP clients. Sets or creates a value-track keyframe on an AnimationPlayer animation.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_set_animation_tree_parameter" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_animation_tree_parameter[/code] tool from the Animation Tools family to MCP clients. Sets an AnimationTree runtime parameter value in a scene resource.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_set_blend_tree_node" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_blend_tree_node[/code] tool from the Animation Tools family to MCP clients. Adds or replaces an AnimationNodeAnimation inside an AnimationNodeBlendTree.
+		</member>
+		<member name="blazium/justamcp/tools/asset_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Asset Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/asset_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/asset_tools/blazium_asset_generate_2d_asset" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_asset_generate_2d_asset[/code] tool from the Asset Tools family to MCP clients. Renders raw SVG code directly into Godot Image instances saving PNG assets to disk and scanning filesystem repositories natively.
+		</member>
+		<member name="blazium/justamcp/tools/audio_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Audio Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/audio_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/audio_tools/blazium_add_audio_bus" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_audio_bus[/code] tool from the Audio Tools family to MCP clients. Binds a new structural audio bus dynamically into the godot runtime.
+		</member>
+		<member name="blazium/justamcp/tools/audio_tools/blazium_add_audio_bus_effect" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_audio_bus_effect[/code] tool from the Audio Tools family to MCP clients. Maps Godot AudioEffects via reflection bridging directly onto buses.
+		</member>
+		<member name="blazium/justamcp/tools/audio_tools/blazium_add_audio_player" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_audio_player[/code] tool from the Audio Tools family to MCP clients. Injects structural AudioStreamPlayer instances directly mapped inside Godot trees.
+		</member>
+		<member name="blazium/justamcp/tools/audio_tools/blazium_audio_get_players_info" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_audio_get_players_info[/code] tool from the Audio Tools family to MCP clients. Returns hierarchical node maps wrapping natively instantiated stream wrappers.
+		</member>
+		<member name="blazium/justamcp/tools/audio_tools/blazium_get_audio_bus_layout" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_audio_bus_layout[/code] tool from the Audio Tools family to MCP clients. Returns native godot AudioServer state containing all available buses and their effects.
+		</member>
+		<member name="blazium/justamcp/tools/audio_tools/blazium_set_audio_bus" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_audio_bus[/code] tool from the Audio Tools family to MCP clients. Modifies specific index Godot audio buses layout.
+		</member>
+		<member name="blazium/justamcp/tools/autowork_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Autowork Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/autowork_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/autowork_tools/blazium_autowork_run_all_tests" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_autowork_run_all_tests[/code] tool from the Autowork Tools family to MCP clients. Recursively traverses and executes all autowork test suites natively returning structured passing/failure statistics.
+		</member>
+		<member name="blazium/justamcp/tools/autowork_tools/blazium_autowork_run_test_by_name" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_autowork_run_test_by_name[/code] tool from the Autowork Tools family to MCP clients. Performs regex lookup isolating explicit test pattern function names universally across suites for debugging single logic instances.
+		</member>
+		<member name="blazium/justamcp/tools/autowork_tools/blazium_autowork_run_test_script" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_autowork_run_test_script[/code] tool from the Autowork Tools family to MCP clients. Executes an exact test script natively against the runtime test suite framework evaluating state.
+		</member>
+		<member name="blazium/justamcp/tools/autowork_tools/blazium_autowork_run_tests_in_directory" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_autowork_run_tests_in_directory[/code] tool from the Autowork Tools family to MCP clients. Recursively finds and executes all Godot autowork unit tests inside a given directory, returning formatted results.
+		</member>
+		<member name="blazium/justamcp/tools/batch_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Batch Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/batch_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/batch_tools/blazium_batch_add_nodes" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_batch_add_nodes[/code] tool from the Batch Tools family to MCP clients. Adds multiple nodes to the currently edited scene in one call.
+		</member>
+		<member name="blazium/justamcp/tools/batch_tools/blazium_batch_execute" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_batch_execute[/code] tool from the Batch Tools family to MCP clients. Executes multiple JustAMCP tools sequentially with optional undo on failure.
+		</member>
+		<member name="blazium/justamcp/tools/batch_tools/blazium_batch_set_property" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_batch_set_property[/code] tool from the Batch Tools family to MCP clients. Finds nodes of a class and assigns a batch property mutation dynamically.
+		</member>
+		<member name="blazium/justamcp/tools/batch_tools/blazium_cross_scene_set_property" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_cross_scene_set_property[/code] tool from the Batch Tools family to MCP clients. Modifies properties identically across ALL scene files matching parameters saving changes into file system.
+		</member>
+		<member name="blazium/justamcp/tools/batch_tools/blazium_find_node_references" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_find_node_references[/code] tool from the Batch Tools family to MCP clients. Searches file system recursively for reference nodes by string pattern.
+		</member>
+		<member name="blazium/justamcp/tools/batch_tools/blazium_find_nodes_by_type" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_find_nodes_by_type[/code] tool from the Batch Tools family to MCP clients. Recursively scans a scene hierarchy looking for class type matches.
+		</member>
+		<member name="blazium/justamcp/tools/batch_tools/blazium_find_signal_connections" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_find_signal_connections[/code] tool from the Batch Tools family to MCP clients. Collects connections and signal maps spanning a particular node criteria.
+		</member>
+		<member name="blazium/justamcp/tools/batch_tools/blazium_get_scene_dependencies" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_scene_dependencies[/code] tool from the Batch Tools family to MCP clients. Interrogates internal Godot dependencies structure string paths via ResourceLoader.
+		</member>
+		<member name="blazium/justamcp/tools/blueprint_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Blueprint Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/blueprint_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/blueprint_tools/blazium_blueprint_create_material_preset" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_blueprint_create_material_preset[/code] tool from the Blueprint Tools family to MCP clients. Applies curated StandardMaterial3D blueprints (metal, glass, emissive, etc.) to target MeshInstance or Material nodes.
+		</member>
+		<member name="blazium/justamcp/tools/blueprint_tools/blazium_blueprint_create_particle_preset" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_blueprint_create_particle_preset[/code] tool from the Blueprint Tools family to MCP clients. Applies high-level ParticleProcessMaterial blueprints (fire, smoke, explosion, etc.) including automated Gradient and QuadMesh setup.
+		</member>
+		<member name="blazium/justamcp/tools/blueprint_tools/blazium_blueprint_setup_camera_preset" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_blueprint_setup_camera_preset[/code] tool from the Blueprint Tools family to MCP clients. Configures Camera2D or Camera3D nodes for specific gameplay paradigms (top-down, platformer, cinematic, action).
+		</member>
+		<member name="blazium/justamcp/tools/documentation_tools" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], enables the Documentation Tools tool family for JustAMCP MCP clients. Enabled by default because this category is part of the core JustAMCP workflow. Individual tools under [code]blazium/justamcp/tools/documentation_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/documentation_tools/blazium_classdb_query" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_classdb_query[/code] tool from the Documentation Tools family to MCP clients. Queries ClassDB for properties, methods, signals, constants, and inheritance for a class.
+		</member>
+		<member name="blazium/justamcp/tools/documentation_tools/blazium_docs_get_class" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_docs_get_class[/code] tool from the Documentation Tools family to MCP clients. Reads full internal documentation for a Blazium class, optionally including all members.
+		</member>
+		<member name="blazium/justamcp/tools/documentation_tools/blazium_docs_get_member" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_docs_get_member[/code] tool from the Documentation Tools family to MCP clients. Reads internal documentation for a specific class member such as a method, property, signal, constant, enum, or annotation.
+		</member>
+		<member name="blazium/justamcp/tools/documentation_tools/blazium_docs_list_classes" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_docs_list_classes[/code] tool from the Documentation Tools family to MCP clients. Lists internally registered Blazium class documentation summaries from the editor documentation database.
+		</member>
+		<member name="blazium/justamcp/tools/documentation_tools/blazium_docs_search" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_docs_search[/code] tool from the Documentation Tools family to MCP clients. Searches internal Blazium documentation across classes, methods, properties, signals, and constants.
+		</member>
+		<member name="blazium/justamcp/tools/draw_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Draw Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/draw_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/draw_tools/blazium_control_draw_recipe" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_control_draw_recipe[/code] tool from the Draw Tools family to MCP clients. Stores and executes ordered CanvasItem draw operations on target Control nodes utilizing an embedded dynamic script natively.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Editor Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/editor_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_clear_output" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_editor_clear_output[/code] tool from the Editor Tools family to MCP clients. Clears the editor output panel through the native command palette.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_get_errors" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_editor_get_errors[/code] tool from the Editor Tools family to MCP clients. Returns recent error and warning lines captured by the JustAMCP engine log hook.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_get_output_log" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_editor_get_output_log[/code] tool from the Editor Tools family to MCP clients. Returns recent output lines captured by the JustAMCP engine log hook.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_get_selected" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_editor_get_selected[/code] tool from the Editor Tools family to MCP clients. Retrieves the currently selected nodes.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_get_settings" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_editor_get_settings[/code] tool from the Editor Tools family to MCP clients. Inspects current user-level settings configurations applied in EditorSettings directly.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_get_signals" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_editor_get_signals[/code] tool from the Editor Tools family to MCP clients. Lists signals for a class or node in the edited scene.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_is_playing" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_editor_is_playing[/code] tool from the Editor Tools family to MCP clients. Checks if a play session is currently active natively.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_open_scene" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_editor_open_scene[/code] tool from the Editor Tools family to MCP clients. Invokes the editor natively to swap active tabs opening a given `.tscn` file onto the viewport.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_play_main" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_editor_play_main[/code] tool from the Editor Tools family to MCP clients. Runs the project's main scene.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_play_scene" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_editor_play_scene[/code] tool from the Editor Tools family to MCP clients. Runs the currently active or specified scene.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_redo" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_editor_redo[/code] tool from the Editor Tools family to MCP clients. Triggers Editor global redo action.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_reload_project" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_editor_reload_project[/code] tool from the Editor Tools family to MCP clients. Requests an editor restart to reload the project.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_save_all_scenes" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_editor_save_all_scenes[/code] tool from the Editor Tools family to MCP clients. Saves all open editor scenes.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_screenshot_game" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_editor_screenshot_game[/code] tool from the Editor Tools family to MCP clients. Captures the visible game display to a PNG file.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_select_node" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_editor_select_node[/code] tool from the Editor Tools family to MCP clients. Changes the user's active selection in the Scene Tree dock.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_set_main_screen" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_editor_set_main_screen[/code] tool from the Editor Tools family to MCP clients. Switches between 2D, 3D, Script, and AssetLib views.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_set_settings" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_editor_set_settings[/code] tool from the Editor Tools family to MCP clients. Manipulates current user-level Editor configurations dynamically applying layout changes instantly.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_stop_play" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_editor_stop_play[/code] tool from the Editor Tools family to MCP clients. Terminates an active play session.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_take_screenshot" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_editor_take_screenshot[/code] tool from the Editor Tools family to MCP clients. Captures the editor or runtime viewport.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_undo" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_editor_undo[/code] tool from the Editor Tools family to MCP clients. Triggers Editor global undo action.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_logs_read" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_logs_read[/code] tool from the Editor Tools family to MCP clients. Reads recent JustAMCP/editor log lines with optional filtering.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_open_in_godot" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_open_in_godot[/code] tool from the Editor Tools family to MCP clients. Opens a script or scene path in the Blazium editor.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_rescan_filesystem" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_rescan_filesystem[/code] tool from the Editor Tools family to MCP clients. Triggers the editor filesystem to rescan project files.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_scene_tree_dump" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_scene_tree_dump[/code] tool from the Editor Tools family to MCP clients. Dumps the currently edited scene tree with node names, types, scripts, and paths.
+		</member>
+		<member name="blazium/justamcp/tools/environment_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Environment Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/environment_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/environment_tools/blazium_environment_create" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_environment_create[/code] tool from the Environment Tools family to MCP clients. Creates a complex Environment (+ optional Sky + ProceduralSkyMaterial) chain and assigns it to a WorldEnvironment node via presets.
+		</member>
+		<member name="blazium/justamcp/tools/export_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Export Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/export_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/export_tools/blazium_deploy_to_android" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_deploy_to_android[/code] tool from the Export Tools family to MCP clients. Exports, installs, and optionally launches an Android build through adb.
+		</member>
+		<member name="blazium/justamcp/tools/export_tools/blazium_export_project" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_export_project[/code] tool from the Export Tools family to MCP clients. Triggers a headless Godot export operation.
+		</member>
+		<member name="blazium/justamcp/tools/export_tools/blazium_get_android_preset_info" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_android_preset_info[/code] tool from the Export Tools family to MCP clients. Reads Android export preset metadata.
+		</member>
+		<member name="blazium/justamcp/tools/export_tools/blazium_get_export_info" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_export_info[/code] tool from the Export Tools family to MCP clients. Returns metadata regarding absolute template directions and binary configurations.
+		</member>
+		<member name="blazium/justamcp/tools/export_tools/blazium_list_android_devices" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_list_android_devices[/code] tool from the Export Tools family to MCP clients. Lists Android devices visible to adb.
+		</member>
+		<member name="blazium/justamcp/tools/export_tools/blazium_list_export_presets" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_list_export_presets[/code] tool from the Export Tools family to MCP clients. Reads and returns all export presets from export_presets.cfg.
+		</member>
+		<member name="blazium/justamcp/tools/input_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Input Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/input_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/input_tools/blazium_input_record" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_input_record[/code] tool from the Input Tools family to MCP clients. Start listening over input sequence frame loops saving complex vectors natively capturing user simulations optimally.
+		</member>
+		<member name="blazium/justamcp/tools/input_tools/blazium_input_replay" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_input_replay[/code] tool from the Input Tools family to MCP clients. Streams input buffer traces driving Godot inputs mapped deterministically accurately replaying test routines safely.
+		</member>
+		<member name="blazium/justamcp/tools/input_tools/blazium_simulate_action" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_simulate_action[/code] tool from the Input Tools family to MCP clients. Triggers artificial input action payloads universally mimicking defined map shortcuts across states natively.
+		</member>
+		<member name="blazium/justamcp/tools/input_tools/blazium_simulate_gamepad" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_simulate_gamepad[/code] tool from the Input Tools family to MCP clients. Fakes joypad signals pushing button index/pressure or axis overrides for active game controller states.
+		</member>
+		<member name="blazium/justamcp/tools/input_tools/blazium_simulate_key" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_simulate_key[/code] tool from the Input Tools family to MCP clients. Mocks native godot InputEventKey structs sent across IPC towards godot debug runtimes.
+		</member>
+		<member name="blazium/justamcp/tools/input_tools/blazium_simulate_mouse_click" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_simulate_mouse_click[/code] tool from the Input Tools family to MCP clients. Mocks native godot InputEventMouseButton bounding structurally across OS IPC streams.
+		</member>
+		<member name="blazium/justamcp/tools/input_tools/blazium_simulate_mouse_move" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_simulate_mouse_move[/code] tool from the Input Tools family to MCP clients. Mocks native godot InputEventMouseMotion translating structural frames over OS IPC streams.
+		</member>
+		<member name="blazium/justamcp/tools/input_tools/blazium_simulate_sequence" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_simulate_sequence[/code] tool from the Input Tools family to MCP clients. Chains an array of defined inputs mapping deterministic simulation timings dynamically.
+		</member>
+		<member name="blazium/justamcp/tools/input_tools/blazium_simulate_touch" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_simulate_touch[/code] tool from the Input Tools family to MCP clients. Mocks screen touch interactions passing accurate index, position, and tap evaluation vectors cleanly bypassing OS screens.
+		</member>
+		<member name="blazium/justamcp/tools/multiuser_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Multiuser Editor Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/multiuser_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/multiuser_tools/blazium_multiuser_get_status" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_multiuser_get_status[/code] tool from the Multiuser Editor Tools family to MCP clients. Returns the active collaborative session status, including the local peer ID and connection state natively out of the Multiplayer network node.
+		</member>
+		<member name="blazium/justamcp/tools/multiuser_tools/blazium_multiuser_kick_peer" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_multiuser_kick_peer[/code] tool from the Multiuser Editor Tools family to MCP clients. Removes a target user peer explicitly from the host environment by ID (Action is silently ignored if the AI host agent lacks active networking privileges).
+		</member>
+		<member name="blazium/justamcp/tools/multiuser_tools/blazium_multiuser_send_chat" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_multiuser_send_chat[/code] tool from the Multiuser Editor Tools family to MCP clients. Dispatches a global text string natively to all uniquely connected remote peer instances across the Editor environment.
+		</member>
+		<member name="blazium/justamcp/tools/multiuser_tools/blazium_multiuser_trigger_autowork" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_multiuser_trigger_autowork[/code] tool from the Multiuser Editor Tools family to MCP clients. Issues a distributed RPC signaling all securely connected peers to automatically boot Godot's Autowork pipeline evaluating unit tests concurrently traversing the network.
+		</member>
+		<member name="blazium/justamcp/tools/networking_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Networking Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/networking_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/networking_tools/blazium_networking_create_http_request" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_networking_create_http_request[/code] tool from the Networking Tools family to MCP clients. Spawns and configures an HTTPRequest node.
+		</member>
+		<member name="blazium/justamcp/tools/networking_tools/blazium_networking_get_info" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_networking_get_info[/code] tool from the Networking Tools family to MCP clients. Returns current multiplayer peer and connection information.
+		</member>
+		<member name="blazium/justamcp/tools/networking_tools/blazium_networking_setup_multiplayer" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_networking_setup_multiplayer[/code] tool from the Networking Tools family to MCP clients. Instantiates a MultiplayerManager structure.
+		</member>
+		<member name="blazium/justamcp/tools/networking_tools/blazium_networking_setup_rpc" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_networking_setup_rpc[/code] tool from the Networking Tools family to MCP clients. Configures RPC (Remote Procedure Call) capabilities onto nodes appending execution mappings natively.
+		</member>
+		<member name="blazium/justamcp/tools/networking_tools/blazium_networking_setup_sync" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_networking_setup_sync[/code] tool from the Networking Tools family to MCP clients. Instantiates a MultiplayerSynchronizer evaluating a properties array to replicate values efficiently.
+		</member>
+		<member name="blazium/justamcp/tools/networking_tools/blazium_networking_setup_websocket" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_networking_setup_websocket[/code] tool from the Networking Tools family to MCP clients. Configures WebSocket connection boilerplate.
+		</member>
+		<member name="blazium/justamcp/tools/node_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Node Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/node_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_add" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_node_add[/code] tool from the Node Tools family to MCP clients. Spawns a godot node natively onto a target structural anchor.
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_add_resource" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_node_add_resource[/code] tool from the Node Tools family to MCP clients. Embeds a godot Resource directly assigned directly onto a node structure natively.
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_connect_signal" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_node_connect_signal[/code] tool from the Node Tools family to MCP clients. Binds callable events between source nodes bounding into target instances natively.
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_delete" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_node_delete[/code] tool from the Node Tools family to MCP clients. Removes a godot node structural anchor.
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_disconnect_signal" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_node_disconnect_signal[/code] tool from the Node Tools family to MCP clients. Snaps off existing bounding callable events recursively mapped over nodes.
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_duplicate" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_node_duplicate[/code] tool from the Node Tools family to MCP clients. Clones a node struct into the scene graph dynamically.
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_find_in_group" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_node_find_in_group[/code] tool from the Node Tools family to MCP clients. Provides lookup access globally towards Godot instance sets natively spanning specific groups.
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_get_groups" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_node_get_groups[/code] tool from the Node Tools family to MCP clients. Aggregates internal Godot Groups strings assigned over standard instances.
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_get_properties" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_node_get_properties[/code] tool from the Node Tools family to MCP clients. Interrogates internal parameters within Node bindings structurally.
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_move" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_node_move[/code] tool from the Node Tools family to MCP clients. Alters structural ownership hierarchy within the Scene Tree.
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_rename" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_node_rename[/code] tool from the Node Tools family to MCP clients. Edits node semantic names directly within godot structures.
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_set_anchor_preset" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_node_set_anchor_preset[/code] tool from the Node Tools family to MCP clients. Enables UI layout modifications bound towards native godot PRESET flags.
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_set_groups" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_node_set_groups[/code] tool from the Node Tools family to MCP clients. Mutates overlapping assignment instances mapped per godot string node groups.
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_update_property" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_node_update_property[/code] tool from the Node Tools family to MCP clients. Explicitly manages individual Variant properties assigned onto a node.
+		</member>
+		<member name="blazium/justamcp/tools/particle_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Particle Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/particle_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/particle_tools/blazium_apply_particle_preset" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_apply_particle_preset[/code] tool from the Particle Tools family to MCP clients. Wraps multiple set calls interpolating variables representing default high quality VFX presets.
+		</member>
+		<member name="blazium/justamcp/tools/particle_tools/blazium_create_particles" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_particles[/code] tool from the Particle Tools family to MCP clients. Instantiates a new particle emitter structure onto a godot node.
+		</member>
+		<member name="blazium/justamcp/tools/particle_tools/blazium_get_particle_info" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_particle_info[/code] tool from the Particle Tools family to MCP clients. Interrogates godot nodes returning hierarchical configuration state back to the MCP stream.
+		</member>
+		<member name="blazium/justamcp/tools/particle_tools/blazium_set_particle_color_gradient" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_particle_color_gradient[/code] tool from the Particle Tools family to MCP clients. Maps linear stop structs against color configurations into a proper GradientTexture1D resource natively.
+		</member>
+		<member name="blazium/justamcp/tools/particle_tools/blazium_set_particle_material" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_particle_material[/code] tool from the Particle Tools family to MCP clients. Modifies inner Godot struct material values bounding Godot Variant types for particles.
+		</member>
+		<member name="blazium/justamcp/tools/physics_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Physics Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/physics_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/physics_tools/blazium_add_raycast" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_raycast[/code] tool from the Physics Tools family to MCP clients. Instantiates native Godot RayCast queries pointing into logical coordinate targets asynchronously bounds.
+		</member>
+		<member name="blazium/justamcp/tools/physics_tools/blazium_get_collision_info" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_collision_info[/code] tool from the Physics Tools family to MCP clients. Walks a sub-hierarchy scraping Godot shape configurations for runtime representations.
+		</member>
+		<member name="blazium/justamcp/tools/physics_tools/blazium_get_physics_layers" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_physics_layers[/code] tool from the Physics Tools family to MCP clients. Reads intrinsic properties parsing bitmask configurations exposing layers visually.
+		</member>
+		<member name="blazium/justamcp/tools/physics_tools/blazium_set_physics_layers" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_physics_layers[/code] tool from the Physics Tools family to MCP clients. Controls implicit bitmask configurations assigning node interaction overlap flags natively.
+		</member>
+		<member name="blazium/justamcp/tools/physics_tools/blazium_setup_collision" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_setup_collision[/code] tool from the Physics Tools family to MCP clients. Spawns and attaches native 2D/3D collision boundaries onto physical rigid bodies dynamically.
+		</member>
+		<member name="blazium/justamcp/tools/physics_tools/blazium_setup_physics_body" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_setup_physics_body[/code] tool from the Physics Tools family to MCP clients. Allocates pure native Object implementations defining Physics bodies bounds (Area, Character, Rigid).
+		</member>
+		<member name="blazium/justamcp/tools/profiling_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Profiling Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/profiling_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/profiling_tools/blazium_get_editor_performance" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_editor_performance[/code] tool from the Profiling Tools family to MCP clients. Retrieves a compact structural overview of the performance footprint of the godot editor process.
+		</member>
+		<member name="blazium/justamcp/tools/profiling_tools/blazium_get_performance_monitors" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_performance_monitors[/code] tool from the Profiling Tools family to MCP clients. Retrieves all performance monitors related to memory, FPS, navigation, rendering.
+		</member>
+		<member name="blazium/justamcp/tools/profiling_tools/blazium_profiling_detect_bottlenecks" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_profiling_detect_bottlenecks[/code] tool from the Profiling Tools family to MCP clients. Analyzes current Performance counters for common bottlenecks.
+		</member>
+		<member name="blazium/justamcp/tools/profiling_tools/blazium_profiling_monitor" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_profiling_monitor[/code] tool from the Profiling Tools family to MCP clients. Compares current Performance counters against caller-provided thresholds.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Project Tools tool family for JustAMCP MCP clients. Enabled by default because this category is part of the core JustAMCP workflow. Individual tools under [code]blazium/justamcp/tools/project_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_add_autoload" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_autoload[/code] tool from the Project Tools family to MCP clients. Injects a singleton scene or script as an autoload in project scope.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_get_filesystem_tree" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_filesystem_tree[/code] tool from the Project Tools family to MCP clients. Returns a recursive file tree with an option to filter by extension.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_get_project_info" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_project_info[/code] tool from the Project Tools family to MCP clients. Returns metadata about the project, renderer, viewport, and autoloads.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_inject_drag" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_inject_drag[/code] tool from the Project Tools family to MCP clients. Executes a rapid mouse drag-and-drop event from start to end coordinates.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_inject_gamepad" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_inject_gamepad[/code] tool from the Project Tools family to MCP clients. Simulates joypad events including button presses and axis motions.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_inject_gesture" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_inject_gesture[/code] tool from the Project Tools family to MCP clients. Injects high-level touch gestures like pinch or swipe into the engine.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_inject_scroll" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_inject_scroll[/code] tool from the Project Tools family to MCP clients. Triggers a viewport scroll event at specified coordinates with a given delta.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_project_get_collision_layers" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_project_get_collision_layers[/code] tool from the Project Tools family to MCP clients. Dumps named Godot physics layers extracting user-defined metadata from ProjectSettings configuration natively.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_project_get_input_actions" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_project_get_input_actions[/code] tool from the Project Tools family to MCP clients. Retrieves the engine InputMap event bindings natively.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_project_list_settings" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_project_list_settings[/code] tool from the Project Tools family to MCP clients. Queries active Godot ProjectSettings dumping categorized key-value pairs with serialization logic.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_project_manage_autoloads" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_project_manage_autoloads[/code] tool from the Project Tools family to MCP clients. Automates Godot Autoload registrations minting or deleting global project singletons dynamically.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_project_map_project" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_project_map_project[/code] tool from the Project Tools family to MCP clients. Crawls the physical file system mapping GdScript inheritance, signal connectors, and resource preloads structural graphs natively.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_project_map_scenes" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_project_map_scenes[/code] tool from the Project Tools family to MCP clients. Parses .tscn scene tree representations identifying node types and resource dependencies across scene graphs natively.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_project_path_to_uid" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_project_path_to_uid[/code] tool from the Project Tools family to MCP clients. Converts a godot absolute res:// path to its UUID equivalent.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_project_remove_input_action" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_project_remove_input_action[/code] tool from the Project Tools family to MCP clients. Erases an InputMap action definition from project map.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_project_run" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_project_run[/code] tool from the Project Tools family to MCP clients. Runs the project or a scene with optional save-all before launch.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_project_set_input_action" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_project_set_input_action[/code] tool from the Project Tools family to MCP clients. Binds a custom InputMap action to an event mapping.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_project_update_settings" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_project_update_settings[/code] tool from the Project Tools family to MCP clients. Persists localized Godot ProjectSettings mapping dynamic dictionaries onto global configuration buffers recursively.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_remove_autoload" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_remove_autoload[/code] tool from the Project Tools family to MCP clients. Detaches a singleton autoload from project scope.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_search_files" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_search_files[/code] tool from the Project Tools family to MCP clients. Searches the file system with a glob or fuzzy query.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_search_in_files" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_search_in_files[/code] tool from the Project Tools family to MCP clients. Searches file contents using string matching or regex.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_set_project_setting" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_project_setting[/code] tool from the Project Tools family to MCP clients. Sets a specific global setting in project.godot.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_uid_to_project_path" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_uid_to_project_path[/code] tool from the Project Tools family to MCP clients. Resolves a Godot UID representation to an absolute res:// path.
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Resource Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/resource_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_apply_theme_shader" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_apply_theme_shader[/code] tool from the Resource Tools family to MCP clients. Applies shaders to UI theme elements natively.
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_create_material" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_material[/code] tool from the Resource Tools family to MCP clients. Creates a material resource natively.
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_create_resource" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_resource[/code] tool from the Resource Tools family to MCP clients. Creates a generic Godot resource.
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_create_shader_template" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_shader_template[/code] tool from the Resource Tools family to MCP clients. Creates a shader file from code or one of the resource shader templates.
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_create_tileset" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_tileset[/code] tool from the Resource Tools family to MCP clients. Creates a standard tileset natively.
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_edit_resource_file" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_edit_resource_file[/code] tool from the Resource Tools family to MCP clients. Edits a resource file by replacing text content or setting resource properties.
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_get_resource_dependencies" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_resource_dependencies[/code] tool from the Resource Tools family to MCP clients. Lists ResourceLoader dependencies for a resource path.
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_get_resource_info" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_resource_info[/code] tool from the Resource Tools family to MCP clients. Returns basic information about a resource class or resource file.
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_get_resource_preview" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_resource_preview[/code] tool from the Resource Tools family to MCP clients. Returns lightweight preview metadata for a resource.
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_import_asset_copy" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_import_asset_copy[/code] tool from the Resource Tools family to MCP clients. Copies an external asset into the project and refreshes the filesystem.
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_list_resource_files" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_list_resource_files[/code] tool from the Resource Tools family to MCP clients. Recursively lists resource files with optional class filtering.
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_manage_resource_autoloads" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_manage_resource_autoloads[/code] tool from the Resource Tools family to MCP clients. Lists, adds, or removes project autoload entries through resource-style arguments.
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_modify_resource" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_modify_resource[/code] tool from the Resource Tools family to MCP clients. Modifies an existing resource.
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_read_resource_file" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_read_resource_file[/code] tool from the Resource Tools family to MCP clients. Reads a resource file as text or returns basic resource metadata.
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_resource_import_asset" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_resource_import_asset[/code] tool from the Resource Tools family to MCP clients. Triggers the EditorFileSystem to reimport a resource asynchronously.
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_save_resource_as" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_save_resource_as[/code] tool from the Resource Tools family to MCP clients. Saves an existing resource to a new project path.
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_set_theme_resource_color" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_theme_resource_color[/code] tool from the Resource Tools family to MCP clients. Configures theme colors natively.
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_set_theme_resource_font_size" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_theme_resource_font_size[/code] tool from the Resource Tools family to MCP clients. Configures theme font sizes natively.
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_set_tilemap_cells" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_tilemap_cells[/code] tool from the Resource Tools family to MCP clients. Modifies bulk tilemap data.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Runtime Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/runtime_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_eval_expression" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_eval_expression[/code] tool from the Runtime Tools family to MCP clients. Evaluates a sandboxed GDScript expression for rapid diagnostic querying.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_execute_gdscript_snippet" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_execute_gdscript_snippet[/code] tool from the Runtime Tools family to MCP clients. Dynamically evaluates raw GDScript source strings overriding static execution bypassing compiled states natively mapping memory contexts locally.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_get_audio_info" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_audio_info[/code] tool from the Runtime Tools family to MCP clients. Snapshots the current AudioServer bus layout including volumes and mute states.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_get_network_info" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_network_info[/code] tool from the Runtime Tools family to MCP clients. Retrieves multiplayer state including peer IDs and server status natively.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_get_runtime_log" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_runtime_log[/code] tool from the Runtime Tools family to MCP clients. Returns recent JustAMCP runtime/editor log lines.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_get_runtime_status" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_runtime_status[/code] tool from the Runtime Tools family to MCP clients. Returns editor play state and runtime bridge availability.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_query_runtime_node" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_query_runtime_node[/code] tool from the Runtime Tools family to MCP clients. Reads a live runtime node through JustAMCPRuntime when the bridge is active.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_run_custom_command" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_run_custom_command[/code] tool from the Runtime Tools family to MCP clients. Invokes a user-registered custom command on the JustAMCPRuntime singleton.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_batch_get_properties" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_runtime_batch_get_properties[/code] tool from the Runtime Tools family to MCP clients. Reads multiple properties from multiple live runtime nodes.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_capabilities" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_runtime_capabilities[/code] tool from the Runtime Tools family to MCP clients. Lists all blazium_ commands currently exposed by this MCP session.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_capture_output" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_runtime_capture_output[/code] tool from the Runtime Tools family to MCP clients. Grabs standard native string output streams logged during active execution natively exposing debug logs rapidly.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_click_button_by_text" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_runtime_click_button_by_text[/code] tool from the Runtime Tools family to MCP clients. Triggers a live BaseButton whose text matches the query.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_compare_screenshots" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_runtime_compare_screenshots[/code] tool from the Runtime Tools family to MCP clients. Evaluates frame buffer pixel matches defining explicit rendering consistencies comparing layout tests natively validating UI shifts.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_find_nodes_by_script" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_runtime_find_nodes_by_script[/code] tool from the Runtime Tools family to MCP clients. Finds live runtime nodes whose script path or global class matches.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_find_ui_elements" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_runtime_find_ui_elements[/code] tool from the Runtime Tools family to MCP clients. Finds visible Control nodes by text and/or class.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_get_autoload" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_runtime_get_autoload[/code] tool from the Runtime Tools family to MCP clients. Reads runtime autoload configuration and loaded singleton node state.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_get_errors" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_runtime_get_errors[/code] tool from the Runtime Tools family to MCP clients. Polls the engine's internal error and warning logs incrementally.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_get_test_results" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_runtime_get_test_results[/code] tool from the Runtime Tools family to MCP clients. Returns the currently available JustAMCP runtime test result snapshot.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_get_tree" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_runtime_get_tree[/code] tool from the Runtime Tools family to MCP clients. Returns a serialized runtime scene tree from the JustAMCP runtime singleton.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_info" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_runtime_info[/code] tool from the Runtime Tools family to MCP clients. Snapshots active engine state including FPS, current scene, and frame counters.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_inspect_node" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_runtime_inspect_node[/code] tool from the Runtime Tools family to MCP clients. Returns runtime node metadata and properties for a specific node path.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_monitor_properties" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_runtime_monitor_properties[/code] tool from the Runtime Tools family to MCP clients. Snapshots selected live runtime node properties.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_move_node" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_runtime_move_node[/code] tool from the Runtime Tools family to MCP clients. Sets a live runtime node's position-like property.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_quit" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_runtime_quit[/code] tool from the Runtime Tools family to MCP clients. Forcibly terminates the running game process synchronously.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_record_video" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_runtime_record_video[/code] tool from the Runtime Tools family to MCP clients. Initializes MP4 rendering capturing frame by frame runtime layouts dynamically tracing rendering tests natively.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_run_gut_tests" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_runtime_run_gut_tests[/code] tool from the Runtime Tools family to MCP clients. Returns native guidance for running GUT tests from the editor or command line.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_signal_emit" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_signal_emit[/code] tool from the Runtime Tools family to MCP clients. Fires Godot Event bindings internally passing variable parameter objects mapping signal arguments natively across local instances.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_take_game_screenshot" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_take_game_screenshot[/code] tool from the Runtime Tools family to MCP clients. Captures the running game's viewport as a PNG base64 blob natively from the active viewport.
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_wait" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_wait[/code] tool from the Runtime Tools family to MCP clients. Sleeps server-side for a bounded interval to let runtime/editor state settle.
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the 3D Scene Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/scene3d_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_add_gridmap" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_gridmap[/code] tool from the 3D Scene Tools family to MCP clients. Mints and instantiates Godot high performance GridMap bounding memory grids locally.
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_add_mesh_instance" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_mesh_instance[/code] tool from the 3D Scene Tools family to MCP clients. Mints and injects a MeshInstance3D primitive directly into Godot Scene tree natively.
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_set_material_3d" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_material_3d[/code] tool from the 3D Scene Tools family to MCP clients. Assigns and computes real-time StandardMaterial3D configurations over Godot primitive and loaded meshes.
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_setup_camera_3d" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_setup_camera_3d[/code] tool from the 3D Scene Tools family to MCP clients. Allocates viewport Camera3D projection mapping native structural properties inside godot runtime.
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_setup_environment" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_setup_environment[/code] tool from the 3D Scene Tools family to MCP clients. Allocates rendering environments over Godot bindings (SSAO, SSR, SDFGI, Glow, Fog).
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_setup_lighting" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_setup_lighting[/code] tool from the 3D Scene Tools family to MCP clients. Configures high performance Godot lights (SpotLight3D, OmniLight3D, DirectionalLight3D) dynamically into the tree.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], enables the Scene Tools tool family for JustAMCP MCP clients. Enabled by default because this category is part of the core JustAMCP workflow. Individual tools under [code]blazium/justamcp/tools/scene_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_add_node" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_node[/code] tool from the Scene Tools family to MCP clients. Adds a new node to a scene tree structure.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_call_node_method" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_call_node_method[/code] tool from the Scene Tools family to MCP clients. Safely invokes a method on a node with arguments.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_connect_signal" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_connect_signal[/code] tool from the Scene Tools family to MCP clients. Connects a Godot signal dynamically.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_create_area_2d" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_area_2d[/code] tool from the Scene Tools family to MCP clients. Creates an Area2D wrapper explicitly configured with standard scene routing.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_create_csg_shape" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_csg_shape[/code] tool from the Scene Tools family to MCP clients. Generates CSG primitives (CSGBox3D, CSGSphere3D) translating explicit dimensional inputs into 3D vectors intelligently.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_create_line_2d" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_line_2d[/code] tool from the Scene Tools family to MCP clients. Instantiates a Line2D vector series translating simple JS coordinate arrays smoothly.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_create_multimesh" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_multimesh[/code] tool from the Scene Tools family to MCP clients. Binds a MultiMeshInstance3D array enabling batch optimizations natively.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_create_polygon_2d" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_polygon_2d[/code] tool from the Scene Tools family to MCP clients. Shapes a geometric Polygon2D boundary instantiating properly across the parent region context.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_create_scene" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_scene[/code] tool from the Scene Tools family to MCP clients. Creates a new hierarchy branch root instantiating complex node definitions mapped onto empty templates efficiently initializing standard root dependencies safely.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_delete_node" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_delete_node[/code] tool from the Scene Tools family to MCP clients. Removes a specific node from a scene hierarchy.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_delete_scene" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_delete_scene[/code] tool from the Scene Tools family to MCP clients. Deletes a scene file from the project.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_disconnect_signal" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_disconnect_signal[/code] tool from the Scene Tools family to MCP clients. Disconnects an existing signal binding.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_duplicate_node" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_duplicate_node[/code] tool from the Scene Tools family to MCP clients. Duplicates an existing node within a scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_find_nodes" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_find_nodes[/code] tool from the Scene Tools family to MCP clients. Deep searches the scene tree by name, type, and/or group simultaneously.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_get_node_properties" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_node_properties[/code] tool from the Scene Tools family to MCP clients. Reads local serialized properties excluding Godot defaults directly resolving node attributes.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_get_node_property" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_node_property[/code] tool from the Scene Tools family to MCP clients. Reads a targeted property from a specific node.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_get_scene_exports" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_scene_exports[/code] tool from the Scene Tools family to MCP clients. Lists exported/editor-visible properties on nodes in a scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_get_scene_file_content" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_scene_file_content[/code] tool from the Scene Tools family to MCP clients. Reads the raw scene file text for inspection.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_has_signal_connection" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_has_signal_connection[/code] tool from the Scene Tools family to MCP clients. Checks if a specific signal connection exists in a scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_instance_scene" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_instance_scene[/code] tool from the Scene Tools family to MCP clients. Spawns an active nested Hierarchy loading an external `.tscn` packed resource.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_list_connections" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_list_connections[/code] tool from the Scene Tools family to MCP clients. Lists active connections of a specified node.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_list_node_signals" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_list_node_signals[/code] tool from the Scene Tools family to MCP clients. Lists signals declared on a node in a scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_list_scene_nodes" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_list_scene_nodes[/code] tool from the Scene Tools family to MCP clients. Lists the hierarchical node structure of a given scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_load_sprite" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_load_sprite[/code] tool from the Scene Tools family to MCP clients. Loads and sets a texture onto a Sprite node.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_modify_node_property" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_modify_node_property[/code] tool from the Scene Tools family to MCP clients. Compatibility wrapper for setting one property on a scene node.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_press_button" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_press_button[/code] tool from the Scene Tools family to MCP clients. Finds a BaseButton-derived node by name and forcibly triggers its pressed signal.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_reparent_node" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_reparent_node[/code] tool from the Scene Tools family to MCP clients. Changes the parent of a specific node within a scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_save_resource_to_file" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_save_resource_to_file[/code] tool from the Scene Tools family to MCP clients. Saves a node resource property to a .tres/.res file.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_save_scene" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_save_scene[/code] tool from the Scene Tools family to MCP clients. Saves the current state of a scene to disk.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_scene_close" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_scene_close[/code] tool from the Scene Tools family to MCP clients. Reports native scene-tab close support status.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_scene_create_inherited" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_scene_create_inherited[/code] tool from the Scene Tools family to MCP clients. Constructs an explicitly derived scene cloning base structural settings automatically generating inheritance graphs locally bypassing standard empty node creations.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_scene_duplicate_file" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_scene_duplicate_file[/code] tool from the Scene Tools family to MCP clients. Copies a scene file to a new project path.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_scene_get_current" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_scene_get_current[/code] tool from the Scene Tools family to MCP clients. Returns the currently edited scene root and path.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_scene_list_open" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_scene_list_open[/code] tool from the Scene Tools family to MCP clients. Lists open editor scene tabs and the active scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_scene_reload" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_scene_reload[/code] tool from the Scene Tools family to MCP clients. Reloads a scene path or the current edited scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_scene_set_current" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_scene_set_current[/code] tool from the Scene Tools family to MCP clients. Switches the active editor scene tab by opening a scene path.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_set_collision_shape" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_collision_shape[/code] tool from the Scene Tools family to MCP clients. Loads a Shape resource and assigns it to a CollisionShape node shape property.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_set_material" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_material[/code] tool from the Scene Tools family to MCP clients. Loads a Material resource and assigns it to a node material property.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_set_mesh" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_mesh[/code] tool from the Scene Tools family to MCP clients. Loads a Mesh resource and assigns it to a node mesh property.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_set_node_properties" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_node_properties[/code] tool from the Scene Tools family to MCP clients. Modifies the internal properties of a specified node.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_set_resource_property" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_resource_property[/code] tool from the Scene Tools family to MCP clients. Sets a resource or raw value on a node property.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_set_sprite_texture" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_sprite_texture[/code] tool from the Scene Tools family to MCP clients. Loads a Texture2D resource and assigns it to a sprite/control texture property.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_setup_camera_2d" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_setup_camera_2d[/code] tool from the Scene Tools family to MCP clients. Generates Camera2D structure setting zoom ratios or smoothing filters directly.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_setup_occlusion" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_setup_occlusion[/code] tool from the Scene Tools family to MCP clients. Builds OccluderInstance3D buffers mitigating excess renders strictly mapping defined properties.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_setup_parallax_2d" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_setup_parallax_2d[/code] tool from the Scene Tools family to MCP clients. Initializes empty ParallaxBackground arrays managing nested tracking.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_setup_skeleton" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_setup_skeleton[/code] tool from the Scene Tools family to MCP clients. Rigs a unified Skeleton3D core attaching animated skeletal bones systematically.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_wait_for_property" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_wait_for_property[/code] tool from the Scene Tools family to MCP clients. Polls until a node property matches an expected value or confirms the current state.
+		</member>
+		<member name="blazium/justamcp/tools/script_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Script Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/script_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_attach_script" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_attach_script[/code] tool from the Script Tools family to MCP clients. Binds a target Godot Resource Script onto a Scene Node dynamically.
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_create_script" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_script[/code] tool from the Script Tools family to MCP clients. Writes a script file providing a default extending template out of the box.
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_delete_script" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_delete_script[/code] tool from the Script Tools family to MCP clients. Deletes a script file from the project.
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_detach_script" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_detach_script[/code] tool from the Script Tools family to MCP clients. Removes a script from a node in the currently edited scene.
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_edit_script" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_edit_script[/code] tool from the Script Tools family to MCP clients. Modifies an existing script intelligently mapping regex replacements or direct injection.
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_find_script_symbols" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_find_script_symbols[/code] tool from the Script Tools family to MCP clients. Extracts classes, functions, variables, signals, constants, and enum symbols from scripts.
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_get_open_scripts" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_open_scripts[/code] tool from the Script Tools family to MCP clients. Maps what files are actively opened within Godot's script editor GUI.
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_get_script_errors" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_script_errors[/code] tool from the Script Tools family to MCP clients. Returns lightweight script validation error information.
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_list_scripts" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_list_scripts[/code] tool from the Script Tools family to MCP clients. Locates .gd, .cs, .gdshader scripts within the project hierarchy.
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_open_script_in_editor" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_open_script_in_editor[/code] tool from the Script Tools family to MCP clients. Opens a script in the editor script workspace.
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_patch_script" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_patch_script[/code] tool from the Script Tools family to MCP clients. Patches a script by replacing or inserting around an anchor.
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_read_script" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_read_script[/code] tool from the Script Tools family to MCP clients. Fetches source text directly from a godot script file.
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_search_in_scripts" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_search_in_scripts[/code] tool from the Script Tools family to MCP clients. Searches project script files for a literal string.
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_validate_script" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_validate_script[/code] tool from the Script Tools family to MCP clients. Compiles a GDScript implicitly returning if valid or syntax errors mapped out.
+		</member>
+		<member name="blazium/justamcp/tools/shader_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Shader Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/shader_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/shader_tools/blazium_assign_shader_material" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_assign_shader_material[/code] tool from the Shader Tools family to MCP clients. Mints native generic ShaderMaterial instances binding active .gdshader onto target nodes.
+		</member>
+		<member name="blazium/justamcp/tools/shader_tools/blazium_create_shader" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_shader[/code] tool from the Shader Tools family to MCP clients. Mints blank Godot Shader files injecting standard structure for canvas_item, script, and spatial types.
+		</member>
+		<member name="blazium/justamcp/tools/shader_tools/blazium_edit_shader" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_edit_shader[/code] tool from the Shader Tools family to MCP clients. Provides file patching replacing code strings directly inside the Shader Resource loading path.
+		</member>
+		<member name="blazium/justamcp/tools/shader_tools/blazium_get_shader_params" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_shader_params[/code] tool from the Shader Tools family to MCP clients. Extracts Godot shader variables directly from Inspector metadata representations natively.
+		</member>
+		<member name="blazium/justamcp/tools/shader_tools/blazium_read_shader" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_read_shader[/code] tool from the Shader Tools family to MCP clients. Loads string source buffers straight out from .gdshader files dynamically mapped in file system.
+		</member>
+		<member name="blazium/justamcp/tools/shader_tools/blazium_set_shader_param" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_shader_param[/code] tool from the Shader Tools family to MCP clients. Reflective native evaluation bounding GDScript variable evaluation parsing shader uniforms natively.
+		</member>
+		<member name="blazium/justamcp/tools/spatial_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Spatial Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/spatial_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/spatial_tools/blazium_navigation_get_info" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_navigation_get_info[/code] tool from the Spatial Tools family to MCP clients. Lists navigation regions and agents below a scene node.
+		</member>
+		<member name="blazium/justamcp/tools/spatial_tools/blazium_navigation_set_layers" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_navigation_set_layers[/code] tool from the Spatial Tools family to MCP clients. Reconfigures navigational layers routing specific bitmask mapping directly over active NavRegions accurately.
+		</member>
+		<member name="blazium/justamcp/tools/spatial_tools/blazium_spatial_analyze_layout" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_spatial_analyze_layout[/code] tool from the Spatial Tools family to MCP clients. Analyzes node density and spacing in a target area.
+		</member>
+		<member name="blazium/justamcp/tools/spatial_tools/blazium_spatial_bake_navigation" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_spatial_bake_navigation[/code] tool from the Spatial Tools family to MCP clients. Asynchronously forces an Editor NavRegion to bake its internal navigation polygons or meshes.
+		</member>
+		<member name="blazium/justamcp/tools/spatial_tools/blazium_spatial_detect_overlaps" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_spatial_detect_overlaps[/code] tool from the Spatial Tools family to MCP clients. Identifies intersecting 3d nodes based on a distance threshold.
+		</member>
+		<member name="blazium/justamcp/tools/spatial_tools/blazium_spatial_measure_distance" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_spatial_measure_distance[/code] tool from the Spatial Tools family to MCP clients. Calculates precise pathing distances between nodes.
+		</member>
+		<member name="blazium/justamcp/tools/spatial_tools/blazium_spatial_suggest_placement" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_spatial_suggest_placement[/code] tool from the Spatial Tools family to MCP clients. Calculates empty coordinates suitable for placing nodes.
+		</member>
+		<member name="blazium/justamcp/tools/theme_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the Theme Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/theme_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/theme_tools/blazium_create_theme" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_theme[/code] tool from the Theme Tools family to MCP clients. Generates a new Theme resource struct caching visual configuration layouts natively.
+		</member>
+		<member name="blazium/justamcp/tools/theme_tools/blazium_get_theme_info" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_theme_info[/code] tool from the Theme Tools family to MCP clients. Interrogates godot Inspector bindings wrapping metadata and dynamic lists natively.
+		</member>
+		<member name="blazium/justamcp/tools/theme_tools/blazium_set_control_theme_color" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_control_theme_color[/code] tool from the Theme Tools family to MCP clients. Injects property mappings explicitly setting color maps inside control nodes.
+		</member>
+		<member name="blazium/justamcp/tools/theme_tools/blazium_set_control_theme_font_size" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_control_theme_font_size[/code] tool from the Theme Tools family to MCP clients. Overrides localized godot font sizes overriding global default assignments.
+		</member>
+		<member name="blazium/justamcp/tools/theme_tools/blazium_set_theme_constant" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_theme_constant[/code] tool from the Theme Tools family to MCP clients. Maps godot uniform parameter spacings assigning values inside active nodes.
+		</member>
+		<member name="blazium/justamcp/tools/theme_tools/blazium_set_theme_stylebox" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_theme_stylebox[/code] tool from the Theme Tools family to MCP clients. Constructs standard StyleBoxFlat representations drawing boundaries over Control structures natively.
+		</member>
+		<member name="blazium/justamcp/tools/theme_tools/blazium_setup_control" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_setup_control[/code] tool from the Theme Tools family to MCP clients. Automates standard Godot UI control flag assignments applying layout layouts.
+		</member>
+		<member name="blazium/justamcp/tools/tilemap_tools" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], enables the TileMap Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/tilemap_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/tilemap_tools/blazium_tilemap_clear" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_tilemap_clear[/code] tool from the TileMap Tools family to MCP clients. Flushes runtime cell structs flushing grids locally for TileMapLayers natively.
+		</member>
+		<member name="blazium/justamcp/tools/tilemap_tools/blazium_tilemap_fill_rect" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_tilemap_fill_rect[/code] tool from the TileMap Tools family to MCP clients. Calculates ranges iterating assignment coordinates spanning bounds uniformly for TileMapLayers natively.
+		</member>
+		<member name="blazium/justamcp/tools/tilemap_tools/blazium_tilemap_get_cell" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_tilemap_get_cell[/code] tool from the TileMap Tools family to MCP clients. Queries active TileSet state identifiers parsing out structural metadata from TileMapLayers natively.
+		</member>
+		<member name="blazium/justamcp/tools/tilemap_tools/blazium_tilemap_get_info" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_tilemap_get_info[/code] tool from the TileMap Tools family to MCP clients. Reads memory maps dumping resource state representations across TileSets dynamically natively.
+		</member>
+		<member name="blazium/justamcp/tools/tilemap_tools/blazium_tilemap_get_used_cells" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_tilemap_get_used_cells[/code] tool from the TileMap Tools family to MCP clients. Calculates bounds pulling physical active grid locations via vector pointers across TileMapLayers natively.
+		</member>
+		<member name="blazium/justamcp/tools/tilemap_tools/blazium_tilemap_set_cell" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_tilemap_set_cell[/code] tool from the TileMap Tools family to MCP clients. Sets physical cell identifiers onto Grid memory iterations inside TileMapLayers natively.
+		</member>
+		<member name="blazium/justamcp/z_mcp_config" type="String" setter="" getter="" default="&quot;&quot;">
+			Advanced JustAMCP JSON configuration managed by the editor plugin UI. Stores supplemental MCP server options not exposed as individual project settings.
 		</member>
 		<member name="collada/use_ambient" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], ambient lights will be imported from COLLADA models as [DirectionalLight3D]. If [code]false[/code], ambient lights will be ignored.

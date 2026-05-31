@@ -64,10 +64,10 @@ void JustAMCPPromptExecutor::register_settings() {
 			String desc = p["description"];
 			String path = "blazium/justamcp/prompts/" + name;
 
-			GLOBAL_DEF_BASIC(PropertyInfo(Variant::STRING, path, PROPERTY_HINT_MULTILINE_TEXT, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY), desc);
+			GLOBAL_DEF_NOVAL_BASIC(PropertyInfo(Variant::STRING, path, PROPERTY_HINT_MULTILINE_TEXT, desc, PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY), String());
 			if (EditorSettings::get_singleton()) {
-				EDITOR_DEF_BASIC(path, desc);
-				EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::STRING, path, PROPERTY_HINT_MULTILINE_TEXT, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY));
+				EDITOR_DEF_BASIC(path, String());
+				EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::STRING, path, PROPERTY_HINT_MULTILINE_TEXT, desc, PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY));
 			}
 		}
 	}

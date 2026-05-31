@@ -62,6 +62,7 @@
 #include "tools/justamcp_task_manager.h"
 #include "tools/justamcp_theme_tools.h"
 #include "tools/justamcp_tilemap_tools.h"
+#include "tools/justamcp_tool_executor.h"
 #include "tools/prompts/justamcp_prompt.h"
 #include "tools/prompts/justamcp_prompt_blazium_context.h"
 #include "tools/prompts/justamcp_prompt_blazium_workflows.h"
@@ -120,6 +121,24 @@ static bool _is_justamcp_enabled() {
 	return false;
 }
 
+#ifdef TOOLS_ENABLED
+static void _register_justamcp_project_settings() {
+	GLOBAL_DEF_BASIC("blazium/justamcp/override_editor_settings", false);
+	GLOBAL_DEF_BASIC("blazium/justamcp/server_enabled", false);
+	GLOBAL_DEF_BASIC("blazium/justamcp/server_port", 6506);
+	GLOBAL_DEF_BASIC("blazium/justamcp/oauth_enabled", false);
+	GLOBAL_DEF_BASIC("blazium/justamcp/client_id", String());
+	GLOBAL_DEF_BASIC("blazium/justamcp/client_secret", String());
+	GLOBAL_DEF_BASIC("blazium/justamcp/z_mcp_config", String());
+	GLOBAL_DEF_BASIC("blazium/justamcp/enable_debug_logging", true);
+	GLOBAL_DEF_BASIC("blazium/justamcp/bind_to_localhost_only", true);
+
+	JustAMCPToolExecutor::register_tool_settings();
+	JustAMCPPromptExecutor::register_settings();
+	JustAMCPResourceExecutor::register_settings();
+}
+#endif
+
 void initialize_justamcp_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
 		GDREGISTER_CLASS(JustAMCPRuntime);
@@ -172,6 +191,7 @@ void initialize_justamcp_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(JustAMCPTaskManager);
 	}
 	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+		_register_justamcp_project_settings();
 		EditorPlugins::add_by_type<JustAMCPEditorPlugin>();
 	}
 #endif

@@ -70,10 +70,10 @@ void JustAMCPResourceExecutor::register_settings() {
 			String desc = res["description"];
 			String path = "blazium/justamcp/resources/" + name;
 
-			GLOBAL_DEF_BASIC(PropertyInfo(Variant::STRING, path, PROPERTY_HINT_MULTILINE_TEXT, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY), desc);
+			GLOBAL_DEF_NOVAL_BASIC(PropertyInfo(Variant::STRING, path, PROPERTY_HINT_MULTILINE_TEXT, desc, PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY), String());
 			if (EditorSettings::get_singleton()) {
-				EDITOR_DEF_BASIC(path, desc);
-				EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::STRING, path, PROPERTY_HINT_MULTILINE_TEXT, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY));
+				EDITOR_DEF_BASIC(path, String());
+				EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::STRING, path, PROPERTY_HINT_MULTILINE_TEXT, desc, PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY));
 			}
 		}
 	}
@@ -87,10 +87,10 @@ void JustAMCPResourceExecutor::register_settings() {
 			String desc = templ["description"];
 			String path = "blazium/justamcp/resources/" + name; // group templates under resources so it creates 1 accordion
 
-			GLOBAL_DEF_BASIC(PropertyInfo(Variant::STRING, path, PROPERTY_HINT_MULTILINE_TEXT, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY), desc);
+			GLOBAL_DEF_NOVAL_BASIC(PropertyInfo(Variant::STRING, path, PROPERTY_HINT_MULTILINE_TEXT, desc, PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY), String());
 			if (EditorSettings::get_singleton()) {
-				EDITOR_DEF_BASIC(path, desc);
-				EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::STRING, path, PROPERTY_HINT_MULTILINE_TEXT, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY));
+				EDITOR_DEF_BASIC(path, String());
+				EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::STRING, path, PROPERTY_HINT_MULTILINE_TEXT, desc, PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY));
 			}
 		}
 	}
@@ -302,6 +302,9 @@ Dictionary JustAMCPResourceExecutor::list_resources(const String &cursor) {
 	resources.push_back(_make_resource_schema("blazium://guide/asset-generation", "Asset Generation Guide", "How SVG-to-PNG asset generation works and how sizing options are applied.", "text/markdown"));
 	resources.push_back(_make_resource_schema("blazium://guide/troubleshooting", "Troubleshooting Guide", "Common failures and recovery steps for runtime, project, and tool workflows.", "text/markdown"));
 	resources.push_back(_make_resource_schema("blazium://guide/tool-index", "Tool Index Guide", "Goal-oriented guide to the main JustAMCP tool families.", "text/markdown"));
+	resources.push_back(_make_resource_schema("blazium://system/logs", "System Logs", "Recent engine log lines captured by JustAMCP."));
+	resources.push_back(_make_resource_schema("blazium://editor/state", "Editor State", "Current editor play mode, active scene, and selection summary."));
+	resources.push_back(_make_resource_schema("blazium://test/results", "Test Results", "Latest Autowork test results when available."));
 
 	result["resources"] = resources;
 	return result;
