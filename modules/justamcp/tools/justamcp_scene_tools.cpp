@@ -147,25 +147,35 @@ Array JustAMCPSceneTools::_load_scene(const String &p_scene_path) {
 	return ret;
 }
 
-Dictionary JustAMCPSceneTools::_save_scene(Node *p_scene_root, const String &p_scene_path) {
+Dictionary JustAMCPSceneTools::_pack_and_save_scene(Node *p_scene_root, const String &p_scene_path, bool p_free_root) {
 	Dictionary ret;
 	Ref<PackedScene> packed;
 	packed.instantiate();
 	if (packed->pack(p_scene_root) != OK) {
-		memdelete(p_scene_root);
+		if (p_free_root) {
+			memdelete(p_scene_root);
+		}
 		ret["ok"] = false;
 		ret["error"] = "Failed to pack scene";
 		return ret;
 	}
 	if (ResourceSaver::save(packed, p_scene_path) != OK) {
-		memdelete(p_scene_root);
+		if (p_free_root) {
+			memdelete(p_scene_root);
+		}
 		ret["ok"] = false;
 		ret["error"] = "Failed to save scene";
 		return ret;
 	}
-	memdelete(p_scene_root);
+	if (p_free_root) {
+		memdelete(p_scene_root);
+	}
 	_refresh_and_reload(p_scene_path);
-	return Dictionary(); // empty dict meaning okay
+	return Dictionary();
+}
+
+Dictionary JustAMCPSceneTools::_save_scene(Node *p_scene_root, const String &p_scene_path) {
+	return _pack_and_save_scene(p_scene_root, p_scene_path, true);
 }
 
 Node *JustAMCPSceneTools::_find_node(Node *p_root, const String &p_path) {
@@ -873,6 +883,10 @@ Dictionary JustAMCPSceneTools::add_node(const Dictionary &p_args) {
 		ur->add_do_reference(new_node);
 		ur->add_undo_method(parent, "remove_child", new_node);
 		ur->commit_action(true);
+		Dictionary save_err = _pack_and_save_scene(root, scene_path, false);
+		if (!save_err.is_empty()) {
+			return save_err;
+		}
 	} else {
 		parent->add_child(new_node);
 		_set_owner_recursive(new_node, root);

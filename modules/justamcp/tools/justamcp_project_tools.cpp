@@ -35,6 +35,7 @@
 #include "core/input/input_map.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
+#include "core/io/json.h"
 #include "modules/regex/regex.h"
 
 void JustAMCPProjectTools::_bind_methods() {}
@@ -502,6 +503,94 @@ Dictionary JustAMCPProjectTools::get_input_actions(const Dictionary &p_args) {
 	return ret;
 }
 
+static Ref<InputEvent> _input_event_from_dictionary(const Dictionary &p_dict) {
+	String type = p_dict.get("type", "");
+	if (type.is_empty()) {
+		String device = p_dict.get("device", "");
+		if (device == "mouse" || p_dict.has("button_index")) {
+			type = "InputEventMouseButton";
+		} else if (p_dict.has("keycode") || p_dict.has("physical_keycode")) {
+			type = "InputEventKey";
+		}
+	}
+	if (type.contains("MouseButton") || type == "mouse_button") {
+		Ref<InputEventMouseButton> ev;
+		ev.instantiate();
+		if (p_dict.has("button_index")) {
+			ev->set_button_index((MouseButton)(int)p_dict["button_index"]);
+		}
+		if (p_dict.has("pressed")) {
+			ev->set_pressed(p_dict["pressed"]);
+		}
+		return ev;
+	}
+	if (type.contains("MouseMotion") || type == "mouse_motion") {
+		Ref<InputEventMouseMotion> ev;
+		ev.instantiate();
+		return ev;
+	}
+	if (type.contains("Key") || type == "key") {
+		Ref<InputEventKey> ev;
+		ev.instantiate();
+		if (p_dict.has("keycode")) {
+			ev->set_keycode((Key)(int)p_dict["keycode"]);
+		}
+		if (p_dict.has("physical_keycode")) {
+			ev->set_physical_keycode((Key)(int)p_dict["physical_keycode"]);
+		}
+		if (p_dict.has("pressed")) {
+			ev->set_pressed(p_dict["pressed"]);
+		}
+		return ev;
+	}
+	return Ref<InputEvent>();
+}
+
+static Array _parse_input_events_variant(const Variant &p_events) {
+	Array out;
+	Array source;
+	if (p_events.get_type() == Variant::STRING) {
+		String json_str = p_events;
+		Variant parsed = JSON::parse_string(json_str);
+		if (parsed.get_type() == Variant::ARRAY) {
+			source = parsed;
+		} else if (parsed.get_type() == Variant::DICTIONARY) {
+			source.push_back(parsed);
+		}
+	} else if (p_events.get_type() == Variant::ARRAY) {
+		source = p_events;
+	} else {
+		return out;
+	}
+	for (int i = 0; i < source.size(); i++) {
+		Variant item = source[i];
+		if (item.get_type() == Variant::OBJECT) {
+			Ref<InputEvent> ev = item;
+			if (ev.is_valid()) {
+				out.push_back(ev);
+			}
+			continue;
+		}
+		if (item.get_type() == Variant::DICTIONARY) {
+			Ref<InputEvent> ev = _input_event_from_dictionary(item);
+			if (ev.is_valid()) {
+				out.push_back(ev);
+			}
+			continue;
+		}
+		if (item.get_type() == Variant::STRING) {
+			Variant parsed = JSON::parse_string(item);
+			if (parsed.get_type() == Variant::DICTIONARY) {
+				Ref<InputEvent> ev = _input_event_from_dictionary(parsed);
+				if (ev.is_valid()) {
+					out.push_back(ev);
+				}
+			}
+		}
+	}
+	return out;
+}
+
 Dictionary JustAMCPProjectTools::set_input_action(const Dictionary &p_args) {
 	String action = p_args.get("action", "");
 	if (action.is_empty()) {
@@ -522,15 +611,27 @@ Dictionary JustAMCPProjectTools::set_input_action(const Dictionary &p_args) {
 		InputMap::get_singleton()->add_action(action, deadzone);
 	} else {
 		InputMap::get_singleton()->action_set_deadzone(action, deadzone);
-		if (p_args.get("replace_events", false)) {
-			InputMap::get_singleton()->action_erase_events(action);
+	}
+	if (p_args.get("replace_events", false)) {
+		InputMap::get_singleton()->action_erase_events(action);
+	}
+
+	Array parsed_events = _parse_input_events_variant(p_args.get("events", Array()));
+	for (int i = 0; i < parsed_events.size(); i++) {
+		Ref<InputEvent> ev = parsed_events[i];
+		if (ev.is_valid()) {
+			InputMap::get_singleton()->action_add_event(action, ev);
 		}
 	}
 
 	// Persist the caller-provided event descriptors so editor/project settings retain the intended binding data.
 	Dictionary setting;
 	setting["deadzone"] = deadzone;
-	setting["events"] = p_args.get("events", Array());
+	if (parsed_events.size() > 0) {
+		setting["events"] = parsed_events;
+	} else {
+		setting["events"] = p_args.get("events", Array());
+	}
 	ProjectSettings::get_singleton()->set_setting("input/" + action, setting);
 	ProjectSettings::get_singleton()->save();
 
