@@ -939,8 +939,8 @@ Array JustAMCPToolExecutor::get_tool_schemas(bool p_register_only, bool p_ignore
 			Vector<String>{ "name", "string" }, Vector<String>{ "name" });
 	add_schema("project_get_input_actions", "Retrieves the engine InputMap event bindings natively.",
 			Vector<String>{}, Vector<String>{});
-	add_schema("project_set_input_action", "Binds a custom InputMap action to an event mapping.",
-			Vector<String>{ "action", "string", "events", "string" }, Vector<String>{ "action", "events" });
+	add_schema("project_set_input_action", "Binds a custom InputMap action to an event mapping. events: array of InputEvent dictionaries (type, button_index, keycode, ...) or JSON string fallback.",
+			Vector<String>{ "action", "string", "events", "array", "deadzone", "number", "replace_events", "boolean" }, Vector<String>{ "action", "events" });
 	add_schema("project_remove_input_action", "Erases an InputMap action definition from project map.",
 			Vector<String>{ "action", "string" }, Vector<String>{ "action" });
 	add_schema("project_run", "Runs the project or a scene with optional save-all before launch.",

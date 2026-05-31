@@ -95,6 +95,7 @@ private:
 
 	Array _load_scene(const String &p_scene_path);
 	Dictionary _save_scene(Node *p_scene_root, const String &p_scene_path);
+	Dictionary _pack_and_save_scene(Node *p_scene_root, const String &p_scene_path, bool p_free_root);
 	Node *_find_node(Node *p_root, const String &p_path);
 
 	Variant _parse_value(const Variant &p_value);
