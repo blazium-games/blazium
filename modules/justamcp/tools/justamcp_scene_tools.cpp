@@ -471,7 +471,7 @@ void JustAMCPSceneTools::_collect_nodes_recursive(Node *p_node, const String &p_
 
 Dictionary JustAMCPSceneTools::create_scene(const Dictionary &p_args) {
 	String project_path = p_args.get("projectPath", "");
-	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", ""));
+	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", p_args.get("scene_path", "")));
 	String root_node_type = p_args.get("rootNodeType", "Node");
 	String script_path = p_args.get("scriptPath", "");
 
@@ -533,7 +533,7 @@ Dictionary JustAMCPSceneTools::create_scene(const Dictionary &p_args) {
 
 Dictionary JustAMCPSceneTools::list_scene_nodes(const Dictionary &p_args) {
 	String project_path = p_args.get("projectPath", "");
-	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", ""));
+	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", p_args.get("scene_path", "")));
 	int depth = p_args.get("depth", -1);
 	bool include_properties = p_args.get("includeProperties", false);
 
@@ -804,10 +804,10 @@ Dictionary JustAMCPSceneTools::close_scene(const Dictionary &p_args) {
 
 Dictionary JustAMCPSceneTools::add_node(const Dictionary &p_args) {
 	String project_path = p_args.get("projectPath", "");
-	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", ""));
-	String node_type = p_args.get("nodeType", "");
-	String node_name = p_args.get("nodeName", "");
-	String parent_node_path = p_args.get("parentNodePath", ".");
+	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", p_args.get("scene_path", "")));
+	String node_type = p_args.get("nodeType", p_args.get("node_type", ""));
+	String node_name = p_args.get("nodeName", p_args.get("node_name", ""));
+	String parent_node_path = p_args.get("parentNodePath", p_args.get("parent_path", "."));
 	Dictionary properties = _parse_properties_arg(p_args.get("properties", Dictionary()));
 
 	if (node_type.is_empty() || node_name.is_empty()) {
@@ -980,7 +980,7 @@ Dictionary JustAMCPSceneTools::instance_scene(const Dictionary &p_args) {
 
 Dictionary JustAMCPSceneTools::delete_node(const Dictionary &p_args) {
 	String project_path = p_args.get("projectPath", "");
-	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", ""));
+	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", p_args.get("scene_path", "")));
 	String node_path = p_args.get("nodePath", "");
 
 	if (node_path.is_empty() || node_path == ".") {
@@ -1050,7 +1050,7 @@ Dictionary JustAMCPSceneTools::delete_node(const Dictionary &p_args) {
 
 Dictionary JustAMCPSceneTools::duplicate_node(const Dictionary &p_args) {
 	String project_path = p_args.get("projectPath", "");
-	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", ""));
+	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", p_args.get("scene_path", "")));
 	String node_path = p_args.get("nodePath", "");
 	String new_name = p_args.get("newName", "");
 	String parent_path = p_args.get("parentPath", "");
@@ -1139,7 +1139,7 @@ Dictionary JustAMCPSceneTools::duplicate_node(const Dictionary &p_args) {
 
 Dictionary JustAMCPSceneTools::reparent_node(const Dictionary &p_args) {
 	String project_path = p_args.get("projectPath", "");
-	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", ""));
+	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", p_args.get("scene_path", "")));
 	String node_path = p_args.get("nodePath", "");
 	String new_parent_path = p_args.get("newParentPath", "");
 
@@ -1207,7 +1207,7 @@ Dictionary JustAMCPSceneTools::reparent_node(const Dictionary &p_args) {
 
 Dictionary JustAMCPSceneTools::set_node_properties(const Dictionary &p_args) {
 	String project_path = p_args.get("projectPath", "");
-	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", ""));
+	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", p_args.get("scene_path", "")));
 	String node_path = p_args.get("nodePath", ".");
 	Dictionary properties = _parse_properties_arg(p_args.get("properties", Dictionary()));
 
@@ -1263,7 +1263,7 @@ Dictionary JustAMCPSceneTools::set_node_properties(const Dictionary &p_args) {
 
 Dictionary JustAMCPSceneTools::get_node_properties(const Dictionary &p_args) {
 	String project_path = p_args.get("projectPath", "");
-	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", ""));
+	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", p_args.get("scene_path", "")));
 	String node_path = p_args.get("nodePath", ".");
 	bool include_defaults = p_args.get("includeDefaults", false);
 
@@ -1328,7 +1328,7 @@ Dictionary JustAMCPSceneTools::get_node_properties(const Dictionary &p_args) {
 
 Dictionary JustAMCPSceneTools::load_sprite(const Dictionary &p_args) {
 	String project_path = p_args.get("projectPath", "");
-	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", ""));
+	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", p_args.get("scene_path", "")));
 	String node_path = p_args.get("nodePath", ".");
 	String texture_path = _to_scene_res_path(project_path, p_args.get("texturePath", ""));
 
@@ -1389,7 +1389,7 @@ Dictionary JustAMCPSceneTools::load_sprite(const Dictionary &p_args) {
 
 Dictionary JustAMCPSceneTools::save_scene(const Dictionary &p_args) {
 	String project_path = p_args.get("projectPath", "");
-	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", ""));
+	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", p_args.get("scene_path", "")));
 	String new_path_raw = p_args.get("newPath", "");
 	String target_path = scene_path;
 	if (!new_path_raw.is_empty()) {
@@ -1460,7 +1460,7 @@ Dictionary JustAMCPSceneTools::create_inherited_scene(const Dictionary &p_args) 
 
 Dictionary JustAMCPSceneTools::connect_signal(const Dictionary &p_args) {
 	String project_path = p_args.get("projectPath", "");
-	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", ""));
+	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", p_args.get("scene_path", "")));
 	String source_node_path = p_args.get("sourceNodePath", "");
 	String signal_name = p_args.get("signalName", "");
 	String target_node_path = p_args.get("targetNodePath", "");
@@ -1534,7 +1534,7 @@ Dictionary JustAMCPSceneTools::connect_signal(const Dictionary &p_args) {
 
 Dictionary JustAMCPSceneTools::disconnect_signal(const Dictionary &p_args) {
 	String project_path = p_args.get("projectPath", "");
-	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", ""));
+	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", p_args.get("scene_path", "")));
 	String source_node_path = p_args.get("sourceNodePath", "");
 	String signal_name = p_args.get("signalName", "");
 	String target_node_path = p_args.get("targetNodePath", "");
@@ -1592,7 +1592,7 @@ Dictionary JustAMCPSceneTools::disconnect_signal(const Dictionary &p_args) {
 
 Dictionary JustAMCPSceneTools::list_connections(const Dictionary &p_args) {
 	String project_path = p_args.get("projectPath", "");
-	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", ""));
+	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", p_args.get("scene_path", "")));
 	String filter_path = p_args.get("nodePath", "");
 
 	Array result = _load_scene(scene_path);
@@ -1651,7 +1651,7 @@ Dictionary JustAMCPSceneTools::list_connections(const Dictionary &p_args) {
 
 Dictionary JustAMCPSceneTools::list_node_signals(const Dictionary &p_args) {
 	String project_path = p_args.get("projectPath", "");
-	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", ""));
+	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", p_args.get("scene_path", "")));
 	String node_path = p_args.get("nodePath", p_args.get("node_path", "."));
 
 	Array result = _load_scene(scene_path);
@@ -1697,7 +1697,7 @@ Dictionary JustAMCPSceneTools::list_node_signals(const Dictionary &p_args) {
 
 Dictionary JustAMCPSceneTools::has_signal_connection(const Dictionary &p_args) {
 	String project_path = p_args.get("projectPath", "");
-	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", ""));
+	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", p_args.get("scene_path", "")));
 	String source_node_path = p_args.get("sourceNodePath", p_args.get("source_path", ""));
 	String signal_name = p_args.get("signalName", p_args.get("signal_name", ""));
 	String target_node_path = p_args.get("targetNodePath", p_args.get("target_path", ""));

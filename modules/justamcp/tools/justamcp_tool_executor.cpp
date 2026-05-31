@@ -2222,6 +2222,9 @@ Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const D
 	if (internal_name == "input_replay") {
 		return input_tools->execute_tool(internal_name, p_args);
 	}
+	if (internal_name == "simulate_touch") {
+		return input_tools->execute_tool(internal_name, p_args);
+	}
 
 	// Documentation Tool Routes
 	if (internal_name == "docs_list_classes" || internal_name == "docs_search" ||
@@ -2735,20 +2738,17 @@ Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const D
 		return animation_tools->create_navigation_agent(p_args);
 	}
 
-	if (p_tool_name.begins_with("blueprint/")) {
-		return blueprint_tools->execute_tool(internal_name, p_args);
+	if (internal_name.begins_with("blueprint_")) {
+		return blueprint_tools->execute_tool(internal_name.substr(String("blueprint_").length()), p_args);
 	}
-	if (p_tool_name.begins_with("draw/")) {
+	if (internal_name == "control_draw_recipe") {
 		return draw_tools->execute_tool(internal_name, p_args);
 	}
-	if (p_tool_name.begins_with("environment/")) {
-		return environment_tools->execute_tool(internal_name, p_args);
+	if (internal_name == "environment_create") {
+		return environment_tools->execute_tool("create_environment", p_args);
 	}
-	if (p_tool_name.begins_with("asset/")) {
-		return asset_tools->execute_tool(internal_name, p_args);
-	}
-	if (p_tool_name.begins_with("project/")) {
-		return project_tools->execute_tool(internal_name, p_args);
+	if (internal_name.begins_with("asset_")) {
+		return asset_tools->execute_tool(internal_name.substr(String("asset_").length()), p_args);
 	}
 
 	if (internal_name.begins_with("editor_")) {
