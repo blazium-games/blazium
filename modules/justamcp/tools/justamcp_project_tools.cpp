@@ -68,6 +68,15 @@ Dictionary JustAMCPProjectTools::execute_tool(const String &p_tool_name, const D
 	if (p_tool_name == "project_remove_input_action") {
 		return remove_input_action(p_args);
 	}
+	if (p_tool_name == "get_project_info") {
+		return get_project_info(p_args);
+	}
+	if (p_tool_name == "set_project_setting") {
+		return set_project_setting(p_args);
+	}
+	if (p_tool_name == "get_filesystem_tree") {
+		return get_filesystem_tree(p_args);
+	}
 
 	Dictionary ret;
 	ret["ok"] = false;
@@ -669,6 +678,130 @@ Dictionary JustAMCPProjectTools::remove_input_action(const Dictionary &p_args) {
 	ret["action"] = action;
 	ret["removed"] = existed;
 	return ret;
+}
+
+Dictionary JustAMCPProjectTools::get_project_info(const Dictionary &p_args) {
+	ProjectSettings *ps = ProjectSettings::get_singleton();
+	ERR_FAIL_COND_V(!ps, Dictionary());
+
+	Dictionary autoload_args;
+	autoload_args["operation"] = "list";
+	Dictionary autoload_res = manage_autoloads(autoload_args);
+
+	Dictionary renderer;
+	renderer["rendering_method"] = ps->get_setting("rendering/renderer/rendering_method", "forward_plus");
+	renderer["anti_aliasing"] = ps->get_setting("rendering/anti_aliasing/quality/msaa_2d", 0);
+
+	Dictionary viewport;
+	viewport["viewport_width"] = ps->get_setting("display/window/size/viewport_width", 1152);
+	viewport["viewport_height"] = ps->get_setting("display/window/size/viewport_height", 648);
+	viewport["window_width_override"] = ps->get_setting("display/window/size/window_width_override", 0);
+	viewport["window_height_override"] = ps->get_setting("display/window/size/window_height_override", 0);
+	viewport["stretch_mode"] = ps->get_setting("display/window/stretch/mode", "canvas_items");
+
+	Dictionary result;
+	result["ok"] = true;
+	result["project_name"] = ps->get_setting("application/config/name", "Untitled");
+	result["main_scene"] = ps->get_setting("application/run/main_scene", "");
+	result["config_version"] = ps->get_setting("config_version", 5);
+	result["renderer"] = renderer;
+	result["viewport"] = viewport;
+	result["autoloads"] = autoload_res.get("autoloads", Array());
+	return result;
+}
+
+Dictionary JustAMCPProjectTools::set_project_setting(const Dictionary &p_args) {
+	String key = p_args.get("key", "");
+	if (key.is_empty()) {
+		Dictionary ret;
+		ret["ok"] = false;
+		ret["error"] = "key is required.";
+		return ret;
+	}
+
+	Variant value = p_args.get("value", Variant());
+	if (value.get_type() == Variant::STRING) {
+		String s = value;
+		Variant parsed = JSON::parse_string(s);
+		if (parsed.get_type() != Variant::NIL) {
+			value = parsed;
+		}
+	}
+
+	ProjectSettings *ps = ProjectSettings::get_singleton();
+	ERR_FAIL_COND_V(!ps, Dictionary());
+	ps->set_setting(key, value);
+	Error err = ps->save();
+
+	Dictionary ret;
+	ret["ok"] = err == OK;
+	ret["key"] = key;
+	ret["value"] = _serialize_value(value);
+	if (err != OK) {
+		ret["error"] = "Failed to save project settings.";
+	}
+	return ret;
+}
+
+Dictionary JustAMCPProjectTools::_build_filesystem_tree(const String &p_path, const String &p_filter, int p_max_depth, int p_depth) {
+	Dictionary node;
+	node["path"] = p_path;
+	node["name"] = p_path == "res://" ? "res://" : p_path.get_file();
+
+	Ref<DirAccess> dir = DirAccess::open(p_path);
+	if (dir.is_null()) {
+		node["type"] = "missing";
+		return node;
+	}
+
+	if (p_max_depth >= 0 && p_depth >= p_max_depth) {
+		node["type"] = "dir";
+		return node;
+	}
+
+	node["type"] = "dir";
+	Array children;
+	dir->list_dir_begin();
+	String name = dir->get_next();
+	while (!name.is_empty()) {
+		if (name.begins_with(".")) {
+			name = dir->get_next();
+			continue;
+		}
+		String full_path = p_path.path_join(name);
+		if (dir->current_is_dir()) {
+			children.push_back(_build_filesystem_tree(full_path, p_filter, p_max_depth, p_depth + 1));
+		} else {
+			if (!p_filter.is_empty() && !name.ends_with(p_filter) && !name.contains(p_filter)) {
+				name = dir->get_next();
+				continue;
+			}
+			Dictionary file_node;
+			file_node["path"] = full_path;
+			file_node["name"] = name;
+			file_node["type"] = "file";
+			children.push_back(file_node);
+		}
+		name = dir->get_next();
+	}
+	dir->list_dir_end();
+	node["children"] = children;
+	return node;
+}
+
+Dictionary JustAMCPProjectTools::get_filesystem_tree(const Dictionary &p_args) {
+	String path = p_args.get("path", "res://");
+	String filter = p_args.get("filter", "");
+	int max_depth = p_args.get("max_depth", -1);
+
+	if (!path.begins_with("res://")) {
+		path = "res://" + path;
+	}
+
+	Dictionary result;
+	result["ok"] = true;
+	result["root"] = _build_filesystem_tree(path, filter, max_depth, 0);
+	return result;
 }
 
 String JustAMCPProjectTools::_type_to_string(int p_type_id) {

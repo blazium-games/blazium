@@ -41,8 +41,10 @@
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/io/resource_loader.h"
+#include "core/io/resource_saver.h"
 #include "core/object/script_language.h"
 #include "modules/regex/regex.h"
+#include "scene/resources/packed_scene.h"
 
 static inline Dictionary _MCP_SUCCESS(const Variant &data) {
 	Dictionary r;
@@ -433,26 +435,18 @@ void JustAMCPScriptTools::_reload_script(const String &p_path) {
 }
 
 Dictionary JustAMCPScriptTools::_attach_script(const Dictionary &p_params) {
-	if (!p_params.has("node_path")) {
+	String node_path = p_params.get("node_path", p_params.get("nodePath", ""));
+	if (node_path.is_empty()) {
 		return MCP_INVALID_PARAMS("Missing param: node_path");
 	}
-	if (!p_params.has("script_path")) {
+	String script_path = p_params.get("script_path", p_params.get("scriptPath", ""));
+	if (script_path.is_empty()) {
 		return MCP_INVALID_PARAMS("Missing param: script_path");
 	}
-	String node_path = p_params["node_path"];
-	String script_path = p_params["script_path"];
 
-	Node *root = _get_edited_root();
-	if (!root) {
-		return MCP_ERROR(-32000, "No scene is currently open");
-	}
-
-	Node *node = _find_node_by_path(node_path);
-	if (!node) {
-		return MCP_NOT_FOUND("Node '" + node_path + "'");
-	}
-
-	if (!FileAccess::exists(script_path)) {
+	if (!script_path.begins_with("res://") && FileAccess::exists(script_path)) {
+		// Keep absolute paths as-is for existence check.
+	} else if (!ResourceLoader::exists(script_path)) {
 		return MCP_NOT_FOUND("Script '" + script_path + "'");
 	}
 
@@ -461,11 +455,71 @@ Dictionary JustAMCPScriptTools::_attach_script(const Dictionary &p_params) {
 		return MCP_INTERNAL("Failed to load script: " + script_path);
 	}
 
+	String scene_path = p_params.get("scenePath", p_params.get("scene_path", ""));
+
+	Node *root = _get_edited_root();
+	if (root && (scene_path.is_empty() || root->get_scene_file_path() == scene_path)) {
+		Node *node = _find_node_by_path(node_path);
+		if (!node) {
+			return MCP_NOT_FOUND("Node '" + node_path + "'");
+		}
+		node->set_script(loaded_script);
+		Dictionary res;
+		res["node_path"] = root->get_path_to(node);
+		res["script_path"] = script_path;
+		res["attached"] = true;
+		return MCP_SUCCESS(res);
+	}
+
+	if (scene_path.is_empty()) {
+		return MCP_ERROR(-32000, "No scene is currently open");
+	}
+
+	if (!scene_path.ends_with(".tscn")) {
+		scene_path += ".tscn";
+	}
+	if (!ResourceLoader::exists(scene_path)) {
+		return MCP_NOT_FOUND("Scene '" + scene_path + "'");
+	}
+
+	Ref<PackedScene> packed_scene = ResourceLoader::load(scene_path);
+	if (packed_scene.is_null()) {
+		return MCP_INTERNAL("Failed to load scene: " + scene_path);
+	}
+
+	Node *scene_root = packed_scene->instantiate();
+	if (!scene_root) {
+		return MCP_INTERNAL("Failed to instantiate scene: " + scene_path);
+	}
+
+	Node *node = scene_root;
+	if (node_path != "." && !node_path.is_empty()) {
+		if (scene_root->has_node(node_path)) {
+			node = scene_root->get_node(node_path);
+		} else {
+			memdelete(scene_root);
+			return MCP_NOT_FOUND("Node '" + node_path + "'");
+		}
+	}
+
 	node->set_script(loaded_script);
 
+	Ref<PackedScene> out_packed;
+	out_packed.instantiate();
+	if (out_packed->pack(scene_root) != OK) {
+		memdelete(scene_root);
+		return MCP_INTERNAL("Failed to pack scene after attach: " + scene_path);
+	}
+	if (ResourceSaver::save(out_packed, scene_path) != OK) {
+		memdelete(scene_root);
+		return MCP_INTERNAL("Failed to save scene after attach: " + scene_path);
+	}
+	memdelete(scene_root);
+
 	Dictionary res;
-	res["node_path"] = root->get_path_to(node);
+	res["node_path"] = node_path;
 	res["script_path"] = script_path;
+	res["scene_path"] = scene_path;
 	res["attached"] = true;
 	return MCP_SUCCESS(res);
 }
