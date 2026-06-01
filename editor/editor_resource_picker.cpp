@@ -125,6 +125,16 @@ void EditorResourcePicker::_update_resource_preview(const String &p_path, const 
 	}
 }
 
+void EditorResourcePicker::_preview_invalidated(const String &p_path) {
+	if (!edited_resource.is_valid()) {
+		return;
+	}
+
+	if (p_path == "ID:" + itos(edited_resource->get_instance_id())) {
+		_update_resource();
+	}
+}
+
 void EditorResourcePicker::_resource_selected() {
 	if (edited_resource.is_null()) {
 		edit_button->set_pressed(true);
@@ -824,6 +834,10 @@ void EditorResourcePicker::_bind_methods() {
 void EditorResourcePicker::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE: {
+			EditorResourcePreview *preview = EditorResourcePreview::get_singleton();
+			if (preview && !preview->is_connected(SNAME("preview_invalidated"), callable_mp(this, &EditorResourcePicker::_preview_invalidated))) {
+				preview->connect(SNAME("preview_invalidated"), callable_mp(this, &EditorResourcePicker::_preview_invalidated));
+			}
 			_update_resource();
 			[[fallthrough]];
 		}

@@ -100,11 +100,13 @@ class EditorResourcePreview : public Node {
 		Dictionary preview_metadata;
 		uint32_t last_hash = 0;
 		uint64_t modified_time = 0;
+		String resource_path;
 	};
 
 	HashMap<String, Item> cache;
 
-	void _preview_ready(const String &p_path, int p_hash, const Ref<Texture2D> &p_texture, const Ref<Texture2D> &p_small_texture, ObjectID id, const StringName &p_func, const Variant &p_ud, const Dictionary &p_metadata);
+	void _preview_ready(const String &p_path, int p_hash, const Ref<Texture2D> &p_texture, const Ref<Texture2D> &p_small_texture, ObjectID id, const StringName &p_func, const Variant &p_ud, const Dictionary &p_metadata, const String &p_resource_path = String());
+	void _resources_reimported(const Vector<String> &p_resources);
 	void _generate_preview(Ref<ImageTexture> &r_texture, Ref<ImageTexture> &r_small_texture, const QueueItem &p_item, const String &cache_base, Dictionary &p_metadata);
 
 	int small_thumbnail_size = -1;
