@@ -55,6 +55,9 @@ public:
 	Dictionary get_input_actions(const Dictionary &p_args);
 	Dictionary set_input_action(const Dictionary &p_args);
 	Dictionary remove_input_action(const Dictionary &p_args);
+	Dictionary get_project_info(const Dictionary &p_args);
+	Dictionary set_project_setting(const Dictionary &p_args);
+	Dictionary get_filesystem_tree(const Dictionary &p_args);
 
 private:
 	void _collect_scripts(const String &p_path, Array &r_results, bool p_include_addons);
@@ -63,6 +66,7 @@ private:
 	Dictionary _parse_scene(const String &p_path);
 	String _type_to_string(int p_type_id);
 	Variant _serialize_value(const Variant &p_value);
+	Dictionary _build_filesystem_tree(const String &p_path, const String &p_filter, int p_max_depth, int p_depth);
 
 public:
 	JustAMCPProjectTools();

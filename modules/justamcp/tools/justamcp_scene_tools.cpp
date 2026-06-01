@@ -38,6 +38,7 @@
 #include "core/io/json.h"
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
+#include "core/object/script_language.h"
 #include "editor/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
@@ -384,6 +385,15 @@ void JustAMCPSceneTools::_set_node_properties(Node *p_node, const Dictionary &p_
 	for (int i = 0; i < keys.size(); i++) {
 		String prop_name = keys[i];
 		Variant val = _parse_value(p_properties[prop_name]);
+		if (prop_name == "script" && val.get_type() == Variant::STRING) {
+			String script_path = val;
+			if (script_path.begins_with("res://")) {
+				Ref<Script> script_res = ResourceLoader::load(script_path);
+				if (script_res.is_valid()) {
+					val = script_res;
+				}
+			}
+		}
 		p_node->set(prop_name, val);
 	}
 }
@@ -514,7 +524,24 @@ Dictionary JustAMCPSceneTools::create_scene(const Dictionary &p_args) {
 		ret["error"] = "Failed to instantiate root node: " + root_node_type;
 		return ret;
 	}
-	root->set_name(root_node_type);
+	String root_node_name = p_args.get("rootNodeName", p_args.get("root_node_name", ""));
+	if (root_node_name.is_empty()) {
+		String file_stem = scene_path.get_file().get_basename();
+		if (!file_stem.is_empty()) {
+			PackedStringArray parts = file_stem.split("_");
+			for (int i = 0; i < parts.size(); i++) {
+				String part = parts[i];
+				if (part.is_empty()) {
+					continue;
+				}
+				root_node_name += part.substr(0, 1).to_upper() + part.substr(1);
+			}
+		}
+	}
+	if (root_node_name.is_empty()) {
+		root_node_name = root_node_type;
+	}
+	root->set_name(root_node_name);
 
 	if (!script_path.is_empty()) {
 		String full_script_path = _to_scene_res_path(project_path, script_path);
@@ -591,7 +618,7 @@ Dictionary JustAMCPSceneTools::get_scene_file_content(const Dictionary &p_args) 
 	Dictionary ret;
 	ret["ok"] = true;
 	ret["path"] = scene_path;
-	ret["content"] = content;
+	ret["sceneContent"] = content;
 	ret["size"] = content.length();
 	return ret;
 }
@@ -905,9 +932,10 @@ Dictionary JustAMCPSceneTools::add_node(const Dictionary &p_args) {
 
 Dictionary JustAMCPSceneTools::instance_scene(const Dictionary &p_args) {
 	String project_path = p_args.get("projectPath", "");
-	String target_scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", ""));
-	String instance_scene_path = _to_scene_res_path(project_path, p_args.get("instanceScenePath", ""));
-	String parent_node_path = p_args.get("parentNodePath", ".");
+	String target_scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", p_args.get("scene_path", "")));
+	String instance_scene_path = _to_scene_res_path(project_path, p_args.get("instanceScenePath", p_args.get("instance_scene_path", "")));
+	String parent_node_path = p_args.get("parentNodePath", p_args.get("parent_path", p_args.get("parent_node_path", ".")));
+	String requested_node_name = p_args.get("nodeName", p_args.get("node_name", ""));
 
 	if (instance_scene_path == "res://") {
 		Dictionary ret;
@@ -948,7 +976,21 @@ Dictionary JustAMCPSceneTools::instance_scene(const Dictionary &p_args) {
 		return ret;
 	}
 
-	Node *new_node = packed->instantiate();
+	if (!requested_node_name.is_empty() && parent->has_node(requested_node_name)) {
+		Node *existing = parent->get_node(requested_node_name);
+		if (!is_active) {
+			memdelete(root);
+		}
+		Dictionary ret;
+		ret["ok"] = true;
+		ret["nodeName"] = existing->get_name();
+		ret["instanceScenePath"] = instance_scene_path;
+		ret["parentNodePath"] = parent_node_path;
+		ret["alreadyExists"] = true;
+		return ret;
+	}
+
+	Node *new_node = packed->instantiate(PackedScene::GEN_EDIT_STATE_INSTANCE);
 	if (!new_node) {
 		if (!is_active) {
 			memdelete(root);
@@ -959,11 +1001,10 @@ Dictionary JustAMCPSceneTools::instance_scene(const Dictionary &p_args) {
 		return ret;
 	}
 
-	if (p_args.has("nodeName")) {
-		String node_name = p_args.get("nodeName", "");
-		if (!node_name.is_empty()) {
-			new_node->set_name(node_name);
-		}
+	new_node->set_scene_file_path(instance_scene_path);
+
+	if (!requested_node_name.is_empty()) {
+		new_node->set_name(requested_node_name);
 	}
 
 	Dictionary properties = _parse_properties_arg(p_args.get("properties", Dictionary()));
@@ -977,8 +1018,12 @@ Dictionary JustAMCPSceneTools::instance_scene(const Dictionary &p_args) {
 		ur->add_do_reference(new_node);
 		ur->add_undo_method(parent, "remove_child", new_node);
 		ur->commit_action(true);
+		Dictionary save_err = _pack_and_save_scene(root, target_scene_path, false);
+		if (!save_err.is_empty()) {
+			return save_err;
+		}
 	} else {
-		parent->add_child(new_node);
+		parent->add_child(new_node, true);
 		_set_owner_recursive(new_node, root);
 		Dictionary save_err = _save_scene(root, target_scene_path);
 		if (!save_err.is_empty()) {
@@ -989,6 +1034,8 @@ Dictionary JustAMCPSceneTools::instance_scene(const Dictionary &p_args) {
 	Dictionary ret;
 	ret["ok"] = true;
 	ret["nodeName"] = new_node->get_name();
+	ret["instanceScenePath"] = instance_scene_path;
+	ret["parentNodePath"] = parent_node_path;
 	return ret;
 }
 
@@ -1222,7 +1269,7 @@ Dictionary JustAMCPSceneTools::reparent_node(const Dictionary &p_args) {
 Dictionary JustAMCPSceneTools::set_node_properties(const Dictionary &p_args) {
 	String project_path = p_args.get("projectPath", "");
 	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", p_args.get("scene_path", "")));
-	String node_path = p_args.get("nodePath", ".");
+	String node_path = p_args.get("nodePath", p_args.get("node_path", "."));
 	Dictionary properties = _parse_properties_arg(p_args.get("properties", Dictionary()));
 
 	bool is_active = _is_active_scene(scene_path);

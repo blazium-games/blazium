@@ -1436,7 +1436,6 @@ Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const D
 		if (!contents.is_empty()) {
 			Dictionary first = contents[0];
 			result["text"] = first.get("text", "");
-			result["content"] = result["text"];
 			result["mime_type"] = first.get("mimeType", "text/markdown");
 		}
 		return result;

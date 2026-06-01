@@ -1042,7 +1042,24 @@ void JustAMCPServer::send_tool_result(const Variant &p_request_id, bool p_succes
 		Dictionary result;
 		if (p_result.get_type() == Variant::DICTIONARY && Dictionary(p_result).has("content")) {
 			// The tool returned strict MCP "content" natively!
-			result["content"] = Dictionary(p_result)["content"];
+			Variant content_val = Dictionary(p_result)["content"];
+			if (content_val.get_type() == Variant::ARRAY) {
+				result["content"] = content_val;
+			} else if (content_val.get_type() == Variant::STRING) {
+				Array content;
+				Dictionary content_item;
+				content_item["type"] = "text";
+				content_item["text"] = content_val;
+				content.push_back(content_item);
+				result["content"] = content;
+			} else {
+				Array content;
+				Dictionary content_item;
+				content_item["type"] = "text";
+				content_item["text"] = JSON::stringify(content_val);
+				content.push_back(content_item);
+				result["content"] = content;
+			}
 			result["isError"] = Dictionary(p_result).get("isError", false);
 		} else {
 			// The tool returned a custom dictionary (e.g. {"result": ...})
