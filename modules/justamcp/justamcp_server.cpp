@@ -50,6 +50,7 @@ static bool _is_headless() {
 }
 
 void JustAMCPServer::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("_process_pending_tools"), &JustAMCPServer::_process_pending_tools);
 	ADD_SIGNAL(MethodInfo("tool_requested", PropertyInfo(Variant::NIL, "request_id", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_NIL_IS_VARIANT), PropertyInfo(Variant::STRING, "tool_name"), PropertyInfo(Variant::DICTIONARY, "args")));
 	ADD_SIGNAL(MethodInfo("server_status_changed", PropertyInfo(Variant::BOOL, "started")));
 	ADD_SIGNAL(MethodInfo("elicitation_completed", PropertyInfo(Variant::NIL, "request_id", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_NIL_IS_VARIANT), PropertyInfo(Variant::DICTIONARY, "result")));
@@ -102,6 +103,9 @@ JustAMCPServer::~JustAMCPServer() {
 	}
 
 	_stop_server();
+#if defined(MODULE_HTTPSERVER_ENABLED)
+	_clear_tool_queue();
+#endif
 #ifdef TOOLS_ENABLED
 	if (prompt_executor) {
 		memdelete(prompt_executor);
@@ -980,27 +984,22 @@ Dictionary JustAMCPServer::_handle_json_rpc(const String &p_body, Ref<HTTPRespon
 		String tool_name = params["name"];
 		Dictionary args = params.has("arguments") && params["arguments"].get_type() == Variant::DICTIONARY ? Dictionary(params["arguments"]) : Dictionary();
 
-		// Remember the response wrapper if it's statistically POST routed.
-		// And execute across the emitter!
-		pending_stateless_mutex.lock();
-		pending_stateless_response = p_response;
-
-		if (p_response.is_valid()) {
-			pending_stateless_result.clear();
-			pending_stateless_mutex.unlock();
-
-			call_deferred(SNAME("emit_signal"), "tool_requested", req_id_var, tool_name, args);
-			pending_stateless_semaphore.wait();
-
-			pending_stateless_mutex.lock();
-			Dictionary res = pending_stateless_result;
-			pending_stateless_mutex.unlock();
-			return res;
-		} else {
-			pending_stateless_mutex.unlock();
-			call_deferred(SNAME("emit_signal"), "tool_requested", req_id_var, tool_name, args);
-			return Dictionary();
+		Dictionary queue_full_error;
+		MCPToolQueueEntry *entry = _enqueue_tool_request(req_id_var, tool_name, args, p_response, queue_full_error);
+		if (!entry) {
+			return queue_full_error;
 		}
+
+		call_deferred(SNAME("_process_pending_tools"));
+
+		if (entry->has_stateless_response) {
+			entry->done_semaphore.wait();
+			Dictionary res = entry->rpc_result;
+			memdelete(entry);
+			return res;
+		}
+
+		return Dictionary();
 	}
 
 	// Method not found fallback
@@ -1115,20 +1114,108 @@ void JustAMCPServer::send_tool_result(const Variant &p_request_id, bool p_succes
 		}
 	}
 
-	// Output to pending stateless HTTP paths
-	pending_stateless_mutex.lock();
-	if (pending_stateless_response.is_valid()) {
-		pending_stateless_result = rpc_result;
-		pending_stateless_response.unref(); // Clear reference before waking thread to prevent concurrent refcount destruction
-		pending_stateless_semaphore.post();
-	} else {
-		// Output to active SSE paths only if not tracked by a stateless execution path,
-		// as the stateless path will dispatch the SSE itself to avoid deadlocks.
-		_send_sse_message(JSON::stringify(rpc_result));
-	}
-	pending_stateless_mutex.unlock();
+	// Output to the active queued tool request.
+	_complete_current_tool_request(rpc_result);
+#else
+	(void)p_request_id;
+	(void)p_success;
+	(void)p_result;
+	(void)p_error;
 #endif
 }
+
+#if defined(MODULE_HTTPSERVER_ENABLED)
+
+MCPToolQueueEntry *JustAMCPServer::_enqueue_tool_request(const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args, Ref<HTTPResponse> p_response, Dictionary &r_queue_full_error) {
+	MutexLock lock(tool_queue_mutex);
+	if (tool_queue.size() >= TOOL_QUEUE_MAX) {
+		r_queue_full_error["jsonrpc"] = "2.0";
+		r_queue_full_error["id"] = p_request_id;
+		Dictionary error_dict;
+		error_dict["code"] = -32003;
+		error_dict["message"] = vformat("MCP tool queue full (%d pending). Retry later.", TOOL_QUEUE_MAX);
+		r_queue_full_error["error"] = error_dict;
+		return nullptr;
+	}
+
+	MCPToolQueueEntry *entry = memnew(MCPToolQueueEntry);
+	entry->request_id = p_request_id;
+	entry->tool_name = p_tool_name;
+	entry->args = p_args;
+	entry->stateless_response = p_response;
+	entry->has_stateless_response = p_response.is_valid();
+	tool_queue.push_back(entry);
+	return entry;
+}
+
+void JustAMCPServer::_process_pending_tools() {
+	MCPToolQueueEntry *entry = nullptr;
+	{
+		MutexLock lock(tool_queue_mutex);
+		if (tool_queue_processing || tool_queue.is_empty()) {
+			return;
+		}
+		entry = tool_queue[0];
+		if (entry == current_tool_entry) {
+			return;
+		}
+		tool_queue_processing = true;
+		current_tool_entry = entry;
+	}
+
+	emit_signal("tool_requested", entry->request_id, entry->tool_name, entry->args);
+}
+
+void JustAMCPServer::_complete_current_tool_request(const Dictionary &p_rpc_result) {
+	MCPToolQueueEntry *completed_entry = nullptr;
+	bool has_stateless = false;
+	bool send_via_sse = false;
+	{
+		MutexLock lock(tool_queue_mutex);
+		if (!current_tool_entry) {
+			send_via_sse = true;
+		} else {
+			completed_entry = current_tool_entry;
+			completed_entry->rpc_result = p_rpc_result;
+			has_stateless = completed_entry->has_stateless_response;
+
+			if (tool_queue.size() > 0 && tool_queue[0] == completed_entry) {
+				tool_queue.remove_at(0);
+			}
+			current_tool_entry = nullptr;
+			tool_queue_processing = false;
+		}
+	}
+
+	if (send_via_sse) {
+		_send_sse_message(JSON::stringify(p_rpc_result));
+		return;
+	}
+
+	if (has_stateless) {
+		completed_entry->done_semaphore.post();
+	} else {
+		_send_sse_message(JSON::stringify(p_rpc_result));
+	}
+
+	call_deferred(SNAME("_process_pending_tools"));
+}
+
+void JustAMCPServer::_clear_tool_queue() {
+	MutexLock lock(tool_queue_mutex);
+	for (int i = 0; i < tool_queue.size(); i++) {
+		MCPToolQueueEntry *entry = tool_queue[i];
+		if (entry) {
+			entry->done_semaphore.post();
+			memdelete(entry);
+		}
+	}
+	tool_queue.clear();
+	current_tool_entry = nullptr;
+	tool_queue_processing = false;
+}
+
+#endif // MODULE_HTTPSERVER_ENABLED
 
 void JustAMCPServer::send_elicitation_request(const String &p_request_id, const String &p_mode, const String &p_message, const Variant &p_url_or_schema) {
 #if defined(MODULE_HTTPSERVER_ENABLED)
@@ -1177,17 +1264,7 @@ void JustAMCPServer::send_url_elicitation_error(const String &p_request_id, cons
 
 	rpc_result["error"] = error;
 
-	pending_stateless_mutex.lock();
-	if (pending_stateless_response.is_valid()) {
-		if (!pending_stateless_response->is_sent()) {
-			pending_stateless_response->set_status(200);
-			pending_stateless_response->set_json(rpc_result);
-		}
-		pending_stateless_response.unref();
-	} else {
-		_send_sse_message(JSON::stringify(rpc_result));
-	}
-	pending_stateless_mutex.unlock();
+	_complete_current_tool_request(rpc_result);
 #endif
 }
 
