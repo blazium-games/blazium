@@ -89,6 +89,7 @@ public:
 private:
 	void _refresh_and_reload(const String &p_scene_path);
 	void _refresh_filesystem();
+	void _deferred_refresh_filesystem();
 	void _reload_scene_in_editor(const String &p_scene_path);
 	String _ensure_res_path(const String &p_path);
 	String _to_scene_res_path(const String &p_project_path, const String &p_scene_path);

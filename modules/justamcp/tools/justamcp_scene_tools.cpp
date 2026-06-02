@@ -39,6 +39,10 @@
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
 #include "core/object/script_language.h"
+#include "core/object/message_queue.h"
+#include "core/os/mutex.h"
+#include "core/os/os.h"
+#include "core/templates/hash_map.h"
 #include "editor/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
@@ -48,7 +52,70 @@
 #include "scene/resources/packed_scene.h"
 
 void JustAMCPSceneTools::_bind_methods() {
-	// Bindings for tool methods
+	ClassDB::bind_method(D_METHOD("_deferred_refresh_filesystem"), &JustAMCPSceneTools::_deferred_refresh_filesystem);
+}
+
+static HashMap<String, Mutex *> _scene_path_mutex_pool;
+static Mutex _scene_path_mutex_pool_guard;
+static bool _filesystem_scan_pending = false;
+
+static Mutex *_get_scene_path_mutex(const String &p_scene_path) {
+	if (p_scene_path.is_empty()) {
+		return nullptr;
+	}
+	MutexLock lock(_scene_path_mutex_pool_guard);
+	Mutex **existing = _scene_path_mutex_pool.getptr(p_scene_path);
+	if (existing) {
+		return *existing;
+	}
+	Mutex *created = memnew(Mutex);
+	_scene_path_mutex_pool[p_scene_path] = created;
+	return created;
+}
+
+static bool _try_lock_mutex_with_timeout(Mutex *p_mutex, int p_timeout_ms = 5000) {
+	if (!p_mutex) {
+		return true;
+	}
+	const uint64_t deadline = OS::get_singleton()->get_ticks_msec() + (uint64_t)p_timeout_ms;
+	while (!p_mutex->try_lock()) {
+		if (OS::get_singleton()->get_ticks_msec() >= deadline) {
+			return false;
+		}
+		OS::get_singleton()->delay_usec(1000);
+	}
+	return true;
+}
+
+struct ScenePathLock {
+	Mutex *mutex = nullptr;
+	bool locked = false;
+
+	explicit ScenePathLock(const String &p_scene_path) {
+		mutex = _get_scene_path_mutex(p_scene_path);
+		locked = _try_lock_mutex_with_timeout(mutex);
+		if (!locked && mutex) {
+			WARN_PRINT(vformat("JustAMCP scene lock timeout for %s", p_scene_path));
+		}
+	}
+
+	~ScenePathLock() {
+		if (locked && mutex) {
+			mutex->unlock();
+		}
+	}
+
+	bool is_locked() const {
+		return locked;
+	}
+};
+
+static Dictionary _scene_lock_busy_response() {
+	Dictionary ret;
+	ret["ok"] = false;
+	ret["error"] = "Scene busy; retry after concurrent operation completes";
+	ret["retryAfterMs"] = 500;
+	return ret;
 }
 
 static bool _is_active_scene(const String &p_scene_path) {
@@ -71,7 +138,16 @@ void JustAMCPSceneTools::_refresh_and_reload(const String &p_scene_path) {
 }
 
 void JustAMCPSceneTools::_refresh_filesystem() {
-	if (editor_plugin) {
+	if (!editor_plugin || _filesystem_scan_pending) {
+		return;
+	}
+	_filesystem_scan_pending = true;
+	MessageQueue::get_singleton()->push_callable(callable_mp(this, &JustAMCPSceneTools::_deferred_refresh_filesystem));
+}
+
+void JustAMCPSceneTools::_deferred_refresh_filesystem() {
+	_filesystem_scan_pending = false;
+	if (EditorFileSystem::get_singleton()) {
 		EditorFileSystem::get_singleton()->scan();
 	}
 }
@@ -511,6 +587,11 @@ Dictionary JustAMCPSceneTools::create_scene(const Dictionary &p_args) {
 		return ret;
 	}
 
+	ScenePathLock scene_lock(scene_path);
+	if (!scene_lock.is_locked()) {
+		return _scene_lock_busy_response();
+	}
+
 	_ensure_parent_dir_for_scene(scene_path);
 
 	Object *_root_obj = ClassDB::instantiate(StringName(root_node_type));
@@ -638,6 +719,12 @@ Dictionary JustAMCPSceneTools::delete_scene_file(const Dictionary &p_args) {
 		ret["error"] = "Scene not found: " + scene_path;
 		return ret;
 	}
+
+	ScenePathLock scene_lock(scene_path);
+	if (!scene_lock.is_locked()) {
+		return _scene_lock_busy_response();
+	}
+
 	Error err = DirAccess::remove_absolute(scene_path);
 	if (err != OK) {
 		Dictionary ret;
@@ -813,6 +900,12 @@ Dictionary JustAMCPSceneTools::duplicate_scene_file(const Dictionary &p_args) {
 		ret["error"] = "Source scene not found: " + source_path;
 		return ret;
 	}
+
+	ScenePathLock scene_lock(dest_path);
+	if (!scene_lock.is_locked()) {
+		return _scene_lock_busy_response();
+	}
+
 	String dir_path = dest_path.get_base_dir();
 	if (!DirAccess::dir_exists_absolute(dir_path)) {
 		DirAccess::make_dir_recursive_absolute(dir_path);
@@ -858,6 +951,11 @@ Dictionary JustAMCPSceneTools::add_node(const Dictionary &p_args) {
 		ret["ok"] = false;
 		ret["error"] = "Invalid nodeType: " + node_type;
 		return ret;
+	}
+
+	ScenePathLock scene_lock(scene_path);
+	if (!scene_lock.is_locked()) {
+		return _scene_lock_busy_response();
 	}
 
 	bool is_active = _is_active_scene(scene_path);
@@ -942,6 +1040,11 @@ Dictionary JustAMCPSceneTools::instance_scene(const Dictionary &p_args) {
 		ret["ok"] = false;
 		ret["error"] = "Missing instanceScenePath";
 		return ret;
+	}
+
+	ScenePathLock scene_lock(target_scene_path);
+	if (!scene_lock.is_locked()) {
+		return _scene_lock_busy_response();
 	}
 
 	Ref<PackedScene> packed = ResourceLoader::load(instance_scene_path);
@@ -1051,6 +1154,11 @@ Dictionary JustAMCPSceneTools::delete_node(const Dictionary &p_args) {
 		return ret;
 	}
 
+	ScenePathLock scene_lock(scene_path);
+	if (!scene_lock.is_locked()) {
+		return _scene_lock_busy_response();
+	}
+
 	bool is_active = _is_active_scene(scene_path);
 	Node *root = nullptr;
 	if (is_active) {
@@ -1121,6 +1229,11 @@ Dictionary JustAMCPSceneTools::duplicate_node(const Dictionary &p_args) {
 		ret["ok"] = false;
 		ret["error"] = "Missing nodePath or newName";
 		return ret;
+	}
+
+	ScenePathLock scene_lock(scene_path);
+	if (!scene_lock.is_locked()) {
+		return _scene_lock_busy_response();
 	}
 
 	bool is_active = _is_active_scene(scene_path);
@@ -1217,6 +1330,11 @@ Dictionary JustAMCPSceneTools::reparent_node(const Dictionary &p_args) {
 		return ret;
 	}
 
+	ScenePathLock scene_lock(scene_path);
+	if (!scene_lock.is_locked()) {
+		return _scene_lock_busy_response();
+	}
+
 	Array result = _load_scene(scene_path);
 	Dictionary err = result[1];
 	if (!err.is_empty()) {
@@ -1271,6 +1389,11 @@ Dictionary JustAMCPSceneTools::set_node_properties(const Dictionary &p_args) {
 	String scene_path = _to_scene_res_path(project_path, p_args.get("scenePath", p_args.get("scene_path", "")));
 	String node_path = p_args.get("nodePath", p_args.get("node_path", "."));
 	Dictionary properties = _parse_properties_arg(p_args.get("properties", Dictionary()));
+
+	ScenePathLock scene_lock(scene_path);
+	if (!scene_lock.is_locked()) {
+		return _scene_lock_busy_response();
+	}
 
 	bool is_active = _is_active_scene(scene_path);
 	Node *root = nullptr;
@@ -1408,6 +1531,11 @@ Dictionary JustAMCPSceneTools::load_sprite(const Dictionary &p_args) {
 		return ret;
 	}
 
+	ScenePathLock scene_lock(scene_path);
+	if (!scene_lock.is_locked()) {
+		return _scene_lock_busy_response();
+	}
+
 	Array result = _load_scene(scene_path);
 	Dictionary err = result[1];
 	if (!err.is_empty()) {
@@ -1457,6 +1585,11 @@ Dictionary JustAMCPSceneTools::save_scene(const Dictionary &p_args) {
 		target_path = _to_scene_res_path(project_path, new_path_raw);
 	}
 
+	ScenePathLock scene_lock(target_path);
+	if (!scene_lock.is_locked()) {
+		return _scene_lock_busy_response();
+	}
+
 	Array result = _load_scene(scene_path);
 	Dictionary err = result[1];
 	if (!err.is_empty()) {
@@ -1488,6 +1621,11 @@ Dictionary JustAMCPSceneTools::create_inherited_scene(const Dictionary &p_args) 
 		ret["ok"] = false;
 		ret["error"] = "Missing baseScenePath or newScenePath parameter.";
 		return ret;
+	}
+
+	ScenePathLock scene_lock(new_scene_path);
+	if (!scene_lock.is_locked()) {
+		return _scene_lock_busy_response();
 	}
 
 	Ref<PackedScene> base_pack = ResourceLoader::load(base_scene_path);
@@ -1533,6 +1671,11 @@ Dictionary JustAMCPSceneTools::connect_signal(const Dictionary &p_args) {
 		ret["ok"] = false;
 		ret["error"] = "Missing required signal connection arguments";
 		return ret;
+	}
+
+	ScenePathLock scene_lock(scene_path);
+	if (!scene_lock.is_locked()) {
+		return _scene_lock_busy_response();
 	}
 
 	Array result = _load_scene(scene_path);
@@ -1606,6 +1749,11 @@ Dictionary JustAMCPSceneTools::disconnect_signal(const Dictionary &p_args) {
 		ret["ok"] = false;
 		ret["error"] = "Missing required signal disconnection arguments";
 		return ret;
+	}
+
+	ScenePathLock scene_lock(scene_path);
+	if (!scene_lock.is_locked()) {
+		return _scene_lock_busy_response();
 	}
 
 	Array result = _load_scene(scene_path);

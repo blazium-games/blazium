@@ -42,14 +42,25 @@
 
 #include "core/string/print_string.h"
 
+struct MCPToolQueueEntry {
+	Variant request_id;
+	String tool_name;
+	Dictionary args;
+	Ref<HTTPResponse> stateless_response;
+	Dictionary rpc_result;
+	Semaphore done_semaphore;
+	bool has_stateless_response = false;
+};
+
 class JustAMCPServer : public Node {
 	GDCLASS(JustAMCPServer, Node);
 
 private:
-	Ref<HTTPResponse> pending_stateless_response;
-	Semaphore pending_stateless_semaphore;
-	Mutex pending_stateless_mutex;
-	Dictionary pending_stateless_result;
+	Mutex tool_queue_mutex;
+	Vector<MCPToolQueueEntry *> tool_queue;
+	MCPToolQueueEntry *current_tool_entry = nullptr;
+	bool tool_queue_processing = false;
+	static const int TOOL_QUEUE_MAX = 32;
 
 	int current_sse_connection_id = -1;
 	bool server_started = false;
@@ -78,6 +89,10 @@ private:
 	Dictionary _handle_json_rpc(const String &p_body, Ref<HTTPResponse> p_response);
 	void _send_sse_message(const String &p_json_string);
 	void _on_sse_connection_opened(int p_connection_id, const String &p_path, const Dictionary &p_headers);
+	MCPToolQueueEntry *_enqueue_tool_request(const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args, Ref<HTTPResponse> p_response, Dictionary &r_queue_full_error);
+	void _process_pending_tools();
+	void _complete_current_tool_request(const Dictionary &p_rpc_result);
+	void _clear_tool_queue();
 #endif
 
 protected:
