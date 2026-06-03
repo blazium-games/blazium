@@ -32,8 +32,9 @@
 #include "modules/modules_enabled.gen.h"
 #include "scene/main/node.h"
 
-#if defined(MODULE_HTTPSERVER_ENABLED)
 #include "core/os/mutex.h"
+
+#if defined(MODULE_HTTPSERVER_ENABLED)
 #include "core/os/semaphore.h"
 #include "modules/httpserver/http_request_context.h"
 #include "modules/httpserver/http_response.h"
@@ -64,7 +65,13 @@ private:
 
 	int current_sse_connection_id = -1;
 	bool server_started = false;
-	String current_log_level = "info";
+	String minimum_log_level = "info";
+	Mutex minimum_log_level_mutex;
+
+	static const int LOG_RATE_LIMIT_PER_SEC = 50;
+	uint64_t log_rate_window_start_usec = 0;
+	int log_rate_count = 0;
+	Mutex log_rate_mutex;
 
 	class JustAMCPPromptExecutor *prompt_executor = nullptr;
 	class JustAMCPResourceExecutor *resource_executor = nullptr;
@@ -95,6 +102,11 @@ private:
 	void _clear_tool_queue();
 #endif
 
+	void _mcp_debug_log(const String &p_message);
+	void _emit_log_notification_deferred(const String &p_level, const String &p_logger, const Dictionary &p_data);
+	bool _should_emit_log(const String &p_level);
+	bool _try_consume_log_rate_limit();
+
 protected:
 	static void _bind_methods();
 	void _notification(int p_what);
@@ -107,7 +119,7 @@ public:
 	void broadcast_tools_list_changed();
 	void broadcast_resources_list_changed();
 	void broadcast_resource_updated(const String &p_uri);
-	void send_log_message(const String &p_level, const String &p_logger, const Variant &p_data);
+	void send_log_message(const String &p_level, const String &p_logger, const Variant &p_data = Variant());
 	void send_progress_notification(const String &p_token, double p_progress, double p_total, const String &p_message);
 	void broadcast_task_status(const String &p_task_id);
 
