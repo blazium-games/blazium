@@ -33,6 +33,7 @@
 #include "scene/main/node.h"
 
 #include "core/os/mutex.h"
+#include "core/templates/hash_map.h"
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 #include "core/os/semaphore.h"
@@ -51,6 +52,16 @@ struct MCPToolQueueEntry {
 	Dictionary rpc_result;
 	Semaphore done_semaphore;
 	bool has_stateless_response = false;
+	String task_id;
+	String progress_token;
+	bool is_task_augmented = false;
+	bool cancel_requested = false;
+};
+
+struct JustAMCPActiveProgressContext {
+	String task_id;
+	Variant request_id;
+	uint64_t last_emit_usec = 0;
 };
 
 class JustAMCPServer : public Node {
@@ -62,6 +73,9 @@ private:
 	MCPToolQueueEntry *current_tool_entry = nullptr;
 	bool tool_queue_processing = false;
 	static const int TOOL_QUEUE_MAX = 32;
+
+	Mutex progress_mutex;
+	HashMap<String, JustAMCPActiveProgressContext> active_progress_tokens;
 
 	int current_sse_connection_id = -1;
 	bool server_started = false;
@@ -98,9 +112,14 @@ private:
 	Dictionary _handle_json_rpc(const String &p_body, Ref<HTTPResponse> p_response);
 	void _send_sse_message(const String &p_json_string);
 	void _on_sse_connection_opened(int p_connection_id, const String &p_path, const Dictionary &p_headers);
-	MCPToolQueueEntry *_enqueue_tool_request(const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args, Ref<HTTPResponse> p_response, Dictionary &r_queue_full_error);
+	MCPToolQueueEntry *_enqueue_tool_request(const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args, Ref<HTTPResponse> p_response, Dictionary &r_queue_full_error, const Dictionary &p_options = Dictionary());
 	void _process_pending_tools();
 	void _complete_current_tool_request(const Dictionary &p_rpc_result);
+	void _complete_task_tool_entry(MCPToolQueueEntry *p_entry, bool p_success, const Variant &p_result, const String &p_error);
+	Dictionary _format_tool_result_dict(bool p_success, const Variant &p_result, const String &p_error) const;
+	Dictionary _build_create_task_result(const String &p_task_id) const;
+	void _register_progress_token(const String &p_token, const String &p_task_id, const Variant &p_request_id);
+	void _unregister_progress_token(const String &p_token);
 	void _clear_tool_queue();
 #endif
 
@@ -124,7 +143,14 @@ public:
 	void broadcast_resource_updated(const String &p_uri);
 	void send_log_message(const String &p_level, const String &p_logger, const Variant &p_data = Variant());
 	void send_progress_notification(const String &p_token, double p_progress, double p_total, const String &p_message);
+	void report_tool_progress(const String &p_token, double p_progress, double p_total, const String &p_message);
 	void broadcast_task_status(const String &p_task_id);
+	void _on_request_cancelled(const Variant &p_request_id, const String &p_reason);
+	bool is_current_tool_cancel_requested() const;
+	String get_current_progress_token() const;
+	String get_current_task_id() const;
+	bool is_task_cancel_requested(const String &p_task_id) const;
+	void request_task_queue_cancel(const String &p_task_id);
 
 	static JustAMCPServer *get_singleton();
 	Vector<String> get_engine_logs();

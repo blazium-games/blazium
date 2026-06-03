@@ -459,11 +459,11 @@
 		<member name="blazium/justamcp/enable_debug_logging" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], JustAMCP sends JSON-RPC method names, validation failures, and HTTP payload traces to connected MCP clients as [code]debug[/code] log notifications ([code]logger: justamcp[/code]).
 		</member>
-		<member name="blazium/justamcp/forward_engine_logs" type="bool" setter="" getter="" default="true">
-			If [code]true[/code] and the JustAMCP server is running, engine [code]print[/code] output is forwarded to MCP clients via [code]notifications/message[/code] ([code]logger: engine[/code]). Respects the client's [code]logging/setLevel[/code] minimum severity.
-		</member>
 		<member name="blazium/justamcp/game_control_enabled" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], allows AI interacting via JustAMCP to natively trigger in-game commands and inputs over the pipeline, granting them orchestration control over gameplay mechanics.
+		</member>
+		<member name="blazium/justamcp/forward_engine_logs" type="bool" setter="" getter="" default="true">
+			If [code]true[/code] and the JustAMCP server is running, engine [code]print[/code] output is forwarded to MCP clients via [code]notifications/message[/code] ([code]logger: engine[/code]). Respects the client's [code]logging/setLevel[/code] minimum severity.
 		</member>
 		<member name="blazium/justamcp/list_page_size" type="int" setter="" getter="" default="50">
 			Maximum items per page for MCP list operations and paginated log reads ([code]tools/list[/code], [code]resources/list[/code], [code]blazium://logs/...[/code], etc.).
@@ -623,6 +623,15 @@
 		</member>
 		<member name="blazium/justamcp/server_port" type="int" setter="" getter="" default="6506">
 			TCP port for the JustAMCP MCP HTTP endpoint ([code]POST /mcp[/code]). Override at launch with [code]--mcp-port[/code].
+		</member>
+		<member name="blazium/justamcp/task_default_ttl_ms" type="int" setter="" getter="" default="600000">
+			Default time-to-live in milliseconds for MCP tasks created without an explicit [code]task.ttl[/code].
+		</member>
+		<member name="blazium/justamcp/task_max_concurrent" type="int" setter="" getter="" default="16">
+			Maximum number of concurrent in-flight MCP tasks.
+		</member>
+		<member name="blazium/justamcp/task_poll_interval_ms" type="int" setter="" getter="" default="1000">
+			Default suggested poll interval in milliseconds for MCP tasks.
 		</member>
 		<member name="blazium/justamcp/tools/analysis_tools" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], enables the Analysis Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/analysis_tools/[/code] can be toggled separately.
@@ -915,8 +924,17 @@
 		<member name="blazium/justamcp/tools/export_tools/blazium_deploy_to_android" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_deploy_to_android[/code] tool from the Export Tools family to MCP clients. Exports, installs, and optionally launches an Android build through adb.
 		</member>
+		<member name="blazium/justamcp/tools/export_tools/blazium_export_custom" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_export_custom[/code] tool from the Export Tools family to MCP clients. Exports the project with explicit debug/release selection.
+		</member>
+		<member name="blazium/justamcp/tools/export_tools/blazium_export_debug" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_export_debug[/code] tool from the Export Tools family to MCP clients. Exports the project using the debug preset.
+		</member>
 		<member name="blazium/justamcp/tools/export_tools/blazium_export_project" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_export_project[/code] tool from the Export Tools family to MCP clients. Triggers a headless Godot export operation.
+		</member>
+		<member name="blazium/justamcp/tools/export_tools/blazium_export_release" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_export_release[/code] tool from the Export Tools family to MCP clients. Exports the project using the release preset.
 		</member>
 		<member name="blazium/justamcp/tools/export_tools/blazium_get_android_preset_info" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_get_android_preset_info[/code] tool from the Export Tools family to MCP clients. Reads Android export preset metadata.

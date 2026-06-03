@@ -31,6 +31,7 @@
 #include "../justamcp_pagination.h"
 #include "../justamcp_runtime.h"
 #include "../justamcp_server.h"
+#include "../justamcp_tool_context.h"
 #include "core/config/project_settings.h"
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
@@ -461,7 +462,7 @@ Array JustAMCPToolExecutor::get_tool_schemas(bool p_register_only, bool p_ignore
 	String current_category = "";
 	bool is_core = false;
 
-	auto add_schema = [&](const String &p_name, const String &p_desc, const Vector<String> &p_props, const Vector<String> &p_req) {
+	auto add_schema = [&](const String &p_name, const String &p_desc, const Vector<String> &p_props, const Vector<String> &p_req, const String &p_task_support = "forbidden") {
 		String full_name = "blazium_" + p_name;
 
 		if (p_register_only) {
@@ -553,6 +554,11 @@ Array JustAMCPToolExecutor::get_tool_schemas(bool p_register_only, bool p_ignore
 			schema["required"] = req;
 		}
 		t["inputSchema"] = schema;
+		if (p_task_support != "forbidden") {
+			Dictionary execution;
+			execution["taskSupport"] = p_task_support;
+			t["execution"] = execution;
+		}
 		tools.push_back(t);
 	};
 
@@ -568,7 +574,7 @@ Array JustAMCPToolExecutor::get_tool_schemas(bool p_register_only, bool p_ignore
 	current_category = "editor_tools";
 	is_core = false;
 	add_schema("editor_play_scene", "Runs the currently active or specified scene.",
-			Vector<String>{ "scene_path", "string" }, Vector<String>{});
+			Vector<String>{ "scene_path", "string" }, Vector<String>{}, "optional");
 	add_schema("editor_play_main", "Runs the project's main scene.",
 			Vector<String>{}, Vector<String>{});
 	add_schema("editor_stop_play", "Terminates an active play session.",
@@ -604,7 +610,7 @@ Array JustAMCPToolExecutor::get_tool_schemas(bool p_register_only, bool p_ignore
 	add_schema("logs_read", "Reads recent JustAMCP/editor log lines with optional filtering and MCP notification replay.",
 			Vector<String>{ "limit", "number", "since_index", "number", "source", "string", "cursor", "string" }, Vector<String>{});
 	add_schema("editor_reload_project", "Requests an editor restart to reload the project.",
-			Vector<String>{ "save", "boolean" }, Vector<String>{});
+			Vector<String>{ "save", "boolean" }, Vector<String>{}, "optional");
 	add_schema("editor_save_all_scenes", "Saves all open editor scenes.",
 			Vector<String>{}, Vector<String>{});
 	add_schema("editor_get_signals", "Lists signals for a class or node in the edited scene.",
@@ -974,7 +980,13 @@ Array JustAMCPToolExecutor::get_tool_schemas(bool p_register_only, bool p_ignore
 	add_schema("list_export_presets", "Reads and returns all export presets from export_presets.cfg.",
 			Vector<String>{}, Vector<String>{});
 	add_schema("export_project", "Triggers a headless Godot export operation.",
-			Vector<String>{ "preset_index", "number", "preset_name", "string", "debug", "boolean" }, Vector<String>{});
+			Vector<String>{ "preset_index", "number", "preset_name", "string", "debug", "boolean" }, Vector<String>{}, "optional");
+	add_schema("export_release", "Exports the project using the release preset.",
+			Vector<String>{ "preset_name", "string", "preset_index", "number" }, Vector<String>{}, "optional");
+	add_schema("export_debug", "Exports the project using the debug preset.",
+			Vector<String>{ "preset_name", "string", "preset_index", "number" }, Vector<String>{}, "optional");
+	add_schema("export_custom", "Exports the project with explicit debug/release selection.",
+			Vector<String>{ "preset_name", "string", "preset_index", "number", "debug", "boolean" }, Vector<String>{}, "optional");
 	add_schema("get_export_info", "Returns metadata regarding absolute template directions and binary configurations.",
 			Vector<String>{}, Vector<String>{});
 	add_schema("list_android_devices", "Lists Android devices visible to adb.",
@@ -982,7 +994,7 @@ Array JustAMCPToolExecutor::get_tool_schemas(bool p_register_only, bool p_ignore
 	add_schema("get_android_preset_info", "Reads Android export preset metadata.",
 			Vector<String>{ "preset_name", "string", "preset_index", "number" }, Vector<String>{});
 	add_schema("deploy_to_android", "Exports, installs, and optionally launches an Android build through adb.",
-			Vector<String>{ "preset_name", "string", "preset_index", "number", "device_serial", "string", "debug", "boolean", "skip_export", "boolean", "launch", "boolean" }, Vector<String>{});
+			Vector<String>{ "preset_name", "string", "preset_index", "number", "device_serial", "string", "debug", "boolean", "skip_export", "boolean", "launch", "boolean" }, Vector<String>{}, "optional");
 
 	// Batch Tools
 	current_category = "batch_tools";
@@ -996,7 +1008,7 @@ Array JustAMCPToolExecutor::get_tool_schemas(bool p_register_only, bool p_ignore
 	add_schema("batch_add_nodes", "Adds multiple nodes to the currently edited scene in one call.",
 			Vector<String>{ "nodes", "array" }, Vector<String>{ "nodes" });
 	add_schema("batch_execute", "Executes multiple JustAMCP tools sequentially with optional undo on failure.",
-			Vector<String>{ "steps", "array", "stop_on_error", "boolean", "undo_on_error", "boolean" }, Vector<String>{ "steps" });
+			Vector<String>{ "steps", "array", "stop_on_error", "boolean", "undo_on_error", "boolean" }, Vector<String>{ "steps" }, "optional");
 	add_schema("find_node_references", "Searches file system recursively for reference nodes by string pattern.",
 			Vector<String>{ "pattern", "string" }, Vector<String>{ "pattern" });
 	add_schema("cross_scene_set_property", "Modifies properties identically across ALL scene files matching parameters saving changes into file system.",
@@ -1284,13 +1296,13 @@ Array JustAMCPToolExecutor::get_tool_schemas(bool p_register_only, bool p_ignore
 	current_category = "autowork_tools";
 	is_core = false;
 	add_schema("autowork_run_all_tests", "Recursively traverses and executes all autowork test suites natively returning structured passing/failure statistics.",
-			Vector<String>{}, Vector<String>{});
+			Vector<String>{}, Vector<String>{}, "optional");
 	add_schema("autowork_run_tests_in_directory", "Recursively finds and executes all Godot autowork unit tests inside a given directory, returning formatted results.",
-			Vector<String>{ "directory_path", "string" }, Vector<String>{ "directory_path" });
+			Vector<String>{ "directory_path", "string" }, Vector<String>{ "directory_path" }, "optional");
 	add_schema("autowork_run_test_script", "Executes an exact test script natively against the runtime test suite framework evaluating state.",
-			Vector<String>{ "script_path", "string" }, Vector<String>{ "script_path" });
+			Vector<String>{ "script_path", "string" }, Vector<String>{ "script_path" }, "optional");
 	add_schema("autowork_run_test_by_name", "Performs regex lookup isolating explicit test pattern function names universally across suites for debugging single logic instances.",
-			Vector<String>{ "test_name", "string" }, Vector<String>{ "test_name" });
+			Vector<String>{ "test_name", "string" }, Vector<String>{ "test_name" }, "optional");
 #endif
 
 	return tools;
@@ -1335,6 +1347,13 @@ Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const D
 		result["ok"] = false;
 		result["error"] = err;
 		return result;
+	}
+
+	if (justamcp_is_cancel_requested()) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = "cancelled";
+		return err;
 	}
 
 	if (target_schema.has("inputSchema")) {
@@ -1751,7 +1770,28 @@ Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const D
 		return export_tools->execute_tool(internal_name, p_args);
 	}
 	if (internal_name == "export_project") {
-		return export_tools->execute_tool(internal_name, p_args);
+		justamcp_report_progress(0, 2, "Starting export_project");
+		if (justamcp_is_cancel_requested()) {
+			Dictionary err;
+			err["ok"] = false;
+			err["error"] = "cancelled";
+			return err;
+		}
+		Dictionary export_result = export_tools->execute_tool(internal_name, p_args);
+		justamcp_report_progress(2, 2, "export_project finished");
+		return export_result;
+	}
+	if (internal_name == "deploy_to_android") {
+		justamcp_report_progress(0, 3, "Starting deploy_to_android");
+		if (justamcp_is_cancel_requested()) {
+			Dictionary err;
+			err["ok"] = false;
+			err["error"] = "cancelled";
+			return err;
+		}
+		Dictionary deploy_result = export_tools->execute_tool(internal_name, p_args);
+		justamcp_report_progress(3, 3, "deploy_to_android finished");
+		return deploy_result;
 	}
 	if (internal_name == "get_export_info") {
 		return export_tools->execute_tool(internal_name, p_args);
@@ -1760,9 +1800,6 @@ Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const D
 		return export_tools->execute_tool(internal_name, p_args);
 	}
 	if (internal_name == "get_android_preset_info") {
-		return export_tools->execute_tool(internal_name, p_args);
-	}
-	if (internal_name == "deploy_to_android") {
 		return export_tools->execute_tool(internal_name, p_args);
 	}
 
@@ -1904,7 +1941,17 @@ Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const D
 		bool undo_on_error = p_args.get("undo_on_error", false);
 		Array results;
 		int completed = 0;
+		const int total_steps = steps.size();
+		justamcp_report_progress(0, total_steps > 0 ? total_steps : 1, "Starting batch_execute");
 		for (int i = 0; i < steps.size(); i++) {
+			if (justamcp_is_cancel_requested()) {
+				Dictionary err;
+				err["ok"] = false;
+				err["error"] = "cancelled";
+				results.push_back(err);
+				break;
+			}
+			justamcp_report_progress(i, total_steps > 0 ? total_steps : 1, vformat("batch step %d", i + 1));
 			if (steps[i].get_type() != Variant::DICTIONARY) {
 				Dictionary step_error;
 				step_error["ok"] = false;
@@ -1944,12 +1991,32 @@ Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const D
 				completed++;
 			}
 		}
+		justamcp_report_progress(total_steps > 0 ? total_steps : 1, total_steps > 0 ? total_steps : 1, "batch_execute finished");
 		Dictionary ret;
 		ret["ok"] = true;
 		ret["results"] = results;
 		ret["completed"] = completed;
 		ret["count"] = results.size();
 		return ret;
+	}
+
+	if (internal_name == "export_release" || internal_name == "export_debug" || internal_name == "export_custom") {
+		Dictionary export_args = p_args.duplicate();
+		if (internal_name == "export_release") {
+			export_args["debug"] = false;
+		} else if (internal_name == "export_debug") {
+			export_args["debug"] = true;
+		}
+		justamcp_report_progress(0, 1, vformat("Starting %s", internal_name));
+		if (justamcp_is_cancel_requested()) {
+			Dictionary err;
+			err["ok"] = false;
+			err["error"] = "cancelled";
+			return err;
+		}
+		Dictionary export_result = export_tools->execute_tool("export_project", export_args);
+		justamcp_report_progress(1, 1, vformat("Finished %s", internal_name));
+		return export_result;
 	}
 
 #ifdef MODULE_AUTOWORK_ENABLED

@@ -33,6 +33,7 @@
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_pagination.h"
 #include "../justamcp_server.h"
+#include "../justamcp_tool_context.h"
 #include "core/io/file_access.h"
 #include "editor/editor_command_palette.h"
 #include "editor/editor_data.h"
@@ -52,6 +53,12 @@ void JustAMCPEditorTools::set_editor_plugin(JustAMCPEditorPlugin *p_plugin) {
 
 Dictionary JustAMCPEditorTools::editor_play_scene(const Dictionary &p_args) {
 	Dictionary result;
+	if (justamcp_is_cancel_requested()) {
+		result["ok"] = false;
+		result["error"] = "cancelled";
+		return result;
+	}
+	justamcp_report_progress(0, 1, "Starting editor play");
 	String scene_path = p_args.get("scene_path", "");
 
 	if (scene_path.is_empty()) {
@@ -456,6 +463,12 @@ Dictionary JustAMCPEditorTools::editor_get_errors(const Dictionary &p_args) {
 
 Dictionary JustAMCPEditorTools::editor_reload_project(const Dictionary &p_args) {
 	Dictionary result;
+	if (justamcp_is_cancel_requested()) {
+		result["ok"] = false;
+		result["error"] = "cancelled";
+		return result;
+	}
+	justamcp_report_progress(0, 1, "Requesting project reload");
 	bool save = p_args.get("save", true);
 	if (DisplayServer::get_singleton() && DisplayServer::get_singleton()->get_name() == "headless") {
 		result["ok"] = false;
