@@ -5,6 +5,7 @@
 	</brief_description>
 	<description>
 		[JustAMCPToolExecutor] builds the available tool schema list and dispatches validated tool calls to specialized tool groups such as [JustAMCPSceneTools], [JustAMCPResourceTools], [JustAMCPScriptTools], and [JustAMCPDocumentationTools]. Use it when code needs the same tool surface exposed to MCP clients.
+		Long-running tools expose [code]execution.taskSupport: optional[/code] in schemas (autowork, export, batch, editor play/reload) for MCP task-augmented [code]tools/call[/code].
 		[codeblock]
 		var schemas = JustAMCPToolExecutor.get_tool_schemas()
 		var executor = JustAMCPToolExecutor.new()

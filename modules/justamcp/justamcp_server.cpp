@@ -63,6 +63,45 @@ static String _justamcp_extract_list_cursor(const Dictionary &p_payload) {
 	return String(params["cursor"]);
 }
 
+static Dictionary _justamcp_extract_request_meta(const Dictionary &p_params) {
+	if (p_params.has("_meta") && p_params["_meta"].get_type() == Variant::DICTIONARY) {
+		return p_params["_meta"];
+	}
+	return Dictionary();
+}
+
+static String _justamcp_progress_token_from_meta(const Dictionary &p_meta) {
+	if (!p_meta.has("progressToken")) {
+		return String();
+	}
+	const Variant token_var = p_meta["progressToken"];
+	if (token_var.get_type() == Variant::STRING) {
+		return token_var;
+	}
+	if (token_var.get_type() == Variant::INT || token_var.get_type() == Variant::FLOAT) {
+		return String(token_var);
+	}
+	return String();
+}
+
+#ifdef TOOLS_ENABLED
+static String _justamcp_get_tool_task_support(const String &p_tool_name) {
+	Array schemas = JustAMCPToolExecutor::get_tool_schemas(false, true);
+	for (int i = 0; i < schemas.size(); i++) {
+		const Dictionary schema = schemas[i];
+		if (String(schema.get("name", "")) != p_tool_name) {
+			continue;
+		}
+		if (schema.has("execution") && schema["execution"].get_type() == Variant::DICTIONARY) {
+			const Dictionary execution = schema["execution"];
+			return String(execution.get("taskSupport", "forbidden"));
+		}
+		return "forbidden";
+	}
+	return "forbidden";
+}
+#endif
+
 static Dictionary _justamcp_finalize_list_result(const Dictionary &p_result, const Variant &p_req_id) {
 	if (p_result.has("ok") && !bool(p_result.get("ok", true))) {
 		Dictionary err;
@@ -88,6 +127,8 @@ void JustAMCPServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_process_pending_tools"), &JustAMCPServer::_process_pending_tools);
 	ClassDB::bind_method(D_METHOD("_emit_log_notification_deferred", "level", "logger", "data"), &JustAMCPServer::_emit_log_notification_deferred);
 	ClassDB::bind_method(D_METHOD("send_log_message", "level", "logger", "data"), &JustAMCPServer::send_log_message, DEFVAL(Variant()));
+	ClassDB::bind_method(D_METHOD("_on_request_cancelled", "request_id", "reason"), &JustAMCPServer::_on_request_cancelled);
+	ClassDB::bind_method(D_METHOD("report_tool_progress", "token", "progress", "total", "message"), &JustAMCPServer::report_tool_progress);
 	ADD_SIGNAL(MethodInfo("tool_requested", PropertyInfo(Variant::NIL, "request_id", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_NIL_IS_VARIANT), PropertyInfo(Variant::STRING, "tool_name"), PropertyInfo(Variant::DICTIONARY, "args")));
 	ADD_SIGNAL(MethodInfo("server_status_changed", PropertyInfo(Variant::BOOL, "started")));
 	ADD_SIGNAL(MethodInfo("elicitation_completed", PropertyInfo(Variant::NIL, "request_id", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_NIL_IS_VARIANT), PropertyInfo(Variant::DICTIONARY, "result")));
@@ -142,6 +183,7 @@ JustAMCPServer::JustAMCPServer() {
 	prompt_executor = memnew(JustAMCPPromptExecutor);
 	resource_executor = memnew(JustAMCPResourceExecutor);
 	task_manager = memnew(JustAMCPTaskManager);
+	task_manager->set_server(this);
 #endif
 }
 
@@ -249,6 +291,15 @@ void JustAMCPServer::_setup_settings() {
 		EDITOR_DEF_BASIC("blazium/justamcp/mcp_log_buffer_size", 500);
 		EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::INT, "blazium/justamcp/mcp_log_buffer_size", PROPERTY_HINT_RANGE, "1,5000,1"));
 
+		EDITOR_DEF_BASIC("blazium/justamcp/task_default_ttl_ms", 600000);
+		EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::INT, "blazium/justamcp/task_default_ttl_ms", PROPERTY_HINT_RANGE, "1000,3600000,1000"));
+
+		EDITOR_DEF_BASIC("blazium/justamcp/task_poll_interval_ms", 1000);
+		EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::INT, "blazium/justamcp/task_poll_interval_ms", PROPERTY_HINT_RANGE, "100,60000,100"));
+
+		EDITOR_DEF_BASIC("blazium/justamcp/task_max_concurrent", 16);
+		EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::INT, "blazium/justamcp/task_max_concurrent", PROPERTY_HINT_RANGE, "1,128,1"));
+
 		EDITOR_DEF_BASIC("blazium/justamcp/bind_to_localhost_only", true);
 		EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::BOOL, "blazium/justamcp/bind_to_localhost_only"));
 	}
@@ -266,6 +317,9 @@ void JustAMCPServer::_setup_settings() {
 	GLOBAL_DEF_BASIC("blazium/justamcp/forward_engine_logs", true);
 	GLOBAL_DEF_BASIC("blazium/justamcp/list_page_size", 50);
 	GLOBAL_DEF_BASIC("blazium/justamcp/mcp_log_buffer_size", 500);
+	GLOBAL_DEF_BASIC("blazium/justamcp/task_default_ttl_ms", 600000);
+	GLOBAL_DEF_BASIC("blazium/justamcp/task_poll_interval_ms", 1000);
+	GLOBAL_DEF_BASIC("blazium/justamcp/task_max_concurrent", 16);
 	GLOBAL_DEF_BASIC("blazium/justamcp/bind_to_localhost_only", true);
 
 #ifdef TOOLS_ENABLED
@@ -952,6 +1006,9 @@ Dictionary JustAMCPServer::_handle_json_rpc(const String &p_body, Ref<HTTPRespon
 #ifdef TOOLS_ENABLED
 		if (task_manager) {
 			result = task_manager->cancel_task(task_id);
+			if (result.get("ok", false)) {
+				request_task_queue_cancel(task_id);
+			}
 		}
 #endif
 		Dictionary rpc_result;
@@ -1028,10 +1085,114 @@ Dictionary JustAMCPServer::_handle_json_rpc(const String &p_body, Ref<HTTPRespon
 		String tool_name = params["name"];
 		Dictionary args = params.has("arguments") && params["arguments"].get_type() == Variant::DICTIONARY ? Dictionary(params["arguments"]) : Dictionary();
 
+#ifdef TOOLS_ENABLED
+		const String task_support = _justamcp_get_tool_task_support(tool_name);
+		const bool has_task_param = params.has("task") && params["task"].get_type() == Variant::DICTIONARY;
+		if (task_support == "forbidden" && has_task_param) {
+			Dictionary err;
+			err["jsonrpc"] = "2.0";
+			err["id"] = req_id_var;
+			Dictionary error_dict;
+			error_dict["code"] = -32601;
+			error_dict["message"] = vformat("Tool '%s' does not support task-augmented execution.", tool_name);
+			err["error"] = error_dict;
+			return err;
+		}
+		if (task_support == "required" && !has_task_param) {
+			Dictionary err;
+			err["jsonrpc"] = "2.0";
+			err["id"] = req_id_var;
+			Dictionary error_dict;
+			error_dict["code"] = -32601;
+			error_dict["message"] = vformat("Tool '%s' requires task-augmented execution.", tool_name);
+			err["error"] = error_dict;
+			return err;
+		}
+#endif
+
+		Dictionary enqueue_options;
+		String progress_token = _justamcp_progress_token_from_meta(_justamcp_extract_request_meta(params));
+		if (!progress_token.is_empty()) {
+			enqueue_options["progress_token"] = progress_token;
+		}
+
+#ifdef TOOLS_ENABLED
+		if (has_task_param) {
+			int default_ttl = 600000;
+			int default_poll = 1000;
+			if (ProjectSettings::get_singleton()) {
+				if (ProjectSettings::get_singleton()->has_setting("blazium/justamcp/task_default_ttl_ms")) {
+					default_ttl = int(GLOBAL_GET("blazium/justamcp/task_default_ttl_ms"));
+				}
+				if (ProjectSettings::get_singleton()->has_setting("blazium/justamcp/task_poll_interval_ms")) {
+					default_poll = int(GLOBAL_GET("blazium/justamcp/task_poll_interval_ms"));
+				}
+			}
+			const Dictionary task_params = params["task"];
+			const int ttl_ms = task_params.has("ttl") ? int(task_params["ttl"]) : default_ttl;
+			const int poll_ms = task_params.has("pollInterval") ? int(task_params["pollInterval"]) : default_poll;
+
+			if (!task_manager) {
+				return invalid_params("Task manager unavailable.");
+			}
+			const String task_id = task_manager->create_task(ttl_ms, poll_ms, progress_token);
+			if (task_id.is_empty()) {
+				Dictionary err;
+				err["jsonrpc"] = "2.0";
+				err["id"] = req_id_var;
+				Dictionary error_dict;
+				error_dict["code"] = -32003;
+				error_dict["message"] = "Maximum concurrent MCP tasks reached.";
+				err["error"] = error_dict;
+				return err;
+			}
+
+			enqueue_options["is_task_augmented"] = true;
+			enqueue_options["task_id"] = task_id;
+			if (!progress_token.is_empty()) {
+				_register_progress_token(progress_token, task_id, req_id_var);
+			}
+
+			Dictionary queue_full_error;
+			MCPToolQueueEntry *entry = _enqueue_tool_request(req_id_var, tool_name, args, p_response, queue_full_error, enqueue_options);
+			if (!entry) {
+				task_manager->fail_task(task_id, "Failed to enqueue tool request.");
+				if (!progress_token.is_empty()) {
+					_unregister_progress_token(progress_token);
+				}
+				return queue_full_error;
+			}
+
+			call_deferred(SNAME("_process_pending_tools"));
+
+			const Dictionary create_task_result = _build_create_task_result(task_id);
+			if (entry->has_stateless_response) {
+				Dictionary rpc_result;
+				rpc_result["jsonrpc"] = "2.0";
+				rpc_result["id"] = req_id_var;
+				rpc_result["result"] = create_task_result;
+				entry->rpc_result = rpc_result;
+				entry->done_semaphore.post();
+				return rpc_result;
+			}
+
+			Dictionary rpc_result;
+			rpc_result["jsonrpc"] = "2.0";
+			rpc_result["id"] = req_id_var;
+			rpc_result["result"] = create_task_result;
+			_send_sse_message(JSON::stringify(rpc_result));
+			return Dictionary();
+		}
+#endif
+
 		Dictionary queue_full_error;
-		MCPToolQueueEntry *entry = _enqueue_tool_request(req_id_var, tool_name, args, p_response, queue_full_error);
+		MCPToolQueueEntry *entry = _enqueue_tool_request(req_id_var, tool_name, args, p_response, queue_full_error, enqueue_options);
 		if (!entry) {
 			return queue_full_error;
+		}
+
+		if (!progress_token.is_empty()) {
+			_register_progress_token(progress_token, String(), req_id_var);
 		}
 
 		call_deferred(SNAME("_process_pending_tools"));
@@ -1039,6 +1200,9 @@ Dictionary JustAMCPServer::_handle_json_rpc(const String &p_body, Ref<HTTPRespon
 		if (entry->has_stateless_response) {
 			entry->done_semaphore.wait();
 			Dictionary res = entry->rpc_result;
+			if (!progress_token.is_empty()) {
+				_unregister_progress_token(progress_token);
+			}
 			memdelete(entry);
 			return res;
 		}
@@ -1075,91 +1239,21 @@ void JustAMCPServer::_send_sse_message(const String &p_json_string) {
 
 void JustAMCPServer::send_tool_result(const Variant &p_request_id, bool p_success, const Variant &p_result, const String &p_error) {
 #if defined(MODULE_HTTPSERVER_ENABLED)
-	Dictionary rpc_result;
-	rpc_result["jsonrpc"] = "2.0";
-
-	// request_id is correctly typed as a Variant (Integer or String)
-	rpc_result["id"] = p_request_id;
-
-	if (p_success) {
-		Dictionary result;
-		if (p_result.get_type() == Variant::DICTIONARY && Dictionary(p_result).has("content")) {
-			// The tool returned strict MCP "content" natively!
-			Variant content_val = Dictionary(p_result)["content"];
-			if (content_val.get_type() == Variant::ARRAY) {
-				result["content"] = content_val;
-			} else if (content_val.get_type() == Variant::STRING) {
-				Array content;
-				Dictionary content_item;
-				content_item["type"] = "text";
-				content_item["text"] = content_val;
-				content.push_back(content_item);
-				result["content"] = content;
-			} else {
-				Array content;
-				Dictionary content_item;
-				content_item["type"] = "text";
-				content_item["text"] = JSON::stringify(content_val);
-				content.push_back(content_item);
-				result["content"] = content;
-			}
-			result["isError"] = Dictionary(p_result).get("isError", false);
-		} else {
-			// The tool returned a custom dictionary (e.g. {"result": ...})
-			// We format it as a single TextContent block.
-			Array content;
-			Dictionary content_item;
-			content_item["type"] = "text";
-
-			String text_val;
-			if (p_result.get_type() == Variant::DICTIONARY && Dictionary(p_result).has("result") && Dictionary(p_result).size() == 1) {
-				Variant inner_result = Dictionary(p_result)["result"];
-				if (inner_result.get_type() == Variant::STRING) {
-					text_val = inner_result;
-				} else {
-					text_val = JSON::stringify(inner_result);
-				}
-			} else if (p_result.get_type() == Variant::STRING) {
-				text_val = p_result;
-			} else {
-				text_val = JSON::stringify(p_result);
-			}
-
-			content_item["text"] = text_val;
-			content.push_back(content_item);
-
-			result["content"] = content;
-			result["isError"] = false;
-		}
-
-		rpc_result["result"] = result;
-	} else {
-		// Differentiate Protocol Errors dynamically
-		Dictionary error_dict = p_result.get_type() == Variant::DICTIONARY ? Dictionary(p_result) : Dictionary();
-		if (!error_dict.is_empty() && error_dict.has("code")) {
-			// Pure JSON-RPC Protocol Error (-32xxx)
-			Dictionary error;
-			error["code"] = error_dict["code"];
-			error["message"] = error_dict.get("message", p_error);
-			rpc_result["error"] = error;
-		} else {
-			// Native Runtime Tool Execution error
-			Dictionary result;
-			Array content;
-			Dictionary content_item;
-			content_item["type"] = "text";
-			content_item["text"] = p_error;
-			content.push_back(content_item);
-
-			result["content"] = content;
-			result["isError"] = true;
-
-			rpc_result["result"] = result;
-		}
+	MCPToolQueueEntry *entry = nullptr;
+	{
+		MutexLock lock(tool_queue_mutex);
+		entry = current_tool_entry;
 	}
 
-	// Output to the active queued tool request.
-	_complete_current_tool_request(rpc_result);
+	if (entry && entry->is_task_augmented) {
+		_complete_task_tool_entry(entry, p_success, p_result, p_error);
+		return;
+	}
+
+	const Dictionary rpc_result = _format_tool_result_dict(p_success, p_result, p_error);
+	Dictionary rpc_with_id = rpc_result.duplicate();
+	rpc_with_id["id"] = p_request_id;
+	_complete_current_tool_request(rpc_with_id);
 #else
 	(void)p_request_id;
 	(void)p_success;
@@ -1170,7 +1264,7 @@ void JustAMCPServer::send_tool_result(const Variant &p_request_id, bool p_succes
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 
-MCPToolQueueEntry *JustAMCPServer::_enqueue_tool_request(const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args, Ref<HTTPResponse> p_response, Dictionary &r_queue_full_error) {
+MCPToolQueueEntry *JustAMCPServer::_enqueue_tool_request(const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args, Ref<HTTPResponse> p_response, Dictionary &r_queue_full_error, const Dictionary &p_options) {
 	MutexLock lock(tool_queue_mutex);
 	if (tool_queue.size() >= TOOL_QUEUE_MAX) {
 		r_queue_full_error["jsonrpc"] = "2.0";
@@ -1188,6 +1282,13 @@ MCPToolQueueEntry *JustAMCPServer::_enqueue_tool_request(const Variant &p_reques
 	entry->args = p_args;
 	entry->stateless_response = p_response;
 	entry->has_stateless_response = p_response.is_valid();
+	if (p_options.has("task_id")) {
+		entry->task_id = p_options["task_id"];
+	}
+	if (p_options.has("progress_token")) {
+		entry->progress_token = p_options["progress_token"];
+	}
+	entry->is_task_augmented = p_options.get("is_task_augmented", false);
 	tool_queue.push_back(entry);
 	return entry;
 }
@@ -1236,6 +1337,10 @@ void JustAMCPServer::_complete_current_tool_request(const Dictionary &p_rpc_resu
 		return;
 	}
 
+	if (!completed_entry->progress_token.is_empty()) {
+		_unregister_progress_token(completed_entry->progress_token);
+	}
+
 	if (has_stateless) {
 		completed_entry->done_semaphore.post();
 	} else {
@@ -1250,6 +1355,9 @@ void JustAMCPServer::_clear_tool_queue() {
 	for (int i = 0; i < tool_queue.size(); i++) {
 		MCPToolQueueEntry *entry = tool_queue[i];
 		if (entry) {
+			if (!entry->progress_token.is_empty()) {
+				_unregister_progress_token(entry->progress_token);
+			}
 			entry->done_semaphore.post();
 			memdelete(entry);
 		}
@@ -1257,6 +1365,278 @@ void JustAMCPServer::_clear_tool_queue() {
 	tool_queue.clear();
 	current_tool_entry = nullptr;
 	tool_queue_processing = false;
+}
+
+Dictionary JustAMCPServer::_format_tool_result_dict(bool p_success, const Variant &p_result, const String &p_error) const {
+	Dictionary rpc_result;
+	rpc_result["jsonrpc"] = "2.0";
+
+	if (p_success) {
+		Dictionary result;
+		if (p_result.get_type() == Variant::DICTIONARY && Dictionary(p_result).has("content")) {
+			Variant content_val = Dictionary(p_result)["content"];
+			if (content_val.get_type() == Variant::ARRAY) {
+				result["content"] = content_val;
+			} else if (content_val.get_type() == Variant::STRING) {
+				Array content;
+				Dictionary content_item;
+				content_item["type"] = "text";
+				content_item["text"] = content_val;
+				content.push_back(content_item);
+				result["content"] = content;
+			} else {
+				Array content;
+				Dictionary content_item;
+				content_item["type"] = "text";
+				content_item["text"] = JSON::stringify(content_val);
+				content.push_back(content_item);
+				result["content"] = content;
+			}
+			result["isError"] = Dictionary(p_result).get("isError", false);
+		} else {
+			Array content;
+			Dictionary content_item;
+			content_item["type"] = "text";
+
+			String text_val;
+			if (p_result.get_type() == Variant::DICTIONARY && Dictionary(p_result).has("result") && Dictionary(p_result).size() == 1) {
+				Variant inner_result = Dictionary(p_result)["result"];
+				if (inner_result.get_type() == Variant::STRING) {
+					text_val = inner_result;
+				} else {
+					text_val = JSON::stringify(inner_result);
+				}
+			} else if (p_result.get_type() == Variant::STRING) {
+				text_val = p_result;
+			} else {
+				text_val = JSON::stringify(p_result);
+			}
+
+			content_item["text"] = text_val;
+			content.push_back(content_item);
+
+			result["content"] = content;
+			result["isError"] = false;
+		}
+
+		rpc_result["result"] = result;
+	} else {
+		Dictionary error_dict = p_result.get_type() == Variant::DICTIONARY ? Dictionary(p_result) : Dictionary();
+		if (!error_dict.is_empty() && error_dict.has("code")) {
+			Dictionary error;
+			error["code"] = error_dict["code"];
+			error["message"] = error_dict.get("message", p_error);
+			rpc_result["error"] = error;
+		} else {
+			Dictionary result;
+			Array content;
+			Dictionary content_item;
+			content_item["type"] = "text";
+			content_item["text"] = p_error;
+			content.push_back(content_item);
+
+			result["content"] = content;
+			result["isError"] = true;
+
+			rpc_result["result"] = result;
+		}
+	}
+
+	return rpc_result;
+}
+
+Dictionary JustAMCPServer::_build_create_task_result(const String &p_task_id) const {
+	Dictionary result;
+#ifdef TOOLS_ENABLED
+	if (task_manager) {
+		Dictionary task_dict = task_manager->get_task(p_task_id);
+		if (task_dict.get("ok", false)) {
+			task_dict.erase("ok");
+			result["task"] = task_dict;
+			return result;
+		}
+	}
+#endif
+	Dictionary task;
+	task["taskId"] = p_task_id;
+	task["status"] = "working";
+	result["task"] = task;
+	return result;
+}
+
+void JustAMCPServer::_register_progress_token(const String &p_token, const String &p_task_id, const Variant &p_request_id) {
+	if (p_token.is_empty()) {
+		return;
+	}
+	MutexLock lock(progress_mutex);
+	JustAMCPActiveProgressContext ctx;
+	ctx.task_id = p_task_id;
+	ctx.request_id = p_request_id;
+	active_progress_tokens[p_token] = ctx;
+}
+
+void JustAMCPServer::_unregister_progress_token(const String &p_token) {
+	if (p_token.is_empty()) {
+		return;
+	}
+	MutexLock lock(progress_mutex);
+	active_progress_tokens.erase(p_token);
+}
+
+void JustAMCPServer::_complete_task_tool_entry(MCPToolQueueEntry *p_entry, bool p_success, const Variant &p_result, const String &p_error) {
+	if (!p_entry) {
+		return;
+	}
+
+	const String progress_token = p_entry->progress_token;
+	const String task_id = p_entry->task_id;
+	const bool was_cancelled = p_entry->cancel_requested || String(p_error) == "cancelled" || (p_result.get_type() == Variant::DICTIONARY && String(Dictionary(p_result).get("error", "")) == "cancelled");
+
+#ifdef TOOLS_ENABLED
+	if (task_manager && !task_id.is_empty()) {
+		if (was_cancelled) {
+			task_manager->cancel_task_execution(task_id);
+		} else {
+			const Dictionary formatted = _format_tool_result_dict(p_success, p_result, p_error);
+			Dictionary stored;
+			if (formatted.has("result")) {
+				stored = formatted["result"];
+			} else if (formatted.has("error")) {
+				task_manager->fail_task(task_id, String(formatted["error"].operator Dictionary().get("message", p_error)));
+			} else {
+				stored = formatted;
+			}
+			if (!was_cancelled && !formatted.has("error")) {
+				const bool is_error = stored.get("isError", false);
+				task_manager->complete_task(task_id, stored, is_error);
+			}
+		}
+	}
+#endif
+
+	if (!progress_token.is_empty()) {
+		_unregister_progress_token(progress_token);
+	}
+
+	MCPToolQueueEntry *completed_entry = p_entry;
+	{
+		MutexLock lock(tool_queue_mutex);
+		if (tool_queue.size() > 0 && tool_queue[0] == completed_entry) {
+			tool_queue.remove_at(0);
+		}
+		if (current_tool_entry == completed_entry) {
+			current_tool_entry = nullptr;
+		}
+		tool_queue_processing = false;
+	}
+
+	memdelete(completed_entry);
+	call_deferred(SNAME("_process_pending_tools"));
+}
+
+void JustAMCPServer::_on_request_cancelled(const Variant &p_request_id, const String &p_reason) {
+	(void)p_reason;
+#if defined(MODULE_HTTPSERVER_ENABLED)
+	MCPToolQueueEntry *target = nullptr;
+	{
+		MutexLock lock(tool_queue_mutex);
+		if (current_tool_entry && current_tool_entry->request_id == p_request_id && !current_tool_entry->is_task_augmented) {
+			current_tool_entry->cancel_requested = true;
+			target = current_tool_entry;
+		} else {
+			for (int i = 0; i < tool_queue.size(); i++) {
+				MCPToolQueueEntry *entry = tool_queue[i];
+				if (entry && entry->request_id == p_request_id && !entry->is_task_augmented) {
+					entry->cancel_requested = true;
+					target = entry;
+					break;
+				}
+			}
+		}
+	}
+
+	if (target && target == current_tool_entry && !target->cancel_requested) {
+		target->cancel_requested = true;
+		Dictionary cancelled;
+		cancelled["ok"] = false;
+		cancelled["error"] = "cancelled";
+		send_tool_result(p_request_id, false, cancelled, "cancelled");
+	}
+#endif
+}
+
+bool JustAMCPServer::is_current_tool_cancel_requested() const {
+	MutexLock lock(tool_queue_mutex);
+	if (!current_tool_entry) {
+		return false;
+	}
+	if (current_tool_entry->cancel_requested) {
+		return true;
+	}
+#ifdef TOOLS_ENABLED
+	if (!current_tool_entry->task_id.is_empty() && task_manager) {
+		return task_manager->is_cancel_requested(current_tool_entry->task_id);
+	}
+#endif
+	return false;
+}
+
+String JustAMCPServer::get_current_progress_token() const {
+	MutexLock lock(tool_queue_mutex);
+	return current_tool_entry ? current_tool_entry->progress_token : String();
+}
+
+String JustAMCPServer::get_current_task_id() const {
+	MutexLock lock(tool_queue_mutex);
+	return current_tool_entry ? current_tool_entry->task_id : String();
+}
+
+bool JustAMCPServer::is_task_cancel_requested(const String &p_task_id) const {
+#ifdef TOOLS_ENABLED
+	return task_manager && task_manager->is_cancel_requested(p_task_id);
+#else
+	(void)p_task_id;
+	return false;
+#endif
+}
+
+void JustAMCPServer::request_task_queue_cancel(const String &p_task_id) {
+#if defined(MODULE_HTTPSERVER_ENABLED)
+	MutexLock lock(tool_queue_mutex);
+	for (int i = 0; i < tool_queue.size(); i++) {
+		MCPToolQueueEntry *entry = tool_queue[i];
+		if (entry && entry->task_id == p_task_id) {
+			entry->cancel_requested = true;
+		}
+	}
+	if (current_tool_entry && current_tool_entry->task_id == p_task_id) {
+		current_tool_entry->cancel_requested = true;
+	}
+#endif
+}
+
+void JustAMCPServer::report_tool_progress(const String &p_token, double p_progress, double p_total, const String &p_message) {
+	if (p_token.is_empty()) {
+		return;
+	}
+
+	bool should_emit = false;
+	{
+		MutexLock lock(progress_mutex);
+		if (!active_progress_tokens.has(p_token)) {
+			return;
+		}
+		JustAMCPActiveProgressContext &ctx = active_progress_tokens[p_token];
+		const uint64_t now = Time::get_singleton()->get_ticks_usec();
+		if (ctx.last_emit_usec == 0 || now - ctx.last_emit_usec >= 100000) {
+			ctx.last_emit_usec = now;
+			should_emit = true;
+		}
+	}
+
+	if (should_emit) {
+		send_progress_notification(p_token, p_progress, p_total, p_message);
+	}
 }
 
 #endif // MODULE_HTTPSERVER_ENABLED

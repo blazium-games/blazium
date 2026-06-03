@@ -7,6 +7,7 @@
 		[JustAMCPServer] owns the editor-facing MCP transport and emits signals for JSON-RPC tool requests, server lifecycle changes, elicitation responses, and cancellation notices. Most projects use it through the JustAMCP editor plugin or [JustAMCPRuntime] rather than instantiating it manually.
 		Implements the MCP [url=https://modelcontextprotocol.io/specification/2025-11-25/server/utilities/logging]Logging[/url] utility: declares [code]logging[/code] capability, handles [code]logging/setLevel[/code], and pushes [code]notifications/message[/code] to SSE clients. Engine output and JustAMCP debug traces can be forwarded when [member ProjectSettings.blazium/justamcp/forward_engine_logs] and [member ProjectSettings.blazium/justamcp/enable_debug_logging] are enabled.
 		Implements MCP [url=https://modelcontextprotocol.io/specification/2025-11-25/server/utilities/pagination]pagination[/url] for [code]tools/list[/code], [code]prompts/list[/code], [code]resources/list[/code], and [code]resources/templates/list[/code] using opaque cursors. Buffers recent [code]notifications/message[/code] payloads for replay when clients missed SSE; see [member ProjectSettings.blazium/justamcp/mcp_log_buffer_size] and [code]blazium://logs/mcp/{cursor}[/code].
+		Supports task-augmented [code]tools/call[/code] for long-running tools ([url=https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/tasks]Tasks[/url]), [code]notifications/progress[/code] via [code]_meta.progressToken[/code] ([url=https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/progress]Progress[/url]), and cooperative cancellation ([url=https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/cancellation]Cancellation[/url]). Sync requests honor [code]notifications/cancelled[/code]; task-augmented work uses [code]tasks/cancel[/code].
 		[codeblock]
 		var server = JustAMCPServer.new()
 		server.tool_requested.connect(func(request_id, tool_name, args):
@@ -18,6 +19,16 @@
 		<link title="Model Context Protocol (MCP)">https://modelcontextprotocol.io/</link>
 	</tutorials>
 	<methods>
+		<method name="report_tool_progress">
+			<return type="void" />
+			<param index="0" name="token" type="String" />
+			<param index="1" name="progress" type="float" />
+			<param index="2" name="total" type="float" />
+			<param index="3" name="message" type="String" />
+			<description>
+				Emits an MCP [code]notifications/progress[/code] notification for the active [code]progressToken[/code].
+			</description>
+		</method>
 		<method name="send_log_message">
 			<return type="void" />
 			<param index="0" name="level" type="String" />

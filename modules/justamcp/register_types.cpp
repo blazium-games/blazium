@@ -134,6 +134,9 @@ static void _register_justamcp_project_settings() {
 	GLOBAL_DEF_BASIC("blazium/justamcp/forward_engine_logs", true);
 	GLOBAL_DEF_BASIC("blazium/justamcp/list_page_size", 50);
 	GLOBAL_DEF_BASIC("blazium/justamcp/mcp_log_buffer_size", 500);
+	GLOBAL_DEF_BASIC("blazium/justamcp/task_default_ttl_ms", 600000);
+	GLOBAL_DEF_BASIC("blazium/justamcp/task_poll_interval_ms", 1000);
+	GLOBAL_DEF_BASIC("blazium/justamcp/task_max_concurrent", 16);
 	GLOBAL_DEF_BASIC("blazium/justamcp/bind_to_localhost_only", true);
 
 	JustAMCPToolExecutor::register_tool_settings();

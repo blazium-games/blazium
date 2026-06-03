@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  justamcp_task_manager.h                                               */
+/*  justamcp_tool_context.cpp                                             */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             BLAZIUM ENGINE                             */
@@ -27,71 +27,31 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#pragma once
-
 #ifdef TOOLS_ENABLED
 
-#include "core/object/class_db.h"
-#include "core/object/object.h"
-#include "core/os/mutex.h"
-#include "core/os/semaphore.h"
-#include "core/templates/hash_map.h"
+#include "justamcp_tool_context.h"
+#include "justamcp_server.h"
 
-class JustAMCPServer;
+bool justamcp_is_cancel_requested() {
+	JustAMCPServer *server = JustAMCPServer::get_singleton();
+	return server && server->is_current_tool_cancel_requested();
+}
 
-struct JustAMCPTaskRecord {
-	String task_id;
-	String status = "working";
-	String status_message;
-	String created_at;
-	String last_updated_at;
-	uint64_t created_at_usec = 0;
-	int ttl_ms = 60000;
-	int poll_interval_ms = 1000;
-	String progress_token;
-	bool cancel_requested = false;
-	bool is_terminal = false;
-	Dictionary stored_result;
-	Dictionary stored_error;
-	bool has_stored_error = false;
-	Semaphore result_ready;
-};
+void justamcp_report_progress(double p_progress, double p_total, const String &p_message) {
+	JustAMCPServer *server = JustAMCPServer::get_singleton();
+	if (!server) {
+		return;
+	}
+	const String token = server->get_current_progress_token();
+	if (token.is_empty()) {
+		return;
+	}
+	server->report_tool_progress(token, p_progress, p_total, p_message);
+}
 
-class JustAMCPTaskManager : public Object {
-	GDCLASS(JustAMCPTaskManager, Object);
-
-	HashMap<String, JustAMCPTaskRecord *> tasks;
-	Mutex tasks_mutex;
-	JustAMCPServer *server = nullptr;
-
-	String _iso_timestamp_now() const;
-	String _generate_task_id() const;
-	bool _is_terminal_status(const String &p_status) const;
-	Dictionary _task_to_dict(const JustAMCPTaskRecord &p_task) const;
-	void _purge_expired_tasks();
-	void _notify_status(const String &p_task_id);
-
-protected:
-	static void _bind_methods();
-
-public:
-	void set_server(JustAMCPServer *p_server);
-
-	String create_task(int p_ttl_ms, int p_poll_interval_ms, const String &p_progress_token = String());
-	Dictionary list_tasks(const String &p_cursor = "");
-	Dictionary get_task(const String &p_task_id);
-	Dictionary get_task_result(const String &p_task_id);
-	Dictionary cancel_task(const String &p_task_id);
-
-	void complete_task(const String &p_task_id, const Dictionary &p_result, bool p_is_error = false);
-	void fail_task(const String &p_task_id, const String &p_error);
-	void cancel_task_execution(const String &p_task_id, const String &p_message = "The task was cancelled by request.");
-
-	bool is_cancel_requested(const String &p_task_id) const;
-	String get_progress_token(const String &p_task_id) const;
-
-	JustAMCPTaskManager();
-	~JustAMCPTaskManager();
-};
+String justamcp_get_active_progress_token() {
+	JustAMCPServer *server = JustAMCPServer::get_singleton();
+	return server ? server->get_current_progress_token() : String();
+}
 
 #endif // TOOLS_ENABLED

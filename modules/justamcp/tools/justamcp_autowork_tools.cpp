@@ -32,6 +32,7 @@
 #ifdef TOOLS_ENABLED
 #ifdef MODULE_AUTOWORK_ENABLED
 
+#include "../justamcp_tool_context.h"
 #include "justamcp_autowork_tools.h"
 #include "modules/autowork/autowork_main.h"
 #include "modules/justamcp/justamcp_editor_plugin.h"
@@ -50,6 +51,12 @@ JustAMCPAutoworkTools::~JustAMCPAutoworkTools() {
 
 static Dictionary _execute_autowork(Autowork *p_autowork) {
 	Dictionary result;
+	if (justamcp_is_cancel_requested()) {
+		result["ok"] = false;
+		result["error"] = "cancelled";
+		return result;
+	}
+	justamcp_report_progress(0, 1, "Running autowork tests");
 
 	SceneTree *tree = Object::cast_to<SceneTree>(OS::get_singleton()->get_main_loop());
 	if (tree) {
@@ -94,6 +101,7 @@ static Dictionary _execute_autowork(Autowork *p_autowork) {
 	}
 	p_autowork->queue_free();
 
+	justamcp_report_progress(1, 1, "Autowork tests finished");
 	return result;
 }
 

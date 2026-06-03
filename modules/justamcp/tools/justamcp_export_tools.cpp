@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "justamcp_export_tools.h"
+#include "../justamcp_tool_context.h"
 #include "core/config/project_settings.h"
 #include "core/io/config_file.h"
 #include "core/io/dir_access.h"
@@ -211,6 +212,13 @@ Dictionary JustAMCPExportTools::_list_export_presets(const Dictionary &p_params)
 }
 
 Dictionary JustAMCPExportTools::_export_project(const Dictionary &p_params) {
+	if (justamcp_is_cancel_requested()) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = "cancelled";
+		return err;
+	}
+	justamcp_report_progress(0, 2, "Preparing export");
 	int preset_index = p_params.has("preset_index") ? int(p_params["preset_index"]) : -1;
 	String preset_name = p_params.has("preset_name") ? String(p_params["preset_name"]) : "";
 	bool debug = p_params.has("debug") ? bool(p_params["debug"]) : true;
@@ -276,6 +284,7 @@ Dictionary JustAMCPExportTools::_export_project(const Dictionary &p_params) {
 	res["debug"] = debug;
 	res["command"] = command;
 	res["message"] = "Run the command above to export. Direct export from editor plugin is not supported in Godot 4 via simple MCP calls yet.";
+	justamcp_report_progress(2, 2, "Export command prepared");
 	return MCP_SUCCESS(res);
 }
 

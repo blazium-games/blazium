@@ -260,6 +260,7 @@ void JustAMCPEditorPlugin::_notification(int p_what) {
 			tool_executor->set_editor_plugin(this);
 
 			mcp_server->connect("tool_requested", callable_mp(this, &JustAMCPEditorPlugin::_on_tool_requested));
+			mcp_server->connect("request_cancelled", callable_mp(mcp_server, &JustAMCPServer::_on_request_cancelled));
 			mcp_server->connect("server_status_changed", callable_mp(this, &JustAMCPEditorPlugin::_on_server_status_changed));
 
 			_setup_status_indicator();
@@ -355,7 +356,21 @@ void JustAMCPEditorPlugin::_on_tool_requested(const Variant &p_request_id, const
 		return;
 	}
 
+	if (mcp_server->is_current_tool_cancel_requested()) {
+		Dictionary cancelled;
+		cancelled["ok"] = false;
+		cancelled["error"] = "cancelled";
+		mcp_server->send_tool_result(p_request_id, false, cancelled, "cancelled");
+		return;
+	}
+
 	Dictionary result = tool_executor->execute_tool(p_tool_name, p_args);
+
+	if (mcp_server->is_current_tool_cancel_requested() && String(result.get("error", "")) != "cancelled") {
+		result["ok"] = false;
+		result["error"] = "cancelled";
+	}
+
 	bool success = result.get("ok", false);
 
 	if (success) {
