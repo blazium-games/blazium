@@ -54,8 +54,10 @@ void HTTPServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_directory_listing_enabled"), &HTTPServer::is_directory_listing_enabled);
 
 	// SSE management
-	ClassDB::bind_method(D_METHOD("send_sse_event", "connection_id", "event", "data"), &HTTPServer::send_sse_event);
+	ClassDB::bind_method(D_METHOD("send_sse_event", "connection_id", "event", "data", "event_id"), &HTTPServer::send_sse_event, DEFVAL(""));
 	ClassDB::bind_method(D_METHOD("send_sse_data", "connection_id", "data"), &HTTPServer::send_sse_data);
+	ClassDB::bind_method(D_METHOD("send_sse_retry", "connection_id", "retry_ms"), &HTTPServer::send_sse_retry);
+	ClassDB::bind_method(D_METHOD("send_sse_comment", "connection_id", "comment"), &HTTPServer::send_sse_comment, DEFVAL(""));
 	ClassDB::bind_method(D_METHOD("close_sse_connection", "connection_id"), &HTTPServer::close_sse_connection);
 	ClassDB::bind_method(D_METHOD("get_active_sse_connections"), &HTTPServer::get_active_sse_connections);
 
@@ -452,7 +454,7 @@ void HTTPServer::_send_response(int p_client_id, ClientConnection &p_client, Ref
 	if (cors_enabled) {
 		response_str += "Access-Control-Allow-Origin: " + cors_origin + "\r\n";
 		response_str += "Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD\r\n";
-		response_str += "Access-Control-Allow-Headers: Content-Type, Authorization\r\n";
+		response_str += "Access-Control-Allow-Headers: Content-Type, Authorization, MCP-Session-Id, MCP-Protocol-Version, Last-Event-ID, Accept\r\n";
 	}
 
 	// Add custom headers
@@ -726,7 +728,7 @@ bool HTTPServer::is_directory_listing_enabled() const {
 	return directory_listing_enabled;
 }
 
-Error HTTPServer::send_sse_event(int p_connection_id, const String &p_event, const String &p_data) {
+Error HTTPServer::send_sse_event(int p_connection_id, const String &p_event, const String &p_data, const String &p_event_id) {
 	MutexLock lock(sse_lock);
 
 	if (!sse_connections.has(p_connection_id)) {
@@ -734,7 +736,7 @@ Error HTTPServer::send_sse_event(int p_connection_id, const String &p_event, con
 	}
 
 	Ref<SSEConnection> conn = sse_connections[p_connection_id];
-	Error err = conn->send_event(p_event, p_data);
+	Error err = conn->send_event(p_event, p_data, p_event_id);
 
 	if (err != OK) {
 		close_sse_connection(p_connection_id);
@@ -745,6 +747,44 @@ Error HTTPServer::send_sse_event(int p_connection_id, const String &p_event, con
 
 Error HTTPServer::send_sse_data(int p_connection_id, const String &p_data) {
 	return send_sse_event(p_connection_id, "", p_data);
+}
+
+Error HTTPServer::send_sse_retry(int p_connection_id, int p_retry_ms) {
+	MutexLock lock(sse_lock);
+
+	if (!sse_connections.has(p_connection_id)) {
+		return ERR_DOES_NOT_EXIST;
+	}
+
+	Ref<SSEConnection> conn = sse_connections[p_connection_id];
+	String message = "retry: " + itos(MAX(0, p_retry_ms)) + "\r\n\r\n";
+	CharString cs = message.utf8();
+	Error err = conn->get_peer()->put_data((const uint8_t *)cs.get_data(), cs.size() - 1);
+	if (err != OK) {
+		close_sse_connection(p_connection_id);
+	}
+	return err;
+}
+
+Error HTTPServer::send_sse_comment(int p_connection_id, const String &p_comment) {
+	MutexLock lock(sse_lock);
+
+	if (!sse_connections.has(p_connection_id)) {
+		return ERR_DOES_NOT_EXIST;
+	}
+
+	Ref<SSEConnection> conn = sse_connections[p_connection_id];
+	String message = ":";
+	if (!p_comment.is_empty()) {
+		message += " " + p_comment;
+	}
+	message += "\r\n\r\n";
+	CharString cs = message.utf8();
+	Error err = conn->get_peer()->put_data((const uint8_t *)cs.get_data(), cs.size() - 1);
+	if (err != OK) {
+		close_sse_connection(p_connection_id);
+	}
+	return err;
 }
 
 void HTTPServer::close_sse_connection(int p_connection_id) {

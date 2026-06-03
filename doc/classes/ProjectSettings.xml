@@ -624,6 +624,18 @@
 		<member name="blazium/justamcp/server_port" type="int" setter="" getter="" default="6506">
 			TCP port for the JustAMCP MCP HTTP endpoint ([code]POST /mcp[/code]). Override at launch with [code]--mcp-port[/code].
 		</member>
+		<member name="blazium/justamcp/session_allow_client_delete" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], MCP clients may terminate a Streamable HTTP session with [code]DELETE /mcp[/code] and the [code]MCP-Session-Id[/code] header.
+		</member>
+		<member name="blazium/justamcp/session_ttl_seconds" type="int" setter="" getter="" default="3600">
+			Idle lifetime in seconds for Streamable HTTP [code]MCP-Session-Id[/code] sessions. Expired sessions return HTTP 404 until the client re-initializes. Set to [code]0[/code] to disable expiry.
+		</member>
+		<member name="blazium/justamcp/streamable_http_allowed_origin" type="String" setter="" getter="" default="&quot;&quot;">
+			When [member blazium/justamcp/streamable_http_strict_origin] is [code]true[/code], only requests whose [code]Origin[/code] header matches this value are accepted on [code]/mcp[/code]. Leave empty to reject all cross-origin requests when strict mode is enabled.
+		</member>
+		<member name="blazium/justamcp/streamable_http_strict_origin" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], Streamable HTTP [code]/mcp[/code] requests must include a valid [code]Origin[/code] header that matches [member blazium/justamcp/streamable_http_allowed_origin]. Ignored when [member blazium/justamcp/bind_to_localhost_only] is [code]true[/code].
+		</member>
 		<member name="blazium/justamcp/task_default_ttl_ms" type="int" setter="" getter="" default="600000">
 			Default time-to-live in milliseconds for MCP tasks created without an explicit [code]task.ttl[/code].
 		</member>
