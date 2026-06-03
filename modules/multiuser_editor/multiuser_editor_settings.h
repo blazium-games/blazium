@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  register_types.cpp                                                    */
+/*  multiuser_editor_settings.h                                           */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             BLAZIUM ENGINE                             */
@@ -27,46 +27,12 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "register_types.h"
+#pragma once
 
 #ifdef TOOLS_ENABLED
-#include "multiuser_editor_dock.h"
-#include "multiuser_editor_permissions.h"
-#include "multiuser_editor_plugin.h"
-#include "multiuser_editor_settings.h"
-#include "multiuser_editor_settings_ui.h"
 
-#ifdef TESTS_ENABLED
-#include "tests/test_multiuser_editor.h"
-#endif
+void multiuser_editor_register_editor_settings();
+bool multiuser_editor_are_editor_settings_registered();
+bool multiuser_editor_is_registering_editor_settings();
 
-#include "core/object/class_db.h"
-#include "editor/editor_settings.h"
-#include "editor/plugins/editor_plugin.h"
-#endif
-
-#ifdef TOOLS_ENABLED
-static bool s_multiuser_editor_plugin_registered = false;
-#endif
-
-void initialize_multiuser_editor_module(ModuleInitializationLevel p_level) {
-#ifdef TOOLS_ENABLED
-	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
-		GDREGISTER_CLASS(MultiuserEditorPlugin);
-		GDREGISTER_CLASS(MultiuserEditorPermissions);
-		GDREGISTER_CLASS(MultiuserEditorDock);
-		GDREGISTER_CLASS(MultiuserEditorGhostCursorOverlay);
-		GDREGISTER_CLASS(MultiuserEditorSettingsInspectorPlugin);
-		GDREGISTER_CLASS(MultiuserEditorSettingsUI);
-
-		multiuser_editor_register_editor_settings();
-
-		if (!s_multiuser_editor_plugin_registered) {
-			EditorPlugins::add_by_type<MultiuserEditorPlugin>();
-			s_multiuser_editor_plugin_registered = true;
-		}
-	}
-#endif
-}
-
-void uninitialize_multiuser_editor_module(ModuleInitializationLevel p_level) {}
+#endif // TOOLS_ENABLED
