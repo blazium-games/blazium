@@ -138,6 +138,10 @@ static void _register_justamcp_project_settings() {
 	GLOBAL_DEF_BASIC("blazium/justamcp/task_poll_interval_ms", 1000);
 	GLOBAL_DEF_BASIC("blazium/justamcp/task_max_concurrent", 16);
 	GLOBAL_DEF_BASIC("blazium/justamcp/bind_to_localhost_only", true);
+	GLOBAL_DEF_BASIC("blazium/justamcp/session_ttl_seconds", 3600);
+	GLOBAL_DEF_BASIC("blazium/justamcp/session_allow_client_delete", true);
+	GLOBAL_DEF_BASIC("blazium/justamcp/streamable_http_strict_origin", false);
+	GLOBAL_DEF_BASIC("blazium/justamcp/streamable_http_allowed_origin", String());
 
 	JustAMCPToolExecutor::register_tool_settings();
 	JustAMCPPromptExecutor::register_settings();

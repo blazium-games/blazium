@@ -44,6 +44,8 @@
 
 #include "core/string/print_string.h"
 
+class MCPSessionManager;
+
 struct MCPToolQueueEntry {
 	Variant request_id;
 	String tool_name;
@@ -56,6 +58,8 @@ struct MCPToolQueueEntry {
 	String progress_token;
 	bool is_task_augmented = false;
 	bool cancel_requested = false;
+	String session_id;
+	int sse_connection_id = -1;
 };
 
 struct JustAMCPActiveProgressContext {
@@ -67,7 +71,11 @@ struct JustAMCPActiveProgressContext {
 class JustAMCPServer : public Node {
 	GDCLASS(JustAMCPServer, Node);
 
+	friend class MCPSessionManager;
+
 private:
+	MCPSessionManager *session_manager = nullptr;
+	String transport_negotiated_protocol = "2024-11-05";
 	Mutex tool_queue_mutex;
 	Vector<MCPToolQueueEntry *> tool_queue;
 	MCPToolQueueEntry *current_tool_entry = nullptr;
@@ -105,13 +113,20 @@ private:
 	static void _print_handler_callback(void *p_user_data, const String &p_string, bool p_error, bool p_rich);
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
-	void _handle_sse_connect(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
+	void _handle_legacy_sse_connect(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
 	void _handle_cors_preflight(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
 	void _handle_message_post(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
+	void _handle_mcp_get(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
+	void _handle_mcp_post(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
+	void _handle_mcp_delete(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
 	void _handle_mcp_stateless_post(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
 	Dictionary _handle_json_rpc(const String &p_body, Ref<HTTPResponse> p_response);
+	Dictionary _transport_handle_json_rpc(const String &p_body, Ref<HTTPResponse> p_response);
 	void _send_sse_message(const String &p_json_string);
+	void _send_sse_routed(const String &p_json_string, const String &p_session_id, int p_connection_id);
 	void _on_sse_connection_opened(int p_connection_id, const String &p_path, const Dictionary &p_headers);
+	void _on_sse_connection_closed(int p_connection_id);
+	bool _validate_mcp_oauth(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
 	MCPToolQueueEntry *_enqueue_tool_request(const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args, Ref<HTTPResponse> p_response, Dictionary &r_queue_full_error, const Dictionary &p_options = Dictionary());
 	void _process_pending_tools();
 	void _complete_current_tool_request(const Dictionary &p_rpc_result);

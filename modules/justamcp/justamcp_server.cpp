@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "justamcp_server.h"
+#include "justamcp_streamable_http.h"
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
 #include "core/os/os.h"
@@ -175,6 +176,9 @@ Vector<String> JustAMCPServer::get_engine_logs() {
 
 JustAMCPServer::JustAMCPServer() {
 	singleton = this;
+#if defined(MODULE_HTTPSERVER_ENABLED)
+	session_manager = memnew(MCPSessionManager(this));
+#endif
 	print_handler.printfunc = _print_handler_callback;
 	print_handler.userdata = this;
 	add_print_handler(&print_handler);
@@ -195,6 +199,10 @@ JustAMCPServer::~JustAMCPServer() {
 
 	_stop_server();
 #if defined(MODULE_HTTPSERVER_ENABLED)
+	if (session_manager) {
+		memdelete(session_manager);
+		session_manager = nullptr;
+	}
 	_clear_tool_queue();
 #endif
 #ifdef TOOLS_ENABLED
@@ -302,6 +310,18 @@ void JustAMCPServer::_setup_settings() {
 
 		EDITOR_DEF_BASIC("blazium/justamcp/bind_to_localhost_only", true);
 		EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::BOOL, "blazium/justamcp/bind_to_localhost_only"));
+
+		EDITOR_DEF_BASIC("blazium/justamcp/session_ttl_seconds", 3600);
+		EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::INT, "blazium/justamcp/session_ttl_seconds", PROPERTY_HINT_RANGE, "0,86400,1"));
+
+		EDITOR_DEF_BASIC("blazium/justamcp/session_allow_client_delete", true);
+		EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::BOOL, "blazium/justamcp/session_allow_client_delete"));
+
+		EDITOR_DEF_BASIC("blazium/justamcp/streamable_http_strict_origin", false);
+		EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::BOOL, "blazium/justamcp/streamable_http_strict_origin"));
+
+		EDITOR_DEF_BASIC("blazium/justamcp/streamable_http_allowed_origin", "");
+		EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::STRING, "blazium/justamcp/streamable_http_allowed_origin"));
 	}
 #endif
 
@@ -321,6 +341,10 @@ void JustAMCPServer::_setup_settings() {
 	GLOBAL_DEF_BASIC("blazium/justamcp/task_poll_interval_ms", 1000);
 	GLOBAL_DEF_BASIC("blazium/justamcp/task_max_concurrent", 16);
 	GLOBAL_DEF_BASIC("blazium/justamcp/bind_to_localhost_only", true);
+	GLOBAL_DEF_BASIC("blazium/justamcp/session_ttl_seconds", 3600);
+	GLOBAL_DEF_BASIC("blazium/justamcp/session_allow_client_delete", true);
+	GLOBAL_DEF_BASIC("blazium/justamcp/streamable_http_strict_origin", false);
+	GLOBAL_DEF_BASIC("blazium/justamcp/streamable_http_allowed_origin", String());
 
 #ifdef TOOLS_ENABLED
 	JustAMCPToolExecutor::register_tool_settings();
@@ -434,17 +458,24 @@ void JustAMCPServer::_start_server() {
 			HTTPServer::get_singleton()->listen(port, bind_address, false);
 		}
 
-		HTTPServer::get_singleton()->register_route("GET", "/sse", callable_mp(this, &JustAMCPServer::_handle_sse_connect));
-		HTTPServer::get_singleton()->register_route("POST", "/sse", callable_mp(this, &JustAMCPServer::_handle_sse_connect));
+		HTTPServer::get_singleton()->set_cors_enabled(true);
+		HTTPServer::get_singleton()->set_cors_origin(bind_to_localhost ? "http://127.0.0.1" : "*");
+
+		HTTPServer::get_singleton()->register_route("GET", "/sse", callable_mp(this, &JustAMCPServer::_handle_legacy_sse_connect));
+		HTTPServer::get_singleton()->register_route("POST", "/sse", callable_mp(this, &JustAMCPServer::_handle_legacy_sse_connect));
 		HTTPServer::get_singleton()->register_route("OPTIONS", "/sse", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
 		HTTPServer::get_singleton()->register_route("POST", "/message", callable_mp(this, &JustAMCPServer::_handle_message_post));
 		HTTPServer::get_singleton()->register_route("OPTIONS", "/message", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
-		HTTPServer::get_singleton()->register_route("GET", "/mcp", callable_mp(this, &JustAMCPServer::_handle_sse_connect));
-		HTTPServer::get_singleton()->register_route("POST", "/mcp", callable_mp(this, &JustAMCPServer::_handle_mcp_stateless_post));
+		HTTPServer::get_singleton()->register_route("GET", "/mcp", callable_mp(this, &JustAMCPServer::_handle_mcp_get));
+		HTTPServer::get_singleton()->register_route("POST", "/mcp", callable_mp(this, &JustAMCPServer::_handle_mcp_post));
+		HTTPServer::get_singleton()->register_route("DELETE", "/mcp", callable_mp(this, &JustAMCPServer::_handle_mcp_delete));
 		HTTPServer::get_singleton()->register_route("OPTIONS", "/mcp", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
 
 		if (!HTTPServer::get_singleton()->is_connected("sse_connection_opened", callable_mp(this, &JustAMCPServer::_on_sse_connection_opened))) {
 			HTTPServer::get_singleton()->connect("sse_connection_opened", callable_mp(this, &JustAMCPServer::_on_sse_connection_opened));
+		}
+		if (!HTTPServer::get_singleton()->is_connected("sse_connection_closed", callable_mp(this, &JustAMCPServer::_on_sse_connection_closed))) {
+			HTTPServer::get_singleton()->connect("sse_connection_closed", callable_mp(this, &JustAMCPServer::_on_sse_connection_closed));
 		}
 
 		server_started = true;
@@ -470,7 +501,11 @@ void JustAMCPServer::_stop_server() {
 		HTTPServer::get_singleton()->unregister_route("OPTIONS", "/message");
 		HTTPServer::get_singleton()->unregister_route("GET", "/mcp");
 		HTTPServer::get_singleton()->unregister_route("POST", "/mcp");
+		HTTPServer::get_singleton()->unregister_route("DELETE", "/mcp");
 		HTTPServer::get_singleton()->unregister_route("OPTIONS", "/mcp");
+		if (session_manager) {
+			session_manager->clear_all();
+		}
 	}
 #endif
 	server_started = false;
@@ -481,15 +516,15 @@ void JustAMCPServer::_stop_server() {
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 void JustAMCPServer::_handle_cors_preflight(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
-	p_response->set_status(204);
-	p_response->set_body("");
+	if (session_manager) {
+		session_manager->handle_cors_preflight(p_context, p_response);
+	} else {
+		p_response->set_status(204);
+		p_response->set_body("");
+	}
 }
 
-void JustAMCPServer::_handle_sse_connect(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
-	if (GLOBAL_GET("blazium/justamcp/enable_debug_logging")) {
-		_mcp_debug_log("Incoming " + p_context->get_method() + " /sse connection attempt...");
-	}
-	// Optional OAuth validation
+bool JustAMCPServer::_validate_mcp_oauth(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
 #ifdef TOOLS_ENABLED
 	bool oauth_enabled = false;
 	String required_client_id = "";
@@ -545,16 +580,69 @@ void JustAMCPServer::_handle_sse_connect(Ref<HTTPRequestContext> p_context, Ref<
 				ERR_PRINT("JustAMCP: Unauthorized connection attempt.");
 				p_response->set_status(401);
 				p_response->set_body("Unauthorized - Invalid OAuth credentials");
-				return;
+				return false;
 			}
 		}
 	}
+#else
+	(void)p_context;
+	(void)p_response;
 #endif
+	return true;
+}
 
+void JustAMCPServer::_handle_legacy_sse_connect(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
+	if (GLOBAL_GET("blazium/justamcp/enable_debug_logging")) {
+		_mcp_debug_log("Incoming " + p_context->get_method() + " /sse connection attempt...");
+	}
+	if (!_validate_mcp_oauth(p_context, p_response)) {
+		return;
+	}
 	p_response->start_sse();
 }
 
+void JustAMCPServer::_handle_mcp_get(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
+	if (!_validate_mcp_oauth(p_context, p_response)) {
+		return;
+	}
+	if (session_manager && session_manager->handle_mcp_get(p_context, p_response)) {
+		return;
+	}
+	p_response->set_status(405);
+	p_response->set_body("Method not allowed");
+}
+
+void JustAMCPServer::_handle_mcp_post(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
+	if (!_validate_mcp_oauth(p_context, p_response)) {
+		return;
+	}
+	if (session_manager && session_manager->handle_mcp_post(p_context, p_response)) {
+		return;
+	}
+	_handle_mcp_stateless_post(p_context, p_response);
+}
+
+void JustAMCPServer::_handle_mcp_delete(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
+	if (!_validate_mcp_oauth(p_context, p_response)) {
+		return;
+	}
+	if (session_manager) {
+		session_manager->handle_mcp_delete(p_context, p_response);
+	} else {
+		p_response->set_status(405);
+		p_response->set_body("Session DELETE not enabled");
+	}
+}
+
+Dictionary JustAMCPServer::_transport_handle_json_rpc(const String &p_body, Ref<HTTPResponse> p_response) {
+	return _handle_json_rpc(p_body, p_response);
+}
+
 void JustAMCPServer::_on_sse_connection_opened(int p_connection_id, const String &p_path, const Dictionary &p_headers) {
+	if (p_path == "/mcp" && session_manager) {
+		session_manager->on_sse_connection_opened(p_connection_id, p_path, p_headers);
+		return;
+	}
 	if (p_path == "/sse") {
 		if (GLOBAL_GET("blazium/justamcp/enable_debug_logging")) {
 			_mcp_debug_log("New SSE connection opened on " + p_path + " (ID: " + itos(p_connection_id) + ")");
@@ -576,6 +664,15 @@ void JustAMCPServer::_on_sse_connection_opened(int p_connection_id, const String
 
 		String endpoint_url = "http://127.0.0.1:" + itos(port) + "/message?sessionId=" + itos(p_connection_id);
 		HTTPServer::get_singleton()->send_sse_event(p_connection_id, "endpoint", endpoint_url);
+	}
+}
+
+void JustAMCPServer::_on_sse_connection_closed(int p_connection_id) {
+	if (session_manager) {
+		session_manager->on_sse_connection_closed(p_connection_id);
+	}
+	if (current_sse_connection_id == p_connection_id) {
+		current_sse_connection_id = -1;
 	}
 }
 
@@ -602,10 +699,20 @@ void JustAMCPServer::_handle_message_post(Ref<HTTPRequestContext> p_context, Ref
 	p_response->set_status(202);
 	p_response->set_body("Accepted");
 
-	// Then handle it via JSON-RPC, emitting the event down our active SSE pipeline!
+	// Then handle it via JSON-RPC, emitting the event down the bound SSE connection.
 	Dictionary result = _handle_json_rpc(body, p_response);
 	if (!result.is_empty()) {
-		_send_sse_message(JSON::stringify(result));
+		const String session_id_param = p_context->get_query_param("sessionId");
+		if (!session_id_param.is_empty() && session_id_param.is_valid_int()) {
+			const int conn_id = session_id_param.to_int();
+			if (session_manager) {
+				session_manager->send_json_legacy_connection(conn_id, JSON::stringify(result));
+			} else {
+				HTTPServer::get_singleton()->send_sse_event(conn_id, "message", JSON::stringify(result));
+			}
+		} else {
+			_send_sse_message(JSON::stringify(result));
+		}
 	}
 }
 
@@ -718,6 +825,8 @@ Dictionary JustAMCPServer::_handle_json_rpc(const String &p_body, Ref<HTTPRespon
 		if (!params.has("protocolVersion") || params["protocolVersion"].get_type() != Variant::STRING) {
 			return invalid_params("initialize requires 'protocolVersion' string.");
 		}
+		const String client_protocol = String(params["protocolVersion"]);
+		transport_negotiated_protocol = MCPSessionManager::negotiate_protocol_version(client_protocol);
 		if (!params.has("capabilities") || params["capabilities"].get_type() != Variant::DICTIONARY) {
 			return invalid_params("initialize requires 'capabilities' object.");
 		}
@@ -726,7 +835,7 @@ Dictionary JustAMCPServer::_handle_json_rpc(const String &p_body, Ref<HTTPRespon
 		}
 
 		Dictionary result;
-		result["protocolVersion"] = "2024-11-05";
+		result["protocolVersion"] = transport_negotiated_protocol;
 
 		Dictionary capabilities;
 		Dictionary tools_cap;
@@ -1226,13 +1335,35 @@ Dictionary JustAMCPServer::_handle_json_rpc(const String &p_body, Ref<HTTPRespon
 	return err;
 }
 
-void JustAMCPServer::_send_sse_message(const String &p_json_string) {
-	Array active_connections = HTTPServer::get_singleton()->get_active_sse_connections();
-	for (int i = 0; i < active_connections.size(); i++) {
-		int conn_id = active_connections[i];
-		// 'message' is the default standard SSE event type for MCP Json-RPC streams
-		HTTPServer::get_singleton()->send_sse_event(conn_id, "message", p_json_string);
+void JustAMCPServer::_send_sse_routed(const String &p_json_string, const String &p_session_id, int p_connection_id) {
+#if defined(MODULE_HTTPSERVER_ENABLED)
+	if (!HTTPServer::get_singleton()) {
+		return;
 	}
+	if (session_manager) {
+		if (!p_session_id.is_empty() && session_manager->send_json_to_session(p_session_id, p_json_string, p_connection_id)) {
+			return;
+		}
+		if (p_connection_id >= 0 && session_manager->send_json_on_connection(p_connection_id, p_json_string)) {
+			return;
+		}
+		session_manager->broadcast_json(p_json_string);
+	}
+	if (current_sse_connection_id >= 0) {
+		HTTPServer::get_singleton()->send_sse_event(current_sse_connection_id, "message", p_json_string);
+	}
+#endif
+}
+
+void JustAMCPServer::_send_sse_message(const String &p_json_string) {
+#if defined(MODULE_HTTPSERVER_ENABLED)
+	if (session_manager) {
+		session_manager->broadcast_json(p_json_string);
+	}
+	if (current_sse_connection_id >= 0 && HTTPServer::get_singleton()) {
+		HTTPServer::get_singleton()->send_sse_event(current_sse_connection_id, "message", p_json_string);
+	}
+#endif
 }
 
 #endif // MODULE_HTTPSERVER_ENABLED
@@ -1289,6 +1420,10 @@ MCPToolQueueEntry *JustAMCPServer::_enqueue_tool_request(const Variant &p_reques
 		entry->progress_token = p_options["progress_token"];
 	}
 	entry->is_task_augmented = p_options.get("is_task_augmented", false);
+	if (session_manager) {
+		entry->session_id = session_manager->get_tool_route_session_id();
+		entry->sse_connection_id = session_manager->get_tool_route_connection_id();
+	}
 	tool_queue.push_back(entry);
 	return entry;
 }
@@ -1333,7 +1468,7 @@ void JustAMCPServer::_complete_current_tool_request(const Dictionary &p_rpc_resu
 	}
 
 	if (send_via_sse) {
-		_send_sse_message(JSON::stringify(p_rpc_result));
+		_send_sse_routed(JSON::stringify(p_rpc_result), String(), -1);
 		return;
 	}
 
@@ -1344,7 +1479,7 @@ void JustAMCPServer::_complete_current_tool_request(const Dictionary &p_rpc_resu
 	if (has_stateless) {
 		completed_entry->done_semaphore.post();
 	} else {
-		_send_sse_message(JSON::stringify(p_rpc_result));
+		_send_sse_routed(JSON::stringify(p_rpc_result), completed_entry->session_id, completed_entry->sse_connection_id);
 	}
 
 	call_deferred(SNAME("_process_pending_tools"));

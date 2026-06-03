@@ -134,8 +134,10 @@ public:
 	bool is_directory_listing_enabled() const;
 
 	// SSE management
-	Error send_sse_event(int p_connection_id, const String &p_event, const String &p_data);
+	Error send_sse_event(int p_connection_id, const String &p_event, const String &p_data, const String &p_event_id = String());
 	Error send_sse_data(int p_connection_id, const String &p_data);
+	Error send_sse_retry(int p_connection_id, int p_retry_ms);
+	Error send_sse_comment(int p_connection_id, const String &p_comment = String());
 	void close_sse_connection(int p_connection_id);
 	Array get_active_sse_connections() const;
 
