@@ -31,6 +31,7 @@
 
 #include "justamcp_editor_tools.h"
 #include "../justamcp_editor_plugin.h"
+#include "../justamcp_pagination.h"
 #include "../justamcp_server.h"
 #include "core/io/file_access.h"
 #include "editor/editor_command_palette.h"
@@ -389,6 +390,34 @@ Dictionary JustAMCPEditorTools::editor_screenshot_game(const Dictionary &p_args)
 }
 
 Dictionary JustAMCPEditorTools::editor_get_output_log(const Dictionary &p_args) {
+	if (p_args.has("cursor")) {
+		Array all_lines;
+		if (JustAMCPServer::get_singleton()) {
+			Vector<String> engine_logs = JustAMCPServer::get_singleton()->get_engine_logs();
+			all_lines.resize(engine_logs.size());
+			for (int i = 0; i < engine_logs.size(); i++) {
+				all_lines[i] = engine_logs[i];
+			}
+		}
+		const String cursor = String(p_args["cursor"]);
+		Dictionary page = justamcp_pagination_slice_array(all_lines, cursor, "logs");
+		if (page.has("ok") && !bool(page.get("ok", true))) {
+			Dictionary err;
+			err["ok"] = false;
+			err["error"] = page.get("error", "Invalid pagination cursor.");
+			err["error_code"] = page.get("error_code", -32602);
+			return err;
+		}
+		Dictionary result;
+		result["ok"] = true;
+		result["logs"] = page.get("logs", Array());
+		result["count"] = Array(result["logs"]).size();
+		if (page.has("nextCursor")) {
+			result["nextCursor"] = page["nextCursor"];
+		}
+		return result;
+	}
+
 	Dictionary result;
 	Array logs;
 	int limit = p_args.get("limit", 200);

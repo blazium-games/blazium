@@ -31,6 +31,13 @@
 				Returns MCP JSON schema dictionaries for the available tools. Set [param register_only] to return registration metadata only, or [param ignore_settings] to bypass editor filtering.
 			</description>
 		</method>
+		<method name="list_tools" qualifiers="static">
+			<return type="Dictionary" />
+			<param index="0" name="cursor" type="String" default="&quot;&quot;" />
+			<description>
+				Returns a paginated MCP [code]tools/list[/code] result dictionary with [code]tools[/code] and optional [code]nextCursor[/code]. [param cursor] is an opaque token from a previous page.
+			</description>
+		</method>
 		<method name="set_test_scene_root" qualifiers="static">
 			<return type="void" />
 			<param index="0" name="node" type="Node" />

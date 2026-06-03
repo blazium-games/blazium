@@ -32,8 +32,9 @@
 #include "modules/modules_enabled.gen.h"
 #include "scene/main/node.h"
 
-#if defined(MODULE_HTTPSERVER_ENABLED)
 #include "core/os/mutex.h"
+
+#if defined(MODULE_HTTPSERVER_ENABLED)
 #include "core/os/semaphore.h"
 #include "modules/httpserver/http_request_context.h"
 #include "modules/httpserver/http_response.h"
@@ -78,6 +79,8 @@ private:
 	static JustAMCPServer *singleton;
 	Vector<String> engine_logs;
 	Mutex engine_logs_mutex;
+	Vector<Dictionary> mcp_notification_log;
+	Mutex mcp_notification_log_mutex;
 	PrintHandlerList print_handler;
 	static void _print_handler_callback(void *p_user_data, const String &p_string, bool p_error, bool p_rich);
 
@@ -94,6 +97,8 @@ private:
 	void _complete_current_tool_request(const Dictionary &p_rpc_result);
 	void _clear_tool_queue();
 #endif
+
+	void _append_mcp_notification_log(const String &p_level, const String &p_logger, const Dictionary &p_data);
 
 protected:
 	static void _bind_methods();
@@ -113,6 +118,7 @@ public:
 
 	static JustAMCPServer *get_singleton();
 	Vector<String> get_engine_logs();
+	Dictionary get_mcp_notification_log_page(const String &p_cursor);
 
 	bool is_server_started() const { return server_started; }
 

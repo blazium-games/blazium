@@ -5,6 +5,7 @@
 	</brief_description>
 	<description>
 		[JustAMCPServer] owns the editor-facing MCP transport and emits signals for JSON-RPC tool requests, server lifecycle changes, elicitation responses, and cancellation notices. Most projects use it through the JustAMCP editor plugin or [JustAMCPRuntime] rather than instantiating it manually.
+		Implements MCP [url=https://modelcontextprotocol.io/specification/2025-11-25/server/utilities/pagination]pagination[/url] for [code]tools/list[/code], [code]prompts/list[/code], [code]resources/list[/code], and [code]resources/templates/list[/code] using opaque cursors. Buffers recent [code]notifications/message[/code] payloads for replay when clients missed SSE; see [member ProjectSettings.blazium/justamcp/mcp_log_buffer_size] and [code]blazium://logs/mcp/{cursor}[/code].
 		[codeblock]
 		var server = JustAMCPServer.new()
 		server.tool_requested.connect(func(request_id, tool_name, args):

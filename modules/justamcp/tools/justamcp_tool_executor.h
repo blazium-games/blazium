@@ -125,6 +125,7 @@ public:
 
 	static void register_tool_settings();
 	static Array get_tool_schemas(bool p_register_only = false, bool p_ignore_settings = false);
+	static Dictionary list_tools(const String &p_cursor = "");
 
 	static Node *test_scene_root;
 	static void set_test_scene_root(Node *p_node);

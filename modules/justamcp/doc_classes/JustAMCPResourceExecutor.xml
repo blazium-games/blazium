@@ -27,14 +27,14 @@
 			<return type="Dictionary" />
 			<param index="0" name="cursor" type="String" default="&quot;&quot;" />
 			<description>
-				Returns the MCP resource templates registered with the executor. [param cursor] is accepted for protocol compatibility.
+				Returns a paginated MCP [code]resources/templates/list[/code] dictionary with [code]resourceTemplates[/code] and optional [code]nextCursor[/code].
 			</description>
 		</method>
 		<method name="list_resources">
 			<return type="Dictionary" />
 			<param index="0" name="cursor" type="String" default="&quot;&quot;" />
 			<description>
-				Returns fixed MCP resources registered with the executor, including names, descriptions, URIs, and MIME types. [param cursor] is accepted for protocol compatibility.
+				Returns a paginated MCP [code]resources/list[/code] dictionary with [code]resources[/code] and optional [code]nextCursor[/code].
 			</description>
 		</method>
 		<method name="read_resource">

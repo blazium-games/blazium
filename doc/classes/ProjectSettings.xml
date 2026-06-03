@@ -462,6 +462,12 @@
 		<member name="blazium/justamcp/game_control_enabled" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], allows AI interacting via JustAMCP to natively trigger in-game commands and inputs over the pipeline, granting them orchestration control over gameplay mechanics.
 		</member>
+		<member name="blazium/justamcp/list_page_size" type="int" setter="" getter="" default="50">
+			Maximum items per page for MCP list operations and paginated log reads ([code]tools/list[/code], [code]resources/list[/code], [code]blazium://logs/...[/code], etc.).
+		</member>
+		<member name="blazium/justamcp/mcp_log_buffer_size" type="int" setter="" getter="" default="500">
+			Maximum buffered MCP [code]notifications/message[/code] entries retained for replay when clients missed SSE.
+		</member>
 		<member name="blazium/justamcp/oauth_enabled" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], MCP clients must authenticate with OAuth credentials before calling JustAMCP tools.
 		</member>
@@ -546,6 +552,9 @@
 		<member name="blazium/justamcp/resources/Input Map" type="String" setter="" getter="">
 			Read-only MCP resource metadata for [code]Input Map[/code]. Description: Project input actions and their configured events.
 		</member>
+		<member name="blazium/justamcp/resources/MCP Log Notifications" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]MCP Log Notifications[/code]. Description: Paginated buffered MCP notifications/message history. Use blazium://logs/mcp/start for the first page.
+		</member>
 		<member name="blazium/justamcp/resources/Materials" type="String" setter="" getter="">
 			Read-only MCP resource metadata for [code]Materials[/code]. Description: Material resources found under res://.
 		</member>
@@ -570,6 +579,9 @@
 		<member name="blazium/justamcp/resources/Project Settings" type="String" setter="" getter="">
 			Read-only MCP resource metadata for [code]Project Settings[/code]. Description: Common project settings subset.
 		</member>
+		<member name="blazium/justamcp/resources/Recent Engine Logs" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]Recent Engine Logs[/code]. Description: Paginated recent engine log lines captured by JustAMCP. Use blazium://logs/recent/start for the first page.
+		</member>
 		<member name="blazium/justamcp/resources/Recent Logs" type="String" setter="" getter="">
 			Read-only MCP resource metadata for [code]Recent Logs[/code]. Description: Recent JustAMCP engine log lines.
 		</member>
@@ -584,6 +596,9 @@
 		</member>
 		<member name="blazium/justamcp/resources/System Logs" type="String" setter="" getter="">
 			Read-only MCP resource metadata for [code]System Logs[/code]. Description: Recent engine log lines captured by JustAMCP.
+		</member>
+		<member name="blazium/justamcp/resources/System Logs (Paginated)" type="String" setter="" getter="">
+			Read-only MCP resource metadata for [code]System Logs (Paginated)[/code]. Description: Paginated engine log lines as JSON. Use blazium://system/logs/start for the first page.
 		</member>
 		<member name="blazium/justamcp/resources/Test Results" type="String" setter="" getter="">
 			Read-only MCP resource metadata for [code]Test Results[/code]. Description: Latest Autowork test results when available.

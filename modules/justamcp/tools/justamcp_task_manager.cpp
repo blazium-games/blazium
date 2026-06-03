@@ -30,6 +30,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_task_manager.h"
+#include "../justamcp_pagination.h"
 #include "core/os/time.h"
 
 void JustAMCPTaskManager::_bind_methods() {
@@ -68,17 +69,13 @@ Dictionary JustAMCPTaskManager::create_task(const String &p_task_id, int p_ttl) 
 }
 
 Dictionary JustAMCPTaskManager::list_tasks(const String &cursor) {
-	Dictionary result;
 	Array tasks_array;
-
 	Array keys = active_tasks.keys();
 	for (int i = 0; i < keys.size(); i++) {
 		Dictionary task_info = active_tasks[keys[i]];
 		tasks_array.push_back(task_info);
 	}
-
-	result["tasks"] = tasks_array;
-	return result;
+	return justamcp_pagination_slice_array(tasks_array, cursor, "tasks");
 }
 
 Dictionary JustAMCPTaskManager::get_task(const String &p_task_id) {

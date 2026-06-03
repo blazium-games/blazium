@@ -31,7 +31,9 @@
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
 #include "core/os/os.h"
+#include "core/os/time.h"
 #include "editor/editor_settings.h"
+#include "justamcp_pagination.h"
 #include "modules/modules_enabled.gen.h"
 #include "servers/display_server.h"
 #include "tools/justamcp_prompt_executor.h"
@@ -47,6 +49,38 @@ static bool _is_headless() {
 		return true;
 	}
 	return false;
+}
+
+static String _justamcp_extract_list_cursor(const Dictionary &p_payload) {
+	if (!p_payload.has("params") || p_payload["params"].get_type() != Variant::DICTIONARY) {
+		return String();
+	}
+	const Dictionary params = p_payload["params"];
+	if (!params.has("cursor")) {
+		return String();
+	}
+	return String(params["cursor"]);
+}
+
+static Dictionary _justamcp_finalize_list_result(const Dictionary &p_result, const Variant &p_req_id) {
+	if (p_result.has("ok") && !bool(p_result.get("ok", true))) {
+		Dictionary err;
+		err["jsonrpc"] = "2.0";
+		err["id"] = p_req_id;
+		Dictionary error_dict;
+		error_dict["code"] = p_result.get("error_code", -32602);
+		error_dict["message"] = p_result.get("error", "Invalid params.");
+		err["error"] = error_dict;
+		return err;
+	}
+
+	Dictionary out = p_result.duplicate();
+	out.erase("ok");
+	Dictionary rpc_result;
+	rpc_result["jsonrpc"] = "2.0";
+	rpc_result["id"] = p_req_id;
+	rpc_result["result"] = out;
+	return rpc_result;
 }
 
 void JustAMCPServer::_bind_methods() {
@@ -191,6 +225,12 @@ void JustAMCPServer::_setup_settings() {
 		EDITOR_DEF_BASIC("blazium/justamcp/enable_debug_logging", true);
 		EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::BOOL, "blazium/justamcp/enable_debug_logging"));
 
+		EDITOR_DEF_BASIC("blazium/justamcp/list_page_size", 50);
+		EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::INT, "blazium/justamcp/list_page_size", PROPERTY_HINT_RANGE, "1,500,1"));
+
+		EDITOR_DEF_BASIC("blazium/justamcp/mcp_log_buffer_size", 500);
+		EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::INT, "blazium/justamcp/mcp_log_buffer_size", PROPERTY_HINT_RANGE, "1,5000,1"));
+
 		EDITOR_DEF_BASIC("blazium/justamcp/bind_to_localhost_only", true);
 		EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::BOOL, "blazium/justamcp/bind_to_localhost_only"));
 	}
@@ -205,6 +245,8 @@ void JustAMCPServer::_setup_settings() {
 	GLOBAL_DEF_BASIC("blazium/justamcp/client_secret", String());
 	GLOBAL_DEF_BASIC("blazium/justamcp/z_mcp_config", String());
 	GLOBAL_DEF_BASIC("blazium/justamcp/enable_debug_logging", true);
+	GLOBAL_DEF_BASIC("blazium/justamcp/list_page_size", 50);
+	GLOBAL_DEF_BASIC("blazium/justamcp/mcp_log_buffer_size", 500);
 	GLOBAL_DEF_BASIC("blazium/justamcp/bind_to_localhost_only", true);
 
 #ifdef TOOLS_ENABLED
@@ -668,39 +710,28 @@ Dictionary JustAMCPServer::_handle_json_rpc(const String &p_body, Ref<HTTPRespon
 	}
 
 	if (method == "tools/list") {
-		Dictionary result;
+		const String cursor = _justamcp_extract_list_cursor(payload);
 #ifdef TOOLS_ENABLED
-		result["tools"] = JustAMCPToolExecutor::get_tool_schemas();
+		return _justamcp_finalize_list_result(JustAMCPToolExecutor::list_tools(cursor), req_id_var);
 #else
-		result["tools"] = Array();
+		Dictionary empty;
+		empty["ok"] = true;
+		empty["tools"] = Array();
+		return _justamcp_finalize_list_result(empty, req_id_var);
 #endif
-
-		Dictionary rpc_result;
-		rpc_result["jsonrpc"] = "2.0";
-		rpc_result["id"] = req_id_var;
-		rpc_result["result"] = result;
-
-		return rpc_result;
 	}
 
 	if (method == "prompts/list") {
-		Dictionary result;
+		const String cursor = _justamcp_extract_list_cursor(payload);
 #ifdef TOOLS_ENABLED
-		String cursor = "";
-		if (payload.has("params") && Dictionary(payload["params"]).has("cursor")) {
-			cursor = String(Variant(Dictionary(payload["params"])["cursor"]));
-		}
 		if (prompt_executor) {
-			result = prompt_executor->list_prompts(cursor);
+			return _justamcp_finalize_list_result(prompt_executor->list_prompts(cursor), req_id_var);
 		}
-#else
-		result["prompts"] = Array();
 #endif
-		Dictionary rpc_result;
-		rpc_result["jsonrpc"] = "2.0";
-		rpc_result["id"] = req_id_var;
-		rpc_result["result"] = result;
-		return rpc_result;
+		Dictionary empty;
+		empty["ok"] = true;
+		empty["prompts"] = Array();
+		return _justamcp_finalize_list_result(empty, req_id_var);
 	}
 
 	if (method == "prompts/get") {
@@ -736,37 +767,29 @@ Dictionary JustAMCPServer::_handle_json_rpc(const String &p_body, Ref<HTTPRespon
 	}
 
 	if (method == "resources/list") {
-		Dictionary result;
+		const String cursor = _justamcp_extract_list_cursor(payload);
 #ifdef TOOLS_ENABLED
-		String cursor = payload.has("params") && Dictionary(payload["params"]).has("cursor") ? String(Variant(Dictionary(payload["params"])["cursor"])) : "";
 		if (resource_executor) {
-			result = resource_executor->list_resources(cursor);
+			return _justamcp_finalize_list_result(resource_executor->list_resources(cursor), req_id_var);
 		}
-#else
-		result["resources"] = Array();
 #endif
-		Dictionary rpc_result;
-		rpc_result["jsonrpc"] = "2.0";
-		rpc_result["id"] = req_id_var;
-		rpc_result["result"] = result;
-		return rpc_result;
+		Dictionary empty;
+		empty["ok"] = true;
+		empty["resources"] = Array();
+		return _justamcp_finalize_list_result(empty, req_id_var);
 	}
 
 	if (method == "resources/templates/list") {
-		Dictionary result;
+		const String cursor = _justamcp_extract_list_cursor(payload);
 #ifdef TOOLS_ENABLED
-		String cursor = payload.has("params") && Dictionary(payload["params"]).has("cursor") ? String(Variant(Dictionary(payload["params"])["cursor"])) : "";
 		if (resource_executor) {
-			result = resource_executor->list_resource_templates(cursor);
+			return _justamcp_finalize_list_result(resource_executor->list_resource_templates(cursor), req_id_var);
 		}
-#else
-		result["resourceTemplates"] = Array();
 #endif
-		Dictionary rpc_result;
-		rpc_result["jsonrpc"] = "2.0";
-		rpc_result["id"] = req_id_var;
-		rpc_result["result"] = result;
-		return rpc_result;
+		Dictionary empty;
+		empty["ok"] = true;
+		empty["resourceTemplates"] = Array();
+		return _justamcp_finalize_list_result(empty, req_id_var);
 	}
 
 	if (method == "resources/read") {
@@ -826,20 +849,16 @@ Dictionary JustAMCPServer::_handle_json_rpc(const String &p_body, Ref<HTTPRespon
 	}
 
 	if (method == "tasks/list") {
-		Dictionary result;
+		const String cursor = _justamcp_extract_list_cursor(payload);
 #ifdef TOOLS_ENABLED
-		String cursor = payload.has("params") && Dictionary(payload["params"]).has("cursor") ? String(Variant(Dictionary(payload["params"])["cursor"])) : "";
 		if (task_manager) {
-			result = task_manager->list_tasks(cursor);
+			return _justamcp_finalize_list_result(task_manager->list_tasks(cursor), req_id_var);
 		}
-#else
-		result["tasks"] = Array();
 #endif
-		Dictionary rpc_result;
-		rpc_result["jsonrpc"] = "2.0";
-		rpc_result["id"] = req_id_var;
-		rpc_result["result"] = result;
-		return rpc_result;
+		Dictionary empty;
+		empty["ok"] = true;
+		empty["tasks"] = Array();
+		return _justamcp_finalize_list_result(empty, req_id_var);
 	}
 
 	if (method == "tasks/get") {
@@ -1286,7 +1305,44 @@ void JustAMCPServer::broadcast_tools_list_changed() {
 #endif
 }
 
+void JustAMCPServer::_append_mcp_notification_log(const String &p_level, const String &p_logger, const Dictionary &p_data) {
+	Dictionary entry;
+	entry["level"] = p_level;
+	if (!p_logger.is_empty()) {
+		entry["logger"] = p_logger;
+	}
+	entry["data"] = p_data;
+	entry["timestamp_usec"] = Time::get_singleton()->get_ticks_usec();
+
+	MutexLock lock(mcp_notification_log_mutex);
+	mcp_notification_log.push_back(entry);
+	const int max_entries = justamcp_mcp_log_buffer_size();
+	while (mcp_notification_log.size() > max_entries) {
+		mcp_notification_log.remove_at(0);
+	}
+}
+
+Dictionary JustAMCPServer::get_mcp_notification_log_page(const String &p_cursor) {
+	Array notifications;
+	{
+		MutexLock lock(mcp_notification_log_mutex);
+		notifications.resize(mcp_notification_log.size());
+		for (int i = 0; i < mcp_notification_log.size(); i++) {
+			notifications[i] = mcp_notification_log[i];
+		}
+	}
+	return justamcp_pagination_slice_array(notifications, p_cursor, "notifications");
+}
+
 void JustAMCPServer::send_log_message(const String &p_level, const String &p_logger, const Variant &p_data) {
+	Dictionary log_data;
+	if (p_data.get_type() == Variant::DICTIONARY) {
+		log_data = Dictionary(p_data);
+	} else if (p_data.get_type() != Variant::NIL) {
+		log_data["message"] = String(p_data);
+	}
+	_append_mcp_notification_log(p_level, p_logger, log_data);
+
 #if defined(MODULE_HTTPSERVER_ENABLED)
 	Dictionary notification;
 	notification["jsonrpc"] = "2.0";
@@ -1297,7 +1353,7 @@ void JustAMCPServer::send_log_message(const String &p_level, const String &p_log
 	if (!p_logger.is_empty()) {
 		params["logger"] = p_logger;
 	}
-	params["data"] = p_data;
+	params["data"] = log_data;
 
 	notification["params"] = params;
 	_send_sse_message(JSON::stringify(notification));
