@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "justamcp_tool_executor.h"
+#include "../justamcp_pagination.h"
 #include "../justamcp_runtime.h"
 #include "../justamcp_server.h"
 #include "core/config/project_settings.h"
@@ -82,6 +83,7 @@
 void JustAMCPToolExecutor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("execute_tool", "tool_name", "args"), &JustAMCPToolExecutor::execute_tool);
 	ClassDB::bind_static_method("JustAMCPToolExecutor", D_METHOD("get_tool_schemas", "register_only", "ignore_settings"), &JustAMCPToolExecutor::get_tool_schemas, DEFVAL(false), DEFVAL(false));
+	ClassDB::bind_static_method("JustAMCPToolExecutor", D_METHOD("list_tools", "cursor"), &JustAMCPToolExecutor::list_tools, DEFVAL(""));
 	ClassDB::bind_static_method("JustAMCPToolExecutor", D_METHOD("set_test_scene_root", "node"), &JustAMCPToolExecutor::set_test_scene_root);
 }
 
@@ -596,11 +598,11 @@ Array JustAMCPToolExecutor::get_tool_schemas(bool p_register_only, bool p_ignore
 	add_schema("editor_screenshot_game", "Captures the visible game display to a PNG file.",
 			Vector<String>{}, Vector<String>{});
 	add_schema("editor_get_output_log", "Returns recent output lines captured by the JustAMCP engine log hook.",
-			Vector<String>{ "limit", "number" }, Vector<String>{});
+			Vector<String>{ "limit", "number", "cursor", "string" }, Vector<String>{});
 	add_schema("editor_get_errors", "Returns recent error and warning lines captured by the JustAMCP engine log hook.",
 			Vector<String>{ "limit", "number" }, Vector<String>{});
-	add_schema("logs_read", "Reads recent JustAMCP/editor log lines with optional filtering.",
-			Vector<String>{ "limit", "number", "since_index", "number", "source", "string" }, Vector<String>{});
+	add_schema("logs_read", "Reads recent JustAMCP/editor log lines with optional filtering and MCP notification replay.",
+			Vector<String>{ "limit", "number", "since_index", "number", "source", "string", "cursor", "string" }, Vector<String>{});
 	add_schema("editor_reload_project", "Requests an editor restart to reload the project.",
 			Vector<String>{ "save", "boolean" }, Vector<String>{});
 	add_schema("editor_save_all_scenes", "Saves all open editor scenes.",
@@ -1294,6 +1296,10 @@ Array JustAMCPToolExecutor::get_tool_schemas(bool p_register_only, bool p_ignore
 	return tools;
 }
 
+Dictionary JustAMCPToolExecutor::list_tools(const String &p_cursor) {
+	return justamcp_pagination_slice_array(get_tool_schemas(false, false), p_cursor, "tools");
+}
+
 Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const Dictionary &p_args) {
 	Dictionary result;
 
@@ -1494,10 +1500,36 @@ Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const D
 		return editor_tools->editor_get_errors(p_args);
 	}
 	if (internal_name == "logs_read") {
+		const String source = String(p_args.get("source", "editor"));
+		const String cursor = String(p_args.get("cursor", ""));
+		if (source == "mcp" && JustAMCPServer::get_singleton()) {
+			Dictionary page = JustAMCPServer::get_singleton()->get_mcp_notification_log_page(cursor);
+			if (page.has("ok") && !bool(page.get("ok", true))) {
+				Dictionary ret;
+				ret["ok"] = false;
+				ret["error"] = page.get("error", "Invalid pagination cursor.");
+				ret["error_code"] = page.get("error_code", -32602);
+				return ret;
+			}
+			Dictionary ret;
+			ret["ok"] = true;
+			ret["source"] = "mcp";
+			ret["notifications"] = page.get("notifications", Array());
+			ret["count"] = Array(ret["notifications"]).size();
+			if (page.has("nextCursor")) {
+				ret["nextCursor"] = page["nextCursor"];
+			}
+			return ret;
+		}
+
 		Dictionary ret;
 		Dictionary log_args;
 		log_args["limit"] = p_args.get("limit", 200);
+		log_args["cursor"] = cursor;
 		Dictionary logs = editor_tools->editor_get_output_log(log_args);
+		if (!bool(logs.get("ok", true))) {
+			return logs;
+		}
 		Array lines = logs.get("logs", Array());
 		int since_index = p_args.get("since_index", 0);
 		Array sliced;
@@ -1505,10 +1537,13 @@ Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const D
 			sliced.push_back(lines[i]);
 		}
 		ret["ok"] = true;
-		ret["source"] = p_args.get("source", "editor");
+		ret["source"] = source;
 		ret["logs"] = sliced;
 		ret["count"] = sliced.size();
 		ret["next_index"] = lines.size();
+		if (logs.has("nextCursor")) {
+			ret["nextCursor"] = logs["nextCursor"];
+		}
 		return ret;
 	}
 	if (internal_name == "editor_reload_project") {

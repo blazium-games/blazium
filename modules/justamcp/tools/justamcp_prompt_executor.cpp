@@ -30,6 +30,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_prompt_executor.h"
+#include "../justamcp_pagination.h"
 #include "core/config/project_settings.h"
 #include "editor/editor_settings.h"
 #include "prompts/justamcp_prompt_autowork_failure_analyzer.h"
@@ -101,31 +102,13 @@ void JustAMCPPromptExecutor::add_prompt(const Ref<JustAMCPPrompt> &p_prompt) {
 }
 
 Dictionary JustAMCPPromptExecutor::list_prompts(const String &cursor) {
-	Dictionary result;
 	Array prompts;
-	int offset = cursor.is_valid_int() ? cursor.to_int() : 0;
-	if (offset < 0) {
-		offset = 0;
-	}
-	const int page_size = 50;
-	int emitted = 0;
-
 	for (int i = 0; i < registered_prompts.size(); i++) {
 		if (registered_prompts[i].is_valid()) {
-			if (i < offset) {
-				continue;
-			}
-			if (emitted >= page_size) {
-				result["nextCursor"] = itos(i);
-				break;
-			}
 			prompts.push_back(registered_prompts[i]->get_prompt());
-			emitted++;
 		}
 	}
-
-	result["prompts"] = prompts;
-	return result;
+	return justamcp_pagination_slice_array(prompts, cursor, "prompts");
 }
 
 Dictionary JustAMCPPromptExecutor::get_prompt(const String &p_name, const Dictionary &p_args) {

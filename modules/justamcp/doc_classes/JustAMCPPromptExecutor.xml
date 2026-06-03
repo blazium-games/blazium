@@ -43,7 +43,7 @@
 			<return type="Dictionary" />
 			<param index="0" name="cursor" type="String" default="&quot;&quot;" />
 			<description>
-				Returns an MCP-compatible dictionary containing the schemas for all registered prompts. [param cursor] is accepted for protocol compatibility.
+				Returns a paginated MCP [code]prompts/list[/code] dictionary with [code]prompts[/code] and optional [code]nextCursor[/code]. Invalid [param cursor] values return an error dictionary with code [code]-32602[/code].
 			</description>
 		</method>
 	</methods>

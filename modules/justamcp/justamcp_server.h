@@ -85,6 +85,8 @@ private:
 	static JustAMCPServer *singleton;
 	Vector<String> engine_logs;
 	Mutex engine_logs_mutex;
+	Vector<Dictionary> mcp_notification_log;
+	Mutex mcp_notification_log_mutex;
 	PrintHandlerList print_handler;
 	static void _print_handler_callback(void *p_user_data, const String &p_string, bool p_error, bool p_rich);
 
@@ -102,6 +104,7 @@ private:
 	void _clear_tool_queue();
 #endif
 
+	void _append_mcp_notification_log(const String &p_level, const String &p_logger, const Dictionary &p_data);
 	void _mcp_debug_log(const String &p_message);
 	void _emit_log_notification_deferred(const String &p_level, const String &p_logger, const Dictionary &p_data);
 	bool _should_emit_log(const String &p_level);
@@ -125,6 +128,7 @@ public:
 
 	static JustAMCPServer *get_singleton();
 	Vector<String> get_engine_logs();
+	Dictionary get_mcp_notification_log_page(const String &p_cursor);
 
 	bool is_server_started() const { return server_started; }
 

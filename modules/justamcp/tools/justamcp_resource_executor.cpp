@@ -30,6 +30,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_resource_executor.h"
+#include "../justamcp_pagination.h"
 #include "../justamcp_server.h"
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
@@ -173,6 +174,19 @@ String JustAMCPResourceExecutor::_canonicalize_resource_uri(const String &p_uri)
 	return p_uri;
 }
 
+static bool _justamcp_try_extract_log_cursor(const String &p_uri, const String &p_prefix, String &r_cursor) {
+	if (p_uri == p_prefix) {
+		r_cursor = String();
+		return true;
+	}
+	const String prefix_slash = p_prefix + "/";
+	if (p_uri.begins_with(prefix_slash)) {
+		r_cursor = justamcp_pagination_cursor_from_uri_suffix(p_uri.substr(prefix_slash.length()));
+		return true;
+	}
+	return false;
+}
+
 Node *JustAMCPResourceExecutor::_get_edited_root() const {
 	if (EditorNode::get_singleton() && EditorInterface::get_singleton()) {
 		return EditorInterface::get_singleton()->get_edited_scene_root();
@@ -278,7 +292,6 @@ void JustAMCPResourceExecutor::_collect_materials(const String &p_path, Array &r
 }
 
 Dictionary JustAMCPResourceExecutor::list_resources(const String &cursor) {
-	Dictionary result;
 	Array resources;
 
 	for (int i = 0; i < registered_resources.size(); i++) {
@@ -306,8 +319,7 @@ Dictionary JustAMCPResourceExecutor::list_resources(const String &cursor) {
 	resources.push_back(_make_resource_schema("blazium://editor/state", "Editor State", "Current editor play mode, active scene, and selection summary."));
 	resources.push_back(_make_resource_schema("blazium://test/results", "Test Results", "Latest Autowork test results when available."));
 
-	result["resources"] = resources;
-	return result;
+	return justamcp_pagination_slice_array(resources, cursor, "resources");
 }
 
 Dictionary JustAMCPResourceExecutor::list_resource_templates(const String &cursor) {
@@ -327,9 +339,11 @@ Dictionary JustAMCPResourceExecutor::list_resource_templates(const String &curso
 	templates.push_back(_make_resource_template_schema("blazium://docs/search/{query}", "Documentation Search", "Search internal Blazium class and member documentation."));
 	templates.push_back(_make_resource_template_schema("blazium://docs/class/{class_name}", "Class Documentation", "Read internal documentation for one Blazium class."));
 	templates.push_back(_make_resource_template_schema("blazium://docs/member/{class_name}/{member_type}/{member_name}", "Member Documentation", "Read internal documentation for one method, property, signal, constant, enum, annotation, or theme property."));
+	templates.push_back(_make_resource_template_schema("blazium://logs/mcp/{cursor}", "MCP Log Notifications", "Paginated buffered MCP notifications/message history. Use blazium://logs/mcp/start for the first page."));
+	templates.push_back(_make_resource_template_schema("blazium://logs/recent/{cursor}", "Recent Engine Logs", "Paginated recent engine log lines captured by JustAMCP. Use blazium://logs/recent/start for the first page."));
+	templates.push_back(_make_resource_template_schema("blazium://system/logs/{cursor}", "System Logs (Paginated)", "Paginated engine log lines as JSON. Use blazium://system/logs/start for the first page."));
 
-	result["resourceTemplates"] = templates;
-	return result;
+	return justamcp_pagination_slice_array(templates, cursor, "resourceTemplates");
 }
 
 Dictionary JustAMCPResourceExecutor::read_resource(const String &p_uri) {
@@ -595,33 +609,86 @@ Dictionary JustAMCPResourceExecutor::_read_blazium_resource(const String &p_uri)
 		return _make_json_contents(p_uri, payload);
 	}
 
-	if (canonical_uri == "blazium://logs/recent") {
-		Array lines;
-		if (JustAMCPServer::get_singleton()) {
-			Vector<String> logs = JustAMCPServer::get_singleton()->get_engine_logs();
-			int start = MAX(0, logs.size() - 100);
-			for (int i = start; i < logs.size(); i++) {
-				lines.push_back(logs[i]);
+	{
+		String log_cursor;
+		if (_justamcp_try_extract_log_cursor(canonical_uri, "blazium://logs/mcp", log_cursor)) {
+			if (!JustAMCPServer::get_singleton()) {
+				Dictionary payload;
+				payload["notifications"] = Array();
+				payload["count"] = 0;
+				return _make_json_contents(p_uri, payload);
 			}
+			Dictionary page = JustAMCPServer::get_singleton()->get_mcp_notification_log_page(log_cursor);
+			if (page.has("ok") && !bool(page.get("ok", true))) {
+				Dictionary payload;
+				payload["error"] = page.get("error", "Invalid pagination cursor.");
+				return _make_json_contents(p_uri, payload);
+			}
+			Dictionary payload;
+			payload["notifications"] = page.get("notifications", Array());
+			payload["count"] = Array(payload["notifications"]).size();
+			if (page.has("nextCursor")) {
+				payload["nextCursor"] = page["nextCursor"];
+				payload["nextUri"] = "blazium://logs/mcp/" + String(page["nextCursor"]);
+			}
+			return _make_json_contents(p_uri, payload);
 		}
-		Dictionary payload;
-		payload["lines"] = lines;
-		payload["count"] = lines.size();
-		return _make_json_contents(p_uri, payload);
 	}
 
-	if (canonical_uri == "blazium://system/logs") {
-		String full_log;
-		if (JustAMCPServer::get_singleton()) {
-			Vector<String> logs = JustAMCPServer::get_singleton()->get_engine_logs();
-			for (int i = 0; i < logs.size(); i++) {
-				full_log += logs[i] + "\n";
+	{
+		String log_cursor;
+		if (_justamcp_try_extract_log_cursor(canonical_uri, "blazium://logs/recent", log_cursor)) {
+			Array all_lines;
+			if (JustAMCPServer::get_singleton()) {
+				Vector<String> logs = JustAMCPServer::get_singleton()->get_engine_logs();
+				all_lines.resize(logs.size());
+				for (int i = 0; i < logs.size(); i++) {
+					all_lines[i] = logs[i];
+				}
 			}
+			Dictionary page = justamcp_pagination_slice_array(all_lines, log_cursor, "lines");
+			if (page.has("ok") && !bool(page.get("ok", true))) {
+				Dictionary payload;
+				payload["error"] = page.get("error", "Invalid pagination cursor.");
+				return _make_json_contents(p_uri, payload);
+			}
+			Dictionary payload;
+			payload["lines"] = page.get("lines", Array());
+			payload["count"] = Array(payload["lines"]).size();
+			if (page.has("nextCursor")) {
+				payload["nextCursor"] = page["nextCursor"];
+				payload["nextUri"] = "blazium://logs/recent/" + String(page["nextCursor"]);
+			}
+			return _make_json_contents(p_uri, payload);
 		}
-		if (full_log.is_empty()) {
-			full_log = "Log is empty or hasn't started capturing yet.";
+	}
+
+	{
+		String log_cursor;
+		if (_justamcp_try_extract_log_cursor(canonical_uri, "blazium://system/logs", log_cursor)) {
+			Array all_lines;
+			if (JustAMCPServer::get_singleton()) {
+				Vector<String> logs = JustAMCPServer::get_singleton()->get_engine_logs();
+				all_lines.resize(logs.size());
+				for (int i = 0; i < logs.size(); i++) {
+					all_lines[i] = logs[i];
+				}
+			}
+			Dictionary page = justamcp_pagination_slice_array(all_lines, log_cursor, "lines");
+			if (page.has("ok") && !bool(page.get("ok", true))) {
+				Dictionary payload;
+				payload["error"] = page.get("error", "Invalid pagination cursor.");
+				return _make_json_contents(p_uri, payload);
+			}
+			Dictionary payload;
+			payload["lines"] = page.get("lines", Array());
+			payload["count"] = Array(payload["lines"]).size();
+			if (page.has("nextCursor")) {
+				payload["nextCursor"] = page["nextCursor"];
+				payload["nextUri"] = "blazium://system/logs/" + String(page["nextCursor"]);
+			}
+			return _make_json_contents(p_uri, payload);
 		}
-		return _make_text_contents(p_uri, full_log, "text/plain");
 	}
 
 	if (canonical_uri == "blazium://editor/state") {
