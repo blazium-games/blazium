@@ -63,7 +63,7 @@ String JustAMCPTaskManager::_iso_timestamp_now() const {
 String JustAMCPTaskManager::_generate_task_id() const {
 	uint8_t bytes[16];
 	CryptoCore::RandomGenerator rng;
-	if (rng.get_random_bytes(bytes, 16) != OK) {
+	if (rng.init() != OK || rng.get_random_bytes(bytes, 16) != OK) {
 		return vformat("task-%d", Time::get_singleton()->get_ticks_usec());
 	}
 	String hex;

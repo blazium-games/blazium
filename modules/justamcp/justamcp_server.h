@@ -57,6 +57,9 @@ struct MCPToolQueueEntry {
 	String task_id;
 	String progress_token;
 	bool is_task_augmented = false;
+	bool pending_task_dispatch = false;
+	int pending_task_ttl_ms = 0;
+	int pending_task_poll_interval_ms = 0;
 	bool cancel_requested = false;
 	String session_id;
 	int sse_connection_id = -1;
@@ -128,6 +131,7 @@ private:
 	void _on_sse_connection_closed(int p_connection_id);
 	bool _validate_mcp_oauth(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
 	MCPToolQueueEntry *_enqueue_tool_request(const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args, Ref<HTTPResponse> p_response, Dictionary &r_queue_full_error, const Dictionary &p_options = Dictionary());
+	void _dispatch_task_augmented_tools_call(const Variant &p_request_id);
 	void _process_pending_tools();
 	void _complete_current_tool_request(const Dictionary &p_rpc_result);
 	void _complete_task_tool_entry(MCPToolQueueEntry *p_entry, bool p_success, const Variant &p_result, const String &p_error);
