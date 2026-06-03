@@ -119,6 +119,7 @@ private:
 	void _route_action(int p_sender_net_id, const Dictionary &p_action);
 	void _send_initial_state(int p_target_net_id);
 	void _poll_runtime();
+	void _try_deferred_startup();
 
 	void _issue_pending_challenge(int p_net_id);
 	void _expire_stale_pending_challenges();
@@ -246,6 +247,8 @@ private:
 	String _resolve_session_branch_name();
 	String _resolve_merge_target_branch();
 	bool last_enabled_state = false;
+	bool _is_orphan_instance = false;
+	bool _startup_done = false;
 
 	void _refresh_settings_inspector();
 	String _last_role_for_inspector;

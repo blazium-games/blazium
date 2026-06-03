@@ -45,6 +45,7 @@
 #include "../multiuser_editor_plugin.h"
 #include "../multiuser_editor_script_sync.h"
 #include "../multiuser_editor_security_sink.h"
+#include "../multiuser_editor_settings.h"
 
 #include "modules/jwttool/jwt.h"
 
@@ -3099,6 +3100,19 @@ TEST_CASE("[MultiuserEditor][Pass12][T76] each Phase-4 promoted kAction* constan
 	CHECK(perms->is_known_action(String(multiuser_editor::kActionProperty)));
 	CHECK(perms->is_known_action(String(multiuser_editor::kActionNodeAdd)));
 	CHECK(perms->is_known_action(String(multiuser_editor::kActionNodeDelete)));
+}
+
+TEST_CASE("[MultiuserEditor] editor settings registration is idempotent") {
+	const bool registered_before = multiuser_editor_are_editor_settings_registered();
+	multiuser_editor_register_editor_settings();
+	const bool registered_after_first = multiuser_editor_are_editor_settings_registered();
+	multiuser_editor_register_editor_settings();
+	const bool registered_after_second = multiuser_editor_are_editor_settings_registered();
+	CHECK(registered_after_first == registered_after_second);
+	if (registered_before) {
+		CHECK(registered_after_first);
+	}
+	CHECK_FALSE(multiuser_editor_is_registering_editor_settings());
 }
 
 } //namespace TestMultiuserEditor
