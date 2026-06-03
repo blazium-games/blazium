@@ -164,7 +164,7 @@ void JustAMCPServer::_print_handler_callback(void *p_user_data, const String &p_
 	{
 		MutexLock lock(server->engine_logs_mutex);
 		String prefix = p_error ? "[ERROR] " : "";
-		server->engine_logs.push_back(prefix + p_string);
+		server->engine_logs.push_back((prefix + p_string).strip_escapes());
 		if (server->engine_logs.size() > 500) {
 			server->engine_logs.remove_at(0);
 		}
