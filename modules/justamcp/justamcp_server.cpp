@@ -31,7 +31,9 @@
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
 #include "core/os/os.h"
+#include "core/os/time.h"
 #include "editor/editor_settings.h"
+#include "justamcp_log_levels.h"
 #include "modules/modules_enabled.gen.h"
 #include "servers/display_server.h"
 #include "tools/justamcp_prompt_executor.h"
@@ -51,6 +53,8 @@ static bool _is_headless() {
 
 void JustAMCPServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_process_pending_tools"), &JustAMCPServer::_process_pending_tools);
+	ClassDB::bind_method(D_METHOD("_emit_log_notification_deferred", "level", "logger", "data"), &JustAMCPServer::_emit_log_notification_deferred);
+	ClassDB::bind_method(D_METHOD("send_log_message", "level", "logger", "data"), &JustAMCPServer::send_log_message, DEFVAL(Variant()));
 	ADD_SIGNAL(MethodInfo("tool_requested", PropertyInfo(Variant::NIL, "request_id", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_NIL_IS_VARIANT), PropertyInfo(Variant::STRING, "tool_name"), PropertyInfo(Variant::DICTIONARY, "args")));
 	ADD_SIGNAL(MethodInfo("server_status_changed", PropertyInfo(Variant::BOOL, "started")));
 	ADD_SIGNAL(MethodInfo("elicitation_completed", PropertyInfo(Variant::NIL, "request_id", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_NIL_IS_VARIANT), PropertyInfo(Variant::DICTIONARY, "result")));
@@ -68,14 +72,26 @@ void JustAMCPServer::_print_handler_callback(void *p_user_data, const String &p_
 	if (!server) {
 		return;
 	}
-	MutexLock lock(server->engine_logs_mutex);
-
-	String prefix = p_error ? "[ERROR] " : "";
-	server->engine_logs.push_back(prefix + p_string);
-
-	if (server->engine_logs.size() > 500) {
-		server->engine_logs.remove_at(0);
+	{
+		MutexLock lock(server->engine_logs_mutex);
+		String prefix = p_error ? "[ERROR] " : "";
+		server->engine_logs.push_back(prefix + p_string);
+		if (server->engine_logs.size() > 500) {
+			server->engine_logs.remove_at(0);
+		}
 	}
+
+	if (!server->server_started) {
+		return;
+	}
+	if (!ProjectSettings::get_singleton() || !GLOBAL_GET("blazium/justamcp/forward_engine_logs")) {
+		return;
+	}
+
+	const String level = p_error ? "error" : "info";
+	Dictionary log_data;
+	log_data["message"] = p_string;
+	server->call_deferred(SNAME("send_log_message"), level, String("engine"), log_data);
 }
 
 Vector<String> JustAMCPServer::get_engine_logs() {
@@ -191,6 +207,9 @@ void JustAMCPServer::_setup_settings() {
 		EDITOR_DEF_BASIC("blazium/justamcp/enable_debug_logging", true);
 		EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::BOOL, "blazium/justamcp/enable_debug_logging"));
 
+		EDITOR_DEF_BASIC("blazium/justamcp/forward_engine_logs", true);
+		EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::BOOL, "blazium/justamcp/forward_engine_logs"));
+
 		EDITOR_DEF_BASIC("blazium/justamcp/bind_to_localhost_only", true);
 		EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::BOOL, "blazium/justamcp/bind_to_localhost_only"));
 	}
@@ -205,6 +224,7 @@ void JustAMCPServer::_setup_settings() {
 	GLOBAL_DEF_BASIC("blazium/justamcp/client_secret", String());
 	GLOBAL_DEF_BASIC("blazium/justamcp/z_mcp_config", String());
 	GLOBAL_DEF_BASIC("blazium/justamcp/enable_debug_logging", true);
+	GLOBAL_DEF_BASIC("blazium/justamcp/forward_engine_logs", true);
 	GLOBAL_DEF_BASIC("blazium/justamcp/bind_to_localhost_only", true);
 
 #ifdef TOOLS_ENABLED
@@ -371,9 +391,8 @@ void JustAMCPServer::_handle_cors_preflight(Ref<HTTPRequestContext> p_context, R
 }
 
 void JustAMCPServer::_handle_sse_connect(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
-	bool debug_logging = GLOBAL_GET("blazium/justamcp/enable_debug_logging");
-	if (debug_logging) {
-		print_line("JustAMCP: Incoming " + p_context->get_method() + " /sse connection attempt...");
+	if (GLOBAL_GET("blazium/justamcp/enable_debug_logging")) {
+		_mcp_debug_log("Incoming " + p_context->get_method() + " /sse connection attempt...");
 	}
 	// Optional OAuth validation
 #ifdef TOOLS_ENABLED
@@ -442,9 +461,8 @@ void JustAMCPServer::_handle_sse_connect(Ref<HTTPRequestContext> p_context, Ref<
 
 void JustAMCPServer::_on_sse_connection_opened(int p_connection_id, const String &p_path, const Dictionary &p_headers) {
 	if (p_path == "/sse") {
-		bool debug_logging = GLOBAL_GET("blazium/justamcp/enable_debug_logging");
-		if (debug_logging) {
-			print_line("JustAMCP: New SSE connection opened on " + p_path + " (ID: " + itos(p_connection_id) + ")");
+		if (GLOBAL_GET("blazium/justamcp/enable_debug_logging")) {
+			_mcp_debug_log("New SSE connection opened on " + p_path + " (ID: " + itos(p_connection_id) + ")");
 		}
 		current_sse_connection_id = p_connection_id;
 
@@ -475,14 +493,14 @@ void JustAMCPServer::_handle_message_post(Ref<HTTPRequestContext> p_context, Ref
 		return;
 	}
 
-	bool debug_logging = GLOBAL_GET("blazium/justamcp/enable_debug_logging");
-	if (debug_logging) {
-		print_line("JustAMCP: Message POST Payload Headers:");
+	if (GLOBAL_GET("blazium/justamcp/enable_debug_logging")) {
 		Array keys = p_context->get_headers().keys();
+		String header_dump;
 		for (int i = 0; i < keys.size(); i++) {
-			print_line("  - " + String(keys[i]) + ": " + String(p_context->get_headers()[keys[i]]));
+			header_dump += "  - " + String(keys[i]) + ": " + String(p_context->get_headers()[keys[i]]) + "\n";
 		}
-		print_line("JustAMCP: Message POST Received Body: " + body);
+		_mcp_debug_log("Message POST Payload Headers:\n" + header_dump);
+		_mcp_debug_log("Message POST Received Body: " + body);
 	}
 
 	// We reply HTTP 202 explicitly to acknowledge receipt of the POST buffer natively for MCP.
@@ -511,27 +529,28 @@ void JustAMCPServer::_handle_mcp_stateless_post(Ref<HTTPRequestContext> p_contex
 		return;
 	}
 
-	bool debug_logging = GLOBAL_GET("blazium/justamcp/enable_debug_logging");
+	const bool debug_logging = GLOBAL_GET("blazium/justamcp/enable_debug_logging");
 	if (debug_logging) {
-		print_line("JustAMCP: Stateless POST Headers:");
 		Array keys = p_context->get_headers().keys();
+		String header_dump;
 		for (int i = 0; i < keys.size(); i++) {
-			print_line("  - " + String(keys[i]) + ": " + String(p_context->get_headers()[keys[i]]));
+			header_dump += "  - " + String(keys[i]) + ": " + String(p_context->get_headers()[keys[i]]) + "\n";
 		}
-		print_line("JustAMCP: Stateless POST Received Body: " + body);
+		_mcp_debug_log("Stateless POST Headers:\n" + header_dump);
+		_mcp_debug_log("Stateless POST Received Body: " + body);
 	}
 
 	Dictionary result = _handle_json_rpc(body, p_response);
 	if (!p_response->is_sent()) {
 		if (result.is_empty()) {
 			if (debug_logging) {
-				print_line("JustAMCP: Stateless POST Replying HTTP 202 (Empty result object)");
+				_mcp_debug_log("Stateless POST Replying HTTP 202 (Empty result object)");
 			}
 			p_response->set_status(202);
 			p_response->set_body("");
 		} else {
 			if (debug_logging) {
-				print_line("JustAMCP: Stateless POST Replying HTTP 200 with Result JSON payload: " + JSON::stringify(result));
+				_mcp_debug_log("Stateless POST Replying HTTP 200 with Result JSON payload: " + JSON::stringify(result));
 			}
 			p_response->set_status(200);
 			p_response->set_json(result);
@@ -573,14 +592,14 @@ Dictionary JustAMCPServer::_handle_json_rpc(const String &p_body, Ref<HTTPRespon
 		}
 	}
 
-	bool debug_logging = GLOBAL_GET("blazium/justamcp/enable_debug_logging");
+	const bool debug_logging = GLOBAL_GET("blazium/justamcp/enable_debug_logging");
 	if (debug_logging) {
-		print_line("JustAMCP: Executing JSON-RPC Method: " + method + " (ID: " + request_id + ")");
+		_mcp_debug_log("Executing JSON-RPC Method: " + method + " (ID: " + request_id + ")");
 	}
 
 	auto invalid_params = [&](const String &msg) -> Dictionary {
 		if (debug_logging) {
-			print_line("JustAMCP: Payload Validation Failed for " + method + ": " + msg);
+			_mcp_debug_log("Payload Validation Failed for " + method + ": " + msg);
 		}
 		Dictionary err;
 		err["jsonrpc"] = "2.0";
@@ -948,7 +967,14 @@ Dictionary JustAMCPServer::_handle_json_rpc(const String &p_body, Ref<HTTPRespon
 		if (!params.has("level") || params["level"].get_type() != Variant::STRING) {
 			return invalid_params("logging/setLevel requires 'level' string.");
 		}
-		current_log_level = String(params["level"]);
+		const String level = justamcp_log_level_canonical(String(params["level"]));
+		if (!justamcp_log_level_is_valid(level)) {
+			return invalid_params("logging/setLevel: invalid log level.");
+		}
+		{
+			MutexLock lock(minimum_log_level_mutex);
+			minimum_log_level = level;
+		}
 		Dictionary rpc_result;
 		rpc_result["jsonrpc"] = "2.0";
 		rpc_result["id"] = req_id_var;
@@ -1286,8 +1312,77 @@ void JustAMCPServer::broadcast_tools_list_changed() {
 #endif
 }
 
+void JustAMCPServer::_mcp_debug_log(const String &p_message) {
+	if (!GLOBAL_GET("blazium/justamcp/enable_debug_logging")) {
+		return;
+	}
+	Dictionary log_data;
+	log_data["message"] = p_message;
+	send_log_message("debug", "justamcp", log_data);
+}
+
+bool JustAMCPServer::_should_emit_log(const String &p_level) {
+	if (!server_started) {
+		return false;
+	}
+	if (!justamcp_log_level_is_valid(p_level)) {
+		return false;
+	}
+	String min_level;
+	{
+		MutexLock lock(minimum_log_level_mutex);
+		min_level = minimum_log_level;
+	}
+	return justamcp_log_level_passes(p_level, min_level);
+}
+
+bool JustAMCPServer::_try_consume_log_rate_limit() {
+	MutexLock lock(log_rate_mutex);
+	const uint64_t now_usec = Time::get_singleton()->get_ticks_usec();
+	const uint64_t window_usec = 1000000;
+	if (log_rate_window_start_usec == 0 || now_usec - log_rate_window_start_usec >= window_usec) {
+		log_rate_window_start_usec = now_usec;
+		log_rate_count = 0;
+	}
+	if (log_rate_count >= LOG_RATE_LIMIT_PER_SEC) {
+		return false;
+	}
+	log_rate_count++;
+	return true;
+}
+
 void JustAMCPServer::send_log_message(const String &p_level, const String &p_logger, const Variant &p_data) {
+	const String level = justamcp_log_level_canonical(p_level);
+	if (!justamcp_log_level_is_valid(level)) {
+		return;
+	}
+	if (!_should_emit_log(level)) {
+		return;
+	}
+	Dictionary log_data;
+	if (p_data.get_type() == Variant::DICTIONARY) {
+		log_data = Dictionary(p_data);
+	} else if (p_data.get_type() != Variant::NIL) {
+		log_data["message"] = String(p_data);
+	}
+	call_deferred(SNAME("_emit_log_notification_deferred"), level, p_logger, log_data);
+}
+
+void JustAMCPServer::_emit_log_notification_deferred(const String &p_level, const String &p_logger, const Dictionary &p_data) {
 #if defined(MODULE_HTTPSERVER_ENABLED)
+	if (!server_started || !HTTPServer::get_singleton()) {
+		return;
+	}
+	if (HTTPServer::get_singleton()->get_active_sse_connections().is_empty()) {
+		return;
+	}
+	if (!_should_emit_log(p_level)) {
+		return;
+	}
+	if (!_try_consume_log_rate_limit()) {
+		return;
+	}
+
 	Dictionary notification;
 	notification["jsonrpc"] = "2.0";
 	notification["method"] = "notifications/message";

@@ -5,6 +5,7 @@
 	</brief_description>
 	<description>
 		[JustAMCPServer] owns the editor-facing MCP transport and emits signals for JSON-RPC tool requests, server lifecycle changes, elicitation responses, and cancellation notices. Most projects use it through the JustAMCP editor plugin or [JustAMCPRuntime] rather than instantiating it manually.
+		Implements the MCP [url=https://modelcontextprotocol.io/specification/2025-11-25/server/utilities/logging]Logging[/url] utility: declares [code]logging[/code] capability, handles [code]logging/setLevel[/code], and pushes [code]notifications/message[/code] to SSE clients. Engine output and JustAMCP debug traces can be forwarded when [member ProjectSettings.blazium/justamcp/forward_engine_logs] and [member ProjectSettings.blazium/justamcp/enable_debug_logging] are enabled.
 		[codeblock]
 		var server = JustAMCPServer.new()
 		server.tool_requested.connect(func(request_id, tool_name, args):
@@ -15,6 +16,17 @@
 	<tutorials>
 		<link title="Model Context Protocol (MCP)">https://modelcontextprotocol.io/</link>
 	</tutorials>
+	<methods>
+		<method name="send_log_message">
+			<return type="void" />
+			<param index="0" name="level" type="String" />
+			<param index="1" name="logger" type="String" />
+			<param index="2" name="data" type="Variant" default="null" />
+			<description>
+				Sends an MCP [code]notifications/message[/code] log to connected clients if [param level] meets the client's [code]logging/setLevel[/code] minimum. [param logger] is optional. [param data] should be a [Dictionary] or string (stored as [code]message[/code]).
+			</description>
+		</method>
+	</methods>
 	<signals>
 		<signal name="elicitation_completed">
 			<param index="0" name="request_id" type="Variant" />

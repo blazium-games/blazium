@@ -457,7 +457,10 @@
 			If [code]true[/code], disables the Model Context Protocol (MCP) server from running alongside exported builds or game tests. Ensure this is marked true for strict production releases to deny introspection.
 		</member>
 		<member name="blazium/justamcp/enable_debug_logging" type="bool" setter="" getter="" default="true">
-			If [code]true[/code], JustAMCP prints JSON-RPC method names, validation failures, and HTTP payloads to the editor output log.
+			If [code]true[/code], JustAMCP sends JSON-RPC method names, validation failures, and HTTP payload traces to connected MCP clients as [code]debug[/code] log notifications ([code]logger: justamcp[/code]).
+		</member>
+		<member name="blazium/justamcp/forward_engine_logs" type="bool" setter="" getter="" default="true">
+			If [code]true[/code] and the JustAMCP server is running, engine [code]print[/code] output is forwarded to MCP clients via [code]notifications/message[/code] ([code]logger: engine[/code]). Respects the client's [code]logging/setLevel[/code] minimum severity.
 		</member>
 		<member name="blazium/justamcp/game_control_enabled" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], allows AI interacting via JustAMCP to natively trigger in-game commands and inputs over the pipeline, granting them orchestration control over gameplay mechanics.
