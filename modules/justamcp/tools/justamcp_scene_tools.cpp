@@ -1081,12 +1081,13 @@ Dictionary JustAMCPSceneTools::instance_scene(const Dictionary &p_args) {
 
 	if (!requested_node_name.is_empty() && parent->has_node(requested_node_name)) {
 		Node *existing = parent->get_node(requested_node_name);
+		const String result_node_name = existing->get_name();
 		if (!is_active) {
 			memdelete(root);
 		}
 		Dictionary ret;
 		ret["ok"] = true;
-		ret["nodeName"] = existing->get_name();
+		ret["nodeName"] = result_node_name;
 		ret["instanceScenePath"] = instance_scene_path;
 		ret["parentNodePath"] = parent_node_path;
 		ret["alreadyExists"] = true;
@@ -1113,6 +1114,8 @@ Dictionary JustAMCPSceneTools::instance_scene(const Dictionary &p_args) {
 	Dictionary properties = _parse_properties_arg(p_args.get("properties", Dictionary()));
 	_set_node_properties(new_node, properties);
 
+	const String result_node_name = new_node->get_name();
+
 	if (is_active) {
 		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
 		ur->create_action(TTR("AI Local: Instance Scene"), UndoRedo::MERGE_DISABLE, parent);
@@ -1136,7 +1139,7 @@ Dictionary JustAMCPSceneTools::instance_scene(const Dictionary &p_args) {
 
 	Dictionary ret;
 	ret["ok"] = true;
-	ret["nodeName"] = new_node->get_name();
+	ret["nodeName"] = result_node_name;
 	ret["instanceScenePath"] = instance_scene_path;
 	ret["parentNodePath"] = parent_node_path;
 	return ret;

@@ -131,6 +131,7 @@ static void _register_justamcp_project_settings() {
 	GLOBAL_DEF_BASIC("blazium/justamcp/client_secret", String());
 	GLOBAL_DEF_BASIC("blazium/justamcp/z_mcp_config", String());
 	GLOBAL_DEF_BASIC("blazium/justamcp/enable_debug_logging", true);
+	GLOBAL_DEF_BASIC("blazium/justamcp/forward_engine_logs", true);
 	GLOBAL_DEF_BASIC("blazium/justamcp/list_page_size", 50);
 	GLOBAL_DEF_BASIC("blazium/justamcp/mcp_log_buffer_size", 500);
 	GLOBAL_DEF_BASIC("blazium/justamcp/bind_to_localhost_only", true);
