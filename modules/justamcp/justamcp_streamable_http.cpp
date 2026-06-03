@@ -6,8 +6,8 @@
 /*                          https://blazium.app                           */
 /**************************************************************************/
 
-#include "modules/modules_enabled.gen.h"
 #include "justamcp_streamable_http.h"
+#include "modules/modules_enabled.gen.h"
 
 #include "justamcp_pagination.h"
 #include "justamcp_server.h"

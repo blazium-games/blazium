@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include "modules/modules_enabled.gen.h"
+
 #include "justamcp_event_store.h"
 
 #include "core/os/mutex.h"

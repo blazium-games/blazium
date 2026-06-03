@@ -28,7 +28,6 @@
 /**************************************************************************/
 
 #include "justamcp_server.h"
-#include "justamcp_streamable_http.h"
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
 #include "core/os/os.h"
@@ -36,6 +35,7 @@
 #include "editor/editor_settings.h"
 #include "justamcp_log_levels.h"
 #include "justamcp_pagination.h"
+#include "justamcp_streamable_http.h"
 #include "modules/modules_enabled.gen.h"
 #include "servers/display_server.h"
 #include "tools/justamcp_prompt_executor.h"
