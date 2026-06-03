@@ -61,8 +61,10 @@ jobs:
             cache-name: windows-template
             target: template_release
             tests: true
-            sconsflags: debug_symbols=no tests=yes
-            bin: ./bin/blazium.windows.template_release.tests.x86_64.console.exe
+            # Build a console binary directly. The GUI + .console.exe wrapper can hang
+            # indefinitely on CI when running --test (MSVC and MinGW).
+            sconsflags: debug_symbols=no tests=yes windows_subsystem=console
+            bin: ./bin/blazium.windows.template_release.tests.x86_64.exe
             compiler: msvc
             artifact: true
             upload: true
@@ -74,7 +76,7 @@ jobs:
             target: template_release
             tests: true
             # Build a console binary directly. The GUI + .console.exe wrapper can hang
-            # indefinitely on CI when running --test with the MinGW toolchain.
+            # indefinitely on CI when running --test (MSVC and MinGW).
             sconsflags: debug_symbols=no use_mingw=yes windows_subsystem=console
             bin: ./bin/blazium.windows.template_release.tests.x86_64.exe
             compiler: gcc
