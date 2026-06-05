@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GDKResult" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Normalized result object for GDK async operations.
+	</brief_description>
+	<description>
+		Contains [code]ok[/code], [code]hresult[/code], [code]code[/code], [code]message[/code], and optional [code]data[/code].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="is_ok">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when the operation completed successfully.
+			</description>
+		</method>
+		<method name="get_hresult">
+			<return type="int" />
+			<description>
+				Returns the underlying Win32 [code]HRESULT[/code] value for the result.
+			</description>
+		</method>
+		<method name="get_code">
+			<return type="String" />
+			<description>
+				Returns the stable machine-readable error code (for example [code]already_initialized[/code]).
+			</description>
+		</method>
+		<method name="get_message">
+			<return type="String" />
+			<description>
+				Returns the human-readable result message.
+			</description>
+		</method>
+		<method name="get_data">
+			<return type="Variant" />
+			<description>
+				Returns optional payload data attached to the result.
+			</description>
+		</method>
+	</methods>
+</class>

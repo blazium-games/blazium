@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="XboxEditorPlugin" inherits="EditorPlugin" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Editor integration for the Xbox on PC export platform and MicrosoftGame.config tooling.
+	</brief_description>
+	<description>
+		[XboxEditorPlugin] registers the Xbox on PC export platform, exposes menu actions for creating and validating [code]MicrosoftGame.config[/code], and surfaces GDK toolchain status in the editor.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>
