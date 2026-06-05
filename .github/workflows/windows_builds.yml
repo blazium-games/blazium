@@ -7,7 +7,7 @@ on:
 env:
   # Used for the cache key. Add version suffix to force clean build.
   BLAZIUM_BASE_BRANCH: blazium-dev
-  SCONSFLAGS: verbose=yes warnings=extra werror=yes module_text_server_fb_enabled=yes d3d12=yes strict_checks=yes "angle_libs=${{ github.workspace }}/"
+  SCONSFLAGS: verbose=yes warnings=extra werror=yes module_text_server_fb_enabled=yes d3d12=yes strict_checks=yes module_xbox_module_enabled=no "angle_libs=${{ github.workspace }}/"
   SCONS_CACHE_MSVC_CONFIG: true
 
 concurrency:
@@ -82,6 +82,26 @@ jobs:
             compiler: gcc
             cache-limit: 1
 
+          - name: Editor w/ Xbox Module (target=editor, tests=yes, module_xbox_module_enabled=yes)
+            cache-name: windows-editor-xbox-module
+            target: editor
+            tests: true
+            sconsflags: debug_symbols=no windows_subsystem=console module_xbox_module_enabled=yes
+            bin: ./bin/blazium.windows.editor.tests.x86_64.exe
+            compiler: msvc
+            xbox-module-test: true
+            cache-limit: 1
+
+          - name: Template w/ Xbox Module (target=template_release, tests=yes, module_xbox_module_enabled=yes)
+            cache-name: windows-template-xbox-module
+            target: template_release
+            tests: true
+            sconsflags: debug_symbols=no tests=yes windows_subsystem=console module_xbox_module_enabled=yes
+            bin: ./bin/blazium.windows.template_release.tests.x86_64.exe
+            compiler: msvc
+            xbox-module-test: true
+            cache-limit: 1
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -96,6 +116,39 @@ jobs:
 
       - name: Setup Python and SCons
         uses: ./.github/actions/godot-deps
+
+      - name: Install Microsoft Gaming GDK and resolve path
+        if: matrix.xbox-module-test
+        shell: pwsh
+        run: |
+          winget install --id Microsoft.Gaming.GDK --accept-package-agreements --accept-source-agreements
+
+          function Get-GdkEditionRoot {
+            foreach ($name in @('GameDKCoreLatest','GameDKLatest','GRDKLatest')) {
+              foreach ($target in @('Process','Machine','User')) {
+                $value = [Environment]::GetEnvironmentVariable($name, $target)
+                if ($value -and (Test-Path $value)) { return $value.TrimEnd('\') }
+              }
+            }
+            $root = Join-Path ${env:ProgramFiles(x86)} 'Microsoft GDK'
+            if (-not (Test-Path $root)) { return $null }
+            $best = $null; $bestNum = -1
+            Get-ChildItem $root -Directory | ForEach-Object {
+              if ($_.Name -match '^\d+$' -and (Test-Path (Join-Path $_.FullName 'windows\include\XGameRuntime.h'))) {
+                $num = [int]$_.Name
+                if ($num -gt $bestNum) { $bestNum = $num; $best = $_.FullName }
+              }
+            }
+            return $best
+          }
+
+          $editionRoot = Get-GdkEditionRoot
+          if (-not $editionRoot) {
+            Write-Error 'GDK not found after winget install (no env marker and no Microsoft GDK edition under Program Files (x86)).'
+            exit 1
+          }
+          Write-Host "GDK edition root: $editionRoot"
+          "gdk_path=$editionRoot" >> $env:GITHUB_ENV
 
       - name: Download Direct3D 12 SDK components
         run: python ./misc/scripts/install_d3d12_sdk_windows.py
@@ -146,9 +199,16 @@ jobs:
           name: ${{ matrix.cache-name }}
 
       - name: Unit tests
-        if: matrix.tests
+        if: matrix.tests && !matrix.xbox-module-test
         timeout-minutes: 45
         run: |
           ${{ matrix.bin }} --version
           ${{ matrix.bin }} --help
           ${{ matrix.bin }} --headless --test --force-colors
+
+      - name: Xbox module unit tests
+        if: matrix.xbox-module-test
+        timeout-minutes: 15
+        run: |
+          ${{ matrix.bin }} --version
+          ${{ matrix.bin }} --headless --test --force-colors --test-case="*[XboxModule]*"
