@@ -61,20 +61,19 @@ TEST_CASE("[XboxModule] GDKToolchain constructs") {
 	CHECK(toolchain.is_valid());
 }
 
-TEST_CASE("[XboxModule] GDK runtime availability and initialize stub") {
+TEST_CASE("[XboxModule] GDK runtime availability and initialize") {
 	GDK *gdk = GDK::get_singleton();
 	CHECK(gdk != nullptr);
-#ifdef XBOX_MODULE_GDK_ENABLED
-	CHECK(gdk->is_available());
-	Ref<GDKResult> init_result = gdk->initialize();
-	CHECK(init_result.is_valid());
-	gdk->shutdown();
-#else
-	CHECK_FALSE(gdk->is_available());
-	Ref<GDKResult> init_result = gdk->initialize();
-	CHECK(init_result.is_valid());
-	CHECK_FALSE(init_result->is_ok());
-#endif
+	if (gdk->is_available()) {
+		Ref<GDKResult> init_result = gdk->initialize();
+		CHECK(init_result.is_valid());
+		CHECK(init_result->is_ok());
+		gdk->shutdown();
+	} else {
+		Ref<GDKResult> init_result = gdk->initialize();
+		CHECK(init_result.is_valid());
+		CHECK_FALSE(init_result->is_ok());
+	}
 }
 
 TEST_CASE("[XboxModule] GDK dispatch returns int") {

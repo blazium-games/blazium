@@ -73,6 +73,20 @@ def _discover_default_gdk_install():
     return _pick_latest_version_dir(default_root)
 
 
+def _scons_safe_windows_path(path):
+    if os.name != "nt" or not path or " " not in path:
+        return path
+    try:
+        import ctypes
+
+        buf = ctypes.create_unicode_buffer(32768)
+        if ctypes.windll.kernel32.GetShortPathNameW(path, buf, len(buf)):
+            return buf.value
+    except Exception:
+        pass
+    return path
+
+
 def _discover_gdk_path(env):
     explicit = str(env.get("gdk_path", "")).strip()
     if not explicit:
@@ -149,6 +163,7 @@ def configure(env):
         )
         return
 
+    gdk_windows = _scons_safe_windows_path(gdk_windows)
     include_dir = os.path.join(gdk_windows, "include")
     lib_dir = os.path.join(gdk_windows, "lib", "x64")
 
@@ -162,14 +177,17 @@ def configure(env):
         env["xbox_module_gdk"] = False
         return
 
-    env.Append(
-        CPPDEFINES=[
-            "XBOX_MODULE_GDK_ENABLED",
-            "_GAMING_DESKTOP",
-            ("WINAPI_FAMILY", "WINAPI_FAMILY_DESKTOP_APP"),
-        ]
-    )
-    env.Append(CPPPATH=[include_dir])
+    if not env.msvc:
+        print(
+            "xbox_module: Microsoft GDK requires MSVC (GDK import libraries are MSVC-only). "
+            "Building stub implementation without XBOX_MODULE_GDK_ENABLED."
+        )
+        env["xbox_module_gdk"] = False
+        return
+
+    # GDK headers and XBOX_MODULE_GDK_ENABLED are scoped to module sources in SCsub
+    # so platform/windows and test_main are not compiled with GDK include paths or macros.
+    env["xbox_module_gdk_include"] = include_dir
     env.Append(LIBPATH=[lib_dir])
 
     # Custom-engine PC integration: GRTS via xgameruntime.lib; XSAPI via Thunks

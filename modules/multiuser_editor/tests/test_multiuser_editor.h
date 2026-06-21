@@ -1156,7 +1156,7 @@ inline Dictionary _basic_payload(const String &p_role) {
 TEST_CASE("[MultiuserEditor] JWT validate accepts well-formed HS256 token") {
 	using namespace MultiuserHardeningPass4Helpers;
 	if (!JWT::get_singleton()) {
-		WARN("JWT singleton unavailable, skipping");
+		MESSAGE("JWT singleton unavailable, skipping");
 		return;
 	}
 	const String secret = "test_secret_12345";
@@ -2737,7 +2737,7 @@ TEST_CASE("[MultiuserEditor][Pass10][T62] apply_remote_action handles unknown ac
 TEST_CASE("[MultiuserEditor][Pass11][T63] validate_jwt_static_d round-trips on valid + malformed token") {
 	using namespace MultiuserHardeningPass4Helpers;
 	if (!JWT::get_singleton()) {
-		WARN("JWT singleton unavailable, skipping");
+		MESSAGE("JWT singleton unavailable, skipping");
 		return;
 	}
 	const String secret = "test_secret_t63";
@@ -2768,7 +2768,7 @@ TEST_CASE("[MultiuserEditor][Pass11][T63] validate_jwt_static_d round-trips on v
 TEST_CASE("[MultiuserEditor][Pass11][T64] validate_jwt_static_d honors audience/issuer/max_token_age dict overrides") {
 	using namespace MultiuserHardeningPass4Helpers;
 	if (!JWT::get_singleton()) {
-		WARN("JWT singleton unavailable, skipping");
+		MESSAGE("JWT singleton unavailable, skipping");
 		return;
 	}
 	const String secret = "test_secret_t64";
