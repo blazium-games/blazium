@@ -209,6 +209,7 @@ int test_main(int argc, char *argv[]) {
 	OS::get_singleton()->set_cmdline("", args, List<String>());
 	DisplayServerMock::register_mock_driver();
 
+	memnew(MessageQueue);
 	WorkerThreadPool::get_singleton()->init();
 
 	// Run custom test tools.
@@ -260,6 +261,10 @@ int test_main(int argc, char *argv[]) {
 	}
 
 	int result = test_context.run();
+	if (MessageQueue::get_singleton()) {
+		MessageQueue::get_singleton()->flush();
+		memdelete(MessageQueue::get_singleton());
+	}
 	WorkerThreadPool::get_singleton()->finish();
 	return result;
 }
@@ -285,7 +290,9 @@ struct GodotTestCaseListener : public doctest::IReporter {
 		String suite_name = String(p_in.m_test_suite);
 
 		if (name.contains("[SceneTree]") || name.contains("[Editor]")) {
-			memnew(MessageQueue);
+			if (!MessageQueue::get_singleton()) {
+				memnew(MessageQueue);
+			}
 
 			memnew(Input);
 			Input::get_singleton()->set_use_accumulated_input(false);
@@ -447,7 +454,6 @@ struct GodotTestCaseListener : public doctest::IReporter {
 
 		if (MessageQueue::get_singleton()) {
 			MessageQueue::get_singleton()->flush();
-			memdelete(MessageQueue::get_singleton());
 		}
 
 		if (AudioServer::get_singleton()) {

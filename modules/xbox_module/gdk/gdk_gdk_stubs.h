@@ -31,25 +31,21 @@
 
 #ifndef XBOX_MODULE_GDK_ENABLED
 
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
+#include <cstdint>
+
+typedef long HRESULT;
+
+#ifndef S_OK
+#define S_OK ((HRESULT)0L)
 #endif
-#include <windows.h>
+#ifndef E_NOTIMPL
+#define E_NOTIMPL ((HRESULT)0x80004001L)
+#endif
 
 #ifdef _WIN32
 #undef min
 #undef max
-#undef ERROR
-#undef DELETE
-#undef MessageBox
-#undef Error
-#undef OK
-#undef CONNECT_DEFERRED
-#undef MemoryBarrier
-#undef MONO_FONT
 #endif
-
-#include <cstdint>
 
 struct XUserLocalId {
 	uint64_t value = 0;

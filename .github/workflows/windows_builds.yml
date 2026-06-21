@@ -29,7 +29,7 @@ jobs:
             target: editor
             tests: true
             # Skip debug symbols, they're way too big with MSVC.
-            sconsflags: debug_symbols=no vsproj=yes vsproj_gen_only=no windows_subsystem=console
+            sconsflags: debug_symbols=no use_mingw=no vsproj=yes vsproj_gen_only=no windows_subsystem=console
             bin: ./bin/blazium.windows.editor.tests.x86_64.exe
             compiler: msvc
             upload: true
@@ -63,7 +63,7 @@ jobs:
             tests: true
             # Build a console binary directly. The GUI + .console.exe wrapper can hang
             # indefinitely on CI when running --test (MSVC and MinGW).
-            sconsflags: debug_symbols=no tests=yes windows_subsystem=console
+            sconsflags: debug_symbols=no use_mingw=no tests=yes windows_subsystem=console
             bin: ./bin/blazium.windows.template_release.tests.x86_64.exe
             compiler: msvc
             artifact: true
@@ -82,24 +82,33 @@ jobs:
             compiler: gcc
             cache-limit: 1
 
+          - name: Editor w/ GCC (target=editor, tests=yes, use_mingw=yes)
+            cache-name: windows-editor-gcc
+            target: editor
+            tests: true
+            sconsflags: debug_symbols=no use_mingw=yes windows_subsystem=console
+            bin: ./bin/blazium.windows.editor.tests.x86_64.exe
+            compiler: gcc
+            cache-limit: 1
+
           - name: Editor w/ Xbox Module (target=editor, tests=yes, module_xbox_module_enabled=yes)
             cache-name: windows-editor-xbox-module
             target: editor
             tests: true
-            sconsflags: debug_symbols=no windows_subsystem=console module_xbox_module_enabled=yes
+            sconsflags: debug_symbols=no windows_subsystem=console module_xbox_module_enabled=yes use_mingw=no
             bin: ./bin/blazium.windows.editor.tests.x86_64.exe
             compiler: msvc
-            xbox-module-test: true
+            xbox_module_test: true
             cache-limit: 1
 
           - name: Template w/ Xbox Module (target=template_release, tests=yes, module_xbox_module_enabled=yes)
             cache-name: windows-template-xbox-module
             target: template_release
             tests: true
-            sconsflags: debug_symbols=no tests=yes windows_subsystem=console module_xbox_module_enabled=yes
+            sconsflags: debug_symbols=no tests=yes windows_subsystem=console module_xbox_module_enabled=yes use_mingw=no
             bin: ./bin/blazium.windows.template_release.tests.x86_64.exe
             compiler: msvc
-            xbox-module-test: true
+            xbox_module_test: true
             cache-limit: 1
 
     steps:
@@ -118,11 +127,9 @@ jobs:
         uses: ./.github/actions/godot-deps
 
       - name: Install Microsoft Gaming GDK and resolve path
-        if: matrix.xbox-module-test
+        if: matrix.xbox_module_test
         shell: pwsh
         run: |
-          winget install --id Microsoft.Gaming.GDK --accept-package-agreements --accept-source-agreements
-
           function Get-GdkEditionRoot {
             foreach ($name in @('GameDKCoreLatest','GameDKLatest','GRDKLatest')) {
               foreach ($target in @('Process','Machine','User')) {
@@ -142,13 +149,51 @@ jobs:
             return $best
           }
 
+          function Set-GdkPath {
+            param([string]$EditionRoot)
+            Write-Host "GDK edition root: $EditionRoot"
+            "gdk_path=`"$EditionRoot`"" >> $env:GITHUB_ENV
+          }
+
+          $editionRoot = Get-GdkEditionRoot
+          if ($editionRoot) {
+            Write-Host 'GDK already present; skipping winget install.'
+            Set-GdkPath $editionRoot
+            exit 0
+          }
+
+          Write-Host 'Repairing winget sources before GDK install...'
+          winget source disable msstore 2>$null
+          Import-Module Appx -UseWindowsPowerShell -ErrorAction SilentlyContinue
+          Add-AppxPackage -Path "https://cdn.winget.microsoft.com/cache/source.msix" -ErrorAction SilentlyContinue
+          winget source update --accept-source-agreements
+
+          $alreadyInstalledCodes = @(0, 2316632107, -1978335189)
+          $maxAttempts = 3
+          for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+            Write-Host "Installing Microsoft Gaming GDK via winget (attempt $attempt/$maxAttempts)..."
+            winget install --id Microsoft.Gaming.GDK `
+              --accept-package-agreements --accept-source-agreements --disable-interactivity
+            $exitCode = $LASTEXITCODE
+            if ($alreadyInstalledCodes -contains $exitCode) {
+              Write-Host "winget install succeeded (exit code $exitCode)."
+              break
+            }
+            if ($attempt -lt $maxAttempts) {
+              Write-Warning "winget install failed with exit code $exitCode; retrying in 15s..."
+              Start-Sleep -Seconds 15
+            } else {
+              Write-Error "winget install failed after $maxAttempts attempts (last exit code $exitCode)."
+              exit 1
+            }
+          }
+
           $editionRoot = Get-GdkEditionRoot
           if (-not $editionRoot) {
             Write-Error 'GDK not found after winget install (no env marker and no Microsoft GDK edition under Program Files (x86)).'
             exit 1
           }
-          Write-Host "GDK edition root: $editionRoot"
-          "gdk_path=$editionRoot" >> $env:GITHUB_ENV
+          Set-GdkPath $editionRoot
 
       - name: Download Direct3D 12 SDK components
         run: python ./misc/scripts/install_d3d12_sdk_windows.py
@@ -164,7 +209,31 @@ jobs:
       - name: Extract pre-built ANGLE static libraries
         run: Expand-Archive -Force angle/angle.zip ${{ github.workspace }}/
 
+      - name: Setup MSVC
+        if: ${{ !matrix.xbox_module_test && matrix.compiler != 'gcc' }}
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Setup MSVC for Xbox module
+        if: matrix.xbox_module_test
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Compilation (Xbox / MSVC)
+        if: matrix.xbox_module_test
+        shell: cmd
+        run: |
+          echo Building Xbox module with MSVC: platform=windows target=${{ matrix.target }} tests=${{ matrix.tests }} use_mingw=no ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
+          if not "${{ matrix.target }}"=="editor" rmdir /s /q editor 2>nul
+          if not "${{ github.event.number }}"=="" (set BUILD_NAME=gh-${{ github.event.number }}) else (set BUILD_NAME=gh)
+          where cl
+          scons platform=windows target=${{ matrix.target }} tests=${{ matrix.tests }} use_mingw=no ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }} "cache_path=${{ github.workspace }}/.scons_cache/" cache_limit=${{ matrix.cache-limit }}
+          if errorlevel 1 exit /b 1
+
       - name: Compilation
+        if: ${{ !matrix.xbox_module_test }}
         uses: ./.github/actions/godot-build
         with:
           sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
@@ -199,7 +268,7 @@ jobs:
           name: ${{ matrix.cache-name }}
 
       - name: Unit tests
-        if: matrix.tests && !matrix.xbox-module-test
+        if: matrix.tests && !matrix.xbox_module_test
         timeout-minutes: 45
         run: |
           ${{ matrix.bin }} --version
@@ -207,7 +276,7 @@ jobs:
           ${{ matrix.bin }} --headless --test --force-colors
 
       - name: Xbox module unit tests
-        if: matrix.xbox-module-test
+        if: matrix.xbox_module_test
         timeout-minutes: 15
         run: |
           ${{ matrix.bin }} --version

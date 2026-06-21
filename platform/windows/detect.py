@@ -278,6 +278,15 @@ def setup_msvc_manual(env: "SConsEnvironment"):
 
     print("Using VCVARS-determined MSVC, arch %s" % (env_arch))
 
+    # Replace any early-loaded mingw/default tools with MSVC (same as setup_msvc_auto).
+    env["MSVC_SETUP_RUN"] = False
+    env["MSVS_VERSION"] = None
+    env["MSVC_VERSION"] = None
+    if "msvc_version" in env:
+        env["MSVC_VERSION"] = env["msvc_version"]
+    env.Tool("msvc")
+    env.Tool("mssdk")
+
 
 def setup_msvc_auto(env: "SConsEnvironment"):
     """Set up MSVC using SCons's auto-detection logic"""
@@ -348,8 +357,77 @@ def setup_mingw(env: "SConsEnvironment"):
     print("Using MinGW, arch %s" % (env["arch"]))
 
 
+def _windows_short_path(path: str) -> str:
+    """8.3 path avoids spaces that Git Bash sh splits even inside quotes."""
+    norm = os.path.normpath(path)
+    if os.name != "nt" or " " not in norm:
+        return norm.replace("\\", "/")
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        windll = getattr(ctypes, "windll")
+        get_short = windll.kernel32.GetShortPathNameW
+        get_short.argtypes = [wintypes.LPCWSTR, wintypes.LPWSTR, wintypes.DWORD]
+        get_short.restype = wintypes.DWORD
+        buf = ctypes.create_unicode_buffer(32768)
+        if get_short(norm, buf, 32768):
+            return buf.value.replace("\\", "/")
+    except (AttributeError, OSError):
+        pass
+    return norm.replace("\\", "/")
+
+
+def _find_msvc_link_exe(env: "SConsEnvironment") -> str:
+    """Full path to MSVC link.exe; bare link/link.exe is shadowed by GNU coreutils on Git Bash."""
+    vctools = os.environ.get("VCToolsInstallDir", "")
+    if vctools:
+        arch_dirs = {
+            "x86_64": "x64",
+            "x86_32": "x86",
+            "arm64": "arm64",
+            "arm32": "arm",
+        }
+        target = arch_dirs.get(env.get("arch", "x86_64"), "x64")
+        for host in ("Hostx64", "Hostx86"):
+            candidate = os.path.join(vctools, "bin", host, target, "link.exe")
+            if os.path.isfile(candidate):
+                return _windows_short_path(candidate)
+    return "link.exe"
+
+
+def _ensure_mslink_com(env: "SConsEnvironment"):
+    """Use mslink-style link when gnulink was loaded instead of mslink (cl -o / winmm.a)."""
+    linkcom = env.get("LINKCOM", "")
+    linkcom_str = linkcom if isinstance(linkcom, str) else str(linkcom)
+    if "/OUT:" in linkcom_str or "$TARGET.windows" in linkcom_str:
+        return
+
+    import SCons.Action
+
+    env["LINK"] = _find_msvc_link_exe(env)
+    env["LIBDIRPREFIX"] = "/LIBPATH:"
+    env["LIBDIRSUFFIX"] = ""
+    env["LIBLINKPREFIX"] = ""
+    env["LIBLINKSUFFIX"] = "$LIBSUFFIX"
+    env["LINKCOM"] = SCons.Action.Action(
+        '${TEMPFILE("$LINK $LINKFLAGS /OUT:$TARGET.windows $_LIBDIRFLAGS $_LIBFLAGS $_PDB $SOURCES.windows", "$LINKCOMSTR")}',
+        "$LINKCOMSTR",
+    )
+    env["TEMPFILEARGJOIN"] = os.linesep
+
+
 def configure_msvc(env: "SConsEnvironment", vcvars_msvc_config):
     """Configure env to work with MSVC"""
+
+    # Long static-library/archive command lines need response files on Windows.
+    # Do not call use_windows_spawn_fix() here: it breaks cl @rsp compiles when
+    # silence_msvc wraps SPAWN (platform/windows objects fail with Error 2).
+    env["TEMPFILESUFFIX"] = ".rsp"
+    if os.name == "nt":
+        env["TEMPFILEARGESCFUNC"] = tempfile_arg_esc_func
+
+    _ensure_mslink_com(env)
 
     ## Build type
 
@@ -370,6 +448,8 @@ def configure_msvc(env: "SConsEnvironment", vcvars_msvc_config):
         env["CXX"] = "clang-cl"
         env["LINK"] = "lld-link"
         env["AR"] = "llvm-lib"
+        # llvm-lib uses lib.exe syntax (/OUT:), not GNU ar (rc).
+        env["ARCOM"] = "${TEMPFILE('$AR /OUT:$TARGET $SOURCES', '$ARCOMSTR')}"
 
         env.AppendUnique(CPPDEFINES=["R128_STDC_ONLY"])
         env.extra_suffix = ".llvm" + env.extra_suffix
@@ -378,6 +458,10 @@ def configure_msvc(env: "SConsEnvironment", vcvars_msvc_config):
         env["CPPDEFPREFIX"] = "-D"
         env["INCPREFIX"] = "-I"
         env.AppendUnique(CPPDEFINES=[("alloca", "_alloca")])
+
+    else:
+        env["ARCOM_ORIG"] = env["ARCOM"]
+        env["ARCOM"] = "${TEMPFILE('$ARCOM_ORIG', '$ARCOMSTR')}"
 
     if env["silence_msvc"] and not env.GetOption("clean"):
         from tempfile import mkstemp
@@ -394,7 +478,8 @@ def configure_msvc(env: "SConsEnvironment", vcvars_msvc_config):
 
         def spawn_capture(sh, escape, cmd, args, env):
             # We only care about cl/link, process everything else as normal.
-            if args[0] not in ["cl", "link"]:
+            is_link = args[0] == "link" or args[0].replace("\\", "/").endswith("/link.exe")
+            if args[0] != "cl" and not is_link:
                 return old_spawn(sh, escape, cmd, args, env)
 
             # Process as normal if the user is manually rerouting output.
@@ -424,7 +509,7 @@ def configure_msvc(env: "SConsEnvironment", vcvars_msvc_config):
             for line in lines:
                 # These conditions are far from all-encompassing, but are specialized
                 # for what can be reasonably expected to show up in the repository.
-                if not caught and (is_cl and re_cl_capture.match(line)) or (not is_cl and re_link_capture.match(line)):
+                if not caught and (is_cl and re_cl_capture.match(line)) or (is_link and re_link_capture.match(line)):
                     caught = True
                     try:
                         with open(capture_path, "a", encoding=sys.stdout.encoding) as log:
@@ -578,7 +663,7 @@ def configure_msvc(env: "SConsEnvironment", vcvars_msvc_config):
     if env["use_llvm"]:
         LIBS += [f"clang_rt.builtins-{env['arch']}"]
 
-    env.Append(LINKFLAGS=[p + env["LIBSUFFIX"] for p in LIBS])
+    env.Append(LINKFLAGS=[p + ".lib" for p in LIBS])
 
     if vcvars_msvc_config:
         if os.getenv("WindowsSdkDir") is not None:
@@ -622,6 +707,10 @@ def configure_msvc(env: "SConsEnvironment", vcvars_msvc_config):
         env.AppendUnique(LINKFLAGS=["/STACK:" + str(STACK_SIZE_SANITIZERS)])
     else:
         env.AppendUnique(LINKFLAGS=["/STACK:" + str(STACK_SIZE)])
+
+    if env["use_llvm"]:
+        # lld-link command lines exceed the Windows limit when built from Git Bash (sh).
+        env.use_windows_spawn_fix()
 
 
 def get_ar_version(env):
