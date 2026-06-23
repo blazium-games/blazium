@@ -20,6 +20,12 @@
 		<link title="Model Context Protocol (MCP)">https://modelcontextprotocol.io/</link>
 	</tutorials>
 	<methods>
+		<method name="is_server_started" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] while the MCP HTTP server is listening on the configured port.
+			</description>
+		</method>
 		<method name="report_tool_progress">
 			<return type="void" />
 			<param index="0" name="token" type="String" />

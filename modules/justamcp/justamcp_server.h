@@ -140,6 +140,8 @@ private:
 	void _register_progress_token(const String &p_token, const String &p_task_id, const Variant &p_request_id);
 	void _unregister_progress_token(const String &p_token);
 	void _clear_tool_queue();
+	bool _wait_for_stateless_tool_entry(MCPToolQueueEntry *p_entry, int p_timeout_ms);
+	Dictionary _stateless_tool_timeout_error(const Variant &p_request_id) const;
 #endif
 
 	void _append_mcp_notification_log(const String &p_level, const String &p_logger, const Dictionary &p_data);

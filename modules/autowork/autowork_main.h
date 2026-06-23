@@ -42,6 +42,11 @@ class Autowork : public Node {
 
 	AutoworkTest *_get_test_instance(Dictionary script_info);
 	void _on_test_over();
+	void _restore_editor_scripting_if_needed();
+
+#ifdef TOOLS_ENABLED
+	bool restore_editor_scripting = false;
+#endif
 
 protected:
 	static void _bind_methods();

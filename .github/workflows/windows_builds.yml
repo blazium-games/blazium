@@ -273,7 +273,15 @@ jobs:
         run: |
           ${{ matrix.bin }} --version
           ${{ matrix.bin }} --help
-          ${{ matrix.bin }} --headless --test --force-colors
+          ${{ matrix.bin }} --headless --test --force-colors --abort-after=1 --log-file=test.log
+
+      - name: Upload unit test log
+        if: failure() && matrix.tests && !matrix.xbox_module_test
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-log-${{ matrix.cache-name }}
+          path: test.log
+          if-no-files-found: ignore
 
       - name: Xbox module unit tests
         if: matrix.xbox_module_test
