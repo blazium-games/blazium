@@ -34,10 +34,12 @@
 #include "autowork_signal_watcher.h"
 #include "autowork_spy.h"
 #include "autowork_stubber.h"
+#include "core/config/engine.h"
 #include "core/io/file_access.h"
 #include "core/io/json.h"
 #include "core/io/resource_loader.h"
 #include "core/object/object.h"
+#include "core/object/script_instance.h"
 #include "core/object/script_language.h"
 #include "core/os/os.h"
 #include "modules/gdscript/gdscript.h"
@@ -100,11 +102,28 @@ void Autowork::set_test(const String &p_test_name) {
 	}
 }
 
+void Autowork::_restore_editor_scripting_if_needed() {
+#ifdef TOOLS_ENABLED
+	if (restore_editor_scripting) {
+		ScriptServer::set_scripting_enabled(false);
+		restore_editor_scripting = false;
+	}
+#endif
+}
+
 void Autowork::run_tests() {
 	ERR_FAIL_COND_MSG(collector.is_null(), "collector is null");
 	ERR_FAIL_COND_MSG(logger.is_null(), "logger is null");
 	OS *os = OS::get_singleton();
 	ERR_FAIL_NULL_MSG(os, "OS singleton is null");
+
+#ifdef TOOLS_ENABLED
+	restore_editor_scripting = false;
+	if (Engine::get_singleton()->is_editor_hint() && !ScriptServer::is_scripting_enabled()) {
+		ScriptServer::set_scripting_enabled(true);
+		restore_editor_scripting = true;
+	}
+#endif
 
 	bool dir_overriden = false;
 	String junit_path;
@@ -222,6 +241,7 @@ void Autowork::run_tests() {
 			hook->call("_run");
 			if (hook->should_abort()) {
 				print_line("Autowork Main: Aborting tests due to pre-run script abort() call.");
+				_restore_editor_scripting_if_needed();
 				return;
 			}
 		}
@@ -306,7 +326,10 @@ static func __run_tests__(
 )";
 	gd_proxy_runner->set_source_code(code);
 	Error err = gd_proxy_runner->reload();
-	ERR_FAIL_COND_MSG(err != OK, "Error initializing proxy script");
+	if (err != OK) {
+		_restore_editor_scripting_if_needed();
+		ERR_FAIL_MSG("Error initializing proxy script");
+	}
 
 	Array scripts = collector->get_scripts();
 	Callable get_test_instance = callable_mp(this, &Autowork::_get_test_instance);
@@ -332,6 +355,11 @@ AutoworkTest *Autowork::_get_test_instance(Dictionary script_info) {
 	}
 
 	test_instance->set_script(test_script);
+	if (test_instance->get_script_instance() && test_instance->get_script_instance()->is_placeholder()) {
+		ERR_PRINT(vformat("Autowork: test script '%s' is a placeholder in editor mode; enable scripting before run_tests().", script_info["path"]));
+		memdelete(test_instance);
+		return nullptr;
+	}
 	test_instance->set_name("TestInstance");
 	add_child(test_instance);
 
@@ -353,6 +381,7 @@ AutoworkTest *Autowork::_get_test_instance(Dictionary script_info) {
 
 void Autowork::_on_test_over() {
 	ERR_FAIL_COND_MSG(logger.is_null(), "logger is null");
+	_restore_editor_scripting_if_needed();
 	logger->print_summary();
 
 	OS *os = OS::get_singleton();

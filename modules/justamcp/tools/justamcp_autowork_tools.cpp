@@ -120,11 +120,18 @@ static bool _is_autowork_already_running() {
 	return false;
 }
 
-static Dictionary _nested_autowork_error() {
+static Dictionary _mcp_tool_error(int p_code, const String &p_message) {
 	Dictionary err;
 	err["ok"] = false;
-	err["error"] = "Autowork is already running. Nested Autowork execution is blocked to avoid recursively launching the active test suite.";
+	Dictionary payload;
+	payload["code"] = p_code;
+	payload["message"] = p_message;
+	err["error"] = payload;
 	return err;
+}
+
+static Dictionary _nested_autowork_error() {
+	return _mcp_tool_error(-32000, "Autowork is already running. Nested Autowork execution is blocked to avoid recursively launching the active test suite.");
 }
 
 Dictionary JustAMCPAutoworkTools::execute_tool(const String &p_tool_name, const Dictionary &p_args) {
@@ -139,10 +146,7 @@ Dictionary JustAMCPAutoworkTools::execute_tool(const String &p_tool_name, const 
 
 	if (p_tool_name == "blazium_autowork_run_tests_in_directory" || p_tool_name == "autowork_run_tests_in_directory") {
 		if (!p_args.has("directory_path")) {
-			Dictionary err;
-			err["ok"] = false;
-			err["error"] = "Missing directory_path argument.";
-			return err;
+			return _mcp_tool_error(-32602, "Missing required parameter for tool " + p_tool_name + ": directory_path");
 		}
 
 		if (_is_autowork_already_running()) {
@@ -155,10 +159,7 @@ Dictionary JustAMCPAutoworkTools::execute_tool(const String &p_tool_name, const 
 
 	if (p_tool_name == "blazium_autowork_run_test_script" || p_tool_name == "autowork_run_test_script") {
 		if (!p_args.has("script_path")) {
-			Dictionary err;
-			err["ok"] = false;
-			err["error"] = "Missing script_path argument.";
-			return err;
+			return _mcp_tool_error(-32602, "Missing required parameter for tool " + p_tool_name + ": script_path");
 		}
 
 		if (_is_autowork_already_running()) {
@@ -171,10 +172,7 @@ Dictionary JustAMCPAutoworkTools::execute_tool(const String &p_tool_name, const 
 
 	if (p_tool_name == "blazium_autowork_run_test_by_name" || p_tool_name == "autowork_run_test_by_name") {
 		if (!p_args.has("test_name")) {
-			Dictionary err;
-			err["ok"] = false;
-			err["error"] = "Missing test_name argument.";
-			return err;
+			return _mcp_tool_error(-32602, "Missing required parameter for tool " + p_tool_name + ": test_name");
 		}
 
 		if (_is_autowork_already_running()) {
@@ -186,10 +184,7 @@ Dictionary JustAMCPAutoworkTools::execute_tool(const String &p_tool_name, const 
 		return _execute_autowork(aw);
 	}
 
-	Dictionary err;
-	err["ok"] = false;
-	err["error"] = "Unknown Tool: " + p_tool_name;
-	return err;
+	return _mcp_tool_error(-32601, "Unknown tool: " + p_tool_name);
 }
 
 #endif // MODULE_AUTOWORK_ENABLED

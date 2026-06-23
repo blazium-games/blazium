@@ -44,6 +44,31 @@
 #include "scene/gui/text_edit.h"
 #include "servers/display_server.h"
 
+static bool _justamcp_tool_error_is_cancelled(const Dictionary &p_result) {
+	const Variant err = p_result.get("error", Variant());
+	if (err.get_type() == Variant::STRING) {
+		return String(err) == "cancelled";
+	}
+	if (err.get_type() == Variant::DICTIONARY) {
+		return String(Dictionary(err).get("message", "")) == "cancelled";
+	}
+	return false;
+}
+
+static String _justamcp_tool_error_message(const Dictionary &p_result) {
+	const Variant err = p_result.get("error", Variant());
+	if (err.get_type() == Variant::DICTIONARY) {
+		const Dictionary err_dict = err;
+		if (err_dict.has("message")) {
+			return String(err_dict["message"]);
+		}
+	}
+	if (err.get_type() == Variant::STRING) {
+		return err;
+	}
+	return "Unknown error";
+}
+
 void JustAMCPConfigUI::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_copy_pressed"), &JustAMCPConfigUI::_copy_pressed);
 	ClassDB::bind_method(D_METHOD("_on_settings_changed"), &JustAMCPConfigUI::_on_settings_changed);
@@ -252,16 +277,34 @@ JustAMCPEditorPlugin::~JustAMCPEditorPlugin() {
 void JustAMCPEditorPlugin::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE: {
-			mcp_server = memnew(JustAMCPServer);
-			mcp_server->set_name("JustAMCPServer");
-			add_child(mcp_server);
+			EditorNode *editor_node = EditorNode::get_singleton();
+			if (editor_node) {
+				mcp_server = Object::cast_to<JustAMCPServer>(editor_node->get_node_or_null(NodePath("JustAMCPServer")));
+			}
+			if (!mcp_server) {
+				mcp_server = memnew(JustAMCPServer);
+				mcp_server->set_name("JustAMCPServer");
+				if (editor_node) {
+					editor_node->call_deferred(SNAME("add_child"), mcp_server);
+				} else {
+					add_child(mcp_server);
+				}
+			} else if (editor_node && mcp_server->get_parent() != editor_node) {
+				editor_node->call_deferred(SNAME("add_child"), mcp_server);
+			}
 
 			tool_executor = memnew(JustAMCPToolExecutor);
 			tool_executor->set_editor_plugin(this);
 
-			mcp_server->connect("tool_requested", callable_mp(this, &JustAMCPEditorPlugin::_on_tool_requested));
-			mcp_server->connect("request_cancelled", callable_mp(mcp_server, &JustAMCPServer::_on_request_cancelled));
-			mcp_server->connect("server_status_changed", callable_mp(this, &JustAMCPEditorPlugin::_on_server_status_changed));
+			if (!mcp_server->is_connected("tool_requested", callable_mp(this, &JustAMCPEditorPlugin::_on_tool_requested))) {
+				mcp_server->connect("tool_requested", callable_mp(this, &JustAMCPEditorPlugin::_on_tool_requested));
+			}
+			if (!mcp_server->is_connected("request_cancelled", callable_mp(mcp_server, &JustAMCPServer::_on_request_cancelled))) {
+				mcp_server->connect("request_cancelled", callable_mp(mcp_server, &JustAMCPServer::_on_request_cancelled));
+			}
+			if (!mcp_server->is_connected("server_status_changed", callable_mp(this, &JustAMCPEditorPlugin::_on_server_status_changed))) {
+				mcp_server->connect("server_status_changed", callable_mp(this, &JustAMCPEditorPlugin::_on_server_status_changed));
+			}
 
 			_setup_status_indicator();
 
@@ -284,7 +327,13 @@ void JustAMCPEditorPlugin::_notification(int p_what) {
 			}
 
 			if (mcp_server) {
-				mcp_server->queue_free();
+				if (mcp_server->is_connected("tool_requested", callable_mp(this, &JustAMCPEditorPlugin::_on_tool_requested))) {
+					mcp_server->disconnect("tool_requested", callable_mp(this, &JustAMCPEditorPlugin::_on_tool_requested));
+				}
+				if (mcp_server->is_connected("server_status_changed", callable_mp(this, &JustAMCPEditorPlugin::_on_server_status_changed))) {
+					mcp_server->disconnect("server_status_changed", callable_mp(this, &JustAMCPEditorPlugin::_on_server_status_changed));
+				}
+				// Keep the MCP server alive on EditorNode for headless module test runs.
 				mcp_server = nullptr;
 			}
 
@@ -352,7 +401,15 @@ void JustAMCPEditorPlugin::_show_configuration_dialog() {
 }
 
 void JustAMCPEditorPlugin::_on_tool_requested(const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args) {
-	if (!tool_executor || !mcp_server) {
+	if (!mcp_server) {
+		return;
+	}
+
+	if (!tool_executor) {
+		Dictionary payload;
+		payload["code"] = -32000;
+		payload["message"] = "JustAMCP tool executor is unavailable.";
+		mcp_server->send_tool_result(p_request_id, false, payload, "JustAMCP tool executor is unavailable.");
 		return;
 	}
 
@@ -366,7 +423,7 @@ void JustAMCPEditorPlugin::_on_tool_requested(const Variant &p_request_id, const
 
 	Dictionary result = tool_executor->execute_tool(p_tool_name, p_args);
 
-	if (mcp_server->is_current_tool_cancel_requested() && String(result.get("error", "")) != "cancelled") {
+	if (mcp_server->is_current_tool_cancel_requested() && !_justamcp_tool_error_is_cancelled(result)) {
 		result["ok"] = false;
 		result["error"] = "cancelled";
 	}
@@ -378,9 +435,8 @@ void JustAMCPEditorPlugin::_on_tool_requested(const Variant &p_request_id, const
 		payload.erase("ok");
 		mcp_server->send_tool_result(p_request_id, true, payload, "");
 	} else {
-		String error_msg = result.get("error", "Unknown error");
-		// If "error" is actually a dictionary with a "code", we pass that exactly as the result Variant for the Server to parse as a protocol error.
-		Variant payload = result.get("error", Variant());
+		const String error_msg = _justamcp_tool_error_message(result);
+		const Variant payload = result.get("error", Variant());
 		mcp_server->send_tool_result(p_request_id, false, payload, error_msg);
 	}
 }

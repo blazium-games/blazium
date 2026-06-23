@@ -53,6 +53,16 @@ static bool _is_headless() {
 	return false;
 }
 
+static bool _justamcp_headless_project_server_requested() {
+	if (!_is_headless()) {
+		return false;
+	}
+	if (!ProjectSettings::get_singleton()) {
+		return false;
+	}
+	return GLOBAL_GET("blazium/justamcp/server_enabled");
+}
+
 static String _justamcp_extract_list_cursor(const Dictionary &p_payload) {
 	if (!p_payload.has("params") || p_payload["params"].get_type() != Variant::DICTIONARY) {
 		return String();
@@ -138,6 +148,7 @@ static Dictionary _justamcp_finalize_list_result(const Dictionary &p_result, con
 }
 
 void JustAMCPServer::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("is_server_started"), &JustAMCPServer::is_server_started);
 	ClassDB::bind_method(D_METHOD("_process_pending_tools"), &JustAMCPServer::_process_pending_tools);
 	ClassDB::bind_method(D_METHOD("_dispatch_task_augmented_tools_call", "request_id"), &JustAMCPServer::_dispatch_task_augmented_tools_call);
 	ClassDB::bind_method(D_METHOD("_emit_log_notification_deferred", "level", "logger", "data"), &JustAMCPServer::_emit_log_notification_deferred);
@@ -267,6 +278,10 @@ void JustAMCPServer::_on_settings_changed() {
 		is_enabled = EditorSettings::get_singleton()->get_setting("blazium/justamcp/server_enabled");
 	}
 
+	if (_justamcp_headless_project_server_requested()) {
+		is_enabled = true;
+	}
+
 	// If it's disabled but we are running, stop it
 	if (!is_enabled && server_started) {
 		_stop_server();
@@ -373,11 +388,13 @@ void JustAMCPServer::_start_server() {
 	}
 
 	const List<String> &args = OS::get_singleton()->get_cmdline_args();
-	for (const String &arg : args) {
-		if (arg == "--test" || arg == "--tests" || arg.begins_with("--aw-") ||
-				arg == "--help" || arg == "-h" || arg == "/?" || arg == "--version" ||
-				arg == "--check-only" || arg.begins_with("--export")) {
-			return; // Do not start Server during CLI tools or testing workflows
+	if (!_justamcp_headless_project_server_requested()) {
+		for (const String &arg : args) {
+			if (arg == "--test" || arg == "--tests" || arg.begins_with("--aw-") ||
+					arg == "--help" || arg == "-h" || arg == "/?" || arg == "--version" ||
+					arg == "--check-only" || arg.begins_with("--export")) {
+				return; // Do not start Server during CLI tools or testing workflows
+			}
 		}
 	}
 
@@ -1273,7 +1290,22 @@ Dictionary JustAMCPServer::_handle_json_rpc(const String &p_body, Ref<HTTPRespon
 			call_deferred(SNAME("_dispatch_task_augmented_tools_call"), req_id_var);
 
 			if (entry->has_stateless_response) {
-				entry->done_semaphore.wait();
+				const int wait_ms = 120000;
+				if (!_wait_for_stateless_tool_entry(entry, wait_ms)) {
+					MutexLock lock(tool_queue_mutex);
+					for (int i = 0; i < tool_queue.size(); i++) {
+						if (tool_queue[i] == entry) {
+							tool_queue.remove_at(i);
+							break;
+						}
+					}
+					if (current_tool_entry == entry) {
+						current_tool_entry = nullptr;
+						tool_queue_processing = false;
+					}
+					memdelete(entry);
+					return _stateless_tool_timeout_error(req_id_var);
+				}
 				Dictionary res = entry->rpc_result;
 				entry->stateless_response = Ref<HTTPResponse>();
 				entry->has_stateless_response = false;
@@ -1298,7 +1330,25 @@ Dictionary JustAMCPServer::_handle_json_rpc(const String &p_body, Ref<HTTPRespon
 		call_deferred(SNAME("_process_pending_tools"));
 
 		if (entry->has_stateless_response) {
-			entry->done_semaphore.wait();
+			const int wait_ms = 120000;
+			if (!_wait_for_stateless_tool_entry(entry, wait_ms)) {
+				if (!progress_token.is_empty()) {
+					_unregister_progress_token(progress_token);
+				}
+				MutexLock lock(tool_queue_mutex);
+				for (int i = 0; i < tool_queue.size(); i++) {
+					if (tool_queue[i] == entry) {
+						tool_queue.remove_at(i);
+						break;
+					}
+				}
+				if (current_tool_entry == entry) {
+					current_tool_entry = nullptr;
+					tool_queue_processing = false;
+				}
+				memdelete(entry);
+				return _stateless_tool_timeout_error(req_id_var);
+			}
 			Dictionary res = entry->rpc_result;
 			if (!progress_token.is_empty()) {
 				_unregister_progress_token(progress_token);
@@ -1582,6 +1632,29 @@ void JustAMCPServer::_clear_tool_queue() {
 	tool_queue.clear();
 	current_tool_entry = nullptr;
 	tool_queue_processing = false;
+}
+
+Dictionary JustAMCPServer::_stateless_tool_timeout_error(const Variant &p_request_id) const {
+	Dictionary err;
+	err["jsonrpc"] = "2.0";
+	err["id"] = p_request_id;
+	Dictionary error_dict;
+	error_dict["code"] = -32003;
+	error_dict["message"] = "MCP tool request timed out waiting for dispatch.";
+	err["error"] = error_dict;
+	return err;
+}
+
+bool JustAMCPServer::_wait_for_stateless_tool_entry(MCPToolQueueEntry *p_entry, int p_timeout_ms) {
+	ERR_FAIL_NULL_V(p_entry, false);
+	const uint64_t deadline = OS::get_singleton()->get_ticks_msec() + (uint64_t)p_timeout_ms;
+	while (OS::get_singleton()->get_ticks_msec() < deadline) {
+		if (p_entry->done_semaphore.try_wait()) {
+			return true;
+		}
+		OS::get_singleton()->delay_usec(1000);
+	}
+	return false;
 }
 
 Dictionary JustAMCPServer::_format_tool_result_dict(bool p_success, const Variant &p_result, const String &p_error) const {

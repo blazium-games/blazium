@@ -2933,6 +2933,9 @@ Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const D
 #endif
 
 	result["ok"] = false;
-	result["error"] = "Unknown tool: " + p_tool_name;
+	Dictionary err;
+	err["code"] = -32601;
+	err["message"] = "Unknown tool: " + p_tool_name;
+	result["error"] = err;
 	return result;
 }

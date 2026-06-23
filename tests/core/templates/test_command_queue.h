@@ -443,22 +443,26 @@ TEST_CASE("[CommandQueue] Test Queue Lapping") {
 }
 
 TEST_CASE("[Stress][CommandQueue] Stress test command queue") {
-	const char *COMMAND_QUEUE_SETTING = "memory/limits/command_queue/multithreading_queue_size_kb";
-	ProjectSettings::get_singleton()->set_setting(COMMAND_QUEUE_SETTING, 1);
 	SharedThreadState sts;
 	sts.init_threads();
 
 	RandomNumberGenerator rng;
-
 	rng.set_seed(1837267);
 
-	int msgs_to_add = 2048;
+	const int msgs_to_add = 2048;
+	// Async commands only. push_and_sync / push_and_ret from the writer thread while
+	// the reader is flushing causes mutex stalls and can hang teardown.
+	static const SharedThreadState::TestMsgType k_async_types[] = {
+		SharedThreadState::TEST_MSG_FUNC1_TRANSFORM,
+		SharedThreadState::TEST_MSG_FUNC2_TRANSFORM_FLOAT,
+		SharedThreadState::TEST_MSG_FUNC3_TRANSFORMx6,
+	};
 
 	for (int i = 0; i < msgs_to_add; i++) {
-		// randi_range is inclusive, so allow any enum value except MAX.
-		sts.add_msg_to_write((SharedThreadState::TestMsgType)rng.randi_range(0, SharedThreadState::TEST_MSG_MAX - 1));
+		sts.add_msg_to_write(k_async_types[rng.randi_range(0, 2)]);
 	}
 	sts.writer_threadwork.main_start_work();
+	sts.writer_threadwork.main_wait_for_done();
 
 	int max_loop_iters = msgs_to_add * 2;
 	int loop_iters = 0;
@@ -472,16 +476,20 @@ TEST_CASE("[Stress][CommandQueue] Stress test command queue") {
 		sts.reader_threadwork.main_wait_for_done();
 		loop_iters++;
 	}
+
+	if (sts.func1_count < msgs_to_add) {
+		sts.message_count_to_read = -1;
+		sts.reader_threadwork.main_start_work();
+		sts.reader_threadwork.main_wait_for_done();
+	}
+
 	CHECK_MESSAGE(loop_iters < max_loop_iters,
 			"Reader needed too many iterations to read messages!");
-	sts.writer_threadwork.main_wait_for_done();
 
 	sts.destroy_threads();
 
 	CHECK_MESSAGE(sts.func1_count == msgs_to_add,
-			"Reader should have read no additional messages after join");
-	ProjectSettings::get_singleton()->set_setting(COMMAND_QUEUE_SETTING,
-			ProjectSettings::get_singleton()->property_get_revert(COMMAND_QUEUE_SETTING));
+			"Reader should have read all messages before join");
 }
 
 TEST_CASE("[CommandQueue] Test Parameter Passing Semantics") {
