@@ -72,40 +72,19 @@ void JWT::_bind_methods() {
 }
 
 Dictionary JWT::get_header(const String &p_jwt) {
-	// split first portion
 	Vector<String> split = p_jwt.split(".");
 	if (split.size() < 2) {
 		return {};
 	}
-	core_bind::Marshalls *singleton = core_bind::Marshalls::get_singleton();
-	if (singleton == nullptr) {
-		ERR_PRINT("Failed to get Marshalls singleton.");
-	}
-	// pad with = if not multiple of 4
-	String padded_string = split[0];
-	while (padded_string.length() % 4 != 0) {
-		padded_string += "=";
-	}
-	String json_utf8 = singleton->base64_to_utf8(padded_string);
+	String json_utf8 = base64url_decode(split[0]);
 	return JSON::parse_string(json_utf8);
 }
 Dictionary JWT::get_payload(const String &p_jwt) {
-	// split first portion
 	Vector<String> split = p_jwt.split(".");
 	if (split.size() < 2) {
 		return {};
 	}
-	core_bind::Marshalls *singleton = core_bind::Marshalls::get_singleton();
-	if (singleton == nullptr) {
-		ERR_PRINT("Failed to get Marshalls singleton.");
-	}
-
-	// pad with = if not multiple of 4
-	String padded_string = split[1];
-	while (padded_string.length() % 4 != 0) {
-		padded_string += "=";
-	}
-	String json_utf8 = singleton->base64_to_utf8(padded_string);
+	String json_utf8 = base64url_decode(split[1]);
 	return JSON::parse_string(json_utf8);
 }
 
