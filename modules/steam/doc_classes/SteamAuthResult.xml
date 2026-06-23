@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SteamAuthResult" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Result of a Steam auth server exchange.
+	</brief_description>
+	<description>
+		Returned by [method Steam.authenticate_with_server]. Contains the JWT and user metadata on success, or an error message on failure.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_app_id" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the validated Steam app ID.
+			</description>
+		</method>
+		<method name="get_error_message" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the error message when [method is_success] is [code]false[/code].
+			</description>
+		</method>
+		<method name="get_http_status" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the HTTP status code from the auth server response.
+			</description>
+		</method>
+		<method name="get_jwt" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the JWT issued by the auth server.
+			</description>
+		</method>
+		<method name="get_persona" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the validated Steam persona name.
+			</description>
+		</method>
+		<method name="get_steam_id" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the validated 64-bit Steam ID as a string.
+			</description>
+		</method>
+		<method name="is_success" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when authentication succeeded.
+			</description>
+		</method>
+	</methods>
+</class>

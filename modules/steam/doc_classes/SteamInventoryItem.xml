@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SteamInventoryItem" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A single Steam inventory item instance owned by the local user.
+	</brief_description>
+	<description>
+		Returned by [method Steam.get_all_items], [method Steam.get_items_by_id], and [method Steam.find_items_by_def_id].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_def_id" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the item definition ID.
+			</description>
+		</method>
+		<method name="get_definition" qualifiers="const">
+			<return type="SteamItemDefinition" />
+			<description>
+			</description>
+		</method>
+		<method name="get_flags" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns Steam item status flags.
+			</description>
+		</method>
+		<method name="get_item_instance_id" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the unique Steam inventory item instance ID for this stack.
+			</description>
+		</method>
+		<method name="get_properties" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns dynamic string properties attached to this instance.
+			</description>
+		</method>
+		<method name="get_property" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Returns a single dynamic property value by name.
+			</description>
+		</method>
+		<method name="get_quantity" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the stack quantity for this instance.
+			</description>
+		</method>
+	</methods>
+</class>
