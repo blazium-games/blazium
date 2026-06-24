@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Discord" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Discord Social SDK integration for OAuth authentication and backend JWT exchange.
+	</brief_description>
+	<description>
+		The Discord singleton dynamically loads the Discord Partner SDK library at runtime. If the library is not found beside the executable, all methods fail gracefully without crashing.
+		Call [method initialize] with your Discord application client ID to start the OAuth flow, pump [method run_callbacks] (or rely on the engine frame hook), then use [method get_access_token] and [method authenticate_with_server] to exchange the token for a JWT from your backend.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="authenticate_with_server">
+			<return type="DiscordAuthResult" />
+			<param index="0" name="url" type="String" />
+			<param index="1" name="access_token" type="String" />
+			<param index="2" name="client_id" type="int" />
+			<description>
+				POSTs the OAuth access token to the auth server and returns the parsed response.
+			</description>
+		</method>
+		<method name="clear_debug_log">
+			<return type="void" />
+			<description>
+				Clears the in-memory debug log buffer.
+			</description>
+		</method>
+		<method name="get_access_token" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the OAuth access token obtained during [method initialize], or an empty string when not connected.
+			</description>
+		</method>
+		<method name="get_connection_state" qualifiers="const">
+			<return type="int" enum="Discord.ConnectionState" />
+			<description>
+				Returns the current Discord SDK connection state.
+			</description>
+		</method>
+		<method name="get_debug_log" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns recent debug log lines when debug logging is enabled.
+			</description>
+		</method>
+		<method name="get_last_error" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the most recent error message from Discord initialization or auth.
+			</description>
+		</method>
+		<method name="get_user_id" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the connected Discord user snowflake ID, or [code]0[/code] when unavailable.
+			</description>
+		</method>
+		<method name="get_username" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the connected Discord display or username.
+			</description>
+		</method>
+		<method name="get_version" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns SDK version metadata and runtime library availability.
+			</description>
+		</method>
+		<method name="initialize">
+			<return type="int" enum="Error" />
+			<param index="0" name="client_id" type="int" default="0" />
+			<description>
+				Initializes the Discord Social SDK and starts the OAuth authorization flow for the given application client ID.
+			</description>
+		</method>
+		<method name="is_available">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when the Discord Partner SDK runtime library is present beside the executable.
+			</description>
+		</method>
+		<method name="is_debug_logging_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns whether debug logging is enabled.
+			</description>
+		</method>
+		<method name="is_initialized" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] after a successful [method initialize].
+			</description>
+		</method>
+		<method name="run_callbacks">
+			<return type="void" />
+			<description>
+				Pumps Discord SDK callbacks. Also invoked automatically each frame when initialized.
+			</description>
+		</method>
+		<method name="set_debug_logging">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				Enables or disables verbose debug logging to stdout and the in-memory debug log.
+			</description>
+		</method>
+		<method name="shutdown">
+			<return type="void" />
+			<description>
+				Shuts down the Discord SDK session and releases resources.
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="STATE_DISCONNECTED" value="0" enum="ConnectionState">
+		</constant>
+		<constant name="STATE_CONNECTING" value="1" enum="ConnectionState">
+		</constant>
+		<constant name="STATE_CONNECTED" value="2" enum="ConnectionState">
+		</constant>
+		<constant name="STATE_READY" value="3" enum="ConnectionState">
+		</constant>
+		<constant name="STATE_RECONNECTING" value="4" enum="ConnectionState">
+		</constant>
+		<constant name="STATE_DISCONNECTING" value="5" enum="ConnectionState">
+		</constant>
+		<constant name="STATE_HTTP_WAIT" value="6" enum="ConnectionState">
+		</constant>
+	</constants>
+</class>
