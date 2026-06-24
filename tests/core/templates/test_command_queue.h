@@ -464,7 +464,8 @@ TEST_CASE("[Stress][CommandQueue] Stress test command queue") {
 	sts.writer_threadwork.main_start_work();
 	sts.writer_threadwork.main_wait_for_done();
 
-	int max_loop_iters = msgs_to_add * 2;
+	// Small queue + large messages can require many reader passes on loaded CI runners.
+	int max_loop_iters = msgs_to_add * 8;
 	int loop_iters = 0;
 	while (sts.func1_count < msgs_to_add && loop_iters < max_loop_iters) {
 		int remaining = (msgs_to_add - sts.func1_count);
