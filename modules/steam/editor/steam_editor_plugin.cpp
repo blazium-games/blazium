@@ -209,6 +209,7 @@ void SteamEditorPlugin::_on_ticket_failed(const String &p_error) {
 
 void SteamEditorPlugin::_setup_dock() {
 	dock_root = memnew(VBoxContainer);
+	dock_root->set_name("Steam Editor");
 
 	Label *title = memnew(Label);
 	title->set_text("Steam Auth Tester");
@@ -332,7 +333,7 @@ void SteamEditorPlugin::_setup_dock() {
 	log_view->set_v_size_flags(Control::SIZE_EXPAND_FILL);
 	dock_root->add_child(log_view);
 
-	add_control_to_dock(DOCK_SLOT_LEFT_UL, dock_root);
+	add_control_to_dock(DOCK_SLOT_LEFT_BR, dock_root);
 
 	Steam *steam = Steam::get_singleton();
 	if (steam) {
