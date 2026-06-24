@@ -1559,6 +1559,8 @@
 		<member name="CrowdControl" type="CrowdControl" setter="" getter="">
 			The [CrowdControl] singleton.
 		</member>
+		<member name="Discord" type="Discord" setter="" getter="">
+		</member>
 		<member name="DisplayServer" type="DisplayServer" setter="" getter="">
 			The [DisplayServer] singleton.
 		</member>
