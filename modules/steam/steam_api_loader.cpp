@@ -96,6 +96,9 @@ bool SteamAPILoader::try_load() {
 	}
 	fn_get_h_steam_pipe = (SteamAPI_GetHSteamPipeFn)symbol;
 
+	_load_symbol("SteamAPI_RunCallbacks", symbol);
+	fn_run_callbacks = (SteamAPI_RunCallbacksFn)symbol;
+
 	if (!_load_symbol("SteamAPI_ManualDispatch_Init", symbol)) {
 		unload();
 		return false;
@@ -350,6 +353,7 @@ void SteamAPILoader::unload() {
 	fn_init_flat = nullptr;
 	fn_shutdown = nullptr;
 	fn_get_h_steam_pipe = nullptr;
+	fn_run_callbacks = nullptr;
 	fn_manual_dispatch_init = nullptr;
 	fn_manual_dispatch_run_frame = nullptr;
 	fn_manual_dispatch_get_next_callback = nullptr;
@@ -441,6 +445,12 @@ void SteamAPILoader::shutdown() {
 
 SteamAPILoader::HSteamPipe SteamAPILoader::get_h_steam_pipe() const {
 	return fn_get_h_steam_pipe ? fn_get_h_steam_pipe() : 0;
+}
+
+void SteamAPILoader::run_callbacks() {
+	if (fn_run_callbacks) {
+		fn_run_callbacks();
+	}
 }
 
 void SteamAPILoader::manual_dispatch_init() {

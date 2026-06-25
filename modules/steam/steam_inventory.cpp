@@ -79,6 +79,13 @@ bool Steam::_wait_for_inventory_definitions(double p_timeout_sec) {
 	const double start_usec = Time::get_singleton()->get_ticks_usec();
 	while (!inventory_definitions_loaded) {
 		_dispatch_callbacks();
+		const Vector<int32_t> ids = loader.inventory_get_item_definition_ids(steam_inventory);
+		if (!ids.is_empty()) {
+			inventory_definitions_loaded = true;
+			inventory_definitions_pending = false;
+			emit_signal("inventory_definitions_updated");
+			return true;
+		}
 		if ((Time::get_singleton()->get_ticks_usec() - start_usec) / 1000000.0 > p_timeout_sec) {
 			_log_debug("Timed out waiting for inventory item definitions");
 			return false;

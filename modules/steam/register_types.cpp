@@ -30,6 +30,7 @@
 #include "register_types.h"
 
 #include "core/config/engine.h"
+#include "scene/main/scene_tree.h"
 #include "steam.h"
 #include "steam_achievement_info.h"
 #include "steam_auth_result.h"
@@ -47,6 +48,45 @@
 #endif
 
 static Steam *steam_singleton = nullptr;
+static bool steam_frame_hook_connected = false;
+
+namespace {
+
+void steam_frame_callback() {
+	if (steam_singleton == nullptr || !steam_singleton->is_initialized()) {
+		return;
+	}
+	steam_singleton->poll_callbacks();
+}
+
+void connect_steam_frame_hook() {
+	if (steam_frame_hook_connected) {
+		return;
+	}
+
+	SceneTree *scene_tree = SceneTree::get_singleton();
+	if (scene_tree == nullptr) {
+		return;
+	}
+
+	scene_tree->connect("process_frame", callable_mp_static(&steam_frame_callback));
+	steam_frame_hook_connected = true;
+}
+
+void disconnect_steam_frame_hook() {
+	if (!steam_frame_hook_connected) {
+		return;
+	}
+
+	SceneTree *scene_tree = SceneTree::get_singleton();
+	if (scene_tree != nullptr) {
+		scene_tree->disconnect("process_frame", callable_mp_static(&steam_frame_callback));
+	}
+
+	steam_frame_hook_connected = false;
+}
+
+} //namespace
 
 void initialize_steam_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
@@ -57,6 +97,7 @@ void initialize_steam_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(Steam);
 		steam_singleton = memnew(Steam);
 		Engine::get_singleton()->add_singleton(Engine::Singleton("Steam", Steam::get_singleton()));
+		connect_steam_frame_hook();
 	}
 
 #ifdef TOOLS_ENABLED
@@ -69,6 +110,7 @@ void initialize_steam_module(ModuleInitializationLevel p_level) {
 
 void uninitialize_steam_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
+		disconnect_steam_frame_hook();
 		if (steam_singleton) {
 			Engine::get_singleton()->remove_singleton("Steam");
 			memdelete(steam_singleton);

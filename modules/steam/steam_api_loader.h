@@ -58,6 +58,7 @@ private:
 	typedef int (*SteamAPI_InitFlatFn)(char *p_out_err_msg);
 	typedef void (*SteamAPI_ShutdownFn)();
 	typedef HSteamPipe (*SteamAPI_GetHSteamPipeFn)();
+	typedef void (*SteamAPI_RunCallbacksFn)();
 	typedef void (*SteamAPI_ManualDispatch_InitFn)();
 	typedef void (*SteamAPI_ManualDispatch_RunFrameFn)(HSteamPipe p_pipe);
 	typedef bool (*SteamAPI_ManualDispatch_GetNextCallbackFn)(HSteamPipe p_pipe, void *p_callback_msg);
@@ -137,6 +138,7 @@ private:
 	SteamAPI_InitFlatFn fn_init_flat = nullptr;
 	SteamAPI_ShutdownFn fn_shutdown = nullptr;
 	SteamAPI_GetHSteamPipeFn fn_get_h_steam_pipe = nullptr;
+	SteamAPI_RunCallbacksFn fn_run_callbacks = nullptr;
 	SteamAPI_ManualDispatch_InitFn fn_manual_dispatch_init = nullptr;
 	SteamAPI_ManualDispatch_RunFrameFn fn_manual_dispatch_run_frame = nullptr;
 	SteamAPI_ManualDispatch_GetNextCallbackFn fn_manual_dispatch_get_next_callback = nullptr;
@@ -223,6 +225,8 @@ public:
 	int init_flat(String &r_err_msg);
 	void shutdown();
 	HSteamPipe get_h_steam_pipe() const;
+	void run_callbacks();
+	bool has_run_callbacks() const { return fn_run_callbacks != nullptr; }
 	void manual_dispatch_init();
 	void manual_dispatch_run_frame(HSteamPipe p_pipe);
 	bool manual_dispatch_get_next_callback(HSteamPipe p_pipe, void *p_callback_msg);
