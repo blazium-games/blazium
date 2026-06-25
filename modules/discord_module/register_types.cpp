@@ -32,6 +32,7 @@
 #include "core/config/engine.h"
 #include "discord.h"
 #include "discord_auth_result.h"
+#include "discord_frame_hook.h"
 #include "scene/main/scene_tree.h"
 
 #ifdef TESTS_ENABLED
@@ -44,13 +45,15 @@ static bool discord_frame_hook_connected = false;
 namespace {
 
 void discord_frame_callback() {
-	if (discord_singleton == nullptr || !discord_singleton->is_initialized()) {
+	if (discord_singleton == nullptr || !discord_singleton->is_client_active()) {
 		return;
 	}
 	discord_singleton->run_callbacks();
 }
 
-void connect_discord_frame_hook() {
+} //namespace
+
+void discord_try_connect_frame_hook() {
 	if (discord_frame_hook_connected) {
 		return;
 	}
@@ -62,7 +65,17 @@ void connect_discord_frame_hook() {
 
 	scene_tree->connect("process_frame", callable_mp_static(&discord_frame_callback));
 	discord_frame_hook_connected = true;
+
+	if (discord_singleton != nullptr) {
+		discord_singleton->note_frame_hook_connected();
+	}
 }
+
+bool discord_is_frame_hook_connected() {
+	return discord_frame_hook_connected;
+}
+
+namespace {
 
 void disconnect_discord_frame_hook() {
 	if (!discord_frame_hook_connected) {
@@ -85,7 +98,7 @@ void initialize_discord_module_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(Discord);
 		discord_singleton = memnew(Discord);
 		Engine::get_singleton()->add_singleton(Engine::Singleton("Discord", Discord::get_singleton()));
-		connect_discord_frame_hook();
+		discord_try_connect_frame_hook();
 	}
 }
 

@@ -152,13 +152,55 @@ bool DiscordAPILoader::try_load() {
 	LOAD_REQUIRED("Discord_UserHandle_Id", fn_user_handle_id);
 	LOAD_REQUIRED("Discord_UserHandle_DisplayName", fn_user_handle_display_name);
 	LOAD_REQUIRED("Discord_UserHandle_Username", fn_user_handle_username);
+	LOAD_REQUIRED("Discord_UserHandle_GameActivity", fn_user_handle_game_activity);
+	LOAD_REQUIRED("Discord_Activity_Type", fn_activity_type);
+	LOAD_REQUIRED("Discord_Activity_Details", fn_activity_details);
+	LOAD_REQUIRED("Discord_Activity_State", fn_activity_state);
 	LOAD_REQUIRED("Discord_Client_GetDefaultCommunicationScopes", fn_client_get_default_communication_scopes);
+	LOAD_REQUIRED("Discord_Client_GetDefaultPresenceScopes", fn_client_get_default_presence_scopes);
+	LOAD_REQUIRED("Discord_Client_AddLogCallback", fn_client_add_log_callback);
+	LOAD_REQUIRED("Discord_Client_GetRelationships", fn_client_get_relationships);
+	LOAD_REQUIRED("Discord_Activity_Init", fn_activity_init);
+	LOAD_REQUIRED("Discord_Activity_Drop", fn_activity_drop);
+	LOAD_REQUIRED("Discord_Activity_SetType", fn_activity_set_type);
+	LOAD_REQUIRED("Discord_Activity_SetDetails", fn_activity_set_details);
+	LOAD_REQUIRED("Discord_Activity_SetState", fn_activity_set_state);
+	LOAD_REQUIRED("Discord_Activity_SetAssets", fn_activity_set_assets);
+	LOAD_REQUIRED("Discord_Activity_SetTimestamps", fn_activity_set_timestamps);
+	LOAD_REQUIRED("Discord_ActivityAssets_Init", fn_activity_assets_init);
+	LOAD_REQUIRED("Discord_ActivityAssets_Drop", fn_activity_assets_drop);
+	LOAD_REQUIRED("Discord_ActivityAssets_SetLargeImage", fn_activity_assets_set_large_image);
+	LOAD_REQUIRED("Discord_ActivityAssets_SetLargeText", fn_activity_assets_set_large_text);
+	LOAD_REQUIRED("Discord_ActivityAssets_SetSmallImage", fn_activity_assets_set_small_image);
+	LOAD_REQUIRED("Discord_ActivityAssets_SetSmallText", fn_activity_assets_set_small_text);
+	LOAD_REQUIRED("Discord_ActivityTimestamps_Init", fn_activity_timestamps_init);
+	LOAD_REQUIRED("Discord_ActivityTimestamps_Drop", fn_activity_timestamps_drop);
+	LOAD_REQUIRED("Discord_ActivityTimestamps_SetStart", fn_activity_timestamps_set_start);
+	LOAD_REQUIRED("Discord_ActivityTimestamps_SetEnd", fn_activity_timestamps_set_end);
+	LOAD_REQUIRED("Discord_Client_UpdateRichPresence", fn_client_update_rich_presence);
+	LOAD_REQUIRED("Discord_Client_ClearRichPresence", fn_client_clear_rich_presence);
 	LOAD_REQUIRED("Discord_Client_GetVersionHash", fn_client_get_version_hash);
 	LOAD_REQUIRED("Discord_Client_GetVersionMajor", fn_client_get_version_major);
 	LOAD_REQUIRED("Discord_Client_GetVersionMinor", fn_client_get_version_minor);
 	LOAD_REQUIRED("Discord_Client_GetVersionPatch", fn_client_get_version_patch);
 
 #undef LOAD_REQUIRED
+
+#define LOAD_OPTIONAL(name, member)            \
+	{                                          \
+		void *symbol = nullptr;                \
+		if (_load_symbol(name, symbol)) {      \
+			member = (decltype(member))symbol; \
+		}                                      \
+	}
+
+	LOAD_OPTIONAL("Discord_AuthorizationArgs_SetIntegrationType", fn_authorization_args_set_integration_type);
+	LOAD_OPTIONAL("Discord_Client_SetAuthorizeDeviceScreenClosedCallback",
+			fn_client_set_authorize_device_screen_closed_callback);
+	LOAD_OPTIONAL("Discord_Client_SetGameWindowPid", fn_client_set_game_window_pid);
+	LOAD_OPTIONAL("Discord_Client_SetLogDir", fn_client_set_log_dir);
+
+#undef LOAD_OPTIONAL
 
 	loaded = true;
 	return true;
@@ -176,12 +218,14 @@ void DiscordAPILoader::unload() {
 	fn_client_drop = nullptr;
 	fn_client_set_application_id = nullptr;
 	fn_client_set_status_changed_callback = nullptr;
+	fn_client_set_authorize_device_screen_closed_callback = nullptr;
 	fn_client_create_authorization_code_verifier = nullptr;
 	fn_authorization_args_init = nullptr;
 	fn_authorization_args_drop = nullptr;
 	fn_authorization_args_set_client_id = nullptr;
 	fn_authorization_args_set_scopes = nullptr;
 	fn_authorization_args_set_code_challenge = nullptr;
+	fn_authorization_args_set_integration_type = nullptr;
 	fn_authorization_code_verifier_drop = nullptr;
 	fn_authorization_code_verifier_challenge = nullptr;
 	fn_authorization_code_verifier_verifier = nullptr;
@@ -198,11 +242,39 @@ void DiscordAPILoader::unload() {
 	fn_user_handle_id = nullptr;
 	fn_user_handle_display_name = nullptr;
 	fn_user_handle_username = nullptr;
+	fn_user_handle_game_activity = nullptr;
+	fn_activity_type = nullptr;
+	fn_activity_details = nullptr;
+	fn_activity_state = nullptr;
 	fn_client_get_default_communication_scopes = nullptr;
+	fn_client_get_default_presence_scopes = nullptr;
+	fn_client_add_log_callback = nullptr;
+	fn_client_get_relationships = nullptr;
+	fn_activity_init = nullptr;
+	fn_activity_drop = nullptr;
+	fn_activity_set_type = nullptr;
+	fn_activity_set_details = nullptr;
+	fn_activity_set_state = nullptr;
+	fn_activity_set_assets = nullptr;
+	fn_activity_set_timestamps = nullptr;
+	fn_activity_assets_init = nullptr;
+	fn_activity_assets_drop = nullptr;
+	fn_activity_assets_set_large_image = nullptr;
+	fn_activity_assets_set_large_text = nullptr;
+	fn_activity_assets_set_small_image = nullptr;
+	fn_activity_assets_set_small_text = nullptr;
+	fn_activity_timestamps_init = nullptr;
+	fn_activity_timestamps_drop = nullptr;
+	fn_activity_timestamps_set_start = nullptr;
+	fn_activity_timestamps_set_end = nullptr;
+	fn_client_update_rich_presence = nullptr;
+	fn_client_clear_rich_presence = nullptr;
 	fn_client_get_version_hash = nullptr;
 	fn_client_get_version_major = nullptr;
 	fn_client_get_version_minor = nullptr;
 	fn_client_get_version_patch = nullptr;
+	fn_client_set_game_window_pid = nullptr;
+	fn_client_set_log_dir = nullptr;
 }
 
 void DiscordAPILoader::run_callbacks() const {
@@ -227,6 +299,16 @@ void DiscordAPILoader::client_set_status_changed_callback(Discord_Client *self,
 		Discord_Client_OnStatusChanged callback,
 		void *user_data) const {
 	fn_client_set_status_changed_callback(self, callback, nullptr, user_data);
+}
+
+bool DiscordAPILoader::client_set_authorize_device_screen_closed_callback(Discord_Client *self,
+		Discord_Client_AuthorizeDeviceScreenClosedCallback callback,
+		void *user_data) const {
+	if (!fn_client_set_authorize_device_screen_closed_callback) {
+		return false;
+	}
+	fn_client_set_authorize_device_screen_closed_callback(self, callback, nullptr, user_data);
+	return true;
 }
 
 void DiscordAPILoader::client_create_authorization_code_verifier(Discord_Client *self,
@@ -257,6 +339,14 @@ void DiscordAPILoader::authorization_args_set_scopes(Discord_AuthorizationArgs *
 void DiscordAPILoader::authorization_args_set_code_challenge(Discord_AuthorizationArgs *self,
 		Discord_AuthorizationCodeChallenge *value) const {
 	fn_authorization_args_set_code_challenge(self, value);
+}
+
+void DiscordAPILoader::authorization_args_set_integration_type(Discord_AuthorizationArgs *self,
+		Discord_IntegrationType value) const {
+	if (!fn_authorization_args_set_integration_type) {
+		return;
+	}
+	fn_authorization_args_set_integration_type(self, &value);
 }
 
 void DiscordAPILoader::authorization_code_verifier_drop(Discord_AuthorizationCodeVerifier *self) const {
@@ -303,6 +393,16 @@ void DiscordAPILoader::client_get_token(Discord_Client *self,
 	fn_client_get_token(self, application_id, code, verifier, redirect_uri, callback, nullptr, user_data);
 }
 
+void DiscordAPILoader::client_get_token(Discord_Client *self,
+		uint64_t application_id,
+		Discord_String code,
+		Discord_String code_verifier,
+		Discord_String redirect_uri,
+		Discord_Client_TokenExchangeCallback callback,
+		void *user_data) const {
+	fn_client_get_token(self, application_id, code, code_verifier, redirect_uri, callback, nullptr, user_data);
+}
+
 void DiscordAPILoader::client_update_token(Discord_Client *self,
 		Discord_AuthorizationTokenType token_type,
 		const String &p_token,
@@ -312,6 +412,14 @@ void DiscordAPILoader::client_update_token(Discord_Client *self,
 	Discord_String token;
 	token.ptr = (uint8_t *)token_utf8.ptr();
 	token.size = token_utf8.length();
+	fn_client_update_token(self, token_type, token, callback, nullptr, user_data);
+}
+
+void DiscordAPILoader::client_update_token(Discord_Client *self,
+		Discord_AuthorizationTokenType token_type,
+		Discord_String token,
+		Discord_Client_UpdateTokenCallback callback,
+		void *user_data) const {
 	fn_client_update_token(self, token_type, token, callback, nullptr, user_data);
 }
 
@@ -361,10 +469,171 @@ String DiscordAPILoader::user_handle_username(Discord_UserHandle *self) const {
 	return to_godot_string(name);
 }
 
+bool DiscordAPILoader::user_handle_game_activity(Discord_UserHandle *self, Discord_Activity *return_value) const {
+	return fn_user_handle_game_activity(self, return_value);
+}
+
+Discord_ActivityTypes DiscordAPILoader::activity_get_type(Discord_Activity *self) const {
+	return fn_activity_type(self);
+}
+
+String DiscordAPILoader::activity_get_details(Discord_Activity *self) const {
+	Discord_String value;
+	if (!fn_activity_details(self, &value)) {
+		return String();
+	}
+	return to_godot_string(value);
+}
+
+String DiscordAPILoader::activity_get_state(Discord_Activity *self) const {
+	Discord_String value;
+	if (!fn_activity_state(self, &value)) {
+		return String();
+	}
+	return to_godot_string(value);
+}
+
 String DiscordAPILoader::get_default_communication_scopes() const {
 	Discord_String scopes;
 	fn_client_get_default_communication_scopes(&scopes);
 	return to_godot_string(scopes);
+}
+
+String DiscordAPILoader::get_default_presence_scopes() const {
+	Discord_String scopes;
+	fn_client_get_default_presence_scopes(&scopes);
+	return to_godot_string(scopes);
+}
+
+void DiscordAPILoader::client_add_log_callback(Discord_Client *self,
+		Discord_Client_LogCallback callback,
+		void *user_data,
+		Discord_LoggingSeverity min_severity) const {
+	fn_client_add_log_callback(self, callback, nullptr, user_data, min_severity);
+}
+
+void DiscordAPILoader::client_get_relationships(Discord_Client *self, Discord_RelationshipHandleSpan *return_value) const {
+	fn_client_get_relationships(self, return_value);
+}
+
+void DiscordAPILoader::activity_init(Discord_Activity *self) const {
+	fn_activity_init(self);
+}
+
+void DiscordAPILoader::activity_drop(Discord_Activity *self) const {
+	fn_activity_drop(self);
+}
+
+void DiscordAPILoader::activity_set_type(Discord_Activity *self, Discord_ActivityTypes value) const {
+	fn_activity_set_type(self, value);
+}
+
+void DiscordAPILoader::activity_set_details(Discord_Activity *self, const String &p_value) const {
+	CharString utf8 = p_value.utf8();
+	Discord_String str;
+	str.ptr = (uint8_t *)utf8.ptr();
+	str.size = utf8.length();
+	fn_activity_set_details(self, &str);
+}
+
+void DiscordAPILoader::activity_set_state(Discord_Activity *self, const String &p_value) const {
+	CharString utf8 = p_value.utf8();
+	Discord_String str;
+	str.ptr = (uint8_t *)utf8.ptr();
+	str.size = utf8.length();
+	fn_activity_set_state(self, &str);
+}
+
+void DiscordAPILoader::activity_set_assets(Discord_Activity *self, Discord_ActivityAssets *value) const {
+	fn_activity_set_assets(self, value);
+}
+
+void DiscordAPILoader::activity_set_timestamps(Discord_Activity *self, Discord_ActivityTimestamps *value) const {
+	fn_activity_set_timestamps(self, value);
+}
+
+void DiscordAPILoader::activity_assets_init(Discord_ActivityAssets *self) const {
+	fn_activity_assets_init(self);
+}
+
+void DiscordAPILoader::activity_assets_drop(Discord_ActivityAssets *self) const {
+	fn_activity_assets_drop(self);
+}
+
+void DiscordAPILoader::activity_assets_set_large_image(Discord_ActivityAssets *self, const String &p_value) const {
+	CharString utf8 = p_value.utf8();
+	Discord_String str;
+	str.ptr = (uint8_t *)utf8.ptr();
+	str.size = utf8.length();
+	fn_activity_assets_set_large_image(self, &str);
+}
+
+void DiscordAPILoader::activity_assets_set_large_text(Discord_ActivityAssets *self, const String &p_value) const {
+	CharString utf8 = p_value.utf8();
+	Discord_String str;
+	str.ptr = (uint8_t *)utf8.ptr();
+	str.size = utf8.length();
+	fn_activity_assets_set_large_text(self, &str);
+}
+
+void DiscordAPILoader::activity_assets_set_small_image(Discord_ActivityAssets *self, const String &p_value) const {
+	CharString utf8 = p_value.utf8();
+	Discord_String str;
+	str.ptr = (uint8_t *)utf8.ptr();
+	str.size = utf8.length();
+	fn_activity_assets_set_small_image(self, &str);
+}
+
+void DiscordAPILoader::activity_assets_set_small_text(Discord_ActivityAssets *self, const String &p_value) const {
+	CharString utf8 = p_value.utf8();
+	Discord_String str;
+	str.ptr = (uint8_t *)utf8.ptr();
+	str.size = utf8.length();
+	fn_activity_assets_set_small_text(self, &str);
+}
+
+void DiscordAPILoader::activity_timestamps_init(Discord_ActivityTimestamps *self) const {
+	fn_activity_timestamps_init(self);
+}
+
+void DiscordAPILoader::activity_timestamps_drop(Discord_ActivityTimestamps *self) const {
+	fn_activity_timestamps_drop(self);
+}
+
+void DiscordAPILoader::activity_timestamps_set_start(Discord_ActivityTimestamps *self, uint64_t value) const {
+	fn_activity_timestamps_set_start(self, value);
+}
+
+void DiscordAPILoader::activity_timestamps_set_end(Discord_ActivityTimestamps *self, uint64_t value) const {
+	fn_activity_timestamps_set_end(self, value);
+}
+
+void DiscordAPILoader::client_update_rich_presence(Discord_Client *self,
+		Discord_Activity *activity,
+		Discord_Client_UpdateRichPresenceCallback callback,
+		void *user_data) const {
+	fn_client_update_rich_presence(self, activity, callback, nullptr, user_data);
+}
+
+void DiscordAPILoader::client_clear_rich_presence(Discord_Client *self) const {
+	fn_client_clear_rich_presence(self);
+}
+
+void DiscordAPILoader::client_set_game_window_pid(Discord_Client *self, int32_t pid) const {
+	if (fn_client_set_game_window_pid) {
+		fn_client_set_game_window_pid(self, pid);
+	}
+}
+
+bool DiscordAPILoader::client_set_log_dir(Discord_Client *self, const String &p_path, Discord_LoggingSeverity min_severity) const {
+	if (!fn_client_set_log_dir) {
+		return false;
+	}
+	CharString path_utf8 = p_path.utf8();
+	Discord_String path;
+	path.ptr = (uint8_t *)path_utf8.ptr();
+	path.size = path_utf8.length();
+	return fn_client_set_log_dir(self, path, min_severity);
 }
 
 void DiscordAPILoader::fill_version_dict(Dictionary &p_version) const {

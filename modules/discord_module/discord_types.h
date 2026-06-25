@@ -58,6 +58,11 @@ typedef enum Discord_AuthorizationTokenType {
 	DISCORD_AUTHORIZATION_TOKEN_TYPE_BEARER = 1,
 } Discord_AuthorizationTokenType;
 
+typedef enum Discord_IntegrationType {
+	DISCORD_INTEGRATION_TYPE_GUILD_INSTALL = 0,
+	DISCORD_INTEGRATION_TYPE_USER_INSTALL = 1,
+} Discord_IntegrationType;
+
 typedef struct Discord_Client {
 	void *opaque;
 } Discord_Client;
@@ -103,3 +108,51 @@ typedef void (*Discord_Client_OnStatusChanged)(Discord_Client_Status status,
 		Discord_Client_Error error,
 		int32_t error_detail,
 		void *user_data);
+
+typedef enum Discord_ActivityTypes {
+	DISCORD_ACTIVITY_TYPE_PLAYING = 0,
+	DISCORD_ACTIVITY_TYPE_STREAMING = 1,
+	DISCORD_ACTIVITY_TYPE_LISTENING = 2,
+	DISCORD_ACTIVITY_TYPE_WATCHING = 3,
+	DISCORD_ACTIVITY_TYPE_CUSTOM_STATUS = 4,
+	DISCORD_ACTIVITY_TYPE_COMPETING = 5,
+	DISCORD_ACTIVITY_TYPE_HANG_STATUS = 6,
+} Discord_ActivityTypes;
+
+typedef enum Discord_LoggingSeverity {
+	DISCORD_LOGGING_SEVERITY_VERBOSE = 1,
+	DISCORD_LOGGING_SEVERITY_INFO = 2,
+	DISCORD_LOGGING_SEVERITY_WARNING = 3,
+	DISCORD_LOGGING_SEVERITY_ERROR = 4,
+	DISCORD_LOGGING_SEVERITY_NONE = 5,
+} Discord_LoggingSeverity;
+
+typedef struct Discord_Activity {
+	void *opaque;
+} Discord_Activity;
+
+typedef struct Discord_ActivityAssets {
+	void *opaque;
+} Discord_ActivityAssets;
+
+typedef struct Discord_ActivityTimestamps {
+	void *opaque;
+} Discord_ActivityTimestamps;
+
+typedef struct Discord_RelationshipHandle {
+	void *opaque;
+} Discord_RelationshipHandle;
+
+typedef struct Discord_RelationshipHandleSpan {
+	Discord_RelationshipHandle *ptr;
+	size_t size;
+} Discord_RelationshipHandleSpan;
+
+typedef void (*Discord_Client_LogCallback)(Discord_String message,
+		Discord_LoggingSeverity severity,
+		void *user_data);
+
+typedef void (*Discord_Client_UpdateRichPresenceCallback)(Discord_ClientResult *result,
+		void *user_data);
+
+typedef void (*Discord_Client_AuthorizeDeviceScreenClosedCallback)(void *user_data);

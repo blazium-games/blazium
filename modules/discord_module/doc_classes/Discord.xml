@@ -16,7 +16,7 @@
 			<param index="1" name="access_token" type="String" />
 			<param index="2" name="client_id" type="int" />
 			<description>
-				POSTs the OAuth access token to the auth server and returns the parsed response.
+				POSTs the OAuth access token to the auth server and returns the parsed response. Requires [constant AUTH_READY] and a non-empty access token.
 			</description>
 		</method>
 		<method name="clear_debug_log">
@@ -25,10 +25,22 @@
 				Clears the in-memory debug log buffer.
 			</description>
 		</method>
+		<method name="clear_rich_presence">
+			<return type="void" />
+			<description>
+				Clears the player's Discord rich presence. Requires [constant AUTH_READY].
+			</description>
+		</method>
 		<method name="get_access_token" qualifiers="const">
 			<return type="String" />
 			<description>
 				Returns the OAuth access token obtained during [method initialize], or an empty string when not connected.
+			</description>
+		</method>
+		<method name="get_auth_state" qualifiers="const">
+			<return type="int" enum="Discord.AuthState" />
+			<description>
+				Returns the current OAuth/auth lifecycle state.
 			</description>
 		</method>
 		<method name="get_connection_state" qualifiers="const">
@@ -40,7 +52,31 @@
 		<method name="get_debug_log" qualifiers="const">
 			<return type="Array" />
 			<description>
-				Returns recent debug log lines when debug logging is enabled.
+				Returns recent lifecycle and SDK log lines (always populated for auth/connect/presence steps; verbose SDK detail when debug logging is enabled).
+			</description>
+		</method>
+		<method name="get_default_communication_scopes" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the default OAuth scopes for communication features ([code]openid[/code] and [code]sdk.social_layer[/code]).
+			</description>
+		</method>
+		<method name="get_default_presence_scopes" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the default OAuth scopes for rich presence ([code]openid[/code] and [code]sdk.social_layer_presence[/code]).
+			</description>
+		</method>
+		<method name="get_game_activity">
+			<return type="Dictionary" />
+			<description>
+				Returns the current user's game-associated activity from the SDK readback ([code]type[/code], [code]details[/code], [code]state[/code]), or an empty dictionary when unavailable.
+			</description>
+		</method>
+		<method name="get_granted_scopes" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the OAuth scopes granted by Discord after token exchange.
 			</description>
 		</method>
 		<method name="get_last_error" qualifiers="const">
@@ -49,16 +85,28 @@
 				Returns the most recent error message from Discord initialization or auth.
 			</description>
 		</method>
+		<method name="get_relationships_count" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the cached Discord relationships count after [constant AUTH_READY], or [code]-1[/code] when unavailable.
+			</description>
+		</method>
+		<method name="get_requested_scopes" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the OAuth scopes requested during the current auth flow.
+			</description>
+		</method>
 		<method name="get_user_id" qualifiers="const">
 			<return type="int" />
 			<description>
-				Returns the connected Discord user snowflake ID, or [code]0[/code] when unavailable.
+				Returns the connected Discord user snowflake ID after [constant AUTH_READY], or [code]0[/code] when unavailable.
 			</description>
 		</method>
 		<method name="get_username" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the connected Discord display or username.
+				Returns the connected Discord display or username after [constant AUTH_READY], or an empty string when unavailable.
 			</description>
 		</method>
 		<method name="get_version" qualifiers="const">
@@ -74,10 +122,28 @@
 				Initializes the Discord Social SDK and starts the OAuth authorization flow for the given application client ID.
 			</description>
 		</method>
+		<method name="is_authorization_pending" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] while waiting for the user to complete OAuth ([constant AUTH_PENDING]).
+			</description>
+		</method>
+		<method name="is_authorized" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] after token exchange succeeds ([constant AUTH_AUTHORIZED] or [constant AUTH_READY]).
+			</description>
+		</method>
 		<method name="is_available">
 			<return type="bool" />
 			<description>
 				Returns [code]true[/code] when the Discord Partner SDK runtime library is present beside the executable.
+			</description>
+		</method>
+		<method name="is_client_active" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] while the SDK client session is active (including during OAuth).
 			</description>
 		</method>
 		<method name="is_debug_logging_enabled" qualifiers="const">
@@ -86,10 +152,21 @@
 				Returns whether debug logging is enabled.
 			</description>
 		</method>
+		<method name="is_frame_hook_connected" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
 		<method name="is_initialized" qualifiers="const">
 			<return type="bool" />
 			<description>
 				Returns [code]true[/code] after a successful [method initialize].
+			</description>
+		</method>
+		<method name="is_ready_for_presence" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when the client has reached [constant STATE_READY] and rich presence can be updated.
 			</description>
 		</method>
 		<method name="run_callbacks">
@@ -102,7 +179,7 @@
 			<return type="void" />
 			<param index="0" name="enabled" type="bool" />
 			<description>
-				Enables or disables verbose debug logging to stdout and the in-memory debug log.
+				Enables verbose SDK file logging ([code]discord.log[/code] in user data) in addition to always-on lifecycle logs.
 			</description>
 		</method>
 		<method name="shutdown">
@@ -111,7 +188,58 @@
 				Shuts down the Discord SDK session and releases resources.
 			</description>
 		</method>
+		<method name="update_rich_presence">
+			<return type="int" enum="Error" />
+			<param index="0" name="activity" type="Dictionary" />
+			<description>
+				Updates Discord rich presence. Dictionary keys: [code]type[/code], [code]details[/code], [code]state[/code], [code]large_image[/code], [code]large_text[/code], [code]small_image[/code], [code]small_text[/code], [code]start_timestamp[/code], [code]end_timestamp[/code]. Requires [constant AUTH_READY]; if called earlier, the activity is cached and applied when [signal ready] fires. Returns [constant ERR_UNAUTHORIZED] when not ready.
+			</description>
+		</method>
 	</methods>
+	<signals>
+		<signal name="authorization_failed">
+			<param index="0" name="error" type="String" />
+			<description>
+				Emitted when OAuth authorization fails or the user dismisses the auth UI.
+			</description>
+		</signal>
+		<signal name="authorization_started">
+			<description>
+				Emitted when the OAuth authorization flow begins (auth popup shown).
+			</description>
+		</signal>
+		<signal name="authorized">
+			<description>
+				Emitted after the access token is stored and [method initialize]'s connect step begins.
+			</description>
+		</signal>
+		<signal name="connection_state_changed">
+			<param index="0" name="state" type="int" />
+			<param index="1" name="error" type="int" />
+			<param index="2" name="error_detail" type="int" />
+			<description>
+				Emitted when the SDK connection state changes. [param state] uses [enum ConnectionState].
+			</description>
+		</signal>
+		<signal name="ready">
+			<description>
+				Emitted once when the client reaches [constant STATE_READY] and rich presence can be updated.
+			</description>
+		</signal>
+		<signal name="relationships_updated">
+			<param index="0" name="count" type="int" />
+			<description>
+				Emitted after relationships are fetched on ready.
+			</description>
+		</signal>
+		<signal name="rich_presence_updated">
+			<param index="0" name="success" type="bool" />
+			<param index="1" name="error" type="String" />
+			<description>
+				Emitted when [method update_rich_presence] completes asynchronously.
+			</description>
+		</signal>
+	</signals>
 	<constants>
 		<constant name="STATE_DISCONNECTED" value="0" enum="ConnectionState">
 		</constant>
@@ -126,6 +254,21 @@
 		<constant name="STATE_DISCONNECTING" value="5" enum="ConnectionState">
 		</constant>
 		<constant name="STATE_HTTP_WAIT" value="6" enum="ConnectionState">
+		</constant>
+		<constant name="AUTH_NONE" value="0" enum="AuthState">
+			No auth flow started.
+		</constant>
+		<constant name="AUTH_PENDING" value="1" enum="AuthState">
+			OAuth popup shown; waiting for user authorization.
+		</constant>
+		<constant name="AUTH_AUTHORIZED" value="2" enum="AuthState">
+			Access token stored; connecting to Discord.
+		</constant>
+		<constant name="AUTH_READY" value="3" enum="AuthState">
+			Client ready; social APIs including rich presence are available.
+		</constant>
+		<constant name="AUTH_FAILED" value="4" enum="AuthState">
+			Authorization failed or was dismissed.
 		</constant>
 	</constants>
 </class>
