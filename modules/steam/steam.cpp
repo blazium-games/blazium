@@ -265,11 +265,30 @@ void Steam::_dispatch_callbacks() {
 		return;
 	}
 
+	if (loader.has_run_callbacks()) {
+		loader.run_callbacks();
+		return;
+	}
+
 	loader.manual_dispatch_run_frame(steam_pipe);
 
 	SteamCallbackMsg callback;
 	while (loader.manual_dispatch_get_next_callback(steam_pipe, &callback)) {
-		if (callback.m_pubParam && callback.m_cubParam > 0) {
+		if (callback.m_iCallback == SteamAPICallCompleted::k_iCallback) {
+			if (callback.m_pubParam && callback.m_cubParam >= (int)sizeof(SteamAPICallCompleted)) {
+				const SteamAPICallCompleted *call_completed = (const SteamAPICallCompleted *)callback.m_pubParam;
+				if (call_completed->m_cubParam > 0) {
+					Vector<uint8_t> result;
+					result.resize((int)call_completed->m_cubParam);
+					bool failed = false;
+					if (loader.manual_dispatch_get_api_call_result(
+								steam_pipe, call_completed->m_hAsyncCall, result.ptrw(),
+								(int)call_completed->m_cubParam, call_completed->m_iCallback, &failed)) {
+						_handle_callback(call_completed->m_iCallback, result.ptr(), (int)call_completed->m_cubParam);
+					}
+				}
+			}
+		} else if (callback.m_pubParam && callback.m_cubParam > 0) {
 			_handle_callback(callback.m_iCallback, callback.m_pubParam, callback.m_cubParam);
 		}
 		loader.manual_dispatch_free_last_callback(steam_pipe);
@@ -315,7 +334,6 @@ Error Steam::initialize(int p_app_id) {
 		return ERR_CANT_OPEN;
 	}
 
-	loader.manual_dispatch_init();
 	steam_pipe = loader.get_h_steam_pipe();
 	steam_user = loader.get_steam_user();
 	if (!steam_user) {
@@ -345,27 +363,6 @@ Error Steam::initialize(int p_app_id) {
 
 	initialized = true;
 	_log_debug("Steam initialized");
-
-	// Pump callbacks until logged on or timeout.
-	const double start_usec = Time::get_singleton()->get_ticks_usec();
-	while (!loader.is_logged_on(steam_user)) {
-		_dispatch_callbacks();
-		if ((Time::get_singleton()->get_ticks_usec() - start_usec) / 1000000.0 > 10.0) {
-			_log_debug("Timed out waiting for Steam login");
-			break;
-		}
-		::OS::get_singleton()->delay_usec(10000);
-	}
-
-	if (loader.is_logged_on(steam_user)) {
-		_log_debug(vformat("Steam user logged on (steam_id=%s)", String::num_uint64(loader.get_steam_id(steam_user))));
-		_wait_for_user_stats(10.0, false);
-		if (steam_inventory) {
-			request_item_definitions(15.0);
-		}
-	} else {
-		_log_debug("Steam user not logged on yet");
-	}
 
 	return OK;
 }
