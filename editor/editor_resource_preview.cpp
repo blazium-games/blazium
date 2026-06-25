@@ -35,6 +35,7 @@
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
 #include "core/variant/variant_utility.h"
+#include "editor/editor_file_system.h"
 #include "editor/editor_node.h"
 #include "editor/editor_paths.h"
 #include "editor/editor_settings.h"
@@ -142,7 +143,7 @@ void EditorResourcePreview::_thread_func(void *ud) {
 	erp->_thread();
 }
 
-void EditorResourcePreview::_preview_ready(const String &p_path, int p_hash, const Ref<Texture2D> &p_texture, const Ref<Texture2D> &p_small_texture, ObjectID id, const StringName &p_func, const Variant &p_ud, const Dictionary &p_metadata) {
+void EditorResourcePreview::_preview_ready(const String &p_path, int p_hash, const Ref<Texture2D> &p_texture, const Ref<Texture2D> &p_small_texture, ObjectID id, const StringName &p_func, const Variant &p_ud, const Dictionary &p_metadata, const String &p_resource_path) {
 	{
 		MutexLock lock(preview_mutex);
 
@@ -162,6 +163,7 @@ void EditorResourcePreview::_preview_ready(const String &p_path, int p_hash, con
 		item.last_hash = p_hash;
 		item.modified_time = modified_time;
 		item.preview_metadata = p_metadata;
+		item.resource_path = p_resource_path;
 
 		cache[p_path] = item;
 	}
@@ -279,7 +281,7 @@ void EditorResourcePreview::_iterate() {
 	if (cache.has(item.path)) {
 		Item cached_item = cache[item.path];
 		// Already has it because someone loaded it, just let it know it's ready.
-		_preview_ready(item.path, cached_item.last_hash, cached_item.preview, cached_item.small_preview, item.id, item.function, item.userdata, cached_item.preview_metadata);
+		_preview_ready(item.path, cached_item.last_hash, cached_item.preview, cached_item.small_preview, item.id, item.function, item.userdata, cached_item.preview_metadata, cached_item.resource_path);
 		preview_mutex.unlock();
 		return;
 	}
@@ -294,7 +296,7 @@ void EditorResourcePreview::_iterate() {
 	if (item.resource.is_valid()) {
 		Dictionary preview_metadata;
 		_generate_preview(texture, small_texture, item, String(), preview_metadata);
-		_preview_ready(item.path, item.resource->hash_edited_version_for_preview(), texture, small_texture, item.id, item.function, item.userdata, preview_metadata);
+		_preview_ready(item.path, item.resource->hash_edited_version_for_preview(), texture, small_texture, item.id, item.function, item.userdata, preview_metadata, item.resource->get_path());
 		return;
 	}
 
@@ -533,6 +535,25 @@ void EditorResourcePreview::_notification(int p_what) {
 	}
 }
 
+void EditorResourcePreview::_resources_reimported(const Vector<String> &p_resources) {
+	Vector<String> invalidated;
+	{
+		MutexLock lock(preview_mutex);
+		for (KeyValue<String, Item> &E : cache) {
+			if (E.key.begins_with("ID:") && !E.value.resource_path.is_empty() && p_resources.has(E.value.resource_path)) {
+				invalidated.push_back(E.key);
+			}
+		}
+		for (const String &key : invalidated) {
+			cache.erase(key);
+		}
+	}
+
+	for (const String &key : invalidated) {
+		call_deferred(SNAME("emit_signal"), "preview_invalidated", key);
+	}
+}
+
 void EditorResourcePreview::check_for_invalidation(const String &p_path) {
 	bool call_invalidated = false;
 	{
@@ -560,6 +581,10 @@ void EditorResourcePreview::check_for_invalidation(const String &p_path) {
 void EditorResourcePreview::start() {
 	if (DisplayServer::get_singleton()->get_name() == "headless") {
 		return;
+	}
+
+	if (EditorFileSystem::get_singleton() && !EditorFileSystem::get_singleton()->is_connected(SNAME("resources_reimported"), callable_mp(this, &EditorResourcePreview::_resources_reimported))) {
+		EditorFileSystem::get_singleton()->connect(SNAME("resources_reimported"), callable_mp(this, &EditorResourcePreview::_resources_reimported));
 	}
 
 	if (is_threaded()) {
