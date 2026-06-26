@@ -64,7 +64,70 @@ TEST_CASE("[DiscordModule] unavailable without runtime library") {
 	CHECK(discord->initialize(123456789) == ERR_UNAVAILABLE);
 }
 
-TEST_CASE("[DiscordModule] auth client rejects empty url") {
+TEST_CASE("[DiscordModule] auth state starts none") {
+	Discord *discord = Discord::get_singleton();
+	REQUIRE(discord != nullptr);
+	CHECK(discord->get_auth_state() == Discord::AUTH_NONE);
+	CHECK_FALSE(discord->is_authorization_pending());
+	CHECK_FALSE(discord->is_authorized());
+}
+
+TEST_CASE("[DiscordModule] rich presence requires ready client") {
+	Discord *discord = Discord::get_singleton();
+	REQUIRE(discord != nullptr);
+	CHECK_FALSE(discord->is_ready_for_presence());
+	CHECK(discord->get_relationships_count() == -1);
+	Dictionary activity;
+	CHECK(discord->update_rich_presence(activity) == ERR_UNAUTHORIZED);
+}
+
+TEST_CASE("[DiscordModule] auth lifecycle signals are registered") {
+	Discord *discord = Discord::get_singleton();
+	REQUIRE(discord != nullptr);
+	CHECK(discord->has_signal("authorization_started"));
+	CHECK(discord->has_signal("authorized"));
+	CHECK(discord->has_signal("authorization_failed"));
+	CHECK(discord->has_signal("connection_state_changed"));
+	CHECK(discord->has_signal("ready"));
+	CHECK(discord->has_signal("rich_presence_updated"));
+}
+
+TEST_CASE("[DiscordModule] default presence scopes when loaded") {
+	DiscordAPILoader api_loader;
+	if (!api_loader.try_load()) {
+		return;
+	}
+	const String scopes = api_loader.get_default_presence_scopes();
+	CHECK_FALSE(scopes.is_empty());
+}
+
+TEST_CASE("[DiscordModule] default communication scopes when loaded") {
+	DiscordAPILoader api_loader;
+	if (!api_loader.try_load()) {
+		return;
+	}
+	const String scopes = api_loader.get_default_communication_scopes();
+	CHECK_FALSE(scopes.is_empty());
+}
+
+TEST_CASE("[DiscordModule] game activity empty when not ready") {
+	Discord *discord = Discord::get_singleton();
+	REQUIRE(discord != nullptr);
+	CHECK(discord->get_game_activity().is_empty());
+	CHECK(discord->get_requested_scopes().is_empty());
+	CHECK(discord->get_granted_scopes().is_empty());
+}
+
+TEST_CASE("[DiscordModule] server auth gated when not ready") {
+	Discord *discord = Discord::get_singleton();
+	REQUIRE(discord != nullptr);
+	Ref<DiscordAuthResult> result = discord->authenticate_with_server("http://example.com/auth", "token", 1);
+	REQUIRE(result.is_valid());
+	CHECK_FALSE(result->is_success());
+	CHECK_FALSE(result->get_error_message().is_empty());
+}
+
+TEST_CASE("[DiscordModule] auth client rejects empty url when ready would allow") {
 	Discord *discord = Discord::get_singleton();
 	REQUIRE(discord != nullptr);
 	Ref<DiscordAuthResult> result = discord->authenticate_with_server("", "token", 1);
