@@ -27,18 +27,28 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "steam_editor_plugin.h"
-
 #ifdef TOOLS_ENABLED
 
+#include "steam_editor_plugin.h"
+
 #include "core/input/shortcut.h"
+#include "editor/themes/editor_scale.h"
 #include "modules/steam/steam.h"
+#include "scene/gui/box_container.h"
+#include "scene/gui/button.h"
+#include "scene/gui/grid_container.h"
+#include "scene/gui/label.h"
+#include "scene/gui/line_edit.h"
+#include "scene/gui/rich_text_label.h"
 
 void SteamEditorPlugin::_append_log(const String &p_line) {
-	if (!log_view) {
+	if (!log) {
 		return;
 	}
-	log_view->insert_text_at_caret(p_line + "\n");
+	log->push_bold();
+	log->add_text(p_line);
+	log->pop();
+	log->add_newline();
 }
 
 void SteamEditorPlugin::_on_init_pressed() {
@@ -104,8 +114,8 @@ void SteamEditorPlugin::_on_authenticate_pressed() {
 }
 
 void SteamEditorPlugin::_on_clear_log_pressed() {
-	if (log_view) {
-		log_view->clear();
+	if (log) {
+		log->clear();
 	}
 	Steam *steam = Steam::get_singleton();
 	if (steam) {
@@ -208,131 +218,134 @@ void SteamEditorPlugin::_on_ticket_failed(const String &p_error) {
 }
 
 void SteamEditorPlugin::_setup_dock() {
-	dock_root = memnew(VBoxContainer);
-	dock_root->set_name("Steam Editor");
+	GridContainer *fields_grid = memnew(GridContainer);
+	fields_grid->set_columns(2);
 
-	Label *title = memnew(Label);
-	title->set_text("Steam Auth Tester");
-	dock_root->add_child(title);
-
-	HBoxContainer *app_row = memnew(HBoxContainer);
 	Label *app_label = memnew(Label);
 	app_label->set_text("App ID");
-	app_label->set_custom_minimum_size(Vector2(80, 0));
+	fields_grid->add_child(app_label);
+
 	app_id_edit = memnew(LineEdit);
+	app_id_edit->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	app_id_edit->set_text("1742110");
 	app_id_edit->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-	app_row->add_child(app_label);
-	app_row->add_child(app_id_edit);
-	dock_root->add_child(app_row);
+	fields_grid->add_child(app_id_edit);
 
-	HBoxContainer *identity_row = memnew(HBoxContainer);
 	Label *identity_label = memnew(Label);
 	identity_label->set_text("Identity");
-	identity_label->set_custom_minimum_size(Vector2(80, 0));
+	fields_grid->add_child(identity_label);
+
 	identity_edit = memnew(LineEdit);
 	identity_edit->set_text("blazium");
 	identity_edit->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-	identity_row->add_child(identity_label);
-	identity_row->add_child(identity_edit);
-	dock_root->add_child(identity_row);
+	fields_grid->add_child(identity_edit);
 
-	HBoxContainer *url_row = memnew(HBoxContainer);
 	Label *url_label = memnew(Label);
 	url_label->set_text("Auth URL");
-	url_label->set_custom_minimum_size(Vector2(80, 0));
+	fields_grid->add_child(url_label);
+
 	server_url_edit = memnew(LineEdit);
 	server_url_edit->set_text("http://127.0.0.1:8080/v1/auth/steam");
 	server_url_edit->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-	url_row->add_child(url_label);
-	url_row->add_child(server_url_edit);
-	dock_root->add_child(url_row);
+	fields_grid->add_child(server_url_edit);
 
-	HBoxContainer *achievement_row = memnew(HBoxContainer);
 	Label *achievement_label = memnew(Label);
 	achievement_label->set_text("Achievement");
-	achievement_label->set_custom_minimum_size(Vector2(80, 0));
+	fields_grid->add_child(achievement_label);
+
 	achievement_id_edit = memnew(LineEdit);
 	achievement_id_edit->set_text("CHEATER_ACHIEVEMENT_2_1");
 	achievement_id_edit->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-	achievement_row->add_child(achievement_label);
-	achievement_row->add_child(achievement_id_edit);
-	dock_root->add_child(achievement_row);
+	fields_grid->add_child(achievement_id_edit);
 
-	HBoxContainer *item_def_row = memnew(HBoxContainer);
 	Label *item_def_label = memnew(Label);
-	item_def_label->set_text("Item Def ID");
-	item_def_label->set_custom_minimum_size(Vector2(80, 0));
+	item_def_label->set_text("Def ID");
+	item_def_label->set_tooltip_text("Item definition ID");
+	fields_grid->add_child(item_def_label);
+
 	item_def_id_edit = memnew(LineEdit);
 	item_def_id_edit->set_placeholder("Item definition ID");
 	item_def_id_edit->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-	item_def_row->add_child(item_def_label);
-	item_def_row->add_child(item_def_id_edit);
-	dock_root->add_child(item_def_row);
+	fields_grid->add_child(item_def_id_edit);
 
-	HBoxContainer *buttons = memnew(HBoxContainer);
+	GridContainer *buttons_grid = memnew(GridContainer);
+	buttons_grid->set_columns(2);
+
 	Button *init_button = memnew(Button);
+	init_button->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	init_button->set_text("Init Steam");
 	init_button->connect(SceneStringName(pressed), callable_mp(this, &SteamEditorPlugin::_on_init_pressed));
-	buttons->add_child(init_button);
-
-	Button *ticket_button = memnew(Button);
-	ticket_button->set_text("Request Ticket");
-	ticket_button->connect(SceneStringName(pressed), callable_mp(this, &SteamEditorPlugin::_on_request_ticket_pressed));
-	buttons->add_child(ticket_button);
+	buttons_grid->add_child(init_button);
 
 	Button *auth_button = memnew(Button);
+	auth_button->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	auth_button->set_text("Authenticate");
 	auth_button->connect(SceneStringName(pressed), callable_mp(this, &SteamEditorPlugin::_on_authenticate_pressed));
-	buttons->add_child(auth_button);
+	buttons_grid->add_child(auth_button);
 
-	Button *clear_button = memnew(Button);
-	clear_button->set_text("Clear Log");
-	clear_button->connect(SceneStringName(pressed), callable_mp(this, &SteamEditorPlugin::_on_clear_log_pressed));
-	buttons->add_child(clear_button);
-	dock_root->add_child(buttons);
+	Button *ticket_button = memnew(Button);
+	ticket_button->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+	ticket_button->set_text("Request Ticket");
+	ticket_button->connect(SceneStringName(pressed), callable_mp(this, &SteamEditorPlugin::_on_request_ticket_pressed));
+	buttons_grid->add_child(ticket_button);
 
-	HBoxContainer *achievement_buttons = memnew(HBoxContainer);
 	Button *refresh_stats_button = memnew(Button);
+	refresh_stats_button->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	refresh_stats_button->set_text("Refresh Stats");
 	refresh_stats_button->connect(SceneStringName(pressed), callable_mp(this, &SteamEditorPlugin::_on_refresh_stats_pressed));
-	achievement_buttons->add_child(refresh_stats_button);
+	buttons_grid->add_child(refresh_stats_button);
 
 	Button *unlock_achievement_button = memnew(Button);
+	unlock_achievement_button->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	unlock_achievement_button->set_text("Unlock Achievement");
 	unlock_achievement_button->connect(SceneStringName(pressed), callable_mp(this, &SteamEditorPlugin::_on_unlock_achievement_pressed));
-	achievement_buttons->add_child(unlock_achievement_button);
+	buttons_grid->add_child(unlock_achievement_button);
 
 	Button *clear_achievement_button = memnew(Button);
+	clear_achievement_button->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	clear_achievement_button->set_text("Clear Achievement");
 	clear_achievement_button->connect(SceneStringName(pressed), callable_mp(this, &SteamEditorPlugin::_on_clear_achievement_pressed));
-	achievement_buttons->add_child(clear_achievement_button);
-	dock_root->add_child(achievement_buttons);
+	buttons_grid->add_child(clear_achievement_button);
 
-	HBoxContainer *inventory_buttons = memnew(HBoxContainer);
 	Button *load_definitions_button = memnew(Button);
+	load_definitions_button->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	load_definitions_button->set_text("Load Definitions");
 	load_definitions_button->connect(SceneStringName(pressed), callable_mp(this, &SteamEditorPlugin::_on_load_definitions_pressed));
-	inventory_buttons->add_child(load_definitions_button);
-
-	Button *refresh_inventory_button = memnew(Button);
-	refresh_inventory_button->set_text("Refresh Inventory");
-	refresh_inventory_button->connect(SceneStringName(pressed), callable_mp(this, &SteamEditorPlugin::_on_refresh_inventory_pressed));
-	inventory_buttons->add_child(refresh_inventory_button);
+	buttons_grid->add_child(load_definitions_button);
 
 	Button *add_promo_button = memnew(Button);
 	add_promo_button->set_text("Add Promo");
 	add_promo_button->connect(SceneStringName(pressed), callable_mp(this, &SteamEditorPlugin::_on_add_promo_pressed));
-	inventory_buttons->add_child(add_promo_button);
-	dock_root->add_child(inventory_buttons);
+	buttons_grid->add_child(add_promo_button);
 
-	log_view = memnew(TextEdit);
-	log_view->set_editable(false);
-	log_view->set_custom_minimum_size(Vector2(0, 240));
-	log_view->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-	log_view->set_v_size_flags(Control::SIZE_EXPAND_FILL);
-	dock_root->add_child(log_view);
+	Button *refresh_inventory_button = memnew(Button);
+	refresh_inventory_button->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+	refresh_inventory_button->set_text("Refresh Inventory");
+	refresh_inventory_button->connect(SceneStringName(pressed), callable_mp(this, &SteamEditorPlugin::_on_refresh_inventory_pressed));
+	buttons_grid->add_child(refresh_inventory_button);
 
+	Button *clear_button = memnew(Button);
+	clear_button->set_text("Clear Log");
+	clear_button->connect(SceneStringName(pressed), callable_mp(this, &SteamEditorPlugin::_on_clear_log_pressed));
+	buttons_grid->add_child(clear_button);
+
+	log = memnew(RichTextLabel);
+	log->set_custom_minimum_size(Vector2(0, 64 * EDSCALE));
+	log->set_threaded(true);
+	log->set_use_bbcode(true);
+	log->set_scroll_follow(true);
+	log->set_selection_enabled(true);
+	log->set_context_menu_enabled(true);
+	log->set_focus_mode(Control::FOCUS_CLICK);
+	log->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+	log->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+	log->set_deselect_on_focus_loss_enabled(false);
+
+	dock_root = memnew(VBoxContainer);
+	dock_root->set_name("Steam Editor");
+	dock_root->add_child(fields_grid);
+	dock_root->add_child(buttons_grid);
+	dock_root->add_child(log);
 	add_control_to_dock(DOCK_SLOT_LEFT_BR, dock_root);
 
 	Steam *steam = Steam::get_singleton();
@@ -361,7 +374,7 @@ void SteamEditorPlugin::_teardown_dock() {
 	server_url_edit = nullptr;
 	achievement_id_edit = nullptr;
 	item_def_id_edit = nullptr;
-	log_view = nullptr;
+	log = nullptr;
 }
 
 SteamEditorPlugin::SteamEditorPlugin() {
