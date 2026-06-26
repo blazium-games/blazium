@@ -32,23 +32,22 @@
 #ifdef TOOLS_ENABLED
 
 #include "editor/plugins/editor_plugin.h"
-#include "scene/gui/box_container.h"
-#include "scene/gui/button.h"
-#include "scene/gui/label.h"
-#include "scene/gui/line_edit.h"
-#include "scene/gui/text_edit.h"
+
+class LineEdit;
+class RichTextLabel;
+class VBoxContainer;
 
 class SteamEditorPlugin : public EditorPlugin {
 	GDCLASS(SteamEditorPlugin, EditorPlugin);
 
 private:
-	Control *dock_root = nullptr;
-	LineEdit *app_id_edit = nullptr;
-	LineEdit *identity_edit = nullptr;
-	LineEdit *server_url_edit = nullptr;
-	LineEdit *achievement_id_edit = nullptr;
-	LineEdit *item_def_id_edit = nullptr;
-	TextEdit *log_view = nullptr;
+	VBoxContainer *dock_root;
+	LineEdit *app_id_edit;
+	LineEdit *identity_edit;
+	LineEdit *server_url_edit;
+	LineEdit *achievement_id_edit;
+	LineEdit *item_def_id_edit;
+	RichTextLabel *log;
 	String last_hex_ticket;
 
 	void _append_log(const String &p_line);
