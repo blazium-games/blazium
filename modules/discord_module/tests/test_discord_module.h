@@ -145,4 +145,42 @@ TEST_CASE("[DiscordModule] version dictionary") {
 	CHECK(version.has("sdk_enabled"));
 }
 
+TEST_CASE("[DiscordModule] presence only mode defaults false") {
+	Discord *discord = Discord::get_singleton();
+	REQUIRE(discord != nullptr);
+	CHECK_FALSE(discord->is_presence_only_mode());
+}
+
+TEST_CASE("[DiscordModule] initialize_presence_only unavailable without runtime library") {
+	Discord *discord = Discord::get_singleton();
+	REQUIRE(discord != nullptr);
+	if (DiscordAPILoader::is_runtime_library_present()) {
+		return;
+	}
+	CHECK(discord->initialize_presence_only(123456789) == ERR_UNAVAILABLE);
+	CHECK_FALSE(discord->is_presence_only_mode());
+}
+
+TEST_CASE("[DiscordModule] presence only signals registered") {
+	Discord *discord = Discord::get_singleton();
+	REQUIRE(discord != nullptr);
+	CHECK(discord->has_signal("activity_join_requested"));
+	CHECK(discord->has_signal("relationship_groups_updated"));
+	CHECK(discord->has_signal("relationship_action_completed"));
+}
+
+TEST_CASE("[DiscordModule] relationship enums exposed") {
+	CHECK(int(Discord::RELATIONSHIP_FRIEND) == 1);
+	CHECK(int(Discord::GROUP_OFFLINE) == 2);
+	CHECK(int(Discord::STATUS_ONLINE) == 0);
+}
+
+TEST_CASE("[DiscordModule] oauth relationship queries gated") {
+	Discord *discord = Discord::get_singleton();
+	REQUIRE(discord != nullptr);
+	CHECK(discord->get_relationships().is_empty());
+	CHECK(discord->get_relationship(1).is_empty());
+	CHECK(discord->get_user(1).is_empty());
+}
+
 } //namespace TestDiscordModule

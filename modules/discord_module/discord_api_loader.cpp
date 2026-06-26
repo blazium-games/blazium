@@ -199,6 +199,91 @@ bool DiscordAPILoader::try_load() {
 			fn_client_set_authorize_device_screen_closed_callback);
 	LOAD_OPTIONAL("Discord_Client_SetGameWindowPid", fn_client_set_game_window_pid);
 	LOAD_OPTIONAL("Discord_Client_SetLogDir", fn_client_set_log_dir);
+	LOAD_OPTIONAL("Discord_Activity_SetName", fn_activity_set_name);
+	LOAD_OPTIONAL("Discord_Activity_SetStatusDisplayType", fn_activity_set_status_display_type);
+	LOAD_OPTIONAL("Discord_Activity_SetStateUrl", fn_activity_set_state_url);
+	LOAD_OPTIONAL("Discord_Activity_SetDetailsUrl", fn_activity_set_details_url);
+	LOAD_OPTIONAL("Discord_Activity_SetParty", fn_activity_set_party);
+	LOAD_OPTIONAL("Discord_Activity_SetSecrets", fn_activity_set_secrets);
+	LOAD_OPTIONAL("Discord_Activity_SetSupportedPlatforms", fn_activity_set_supported_platforms);
+	LOAD_OPTIONAL("Discord_Activity_AddButton", fn_activity_add_button);
+	LOAD_OPTIONAL("Discord_ActivityAssets_SetLargeUrl", fn_activity_assets_set_large_url);
+	LOAD_OPTIONAL("Discord_ActivityAssets_SetSmallUrl", fn_activity_assets_set_small_url);
+	LOAD_OPTIONAL("Discord_ActivityAssets_SetInviteCoverImage", fn_activity_assets_set_invite_cover_image);
+	LOAD_OPTIONAL("Discord_ActivityParty_Init", fn_activity_party_init);
+	LOAD_OPTIONAL("Discord_ActivityParty_Drop", fn_activity_party_drop);
+	LOAD_OPTIONAL("Discord_ActivityParty_SetId", fn_activity_party_set_id);
+	LOAD_OPTIONAL("Discord_ActivityParty_SetCurrentSize", fn_activity_party_set_current_size);
+	LOAD_OPTIONAL("Discord_ActivityParty_SetMaxSize", fn_activity_party_set_max_size);
+	LOAD_OPTIONAL("Discord_ActivitySecrets_Init", fn_activity_secrets_init);
+	LOAD_OPTIONAL("Discord_ActivitySecrets_Drop", fn_activity_secrets_drop);
+	LOAD_OPTIONAL("Discord_ActivitySecrets_SetJoin", fn_activity_secrets_set_join);
+	LOAD_OPTIONAL("Discord_ActivityButton_Init", fn_activity_button_init);
+	LOAD_OPTIONAL("Discord_ActivityButton_Drop", fn_activity_button_drop);
+	LOAD_OPTIONAL("Discord_ActivityButton_SetLabel", fn_activity_button_set_label);
+	LOAD_OPTIONAL("Discord_ActivityButton_SetUrl", fn_activity_button_set_url);
+	LOAD_OPTIONAL("Discord_ActivityInvite_Init", fn_activity_invite_init);
+	LOAD_OPTIONAL("Discord_ActivityInvite_Drop", fn_activity_invite_drop);
+	LOAD_OPTIONAL("Discord_ActivityInvite_SetSenderId", fn_activity_invite_set_sender_id);
+	LOAD_OPTIONAL("Discord_ActivityInvite_SetChannelId", fn_activity_invite_set_channel_id);
+	LOAD_OPTIONAL("Discord_ActivityInvite_SetMessageId", fn_activity_invite_set_message_id);
+	LOAD_OPTIONAL("Discord_ActivityInvite_SetType", fn_activity_invite_set_type);
+	LOAD_OPTIONAL("Discord_ActivityInvite_SetApplicationId", fn_activity_invite_set_application_id);
+	LOAD_OPTIONAL("Discord_ActivityInvite_SetParentApplicationId", fn_activity_invite_set_parent_application_id);
+	LOAD_OPTIONAL("Discord_ActivityInvite_SetPartyId", fn_activity_invite_set_party_id);
+	LOAD_OPTIONAL("Discord_ActivityInvite_SetSessionId", fn_activity_invite_set_session_id);
+	LOAD_OPTIONAL("Discord_ActivityInvite_SetIsValid", fn_activity_invite_set_is_valid);
+	LOAD_OPTIONAL("Discord_ActivityInvite_SenderId", fn_activity_invite_sender_id);
+	LOAD_OPTIONAL("Discord_ActivityInvite_ChannelId", fn_activity_invite_channel_id);
+	LOAD_OPTIONAL("Discord_ActivityInvite_MessageId", fn_activity_invite_message_id);
+	LOAD_OPTIONAL("Discord_ActivityInvite_Type", fn_activity_invite_type);
+	LOAD_OPTIONAL("Discord_ActivityInvite_ApplicationId", fn_activity_invite_application_id);
+	LOAD_OPTIONAL("Discord_ActivityInvite_ParentApplicationId", fn_activity_invite_parent_application_id);
+	LOAD_OPTIONAL("Discord_ActivityInvite_PartyId", fn_activity_invite_party_id);
+	LOAD_OPTIONAL("Discord_ActivityInvite_SessionId", fn_activity_invite_session_id);
+	LOAD_OPTIONAL("Discord_ActivityInvite_IsValid", fn_activity_invite_is_valid);
+	LOAD_OPTIONAL("Discord_Client_RegisterLaunchCommand", fn_client_register_launch_command);
+	LOAD_OPTIONAL("Discord_Client_RegisterLaunchSteamApplication", fn_client_register_launch_steam_application);
+	LOAD_OPTIONAL("Discord_Client_SendActivityInvite", fn_client_send_activity_invite);
+	LOAD_OPTIONAL("Discord_Client_SendActivityJoinRequest", fn_client_send_activity_join_request);
+	LOAD_OPTIONAL("Discord_Client_SendActivityJoinRequestReply", fn_client_send_activity_join_request_reply);
+	LOAD_OPTIONAL("Discord_Client_AcceptActivityInvite", fn_client_accept_activity_invite);
+	LOAD_OPTIONAL("Discord_Client_CreateOrJoinLobby", fn_client_create_or_join_lobby);
+	LOAD_OPTIONAL("Discord_Client_SetActivityInviteCreatedCallback", fn_client_set_activity_invite_created_callback);
+	LOAD_OPTIONAL("Discord_Client_SetActivityInviteUpdatedCallback", fn_client_set_activity_invite_updated_callback);
+	LOAD_OPTIONAL("Discord_Client_SetActivityJoinCallback", fn_client_set_activity_join_callback);
+	LOAD_OPTIONAL("Discord_Client_SetLobbyCreatedCallback", fn_client_set_lobby_created_callback);
+	LOAD_OPTIONAL("Discord_Client_GetRelationshipsByGroup", fn_client_get_relationships_by_group);
+	LOAD_OPTIONAL("Discord_Client_GetRelationshipHandle", fn_client_get_relationship_handle);
+	LOAD_OPTIONAL("Discord_Client_GetUser", fn_client_get_user);
+	LOAD_OPTIONAL("Discord_RelationshipHandle_DiscordRelationshipType", fn_relationship_handle_discord_relationship_type);
+	LOAD_OPTIONAL("Discord_RelationshipHandle_GameRelationshipType", fn_relationship_handle_game_relationship_type);
+	LOAD_OPTIONAL("Discord_RelationshipHandle_Id", fn_relationship_handle_id);
+	LOAD_OPTIONAL("Discord_RelationshipHandle_IsSpamRequest", fn_relationship_handle_is_spam_request);
+	LOAD_OPTIONAL("Discord_RelationshipHandle_User", fn_relationship_handle_user);
+	LOAD_OPTIONAL("Discord_RelationshipHandle_Drop", fn_relationship_handle_drop);
+	LOAD_OPTIONAL("Discord_UserHandle_GlobalName", fn_user_handle_global_name);
+	LOAD_OPTIONAL("Discord_UserHandle_Status", fn_user_handle_status);
+	LOAD_OPTIONAL("Discord_UserHandle_IsProvisional", fn_user_handle_is_provisional);
+	LOAD_OPTIONAL("Discord_UserHandle_AvatarUrl", fn_user_handle_avatar_url);
+	LOAD_OPTIONAL("Discord_Client_AcceptDiscordFriendRequest", fn_client_accept_discord_friend_request);
+	LOAD_OPTIONAL("Discord_Client_AcceptGameFriendRequest", fn_client_accept_game_friend_request);
+	LOAD_OPTIONAL("Discord_Client_BlockUser", fn_client_block_user);
+	LOAD_OPTIONAL("Discord_Client_CancelDiscordFriendRequest", fn_client_cancel_discord_friend_request);
+	LOAD_OPTIONAL("Discord_Client_CancelGameFriendRequest", fn_client_cancel_game_friend_request);
+	LOAD_OPTIONAL("Discord_Client_RejectDiscordFriendRequest", fn_client_reject_discord_friend_request);
+	LOAD_OPTIONAL("Discord_Client_RejectGameFriendRequest", fn_client_reject_game_friend_request);
+	LOAD_OPTIONAL("Discord_Client_RemoveDiscordAndGameFriend", fn_client_remove_discord_and_game_friend);
+	LOAD_OPTIONAL("Discord_Client_RemoveGameFriend", fn_client_remove_game_friend);
+	LOAD_OPTIONAL("Discord_Client_SendDiscordFriendRequest", fn_client_send_discord_friend_request);
+	LOAD_OPTIONAL("Discord_Client_SendDiscordFriendRequestById", fn_client_send_discord_friend_request_by_id);
+	LOAD_OPTIONAL("Discord_Client_SendGameFriendRequest", fn_client_send_game_friend_request);
+	LOAD_OPTIONAL("Discord_Client_SendGameFriendRequestById", fn_client_send_game_friend_request_by_id);
+	LOAD_OPTIONAL("Discord_Client_SetRelationshipCreatedCallback", fn_client_set_relationship_created_callback);
+	LOAD_OPTIONAL("Discord_Client_SetRelationshipDeletedCallback", fn_client_set_relationship_deleted_callback);
+	LOAD_OPTIONAL("Discord_Client_SetRelationshipGroupsUpdatedCallback", fn_client_set_relationship_groups_updated_callback);
+	LOAD_OPTIONAL("Discord_Client_SetUserUpdatedCallback", fn_client_set_user_updated_callback);
+	LOAD_OPTIONAL("Discord_Client_UnblockUser", fn_client_unblock_user);
 
 #undef LOAD_OPTIONAL
 
@@ -275,6 +360,91 @@ void DiscordAPILoader::unload() {
 	fn_client_get_version_patch = nullptr;
 	fn_client_set_game_window_pid = nullptr;
 	fn_client_set_log_dir = nullptr;
+	fn_activity_set_name = nullptr;
+	fn_activity_set_status_display_type = nullptr;
+	fn_activity_set_state_url = nullptr;
+	fn_activity_set_details_url = nullptr;
+	fn_activity_set_party = nullptr;
+	fn_activity_set_secrets = nullptr;
+	fn_activity_set_supported_platforms = nullptr;
+	fn_activity_add_button = nullptr;
+	fn_activity_assets_set_large_url = nullptr;
+	fn_activity_assets_set_small_url = nullptr;
+	fn_activity_assets_set_invite_cover_image = nullptr;
+	fn_activity_party_init = nullptr;
+	fn_activity_party_drop = nullptr;
+	fn_activity_party_set_id = nullptr;
+	fn_activity_party_set_current_size = nullptr;
+	fn_activity_party_set_max_size = nullptr;
+	fn_activity_secrets_init = nullptr;
+	fn_activity_secrets_drop = nullptr;
+	fn_activity_secrets_set_join = nullptr;
+	fn_activity_button_init = nullptr;
+	fn_activity_button_drop = nullptr;
+	fn_activity_button_set_label = nullptr;
+	fn_activity_button_set_url = nullptr;
+	fn_activity_invite_init = nullptr;
+	fn_activity_invite_drop = nullptr;
+	fn_activity_invite_set_sender_id = nullptr;
+	fn_activity_invite_set_channel_id = nullptr;
+	fn_activity_invite_set_message_id = nullptr;
+	fn_activity_invite_set_type = nullptr;
+	fn_activity_invite_set_application_id = nullptr;
+	fn_activity_invite_set_parent_application_id = nullptr;
+	fn_activity_invite_set_party_id = nullptr;
+	fn_activity_invite_set_session_id = nullptr;
+	fn_activity_invite_set_is_valid = nullptr;
+	fn_activity_invite_sender_id = nullptr;
+	fn_activity_invite_channel_id = nullptr;
+	fn_activity_invite_message_id = nullptr;
+	fn_activity_invite_type = nullptr;
+	fn_activity_invite_application_id = nullptr;
+	fn_activity_invite_parent_application_id = nullptr;
+	fn_activity_invite_party_id = nullptr;
+	fn_activity_invite_session_id = nullptr;
+	fn_activity_invite_is_valid = nullptr;
+	fn_client_register_launch_command = nullptr;
+	fn_client_register_launch_steam_application = nullptr;
+	fn_client_send_activity_invite = nullptr;
+	fn_client_send_activity_join_request = nullptr;
+	fn_client_send_activity_join_request_reply = nullptr;
+	fn_client_accept_activity_invite = nullptr;
+	fn_client_create_or_join_lobby = nullptr;
+	fn_client_set_activity_invite_created_callback = nullptr;
+	fn_client_set_activity_invite_updated_callback = nullptr;
+	fn_client_set_activity_join_callback = nullptr;
+	fn_client_set_lobby_created_callback = nullptr;
+	fn_client_get_relationships_by_group = nullptr;
+	fn_client_get_relationship_handle = nullptr;
+	fn_client_get_user = nullptr;
+	fn_relationship_handle_discord_relationship_type = nullptr;
+	fn_relationship_handle_game_relationship_type = nullptr;
+	fn_relationship_handle_id = nullptr;
+	fn_relationship_handle_is_spam_request = nullptr;
+	fn_relationship_handle_user = nullptr;
+	fn_relationship_handle_drop = nullptr;
+	fn_user_handle_global_name = nullptr;
+	fn_user_handle_status = nullptr;
+	fn_user_handle_is_provisional = nullptr;
+	fn_user_handle_avatar_url = nullptr;
+	fn_client_accept_discord_friend_request = nullptr;
+	fn_client_accept_game_friend_request = nullptr;
+	fn_client_block_user = nullptr;
+	fn_client_cancel_discord_friend_request = nullptr;
+	fn_client_cancel_game_friend_request = nullptr;
+	fn_client_reject_discord_friend_request = nullptr;
+	fn_client_reject_game_friend_request = nullptr;
+	fn_client_remove_discord_and_game_friend = nullptr;
+	fn_client_remove_game_friend = nullptr;
+	fn_client_send_discord_friend_request = nullptr;
+	fn_client_send_discord_friend_request_by_id = nullptr;
+	fn_client_send_game_friend_request = nullptr;
+	fn_client_send_game_friend_request_by_id = nullptr;
+	fn_client_set_relationship_created_callback = nullptr;
+	fn_client_set_relationship_deleted_callback = nullptr;
+	fn_client_set_relationship_groups_updated_callback = nullptr;
+	fn_client_set_user_updated_callback = nullptr;
+	fn_client_unblock_user = nullptr;
 }
 
 void DiscordAPILoader::run_callbacks() const {
@@ -647,5 +817,530 @@ void DiscordAPILoader::fill_version_dict(Dictionary &p_version) const {
 		p_version["hash"] = to_godot_string(hash);
 	} else {
 		p_version["hash"] = String();
+	}
+}
+
+#define DISCORD_LOADER_STRING_PTR(setter, fn_member)            \
+	void DiscordAPILoader::setter(Discord_ActivityAssets *self, \
+			const String &p_value) const {                      \
+		if (!fn_member) {                                       \
+			return;                                             \
+		}                                                       \
+		CharString utf8 = p_value.utf8();                       \
+		Discord_String str;                                     \
+		str.ptr = (uint8_t *)utf8.ptr();                        \
+		str.size = utf8.length();                               \
+		fn_member(self, &str);                                  \
+	}
+
+DISCORD_LOADER_STRING_PTR(activity_assets_set_large_url, fn_activity_assets_set_large_url)
+DISCORD_LOADER_STRING_PTR(activity_assets_set_small_url, fn_activity_assets_set_small_url)
+DISCORD_LOADER_STRING_PTR(activity_assets_set_invite_cover_image, fn_activity_assets_set_invite_cover_image)
+
+#undef DISCORD_LOADER_STRING_PTR
+
+void DiscordAPILoader::activity_set_name(Discord_Activity *self, const String &p_value) const {
+	if (!fn_activity_set_name) {
+		return;
+	}
+	Discord_String str = make_string(p_value);
+	fn_activity_set_name(self, str);
+}
+
+void DiscordAPILoader::activity_set_status_display_type(Discord_Activity *self, Discord_StatusDisplayTypes value) const {
+	if (!fn_activity_set_status_display_type) {
+		return;
+	}
+	fn_activity_set_status_display_type(self, &value);
+}
+
+void DiscordAPILoader::activity_set_state_url(Discord_Activity *self, const String &p_value) const {
+	if (!fn_activity_set_state_url) {
+		return;
+	}
+	CharString utf8 = p_value.utf8();
+	Discord_String str;
+	str.ptr = (uint8_t *)utf8.ptr();
+	str.size = utf8.length();
+	fn_activity_set_state_url(self, &str);
+}
+
+void DiscordAPILoader::activity_set_details_url(Discord_Activity *self, const String &p_value) const {
+	if (!fn_activity_set_details_url) {
+		return;
+	}
+	CharString utf8 = p_value.utf8();
+	Discord_String str;
+	str.ptr = (uint8_t *)utf8.ptr();
+	str.size = utf8.length();
+	fn_activity_set_details_url(self, &str);
+}
+
+void DiscordAPILoader::activity_set_party(Discord_Activity *self, Discord_ActivityParty *value) const {
+	if (fn_activity_set_party) {
+		fn_activity_set_party(self, value);
+	}
+}
+
+void DiscordAPILoader::activity_set_secrets(Discord_Activity *self, Discord_ActivitySecrets *value) const {
+	if (fn_activity_set_secrets) {
+		fn_activity_set_secrets(self, value);
+	}
+}
+
+void DiscordAPILoader::activity_set_supported_platforms(Discord_Activity *self, Discord_ActivityGamePlatforms value) const {
+	if (fn_activity_set_supported_platforms) {
+		fn_activity_set_supported_platforms(self, value);
+	}
+}
+
+void DiscordAPILoader::activity_add_button(Discord_Activity *self, Discord_ActivityButton const *button) const {
+	if (fn_activity_add_button) {
+		fn_activity_add_button(self, button);
+	}
+}
+
+void DiscordAPILoader::activity_party_init(Discord_ActivityParty *self) const {
+	if (fn_activity_party_init) {
+		fn_activity_party_init(self);
+	}
+}
+
+void DiscordAPILoader::activity_party_drop(Discord_ActivityParty *self) const {
+	if (fn_activity_party_drop) {
+		fn_activity_party_drop(self);
+	}
+}
+
+void DiscordAPILoader::activity_party_set_id(Discord_ActivityParty *self, const String &p_value) const {
+	if (fn_activity_party_set_id) {
+		fn_activity_party_set_id(self, make_string(p_value));
+	}
+}
+
+void DiscordAPILoader::activity_party_set_current_size(Discord_ActivityParty *self, int32_t value) const {
+	if (fn_activity_party_set_current_size) {
+		fn_activity_party_set_current_size(self, value);
+	}
+}
+
+void DiscordAPILoader::activity_party_set_max_size(Discord_ActivityParty *self, int32_t value) const {
+	if (fn_activity_party_set_max_size) {
+		fn_activity_party_set_max_size(self, value);
+	}
+}
+
+void DiscordAPILoader::activity_secrets_init(Discord_ActivitySecrets *self) const {
+	if (fn_activity_secrets_init) {
+		fn_activity_secrets_init(self);
+	}
+}
+
+void DiscordAPILoader::activity_secrets_drop(Discord_ActivitySecrets *self) const {
+	if (fn_activity_secrets_drop) {
+		fn_activity_secrets_drop(self);
+	}
+}
+
+void DiscordAPILoader::activity_secrets_set_join(Discord_ActivitySecrets *self, const String &p_value) const {
+	if (fn_activity_secrets_set_join) {
+		fn_activity_secrets_set_join(self, make_string(p_value));
+	}
+}
+
+void DiscordAPILoader::activity_button_init(Discord_ActivityButton *self) const {
+	if (fn_activity_button_init) {
+		fn_activity_button_init(self);
+	}
+}
+
+void DiscordAPILoader::activity_button_drop(Discord_ActivityButton *self) const {
+	if (fn_activity_button_drop) {
+		fn_activity_button_drop(self);
+	}
+}
+
+void DiscordAPILoader::activity_button_set_label(Discord_ActivityButton *self, const String &p_value) const {
+	if (fn_activity_button_set_label) {
+		fn_activity_button_set_label(self, make_string(p_value));
+	}
+}
+
+void DiscordAPILoader::activity_button_set_url(Discord_ActivityButton *self, const String &p_value) const {
+	if (fn_activity_button_set_url) {
+		fn_activity_button_set_url(self, make_string(p_value));
+	}
+}
+
+void DiscordAPILoader::activity_invite_init(Discord_ActivityInvite *self) const {
+	if (fn_activity_invite_init) {
+		fn_activity_invite_init(self);
+	}
+}
+
+void DiscordAPILoader::activity_invite_drop(Discord_ActivityInvite *self) const {
+	if (fn_activity_invite_drop) {
+		fn_activity_invite_drop(self);
+	}
+}
+
+void DiscordAPILoader::activity_invite_set_sender_id(Discord_ActivityInvite *self, uint64_t value) const {
+	if (fn_activity_invite_set_sender_id) {
+		fn_activity_invite_set_sender_id(self, value);
+	}
+}
+
+void DiscordAPILoader::activity_invite_set_channel_id(Discord_ActivityInvite *self, uint64_t value) const {
+	if (fn_activity_invite_set_channel_id) {
+		fn_activity_invite_set_channel_id(self, value);
+	}
+}
+
+void DiscordAPILoader::activity_invite_set_message_id(Discord_ActivityInvite *self, uint64_t value) const {
+	if (fn_activity_invite_set_message_id) {
+		fn_activity_invite_set_message_id(self, value);
+	}
+}
+
+void DiscordAPILoader::activity_invite_set_type(Discord_ActivityInvite *self, Discord_ActivityActionTypes value) const {
+	if (fn_activity_invite_set_type) {
+		fn_activity_invite_set_type(self, value);
+	}
+}
+
+void DiscordAPILoader::activity_invite_set_application_id(Discord_ActivityInvite *self, uint64_t value) const {
+	if (fn_activity_invite_set_application_id) {
+		fn_activity_invite_set_application_id(self, value);
+	}
+}
+
+void DiscordAPILoader::activity_invite_set_parent_application_id(Discord_ActivityInvite *self, uint64_t value) const {
+	if (fn_activity_invite_set_parent_application_id) {
+		fn_activity_invite_set_parent_application_id(self, value);
+	}
+}
+
+void DiscordAPILoader::activity_invite_set_party_id(Discord_ActivityInvite *self, const String &p_value) const {
+	if (fn_activity_invite_set_party_id) {
+		fn_activity_invite_set_party_id(self, make_string(p_value));
+	}
+}
+
+void DiscordAPILoader::activity_invite_set_session_id(Discord_ActivityInvite *self, const String &p_value) const {
+	if (fn_activity_invite_set_session_id) {
+		fn_activity_invite_set_session_id(self, make_string(p_value));
+	}
+}
+
+void DiscordAPILoader::activity_invite_set_is_valid(Discord_ActivityInvite *self, bool value) const {
+	if (fn_activity_invite_set_is_valid) {
+		fn_activity_invite_set_is_valid(self, value);
+	}
+}
+
+Dictionary DiscordAPILoader::activity_invite_to_dict(Discord_ActivityInvite *self) const {
+	Dictionary out;
+	if (!self) {
+		return out;
+	}
+	if (fn_activity_invite_sender_id) {
+		out["sender_id"] = (int64_t)fn_activity_invite_sender_id(self);
+	}
+	if (fn_activity_invite_channel_id) {
+		out["channel_id"] = (int64_t)fn_activity_invite_channel_id(self);
+	}
+	if (fn_activity_invite_message_id) {
+		out["message_id"] = (int64_t)fn_activity_invite_message_id(self);
+	}
+	if (fn_activity_invite_type) {
+		out["type"] = (int)fn_activity_invite_type(self);
+	}
+	if (fn_activity_invite_application_id) {
+		out["application_id"] = (int64_t)fn_activity_invite_application_id(self);
+	}
+	if (fn_activity_invite_parent_application_id) {
+		out["parent_application_id"] = (int64_t)fn_activity_invite_parent_application_id(self);
+	}
+	if (fn_activity_invite_party_id) {
+		Discord_String party_id;
+		fn_activity_invite_party_id(self, &party_id);
+		out["party_id"] = to_godot_string(party_id);
+	}
+	if (fn_activity_invite_session_id) {
+		Discord_String session_id;
+		fn_activity_invite_session_id(self, &session_id);
+		out["session_id"] = to_godot_string(session_id);
+	}
+	if (fn_activity_invite_is_valid) {
+		out["is_valid"] = fn_activity_invite_is_valid(self);
+	}
+	return out;
+}
+
+bool DiscordAPILoader::client_register_launch_command(Discord_Client *self, uint64_t application_id, const String &p_command) const {
+	if (!fn_client_register_launch_command) {
+		return false;
+	}
+	return fn_client_register_launch_command(self, application_id, make_string(p_command));
+}
+
+bool DiscordAPILoader::client_register_launch_steam_application(Discord_Client *self, uint64_t application_id, uint32_t steam_app_id) const {
+	if (!fn_client_register_launch_steam_application) {
+		return false;
+	}
+	return fn_client_register_launch_steam_application(self, application_id, steam_app_id);
+}
+
+void DiscordAPILoader::client_send_activity_invite(Discord_Client *self,
+		uint64_t user_id,
+		const String &p_content,
+		Discord_Client_SendActivityInviteCallback callback,
+		void *user_data) const {
+	if (fn_client_send_activity_invite) {
+		fn_client_send_activity_invite(self, user_id, make_string(p_content), callback, nullptr, user_data);
+	}
+}
+
+void DiscordAPILoader::client_send_activity_join_request(Discord_Client *self,
+		uint64_t user_id,
+		Discord_Client_SendActivityInviteCallback callback,
+		void *user_data) const {
+	if (fn_client_send_activity_join_request) {
+		fn_client_send_activity_join_request(self, user_id, callback, nullptr, user_data);
+	}
+}
+
+void DiscordAPILoader::client_send_activity_join_request_reply(Discord_Client *self,
+		Discord_ActivityInvite *invite,
+		Discord_Client_SendActivityInviteCallback callback,
+		void *user_data) const {
+	if (fn_client_send_activity_join_request_reply) {
+		fn_client_send_activity_join_request_reply(self, invite, callback, nullptr, user_data);
+	}
+}
+
+void DiscordAPILoader::client_accept_activity_invite(Discord_Client *self,
+		Discord_ActivityInvite *invite,
+		Discord_Client_AcceptActivityInviteCallback callback,
+		void *user_data) const {
+	if (fn_client_accept_activity_invite) {
+		fn_client_accept_activity_invite(self, invite, callback, nullptr, user_data);
+	}
+}
+
+void DiscordAPILoader::client_create_or_join_lobby(Discord_Client *self,
+		const String &p_secret,
+		Discord_Client_CreateOrJoinLobbyCallback callback,
+		void *user_data) const {
+	if (fn_client_create_or_join_lobby) {
+		fn_client_create_or_join_lobby(self, make_string(p_secret), callback, nullptr, user_data);
+	}
+}
+
+void DiscordAPILoader::client_set_activity_invite_created_callback(Discord_Client *self,
+		Discord_Client_ActivityInviteCallback callback,
+		void *user_data) const {
+	if (fn_client_set_activity_invite_created_callback) {
+		fn_client_set_activity_invite_created_callback(self, callback, nullptr, user_data);
+	}
+}
+
+void DiscordAPILoader::client_set_activity_invite_updated_callback(Discord_Client *self,
+		Discord_Client_ActivityInviteCallback callback,
+		void *user_data) const {
+	if (fn_client_set_activity_invite_updated_callback) {
+		fn_client_set_activity_invite_updated_callback(self, callback, nullptr, user_data);
+	}
+}
+
+void DiscordAPILoader::client_set_activity_join_callback(Discord_Client *self,
+		Discord_Client_ActivityJoinCallback callback,
+		void *user_data) const {
+	if (fn_client_set_activity_join_callback) {
+		fn_client_set_activity_join_callback(self, callback, nullptr, user_data);
+	}
+}
+
+void DiscordAPILoader::client_set_lobby_created_callback(Discord_Client *self,
+		Discord_Client_LobbyCreatedCallback callback,
+		void *user_data) const {
+	if (fn_client_set_lobby_created_callback) {
+		fn_client_set_lobby_created_callback(self, callback, nullptr, user_data);
+	}
+}
+
+void DiscordAPILoader::client_get_relationships_by_group(Discord_Client *self,
+		Discord_RelationshipGroupType group_type,
+		Discord_RelationshipHandleSpan *return_value) const {
+	if (fn_client_get_relationships_by_group) {
+		fn_client_get_relationships_by_group(self, group_type, return_value);
+	}
+}
+
+void DiscordAPILoader::client_get_relationship_handle(Discord_Client *self,
+		uint64_t user_id,
+		Discord_RelationshipHandle *return_value) const {
+	if (fn_client_get_relationship_handle) {
+		fn_client_get_relationship_handle(self, user_id, return_value);
+	}
+}
+
+bool DiscordAPILoader::client_get_user(Discord_Client *self, uint64_t user_id, Discord_UserHandle *return_value) const {
+	if (!fn_client_get_user) {
+		return false;
+	}
+	return fn_client_get_user(self, user_id, return_value);
+}
+
+void DiscordAPILoader::relationship_handle_drop(Discord_RelationshipHandle *self) const {
+	if (fn_relationship_handle_drop) {
+		fn_relationship_handle_drop(self);
+	}
+}
+
+Discord_RelationshipType DiscordAPILoader::relationship_handle_discord_relationship_type(Discord_RelationshipHandle *self) const {
+	if (!fn_relationship_handle_discord_relationship_type) {
+		return DISCORD_RELATIONSHIP_TYPE_NONE;
+	}
+	return fn_relationship_handle_discord_relationship_type(self);
+}
+
+Discord_RelationshipType DiscordAPILoader::relationship_handle_game_relationship_type(Discord_RelationshipHandle *self) const {
+	if (!fn_relationship_handle_game_relationship_type) {
+		return DISCORD_RELATIONSHIP_TYPE_NONE;
+	}
+	return fn_relationship_handle_game_relationship_type(self);
+}
+
+uint64_t DiscordAPILoader::relationship_handle_id(Discord_RelationshipHandle *self) const {
+	if (!fn_relationship_handle_id) {
+		return 0;
+	}
+	return fn_relationship_handle_id(self);
+}
+
+bool DiscordAPILoader::relationship_handle_is_spam_request(Discord_RelationshipHandle *self) const {
+	if (!fn_relationship_handle_is_spam_request) {
+		return false;
+	}
+	return fn_relationship_handle_is_spam_request(self);
+}
+
+bool DiscordAPILoader::relationship_handle_user(Discord_RelationshipHandle *self, Discord_UserHandle *return_value) const {
+	if (!fn_relationship_handle_user) {
+		return false;
+	}
+	return fn_relationship_handle_user(self, return_value);
+}
+
+String DiscordAPILoader::user_handle_global_name(Discord_UserHandle *self) const {
+	if (!fn_user_handle_global_name) {
+		return String();
+	}
+	Discord_String name;
+	if (!fn_user_handle_global_name(self, &name)) {
+		return String();
+	}
+	return to_godot_string(name);
+}
+
+Discord_StatusType DiscordAPILoader::user_handle_status(Discord_UserHandle *self) const {
+	if (!fn_user_handle_status) {
+		return DISCORD_STATUS_TYPE_UNKNOWN;
+	}
+	return fn_user_handle_status(self);
+}
+
+bool DiscordAPILoader::user_handle_is_provisional(Discord_UserHandle *self) const {
+	if (!fn_user_handle_is_provisional) {
+		return false;
+	}
+	return fn_user_handle_is_provisional(self);
+}
+
+String DiscordAPILoader::user_handle_avatar_url(Discord_UserHandle *self) const {
+	if (!fn_user_handle_avatar_url) {
+		return String();
+	}
+	Discord_String url;
+	fn_user_handle_avatar_url(self,
+			DISCORD_USER_HANDLE_AVATAR_TYPE_GIF,
+			DISCORD_USER_HANDLE_AVATAR_TYPE_PNG,
+			&url);
+	return to_godot_string(url);
+}
+
+#define DISCORD_LOADER_RELATIONSHIP_ACTION(name, fn_member)         \
+	void DiscordAPILoader::name(Discord_Client *self,               \
+			uint64_t user_id,                                       \
+			Discord_Client_UpdateRelationshipCallback callback,     \
+			void *user_data) const {                                \
+		if (fn_member) {                                            \
+			fn_member(self, user_id, callback, nullptr, user_data); \
+		}                                                           \
+	}
+
+DISCORD_LOADER_RELATIONSHIP_ACTION(client_accept_discord_friend_request, fn_client_accept_discord_friend_request)
+DISCORD_LOADER_RELATIONSHIP_ACTION(client_accept_game_friend_request, fn_client_accept_game_friend_request)
+DISCORD_LOADER_RELATIONSHIP_ACTION(client_block_user, fn_client_block_user)
+DISCORD_LOADER_RELATIONSHIP_ACTION(client_cancel_discord_friend_request, fn_client_cancel_discord_friend_request)
+DISCORD_LOADER_RELATIONSHIP_ACTION(client_cancel_game_friend_request, fn_client_cancel_game_friend_request)
+DISCORD_LOADER_RELATIONSHIP_ACTION(client_reject_discord_friend_request, fn_client_reject_discord_friend_request)
+DISCORD_LOADER_RELATIONSHIP_ACTION(client_reject_game_friend_request, fn_client_reject_game_friend_request)
+DISCORD_LOADER_RELATIONSHIP_ACTION(client_remove_discord_and_game_friend, fn_client_remove_discord_and_game_friend)
+DISCORD_LOADER_RELATIONSHIP_ACTION(client_remove_game_friend, fn_client_remove_game_friend)
+DISCORD_LOADER_RELATIONSHIP_ACTION(client_send_discord_friend_request_by_id, fn_client_send_discord_friend_request_by_id)
+DISCORD_LOADER_RELATIONSHIP_ACTION(client_send_game_friend_request_by_id, fn_client_send_game_friend_request_by_id)
+DISCORD_LOADER_RELATIONSHIP_ACTION(client_unblock_user, fn_client_unblock_user)
+
+#undef DISCORD_LOADER_RELATIONSHIP_ACTION
+
+void DiscordAPILoader::client_send_discord_friend_request(Discord_Client *self,
+		const String &p_username,
+		Discord_Client_SendFriendRequestCallback callback,
+		void *user_data) const {
+	if (fn_client_send_discord_friend_request) {
+		fn_client_send_discord_friend_request(self, make_string(p_username), callback, nullptr, user_data);
+	}
+}
+
+void DiscordAPILoader::client_send_game_friend_request(Discord_Client *self,
+		const String &p_username,
+		Discord_Client_SendFriendRequestCallback callback,
+		void *user_data) const {
+	if (fn_client_send_game_friend_request) {
+		fn_client_send_game_friend_request(self, make_string(p_username), callback, nullptr, user_data);
+	}
+}
+
+void DiscordAPILoader::client_set_relationship_created_callback(Discord_Client *self,
+		Discord_Client_RelationshipCreatedCallback callback,
+		void *user_data) const {
+	if (fn_client_set_relationship_created_callback) {
+		fn_client_set_relationship_created_callback(self, callback, nullptr, user_data);
+	}
+}
+
+void DiscordAPILoader::client_set_relationship_deleted_callback(Discord_Client *self,
+		Discord_Client_RelationshipDeletedCallback callback,
+		void *user_data) const {
+	if (fn_client_set_relationship_deleted_callback) {
+		fn_client_set_relationship_deleted_callback(self, callback, nullptr, user_data);
+	}
+}
+
+void DiscordAPILoader::client_set_relationship_groups_updated_callback(Discord_Client *self,
+		Discord_Client_RelationshipGroupsUpdatedCallback callback,
+		void *user_data) const {
+	if (fn_client_set_relationship_groups_updated_callback) {
+		fn_client_set_relationship_groups_updated_callback(self, callback, nullptr, user_data);
+	}
+}
+
+void DiscordAPILoader::client_set_user_updated_callback(Discord_Client *self,
+		Discord_Client_UserUpdatedCallback callback,
+		void *user_data) const {
+	if (fn_client_set_user_updated_callback) {
+		fn_client_set_user_updated_callback(self, callback, nullptr, user_data);
 	}
 }
