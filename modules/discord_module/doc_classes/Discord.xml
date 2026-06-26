@@ -1,15 +1,36 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="Discord" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
-		Discord Social SDK integration for OAuth authentication and backend JWT exchange.
+		Discord Social SDK integration for RPC rich presence, OAuth, invites, and relationships.
 	</brief_description>
 	<description>
-		The Discord singleton dynamically loads the Discord Partner SDK library at runtime. If the library is not found beside the executable, all methods fail gracefully without crashing.
-		Call [method initialize] with your Discord application client ID to start the OAuth flow, pump [method run_callbacks] (or rely on the engine frame hook), then use [method get_access_token] and [method authenticate_with_server] to exchange the token for a JWT from your backend.
+		The Discord singleton dynamically loads the Discord Partner SDK library at runtime. Use [method initialize_presence_only] for auth-less RPC rich presence, or [method initialize] for the full OAuth social layer (friends, invites, server auth).
+		Pump [method run_callbacks] each frame (or rely on the engine frame hook) while the client is active.
 	</description>
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="accept_activity_invite">
+			<return type="void" />
+			<param index="0" name="invite" type="Dictionary" />
+			<description>
+				Accepts an activity invite built from [signal activity_invite_created] / [signal activity_invite_updated] payload fields. Requires OAuth ([constant AUTH_READY]).
+			</description>
+		</method>
+		<method name="accept_discord_friend_request">
+			<return type="void" />
+			<param index="0" name="user_id" type="int" />
+			<description>
+				Accepts a pending Discord-wide friend request. OAuth only. Emits [signal relationship_action_completed].
+			</description>
+		</method>
+		<method name="accept_game_friend_request">
+			<return type="void" />
+			<param index="0" name="user_id" type="int" />
+			<description>
+				Accepts a pending game-scoped friend request. OAuth only. Emits [signal relationship_action_completed].
+			</description>
+		</method>
 		<method name="authenticate_with_server">
 			<return type="DiscordAuthResult" />
 			<param index="0" name="url" type="String" />
@@ -17,6 +38,27 @@
 			<param index="2" name="client_id" type="int" />
 			<description>
 				POSTs the OAuth access token to the auth server and returns the parsed response. Requires [constant AUTH_READY] and a non-empty access token.
+			</description>
+		</method>
+		<method name="block_user">
+			<return type="void" />
+			<param index="0" name="user_id" type="int" />
+			<description>
+				Blocks a user. OAuth only. Emits [signal relationship_action_completed].
+			</description>
+		</method>
+		<method name="cancel_discord_friend_request">
+			<return type="void" />
+			<param index="0" name="user_id" type="int" />
+			<description>
+				Cancels an outgoing Discord friend request. OAuth only.
+			</description>
+		</method>
+		<method name="cancel_game_friend_request">
+			<return type="void" />
+			<param index="0" name="user_id" type="int" />
+			<description>
+				Cancels an outgoing game friend request. OAuth only.
 			</description>
 		</method>
 		<method name="clear_debug_log">
@@ -28,7 +70,14 @@
 		<method name="clear_rich_presence">
 			<return type="void" />
 			<description>
-				Clears the player's Discord rich presence. Requires [constant AUTH_READY].
+				Clears the player's Discord rich presence. Requires presence readiness ([method is_ready_for_presence]).
+			</description>
+		</method>
+		<method name="create_or_join_lobby">
+			<return type="void" />
+			<param index="0" name="secret" type="String" />
+			<description>
+				Creates or joins a Discord lobby by secret. OAuth only. Emits [signal lobby_joined] on success.
 			</description>
 		</method>
 		<method name="get_access_token" qualifiers="const">
@@ -52,25 +101,25 @@
 		<method name="get_debug_log" qualifiers="const">
 			<return type="Array" />
 			<description>
-				Returns recent lifecycle and SDK log lines (always populated for auth/connect/presence steps; verbose SDK detail when debug logging is enabled).
+				Returns recent lifecycle and SDK log lines.
 			</description>
 		</method>
 		<method name="get_default_communication_scopes" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the default OAuth scopes for communication features ([code]openid[/code] and [code]sdk.social_layer[/code]).
+				Returns the default OAuth scopes for communication features.
 			</description>
 		</method>
 		<method name="get_default_presence_scopes" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the default OAuth scopes for rich presence ([code]openid[/code] and [code]sdk.social_layer_presence[/code]).
+				Returns the default OAuth scopes for rich presence and friends list.
 			</description>
 		</method>
 		<method name="get_game_activity">
 			<return type="Dictionary" />
 			<description>
-				Returns the current user's game-associated activity from the SDK readback ([code]type[/code], [code]details[/code], [code]state[/code]), or an empty dictionary when unavailable.
+				Returns the current user's game-associated activity readback, or an empty dictionary when unavailable.
 			</description>
 		</method>
 		<method name="get_granted_scopes" qualifiers="const">
@@ -82,13 +131,33 @@
 		<method name="get_last_error" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the most recent error message from Discord initialization or auth.
+				Returns the most recent error message.
+			</description>
+		</method>
+		<method name="get_relationship">
+			<return type="Dictionary" />
+			<param index="0" name="user_id" type="int" />
+			<description>
+				Returns a relationship dictionary for [param user_id], or empty when unavailable. OAuth only.
+			</description>
+		</method>
+		<method name="get_relationships">
+			<return type="Array" />
+			<description>
+				Returns all relationships as an array of dictionaries. OAuth only.
+			</description>
+		</method>
+		<method name="get_relationships_by_group">
+			<return type="Array" />
+			<param index="0" name="group" type="int" enum="Discord.RelationshipGroupType" />
+			<description>
+				Returns relationships for a unified friends list group. OAuth only.
 			</description>
 		</method>
 		<method name="get_relationships_count" qualifiers="const">
 			<return type="int" />
 			<description>
-				Returns the cached Discord relationships count after [constant AUTH_READY], or [code]-1[/code] when unavailable.
+				Returns the cached relationships count after [constant AUTH_READY], or [code]-1[/code] when unavailable.
 			</description>
 		</method>
 		<method name="get_requested_scopes" qualifiers="const">
@@ -97,16 +166,23 @@
 				Returns the OAuth scopes requested during the current auth flow.
 			</description>
 		</method>
+		<method name="get_user">
+			<return type="Dictionary" />
+			<param index="0" name="user_id" type="int" />
+			<description>
+				Returns a user dictionary for [param user_id]. OAuth only.
+			</description>
+		</method>
 		<method name="get_user_id" qualifiers="const">
 			<return type="int" />
 			<description>
-				Returns the connected Discord user snowflake ID after [constant AUTH_READY], or [code]0[/code] when unavailable.
+				Returns the connected Discord user snowflake ID after [constant AUTH_READY], or [code]0[/code].
 			</description>
 		</method>
 		<method name="get_username" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the connected Discord display or username after [constant AUTH_READY], or an empty string when unavailable.
+				Returns the connected Discord display or username after [constant AUTH_READY].
 			</description>
 		</method>
 		<method name="get_version" qualifiers="const">
@@ -119,31 +195,38 @@
 			<return type="int" enum="Error" />
 			<param index="0" name="client_id" type="int" default="0" />
 			<description>
-				Initializes the Discord Social SDK and starts the OAuth authorization flow for the given application client ID.
+				Initializes the Discord Social SDK and starts the OAuth authorization flow.
+			</description>
+		</method>
+		<method name="initialize_presence_only">
+			<return type="int" enum="Error" />
+			<param index="0" name="client_id" type="int" />
+			<description>
+				Initializes RPC rich presence without OAuth or [method initialize]'s connect step. Sets [method is_presence_only_mode] and emits [signal ready] immediately.
 			</description>
 		</method>
 		<method name="is_authorization_pending" qualifiers="const">
 			<return type="bool" />
 			<description>
-				Returns [code]true[/code] while waiting for the user to complete OAuth ([constant AUTH_PENDING]).
+				Returns [code]true[/code] while waiting for OAuth ([constant AUTH_PENDING]).
 			</description>
 		</method>
 		<method name="is_authorized" qualifiers="const">
 			<return type="bool" />
 			<description>
-				Returns [code]true[/code] after token exchange succeeds ([constant AUTH_AUTHORIZED] or [constant AUTH_READY]).
+				Returns [code]true[/code] after token exchange succeeds.
 			</description>
 		</method>
 		<method name="is_available">
 			<return type="bool" />
 			<description>
-				Returns [code]true[/code] when the Discord Partner SDK runtime library is present beside the executable.
+				Returns [code]true[/code] when the Discord Partner SDK runtime library is present.
 			</description>
 		</method>
 		<method name="is_client_active" qualifiers="const">
 			<return type="bool" />
 			<description>
-				Returns [code]true[/code] while the SDK client session is active (including during OAuth).
+				Returns [code]true[/code] while the SDK client session is active.
 			</description>
 		</method>
 		<method name="is_debug_logging_enabled" qualifiers="const">
@@ -155,18 +238,75 @@
 		<method name="is_frame_hook_connected" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Returns whether the engine frame hook is connected for automatic callback pumping.
 			</description>
 		</method>
 		<method name="is_initialized" qualifiers="const">
 			<return type="bool" />
 			<description>
-				Returns [code]true[/code] after a successful [method initialize].
+				Returns [code]true[/code] after a successful [method initialize] or [method initialize_presence_only].
+			</description>
+		</method>
+		<method name="is_presence_only_mode" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when initialized via [method initialize_presence_only] (RPC, no OAuth).
 			</description>
 		</method>
 		<method name="is_ready_for_presence" qualifiers="const">
 			<return type="bool" />
 			<description>
-				Returns [code]true[/code] when the client has reached [constant STATE_READY] and rich presence can be updated.
+				Returns [code]true[/code] when rich presence can be updated (RPC mode or [constant AUTH_READY]).
+			</description>
+		</method>
+		<method name="refresh_relationships">
+			<return type="void" />
+			<description>
+				Refreshes the cached relationship count and emits [signal relationships_updated]. OAuth only.
+			</description>
+		</method>
+		<method name="register_launch_command">
+			<return type="bool" />
+			<param index="0" name="application_id" type="int" />
+			<param index="1" name="command" type="String" />
+			<description>
+				Registers a custom launch command for Discord deep links. Works in RPC and OAuth modes.
+			</description>
+		</method>
+		<method name="register_launch_steam_application">
+			<return type="bool" />
+			<param index="0" name="application_id" type="int" />
+			<param index="1" name="steam_app_id" type="int" />
+			<description>
+				Registers Steam launch integration for Discord join flows. Works in RPC and OAuth modes.
+			</description>
+		</method>
+		<method name="reject_discord_friend_request">
+			<return type="void" />
+			<param index="0" name="user_id" type="int" />
+			<description>
+				Rejects a pending Discord friend request. OAuth only.
+			</description>
+		</method>
+		<method name="reject_game_friend_request">
+			<return type="void" />
+			<param index="0" name="user_id" type="int" />
+			<description>
+				Rejects a pending game friend request. OAuth only.
+			</description>
+		</method>
+		<method name="remove_discord_and_game_friend">
+			<return type="void" />
+			<param index="0" name="user_id" type="int" />
+			<description>
+				Removes both Discord and game friendship. OAuth only.
+			</description>
+		</method>
+		<method name="remove_game_friend">
+			<return type="void" />
+			<param index="0" name="user_id" type="int" />
+			<description>
+				Removes a game-scoped friend. OAuth only.
 			</description>
 		</method>
 		<method name="run_callbacks">
@@ -175,11 +315,61 @@
 				Pumps Discord SDK callbacks. Also invoked automatically each frame when initialized.
 			</description>
 		</method>
+		<method name="send_activity_invite">
+			<return type="void" />
+			<param index="0" name="user_id" type="int" />
+			<param index="1" name="content" type="String" default="&quot;&quot;" />
+			<description>
+				Sends an activity invite with optional message text. OAuth only. Emits [signal activity_invite_sent].
+			</description>
+		</method>
+		<method name="send_activity_join_request">
+			<return type="void" />
+			<param index="0" name="user_id" type="int" />
+			<description>
+				Sends a join request to another user. OAuth only.
+			</description>
+		</method>
+		<method name="send_activity_join_request_reply">
+			<return type="void" />
+			<param index="0" name="invite" type="Dictionary" />
+			<description>
+				Replies to an activity join request invite. OAuth only.
+			</description>
+		</method>
+		<method name="send_discord_friend_request">
+			<return type="void" />
+			<param index="0" name="username" type="String" />
+			<description>
+				Sends a Discord-wide friend request by username. OAuth only.
+			</description>
+		</method>
+		<method name="send_discord_friend_request_by_id">
+			<return type="void" />
+			<param index="0" name="user_id" type="int" />
+			<description>
+				Sends a Discord-wide friend request by user ID. OAuth only.
+			</description>
+		</method>
+		<method name="send_game_friend_request">
+			<return type="void" />
+			<param index="0" name="username" type="String" />
+			<description>
+				Sends a game-scoped friend request by username. OAuth only.
+			</description>
+		</method>
+		<method name="send_game_friend_request_by_id">
+			<return type="void" />
+			<param index="0" name="user_id" type="int" />
+			<description>
+				Sends a game-scoped friend request by user ID. OAuth only.
+			</description>
+		</method>
 		<method name="set_debug_logging">
 			<return type="void" />
 			<param index="0" name="enabled" type="bool" />
 			<description>
-				Enables verbose SDK file logging ([code]discord.log[/code] in user data) in addition to always-on lifecycle logs.
+				Enables verbose SDK file logging in user data.
 			</description>
 		</method>
 		<method name="shutdown">
@@ -188,29 +378,65 @@
 				Shuts down the Discord SDK session and releases resources.
 			</description>
 		</method>
+		<method name="unblock_user">
+			<return type="void" />
+			<param index="0" name="user_id" type="int" />
+			<description>
+				Unblocks a user. OAuth only.
+			</description>
+		</method>
 		<method name="update_rich_presence">
 			<return type="int" enum="Error" />
 			<param index="0" name="activity" type="Dictionary" />
 			<description>
-				Updates Discord rich presence. Dictionary keys: [code]type[/code], [code]details[/code], [code]state[/code], [code]large_image[/code], [code]large_text[/code], [code]small_image[/code], [code]small_text[/code], [code]start_timestamp[/code], [code]end_timestamp[/code]. Requires [constant AUTH_READY]; if called earlier, the activity is cached and applied when [signal ready] fires. Returns [constant ERR_UNAUTHORIZED] when not ready.
+				Updates Discord rich presence. Keys include [code]type[/code], [code]name[/code], [code]details[/code], [code]state[/code], [code]details_url[/code], [code]state_url[/code], asset fields, [code]invite_cover_image[/code], [code]status_display_type[/code] ([code]name[/code]/[code]state[/code]/[code]details[/code]), [code]supported_platforms[/code] (array or bitmask), [code]party_id[/code], [code]party_current[/code], [code]party_max[/code], [code]join_secret[/code], [code]buttons[/code] ([code]{label,url}[/code]), and timestamps. Cached if called before ready.
 			</description>
 		</method>
 	</methods>
 	<signals>
+		<signal name="activity_invite_accepted">
+			<param index="0" name="join_secret" type="String" />
+			<description>
+				Emitted when the local user accepts an activity invite.
+			</description>
+		</signal>
+		<signal name="activity_invite_created">
+			<param index="0" name="invite" type="Dictionary" />
+			<description>
+				Emitted when a new activity invite is received.
+			</description>
+		</signal>
+		<signal name="activity_invite_sent">
+			<description>
+				Emitted after [method send_activity_invite] completes successfully.
+			</description>
+		</signal>
+		<signal name="activity_invite_updated">
+			<param index="0" name="invite" type="Dictionary" />
+			<description>
+				Emitted when an existing activity invite is updated.
+			</description>
+		</signal>
+		<signal name="activity_join_requested">
+			<param index="0" name="join_secret" type="String" />
+			<description>
+				Emitted when another user requests to join via the Discord client Join button.
+			</description>
+		</signal>
 		<signal name="authorization_failed">
 			<param index="0" name="error" type="String" />
 			<description>
-				Emitted when OAuth authorization fails or the user dismisses the auth UI.
+				Emitted when OAuth authorization fails.
 			</description>
 		</signal>
 		<signal name="authorization_started">
 			<description>
-				Emitted when the OAuth authorization flow begins (auth popup shown).
+				Emitted when OAuth authorization begins and the user must approve access.
 			</description>
 		</signal>
 		<signal name="authorized">
 			<description>
-				Emitted after the access token is stored and [method initialize]'s connect step begins.
+				Emitted when OAuth authorization succeeds before the client reaches ready state.
 			</description>
 		</signal>
 		<signal name="connection_state_changed">
@@ -218,25 +444,66 @@
 			<param index="1" name="error" type="int" />
 			<param index="2" name="error_detail" type="int" />
 			<description>
-				Emitted when the SDK connection state changes. [param state] uses [enum ConnectionState].
+				Emitted when the Discord client connection state changes.
+			</description>
+		</signal>
+		<signal name="lobby_joined">
+			<param index="0" name="lobby_id" type="int" />
+			<description>
+				Emitted when [method create_or_join_lobby] succeeds.
 			</description>
 		</signal>
 		<signal name="ready">
 			<description>
-				Emitted once when the client reaches [constant STATE_READY] and rich presence can be updated.
+				Emitted when Discord is ready for rich presence updates.
+			</description>
+		</signal>
+		<signal name="relationship_action_completed">
+			<param index="0" name="action" type="String" />
+			<param index="1" name="user_id" type="int" />
+			<param index="2" name="success" type="bool" />
+			<param index="3" name="error" type="String" />
+			<description>
+				Emitted when an OAuth relationship action completes.
+			</description>
+		</signal>
+		<signal name="relationship_created">
+			<param index="0" name="user_id" type="int" />
+			<param index="1" name="is_discord" type="bool" />
+			<description>
+				Emitted when a new relationship is created. OAuth only.
+			</description>
+		</signal>
+		<signal name="relationship_deleted">
+			<param index="0" name="user_id" type="int" />
+			<param index="1" name="is_discord" type="bool" />
+			<description>
+				Emitted when a relationship is removed. OAuth only.
+			</description>
+		</signal>
+		<signal name="relationship_groups_updated">
+			<param index="0" name="user_id" type="int" />
+			<description>
+				Emitted when unified friends list groups should be refreshed. OAuth only.
 			</description>
 		</signal>
 		<signal name="relationships_updated">
 			<param index="0" name="count" type="int" />
 			<description>
-				Emitted after relationships are fetched on ready.
+				Emitted when the relationship count is refreshed after connect.
 			</description>
 		</signal>
 		<signal name="rich_presence_updated">
 			<param index="0" name="success" type="bool" />
 			<param index="1" name="error" type="String" />
 			<description>
-				Emitted when [method update_rich_presence] completes asynchronously.
+				Emitted when a rich presence update completes.
+			</description>
+		</signal>
+		<signal name="user_updated">
+			<param index="0" name="user_id" type="int" />
+			<description>
+				Emitted when a Discord user's profile or status changes. OAuth only.
 			</description>
 		</signal>
 	</signals>
@@ -256,19 +523,50 @@
 		<constant name="STATE_HTTP_WAIT" value="6" enum="ConnectionState">
 		</constant>
 		<constant name="AUTH_NONE" value="0" enum="AuthState">
-			No auth flow started.
 		</constant>
 		<constant name="AUTH_PENDING" value="1" enum="AuthState">
-			OAuth popup shown; waiting for user authorization.
 		</constant>
 		<constant name="AUTH_AUTHORIZED" value="2" enum="AuthState">
-			Access token stored; connecting to Discord.
 		</constant>
 		<constant name="AUTH_READY" value="3" enum="AuthState">
-			Client ready; social APIs including rich presence are available.
 		</constant>
 		<constant name="AUTH_FAILED" value="4" enum="AuthState">
-			Authorization failed or was dismissed.
+		</constant>
+		<constant name="RELATIONSHIP_NONE" value="0" enum="RelationshipType">
+		</constant>
+		<constant name="RELATIONSHIP_FRIEND" value="1" enum="RelationshipType">
+		</constant>
+		<constant name="RELATIONSHIP_BLOCKED" value="2" enum="RelationshipType">
+		</constant>
+		<constant name="RELATIONSHIP_PENDING_INCOMING" value="3" enum="RelationshipType">
+		</constant>
+		<constant name="RELATIONSHIP_PENDING_OUTGOING" value="4" enum="RelationshipType">
+		</constant>
+		<constant name="RELATIONSHIP_IMPLICIT" value="5" enum="RelationshipType">
+		</constant>
+		<constant name="RELATIONSHIP_SUGGESTION" value="6" enum="RelationshipType">
+		</constant>
+		<constant name="GROUP_ONLINE_PLAYING_GAME" value="0" enum="RelationshipGroupType">
+		</constant>
+		<constant name="GROUP_ONLINE_ELSEWHERE" value="1" enum="RelationshipGroupType">
+		</constant>
+		<constant name="GROUP_OFFLINE" value="2" enum="RelationshipGroupType">
+		</constant>
+		<constant name="STATUS_ONLINE" value="0" enum="StatusType">
+		</constant>
+		<constant name="STATUS_OFFLINE" value="1" enum="StatusType">
+		</constant>
+		<constant name="STATUS_BLOCKED" value="2" enum="StatusType">
+		</constant>
+		<constant name="STATUS_IDLE" value="3" enum="StatusType">
+		</constant>
+		<constant name="STATUS_DND" value="4" enum="StatusType">
+		</constant>
+		<constant name="STATUS_INVISIBLE" value="5" enum="StatusType">
+		</constant>
+		<constant name="STATUS_STREAMING" value="6" enum="StatusType">
+		</constant>
+		<constant name="STATUS_UNKNOWN" value="7" enum="StatusType">
 		</constant>
 	</constants>
 </class>

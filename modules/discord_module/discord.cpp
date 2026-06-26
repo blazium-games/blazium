@@ -31,6 +31,7 @@
 
 #include "core/config/project_settings.h"
 #include "core/os/os.h"
+#include "core/variant/array.h"
 #include "discord_auth_client.h"
 #include "discord_frame_hook.h"
 
@@ -54,44 +55,83 @@ Discord *Discord::singleton = nullptr;
 static const char *kDefaultOAuthRedirectUri = "http://127.0.0.1/callback";
 
 void Discord::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("is_available"), &Discord::is_available);
-	ClassDB::bind_method(D_METHOD("initialize", "client_id"), &Discord::initialize, DEFVAL(0));
-	ClassDB::bind_method(D_METHOD("shutdown"), &Discord::shutdown);
-	ClassDB::bind_method(D_METHOD("is_initialized"), &Discord::is_initialized);
-	ClassDB::bind_method(D_METHOD("is_client_active"), &Discord::is_client_active);
-	ClassDB::bind_method(D_METHOD("is_ready_for_presence"), &Discord::is_ready_for_presence);
+	ClassDB::bind_method(D_METHOD("accept_activity_invite", "invite"), &Discord::accept_activity_invite);
+	ClassDB::bind_method(D_METHOD("accept_discord_friend_request", "user_id"), &Discord::accept_discord_friend_request);
+	ClassDB::bind_method(D_METHOD("accept_game_friend_request", "user_id"), &Discord::accept_game_friend_request);
+	ClassDB::bind_method(D_METHOD("authenticate_with_server", "url", "access_token", "client_id"), &Discord::authenticate_with_server);
+	ClassDB::bind_method(D_METHOD("block_user", "user_id"), &Discord::block_user);
+	ClassDB::bind_method(D_METHOD("cancel_discord_friend_request", "user_id"), &Discord::cancel_discord_friend_request);
+	ClassDB::bind_method(D_METHOD("cancel_game_friend_request", "user_id"), &Discord::cancel_game_friend_request);
+	ClassDB::bind_method(D_METHOD("clear_debug_log"), &Discord::clear_debug_log);
+	ClassDB::bind_method(D_METHOD("clear_rich_presence"), &Discord::clear_rich_presence);
+	ClassDB::bind_method(D_METHOD("create_or_join_lobby", "secret"), &Discord::create_or_join_lobby);
+	ClassDB::bind_method(D_METHOD("get_access_token"), &Discord::get_access_token);
 	ClassDB::bind_method(D_METHOD("get_auth_state"), &Discord::get_auth_state);
+	ClassDB::bind_method(D_METHOD("get_connection_state"), &Discord::get_connection_state);
+	ClassDB::bind_method(D_METHOD("get_debug_log"), &Discord::get_debug_log);
+	ClassDB::bind_method(D_METHOD("get_default_communication_scopes"), &Discord::get_default_communication_scopes);
+	ClassDB::bind_method(D_METHOD("get_default_presence_scopes"), &Discord::get_default_presence_scopes);
+	ClassDB::bind_method(D_METHOD("get_game_activity"), &Discord::get_game_activity);
+	ClassDB::bind_method(D_METHOD("get_granted_scopes"), &Discord::get_granted_scopes);
+	ClassDB::bind_method(D_METHOD("get_last_error"), &Discord::get_last_error);
+	ClassDB::bind_method(D_METHOD("get_relationship", "user_id"), &Discord::get_relationship);
+	ClassDB::bind_method(D_METHOD("get_relationships"), &Discord::get_relationships);
+	ClassDB::bind_method(D_METHOD("get_relationships_by_group", "group"), &Discord::get_relationships_by_group);
+	ClassDB::bind_method(D_METHOD("get_relationships_count"), &Discord::get_relationships_count);
+	ClassDB::bind_method(D_METHOD("get_requested_scopes"), &Discord::get_requested_scopes);
+	ClassDB::bind_method(D_METHOD("get_user", "user_id"), &Discord::get_user);
+	ClassDB::bind_method(D_METHOD("get_user_id"), &Discord::get_user_id);
+	ClassDB::bind_method(D_METHOD("get_username"), &Discord::get_username);
+	ClassDB::bind_method(D_METHOD("get_version"), &Discord::get_version);
+	ClassDB::bind_method(D_METHOD("initialize", "client_id"), &Discord::initialize, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("initialize_presence_only", "client_id"), &Discord::initialize_presence_only);
 	ClassDB::bind_method(D_METHOD("is_authorization_pending"), &Discord::is_authorization_pending);
 	ClassDB::bind_method(D_METHOD("is_authorized"), &Discord::is_authorized);
-	ClassDB::bind_method(D_METHOD("set_debug_logging", "enabled"), &Discord::set_debug_logging);
+	ClassDB::bind_method(D_METHOD("is_available"), &Discord::is_available);
+	ClassDB::bind_method(D_METHOD("is_client_active"), &Discord::is_client_active);
 	ClassDB::bind_method(D_METHOD("is_debug_logging_enabled"), &Discord::is_debug_logging_enabled);
-	ClassDB::bind_method(D_METHOD("get_debug_log"), &Discord::get_debug_log);
-	ClassDB::bind_method(D_METHOD("clear_debug_log"), &Discord::clear_debug_log);
-	ClassDB::bind_method(D_METHOD("run_callbacks"), &Discord::run_callbacks);
 	ClassDB::bind_method(D_METHOD("is_frame_hook_connected"), &Discord::is_frame_hook_connected);
-	ClassDB::bind_method(D_METHOD("get_connection_state"), &Discord::get_connection_state);
-	ClassDB::bind_method(D_METHOD("get_access_token"), &Discord::get_access_token);
-	ClassDB::bind_method(D_METHOD("get_username"), &Discord::get_username);
-	ClassDB::bind_method(D_METHOD("get_user_id"), &Discord::get_user_id);
-	ClassDB::bind_method(D_METHOD("get_relationships_count"), &Discord::get_relationships_count);
-	ClassDB::bind_method(D_METHOD("get_last_error"), &Discord::get_last_error);
-	ClassDB::bind_method(D_METHOD("get_default_presence_scopes"), &Discord::get_default_presence_scopes);
-	ClassDB::bind_method(D_METHOD("get_default_communication_scopes"), &Discord::get_default_communication_scopes);
-	ClassDB::bind_method(D_METHOD("get_requested_scopes"), &Discord::get_requested_scopes);
-	ClassDB::bind_method(D_METHOD("get_granted_scopes"), &Discord::get_granted_scopes);
-	ClassDB::bind_method(D_METHOD("get_game_activity"), &Discord::get_game_activity);
+	ClassDB::bind_method(D_METHOD("is_initialized"), &Discord::is_initialized);
+	ClassDB::bind_method(D_METHOD("is_presence_only_mode"), &Discord::is_presence_only_mode);
+	ClassDB::bind_method(D_METHOD("is_ready_for_presence"), &Discord::is_ready_for_presence);
+	ClassDB::bind_method(D_METHOD("refresh_relationships"), &Discord::refresh_relationships);
+	ClassDB::bind_method(D_METHOD("register_launch_command", "application_id", "command"), &Discord::register_launch_command);
+	ClassDB::bind_method(D_METHOD("register_launch_steam_application", "application_id", "steam_app_id"), &Discord::register_launch_steam_application);
+	ClassDB::bind_method(D_METHOD("reject_discord_friend_request", "user_id"), &Discord::reject_discord_friend_request);
+	ClassDB::bind_method(D_METHOD("reject_game_friend_request", "user_id"), &Discord::reject_game_friend_request);
+	ClassDB::bind_method(D_METHOD("remove_discord_and_game_friend", "user_id"), &Discord::remove_discord_and_game_friend);
+	ClassDB::bind_method(D_METHOD("remove_game_friend", "user_id"), &Discord::remove_game_friend);
+	ClassDB::bind_method(D_METHOD("run_callbacks"), &Discord::run_callbacks);
+	ClassDB::bind_method(D_METHOD("send_activity_invite", "user_id", "content"), &Discord::send_activity_invite, DEFVAL(String()));
+	ClassDB::bind_method(D_METHOD("send_activity_join_request", "user_id"), &Discord::send_activity_join_request);
+	ClassDB::bind_method(D_METHOD("send_activity_join_request_reply", "invite"), &Discord::send_activity_join_request_reply);
+	ClassDB::bind_method(D_METHOD("send_discord_friend_request", "username"), &Discord::send_discord_friend_request);
+	ClassDB::bind_method(D_METHOD("send_discord_friend_request_by_id", "user_id"), &Discord::send_discord_friend_request_by_id);
+	ClassDB::bind_method(D_METHOD("send_game_friend_request", "username"), &Discord::send_game_friend_request);
+	ClassDB::bind_method(D_METHOD("send_game_friend_request_by_id", "user_id"), &Discord::send_game_friend_request_by_id);
+	ClassDB::bind_method(D_METHOD("set_debug_logging", "enabled"), &Discord::set_debug_logging);
+	ClassDB::bind_method(D_METHOD("shutdown"), &Discord::shutdown);
+	ClassDB::bind_method(D_METHOD("unblock_user", "user_id"), &Discord::unblock_user);
 	ClassDB::bind_method(D_METHOD("update_rich_presence", "activity"), &Discord::update_rich_presence);
-	ClassDB::bind_method(D_METHOD("clear_rich_presence"), &Discord::clear_rich_presence);
-	ClassDB::bind_method(D_METHOD("authenticate_with_server", "url", "access_token", "client_id"), &Discord::authenticate_with_server);
-	ClassDB::bind_method(D_METHOD("get_version"), &Discord::get_version);
 
-	ADD_SIGNAL(MethodInfo("connection_state_changed", PropertyInfo(Variant::INT, "state"), PropertyInfo(Variant::INT, "error"), PropertyInfo(Variant::INT, "error_detail")));
+	ADD_SIGNAL(MethodInfo("activity_invite_accepted", PropertyInfo(Variant::STRING, "join_secret")));
+	ADD_SIGNAL(MethodInfo("activity_invite_created", PropertyInfo(Variant::DICTIONARY, "invite")));
+	ADD_SIGNAL(MethodInfo("activity_invite_sent"));
+	ADD_SIGNAL(MethodInfo("activity_invite_updated", PropertyInfo(Variant::DICTIONARY, "invite")));
+	ADD_SIGNAL(MethodInfo("activity_join_requested", PropertyInfo(Variant::STRING, "join_secret")));
+	ADD_SIGNAL(MethodInfo("authorization_failed", PropertyInfo(Variant::STRING, "error")));
 	ADD_SIGNAL(MethodInfo("authorization_started"));
 	ADD_SIGNAL(MethodInfo("authorized"));
-	ADD_SIGNAL(MethodInfo("authorization_failed", PropertyInfo(Variant::STRING, "error")));
+	ADD_SIGNAL(MethodInfo("connection_state_changed", PropertyInfo(Variant::INT, "state"), PropertyInfo(Variant::INT, "error"), PropertyInfo(Variant::INT, "error_detail")));
+	ADD_SIGNAL(MethodInfo("lobby_joined", PropertyInfo(Variant::INT, "lobby_id")));
 	ADD_SIGNAL(MethodInfo("ready"));
+	ADD_SIGNAL(MethodInfo("relationship_action_completed", PropertyInfo(Variant::STRING, "action"), PropertyInfo(Variant::INT, "user_id"), PropertyInfo(Variant::BOOL, "success"), PropertyInfo(Variant::STRING, "error")));
+	ADD_SIGNAL(MethodInfo("relationship_created", PropertyInfo(Variant::INT, "user_id"), PropertyInfo(Variant::BOOL, "is_discord")));
+	ADD_SIGNAL(MethodInfo("relationship_deleted", PropertyInfo(Variant::INT, "user_id"), PropertyInfo(Variant::BOOL, "is_discord")));
+	ADD_SIGNAL(MethodInfo("relationship_groups_updated", PropertyInfo(Variant::INT, "user_id")));
 	ADD_SIGNAL(MethodInfo("relationships_updated", PropertyInfo(Variant::INT, "count")));
 	ADD_SIGNAL(MethodInfo("rich_presence_updated", PropertyInfo(Variant::BOOL, "success"), PropertyInfo(Variant::STRING, "error")));
+	ADD_SIGNAL(MethodInfo("user_updated", PropertyInfo(Variant::INT, "user_id")));
 
 	BIND_ENUM_CONSTANT(STATE_DISCONNECTED);
 	BIND_ENUM_CONSTANT(STATE_CONNECTING);
@@ -106,6 +146,27 @@ void Discord::_bind_methods() {
 	BIND_ENUM_CONSTANT(AUTH_AUTHORIZED);
 	BIND_ENUM_CONSTANT(AUTH_READY);
 	BIND_ENUM_CONSTANT(AUTH_FAILED);
+
+	BIND_ENUM_CONSTANT(RELATIONSHIP_NONE);
+	BIND_ENUM_CONSTANT(RELATIONSHIP_FRIEND);
+	BIND_ENUM_CONSTANT(RELATIONSHIP_BLOCKED);
+	BIND_ENUM_CONSTANT(RELATIONSHIP_PENDING_INCOMING);
+	BIND_ENUM_CONSTANT(RELATIONSHIP_PENDING_OUTGOING);
+	BIND_ENUM_CONSTANT(RELATIONSHIP_IMPLICIT);
+	BIND_ENUM_CONSTANT(RELATIONSHIP_SUGGESTION);
+
+	BIND_ENUM_CONSTANT(GROUP_ONLINE_PLAYING_GAME);
+	BIND_ENUM_CONSTANT(GROUP_ONLINE_ELSEWHERE);
+	BIND_ENUM_CONSTANT(GROUP_OFFLINE);
+
+	BIND_ENUM_CONSTANT(STATUS_ONLINE);
+	BIND_ENUM_CONSTANT(STATUS_OFFLINE);
+	BIND_ENUM_CONSTANT(STATUS_BLOCKED);
+	BIND_ENUM_CONSTANT(STATUS_IDLE);
+	BIND_ENUM_CONSTANT(STATUS_DND);
+	BIND_ENUM_CONSTANT(STATUS_INVISIBLE);
+	BIND_ENUM_CONSTANT(STATUS_STREAMING);
+	BIND_ENUM_CONSTANT(STATUS_UNKNOWN);
 }
 
 Discord *Discord::get_singleton() {
@@ -155,11 +216,25 @@ void Discord::_set_auth_state(AuthState p_state) {
 	_log_lifecycle(vformat("Auth state -> %d", (int)p_state));
 }
 
-Error Discord::_require_auth_ready(const char *p_operation) {
+Error Discord::_require_presence_ready(const char *p_operation) {
+	if (ready_for_presence && (presence_only_mode || auth_state == AUTH_READY)) {
+		return OK;
+	}
+	last_error = vformat("Discord is not ready for %s (presence_only=%s, auth_state=%d, connection=%d)",
+			p_operation, presence_only_mode ? "true" : "false", (int)auth_state, (int)connection_state);
+	return ERR_UNAUTHORIZED;
+}
+
+Error Discord::_require_oauth_ready(const char *p_operation) {
+	if (presence_only_mode) {
+		last_error = vformat("Discord OAuth is required for %s (presence-only mode active)", p_operation);
+		return ERR_UNAUTHORIZED;
+	}
 	if (ready_for_presence && auth_state == AUTH_READY) {
 		return OK;
 	}
-	last_error = vformat("Discord is not ready for %s (auth_state=%d, connection=%d)", p_operation, (int)auth_state, (int)connection_state);
+	last_error = vformat("Discord OAuth is not ready for %s (auth_state=%d, connection=%d)",
+			p_operation, (int)auth_state, (int)connection_state);
 	return ERR_UNAUTHORIZED;
 }
 
@@ -378,6 +453,15 @@ void Discord::_update_rich_presence_callback(Discord_ClientResult *result, void 
 	discord->emit_signal(SNAME("rich_presence_updated"), success, error);
 }
 
+void Discord::_emit_ready_once() {
+	if (ready_signal_emitted) {
+		return;
+	}
+	ready_signal_emitted = true;
+	_log_lifecycle("Client is ready for rich presence");
+	emit_signal(SNAME("ready"));
+}
+
 void Discord::_on_client_ready() {
 	if (ready_for_presence) {
 		return;
@@ -397,16 +481,11 @@ void Discord::_on_client_ready() {
 	}
 
 	_refresh_relationships();
-
-	if (!ready_signal_emitted) {
-		ready_signal_emitted = true;
-		_log_lifecycle("Client is ready for rich presence");
-		emit_signal(SNAME("ready"));
-	}
+	_emit_ready_once();
 
 	const bool had_pending = has_pending_presence;
 	_apply_pending_presence();
-	if (!had_pending && last_presence_sent.is_empty()) {
+	if (!had_pending && last_presence_sent.is_empty() && !presence_only_mode) {
 		Dictionary sample;
 		sample["type"] = DISCORD_ACTIVITY_TYPE_PLAYING;
 		sample["details"] = "Rank: Diamond II";
@@ -489,8 +568,11 @@ void Discord::_reset_session() {
 	initialized = false;
 	ready_for_presence = false;
 	ready_signal_emitted = false;
+	presence_only_mode = false;
 	log_callback_registered = false;
 	authorize_dismiss_callback_registered = false;
+	activity_callbacks_registered = false;
+	relationship_callbacks_registered = false;
 	has_pending_presence = false;
 	pending_presence = Dictionary();
 	last_presence_sent = Dictionary();
@@ -499,6 +581,8 @@ void Discord::_reset_session() {
 	last_emitted_error_detail = 0;
 	last_polled_status = -1;
 	auth_state = AUTH_NONE;
+	pending_relationship_action = String();
+	pending_relationship_user_id = 0;
 	client_id = 0;
 }
 
@@ -515,7 +599,7 @@ bool Discord::is_available() {
 	return dll_available;
 }
 
-Error Discord::_initialize_client(int64_t p_client_id) {
+Error Discord::_setup_client(int64_t p_client_id) {
 	if (client_active) {
 		return OK;
 	}
@@ -527,7 +611,14 @@ Error Discord::_initialize_client(int64_t p_client_id) {
 	_register_log_callback();
 	_register_authorize_dismiss_callback();
 	_register_platform_hooks();
+	_register_activity_callbacks();
+	if (!presence_only_mode) {
+		_register_relationship_callbacks();
+	}
+	return OK;
+}
 
+Error Discord::_initialize_client_oauth(int64_t p_client_id) {
 	Discord_AuthorizationCodeVerifier verifier;
 	loader.client_create_authorization_code_verifier(&client, &verifier);
 
@@ -580,7 +671,13 @@ Error Discord::initialize(int64_t p_client_id) {
 	discord_try_connect_frame_hook();
 
 	client_id = p_client_id;
-	Error err = _initialize_client(p_client_id);
+	presence_only_mode = false;
+	Error err = _setup_client(p_client_id);
+	if (err != OK) {
+		_reset_session();
+		return err;
+	}
+	err = _initialize_client_oauth(p_client_id);
 	if (err != OK) {
 		_reset_session();
 		return err;
@@ -588,6 +685,37 @@ Error Discord::initialize(int64_t p_client_id) {
 
 	initialized = true;
 	_log_lifecycle(vformat("Discord auth started (client_id=%s)", String::num_int64(p_client_id)));
+	return OK;
+}
+
+Error Discord::initialize_presence_only(int64_t p_client_id) {
+	if (!is_available()) {
+		last_error = "Discord Social SDK runtime library not available";
+		return ERR_UNAVAILABLE;
+	}
+	if (initialized) {
+		return OK;
+	}
+	if (p_client_id <= 0) {
+		last_error = "client_id must be a positive Discord application ID";
+		return ERR_INVALID_PARAMETER;
+	}
+
+	discord_try_connect_frame_hook();
+
+	client_id = p_client_id;
+	presence_only_mode = true;
+	Error err = _setup_client(p_client_id);
+	if (err != OK) {
+		_reset_session();
+		return err;
+	}
+
+	initialized = true;
+	ready_for_presence = true;
+	_emit_ready_once();
+	_apply_pending_presence();
+	_log_lifecycle(vformat("Discord presence-only RPC started (client_id=%s)", String::num_int64(p_client_id)));
 	return OK;
 }
 
@@ -692,7 +820,7 @@ String Discord::get_default_communication_scopes() const {
 }
 
 Error Discord::update_rich_presence(const Dictionary &p_activity) {
-	if (_require_auth_ready("update_rich_presence") != OK) {
+	if (_require_presence_ready("update_rich_presence") != OK) {
 		pending_presence = p_activity;
 		has_pending_presence = true;
 		return ERR_UNAUTHORIZED;
@@ -701,7 +829,7 @@ Error Discord::update_rich_presence(const Dictionary &p_activity) {
 }
 
 Error Discord::_send_rich_presence(const Dictionary &p_activity) {
-	if (_require_auth_ready("update_rich_presence") != OK) {
+	if (_require_presence_ready("update_rich_presence") != OK) {
 		return ERR_UNAUTHORIZED;
 	}
 
@@ -719,15 +847,36 @@ Error Discord::_send_rich_presence(const Dictionary &p_activity) {
 	const int activity_type = p_activity.has("type") ? (int)p_activity["type"] : DISCORD_ACTIVITY_TYPE_PLAYING;
 	loader.activity_set_type(&activity, (Discord_ActivityTypes)activity_type);
 
+	if (p_activity.has("name")) {
+		loader.activity_set_name(&activity, (String)p_activity["name"]);
+	}
 	if (p_activity.has("details")) {
 		loader.activity_set_details(&activity, (String)p_activity["details"]);
 	}
 	if (p_activity.has("state")) {
 		loader.activity_set_state(&activity, (String)p_activity["state"]);
 	}
+	if (p_activity.has("details_url")) {
+		loader.activity_set_details_url(&activity, (String)p_activity["details_url"]);
+	}
+	if (p_activity.has("state_url")) {
+		loader.activity_set_state_url(&activity, (String)p_activity["state_url"]);
+	}
+	if (p_activity.has("status_display_type")) {
+		const Discord_StatusDisplayTypes display_type = _parse_status_display_type((String)p_activity["status_display_type"]);
+		loader.activity_set_status_display_type(&activity, display_type);
+	}
+	if (p_activity.has("supported_platforms")) {
+		const Discord_ActivityGamePlatforms platforms = _parse_supported_platforms(p_activity["supported_platforms"]);
+		if (platforms != 0) {
+			loader.activity_set_supported_platforms(&activity, platforms);
+		}
+	}
 
 	const bool has_assets = p_activity.has("large_image") || p_activity.has("large_text") ||
-			p_activity.has("small_image") || p_activity.has("small_text");
+			p_activity.has("small_image") || p_activity.has("small_text") ||
+			p_activity.has("large_url") || p_activity.has("small_url") ||
+			p_activity.has("invite_cover_image");
 	if (has_assets) {
 		Discord_ActivityAssets assets;
 		loader.activity_assets_init(&assets);
@@ -737,11 +886,20 @@ Error Discord::_send_rich_presence(const Dictionary &p_activity) {
 		if (p_activity.has("large_text")) {
 			loader.activity_assets_set_large_text(&assets, (String)p_activity["large_text"]);
 		}
+		if (p_activity.has("large_url")) {
+			loader.activity_assets_set_large_url(&assets, (String)p_activity["large_url"]);
+		}
 		if (p_activity.has("small_image")) {
 			loader.activity_assets_set_small_image(&assets, (String)p_activity["small_image"]);
 		}
 		if (p_activity.has("small_text")) {
 			loader.activity_assets_set_small_text(&assets, (String)p_activity["small_text"]);
+		}
+		if (p_activity.has("small_url")) {
+			loader.activity_assets_set_small_url(&assets, (String)p_activity["small_url"]);
+		}
+		if (p_activity.has("invite_cover_image")) {
+			loader.activity_assets_set_invite_cover_image(&assets, (String)p_activity["invite_cover_image"]);
 		}
 		loader.activity_set_assets(&activity, &assets);
 		loader.activity_assets_drop(&assets);
@@ -761,13 +919,66 @@ Error Discord::_send_rich_presence(const Dictionary &p_activity) {
 		loader.activity_timestamps_drop(&timestamps);
 	}
 
+	const bool has_party = p_activity.has("party_id") || p_activity.has("party_current") || p_activity.has("party_max");
+	if (has_party && loader.has_activity_extensions()) {
+		Discord_ActivityParty party;
+		loader.activity_party_init(&party);
+		if (p_activity.has("party_id")) {
+			loader.activity_party_set_id(&party, (String)p_activity["party_id"]);
+		}
+		if (p_activity.has("party_current")) {
+			loader.activity_party_set_current_size(&party, (int32_t)(int)p_activity["party_current"]);
+		}
+		if (p_activity.has("party_max")) {
+			loader.activity_party_set_max_size(&party, (int32_t)(int)p_activity["party_max"]);
+		}
+		loader.activity_set_party(&activity, &party);
+		loader.activity_party_drop(&party);
+	}
+
+	const bool has_secrets = p_activity.has("join_secret") || p_activity.has("spectate_secret") || p_activity.has("match_secret");
+	if (has_secrets && loader.has_activity_extensions()) {
+		Discord_ActivitySecrets secrets;
+		loader.activity_secrets_init(&secrets);
+		if (p_activity.has("join_secret")) {
+			loader.activity_secrets_set_join(&secrets, (String)p_activity["join_secret"]);
+		}
+		if (p_activity.has("spectate_secret") || p_activity.has("match_secret")) {
+			_log_debug("spectate_secret/match_secret are not supported by the loaded Discord SDK; use join_secret");
+		}
+		loader.activity_set_secrets(&activity, &secrets);
+		loader.activity_secrets_drop(&secrets);
+	}
+
+	if (p_activity.has("buttons") && loader.has_activity_extensions()) {
+		const Variant buttons_variant = p_activity["buttons"];
+		if (buttons_variant.get_type() == Variant::ARRAY) {
+			const Array buttons = buttons_variant;
+			for (int i = 0; i < buttons.size(); i++) {
+				if (buttons[i].get_type() != Variant::DICTIONARY) {
+					continue;
+				}
+				const Dictionary button_dict = buttons[i];
+				if (!button_dict.has("label") || !button_dict.has("url")) {
+					continue;
+				}
+				Discord_ActivityButton button;
+				loader.activity_button_init(&button);
+				loader.activity_button_set_label(&button, (String)button_dict["label"]);
+				loader.activity_button_set_url(&button, (String)button_dict["url"]);
+				loader.activity_add_button(&activity, &button);
+				loader.activity_button_drop(&button);
+			}
+		}
+	}
+
 	loader.client_update_rich_presence(&client, &activity, Discord::_update_rich_presence_callback, this);
 	loader.activity_drop(&activity);
 	return OK;
 }
 
 void Discord::clear_rich_presence() {
-	if (_require_auth_ready("clear_rich_presence") != OK) {
+	if (_require_presence_ready("clear_rich_presence") != OK) {
 		return;
 	}
 	loader.client_clear_rich_presence(&client);
@@ -873,7 +1084,7 @@ Dictionary Discord::get_game_activity() {
 }
 
 Ref<DiscordAuthResult> Discord::authenticate_with_server(const String &p_url, const String &p_access_token, int64_t p_client_id) {
-	if (_require_auth_ready("authenticate_with_server") != OK) {
+	if (_require_oauth_ready("authenticate_with_server") != OK) {
 		Ref<DiscordAuthResult> result;
 		result.instantiate();
 		result->set_error_message(last_error);
@@ -906,4 +1117,524 @@ Dictionary Discord::get_version() const {
 	version["runtime_library"] = DiscordAPILoader::get_runtime_library_name();
 	version["runtime_present"] = DiscordAPILoader::is_runtime_library_present();
 	return version;
+}
+
+void Discord::_register_activity_callbacks() {
+	if (!client_active || activity_callbacks_registered) {
+		return;
+	}
+	loader.client_set_activity_invite_created_callback(&client, Discord::_activity_invite_created_callback, this);
+	loader.client_set_activity_invite_updated_callback(&client, Discord::_activity_invite_updated_callback, this);
+	loader.client_set_activity_join_callback(&client, Discord::_activity_join_callback, this);
+	loader.client_set_lobby_created_callback(&client, Discord::_lobby_created_callback, this);
+	activity_callbacks_registered = true;
+}
+
+void Discord::_register_relationship_callbacks() {
+	if (!client_active || relationship_callbacks_registered || !loader.has_relationship_api()) {
+		return;
+	}
+	loader.client_set_relationship_created_callback(&client, Discord::_relationship_created_callback, this);
+	loader.client_set_relationship_deleted_callback(&client, Discord::_relationship_deleted_callback, this);
+	loader.client_set_relationship_groups_updated_callback(&client, Discord::_relationship_groups_updated_callback, this);
+	loader.client_set_user_updated_callback(&client, Discord::_user_updated_callback, this);
+	relationship_callbacks_registered = true;
+}
+
+Discord_StatusDisplayTypes Discord::_parse_status_display_type(const String &p_value) const {
+	const String normalized = p_value.to_lower();
+	if (normalized == "state") {
+		return DISCORD_STATUS_DISPLAY_TYPE_STATE;
+	}
+	if (normalized == "details") {
+		return DISCORD_STATUS_DISPLAY_TYPE_DETAILS;
+	}
+	return DISCORD_STATUS_DISPLAY_TYPE_NAME;
+}
+
+Discord_ActivityGamePlatforms Discord::_parse_supported_platforms(const Variant &p_value) const {
+	if (p_value.get_type() == Variant::INT) {
+		return (Discord_ActivityGamePlatforms)(int)p_value;
+	}
+	if (p_value.get_type() != Variant::ARRAY) {
+		return (Discord_ActivityGamePlatforms)0;
+	}
+	int mask = 0;
+	const Array platforms = p_value;
+	for (int i = 0; i < platforms.size(); i++) {
+		const String platform = String(platforms[i]).to_lower();
+		if (platform == "desktop") {
+			mask |= DISCORD_ACTIVITY_GAME_PLATFORM_DESKTOP;
+		} else if (platform == "xbox") {
+			mask |= DISCORD_ACTIVITY_GAME_PLATFORM_XBOX;
+		} else if (platform == "ios") {
+			mask |= DISCORD_ACTIVITY_GAME_PLATFORM_IOS;
+		} else if (platform == "android") {
+			mask |= DISCORD_ACTIVITY_GAME_PLATFORM_ANDROID;
+		}
+	}
+	return (Discord_ActivityGamePlatforms)mask;
+}
+
+Dictionary Discord::_serialize_user(Discord_UserHandle *p_user) {
+	Dictionary out;
+	if (!p_user) {
+		return out;
+	}
+	out["id"] = (int64_t)loader.user_handle_id(p_user);
+	out["username"] = loader.user_handle_username(p_user);
+	out["display_name"] = loader.user_handle_display_name(p_user);
+	out["global_name"] = loader.user_handle_global_name(p_user);
+	out["is_provisional"] = loader.user_handle_is_provisional(p_user);
+	out["status"] = (int)loader.user_handle_status(p_user);
+	out["avatar_url"] = loader.user_handle_avatar_url(p_user);
+	Discord_Activity activity;
+	out["has_game_activity"] = loader.user_handle_game_activity(p_user, &activity);
+	if (out["has_game_activity"]) {
+		loader.activity_drop(&activity);
+	}
+	return out;
+}
+
+Dictionary Discord::_serialize_relationship(Discord_RelationshipHandle *p_relationship) {
+	Dictionary out;
+	if (!p_relationship) {
+		return out;
+	}
+	const uint64_t relationship_id = loader.relationship_handle_id(p_relationship);
+	out["user_id"] = (int64_t)relationship_id;
+	out["discord_relationship_type"] = (int)loader.relationship_handle_discord_relationship_type(p_relationship);
+	out["game_relationship_type"] = (int)loader.relationship_handle_game_relationship_type(p_relationship);
+	out["is_spam_request"] = loader.relationship_handle_is_spam_request(p_relationship);
+	Discord_UserHandle user;
+	if (loader.relationship_handle_user(p_relationship, &user)) {
+		out["user"] = _serialize_user(&user);
+		loader.user_handle_drop(&user);
+	}
+	return out;
+}
+
+Array Discord::_serialize_relationship_span(const Discord_RelationshipHandleSpan &p_span) {
+	Array out;
+	for (size_t i = 0; i < p_span.size; i++) {
+		out.push_back(_serialize_relationship(&p_span.ptr[i]));
+	}
+	return out;
+}
+
+bool Discord::_build_activity_invite(const Dictionary &p_invite, Discord_ActivityInvite *r_invite) const {
+	if (!r_invite || !loader.has_invite_api()) {
+		return false;
+	}
+	loader.activity_invite_init(r_invite);
+	if (p_invite.has("sender_id")) {
+		loader.activity_invite_set_sender_id(r_invite, (uint64_t)(int64_t)p_invite["sender_id"]);
+	}
+	if (p_invite.has("channel_id")) {
+		loader.activity_invite_set_channel_id(r_invite, (uint64_t)(int64_t)p_invite["channel_id"]);
+	}
+	if (p_invite.has("message_id")) {
+		loader.activity_invite_set_message_id(r_invite, (uint64_t)(int64_t)p_invite["message_id"]);
+	}
+	if (p_invite.has("type")) {
+		loader.activity_invite_set_type(r_invite, (Discord_ActivityActionTypes)(int)p_invite["type"]);
+	}
+	if (p_invite.has("application_id")) {
+		loader.activity_invite_set_application_id(r_invite, (uint64_t)(int64_t)p_invite["application_id"]);
+	}
+	if (p_invite.has("parent_application_id")) {
+		loader.activity_invite_set_parent_application_id(r_invite, (uint64_t)(int64_t)p_invite["parent_application_id"]);
+	}
+	if (p_invite.has("party_id")) {
+		loader.activity_invite_set_party_id(r_invite, (String)p_invite["party_id"]);
+	}
+	if (p_invite.has("session_id")) {
+		loader.activity_invite_set_session_id(r_invite, (String)p_invite["session_id"]);
+	}
+	if (p_invite.has("is_valid")) {
+		loader.activity_invite_set_is_valid(r_invite, (bool)p_invite["is_valid"]);
+	}
+	return true;
+}
+
+void Discord::_emit_relationship_action_completed(Discord_ClientResult *result, const String &p_action, uint64_t p_user_id) {
+	const bool success = result ? loader.client_result_successful(result) : false;
+	const String error = success ? String() : (result ? loader.client_result_error(result) : String("Discord SDK relationship API unavailable"));
+	if (result) {
+		loader.client_result_drop(result);
+	}
+	emit_signal(SNAME("relationship_action_completed"), p_action, (int64_t)p_user_id, success, error);
+}
+
+bool Discord::register_launch_command(int64_t p_application_id, const String &p_command) {
+	if (_require_presence_ready("register_launch_command") != OK) {
+		return false;
+	}
+	const int64_t app_id = p_application_id > 0 ? p_application_id : client_id;
+	return loader.client_register_launch_command(&client, (uint64_t)app_id, p_command);
+}
+
+bool Discord::register_launch_steam_application(int64_t p_application_id, int p_steam_app_id) {
+	if (_require_presence_ready("register_launch_steam_application") != OK) {
+		return false;
+	}
+	const int64_t app_id = p_application_id > 0 ? p_application_id : client_id;
+	return loader.client_register_launch_steam_application(&client, (uint64_t)app_id, (uint32_t)p_steam_app_id);
+}
+
+void Discord::send_activity_invite(uint64_t p_user_id, const String &p_content) {
+	if (_require_oauth_ready("send_activity_invite") != OK) {
+		return;
+	}
+	loader.client_send_activity_invite(&client, p_user_id, p_content, Discord::_send_activity_invite_callback, this);
+}
+
+void Discord::send_activity_join_request(uint64_t p_user_id) {
+	if (_require_oauth_ready("send_activity_join_request") != OK) {
+		return;
+	}
+	loader.client_send_activity_join_request(&client, p_user_id, Discord::_send_activity_invite_callback, this);
+}
+
+void Discord::send_activity_join_request_reply(const Dictionary &p_invite) {
+	if (_require_oauth_ready("send_activity_join_request_reply") != OK) {
+		return;
+	}
+	Discord_ActivityInvite invite;
+	if (!_build_activity_invite(p_invite, &invite)) {
+		last_error = "Failed to build activity invite";
+		return;
+	}
+	loader.client_send_activity_join_request_reply(&client, &invite, Discord::_send_activity_invite_callback, this);
+	loader.activity_invite_drop(&invite);
+}
+
+void Discord::accept_activity_invite(const Dictionary &p_invite) {
+	if (_require_oauth_ready("accept_activity_invite") != OK) {
+		return;
+	}
+	Discord_ActivityInvite invite;
+	if (!_build_activity_invite(p_invite, &invite)) {
+		last_error = "Failed to build activity invite";
+		return;
+	}
+	loader.client_accept_activity_invite(&client, &invite, Discord::_accept_activity_invite_callback, this);
+	loader.activity_invite_drop(&invite);
+}
+
+void Discord::create_or_join_lobby(const String &p_secret) {
+	if (_require_oauth_ready("create_or_join_lobby") != OK) {
+		return;
+	}
+	loader.client_create_or_join_lobby(&client, p_secret, Discord::_create_or_join_lobby_callback, this);
+}
+
+Array Discord::get_relationships() {
+	Array out;
+	if (_require_oauth_ready("get_relationships") != OK) {
+		return out;
+	}
+	Discord_RelationshipHandleSpan span;
+	loader.client_get_relationships(&client, &span);
+	return _serialize_relationship_span(span);
+}
+
+Array Discord::get_relationships_by_group(RelationshipGroupType p_group) {
+	Array out;
+	if (_require_oauth_ready("get_relationships_by_group") != OK) {
+		return out;
+	}
+	Discord_RelationshipHandleSpan span;
+	loader.client_get_relationships_by_group(&client, (Discord_RelationshipGroupType)p_group, &span);
+	return _serialize_relationship_span(span);
+}
+
+Dictionary Discord::get_relationship(uint64_t p_user_id) {
+	Dictionary out;
+	if (_require_oauth_ready("get_relationship") != OK) {
+		return out;
+	}
+	Discord_RelationshipHandle relationship;
+	loader.client_get_relationship_handle(&client, p_user_id, &relationship);
+	out = _serialize_relationship(&relationship);
+	loader.relationship_handle_drop(&relationship);
+	return out;
+}
+
+Dictionary Discord::get_user(uint64_t p_user_id) {
+	Dictionary out;
+	if (_require_oauth_ready("get_user") != OK) {
+		return out;
+	}
+	Discord_UserHandle user;
+	if (!loader.client_get_user(&client, p_user_id, &user)) {
+		return out;
+	}
+	out = _serialize_user(&user);
+	loader.user_handle_drop(&user);
+	return out;
+}
+
+void Discord::refresh_relationships() {
+	if (_require_oauth_ready("refresh_relationships") != OK) {
+		return;
+	}
+	_refresh_relationships();
+}
+
+void Discord::send_game_friend_request(const String &p_username) {
+	if (_require_oauth_ready("send_game_friend_request") != OK) {
+		return;
+	}
+	pending_relationship_action = "send_game_friend_request";
+	pending_relationship_user_id = 0;
+	loader.client_send_game_friend_request(&client, p_username, Discord::_send_friend_request_callback, this);
+}
+
+void Discord::send_game_friend_request_by_id(uint64_t p_user_id) {
+	if (_require_oauth_ready("send_game_friend_request_by_id") != OK) {
+		return;
+	}
+	pending_relationship_action = "send_game_friend_request_by_id";
+	pending_relationship_user_id = p_user_id;
+	loader.client_send_game_friend_request_by_id(&client, p_user_id, Discord::_relationship_action_callback, this);
+}
+
+void Discord::send_discord_friend_request(const String &p_username) {
+	if (_require_oauth_ready("send_discord_friend_request") != OK) {
+		return;
+	}
+	pending_relationship_action = "send_discord_friend_request";
+	pending_relationship_user_id = 0;
+	loader.client_send_discord_friend_request(&client, p_username, Discord::_send_friend_request_callback, this);
+}
+
+void Discord::send_discord_friend_request_by_id(uint64_t p_user_id) {
+	if (_require_oauth_ready("send_discord_friend_request_by_id") != OK) {
+		return;
+	}
+	pending_relationship_action = "send_discord_friend_request_by_id";
+	pending_relationship_user_id = p_user_id;
+	loader.client_send_discord_friend_request_by_id(&client, p_user_id, Discord::_relationship_action_callback, this);
+}
+
+void Discord::accept_game_friend_request(uint64_t p_user_id) {
+	if (_require_oauth_ready("accept_game_friend_request") != OK) {
+		return;
+	}
+	pending_relationship_action = "accept_game_friend_request";
+	pending_relationship_user_id = p_user_id;
+	loader.client_accept_game_friend_request(&client, p_user_id, Discord::_relationship_action_callback, this);
+}
+
+void Discord::accept_discord_friend_request(uint64_t p_user_id) {
+	if (_require_oauth_ready("accept_discord_friend_request") != OK) {
+		return;
+	}
+	pending_relationship_action = "accept_discord_friend_request";
+	pending_relationship_user_id = p_user_id;
+	loader.client_accept_discord_friend_request(&client, p_user_id, Discord::_relationship_action_callback, this);
+}
+
+void Discord::reject_game_friend_request(uint64_t p_user_id) {
+	if (_require_oauth_ready("reject_game_friend_request") != OK) {
+		return;
+	}
+	pending_relationship_action = "reject_game_friend_request";
+	pending_relationship_user_id = p_user_id;
+	loader.client_reject_game_friend_request(&client, p_user_id, Discord::_relationship_action_callback, this);
+}
+
+void Discord::reject_discord_friend_request(uint64_t p_user_id) {
+	if (_require_oauth_ready("reject_discord_friend_request") != OK) {
+		return;
+	}
+	pending_relationship_action = "reject_discord_friend_request";
+	pending_relationship_user_id = p_user_id;
+	loader.client_reject_discord_friend_request(&client, p_user_id, Discord::_relationship_action_callback, this);
+}
+
+void Discord::cancel_game_friend_request(uint64_t p_user_id) {
+	if (_require_oauth_ready("cancel_game_friend_request") != OK) {
+		return;
+	}
+	pending_relationship_action = "cancel_game_friend_request";
+	pending_relationship_user_id = p_user_id;
+	loader.client_cancel_game_friend_request(&client, p_user_id, Discord::_relationship_action_callback, this);
+}
+
+void Discord::cancel_discord_friend_request(uint64_t p_user_id) {
+	if (_require_oauth_ready("cancel_discord_friend_request") != OK) {
+		return;
+	}
+	pending_relationship_action = "cancel_discord_friend_request";
+	pending_relationship_user_id = p_user_id;
+	loader.client_cancel_discord_friend_request(&client, p_user_id, Discord::_relationship_action_callback, this);
+}
+
+void Discord::remove_game_friend(uint64_t p_user_id) {
+	if (_require_oauth_ready("remove_game_friend") != OK) {
+		return;
+	}
+	pending_relationship_action = "remove_game_friend";
+	pending_relationship_user_id = p_user_id;
+	loader.client_remove_game_friend(&client, p_user_id, Discord::_relationship_action_callback, this);
+}
+
+void Discord::remove_discord_and_game_friend(uint64_t p_user_id) {
+	if (_require_oauth_ready("remove_discord_and_game_friend") != OK) {
+		return;
+	}
+	pending_relationship_action = "remove_discord_and_game_friend";
+	pending_relationship_user_id = p_user_id;
+	loader.client_remove_discord_and_game_friend(&client, p_user_id, Discord::_relationship_action_callback, this);
+}
+
+void Discord::block_user(uint64_t p_user_id) {
+	if (_require_oauth_ready("block_user") != OK) {
+		return;
+	}
+	pending_relationship_action = "block_user";
+	pending_relationship_user_id = p_user_id;
+	loader.client_block_user(&client, p_user_id, Discord::_relationship_action_callback, this);
+}
+
+void Discord::unblock_user(uint64_t p_user_id) {
+	if (_require_oauth_ready("unblock_user") != OK) {
+		return;
+	}
+	pending_relationship_action = "unblock_user";
+	pending_relationship_user_id = p_user_id;
+	loader.client_unblock_user(&client, p_user_id, Discord::_relationship_action_callback, this);
+}
+
+void Discord::_activity_invite_created_callback(Discord_ActivityInvite *invite, void *user_data) {
+	Discord *discord = (Discord *)user_data;
+	if (!discord || !invite) {
+		return;
+	}
+	discord->emit_signal(SNAME("activity_invite_created"), discord->loader.activity_invite_to_dict(invite));
+}
+
+void Discord::_activity_invite_updated_callback(Discord_ActivityInvite *invite, void *user_data) {
+	Discord *discord = (Discord *)user_data;
+	if (!discord || !invite) {
+		return;
+	}
+	discord->emit_signal(SNAME("activity_invite_updated"), discord->loader.activity_invite_to_dict(invite));
+}
+
+void Discord::_activity_join_callback(Discord_String join_secret, void *user_data) {
+	Discord *discord = (Discord *)user_data;
+	if (!discord) {
+		return;
+	}
+	discord->emit_signal(SNAME("activity_join_requested"), DiscordAPILoader::to_godot_string(join_secret));
+}
+
+void Discord::_accept_activity_invite_callback(Discord_ClientResult *result, Discord_String join_secret, void *user_data) {
+	Discord *discord = (Discord *)user_data;
+	if (!discord) {
+		return;
+	}
+	const bool success = discord->loader.client_result_successful(result);
+	const String error = success ? String() : discord->loader.client_result_error(result);
+	discord->loader.client_result_drop(result);
+	if (success) {
+		discord->emit_signal(SNAME("activity_invite_accepted"), DiscordAPILoader::to_godot_string(join_secret));
+	} else if (!error.is_empty()) {
+		discord->_set_last_error(error);
+	}
+}
+
+void Discord::_send_activity_invite_callback(Discord_ClientResult *result, void *user_data) {
+	Discord *discord = (Discord *)user_data;
+	if (!discord) {
+		return;
+	}
+	const bool success = discord->loader.client_result_successful(result);
+	const String error = success ? String() : discord->loader.client_result_error(result);
+	discord->loader.client_result_drop(result);
+	if (success) {
+		discord->emit_signal(SNAME("activity_invite_sent"));
+	} else if (!error.is_empty()) {
+		discord->_set_last_error(error);
+	}
+}
+
+void Discord::_create_or_join_lobby_callback(Discord_ClientResult *result, uint64_t lobby_id, void *user_data) {
+	Discord *discord = (Discord *)user_data;
+	if (!discord) {
+		return;
+	}
+	const bool success = discord->loader.client_result_successful(result);
+	const String error = success ? String() : discord->loader.client_result_error(result);
+	discord->loader.client_result_drop(result);
+	if (success) {
+		discord->emit_signal(SNAME("lobby_joined"), (int64_t)lobby_id);
+	} else if (!error.is_empty()) {
+		discord->_set_last_error(error);
+	}
+}
+
+void Discord::_lobby_created_callback(uint64_t lobby_id, void *user_data) {
+	Discord *discord = (Discord *)user_data;
+	if (!discord) {
+		return;
+	}
+	discord->emit_signal(SNAME("lobby_joined"), (int64_t)lobby_id);
+}
+
+void Discord::_relationship_created_callback(uint64_t user_id, bool is_discord, void *user_data) {
+	Discord *discord = (Discord *)user_data;
+	if (!discord) {
+		return;
+	}
+	discord->emit_signal(SNAME("relationship_created"), (int64_t)user_id, is_discord);
+}
+
+void Discord::_relationship_deleted_callback(uint64_t user_id, bool is_discord, void *user_data) {
+	Discord *discord = (Discord *)user_data;
+	if (!discord) {
+		return;
+	}
+	discord->emit_signal(SNAME("relationship_deleted"), (int64_t)user_id, is_discord);
+}
+
+void Discord::_relationship_groups_updated_callback(uint64_t user_id, void *user_data) {
+	Discord *discord = (Discord *)user_data;
+	if (!discord) {
+		return;
+	}
+	discord->emit_signal(SNAME("relationship_groups_updated"), (int64_t)user_id);
+}
+
+void Discord::_user_updated_callback(uint64_t user_id, void *user_data) {
+	Discord *discord = (Discord *)user_data;
+	if (!discord) {
+		return;
+	}
+	discord->emit_signal(SNAME("user_updated"), (int64_t)user_id);
+}
+
+void Discord::_relationship_action_callback(Discord_ClientResult *result, void *user_data) {
+	Discord *discord = (Discord *)user_data;
+	if (!discord) {
+		return;
+	}
+	const String action = discord->pending_relationship_action;
+	const uint64_t user_id = discord->pending_relationship_user_id;
+	discord->pending_relationship_action = String();
+	discord->pending_relationship_user_id = 0;
+	discord->_emit_relationship_action_completed(result, action, user_id);
+}
+
+void Discord::_send_friend_request_callback(Discord_ClientResult *result, void *user_data) {
+	Discord *discord = (Discord *)user_data;
+	if (!discord) {
+		return;
+	}
+	const String action = discord->pending_relationship_action;
+	discord->pending_relationship_action = String();
+	discord->_emit_relationship_action_completed(result, action, 0);
 }
