@@ -1669,8 +1669,8 @@ void MultiuserEditorPlugin::_route_action(int p_sender_net_id, const Dictionary 
 		}
 		Dictionary action_data = p_action.get("data", Dictionary());
 		String message = String(action_data.get("message", ""));
-		if (dock) {
-			dock->add_chat_message(peer_id, message);
+		if (chat_dock) {
+			chat_dock->add_chat_message(peer_id, message);
 		}
 		if (bool(MULTIUSER_GET("blazium/multiuser_editor/server_log_chat", true))) {
 			print_line(vformat("[Multiuser Chat] %s: %s", peer_id, message));
@@ -1854,6 +1854,9 @@ void MultiuserEditorPlugin::_try_deferred_startup() {
 	if (dock) {
 		dock->set_module_enabled(last_enabled_state);
 	}
+	if (chat_dock) {
+		chat_dock->set_module_enabled(last_enabled_state);
+	}
 
 	_refresh_permissions_from_settings();
 
@@ -1891,6 +1894,9 @@ void MultiuserEditorPlugin::_poll_runtime() {
 		last_enabled_state = current_enabled;
 		if (dock) {
 			dock->set_module_enabled(current_enabled);
+		}
+		if (chat_dock) {
+			chat_dock->set_module_enabled(current_enabled);
 		}
 	}
 	if (!current_enabled) {
@@ -2193,16 +2199,23 @@ void MultiuserEditorPlugin::_setup_dock() {
 	add_control_to_dock(DOCK_SLOT_RIGHT_UL, dock);
 	dock->set_session_branch_default(String(MULTIUSER_GET("blazium/multiuser_editor/git_session_branch_name", "multiuser_session_{timestamp}")));
 	dock->set_merge_target_default(String(MULTIUSER_GET("blazium/multiuser_editor/git_merge_target_branch", "main")));
-	dock->set_chat_history_max(MAX(16, int(MULTIUSER_GET("blazium/multiuser_editor/limits/chat_history_max", 256))));
 	last_enabled_state = bool(MULTIUSER_GET("blazium/multiuser_editor/enabled", false));
 	dock->set_module_enabled(last_enabled_state);
+
+	chat_dock = memnew(MultiuserChatDock);
+	chat_dock->set_module_enabled(last_enabled_state);
+	chat_dock->set_chat_history_max(MAX(16, int(MULTIUSER_GET("blazium/multiuser_editor/limits/chat_history_max", 256))));
+	add_control_to_dock(DOCK_SLOT_LEFT_BR, chat_dock);
 }
 
 void MultiuserEditorPlugin::_teardown_dock() {
 	if (dock) {
 		remove_control_from_docks(dock);
+		remove_control_from_docks(chat_dock);
 		dock->queue_free();
+		chat_dock->queue_free();
 		dock = nullptr;
+		chat_dock = nullptr;
 	}
 }
 
@@ -4451,8 +4464,8 @@ void MultiuserEditorPlugin::send_chat(const String &p_message) {
 	act_data["message"] = p_message;
 	action["data"] = act_data;
 	_emit_action(action);
-	if (dock) {
-		dock->add_chat_message(local_peer_id, p_message);
+	if (chat_dock) {
+		chat_dock->add_chat_message(local_peer_id, p_message);
 	}
 }
 

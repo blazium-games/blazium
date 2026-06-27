@@ -45,25 +45,60 @@ class RichTextLabel;
 class FileDialog;
 class PopupMenu;
 
+class MultiuserChatDock : public VBoxContainer {
+	GDCLASS(MultiuserChatDock, VBoxContainer);
+
+	RichTextLabel *chat_history;
+	Button *chat_clear_btn;
+	Button *chat_export_btn;
+	FileDialog *chat_export_dialog;
+	Label *info_label;
+
+	void _chat_submitted(const String &p_text);
+
+	void _on_chat_clear_pressed();
+	void _on_chat_export_pressed();
+	void _on_chat_export_file_selected(const String &p_path);
+
+	struct ChatEntry {
+		String peer_id;
+		String message;
+	};
+	List<ChatEntry> chat_ring;
+	int _chat_ring_max = 256;
+
+protected:
+	static void _bind_methods() {}
+
+public:
+	LineEdit *chat_input;
+
+	void add_chat_message(const String &p_peer_id, const String &p_message);
+	void set_chat_history_max(int p_max);
+	int get_chat_history_count() const { return chat_ring.size(); }
+	void update_info(const String &p_text);
+	void set_module_enabled(bool p_enabled);
+
+	MultiuserChatDock();
+};
+
 class MultiuserEditorDock : public VBoxContainer {
 	GDCLASS(MultiuserEditorDock, VBoxContainer);
 
-	Label *status_label = nullptr;
-	Label *info_label = nullptr;
-	Tree *peer_tree = nullptr;
-	RichTextLabel *chat_history = nullptr;
-	LineEdit *chat_input = nullptr;
-	Button *host_button = nullptr;
-	Button *join_button = nullptr;
-	Button *stop_button = nullptr;
-	Button *jump_button = nullptr;
-	Button *kick_button = nullptr;
-	Button *follow_button = nullptr;
-	Button *test_button = nullptr;
+	Label *status_label;
+	Label *info_label;
+	Tree *peer_tree;
 
-	Label *auth_mode_label = nullptr;
-	Label *drop_counter_label = nullptr;
-	Label *throttle_counter_label = nullptr;
+	Button *host_button;
+	Button *join_button;
+	Button *stop_button;
+	Button *jump_button;
+	// Button *kick_button;
+	Button *follow_button;
+	Button *test_button;
+	Label *auth_mode_label;
+	Label *drop_counter_label;
+	Label *throttle_counter_label;
 	int drop_counter = 0;
 	int throttle_counter = 0;
 
@@ -99,34 +134,30 @@ private:
 	};
 	List<SecurityEvent> security_ring;
 	int _security_ring_max = 16;
-	Button *security_toggle_btn = nullptr;
-	RichTextLabel *security_events_log = nullptr;
+	Button *security_toggle_btn;
+	RichTextLabel *security_events_log;
 	bool security_events_visible = false;
 
-	Button *chat_clear_btn = nullptr;
-	Button *chat_export_btn = nullptr;
-	FileDialog *chat_export_dialog = nullptr;
-
-	SpinBox *port_input = nullptr;
-	LineEdit *host_input = nullptr;
-	LineEdit *password_input = nullptr;
-	LineEdit *session_branch_input = nullptr;
-	LineEdit *merge_target_input = nullptr;
+	SpinBox *port_input;
+	LineEdit *host_input;
+	LineEdit *password_input;
+	LineEdit *session_branch_input;
+	LineEdit *merge_target_input;
 	bool module_enabled = true;
 	bool session_active = false;
 
-	VBoxContainer *git_panel = nullptr;
-	LineEdit *git_branch_input = nullptr;
-	Button *git_switch_btn = nullptr;
-	Button *git_create_btn = nullptr;
-	LineEdit *git_commit_input = nullptr;
-	Button *git_commit_btn = nullptr;
-	Button *git_status_btn = nullptr;
-	Button *git_pull_btn = nullptr;
-	Button *git_pull_rebase_btn = nullptr;
-	Button *git_push_btn = nullptr;
-	Button *git_force_push_btn = nullptr;
-	RichTextLabel *git_output = nullptr;
+	VBoxContainer *git_panel;
+	LineEdit *git_branch_input;
+	Button *git_switch_btn;
+	Button *git_create_btn;
+	LineEdit *git_commit_input;
+	Button *git_commit_btn;
+	Button *git_status_btn;
+	Button *git_pull_btn;
+	Button *git_pull_rebase_btn;
+	Button *git_push_btn;
+	Button *git_force_push_btn;
+	RichTextLabel *git_output;
 	String local_role_cached = "Editor";
 	bool force_push_visible_cached = false;
 
@@ -136,7 +167,6 @@ private:
 	void _jump_selected_peer();
 	void _follow_selected_peer();
 	void _test_pressed();
-	void _chat_submitted(const String &p_text);
 
 	void _git_switch_pressed();
 	void _git_create_pressed();
@@ -156,9 +186,6 @@ private:
 	void _on_kick_pressed();
 	void _on_copy_id_pressed();
 	void _on_security_toggle_pressed();
-	void _on_chat_clear_pressed();
-	void _on_chat_export_pressed();
-	void _on_chat_export_file_selected(const String &p_path);
 	void _refresh_security_events_log();
 
 	HashMap<String, Dictionary> peer_telemetry;
@@ -167,15 +194,8 @@ private:
 	PopupMenu *peer_context_menu = nullptr;
 	String peer_context_target_id;
 
-	struct ChatEntry {
-		String peer_id;
-		String message;
-	};
-	List<ChatEntry> chat_ring;
-	int _chat_ring_max = 256;
-
 protected:
-	static void _bind_methods();
+	static void _bind_methods() {}
 
 public:
 	void set_connected(const String &p_status);
@@ -185,9 +205,6 @@ public:
 	void update_peer_telemetry(const String &p_peer_id, const Dictionary &p_telemetry);
 
 	void update_info(const String &p_text);
-	void add_chat_message(const String &p_peer_id, const String &p_message);
-	void set_chat_history_max(int p_max);
-	int get_chat_history_count() const { return chat_ring.size(); }
 
 	enum AuthMode {
 		AUTH_NONE = 0,
@@ -248,4 +265,4 @@ public:
 	MultiuserEditorDock();
 };
 
-#endif
+#endif // TOOLS_ENABLED
