@@ -36,45 +36,171 @@
 #include "core/io/file_access.h"
 #include "core/os/time.h"
 #include "editor/editor_settings.h"
+#include "editor/themes/editor_scale.h"
 #include "multiuser_editor_constants.h"
 #include "multiuser_editor_plugin.h"
 #include "scene/gui/button.h"
 #include "scene/gui/file_dialog.h"
+#include "scene/gui/flow_container.h"
+#include "scene/gui/grid_container.h"
 #include "scene/gui/label.h"
 #include "scene/gui/line_edit.h"
 #include "scene/gui/popup_menu.h"
 #include "scene/gui/rich_text_label.h"
+#include "scene/gui/scroll_container.h"
 #include "scene/gui/spin_box.h"
 #include "scene/gui/tree.h"
 
-void MultiuserEditorDock::_bind_methods() {}
+void MultiuserChatDock::set_module_enabled(bool p_enabled) {
+	chat_input->set_editable(p_enabled);
+}
+
+void MultiuserChatDock::add_chat_message(const String &p_peer_id, const String &p_message) {
+	ChatEntry entry;
+	entry.peer_id = p_peer_id;
+	entry.message = p_message;
+	chat_ring.push_back(entry);
+	const int cap = MAX(1, _chat_ring_max);
+	while (chat_ring.size() > cap) {
+		chat_ring.pop_front();
+	}
+	chat_history->add_text("[" + p_peer_id + "]: ");
+	chat_history->add_text(p_message);
+	chat_history->add_newline();
+}
+
+void MultiuserChatDock::set_chat_history_max(int p_max) {
+	_chat_ring_max = MAX(1, p_max);
+	while (chat_ring.size() > _chat_ring_max) {
+		chat_ring.pop_front();
+	}
+}
+
+void MultiuserChatDock::_chat_submitted(const String &p_text) {
+	if (p_text.strip_edges().is_empty()) {
+		return;
+	}
+	if (MultiuserEditorPlugin::get_singleton()) {
+		MultiuserEditorPlugin::get_singleton()->call("send_chat", p_text);
+	}
+	chat_input->clear();
+}
+
+void MultiuserChatDock::_on_chat_clear_pressed() {
+	chat_ring.clear();
+	chat_history->clear();
+}
+
+void MultiuserChatDock::_on_chat_export_pressed() {
+	if (chat_export_dialog) {
+		chat_export_dialog->popup_centered_ratio(0.6f);
+	}
+}
+
+void MultiuserChatDock::_on_chat_export_file_selected(const String &p_path) {
+	if (p_path.is_empty()) {
+		return;
+	}
+	Ref<FileAccess> fa = FileAccess::open(p_path, FileAccess::WRITE);
+	if (fa.is_null()) {
+		update_info(vformat(TTR("Could not open %s for writing"), p_path));
+		return;
+	}
+	for (const ChatEntry &e : chat_ring) {
+		String time_str;
+		if (Time::get_singleton()) {
+			time_str = Time::get_singleton()->get_time_string_from_system();
+		}
+		fa->store_line(vformat("[%s] %s: %s", time_str, e.peer_id, e.message));
+	}
+	fa->close();
+	update_info(vformat(TTR("Chat exported to %s"), p_path));
+}
+
+void MultiuserChatDock::update_info(const String &p_text) {
+	info_label->set_text(p_text);
+}
+
+MultiuserChatDock::MultiuserChatDock() {
+	set_name("Chat");
+
+	chat_history = memnew(RichTextLabel);
+	chat_history->set_custom_minimum_size(Size2(0, 80 * EDSCALE));
+	chat_history->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+	chat_history->set_scroll_follow(true);
+
+	chat_history->set_use_bbcode(false);
+	add_child(chat_history);
+
+	chat_input = memnew(LineEdit);
+	chat_input->set_placeholder(TTR("Type a message..."));
+	chat_input->set_keep_editing_on_text_submit(true);
+	chat_input->connect("text_submitted", callable_mp(this, &MultiuserChatDock::_chat_submitted));
+	add_child(chat_input);
+
+	HBoxContainer *chat_actions_row = memnew(HBoxContainer);
+	chat_clear_btn = memnew(Button);
+	chat_clear_btn->set_h_size_flags(SIZE_EXPAND_FILL);
+	chat_clear_btn->set_text(TTR("Clear Chat"));
+	chat_clear_btn->connect(SceneStringName(pressed), callable_mp(this, &MultiuserChatDock::_on_chat_clear_pressed));
+	chat_actions_row->add_child(chat_clear_btn);
+
+	chat_export_btn = memnew(Button);
+	chat_export_btn->set_h_size_flags(SIZE_EXPAND_FILL);
+	chat_export_btn->set_text(TTR("Export Chat..."));
+	chat_export_btn->connect(SceneStringName(pressed), callable_mp(this, &MultiuserChatDock::_on_chat_export_pressed));
+	chat_actions_row->add_child(chat_export_btn);
+	add_child(chat_actions_row);
+
+	info_label = memnew(Label);
+	add_child(info_label);
+
+	chat_export_dialog = memnew(FileDialog);
+	chat_export_dialog->set_file_mode(FileDialog::FILE_MODE_SAVE_FILE);
+	chat_export_dialog->set_access(FileDialog::ACCESS_FILESYSTEM);
+	chat_export_dialog->set_title(TTR("Export Chat To File"));
+	chat_export_dialog->add_filter("*.txt", TTR("Text File"));
+	chat_export_dialog->set_current_file("chat.txt");
+	chat_export_dialog->connect("file_selected", callable_mp(this, &MultiuserChatDock::_on_chat_export_file_selected));
+	add_child(chat_export_dialog);
+}
 
 MultiuserEditorDock::MultiuserEditorDock() {
-	set_name("Multiuser Editor");
-
-	Label *title = memnew(Label);
-	title->set_text(TTR("Multiuser Editor"));
-	title->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
-	add_child(title);
+	set_name("Multiuser");
 
 	status_label = memnew(Label);
+	status_label->set_custom_minimum_size(Vector2(64 * EDSCALE, 0));
+	status_label->set_autowrap_mode(TextServer::AUTOWRAP_WORD);
 	add_child(status_label);
 
-	HBoxContainer *status_header = memnew(HBoxContainer);
-	add_child(status_header);
+	HFlowContainer *status_header = memnew(HFlowContainer);
 	auth_mode_label = memnew(Label);
 	auth_mode_label->set_text(TTR("Auth: Open / not connected"));
 	auth_mode_label->add_theme_color_override("font_color", Color(0.85, 0.85, 0.85));
 	status_header->add_child(auth_mode_label);
+	HBoxContainer *counter_row = memnew(HBoxContainer);
 	drop_counter_label = memnew(Label);
 	drop_counter_label->set_text(TTR("Dropped: 0"));
-	status_header->add_child(drop_counter_label);
+	counter_row->add_child(drop_counter_label);
 	throttle_counter_label = memnew(Label);
 	throttle_counter_label->set_text(TTR("Throttled: 0"));
-	status_header->add_child(throttle_counter_label);
+	counter_row->add_child(throttle_counter_label);
+	status_header->add_child(counter_row);
+	add_child(status_header);
+
+	ScrollContainer *scroll = memnew(ScrollContainer);
+	scroll->set_follow_focus(true);
+	scroll->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+	scroll->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+	scroll->set_horizontal_scroll_mode(ScrollContainer::SCROLL_MODE_DISABLED);
+	add_child(scroll);
+
+	VBoxContainer *content_vb = memnew(VBoxContainer);
+	content_vb->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+	content_vb->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+	scroll->add_child(content_vb);
 
 	HBoxContainer *host_row = memnew(HBoxContainer);
-	add_child(host_row);
 	Label *host_label = memnew(Label);
 	host_label->set_text(TTR("Host:"));
 	host_row->add_child(host_label);
@@ -86,9 +212,9 @@ MultiuserEditorDock::MultiuserEditorDock() {
 	}
 	host_input->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	host_row->add_child(host_input);
+	content_vb->add_child(host_row);
 
 	HBoxContainer *port_row = memnew(HBoxContainer);
-	add_child(port_row);
 	Label *port_label = memnew(Label);
 	port_label->set_text(TTR("Port:"));
 	port_row->add_child(port_label);
@@ -102,9 +228,9 @@ MultiuserEditorDock::MultiuserEditorDock() {
 	}
 	port_input->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	port_row->add_child(port_input);
+	content_vb->add_child(port_row);
 
 	HBoxContainer *pass_row = memnew(HBoxContainer);
-	add_child(pass_row);
 	Label *pass_label = memnew(Label);
 	pass_label->set_text(TTR("Password:"));
 	pass_row->add_child(pass_label);
@@ -112,9 +238,9 @@ MultiuserEditorDock::MultiuserEditorDock() {
 	password_input->set_secret(true);
 	password_input->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	pass_row->add_child(password_input);
+	content_vb->add_child(pass_row);
 
 	HBoxContainer *branch_row = memnew(HBoxContainer);
-	add_child(branch_row);
 	Label *branch_label = memnew(Label);
 	branch_label->set_text(TTR("Branch:"));
 	branch_row->add_child(branch_label);
@@ -122,9 +248,9 @@ MultiuserEditorDock::MultiuserEditorDock() {
 	session_branch_input->set_placeholder("multiuser_session_{timestamp}");
 	session_branch_input->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	branch_row->add_child(session_branch_input);
+	content_vb->add_child(branch_row);
 
 	HBoxContainer *merge_row = memnew(HBoxContainer);
-	add_child(merge_row);
 	Label *merge_label = memnew(Label);
 	merge_label->set_text(TTR("Merge Into:"));
 	merge_row->add_child(merge_label);
@@ -132,25 +258,29 @@ MultiuserEditorDock::MultiuserEditorDock() {
 	merge_target_input->set_placeholder("main");
 	merge_target_input->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	merge_row->add_child(merge_target_input);
+	content_vb->add_child(merge_row);
 
 	HBoxContainer *button_row = memnew(HBoxContainer);
-	add_child(button_row);
 	host_button = memnew(Button);
 	host_button->set_text(TTR("Host"));
+	host_button->set_h_size_flags(SIZE_EXPAND_FILL);
 	host_button->connect(SceneStringName(pressed), callable_mp(this, &MultiuserEditorDock::_host_pressed));
 	button_row->add_child(host_button);
 	join_button = memnew(Button);
+	join_button->set_h_size_flags(SIZE_EXPAND_FILL);
 	join_button->set_text(TTR("Join"));
 	join_button->connect(SceneStringName(pressed), callable_mp(this, &MultiuserEditorDock::_join_pressed));
 	button_row->add_child(join_button);
 	stop_button = memnew(Button);
+	stop_button->set_h_size_flags(SIZE_EXPAND_FILL);
 	stop_button->set_text(TTR("Stop"));
 	stop_button->connect(SceneStringName(pressed), callable_mp(this, &MultiuserEditorDock::_stop_pressed));
 	button_row->add_child(stop_button);
+	content_vb->add_child(button_row);
 
 	Label *peers_label = memnew(Label);
 	peers_label->set_text(TTR("Connected Peers:"));
-	add_child(peers_label);
+	content_vb->add_child(peers_label);
 
 	peer_tree = memnew(Tree);
 	peer_tree->set_columns(4);
@@ -161,49 +291,63 @@ MultiuserEditorDock::MultiuserEditorDock() {
 	peer_tree->set_column_titles_visible(true);
 	peer_tree->set_hide_root(true);
 	peer_tree->create_item();
-	peer_tree->set_custom_minimum_size(Size2(0, 150));
+	peer_tree->set_custom_minimum_size(Size2(0, 100 * EDSCALE));
 	peer_tree->set_v_size_flags(Control::SIZE_EXPAND_FILL);
-	add_child(peer_tree);
 	peer_tree->connect("cell_selected", callable_mp(this, &MultiuserEditorDock::_on_peer_tree_cell_selected));
 	peer_tree->connect("item_mouse_selected", callable_mp(this, &MultiuserEditorDock::_on_peer_tree_item_mouse_selected));
+	content_vb->add_child(peer_tree);
+
+	HBoxContainer *peer_buttons_row = memnew(HBoxContainer);
+	content_vb->add_child(peer_buttons_row);
 
 	jump_button = memnew(Button);
+	jump_button->set_h_size_flags(SIZE_EXPAND_FILL);
 	jump_button->set_text(TTR("Jump to Peer"));
 	jump_button->set_disabled(true);
 	jump_button->connect(SceneStringName(pressed), callable_mp(this, &MultiuserEditorDock::_jump_selected_peer));
-	add_child(jump_button);
+	peer_buttons_row->add_child(jump_button);
 
 	follow_button = memnew(Button);
+	follow_button->set_h_size_flags(SIZE_EXPAND_FILL);
 	follow_button->set_text(TTR("Follow Peer"));
 	follow_button->set_disabled(true);
 	follow_button->connect(SceneStringName(pressed), callable_mp(this, &MultiuserEditorDock::_follow_selected_peer));
-	add_child(follow_button);
+	peer_buttons_row->add_child(follow_button);
 
 	test_button = memnew(Button);
 	test_button->set_text(TTR("Network Test (Autowork)"));
 	test_button->connect(SceneStringName(pressed), callable_mp(this, &MultiuserEditorDock::_test_pressed));
-	add_child(test_button);
+	content_vb->add_child(test_button);
 
 	security_toggle_btn = memnew(Button);
 	security_toggle_btn->set_text(TTR("Security Events"));
 	security_toggle_btn->set_toggle_mode(true);
 	security_toggle_btn->set_pressed(false);
 	security_toggle_btn->connect(SceneStringName(pressed), callable_mp(this, &MultiuserEditorDock::_on_security_toggle_pressed));
-	add_child(security_toggle_btn);
+	content_vb->add_child(security_toggle_btn);
 
 	security_events_log = memnew(RichTextLabel);
-	security_events_log->set_custom_minimum_size(Size2(0, 90));
+	security_events_log->set_custom_minimum_size(Size2(0, 80 * EDSCALE));
 	security_events_log->set_scroll_follow(true);
 	security_events_log->set_visible(false);
-	add_child(security_events_log);
+	content_vb->add_child(security_events_log);
 
 	git_panel = memnew(VBoxContainer);
-	add_child(git_panel);
+	content_vb->add_child(git_panel);
 	{
+		HBoxContainer *git_row = memnew(HBoxContainer);
+		git_panel->add_child(git_row);
+
 		Label *git_label = memnew(Label);
-		git_label->set_text(TTR("Git Workflow"));
-		git_label->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
-		git_panel->add_child(git_label);
+		git_label->set_h_size_flags(SIZE_EXPAND_FILL);
+		git_label->set_text(TTR("Git Workflow:"));
+		// git_label->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
+		git_row->add_child(git_label);
+
+		git_status_btn = memnew(Button);
+		git_status_btn->set_text(TTR("Status"));
+		git_status_btn->connect(SceneStringName(pressed), callable_mp(this, &MultiuserEditorDock::_git_status_pressed));
+		git_row->add_child(git_status_btn);
 
 		HBoxContainer *branch_row_g = memnew(HBoxContainer);
 		git_panel->add_child(branch_row_g);
@@ -237,78 +381,42 @@ MultiuserEditorDock::MultiuserEditorDock() {
 		git_commit_btn->connect(SceneStringName(pressed), callable_mp(this, &MultiuserEditorDock::_git_commit_pressed));
 		commit_row->add_child(git_commit_btn);
 
-		HBoxContainer *ops_row = memnew(HBoxContainer);
-		git_panel->add_child(ops_row);
-		git_status_btn = memnew(Button);
-		git_status_btn->set_text(TTR("Status"));
-		git_status_btn->connect(SceneStringName(pressed), callable_mp(this, &MultiuserEditorDock::_git_status_pressed));
-		ops_row->add_child(git_status_btn);
+		GridContainer *git_buttons_gc = memnew(GridContainer);
+		git_buttons_gc->set_columns(2);
+		git_panel->add_child(git_buttons_gc);
+
 		git_pull_btn = memnew(Button);
+		git_pull_btn->set_h_size_flags(SIZE_EXPAND_FILL);
 		git_pull_btn->set_text(TTR("Pull"));
 		git_pull_btn->connect(SceneStringName(pressed), callable_mp(this, &MultiuserEditorDock::_git_pull_pressed));
-		ops_row->add_child(git_pull_btn);
+		git_buttons_gc->add_child(git_pull_btn);
 		git_pull_rebase_btn = memnew(Button);
+		git_pull_rebase_btn->set_h_size_flags(SIZE_EXPAND_FILL);
 		git_pull_rebase_btn->set_text(TTR("Pull (rebase)"));
 		git_pull_rebase_btn->connect(SceneStringName(pressed), callable_mp(this, &MultiuserEditorDock::_git_pull_rebase_pressed));
-		ops_row->add_child(git_pull_rebase_btn);
+		git_buttons_gc->add_child(git_pull_rebase_btn);
 		git_push_btn = memnew(Button);
+		git_push_btn->set_h_size_flags(SIZE_EXPAND_FILL);
 		git_push_btn->set_text(TTR("Push"));
 		git_push_btn->connect(SceneStringName(pressed), callable_mp(this, &MultiuserEditorDock::_git_push_pressed));
-		ops_row->add_child(git_push_btn);
+		git_buttons_gc->add_child(git_push_btn);
 		git_force_push_btn = memnew(Button);
+		git_force_push_btn->set_h_size_flags(SIZE_EXPAND_FILL);
 		git_force_push_btn->set_text(TTR("Force Push"));
 		git_force_push_btn->connect(SceneStringName(pressed), callable_mp(this, &MultiuserEditorDock::_git_force_push_pressed));
-		ops_row->add_child(git_force_push_btn);
+		git_buttons_gc->add_child(git_force_push_btn);
 
 		git_output = memnew(RichTextLabel);
-		git_output->set_custom_minimum_size(Size2(0, 80));
+		git_output->set_custom_minimum_size(Size2(0, 80 * EDSCALE));
 		git_output->set_scroll_follow(true);
 		git_panel->add_child(git_output);
 	}
 	git_panel->hide();
 
-	Label *chat_label = memnew(Label);
-
-	chat_label->set_text(TTR("Chat:"));
-	add_child(chat_label);
-
-	chat_history = memnew(RichTextLabel);
-	chat_history->set_custom_minimum_size(Size2(0, 150));
-	chat_history->set_v_size_flags(Control::SIZE_EXPAND_FILL);
-	chat_history->set_scroll_follow(true);
-
-	chat_history->set_use_bbcode(false);
-	add_child(chat_history);
-
-	chat_input = memnew(LineEdit);
-	chat_input->set_placeholder(TTR("Type a message..."));
-	chat_input->connect("text_submitted", callable_mp(this, &MultiuserEditorDock::_chat_submitted));
-	add_child(chat_input);
-
-	HBoxContainer *chat_actions_row = memnew(HBoxContainer);
-	add_child(chat_actions_row);
-	chat_clear_btn = memnew(Button);
-	chat_clear_btn->set_text(TTR("Clear Chat"));
-	chat_clear_btn->connect(SceneStringName(pressed), callable_mp(this, &MultiuserEditorDock::_on_chat_clear_pressed));
-	chat_actions_row->add_child(chat_clear_btn);
-	chat_export_btn = memnew(Button);
-	chat_export_btn->set_text(TTR("Export Chat..."));
-	chat_export_btn->connect(SceneStringName(pressed), callable_mp(this, &MultiuserEditorDock::_on_chat_export_pressed));
-	chat_actions_row->add_child(chat_export_btn);
-
-	chat_export_dialog = memnew(FileDialog);
-	chat_export_dialog->set_file_mode(FileDialog::FILE_MODE_SAVE_FILE);
-	chat_export_dialog->set_access(FileDialog::ACCESS_FILESYSTEM);
-	chat_export_dialog->set_title(TTR("Export Chat To File"));
-	chat_export_dialog->add_filter("*.txt", TTR("Text File"));
-	chat_export_dialog->set_current_file("chat.txt");
-	chat_export_dialog->connect("file_selected", callable_mp(this, &MultiuserEditorDock::_on_chat_export_file_selected));
-	add_child(chat_export_dialog);
-
 	info_label = memnew(Label);
-
 	info_label->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
 	add_child(info_label);
+
 	set_disconnected();
 }
 
@@ -417,16 +525,6 @@ void MultiuserEditorDock::_test_pressed() {
 	}
 }
 
-void MultiuserEditorDock::_chat_submitted(const String &p_text) {
-	if (p_text.strip_edges().is_empty()) {
-		return;
-	}
-	if (MultiuserEditorPlugin::get_singleton()) {
-		MultiuserEditorPlugin::get_singleton()->call("send_chat", p_text);
-	}
-	chat_input->clear();
-}
-
 void MultiuserEditorDock::set_connected(const String &p_status) {
 	session_active = true;
 	status_label->set_text(vformat(TTR("Status: %s"), p_status));
@@ -513,9 +611,6 @@ void MultiuserEditorDock::set_module_enabled(bool p_enabled) {
 	}
 	if (merge_target_input) {
 		merge_target_input->set_editable(false);
-	}
-	if (chat_input) {
-		chat_input->set_editable(false);
 	}
 	if (jump_button) {
 		jump_button->set_disabled(true);
@@ -638,32 +733,7 @@ void MultiuserEditorDock::update_peer_telemetry(const String &p_peer_id, const D
 }
 
 void MultiuserEditorDock::update_info(const String &p_text) {
-	if (info_label) {
-		info_label->set_text(p_text);
-	}
-}
-
-void MultiuserEditorDock::add_chat_message(const String &p_peer_id, const String &p_message) {
-	ChatEntry entry;
-	entry.peer_id = p_peer_id;
-	entry.message = p_message;
-	chat_ring.push_back(entry);
-	const int cap = MAX(1, _chat_ring_max);
-	while (chat_ring.size() > cap) {
-		chat_ring.pop_front();
-	}
-	if (chat_history) {
-		chat_history->add_text("[" + p_peer_id + "]: ");
-		chat_history->add_text(p_message);
-		chat_history->add_newline();
-	}
-}
-
-void MultiuserEditorDock::set_chat_history_max(int p_max) {
-	_chat_ring_max = MAX(1, p_max);
-	while (chat_ring.size() > _chat_ring_max) {
-		chat_ring.pop_front();
-	}
+	info_label->set_text(p_text);
 }
 
 void MultiuserEditorDock::_refresh_git_visibility() {
@@ -924,39 +994,6 @@ void MultiuserEditorDock::_refresh_security_events_log() {
 		security_events_log->add_text(ev.message);
 		security_events_log->add_newline();
 	}
-}
-
-void MultiuserEditorDock::_on_chat_clear_pressed() {
-	chat_ring.clear();
-	if (chat_history) {
-		chat_history->clear();
-	}
-}
-
-void MultiuserEditorDock::_on_chat_export_pressed() {
-	if (chat_export_dialog) {
-		chat_export_dialog->popup_centered_ratio(0.6f);
-	}
-}
-
-void MultiuserEditorDock::_on_chat_export_file_selected(const String &p_path) {
-	if (p_path.is_empty()) {
-		return;
-	}
-	Ref<FileAccess> fa = FileAccess::open(p_path, FileAccess::WRITE);
-	if (fa.is_null()) {
-		update_info(vformat(TTR("Could not open %s for writing"), p_path));
-		return;
-	}
-	for (const ChatEntry &e : chat_ring) {
-		String time_str;
-		if (Time::get_singleton()) {
-			time_str = Time::get_singleton()->get_time_string_from_system();
-		}
-		fa->store_line(vformat("[%s] %s: %s", time_str, e.peer_id, e.message));
-	}
-	fa->close();
-	update_info(vformat(TTR("Chat exported to %s"), p_path));
 }
 
 #endif

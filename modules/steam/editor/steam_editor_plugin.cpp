@@ -342,11 +342,11 @@ void SteamEditorPlugin::_setup_dock() {
 	log->set_deselect_on_focus_loss_enabled(false);
 
 	dock_root = memnew(VBoxContainer);
-	dock_root->set_name("Steam Editor");
+	dock_root->set_name("Steam");
 	dock_root->add_child(fields_grid);
 	dock_root->add_child(buttons_grid);
 	dock_root->add_child(log);
-	add_control_to_dock(DOCK_SLOT_LEFT_BR, dock_root);
+	add_control_to_dock(DOCK_SLOT_RIGHT_UL, dock_root);
 
 	Steam *steam = Steam::get_singleton();
 	if (steam) {

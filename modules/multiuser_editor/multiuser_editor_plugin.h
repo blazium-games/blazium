@@ -56,6 +56,7 @@ class MultiuserEditorPlugin;
 
 class Label;
 class MultiuserEditorDock;
+class MultiuserChatDock;
 
 class MultiuserEditorPlugin : public EditorPlugin {
 	GDCLASS(MultiuserEditorPlugin, EditorPlugin);
@@ -86,6 +87,7 @@ private:
 	MultiuserEditorGhostCursorOverlay *ghost_overlay = nullptr;
 	Timer *poll_timer = nullptr;
 	MultiuserEditorDock *dock = nullptr;
+	MultiuserChatDock *chat_dock = nullptr;
 	Label *status_label = nullptr;
 	Ref<MultiuserEditorSettingsInspectorPlugin> inspector_plugin;
 	EditorSelection *selection = nullptr;
