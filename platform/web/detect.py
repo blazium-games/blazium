@@ -249,7 +249,11 @@ def configure(env: "SConsEnvironment"):
         if not env["dlink_enabled"]:
             # Workaround https://github.com/emscripten-core/emscripten/issues/21844#issuecomment-2116936414.
             # Not needed (and potentially dangerous) when dlink_enabled=yes, since we set EXPORT_ALL=1 in that case.
-            env.Append(LINKFLAGS=["-sEXPORTED_FUNCTIONS=['__emscripten_thread_crashed','_main']"])
+            exported = "['__emscripten_thread_crashed','_main'"
+            if env.get("module_luau_module_enabled"):
+                exported += ",'_luau_web_execute_script','_luau_web_check_script'"
+            exported += "]"
+            env.Append(LINKFLAGS=[f"-sEXPORTED_FUNCTIONS={exported}"])
 
     elif env["proxy_to_pthread"]:
         print_warning('"threads=no" support requires "proxy_to_pthread=no", disabling proxy to pthread.')
@@ -297,6 +301,9 @@ def configure(env: "SConsEnvironment"):
 
     # Do not call main immediately when the support code is ready.
     env.Append(LINKFLAGS=["-sINVOKE_RUN=0"])
+
+    if env.get("module_luau_module_enabled") and not env["threads"]:
+        env.Append(LINKFLAGS=["-sEXPORTED_FUNCTIONS=['_main','_luau_web_execute_script','_luau_web_check_script']"])
 
     # callMain for manual start, cwrap for the mono version.
     env.Append(LINKFLAGS=["-sEXPORTED_RUNTIME_METHODS=['callMain','cwrap']"])

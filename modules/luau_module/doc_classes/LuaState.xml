@@ -1,0 +1,1224 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="LuaState" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Embedded Luau virtual machine for sandboxed scripting.
+	</brief_description>
+	<description>
+		LuaState wraps a sandboxed Luau VM for embedded scripting from GDScript or C#.
+		When passing C# callbacks into Luau, wrap them in a Callable before pushing them into the VM.
+	</description>
+	<tutorials>
+		<link title="Luau Module Developer Examples">https://github.com/blazium-games/luau_module_tests</link>
+	</tutorials>
+	<methods>
+		<method name="abs_index">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="arg_error">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="message" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="bind_callable" qualifiers="static">
+			<return type="Callable" />
+			<param index="0" name="callable" type="Callable" />
+			<description>
+			</description>
+		</method>
+		<method name="break_execution">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="call_meta">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="field" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="check_stack">
+			<return type="bool" />
+			<param index="0" name="size" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="clear_table">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="clone_function">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="clone_table">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="close">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="co_status">
+			<return type="int" enum="LuaState.CoStatus" />
+			<param index="0" name="co" type="LuaState" />
+			<description>
+			</description>
+		</method>
+		<method name="concat">
+			<return type="void" />
+			<param index="0" name="count" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="cpcall">
+			<return type="int" enum="LuaState.Status" />
+			<param index="0" name="callable" type="Callable" />
+			<description>
+			</description>
+		</method>
+		<method name="create_table">
+			<return type="void" />
+			<param index="0" name="narr" type="int" default="0" />
+			<param index="1" name="nrec" type="int" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="debug_trace">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="do_string">
+			<return type="int" enum="LuaState.Status" />
+			<param index="0" name="code" type="String" />
+			<param index="1" name="chunk_name" type="String" default="&quot;&quot;" />
+			<param index="2" name="env" type="int" default="0" />
+			<param index="3" name="nargs" type="int" default="0" />
+			<param index="4" name="nresults" type="int" default="-1" />
+			<param index="5" name="errfunc" type="int" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="enforce_any">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="enforce_buffer">
+			<return type="PackedByteArray" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="enforce_full_userdata">
+			<return type="Object" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="tname" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="enforce_integer">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="enforce_number">
+			<return type="float" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="enforce_option">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="options" type="PackedStringArray" />
+			<param index="2" name="default" type="String" default="&quot;&quot;" />
+			<description>
+			</description>
+		</method>
+		<method name="enforce_stack">
+			<return type="void" />
+			<param index="0" name="size" type="int" />
+			<param index="1" name="message" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="enforce_string_inplace">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="enforce_string_name">
+			<return type="StringName" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="enforce_type">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="type" type="int" enum="LuaState.ValueType" />
+			<description>
+			</description>
+		</method>
+		<method name="enforce_vector3">
+			<return type="Vector3" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="equal">
+			<return type="bool" />
+			<param index="0" name="index1" type="int" />
+			<param index="1" name="index2" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="error">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="full_userdata_tag">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="gc">
+			<return type="int" />
+			<param index="0" name="what" type="int" enum="LuaState.GCOp" />
+			<param index="1" name="data" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_argument">
+			<return type="bool" />
+			<param index="0" name="level" type="int" />
+			<param index="1" name="narg" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_coverage">
+			<return type="void" />
+			<param index="0" name="funcindex" type="int" />
+			<param index="1" name="callback" type="Callable" />
+			<description>
+			</description>
+		</method>
+		<method name="get_fenv">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_field">
+			<return type="int" enum="LuaState.ValueType" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="key" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="get_full_userdata_metatable">
+			<return type="void" />
+			<param index="0" name="tag" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_global">
+			<return type="int" enum="LuaState.ValueType" />
+			<param index="0" name="key" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="get_info">
+			<return type="LuaDebug" />
+			<param index="0" name="level" type="int" />
+			<param index="1" name="what" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_light_userdata_name">
+			<return type="StringName" />
+			<param index="0" name="tag" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_local">
+			<return type="StringName" />
+			<param index="0" name="level" type="int" />
+			<param index="1" name="nlocal" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_main_thread">
+			<return type="LuaState" />
+			<description>
+			</description>
+		</method>
+		<method name="get_meta_field">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="field" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="get_metatable">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_metatable_named">
+			<return type="int" enum="LuaState.ValueType" />
+			<param index="0" name="tname" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="get_namecall">
+			<return type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="get_read_only">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_ref">
+			<return type="void" />
+			<param index="0" name="ref" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_stack_depth">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_table">
+			<return type="int" enum="LuaState.ValueType" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_top">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_total_bytes">
+			<return type="int" />
+			<param index="0" name="category" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_upvalue">
+			<return type="StringName" />
+			<param index="0" name="funcindex" type="int" />
+			<param index="1" name="nupvalue" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="insert">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_array">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_boolean">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_buffer">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_c_function">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_full_userdata">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_function">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_light_userdata">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_lua_function">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_main_thread" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="is_nil">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_none">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_none_or_nil">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_number">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_object">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="tag" type="int" default="-1" />
+			<description>
+			</description>
+		</method>
+		<method name="is_string">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_table">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_thread">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_thread_reset">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="is_userdata">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_valid" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="is_vector">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_yieldable">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="less_than">
+			<return type="bool" />
+			<param index="0" name="index1" type="int" />
+			<param index="1" name="index2" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="light_userdata_tag">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="load_bytecode">
+			<return type="bool" />
+			<param index="0" name="bytecode" type="PackedByteArray" />
+			<param index="1" name="chunk_name" type="String" />
+			<param index="2" name="env" type="int" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="load_string">
+			<return type="bool" />
+			<param index="0" name="code" type="String" />
+			<param index="1" name="chunk_name" type="String" />
+			<param index="2" name="env" type="int" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="new_metatable_named">
+			<return type="bool" />
+			<param index="0" name="tname" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="new_thread">
+			<return type="LuaState" />
+			<description>
+			</description>
+		</method>
+		<method name="next">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="obj_len">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="open_libs">
+			<return type="void" />
+			<param index="0" name="libs" type="int" enum="LuaState.LibraryFlags" is_bitfield="true" default="4095" />
+			<description>
+			</description>
+		</method>
+		<method name="opt_integer">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="default" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="opt_number">
+			<return type="float" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="default" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="opt_string_inplace">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="default" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="opt_string_name">
+			<return type="StringName" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="default" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="opt_vector3">
+			<return type="Vector3" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="default" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="pcall">
+			<return type="int" enum="LuaState.Status" />
+			<param index="0" name="nargs" type="int" />
+			<param index="1" name="nresults" type="int" />
+			<param index="2" name="errfunc" type="int" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="pop">
+			<return type="void" />
+			<param index="0" name="count" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="print_where">
+			<return type="void" />
+			<param index="0" name="level" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="push_array">
+			<return type="void" />
+			<param index="0" name="value" type="Array" />
+			<description>
+			</description>
+		</method>
+		<method name="push_as_string">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="push_boolean">
+			<return type="void" />
+			<param index="0" name="b" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="push_callable">
+			<return type="void" />
+			<param index="0" name="value" type="Callable" />
+			<description>
+			</description>
+		</method>
+		<method name="push_default_object_metatable">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="push_dictionary">
+			<return type="void" />
+			<param index="0" name="value" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="push_full_userdata">
+			<return type="void" />
+			<param index="0" name="obj" type="Object" />
+			<param index="1" name="tag" type="int" default="-1" />
+			<description>
+			</description>
+		</method>
+		<method name="push_integer">
+			<return type="void" />
+			<param index="0" name="num" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="push_light_userdata">
+			<return type="void" />
+			<param index="0" name="obj" type="Object" />
+			<param index="1" name="tag" type="int" default="-1" />
+			<description>
+			</description>
+		</method>
+		<method name="push_nil">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="push_number">
+			<return type="void" />
+			<param index="0" name="num" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="push_object">
+			<return type="void" />
+			<param index="0" name="obj" type="Object" />
+			<param index="1" name="tag" type="int" default="-1" />
+			<description>
+			</description>
+		</method>
+		<method name="push_string">
+			<return type="void" />
+			<param index="0" name="str" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="push_string_name">
+			<return type="void" />
+			<param index="0" name="string_name" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="push_thread">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="push_value">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="push_variant">
+			<return type="void" />
+			<param index="0" name="value" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="push_vector3">
+			<return type="void" />
+			<param index="0" name="vec" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="raw_check_stack">
+			<return type="void" />
+			<param index="0" name="size" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="raw_equal">
+			<return type="bool" />
+			<param index="0" name="index1" type="int" />
+			<param index="1" name="index2" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="raw_get">
+			<return type="int" enum="LuaState.ValueType" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="raw_get_field">
+			<return type="int" enum="LuaState.ValueType" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="key" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="raw_geti">
+			<return type="int" enum="LuaState.ValueType" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="n" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="raw_iter">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="iter" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="raw_set">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="raw_set_field">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="key" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="raw_seti">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="n" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="ref">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="register_library">
+			<return type="void" />
+			<param index="0" name="lib_name" type="StringName" />
+			<param index="1" name="functions" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="remove">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="replace">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="reset_thread">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="resume">
+			<return type="int" enum="LuaState.Status" />
+			<param index="0" name="narg" type="int" default="0" />
+			<param index="1" name="from" type="LuaState" default="null" />
+			<description>
+			</description>
+		</method>
+		<method name="resume_error">
+			<return type="int" enum="LuaState.Status" />
+			<param index="0" name="from" type="LuaState" default="null" />
+			<description>
+			</description>
+		</method>
+		<method name="sandbox">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="sandbox_thread">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="set_breakpoint">
+			<return type="int" />
+			<param index="0" name="funcindex" type="int" />
+			<param index="1" name="nline" type="int" />
+			<param index="2" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_call_metamethod">
+			<return type="void" />
+			<param index="0" name="metatable_index" type="int" />
+			<param index="1" name="callable" type="Callable" />
+			<description>
+			</description>
+		</method>
+		<method name="set_fenv">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_field">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="key" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="set_full_userdata_metatable">
+			<return type="void" />
+			<param index="0" name="tag" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_full_userdata_tag">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="tag" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_global">
+			<return type="void" />
+			<param index="0" name="key" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="set_index_metamethod">
+			<return type="void" />
+			<param index="0" name="metatable_index" type="int" />
+			<param index="1" name="callable" type="Callable" />
+			<description>
+			</description>
+		</method>
+		<method name="set_interrupts">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_light_userdata_name">
+			<return type="void" />
+			<param index="0" name="tag" type="int" />
+			<param index="1" name="name" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="set_local">
+			<return type="StringName" />
+			<param index="0" name="level" type="int" />
+			<param index="1" name="nlocal" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_memory_category">
+			<return type="void" />
+			<param index="0" name="category" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_metatable">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_newindex_metamethod">
+			<return type="void" />
+			<param index="0" name="metatable_index" type="int" />
+			<param index="1" name="callable" type="Callable" />
+			<description>
+			</description>
+		</method>
+		<method name="set_read_only">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_safe_env">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_single_step">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_table">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_top">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_upvalue">
+			<return type="StringName" />
+			<param index="0" name="funcindex" type="int" />
+			<param index="1" name="nupvalue" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="stack_to_string">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="status">
+			<return type="int" enum="LuaState.Status" />
+			<description>
+			</description>
+		</method>
+		<method name="to_array">
+			<return type="Array" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="to_boolean">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="to_buffer">
+			<return type="PackedByteArray" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="to_callable">
+			<return type="Callable" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="to_dictionary">
+			<return type="Dictionary" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="to_full_userdata">
+			<return type="Object" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="tag" type="int" default="-1" />
+			<description>
+			</description>
+		</method>
+		<method name="to_integer">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="to_light_userdata">
+			<return type="Object" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="tag" type="int" default="-1" />
+			<description>
+			</description>
+		</method>
+		<method name="to_number">
+			<return type="float" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="to_object">
+			<return type="Object" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="tag" type="int" default="-1" />
+			<description>
+			</description>
+		</method>
+		<method name="to_pointer">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="to_string_inplace">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="to_string_name">
+			<return type="StringName" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="to_thread">
+			<return type="LuaState" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="to_variant">
+			<return type="Variant" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="to_vector3">
+			<return type="Vector3" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="type">
+			<return type="int" enum="LuaState.ValueType" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="type_error">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="expected" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="type_name">
+			<return type="StringName" />
+			<param index="0" name="type_id" type="int" enum="LuaState.ValueType" />
+			<description>
+			</description>
+		</method>
+		<method name="type_name_for_value">
+			<return type="StringName" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="unref">
+			<return type="void" />
+			<param index="0" name="ref" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="xmove">
+			<return type="void" />
+			<param index="0" name="to_state" type="LuaState" />
+			<param index="1" name="count" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="xpush">
+			<return type="void" />
+			<param index="0" name="to_state" type="LuaState" />
+			<param index="1" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="yield">
+			<return type="void" />
+			<param index="0" name="nresults" type="int" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="debugbreak">
+			<param index="0" name="state" type="LuaState" />
+			<param index="1" name="debug_info" type="LuaDebug" />
+			<description>
+			</description>
+		</signal>
+		<signal name="debugstep">
+			<param index="0" name="state" type="LuaState" />
+			<description>
+			</description>
+		</signal>
+		<signal name="interrupt">
+			<param index="0" name="state" type="LuaState" />
+			<param index="1" name="gc_state" type="int" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="LIB_BASE" value="1" enum="LibraryFlags" is_bitfield="true">
+		</constant>
+		<constant name="LIB_COROUTINE" value="2" enum="LibraryFlags" is_bitfield="true">
+		</constant>
+		<constant name="LIB_TABLE" value="4" enum="LibraryFlags" is_bitfield="true">
+		</constant>
+		<constant name="LIB_OS" value="8" enum="LibraryFlags" is_bitfield="true">
+		</constant>
+		<constant name="LIB_STRING" value="16" enum="LibraryFlags" is_bitfield="true">
+		</constant>
+		<constant name="LIB_BIT32" value="32" enum="LibraryFlags" is_bitfield="true">
+		</constant>
+		<constant name="LIB_BUFFER" value="64" enum="LibraryFlags" is_bitfield="true">
+		</constant>
+		<constant name="LIB_UTF8" value="128" enum="LibraryFlags" is_bitfield="true">
+		</constant>
+		<constant name="LIB_MATH" value="256" enum="LibraryFlags" is_bitfield="true">
+		</constant>
+		<constant name="LIB_DEBUG" value="512" enum="LibraryFlags" is_bitfield="true">
+		</constant>
+		<constant name="LIB_VECTOR" value="1024" enum="LibraryFlags" is_bitfield="true">
+		</constant>
+		<constant name="LIB_BLAZIUM" value="2048" enum="LibraryFlags" is_bitfield="true">
+		</constant>
+		<constant name="LIB_ALL" value="4095" enum="LibraryFlags" is_bitfield="true">
+		</constant>
+		<constant name="VALUE_NONE" value="-1" enum="ValueType">
+		</constant>
+		<constant name="VALUE_NIL" value="0" enum="ValueType">
+		</constant>
+		<constant name="VALUE_BOOLEAN" value="1" enum="ValueType">
+		</constant>
+		<constant name="VALUE_LIGHTUSERDATA" value="2" enum="ValueType">
+		</constant>
+		<constant name="VALUE_NUMBER" value="3" enum="ValueType">
+		</constant>
+		<constant name="VALUE_VECTOR" value="4" enum="ValueType">
+		</constant>
+		<constant name="VALUE_STRING" value="5" enum="ValueType">
+		</constant>
+		<constant name="VALUE_TABLE" value="6" enum="ValueType">
+		</constant>
+		<constant name="VALUE_FUNCTION" value="7" enum="ValueType">
+		</constant>
+		<constant name="VALUE_USERDATA" value="8" enum="ValueType">
+		</constant>
+		<constant name="VALUE_THREAD" value="9" enum="ValueType">
+		</constant>
+		<constant name="VALUE_BUFFER" value="10" enum="ValueType">
+		</constant>
+		<constant name="VALUE_PROTO" value="11" enum="ValueType">
+		</constant>
+		<constant name="VALUE_UPVAL" value="12" enum="ValueType">
+		</constant>
+		<constant name="VALUE_DEADKEY" value="13" enum="ValueType">
+		</constant>
+		<constant name="STATUS_OK" value="0" enum="Status">
+		</constant>
+		<constant name="STATUS_YIELD" value="1" enum="Status">
+		</constant>
+		<constant name="STATUS_ERRRUN" value="2" enum="Status">
+		</constant>
+		<constant name="STATUS_ERRSYNTAX" value="3" enum="Status">
+		</constant>
+		<constant name="STATUS_ERRMEM" value="4" enum="Status">
+		</constant>
+		<constant name="STATUS_ERRERR" value="5" enum="Status">
+		</constant>
+		<constant name="STATUS_BREAK" value="6" enum="Status">
+		</constant>
+		<constant name="CO_RUN" value="0" enum="CoStatus">
+		</constant>
+		<constant name="CO_SUSPENDED" value="1" enum="CoStatus">
+		</constant>
+		<constant name="CO_NORMAL" value="2" enum="CoStatus">
+		</constant>
+		<constant name="CO_FINISHED" value="3" enum="CoStatus">
+		</constant>
+		<constant name="CO_ERROR" value="4" enum="CoStatus">
+		</constant>
+		<constant name="GC_STOP" value="0" enum="GCOp">
+		</constant>
+		<constant name="GC_RESTART" value="1" enum="GCOp">
+		</constant>
+		<constant name="GC_COLLECT" value="2" enum="GCOp">
+		</constant>
+		<constant name="GC_COUNT" value="3" enum="GCOp">
+		</constant>
+		<constant name="GC_COUNTB" value="4" enum="GCOp">
+		</constant>
+		<constant name="GC_ISRUNNING" value="5" enum="GCOp">
+		</constant>
+		<constant name="GC_STEP" value="6" enum="GCOp">
+		</constant>
+		<constant name="GC_SETGOAL" value="7" enum="GCOp">
+		</constant>
+		<constant name="GC_SETSTEPMUL" value="8" enum="GCOp">
+		</constant>
+		<constant name="GC_SETSTEPSIZE" value="9" enum="GCOp">
+		</constant>
+	</constants>
+</class>

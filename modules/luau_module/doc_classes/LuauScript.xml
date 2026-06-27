@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="LuauScript" inherits="Script" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Luau script resource for node attachment and global classes.
+	</brief_description>
+	<description>
+		Represents a Luau script file (.luau, .lua, or compiled .luauc sidecar). Supports hybrid table DSL and gdclass syntax.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="compile">
+			<return type="PackedByteArray" />
+			<param index="0" name="force_recompile" type="bool" default="false" />
+			<description>
+			</description>
+		</method>
+		<method name="load_source_code">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="new" qualifiers="vararg">
+			<return type="Variant" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>
