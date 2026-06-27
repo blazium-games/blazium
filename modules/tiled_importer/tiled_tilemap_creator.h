@@ -103,8 +103,8 @@ private:
 	String _custom_data_prefix;
 	String _tileset_save_path;
 	Dictionary _object_groups;
-	Ref<GodotTsonMap> _base_map;
-	Ref<GodotTsonTileson> _tileson;
+	Ref<TiledMap> _base_map;
+	Ref<TiledTileson> _tileson;
 
 	float _iso_rot = 0.0f;
 	float _iso_skew = 0.0f;
@@ -114,19 +114,19 @@ private:
 
 	static void recursively_change_owner(Node *p_node, Node *p_new_owner);
 
-	void handle_layer(Ref<GodotTsonLayer> p_layer, Node2D *p_parent);
-	void handle_parallaxes(Node *p_parent, Node *p_layer_node, Ref<GodotTsonLayer> p_layer_dict);
+	void handle_layer(Ref<TiledLayer> p_layer, Node2D *p_parent);
+	void handle_parallaxes(Node *p_parent, Node *p_layer_node, Ref<TiledLayer> p_layer_dict);
 	Array handle_data(const Variant &p_data, int p_map_size);
 	void create_polygons_on_alternative_tiles(TileData *p_source_data, TileData *p_target_data, int p_alt_id);
 	void create_map_from_data(const Array &p_layer_data, int p_offset_x, int p_offset_y, int p_map_width);
 
-	void handle_object(Ref<GodotTsonObject> p_obj_ro, Node *p_layer_node, Ref<TileSet> p_tileset, const Vector2 &p_offset);
+	void handle_object(Ref<TiledObject> p_obj_ro, Node *p_layer_node, Ref<TileSet> p_tileset, const Vector2 &p_offset);
 	void handle_properties(Node *p_target_node, const Array &p_properties);
 
 	Vector2 get_instance_offset(float p_width, float p_height, const String &p_r_alignment, const String &p_c_alignment);
 	Vector2 get_position_offset(float p_width, float p_height, float p_rotation);
 	void set_sprite_offset(Sprite2D *p_sprite, float p_width, float p_height, const String &p_alignment);
-	void convert_metadata_to_obj_properties(TileData *p_td, Ref<GodotTsonObject> p_obj);
+	void convert_metadata_to_obj_properties(TileData *p_td, Ref<TiledObject> p_obj);
 
 	PackedVector2Array polygon_from_array(const Array &p_poly_array);
 	PackedVector2Array polygon_from_rectangle(float p_width, float p_height);
@@ -142,10 +142,10 @@ private:
 	String get_tileset_orientation(int p_gid);
 	String get_tileset_alignment(int p_gid);
 	bool is_partitioned_tileset(int p_source_id);
-	Ref<GodotTsonLayer> get_object_group(int p_index);
-	Ref<GodotTsonObject> get_object(int p_index);
+	Ref<TiledLayer> get_object_group(int p_index);
+	Ref<TiledObject> get_object(int p_index);
 	PackedVector2Array get_object_polygon(int p_obj_id);
-	void add_collision_shapes(CollisionObject2D *p_parent, Ref<GodotTsonLayer> p_object_group, float p_tile_width, float p_tile_height, bool p_flipped_h, bool p_flipped_v, const Vector2 &p_scale);
+	void add_collision_shapes(CollisionObject2D *p_parent, Ref<TiledLayer> p_object_group, float p_tile_width, float p_tile_height, bool p_flipped_h, bool p_flipped_v, const Vector2 &p_scale);
 
 public:
 	TiledTilemapCreator();
@@ -164,6 +164,6 @@ public:
 	Node *create_tilemap(const String &p_source_file);
 
 	static GodotType get_godot_type(const String &p_godot_type_string);
-	static String get_godot_node_type_property(Ref<GodotTsonObject> p_obj, bool &r_property_found);
-	static GodotType get_godot_node_type(Ref<GodotTsonObject> p_obj);
+	static String get_godot_node_type_property(Ref<TiledObject> p_obj, bool &r_property_found);
+	static GodotType get_godot_node_type(Ref<TiledObject> p_obj);
 };

@@ -61,7 +61,7 @@ void TiledTilesetCreator::set_custom_data_prefix(const String &p_value) {
 
 Ref<TileSet> TiledTilesetCreator::create_from_dictionary_array(const Array &p_tile_sets) {
 	for (int i = 0; i < p_tile_sets.size(); ++i) {
-		Ref<GodotTsonTileset> tile_set = p_tile_sets[i];
+		Ref<TiledTileset> tile_set = p_tile_sets[i];
 		if (!tile_set.is_valid()) {
 			continue;
 		}
@@ -72,8 +72,8 @@ Ref<TileSet> TiledTilesetCreator::create_from_dictionary_array(const Array &p_ti
 	return _tileset;
 }
 
-void TiledTilesetCreator::create_or_append(Ref<GodotTsonTileset> p_tile_set_ro) {
-	Ref<GodotTsonTileset> p_tile_set = p_tile_set_ro;
+void TiledTilesetCreator::create_or_append(Ref<TiledTileset> p_tile_set_ro) {
+	Ref<TiledTileset> p_tile_set = p_tile_set_ro;
 	if (p_tile_set->get_name() == "AutoMap Rules") {
 		return;
 	}
@@ -100,7 +100,7 @@ void TiledTilesetCreator::create_or_append(Ref<GodotTsonTileset> p_tile_set_ro) 
 	_current_first_gid = p_tile_set->get_first_gid();
 
 	if (p_tile_set->get_grid().is_valid()) {
-		Ref<GodotTsonGrid> grid = p_tile_set->get_grid();
+		Ref<TiledGrid> grid = p_tile_set->get_grid();
 		if ((!grid->get_orientation().is_empty())) {
 			_tileset_orientation = grid->get_orientation();
 		}
@@ -182,7 +182,7 @@ TileData *TiledTilesetCreator::create_tile_if_not_existing_and_get_tiledata(int 
 
 void TiledTilesetCreator::handle_tiles(const Array &p_tiles) {
 	for (int i = 0; i < p_tiles.size(); i++) {
-		Ref<GodotTsonTile> tile = p_tiles[i];
+		Ref<TiledTile> tile = p_tiles[i];
 		if (_custom_types.is_valid()) {
 		}
 		int tile_id = tile->get_id();
@@ -289,7 +289,7 @@ void TiledTilesetCreator::handle_animation(Array p_frames, int p_tile_id) {
 	Vector2i prev_coords;
 
 	for (int i = 0; i < frame_count; i++) {
-		Ref<GodotTsonFrame> frame = p_frames[i];
+		Ref<TiledFrame> frame = p_frames[i];
 		int frame_tile_id = frame->get_tile_id();
 		Vector2i coords(frame_tile_id % _columns, frame_tile_id / _columns);
 
@@ -337,7 +337,7 @@ void TiledTilesetCreator::handle_animation(Array p_frames, int p_tile_id) {
 		_current_atlas_source->set_tile_animation_columns(tile_coords, anim_columns);
 		_current_atlas_source->set_tile_animation_frames_count(tile_coords, frame_count);
 		for (int i = 0; i < frame_count; i++) {
-			Ref<GodotTsonFrame> frame = p_frames[i];
+			Ref<TiledFrame> frame = p_frames[i];
 			float duration_in_secs = float(frame->get_duration()) / 1000.0f;
 			_current_atlas_source->set_tile_animation_frame_duration(tile_coords, i, duration_in_secs);
 		}
@@ -346,7 +346,7 @@ void TiledTilesetCreator::handle_animation(Array p_frames, int p_tile_id) {
 	}
 }
 
-void TiledTilesetCreator::handle_objectgroup(Ref<GodotTsonLayer> p_object_group, TileData *p_current_tile, int p_tile_id) {
+void TiledTilesetCreator::handle_objectgroup(Ref<TiledLayer> p_object_group, TileData *p_current_tile, int p_tile_id) {
 	_object_groups_counter += 1;
 	register_object_group(_object_groups_counter, p_object_group);
 	p_current_tile->set_custom_data("__internal__", _object_groups_counter);
@@ -355,7 +355,7 @@ void TiledTilesetCreator::handle_objectgroup(Ref<GodotTsonLayer> p_object_group,
 	Array objects = p_object_group->get_objects();
 
 	for (int i = 0; i < objects.size(); i++) {
-		Ref<GodotTsonObject> obj = objects[i];
+		Ref<TiledObject> obj = objects[i];
 		if (obj->is_point()) {
 			continue;
 		}
@@ -450,7 +450,7 @@ void TiledTilesetCreator::handle_objectgroup(Ref<GodotTsonLayer> p_object_group,
 		}
 		Array obj_props = obj->get_properties();
 		for (int p_idx = 0; p_idx < obj_props.size(); p_idx++) {
-			Ref<GodotTsonProperty> property = obj_props[p_idx];
+			Ref<TiledProperty> property = obj_props[p_idx];
 			String name = property->get_name();
 			String type = property->get_property_type();
 			String val = property->get_value();
@@ -467,7 +467,7 @@ void TiledTilesetCreator::handle_objectgroup(Ref<GodotTsonLayer> p_object_group,
 }
 void TiledTilesetCreator::handle_tile_properties(const Array &p_properties, TileData *p_current_tile) {
 	for (int i = 0; i < p_properties.size(); i++) {
-		Ref<GodotTsonProperty> property = p_properties[i];
+		Ref<TiledProperty> property = p_properties[i];
 		String name = property->get_name();
 		String type = property->get_property_type();
 		String val = property->get_value();
@@ -527,7 +527,7 @@ void TiledTilesetCreator::handle_tile_properties(const Array &p_properties, Tile
 
 void TiledTilesetCreator::handle_tileset_properties(const Array &p_properties) {
 	for (int i = 0; i < p_properties.size(); i++) {
-		Ref<GodotTsonProperty> property = p_properties[i];
+		Ref<TiledProperty> property = p_properties[i];
 		String name = property->get_name();
 		String type = property->get_property_type();
 		String val = property->get_value();
@@ -611,7 +611,7 @@ void TiledTilesetCreator::register_atlas_source(int p_source_id, int p_num_tiles
 	_atlas_sources.push_back(item);
 }
 
-void TiledTilesetCreator::register_object_group(int p_tile_id, Ref<GodotTsonLayer> p_object_group) {
+void TiledTilesetCreator::register_object_group(int p_tile_id, Ref<TiledLayer> p_object_group) {
 	_object_groups[p_tile_id] = p_object_group;
 }
 
@@ -626,7 +626,7 @@ Vector2 TiledTilesetCreator::transpose_coords(float p_x, float p_y) {
 
 int TiledTilesetCreator::get_special_property(const Array &p_properties, const String &p_property_name) {
 	for (int i = 0; i < p_properties.size(); i++) {
-		Ref<GodotTsonProperty> prop = p_properties[i];
+		Ref<TiledProperty> prop = p_properties[i];
 		if (String(prop->get_name()).to_lower() == p_property_name.to_lower()) {
 			return (int)prop->get_value();
 		}

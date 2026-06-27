@@ -87,7 +87,7 @@ Node *TiledTilemapCreator::create_tilemap(const String &p_source_file) {
 	// removed bad json backup
 
 	if (!_base_map.is_valid()) {
-		ERR_PRINT("GodotTson failed to parse dynamic map.");
+		ERR_PRINT("Tiled failed to parse dynamic map.");
 		return nullptr;
 	}
 	_map_orientation = (_base_map.is_valid() ? _base_map->get_orientation() : "orthogonal");
@@ -103,7 +103,7 @@ Node *TiledTilemapCreator::create_tilemap(const String &p_source_file) {
 	if (_base_map.is_valid()) {
 		Array tilesets = _base_map->get_tilesets();
 		for (int i = 0; i < tilesets.size(); i++) {
-			Ref<GodotTsonTileset> tileSet = tilesets[i];
+			Ref<TiledTileset> tileSet = tilesets[i];
 			if (tileSet.is_valid()) {
 				_first_gids.push_back(tileSet->get_first_gid());
 			}
@@ -164,7 +164,7 @@ Node *TiledTilemapCreator::create_tilemap(const String &p_source_file) {
 	if (_base_map.is_valid()) {
 		Array layers = _base_map->get_layers();
 		for (int i = 0; i < layers.size(); i++) {
-			Ref<GodotTsonLayer> layer_node = layers[i];
+			Ref<TiledLayer> layer_node = layers[i];
 			handle_layer(layer_node, _base_node);
 		}
 	}
@@ -199,7 +199,7 @@ void TiledTilemapCreator::recursively_change_owner(Node *p_node, Node *p_new_own
 	}
 }
 
-void TiledTilemapCreator::handle_layer(Ref<GodotTsonLayer> p_layer, Node2D *p_parent) {
+void TiledTilemapCreator::handle_layer(Ref<TiledLayer> p_layer, Node2D *p_parent) {
 	if (!p_layer.is_valid()) {
 		return;
 	}
@@ -242,7 +242,7 @@ void TiledTilemapCreator::handle_layer(Ref<GodotTsonLayer> p_layer, Node2D *p_pa
 		if (_infinite && p_layer->get_chunks().size() > 0) {
 			Array chunks = p_layer->get_chunks();
 			for (int c = 0; c < chunks.size(); c++) {
-				Ref<GodotTsonChunk> chunk = chunks[c];
+				Ref<TiledChunk> chunk = chunks[c];
 				int chunk_width = chunk->get_size().x;
 				int chunk_local_offset_x = chunk->get_position().x;
 				int chunk_local_offset_y = chunk->get_position().y;
@@ -427,7 +427,7 @@ void TiledTilemapCreator::handle_layer(Ref<GodotTsonLayer> p_layer, Node2D *p_pa
 		}
 	}
 }
-void TiledTilemapCreator::handle_parallaxes(Node *p_parent, Node *p_layer_node, Ref<GodotTsonLayer> p_layer_dict) {
+void TiledTilemapCreator::handle_parallaxes(Node *p_parent, Node *p_layer_node, Ref<TiledLayer> p_layer_dict) {
 	if (p_layer_dict->get_parallax().x != 1.0f || p_layer_dict->get_parallax().y != 1.0f) {
 		if (!_parallax_layer_existing) {
 			if (_background) {
@@ -595,21 +595,21 @@ bool TiledTilemapCreator::is_partitioned_tileset(int p_source_id) {
 	return true;
 }
 
-Ref<GodotTsonLayer> TiledTilemapCreator::get_object_group(int p_index) {
+Ref<TiledLayer> TiledTilemapCreator::get_object_group(int p_index) {
 	if (_object_groups.has(p_index)) {
 		return _object_groups[p_index];
 	}
 	return nullptr;
 }
 
-Ref<GodotTsonObject> TiledTilemapCreator::get_object(int p_index) {
+Ref<TiledObject> TiledTilemapCreator::get_object(int p_index) {
 	Array keys = _object_groups.keys();
 	for (int g = 0; g < keys.size(); g++) {
-		Ref<GodotTsonLayer> grp = _object_groups[keys[g]];
+		Ref<TiledLayer> grp = _object_groups[keys[g]];
 		if (grp.is_valid() && grp->get_objects().size() > 0) {
 			Array objs = grp->get_objects();
 			for (int i = 0; i < objs.size(); i++) {
-				Ref<GodotTsonObject> obj = objs[i];
+				Ref<TiledObject> obj = objs[i];
 				if (obj->get_id() == p_index) {
 					return obj;
 				}
@@ -620,7 +620,7 @@ Ref<GodotTsonObject> TiledTilemapCreator::get_object(int p_index) {
 }
 
 PackedVector2Array TiledTilemapCreator::get_object_polygon(int p_obj_id) {
-	Ref<GodotTsonObject> obj = get_object(p_obj_id);
+	Ref<TiledObject> obj = get_object(p_obj_id);
 	if (!obj.is_valid()) {
 		return PackedVector2Array();
 	}
@@ -869,13 +869,13 @@ void TiledTilemapCreator::create_map_from_data(const Array &p_data, int p_offset
 	}
 }
 
-void TiledTilemapCreator::add_collision_shapes(CollisionObject2D *p_parent, Ref<GodotTsonLayer> p_object_group, float p_tile_width, float p_tile_height, bool p_flipped_h, bool p_flipped_v, const Vector2 &p_scale) {
+void TiledTilemapCreator::add_collision_shapes(CollisionObject2D *p_parent, Ref<TiledLayer> p_object_group, float p_tile_width, float p_tile_height, bool p_flipped_h, bool p_flipped_v, const Vector2 &p_scale) {
 	if (!p_object_group.is_valid() || p_object_group->get_objects().is_empty()) {
 		return;
 	}
 	Array objects = p_object_group->get_objects();
 	for (int i = 0; i < objects.size(); i++) {
-		Ref<GodotTsonObject> obj = objects[i];
+		Ref<TiledObject> obj = objects[i];
 		String obj_name = obj->get_name();
 		if (obj->is_point()) {
 			WARN_PRINT("'Point' has currently no corresponding collision element in Godot 4. -> Skipped");
@@ -944,7 +944,7 @@ void TiledTilemapCreator::add_collision_shapes(CollisionObject2D *p_parent, Ref<
 			if ((obj->get_properties().size() > 0)) {
 				Array props = obj->get_properties();
 				for (int p_idx = 0; p_idx < props.size(); p_idx++) {
-					Ref<GodotTsonProperty> prop = props[p_idx];
+					Ref<TiledProperty> prop = props[p_idx];
 					String p_name = prop->get_name();
 					if (p_name == "one_way" && prop->get_value().operator String() == "true") {
 						one_way = true;
@@ -1098,7 +1098,7 @@ void TiledTilemapCreator::add_collision_shapes(CollisionObject2D *p_parent, Ref<
 			if ((obj->get_properties().size() > 0)) {
 				Array props = obj->get_properties();
 				for (int p_idx = 0; p_idx < props.size(); p_idx++) {
-					Ref<GodotTsonProperty> prop = props[p_idx];
+					Ref<TiledProperty> prop = props[p_idx];
 					String p_name = prop->get_name();
 					if (p_name == "one_way" && prop->get_value().operator String() == "true") {
 						one_way = true;
@@ -1116,8 +1116,8 @@ void TiledTilemapCreator::add_collision_shapes(CollisionObject2D *p_parent, Ref<
 	}
 }
 
-void TiledTilemapCreator::handle_object(Ref<GodotTsonObject> p_obj_ro, Node *p_layer_node, Ref<TileSet> p_tileset, const Vector2 &p_offset) {
-	Ref<GodotTsonObject> p_obj = p_obj_ro;
+void TiledTilemapCreator::handle_object(Ref<TiledObject> p_obj_ro, Node *p_layer_node, Ref<TileSet> p_tileset, const Vector2 &p_offset) {
+	Ref<TiledObject> p_obj = p_obj_ro;
 	if (_custom_types.is_valid()) {
 		/*_custom_types->merge_custom_properties(p_obj, class_string);*/ // Deprecated direct custom-types dict injection; YATI now injects during native Tileson initial JSON load.
 	}
@@ -1222,7 +1222,7 @@ void TiledTilemapCreator::handle_object(Ref<GodotTsonObject> p_obj_ro, Node *p_l
 					godot_type = get_godot_type(tile_class);
 				}
 
-				Ref<GodotTsonObject> p_obj_mut = p_obj;
+				Ref<TiledObject> p_obj_mut = p_obj;
 				convert_metadata_to_obj_properties(td, p_obj_mut);
 
 				String custom_data_internal = _custom_data_prefix + "internal";
@@ -1422,7 +1422,7 @@ void TiledTilemapCreator::handle_object(Ref<GodotTsonObject> p_obj_ro, Node *p_l
 		obj_text->set_rotation_degrees(obj_rot);
 		obj_text->set_visible(obj_visible);
 
-		Ref<GodotTsonText> txt = p_obj->get_text();
+		Ref<TiledText> txt = p_obj->get_text();
 		obj_text->set_text(txt->get_text());
 		bool wrap = txt->is_wrap();
 		obj_text->set_autowrap_mode(wrap ? TextServer::AUTOWRAP_WORD_SMART : TextServer::AUTOWRAP_OFF);
@@ -1604,7 +1604,7 @@ void TiledTilemapCreator::handle_object(Ref<GodotTsonObject> p_obj_ro, Node *p_l
 
 void TiledTilemapCreator::handle_properties(Node *p_target_node, const Array &p_properties) {
 	for (int i = 0; i < p_properties.size(); i++) {
-		Ref<GodotTsonProperty> property = p_properties[i];
+		Ref<TiledProperty> property = p_properties[i];
 		String name = property->get_name();
 		String type = property->get_property_type();
 		Variant val = property->get_value();
@@ -1692,12 +1692,12 @@ TiledTilemapCreator::GodotType TiledTilemapCreator::get_godot_type(const String 
 	}
 	return GODOT_TYPE_UNKNOWN;
 }
-String TiledTilemapCreator::get_godot_node_type_property(Ref<GodotTsonObject> p_obj, bool &r_property_found) {
+String TiledTilemapCreator::get_godot_node_type_property(Ref<TiledObject> p_obj, bool &r_property_found) {
 	r_property_found = false;
 	if ((p_obj->get_properties().size() > 0)) {
 		Array props = p_obj->get_properties();
 		for (int i = 0; i < props.size(); i++) {
-			Ref<GodotTsonProperty> prop = props[i];
+			Ref<TiledProperty> prop = props[i];
 			String name = prop->get_name();
 			String type = prop->get_property_type();
 			String val = prop->get_value();
@@ -1709,7 +1709,7 @@ String TiledTilemapCreator::get_godot_node_type_property(Ref<GodotTsonObject> p_
 	}
 	return "";
 }
-TiledTilemapCreator::GodotType TiledTilemapCreator::get_godot_node_type(Ref<GodotTsonObject> p_obj) {
+TiledTilemapCreator::GodotType TiledTilemapCreator::get_godot_node_type(Ref<TiledObject> p_obj) {
 	String class_string = p_obj->get_class_type();
 	if (class_string.is_empty()) {
 		class_string = p_obj->get_tson_type();
@@ -1799,7 +1799,7 @@ Vector2 TiledTilemapCreator::get_position_offset(float p_width, float p_height, 
 	return orig_point - new_point;
 }
 
-void TiledTilemapCreator::convert_metadata_to_obj_properties(TileData *p_td, Ref<GodotTsonObject> p_obj) {
+void TiledTilemapCreator::convert_metadata_to_obj_properties(TileData *p_td, Ref<TiledObject> p_obj) {
 	List<StringName> meta_list;
 	p_td->get_meta_list(&meta_list);
 	for (const StringName &meta_name_sn : meta_list) {
@@ -1839,7 +1839,7 @@ void TiledTilemapCreator::convert_metadata_to_obj_properties(TileData *p_td, Ref
 			Array props = p_obj->get_properties();
 			bool found = false;
 			for (int p = 0; p < props.size(); p++) {
-				Ref<GodotTsonProperty> prop = props[p];
+				Ref<TiledProperty> prop = props[p];
 				if (String(prop->get_name()).to_lower() == meta_name.to_lower()) {
 					found = true;
 					break;

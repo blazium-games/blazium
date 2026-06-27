@@ -39,17 +39,17 @@
 #include "tileson.hpp"
 #include <memory>
 
-class GodotTsonMap;
-class GodotTsonLayer;
-class GodotTsonTileset;
-class GodotTsonGrid;
-class GodotTsonTerrain;
-class GodotTsonTransformations;
-class GodotTsonText;
-class GodotTsonTiledClass;
-class GodotTsonEnumDefinition;
-class GodotTsonTileObject;
-class GodotTsonProjectPropertyTypes;
+class TiledMap;
+class TiledLayer;
+class TiledTileset;
+class TiledGrid;
+class TiledTerrain;
+class TiledTransformations;
+class TiledText;
+class TiledClass;
+class TiledEnumDefinition;
+class TiledTileObject;
+class TiledProjectPropertyTypes;
 
 // Helper to convert std::string to Godot String
 inline String to_godot_string(const std::string &p_str) {
@@ -62,26 +62,26 @@ inline std::string to_std_string(const String &p_str) {
 }
 
 // -------------------------------------------------------------
-// GodotTsonTileson (Parser Interface)
+// TiledTileson (Parser Interface)
 // -------------------------------------------------------------
-class GodotTsonTileson : public RefCounted {
-	GDCLASS(GodotTsonTileson, RefCounted);
+class TiledTileson : public RefCounted {
+	GDCLASS(TiledTileson, RefCounted);
 
 protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonTileson();
+	TiledTileson();
 
-	Ref<GodotTsonMap> parse_file(const String &p_path);
-	Ref<GodotTsonMap> parse_string(const String &p_json);
+	Ref<TiledMap> parse_file(const String &p_path);
+	Ref<TiledMap> parse_string(const String &p_json);
 };
 
 // -------------------------------------------------------------
-// GodotTsonLayer
+// TiledLayer
 // -------------------------------------------------------------
-class GodotTsonLayer : public RefCounted {
-	GDCLASS(GodotTsonLayer, RefCounted);
+class TiledLayer : public RefCounted {
+	GDCLASS(TiledLayer, RefCounted);
 
 private:
 	tson::Layer *layer = nullptr; // Reference to inner layer
@@ -90,7 +90,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonLayer() {}
+	TiledLayer() {}
 	void set_layer(tson::Layer *p_layer) { layer = p_layer; }
 	tson::Layer *get_layer() const { return layer; }
 
@@ -124,10 +124,10 @@ public:
 };
 
 // -------------------------------------------------------------
-// GodotTsonTileset
+// TiledTileset
 // -------------------------------------------------------------
-class GodotTsonTileset : public RefCounted {
-	GDCLASS(GodotTsonTileset, RefCounted);
+class TiledTileset : public RefCounted {
+	GDCLASS(TiledTileset, RefCounted);
 
 private:
 	tson::Tileset *tileset = nullptr; // Reference to inner tileset
@@ -136,7 +136,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonTileset() {}
+	TiledTileset() {}
 	void set_tileset(tson::Tileset *p_tileset) { tileset = p_tileset; }
 	tson::Tileset *get_tileset() const { return tileset; }
 
@@ -161,16 +161,16 @@ public:
 	Array get_tiles() const;
 	Array get_properties();
 	Array get_wang_sets() const;
-	Ref<GodotTsonGrid> get_grid() const;
+	Ref<TiledGrid> get_grid() const;
 	Array get_terrains() const;
-	Ref<GodotTsonTransformations> get_transformations() const;
+	Ref<TiledTransformations> get_transformations() const;
 };
 
 // -------------------------------------------------------------
-// GodotTsonWangColor
+// TiledWangColor
 // -------------------------------------------------------------
-class GodotTsonWangColor : public RefCounted {
-	GDCLASS(GodotTsonWangColor, RefCounted);
+class TiledWangColor : public RefCounted {
+	GDCLASS(TiledWangColor, RefCounted);
 
 private:
 	tson::WangColor *wang_color = nullptr;
@@ -179,7 +179,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonWangColor() {}
+	TiledWangColor() {}
 	void set_wang_color(tson::WangColor *p_color) { wang_color = p_color; }
 
 	Color get_color() const;
@@ -191,10 +191,10 @@ public:
 };
 
 // -------------------------------------------------------------
-// GodotTsonWangTile
+// TiledWangTile
 // -------------------------------------------------------------
-class GodotTsonWangTile : public RefCounted {
-	GDCLASS(GodotTsonWangTile, RefCounted);
+class TiledWangTile : public RefCounted {
+	GDCLASS(TiledWangTile, RefCounted);
 
 private:
 	tson::WangTile *wang_tile = nullptr;
@@ -203,7 +203,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonWangTile() {}
+	TiledWangTile() {}
 	void set_wang_tile(tson::WangTile *p_tile) { wang_tile = p_tile; }
 
 	int get_tile_id() const;
@@ -214,10 +214,10 @@ public:
 };
 
 // -------------------------------------------------------------
-// GodotTsonWangSet
+// TiledWangSet
 // -------------------------------------------------------------
-class GodotTsonWangSet : public RefCounted {
-	GDCLASS(GodotTsonWangSet, RefCounted);
+class TiledWangSet : public RefCounted {
+	GDCLASS(TiledWangSet, RefCounted);
 
 private:
 	tson::WangSet *wang_set = nullptr;
@@ -226,7 +226,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonWangSet() {}
+	TiledWangSet() {}
 	void set_wang_set(tson::WangSet *p_wang_set) { wang_set = p_wang_set; }
 
 	String get_name() const;
@@ -238,10 +238,10 @@ public:
 };
 
 // -------------------------------------------------------------
-// GodotTsonFrame
+// TiledFrame
 // -------------------------------------------------------------
-class GodotTsonFrame : public RefCounted {
-	GDCLASS(GodotTsonFrame, RefCounted);
+class TiledFrame : public RefCounted {
+	GDCLASS(TiledFrame, RefCounted);
 
 private:
 	tson::Frame *frame = nullptr;
@@ -250,7 +250,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonFrame() {}
+	TiledFrame() {}
 	void set_frame(tson::Frame *p_frame) { frame = p_frame; }
 	tson::Frame *get_frame() const { return frame; }
 
@@ -259,10 +259,10 @@ public:
 };
 
 // -------------------------------------------------------------
-// GodotTsonAnimation
+// TiledAnimation
 // -------------------------------------------------------------
-class GodotTsonAnimation : public RefCounted {
-	GDCLASS(GodotTsonAnimation, RefCounted);
+class TiledAnimation : public RefCounted {
+	GDCLASS(TiledAnimation, RefCounted);
 
 private:
 	tson::Animation *animation = nullptr;
@@ -271,7 +271,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonAnimation() {}
+	TiledAnimation() {}
 	void set_animation(tson::Animation *p_animation) { animation = p_animation; }
 	tson::Animation *get_animation() const { return animation; }
 
@@ -279,10 +279,10 @@ public:
 };
 
 // -------------------------------------------------------------
-// GodotTsonTile
+// TiledTile
 // -------------------------------------------------------------
-class GodotTsonTile : public RefCounted {
-	GDCLASS(GodotTsonTile, RefCounted);
+class TiledTile : public RefCounted {
+	GDCLASS(TiledTile, RefCounted);
 
 private:
 	tson::Tile *tile = nullptr;
@@ -291,7 +291,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonTile() {}
+	TiledTile() {}
 	void set_tile(tson::Tile *p_tile) { tile = p_tile; }
 	tson::Tile *get_tile() const { return tile; }
 
@@ -306,16 +306,16 @@ public:
 	int get_flip_flags() const;
 	int get_gid() const;
 
-	Ref<GodotTsonAnimation> get_animation() const;
-	Ref<GodotTsonLayer> get_objectgroup() const;
+	Ref<TiledAnimation> get_animation() const;
+	Ref<TiledLayer> get_objectgroup() const;
 	Array get_properties();
 };
 
 // -------------------------------------------------------------
-// GodotTsonObject
+// TiledObject
 // -------------------------------------------------------------
-class GodotTsonObject : public RefCounted {
-	GDCLASS(GodotTsonObject, RefCounted);
+class TiledObject : public RefCounted {
+	GDCLASS(TiledObject, RefCounted);
 
 private:
 	tson::Object *object = nullptr;
@@ -324,7 +324,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonObject() {}
+	TiledObject() {}
 	void set_object(tson::Object *p_object) { object = p_object; }
 	tson::Object *get_object() const { return object; }
 
@@ -345,14 +345,14 @@ public:
 	int get_gid() const;
 
 	Array get_properties();
-	Ref<GodotTsonText> get_text() const;
+	Ref<TiledText> get_text() const;
 };
 
 // -------------------------------------------------------------
-// GodotTsonChunk
+// TiledChunk
 // -------------------------------------------------------------
-class GodotTsonChunk : public RefCounted {
-	GDCLASS(GodotTsonChunk, RefCounted);
+class TiledChunk : public RefCounted {
+	GDCLASS(TiledChunk, RefCounted);
 
 private:
 	tson::Chunk *chunk = nullptr;
@@ -361,7 +361,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonChunk() {}
+	TiledChunk() {}
 	void set_chunk(tson::Chunk *p_chunk) { chunk = p_chunk; }
 	tson::Chunk *get_chunk() const { return chunk; }
 
@@ -371,10 +371,10 @@ public:
 };
 
 // -------------------------------------------------------------
-// GodotTsonMap
+// TiledMap
 // -------------------------------------------------------------
-class GodotTsonMap : public RefCounted {
-	GDCLASS(GodotTsonMap, RefCounted);
+class TiledMap : public RefCounted {
+	GDCLASS(TiledMap, RefCounted);
 
 private:
 	std::shared_ptr<tson::Map> map;
@@ -383,7 +383,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonMap() {}
+	TiledMap() {}
 	void set_map(std::unique_ptr<tson::Map> p_map) { map = std::shared_ptr<tson::Map>(std::move(p_map)); }
 	std::shared_ptr<tson::Map> get_map() { return map; }
 
@@ -411,10 +411,10 @@ public:
 };
 
 // -------------------------------------------------------------
-// GodotTsonProperty
+// TiledProperty
 // -------------------------------------------------------------
-class GodotTsonProperty : public RefCounted {
-	GDCLASS(GodotTsonProperty, RefCounted);
+class TiledProperty : public RefCounted {
+	GDCLASS(TiledProperty, RefCounted);
 
 private:
 	tson::Property *property = nullptr;
@@ -423,7 +423,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonProperty() {}
+	TiledProperty() {}
 	void set_property(tson::Property *p_property) { property = p_property; }
 	tson::Property *get_property() const { return property; }
 
@@ -434,10 +434,10 @@ public:
 };
 
 // -------------------------------------------------------------
-// GodotTsonProjectFolder
+// TiledProjectFolder
 // -------------------------------------------------------------
-class GodotTsonProjectFolder : public RefCounted {
-	GDCLASS(GodotTsonProjectFolder, RefCounted);
+class TiledProjectFolder : public RefCounted {
+	GDCLASS(TiledProjectFolder, RefCounted);
 
 private:
 	tson::ProjectFolder *folder = nullptr;
@@ -446,7 +446,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonProjectFolder() {}
+	TiledProjectFolder() {}
 	void set_folder(tson::ProjectFolder *p_folder) { folder = p_folder; }
 
 	String get_path() const;
@@ -456,10 +456,10 @@ public:
 };
 
 // -------------------------------------------------------------
-// GodotTsonProjectData
+// TiledProjectData
 // -------------------------------------------------------------
-class GodotTsonProjectData : public RefCounted {
-	GDCLASS(GodotTsonProjectData, RefCounted);
+class TiledProjectData : public RefCounted {
+	GDCLASS(TiledProjectData, RefCounted);
 
 private:
 	const tson::ProjectData *project_data = nullptr;
@@ -468,7 +468,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonProjectData() {}
+	TiledProjectData() {}
 	void set_data(const tson::ProjectData *p_data) { project_data = p_data; }
 
 	String get_base_path() const;
@@ -477,14 +477,14 @@ public:
 	String get_extensions_path() const;
 	Array get_folders() const;
 	String get_object_types_file() const;
-	Ref<GodotTsonProjectPropertyTypes> get_project_property_types() const;
+	Ref<TiledProjectPropertyTypes> get_project_property_types() const;
 };
 
 // -------------------------------------------------------------
-// GodotTsonProject
+// TiledProject
 // -------------------------------------------------------------
-class GodotTsonProject : public RefCounted {
-	GDCLASS(GodotTsonProject, RefCounted);
+class TiledProject : public RefCounted {
+	GDCLASS(TiledProject, RefCounted);
 
 private:
 	std::unique_ptr<tson::Project> project;
@@ -493,22 +493,22 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonProject() {}
+	TiledProject() {}
 	tson::Project *get_project() const { return project.get(); }
 	bool parse(const String &p_path);
 
 	String get_path() const;
-	Ref<GodotTsonProjectData> get_data() const;
+	Ref<TiledProjectData> get_data() const;
 	Array get_folders() const;
-	Ref<GodotTsonTiledClass> get_tiled_class(const String &p_name) const;
-	Ref<GodotTsonEnumDefinition> get_enum_definition(const String &p_name) const;
+	Ref<TiledClass> get_tiled_class(const String &p_name) const;
+	Ref<TiledEnumDefinition> get_enum_definition(const String &p_name) const;
 };
 
 // -------------------------------------------------------------
-// GodotTsonWorldMapData
+// TiledWorldMapData
 // -------------------------------------------------------------
-class GodotTsonWorldMapData : public RefCounted {
-	GDCLASS(GodotTsonWorldMapData, RefCounted);
+class TiledWorldMapData : public RefCounted {
+	GDCLASS(TiledWorldMapData, RefCounted);
 
 private:
 	tson::WorldMapData *world_map_data = nullptr;
@@ -517,7 +517,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonWorldMapData() {}
+	TiledWorldMapData() {}
 	void set_data(tson::WorldMapData *p_data) { world_map_data = p_data; }
 
 	String get_folder() const;
@@ -528,10 +528,10 @@ public:
 };
 
 // -------------------------------------------------------------
-// GodotTsonWorld
+// TiledWorld
 // -------------------------------------------------------------
-class GodotTsonWorld : public RefCounted {
-	GDCLASS(GodotTsonWorld, RefCounted);
+class TiledWorld : public RefCounted {
+	GDCLASS(TiledWorld, RefCounted);
 
 private:
 	std::unique_ptr<tson::World> world;
@@ -540,7 +540,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonWorld() {}
+	TiledWorld() {}
 	tson::World *get_world() const { return world.get(); }
 	void parse(const String &p_path);
 
@@ -552,10 +552,10 @@ public:
 };
 
 // -------------------------------------------------------------
-// GodotTsonGrid
+// TiledGrid
 // -------------------------------------------------------------
-class GodotTsonGrid : public RefCounted {
-	GDCLASS(GodotTsonGrid, RefCounted);
+class TiledGrid : public RefCounted {
+	GDCLASS(TiledGrid, RefCounted);
 
 private:
 	const tson::Grid *grid = nullptr;
@@ -564,7 +564,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonGrid() {}
+	TiledGrid() {}
 	void set_grid(const tson::Grid *p_grid) { grid = p_grid; }
 
 	String get_orientation() const;
@@ -572,10 +572,10 @@ public:
 };
 
 // -------------------------------------------------------------
-// GodotTsonTerrain
+// TiledTerrain
 // -------------------------------------------------------------
-class GodotTsonTerrain : public RefCounted {
-	GDCLASS(GodotTsonTerrain, RefCounted);
+class TiledTerrain : public RefCounted {
+	GDCLASS(TiledTerrain, RefCounted);
 
 private:
 	tson::Terrain *terrain = nullptr;
@@ -584,7 +584,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonTerrain() {}
+	TiledTerrain() {}
 	void set_terrain(tson::Terrain *p_terrain) { terrain = p_terrain; }
 
 	String get_name() const;
@@ -593,10 +593,10 @@ public:
 };
 
 // -------------------------------------------------------------
-// GodotTsonText
+// TiledText
 // -------------------------------------------------------------
-class GodotTsonText : public RefCounted {
-	GDCLASS(GodotTsonText, RefCounted);
+class TiledText : public RefCounted {
+	GDCLASS(TiledText, RefCounted);
 
 private:
 	const tson::Text *text = nullptr;
@@ -605,7 +605,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonText() {}
+	TiledText() {}
 	void set_text(const tson::Text *p_text) { text = p_text; }
 
 	String get_text() const;
@@ -623,10 +623,10 @@ public:
 };
 
 // -------------------------------------------------------------
-// GodotTsonTransformations
+// TiledTransformations
 // -------------------------------------------------------------
-class GodotTsonTransformations : public RefCounted {
-	GDCLASS(GodotTsonTransformations, RefCounted);
+class TiledTransformations : public RefCounted {
+	GDCLASS(TiledTransformations, RefCounted);
 
 private:
 	const tson::Transformations *transformations = nullptr;
@@ -635,7 +635,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonTransformations() {}
+	TiledTransformations() {}
 	void set_transformations(const tson::Transformations *p_transform) { transformations = p_transform; }
 
 	bool allow_hflip() const;
@@ -645,10 +645,10 @@ public:
 };
 
 // -------------------------------------------------------------
-// GodotTsonTiledClass
+// TiledClass
 // -------------------------------------------------------------
-class GodotTsonTiledClass : public RefCounted {
-	GDCLASS(GodotTsonTiledClass, RefCounted);
+class TiledClass : public RefCounted {
+	GDCLASS(TiledClass, RefCounted);
 
 private:
 	tson::TiledClass *tiled_class = nullptr;
@@ -657,7 +657,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonTiledClass() {}
+	TiledClass() {}
 	void set_class(tson::TiledClass *p_class) { tiled_class = p_class; }
 
 	int get_id() const;
@@ -667,10 +667,10 @@ public:
 };
 
 // -------------------------------------------------------------
-// GodotTsonEnumDefinition
+// TiledEnumDefinition
 // -------------------------------------------------------------
-class GodotTsonEnumDefinition : public RefCounted {
-	GDCLASS(GodotTsonEnumDefinition, RefCounted);
+class TiledEnumDefinition : public RefCounted {
+	GDCLASS(TiledEnumDefinition, RefCounted);
 
 private:
 	tson::EnumDefinition *enum_def = nullptr;
@@ -679,7 +679,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonEnumDefinition() {}
+	TiledEnumDefinition() {}
 	void set_definition(tson::EnumDefinition *p_def) { enum_def = p_def; }
 
 	int get_id() const;
@@ -693,10 +693,10 @@ public:
 };
 
 // -------------------------------------------------------------
-// GodotTsonEnumValue
+// TiledEnumValue
 // -------------------------------------------------------------
-class GodotTsonEnumValue : public RefCounted {
-	GDCLASS(GodotTsonEnumValue, RefCounted);
+class TiledEnumValue : public RefCounted {
+	GDCLASS(TiledEnumValue, RefCounted);
 
 private:
 	tson::EnumValue *enum_val = nullptr;
@@ -705,21 +705,21 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonEnumValue() {}
+	TiledEnumValue() {}
 	void set_value(tson::EnumValue *p_val) { enum_val = p_val; }
 
 	int get_value() const;
 	String get_value_name() const;
 	bool contains_value_name(const String &name) const;
 	Array get_value_names() const;
-	Ref<GodotTsonEnumDefinition> get_definition() const;
+	Ref<TiledEnumDefinition> get_definition() const;
 };
 
 // -------------------------------------------------------------
-// GodotTsonTileObject
+// TiledTileObject
 // -------------------------------------------------------------
-class GodotTsonTileObject : public RefCounted {
-	GDCLASS(GodotTsonTileObject, RefCounted);
+class TiledTileObject : public RefCounted {
+	GDCLASS(TiledTileObject, RefCounted);
 
 private:
 	tson::TileObject *tile_object = nullptr;
@@ -728,7 +728,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonTileObject() {}
+	TiledTileObject() {}
 	void set_tile_object(tson::TileObject *p_tile_object) { tile_object = p_tile_object; }
 
 	Vector2i get_position_in_tile_units() const;
@@ -736,10 +736,10 @@ public:
 };
 
 // -------------------------------------------------------------
-// GodotTsonProjectPropertyTypes
+// TiledProjectPropertyTypes
 // -------------------------------------------------------------
-class GodotTsonProjectPropertyTypes : public RefCounted {
-	GDCLASS(GodotTsonProjectPropertyTypes, RefCounted);
+class TiledProjectPropertyTypes : public RefCounted {
+	GDCLASS(TiledProjectPropertyTypes, RefCounted);
 
 private:
 	const tson::ProjectPropertyTypes *prop_types = nullptr;
@@ -748,11 +748,11 @@ protected:
 	static void _bind_methods();
 
 public:
-	GodotTsonProjectPropertyTypes() {}
+	TiledProjectPropertyTypes() {}
 	void set_project_property_types(const tson::ProjectPropertyTypes *p_prop_types) { prop_types = p_prop_types; }
 
 	Array get_enums() const;
 	Array get_classes() const;
-	Ref<GodotTsonEnumDefinition> get_enum_definition(const String &name) const;
-	Ref<GodotTsonTiledClass> get_tiled_class(const String &name) const;
+	Ref<TiledEnumDefinition> get_enum_definition(const String &name) const;
+	Ref<TiledClass> get_tiled_class(const String &name) const;
 };
