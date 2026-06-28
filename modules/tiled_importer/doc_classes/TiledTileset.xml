@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="GodotTsonTileset" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="TiledTileset" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 	</brief_description>
 	<description>
@@ -33,7 +33,7 @@
 			</description>
 		</method>
 		<method name="get_grid" qualifiers="const">
-			<return type="GodotTsonGrid" />
+			<return type="TiledGrid" />
 			<description>
 			</description>
 		</method>
@@ -103,7 +103,7 @@
 			</description>
 		</method>
 		<method name="get_transformations" qualifiers="const">
-			<return type="GodotTsonTransformations" />
+			<return type="TiledTransformations" />
 			<description>
 			</description>
 		</method>

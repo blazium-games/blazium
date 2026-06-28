@@ -69,20 +69,20 @@ private:
 
 	// Internal data tracking mimicking YATI states
 	Array _atlas_sources;
-	Dictionary _object_groups; // We'll keep this as a mapping of tile_id -> Ref<GodotTsonLayer> wrapper
+	Dictionary _object_groups; // We'll keep this as a mapping of tile_id -> Ref<TiledLayer> wrapper
 	Ref<TiledCustomTypes> _custom_types;
 
-	void create_or_append(Ref<GodotTsonTileset> p_tile_set_ro);
+	void create_or_append(Ref<TiledTileset> p_tile_set_ro);
 	void handle_tiles(const Array &p_tiles);
 	void handle_wangsets_old_mapping(const Array &p_wangsets);
 	void handle_wangsets(const Array &p_wangsets);
 	void handle_animation(Array p_frames, int p_tile_id);
-	void handle_objectgroup(Ref<GodotTsonLayer> p_object_group, TileData *p_current_tile, int p_tile_id);
+	void handle_objectgroup(Ref<TiledLayer> p_object_group, TileData *p_current_tile, int p_tile_id);
 	void handle_tile_properties(const Array &p_properties, TileData *p_current_tile);
 	void handle_tileset_properties(const Array &p_properties);
 
 	void register_atlas_source(int p_source_id, int p_num_tiles, int p_assigned_tile_id, const Vector2i &p_tile_offset);
-	void register_object_group(int p_tile_id, Ref<GodotTsonLayer> p_object_group);
+	void register_object_group(int p_tile_id, Ref<TiledLayer> p_object_group);
 
 	TileData *create_tile_if_not_existing_and_get_tiledata(int p_tile_id);
 	Vector2 transpose_coords(float p_x, float p_y);

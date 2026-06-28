@@ -41,12 +41,6 @@ struct TiledPoint {
 	float y = 0;
 };
 
-struct TiledProperty {
-	String name;
-	Variant::Type type = Variant::NIL;
-	Variant value;
-};
-
 class DataLoader {
 public:
 	static PackedByteArray get_tiled_file_content(const String &p_file_name, const String &p_base_path);

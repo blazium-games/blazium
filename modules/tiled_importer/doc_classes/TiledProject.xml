@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="GodotTsonProject" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="TiledProject" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 	</brief_description>
 	<description>
@@ -8,12 +8,12 @@
 	</tutorials>
 	<methods>
 		<method name="get_data" qualifiers="const">
-			<return type="GodotTsonProjectData" />
+			<return type="TiledProjectData" />
 			<description>
 			</description>
 		</method>
 		<method name="get_enum_definition" qualifiers="const">
-			<return type="GodotTsonEnumDefinition" />
+			<return type="TiledEnumDefinition" />
 			<param index="0" name="name" type="String" />
 			<description>
 			</description>
@@ -29,7 +29,7 @@
 			</description>
 		</method>
 		<method name="get_tiled_class" qualifiers="const">
-			<return type="GodotTsonTiledClass" />
+			<return type="TiledClass" />
 			<param index="0" name="name" type="String" />
 			<description>
 			</description>

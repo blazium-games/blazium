@@ -41,33 +41,33 @@
 
 void initialize_tiled_importer_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-		GDREGISTER_CLASS(GodotTsonTileson);
-		GDREGISTER_CLASS(GodotTsonMap);
-		GDREGISTER_CLASS(GodotTsonLayer);
-		GDREGISTER_CLASS(GodotTsonTileset);
-		GDREGISTER_CLASS(GodotTsonObject);
-		GDREGISTER_CLASS(GodotTsonChunk);
-		GDREGISTER_CLASS(GodotTsonTile);
-		GDREGISTER_CLASS(GodotTsonAnimation);
-		GDREGISTER_CLASS(GodotTsonFrame);
-		GDREGISTER_CLASS(GodotTsonProperty);
-		GDREGISTER_CLASS(GodotTsonWorld);
-		GDREGISTER_CLASS(GodotTsonWorldMapData);
-		GDREGISTER_CLASS(GodotTsonProject);
-		GDREGISTER_CLASS(GodotTsonProjectData);
-		GDREGISTER_CLASS(GodotTsonProjectFolder);
-		GDREGISTER_CLASS(GodotTsonWangSet);
-		GDREGISTER_CLASS(GodotTsonWangTile);
-		GDREGISTER_CLASS(GodotTsonWangColor);
-		GDREGISTER_CLASS(GodotTsonGrid);
-		GDREGISTER_CLASS(GodotTsonTerrain);
-		GDREGISTER_CLASS(GodotTsonText);
-		GDREGISTER_CLASS(GodotTsonTransformations);
-		GDREGISTER_CLASS(GodotTsonTiledClass);
-		GDREGISTER_CLASS(GodotTsonEnumDefinition);
-		GDREGISTER_CLASS(GodotTsonEnumValue);
-		GDREGISTER_CLASS(GodotTsonTileObject);
-		GDREGISTER_CLASS(GodotTsonProjectPropertyTypes);
+		GDREGISTER_CLASS(TiledTileson);
+		GDREGISTER_CLASS(TiledMap);
+		GDREGISTER_CLASS(TiledLayer);
+		GDREGISTER_CLASS(TiledTileset);
+		GDREGISTER_CLASS(TiledObject);
+		GDREGISTER_CLASS(TiledChunk);
+		GDREGISTER_CLASS(TiledTile);
+		GDREGISTER_CLASS(TiledAnimation);
+		GDREGISTER_CLASS(TiledFrame);
+		GDREGISTER_CLASS(TiledProperty);
+		GDREGISTER_CLASS(TiledWorld);
+		GDREGISTER_CLASS(TiledWorldMapData);
+		GDREGISTER_CLASS(TiledProject);
+		GDREGISTER_CLASS(TiledProjectData);
+		GDREGISTER_CLASS(TiledProjectFolder);
+		GDREGISTER_CLASS(TiledWangSet);
+		GDREGISTER_CLASS(TiledWangTile);
+		GDREGISTER_CLASS(TiledWangColor);
+		GDREGISTER_CLASS(TiledGrid);
+		GDREGISTER_CLASS(TiledTerrain);
+		GDREGISTER_CLASS(TiledText);
+		GDREGISTER_CLASS(TiledTransformations);
+		GDREGISTER_CLASS(TiledClass);
+		GDREGISTER_CLASS(TiledEnumDefinition);
+		GDREGISTER_CLASS(TiledEnumValue);
+		GDREGISTER_CLASS(TiledTileObject);
+		GDREGISTER_CLASS(TiledProjectPropertyTypes);
 	}
 
 	if (p_level != MODULE_INITIALIZATION_LEVEL_EDITOR) {

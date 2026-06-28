@@ -49,7 +49,7 @@ void TiledEditorPlugin::_notification(int p_what) {
 			main_panel->add_child(vbox);
 
 			status_label = memnew(Label);
-			status_label->set_text("Tiled Importer: Native GodotTson Architecture Loaded");
+			status_label->set_text("Tiled Importer: Native Tiled Architecture Loaded");
 			status_label->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
 			vbox->add_child(status_label);
 
