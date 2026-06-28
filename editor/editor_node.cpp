@@ -1288,6 +1288,24 @@ void EditorNode::_remove_lock_file() {
 	OS::get_singleton()->remove_lock_file();
 }
 
+bool EditorNode::is_path_excluded_from_external_change_check(const String &p_path) {
+	const PackedStringArray patterns = GLOBAL_GET("editor/external_changes/ignored_paths");
+	if (patterns.is_empty()) {
+		return false;
+	}
+
+	const String file = p_path.get_file();
+	for (const String &pattern : patterns) {
+		if (pattern.is_empty()) {
+			continue;
+		}
+		if (p_path.matchn(pattern) || file.matchn(pattern)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 void EditorNode::_scan_external_changes() {
 	disk_changed_list->clear();
 	TreeItem *r = disk_changed_list->create_item();
@@ -1299,6 +1317,10 @@ void EditorNode::_scan_external_changes() {
 	for (int i = 0; i < editor_data.get_edited_scene_count(); i++) {
 		Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_RESOURCES);
 		if (editor_data.get_scene_path(i) == "" || !da->file_exists(editor_data.get_scene_path(i))) {
+			continue;
+		}
+
+		if (is_path_excluded_from_external_change_check(editor_data.get_scene_path(i))) {
 			continue;
 		}
 
@@ -1335,6 +1357,10 @@ void EditorNode::_reload_modified_scenes() {
 
 	for (int i = 0; i < editor_data.get_edited_scene_count(); i++) {
 		if (editor_data.get_scene_path(i) == "") {
+			continue;
+		}
+
+		if (is_path_excluded_from_external_change_check(editor_data.get_scene_path(i))) {
 			continue;
 		}
 
@@ -6970,6 +6996,7 @@ EditorNode::EditorNode() {
 	DEV_ASSERT(!singleton);
 	singleton = this;
 
+	GLOBAL_DEF(PropertyInfo(Variant::PACKED_STRING_ARRAY, "editor/external_changes/ignored_paths"), PackedStringArray());
 	// Detecting headless mode, that means the editor is running in command line.
 	if (!DisplayServer::get_singleton()->window_can_draw()) {
 		cmdline_mode = true;

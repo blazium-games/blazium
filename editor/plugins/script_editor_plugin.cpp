@@ -1163,6 +1163,10 @@ bool ScriptEditor::_test_script_times_on_disk(Ref<Resource> p_for_script) {
 				continue; //internal script, who cares
 			}
 
+			if (EditorNode::is_path_excluded_from_external_change_check(se->edited_file_data.path)) {
+				continue;
+			}
+
 			uint64_t last_date = se->edited_file_data.last_modified_time;
 			uint64_t date = FileAccess::get_modified_time(se->edited_file_data.path);
 
@@ -2818,6 +2822,10 @@ void ScriptEditor::_reload_scripts(bool p_refresh_only) {
 
 		if (edited_res->is_built_in()) {
 			continue; // Internal script, who cares.
+		}
+
+		if (EditorNode::is_path_excluded_from_external_change_check(edited_res->get_path())) {
+			continue;
 		}
 
 		if (p_refresh_only) {
