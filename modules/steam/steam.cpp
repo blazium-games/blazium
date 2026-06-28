@@ -261,38 +261,44 @@ void Steam::poll_callbacks() {
 }
 
 void Steam::_dispatch_callbacks() {
-	if (!initialized || !loader.is_loaded()) {
+	if (!initialized || !loader.is_loaded() || dispatching_callbacks) {
 		return;
 	}
 
-	if (loader.has_run_callbacks()) {
-		loader.run_callbacks();
-		return;
-	}
+	dispatching_callbacks = true;
 
-	loader.manual_dispatch_run_frame(steam_pipe);
+	if (steam_pipe != 0 && manual_dispatch_enabled) {
+		loader.manual_dispatch_run_frame(steam_pipe);
 
-	SteamCallbackMsg callback;
-	while (loader.manual_dispatch_get_next_callback(steam_pipe, &callback)) {
-		if (callback.m_iCallback == SteamAPICallCompleted::k_iCallback) {
-			if (callback.m_pubParam && callback.m_cubParam >= (int)sizeof(SteamAPICallCompleted)) {
-				const SteamAPICallCompleted *call_completed = (const SteamAPICallCompleted *)callback.m_pubParam;
-				if (call_completed->m_cubParam > 0) {
-					Vector<uint8_t> result;
-					result.resize((int)call_completed->m_cubParam);
-					bool failed = false;
-					if (loader.manual_dispatch_get_api_call_result(
-								steam_pipe, call_completed->m_hAsyncCall, result.ptrw(),
-								(int)call_completed->m_cubParam, call_completed->m_iCallback, &failed)) {
-						_handle_callback(call_completed->m_iCallback, result.ptr(), (int)call_completed->m_cubParam);
+		const int kMaxCallbacksPerFrame = 64;
+		int processed = 0;
+		SteamCallbackMsg callback;
+		while (processed < kMaxCallbacksPerFrame && loader.manual_dispatch_get_next_callback(steam_pipe, &callback)) {
+			if (callback.m_iCallback == SteamAPICallCompleted::k_iCallback) {
+				if (callback.m_pubParam && callback.m_cubParam >= (int)sizeof(SteamAPICallCompleted)) {
+					const SteamAPICallCompleted *call_completed = (const SteamAPICallCompleted *)callback.m_pubParam;
+					if (call_completed->m_cubParam > 0) {
+						Vector<uint8_t> result;
+						result.resize((int)call_completed->m_cubParam);
+						bool failed = false;
+						if (loader.manual_dispatch_get_api_call_result(
+									steam_pipe, call_completed->m_hAsyncCall, result.ptrw(),
+									(int)call_completed->m_cubParam, call_completed->m_iCallback, &failed)) {
+							_handle_callback(call_completed->m_iCallback, result.ptr(), (int)call_completed->m_cubParam);
+						}
 					}
 				}
+			} else if (callback.m_pubParam && callback.m_cubParam > 0) {
+				_handle_callback(callback.m_iCallback, callback.m_pubParam, callback.m_cubParam);
 			}
-		} else if (callback.m_pubParam && callback.m_cubParam > 0) {
-			_handle_callback(callback.m_iCallback, callback.m_pubParam, callback.m_cubParam);
+			loader.manual_dispatch_free_last_callback(steam_pipe);
+			processed++;
 		}
-		loader.manual_dispatch_free_last_callback(steam_pipe);
+	} else if (loader.has_run_callbacks()) {
+		loader.run_callbacks();
 	}
+
+	dispatching_callbacks = false;
 }
 
 bool Steam::is_available() {
@@ -342,6 +348,9 @@ Error Steam::initialize(int p_app_id) {
 		return ERR_CANT_CREATE;
 	}
 
+	loader.manual_dispatch_init();
+	manual_dispatch_enabled = true;
+
 	if (loader.has_stats_support()) {
 		steam_user_stats = loader.get_steam_user_stats();
 		steam_friends = loader.get_steam_friends();
@@ -382,6 +391,7 @@ void Steam::shutdown() {
 	steam_utils = nullptr;
 	steam_inventory = nullptr;
 	steam_pipe = 0;
+	manual_dispatch_enabled = false;
 	stats_received = false;
 	stats_store_pending = false;
 	stats_store_succeeded = false;
@@ -424,17 +434,11 @@ void Steam::request_web_api_ticket(const String &p_identity) {
 	pending_auth_ticket = loader.get_auth_ticket_for_web_api(steam_user, identity_utf8.get_data());
 	_log_debug(vformat("Requested Web API ticket (identity=%s, handle=%d)", p_identity, (int)pending_auth_ticket));
 
-	const double start_usec = Time::get_singleton()->get_ticks_usec();
-	while (ticket_state == TICKET_STATE_PENDING) {
-		_dispatch_callbacks();
-		if ((Time::get_singleton()->get_ticks_usec() - start_usec) / 1000000.0 > 15.0) {
-			ticket_state = TICKET_STATE_FAILED;
-			pending_ticket_error = "Timed out waiting for Web API ticket callback";
-			_log_debug(pending_ticket_error);
-			emit_signal("web_api_ticket_failed", pending_ticket_error);
-			break;
-		}
-		::OS::get_singleton()->delay_usec(1000);
+	if (pending_auth_ticket == 0) {
+		ticket_state = TICKET_STATE_FAILED;
+		pending_ticket_error = "Failed to request Web API ticket";
+		_log_debug(pending_ticket_error);
+		emit_signal("web_api_ticket_failed", pending_ticket_error);
 	}
 }
 

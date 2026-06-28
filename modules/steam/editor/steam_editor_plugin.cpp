@@ -77,6 +77,10 @@ void SteamEditorPlugin::_on_request_ticket_pressed() {
 	}
 	String identity = identity_edit ? identity_edit->get_text() : "blazium";
 	steam->request_web_api_ticket(identity);
+	for (int i = 0; i < 300 && steam->get_ticket_state() == Steam::TICKET_STATE_PENDING; i++) {
+		steam->poll_callbacks();
+		OS::get_singleton()->delay_usec(10000);
+	}
 	if (steam->get_ticket_state() == Steam::TICKET_STATE_READY) {
 		last_hex_ticket = steam->get_pending_hex_ticket();
 		_append_log(vformat("Ticket ready (%d chars)", last_hex_ticket.length()));
