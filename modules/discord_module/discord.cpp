@@ -190,6 +190,9 @@ Discord::~Discord() {
 }
 
 void Discord::_log_lifecycle(const String &p_message) {
+	if (!debug_logging) {
+		return;
+	}
 	print_line(vformat("[Discord] %s", p_message));
 	if (debug_log.size() >= kMaxDebugLogEntries) {
 		debug_log.remove_at(0);
@@ -433,7 +436,7 @@ void Discord::_log_callback(Discord_String message, Discord_LoggingSeverity seve
 	if (!discord) {
 		return;
 	}
-	discord->_log_lifecycle(vformat("[SDK] %s", DiscordAPILoader::to_godot_string(message)));
+	discord->_log_debug(vformat("[SDK] %s", DiscordAPILoader::to_godot_string(message)));
 }
 
 void Discord::_update_rich_presence_callback(Discord_ClientResult *result, void *user_data) {

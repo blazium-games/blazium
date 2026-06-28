@@ -83,6 +83,8 @@ private:
 
 	bool inventory_definitions_loaded = false;
 	bool inventory_definitions_pending = false;
+	bool dispatching_callbacks = false;
+	bool manual_dispatch_enabled = false;
 	HashMap<int, int> inventory_pending_results;
 
 	SteamInventoryUpdateHandle_t inventory_property_update_handle = STEAM_INVENTORY_UPDATE_HANDLE_INVALID;
