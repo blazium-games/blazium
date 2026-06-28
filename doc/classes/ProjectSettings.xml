@@ -3418,6 +3418,8 @@
 		<member name="layer_names/avoidance/layer_32" type="String" setter="" getter="" default="&quot;&quot;">
 			Optional name for the navigation avoidance layer 32. If left empty, the layer will display as "Layer 32".
 		</member>
+		<member name="luau_module/package/path" type="String" setter="" getter="" default="&quot;res://?.luau;res://?.lua;res://?.mod.luau;res://?/init.luau&quot;">
+		</member>
 		<member name="memory/limits/message_queue/max_size_mb" type="int" setter="" getter="" default="32">
 			Godot uses a message queue to defer some function calls. If you run out of space on it (you will see an error), you can increase the size here.
 		</member>

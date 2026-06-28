@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="LuaCompileOptions" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="coverage_level" type="int" setter="set_coverage_level" getter="get_coverage_level" default="0">
+		</member>
+		<member name="debug_level" type="int" setter="set_debug_level" getter="get_debug_level" default="1">
+		</member>
+		<member name="optimization_level" type="int" setter="set_optimization_level" getter="get_optimization_level" default="1">
+		</member>
+		<member name="type_info_level" type="int" setter="set_type_info_level" getter="get_type_info_level" default="0">
+		</member>
+	</members>
+</class>
