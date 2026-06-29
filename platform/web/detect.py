@@ -302,7 +302,9 @@ def configure(env: "SConsEnvironment"):
     # Do not call main immediately when the support code is ready.
     env.Append(LINKFLAGS=["-sINVOKE_RUN=0"])
 
-    if env.get("module_luau_module_enabled") and not env["threads"]:
+    # Luau web bridge symbols live in the Godot side module when dynamic linking is
+    # enabled; listing them on the main module link fails with undefined exports.
+    if env.get("module_luau_module_enabled") and not env["threads"] and not env["dlink_enabled"]:
         env.Append(LINKFLAGS=["-sEXPORTED_FUNCTIONS=['_main','_luau_web_execute_script','_luau_web_check_script']"])
 
     # callMain for manual start, cwrap for the mono version.
