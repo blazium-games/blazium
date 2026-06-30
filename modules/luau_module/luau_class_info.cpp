@@ -43,6 +43,8 @@
 #include "require/luau_package_path.h"
 #include "string_cache.h"
 
+#include "core/io/reg_ex.h"
+
 #include "core/error/error_macros.h"
 #include "core/object/class_db.h"
 #include <lualib.h>
@@ -645,34 +647,29 @@ void LuauClassInfo::parse_global_class_metadata_from_source(const String &p_sour
 	r_info->clear();
 
 	auto extract_quoted_field = [](const String &p_src, const String &p_key) -> String {
-		for (const char quote : { '"', '\'' }) {
-			const String q = String::chr(quote);
-			for (const String &sep : { " = ", "=" }) {
-				const int start = p_src.find(p_key + sep + q);
-				if (start == -1) {
-					continue;
-				}
-				const int value_start = start + (p_key + sep + q).length();
-				const int value_end = p_src.find(q, value_start);
-				if (value_end != -1 && value_end > value_start) {
-					return p_src.substr(value_start, value_end - value_start);
-				}
-			}
+		RegEx re;
+		re.compile(vformat(R"((?:^|[\s,{])%s\s*=\s*["']([^"']+)["'])", p_key));
+		Ref<RegExMatch> match = re.search(p_src);
+		if (match.is_valid()) {
+			return match->get_string(1);
 		}
 		return String();
 	};
 
-	auto extract_optional_bool = [](const String &p_src, const String &p_key, bool &r_found) -> bool {
-		r_found = false;
-		for (const String &sep : { " = ", "=" }) {
-			for (const String &value : { "true", "false" }) {
-				if (p_src.find(p_key + sep + value) != -1) {
-					r_found = true;
-					return value == "true";
-				}
-			}
+	auto extract_bool_field = [](const String &p_src, const String &p_key) -> bool {
+		RegEx re;
+		re.compile(vformat(R"((?:^|[\s,{])%s\s*=\s*(true|false))", p_key));
+		Ref<RegExMatch> match = re.search(p_src);
+		if (match.is_valid()) {
+			return match->get_string(1) == "true";
 		}
 		return false;
+	};
+
+	auto has_bool_field = [](const String &p_src, const String &p_key) -> bool {
+		RegEx re;
+		re.compile(vformat(R"((?:^|[\s,{])%s\s*=\s*(true|false))", p_key));
+		return re.search(p_src).is_valid();
 	};
 
 	const String extends = extract_quoted_field(p_source, "extends");
@@ -685,16 +682,12 @@ void LuauClassInfo::parse_global_class_metadata_from_source(const String &p_sour
 		r_info->class_name = class_name;
 	}
 
-	bool found = false;
-	const bool tool = extract_optional_bool(p_source, "tool", found);
-	if (found) {
-		r_info->tool = tool;
+	if (has_bool_field(p_source, "tool")) {
+		r_info->tool = extract_bool_field(p_source, "tool");
 	}
 
-	found = false;
-	const bool abstract = extract_optional_bool(p_source, "abstract", found);
-	if (found) {
-		r_info->abstract = abstract;
+	if (has_bool_field(p_source, "abstract")) {
+		r_info->abstract = extract_bool_field(p_source, "abstract");
 	}
 
 	const String icon = extract_quoted_field(p_source, "icon");
