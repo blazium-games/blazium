@@ -46,6 +46,7 @@
 #include "scene/resources/3d/convex_polygon_shape_3d.h"
 #include "scene/resources/surface_tool.h"
 #endif // _3D_DISABLED
+#include "scene/debugger/bottleneck_debugger.h"
 #include "scene/gui/popup_menu.h"
 #include "scene/main/canvas_layer.h"
 #include "scene/main/scene_tree.h"
@@ -61,6 +62,7 @@ SceneDebugger::SceneDebugger() {
 	RuntimeNodeSelect::singleton = memnew(RuntimeNodeSelect);
 
 	EngineDebugger::register_message_capture("scene", EngineDebugger::Capture(nullptr, SceneDebugger::parse_message));
+	EngineDebugger::register_message_capture("bottleneck", EngineDebugger::Capture(nullptr, BottleneckDebugger::parse_message));
 #endif // DEBUG_ENABLED
 }
 
@@ -68,6 +70,7 @@ SceneDebugger::~SceneDebugger() {
 #ifdef DEBUG_ENABLED
 	if (LiveEditor::singleton) {
 		EngineDebugger::unregister_message_capture("scene");
+		EngineDebugger::unregister_message_capture("bottleneck");
 		memdelete(LiveEditor::singleton);
 		LiveEditor::singleton = nullptr;
 	}
