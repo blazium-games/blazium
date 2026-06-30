@@ -49,9 +49,11 @@
 #endif
 #include "core/config/project_settings.h"
 #include "core/error/error_macros.h"
+#include "core/io/file_access.h"
 #include "core/io/resource_loader.h"
 #include "core/math/expression.h"
 #include "core/object/script_language.h"
+#include "core/object/script_server.h"
 #include "core/os/os.h"
 #include "core/os/time.h"
 #include "core/variant/variant_utility.h"
@@ -958,28 +960,55 @@ bool LuauScriptLanguage::debug_should_break_at(const String &p_source, int p_lin
 }
 
 String LuauScriptLanguage::get_global_class_name(const String &p_path, String *r_base_type, String *r_icon_path, bool *r_is_abstract, bool *r_is_tool) const {
-	Ref<LuauScript> scr = ResourceLoader::load(p_path);
-	if (scr.is_null() || !scr->is_valid()) {
+	/* **WARNING**
+	 *
+	 * Do not load scripts here. EditorFileSystem calls this while scanning global
+	 * classes, before dependencies exist and while the filesystem scan is active.
+	 * Full ResourceLoader::load() can re-enter the scan and crash the editor.
+	 */
+	String source_path = p_path;
+	const String ext = source_path.get_extension().to_lower();
+	if (ext == "luauc") {
+		const String luau_path = source_path.get_basename() + ".luau";
+		if (FileAccess::exists(luau_path)) {
+			source_path = luau_path;
+		}
+	} else if (ext != "luau" && ext != "lua") {
+		return String();
+	}
+
+	Error err = OK;
+	Ref<FileAccess> file = FileAccess::open(source_path, FileAccess::READ, &err);
+	if (err != OK) {
+		return String();
+	}
+
+	const String source = file->get_as_text();
+	LuauClassInfo info;
+	LuauClassInfo::parse_global_class_metadata_from_source(source, &info);
+	if (info.class_name.is_empty()) {
 		return String();
 	}
 
 	if (r_base_type) {
-		*r_base_type = scr->get_instance_base_type();
+		if (ClassDB::class_exists(info.extends)) {
+			*r_base_type = info.extends;
+		} else if (ScriptServer::is_global_class(info.extends)) {
+			*r_base_type = ScriptServer::get_global_class_native_base(info.extends);
+		} else {
+			*r_base_type = info.extends;
+		}
 	}
 	if (r_icon_path) {
-#ifdef TOOLS_ENABLED
-		*r_icon_path = scr->get_class_icon_path();
-#else
-		*r_icon_path = scr->get_class_info().icon_path;
-#endif
+		*r_icon_path = info.icon_path;
 	}
 	if (r_is_abstract) {
-		*r_is_abstract = scr->is_abstract();
+		*r_is_abstract = info.abstract;
 	}
 	if (r_is_tool) {
-		*r_is_tool = scr->is_tool();
+		*r_is_tool = info.tool;
 	}
-	return scr->get_global_name();
+	return info.class_name;
 }
 
 LuauScriptLanguage::LuauScriptLanguage() {

@@ -39,6 +39,7 @@
 #include "luau.h"
 #include "luau_bytecode_format.h"
 #include "luau_codegen.h"
+#include "luau_class_info.h"
 #include "luau_compile_result.h"
 #include "luau_parser_pool.h"
 
@@ -152,6 +153,25 @@ TEST_CASE("[Modules][LuauModule] LuauState do_string") {
 	Variant result = state->to_variant(-1);
 	CHECK(result.get_type() == Variant::INT);
 	CHECK(int(result) == 42);
+}
+
+TEST_CASE("[Modules][LuauModule] parse global class metadata from source") {
+	const String source = R"(
+--- @class LuauFixtureTableDsl
+--- @extends Node
+local TableDslNode = {
+	extends = "Node",
+	class_name = "LuauFixtureTableDsl",
+	tool = true,
+}
+return TableDslNode
+)";
+
+	LuauClassInfo info;
+	LuauClassInfo::parse_global_class_metadata_from_source(source, &info);
+	CHECK(info.class_name == StringName("LuauFixtureTableDsl"));
+	CHECK(info.extends == "Node");
+	CHECK(info.tool);
 }
 
 } //namespace TestLuauModule

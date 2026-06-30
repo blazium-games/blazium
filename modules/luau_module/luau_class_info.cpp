@@ -43,6 +43,8 @@
 #include "require/luau_package_path.h"
 #include "string_cache.h"
 
+#include "core/io/reg_ex.h"
+
 #include "core/error/error_macros.h"
 #include "core/object/class_db.h"
 #include <lualib.h>
@@ -635,4 +637,63 @@ Error LuauClassInfo::parse_info_from_source(const Ref<LuaState> &p_registry_stat
 	parser->set_top(0);
 	pool.release(parser);
 	return err;
+}
+
+void LuauClassInfo::parse_global_class_metadata_from_source(const String &p_source, LuauClassInfo *r_info) {
+	if (!r_info) {
+		return;
+	}
+
+	r_info->clear();
+
+	auto extract_quoted_field = [](const String &p_src, const String &p_key) -> String {
+		RegEx re;
+		re.compile(vformat(R"((?:^|[\s,{])%s\s*=\s*["']([^"']+)["'])", p_key));
+		Ref<RegExMatch> match = re.search(p_src);
+		if (match.is_valid()) {
+			return match->get_string(1);
+		}
+		return String();
+	};
+
+	auto extract_bool_field = [](const String &p_src, const String &p_key) -> bool {
+		RegEx re;
+		re.compile(vformat(R"((?:^|[\s,{])%s\s*=\s*(true|false))", p_key));
+		Ref<RegExMatch> match = re.search(p_src);
+		if (match.is_valid()) {
+			return match->get_string(1) == "true";
+		}
+		return false;
+	};
+
+	auto has_bool_field = [](const String &p_src, const String &p_key) -> bool {
+		RegEx re;
+		re.compile(vformat(R"((?:^|[\s,{])%s\s*=\s*(true|false))", p_key));
+		return re.search(p_src).is_valid();
+	};
+
+	const String extends = extract_quoted_field(p_source, "extends");
+	if (!extends.is_empty()) {
+		r_info->extends = extends;
+	}
+
+	const String class_name = extract_quoted_field(p_source, "class_name");
+	if (!class_name.is_empty()) {
+		r_info->class_name = class_name;
+	}
+
+	if (has_bool_field(p_source, "tool")) {
+		r_info->tool = extract_bool_field(p_source, "tool");
+	}
+
+	if (has_bool_field(p_source, "abstract")) {
+		r_info->abstract = extract_bool_field(p_source, "abstract");
+	}
+
+	const String icon = extract_quoted_field(p_source, "icon");
+	if (!icon.is_empty()) {
+		r_info->icon_path = icon;
+	}
+
+	LuauAnalysis::parse_annotations(p_source, r_info);
 }
