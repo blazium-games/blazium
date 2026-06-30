@@ -53,6 +53,7 @@
 #include "core/io/resource_loader.h"
 #include "core/math/expression.h"
 #include "core/object/script_language.h"
+#include "core/object/script_server.h"
 #include "core/os/os.h"
 #include "core/os/time.h"
 #include "core/variant/variant_utility.h"
