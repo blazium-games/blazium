@@ -194,6 +194,7 @@ jobs:
             exit 1
           }
           Set-GdkPath $editionRoot
+          exit 0
 
       - name: Download Direct3D 12 SDK components
         run: python ./misc/scripts/install_d3d12_sdk_windows.py

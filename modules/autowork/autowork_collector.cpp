@@ -37,6 +37,9 @@ void AutoworkCollector::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_script", "path"), &AutoworkCollector::add_script);
 	ClassDB::bind_method(D_METHOD("process_directory", "path"), &AutoworkCollector::process_directory);
 	ClassDB::bind_method(D_METHOD("get_scripts"), &AutoworkCollector::get_scripts);
+	ClassDB::bind_method(D_METHOD("set_script_prefix", "prefix"), &AutoworkCollector::set_script_prefix);
+	ClassDB::bind_method(D_METHOD("set_script_suffix", "suffix"), &AutoworkCollector::set_script_suffix);
+	ClassDB::bind_method(D_METHOD("set_include_subdirectories", "enable"), &AutoworkCollector::set_include_subdirectories);
 }
 
 AutoworkCollector::AutoworkCollector() {
@@ -47,6 +50,18 @@ AutoworkCollector::~AutoworkCollector() {
 
 void AutoworkCollector::clear() {
 	scripts.clear();
+}
+
+void AutoworkCollector::set_script_prefix(const String &p_prefix) {
+	script_prefix = p_prefix;
+}
+
+void AutoworkCollector::set_script_suffix(const String &p_suffix) {
+	script_suffix = p_suffix;
+}
+
+void AutoworkCollector::set_include_subdirectories(bool p_enable) {
+	include_subdirectories = p_enable;
 }
 
 void AutoworkCollector::add_script(const String &p_path) {

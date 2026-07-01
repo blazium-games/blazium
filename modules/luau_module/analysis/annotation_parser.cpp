@@ -38,7 +38,10 @@ using namespace luau_module;
 namespace {
 
 static Variant::Type luau_type_to_variant(const String &p_type) {
-	if (p_type == "number" || p_type == "float" || p_type == "int") {
+	if (p_type == "int") {
+		return Variant::INT;
+	}
+	if (p_type == "number" || p_type == "float") {
 		return Variant::FLOAT;
 	}
 	if (p_type == "boolean" || p_type == "bool") {
@@ -80,29 +83,34 @@ static PropertyHint parse_property_hint(const String &p_hint) {
 
 static void parse_property_args(const String &p_args, LuauClassProperty &r_prop) {
 	PackedStringArray tokens = p_args.split(" ", false);
-	if (tokens.is_empty()) {
-		return;
-	}
-	r_prop.info.name = StringName(tokens[0]);
-	if (tokens.size() > 1) {
-		const Variant::Type vt = luau_type_to_variant(tokens[1]);
-		if (vt != Variant::NIL) {
-			r_prop.info.type = vt;
-			if (vt == Variant::OBJECT && tokens.size() > 1) {
-				r_prop.info.class_name = StringName(tokens[1]);
-			}
-		}
-	}
-	for (int i = 2; i < tokens.size(); i++) {
+	for (int i = 0; i < tokens.size(); i++) {
 		const String token = tokens[i];
-		if (token.begins_with("default=")) {
+		if (token.begins_with("name=")) {
+			r_prop.info.name = StringName(token.substr(5));
+		} else if (token.begins_with("type=")) {
+			const String type_name = token.substr(5);
+			const Variant::Type vt = luau_type_to_variant(type_name);
+			if (vt != Variant::NIL) {
+				r_prop.info.type = vt;
+				if (vt == Variant::OBJECT) {
+					r_prop.info.class_name = StringName(type_name);
+				}
+			}
+		} else if (token.begins_with("default=")) {
 			const String value = token.substr(8);
 			if (value == "true" || value == "false") {
 				r_prop.default_value = value == "true";
 				r_prop.info.type = Variant::BOOL;
+			} else if (value.is_valid_int()) {
+				r_prop.default_value = value.to_int();
+				if (r_prop.info.type == Variant::NIL) {
+					r_prop.info.type = Variant::INT;
+				}
 			} else if (value.is_valid_float()) {
 				r_prop.default_value = value.to_float();
-				r_prop.info.type = Variant::FLOAT;
+				if (r_prop.info.type == Variant::NIL) {
+					r_prop.info.type = Variant::FLOAT;
+				}
 			} else {
 				r_prop.default_value = value;
 				r_prop.info.type = Variant::STRING;
@@ -115,6 +123,16 @@ static void parse_property_args(const String &p_args, LuauClassProperty &r_prop)
 			r_prop.info.usage |= PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_STORAGE;
 		} else if (token == "onready") {
 			r_prop.info.usage |= PROPERTY_USAGE_SCRIPT_VARIABLE;
+		} else if (r_prop.info.name.is_empty()) {
+			r_prop.info.name = StringName(token);
+		} else if (r_prop.info.type == Variant::NIL) {
+			const Variant::Type vt = luau_type_to_variant(token);
+			if (vt != Variant::NIL) {
+				r_prop.info.type = vt;
+				if (vt == Variant::OBJECT) {
+					r_prop.info.class_name = StringName(token);
+				}
+			}
 		}
 	}
 	if (r_prop.info.type == Variant::NIL) {
@@ -295,7 +313,7 @@ void LuauAnnotationParser::merge_into(LuauClassInfo *r_info, const LuauClassInfo
 				existing.info.hint = pair.value.info.hint;
 				existing.info.hint_string = pair.value.info.hint_string;
 			}
-			if (existing.default_value.get_type() == Variant::NIL && pair.value.default_value.get_type() != Variant::NIL) {
+			if (pair.value.default_value.get_type() != Variant::NIL) {
 				existing.default_value = pair.value.default_value;
 			}
 			if (existing.description.is_empty() && !pair.value.description.is_empty()) {

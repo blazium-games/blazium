@@ -52,6 +52,9 @@ public:
 
 	void add_script(const String &p_path);
 	void process_directory(const String &p_path);
+	void set_script_prefix(const String &p_prefix);
+	void set_script_suffix(const String &p_suffix);
+	void set_include_subdirectories(bool p_enable);
 	Array get_scripts() const;
 	void clear();
 };

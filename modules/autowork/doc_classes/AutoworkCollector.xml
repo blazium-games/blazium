@@ -33,5 +33,23 @@
 				Searches the directory at [param path] for test scripts and adds them to the collection.
 			</description>
 		</method>
+		<method name="set_include_subdirectories">
+			<return type="void" />
+			<param index="0" name="enable" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_script_prefix">
+			<return type="void" />
+			<param index="0" name="prefix" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="set_script_suffix">
+			<return type="void" />
+			<param index="0" name="suffix" type="String" />
+			<description>
+			</description>
+		</method>
 	</methods>
 </class>

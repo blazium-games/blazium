@@ -158,8 +158,26 @@ static int typed_eq(lua_State *L) {
 	return 1;
 }
 
+static int typed_vector2_index(lua_State *L) {
+	Vector2 *vec = static_cast<Vector2 *>(lua_touserdata(L, 1));
+	ERR_FAIL_NULL_V(vec, 0);
+	const char *key = luaL_checkstring(L, 2);
+	if (strcmp(key, "x") == 0) {
+		lua_pushnumber(L, vec->x);
+	} else if (strcmp(key, "y") == 0) {
+		lua_pushnumber(L, vec->y);
+	} else {
+		luaL_error(L, "'Vector2' has no field '%s'", key);
+	}
+	return 1;
+}
+
 static void register_typed_metatable(lua_State *L, const char *p_mt) {
 	if (!luaL_newmetatable(L, p_mt)) {
+		if (strcmp(p_mt, VECTOR2_MT) == 0) {
+			lua_pushcfunction(L, typed_vector2_index, "__index");
+			lua_setfield(L, -2, "__index");
+		}
 		return;
 	}
 
@@ -177,6 +195,10 @@ static void register_typed_metatable(lua_State *L, const char *p_mt) {
 	lua_setfield(L, -2, "__unm");
 	lua_pushcfunction(L, typed_eq, "__eq");
 	lua_setfield(L, -2, "__eq");
+	if (strcmp(p_mt, VECTOR2_MT) == 0) {
+		lua_pushcfunction(L, typed_vector2_index, "__index");
+		lua_setfield(L, -2, "__index");
+	}
 	lua_setreadonly(L, -1, 1);
 	lua_pop(L, 1);
 }

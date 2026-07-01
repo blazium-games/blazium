@@ -508,8 +508,6 @@ Error LuauClassInfo::parse_from_object(const Ref<LuaState> &p_state, int p_objec
 }
 
 Error LuauClassInfo::parse_from_source(const Ref<LuaState> &p_registry_state, const String &p_source, const String &p_path, PackedByteArray &r_bytecode, LuauClassInfo &r_info, Ref<LuaState> &r_class_vm, int *r_table_ref) {
-	ERR_FAIL_COND_V(p_registry_state.is_null() || !p_registry_state->is_valid(), ERR_INVALID_PARAMETER);
-
 	r_class_vm.unref();
 
 	if (r_bytecode.is_empty()) {
@@ -523,8 +521,13 @@ Error LuauClassInfo::parse_from_source(const Ref<LuaState> &p_registry_state, co
 	}
 
 	Ref<LuaState> parser;
-	parser.instantiate();
-	LuauParserPool::configure_parser_vm(parser);
+	const bool reuse_registry_vm = p_registry_state.is_valid() && p_registry_state->is_valid();
+	if (reuse_registry_vm) {
+		parser = p_registry_state;
+	} else {
+		parser.instantiate();
+		LuauParserPool::configure_parser_vm(parser);
+	}
 
 	String chunk_name = p_path.is_empty() ? "@luau_script" : "@" + p_path;
 	if (!parser->load_bytecode(r_bytecode, chunk_name)) {
@@ -548,8 +551,6 @@ Error LuauClassInfo::parse_from_source(const Ref<LuaState> &p_registry_state, co
 		return ERR_INVALID_DATA;
 	}
 
-	r_class_vm = parser;
-
 	Error err = ERR_INVALID_DATA;
 	if (parser->is_table(-1)) {
 		err = parse_from_table(parser, -1, r_info, r_table_ref);
@@ -559,6 +560,11 @@ Error LuauClassInfo::parse_from_source(const Ref<LuaState> &p_registry_state, co
 		ERR_PRINT("LuauClassInfo: script must return a class table, gdclass/class descriptor, or call class({...})");
 		parser->set_top(0);
 		return ERR_INVALID_DATA;
+	}
+
+	if (err != OK) {
+		parser->set_top(0);
+		return err;
 	}
 
 	LuauAnalysis::parse_annotations(p_source, &r_info);
@@ -571,6 +577,7 @@ Error LuauClassInfo::parse_from_source(const Ref<LuaState> &p_registry_state, co
 		}
 	}
 
+	r_class_vm = parser;
 	parser->set_top(0);
 	return err;
 }
@@ -635,4 +642,76 @@ Error LuauClassInfo::parse_info_from_source(const Ref<LuaState> &p_registry_stat
 	parser->set_top(0);
 	pool.release(parser);
 	return err;
+}
+
+void LuauClassInfo::parse_global_class_metadata_from_source(const String &p_source, LuauClassInfo *r_info) {
+	if (!r_info) {
+		return;
+	}
+
+	r_info->clear();
+
+	auto extract_quoted_field = [](const String &p_src, const String &p_key) -> String {
+		for (const char quote : { '"', '\'' }) {
+			const String q = String::chr(quote);
+			for (const char *sep : { " = ", "=" }) {
+				const String sep_str = sep;
+				const String needle = p_key + sep_str + q;
+				const int start = p_src.find(needle);
+				if (start == -1) {
+					continue;
+				}
+				const int value_start = start + needle.length();
+				const int value_end = p_src.find(q, value_start);
+				if (value_end != -1 && value_end > value_start) {
+					return p_src.substr(value_start, value_end - value_start);
+				}
+			}
+		}
+		return String();
+	};
+
+	auto extract_optional_bool = [](const String &p_src, const String &p_key, bool &r_found) -> bool {
+		r_found = false;
+		for (const char *sep : { " = ", "=" }) {
+			const String sep_str = sep;
+			for (const char *value : { "true", "false" }) {
+				const String value_str = value;
+				if (p_src.find(p_key + sep_str + value_str) != -1) {
+					r_found = true;
+					return value_str == "true";
+				}
+			}
+		}
+		return false;
+	};
+
+	const String extends = extract_quoted_field(p_source, "extends");
+	if (!extends.is_empty()) {
+		r_info->extends = extends;
+	}
+
+	const String class_name = extract_quoted_field(p_source, "class_name");
+	if (!class_name.is_empty()) {
+		r_info->class_name = class_name;
+	}
+
+	bool found = false;
+	const bool tool = extract_optional_bool(p_source, "tool", found);
+	if (found) {
+		r_info->tool = tool;
+	}
+
+	found = false;
+	const bool abstract = extract_optional_bool(p_source, "abstract", found);
+	if (found) {
+		r_info->abstract = abstract;
+	}
+
+	const String icon = extract_quoted_field(p_source, "icon");
+	if (!icon.is_empty()) {
+		r_info->icon_path = icon;
+	}
+
+	LuauAnalysis::parse_annotations(p_source, r_info);
 }

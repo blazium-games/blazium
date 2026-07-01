@@ -15,6 +15,11 @@
 			<description>
 			</description>
 		</method>
+		<method name="is_placeholder_fallback_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
 		<method name="load_source_code">
 			<return type="int" enum="Error" />
 			<param index="0" name="path" type="String" />

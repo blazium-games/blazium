@@ -44,9 +44,27 @@ using luau_module::LuauBytecodeFormat;
 #include "core/object/class_db.h"
 #include "core/object/script_language.h"
 
+namespace {
+
+void merge_inherited_class_metadata(LuauClassInfo &r_info, const LuauClassInfo &p_base_info) {
+	for (const KeyValue<StringName, LuauClassProperty> &pair : p_base_info.properties) {
+		if (!r_info.properties.has(pair.key)) {
+			r_info.properties[pair.key] = pair.value;
+		}
+	}
+	for (const KeyValue<StringName, LuauClassSignal> &pair : p_base_info.signals) {
+		if (!r_info.signals.has(pair.key)) {
+			r_info.signals[pair.key] = pair.value;
+		}
+	}
+}
+
+} //namespace
+
 void LuauScript::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("load_source_code", "path"), &LuauScript::load_source_code);
 	ClassDB::bind_method(D_METHOD("compile", "force_recompile"), &LuauScript::compile, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("is_placeholder_fallback_enabled"), &LuauScript::is_placeholder_fallback_enabled);
 	ClassDB::bind_vararg_method(METHOD_FLAGS_DEFAULT, "new", &LuauScript::_new, MethodInfo("new"));
 }
 
@@ -242,12 +260,31 @@ Error LuauScript::reload(bool p_keep_state) {
 	Ref<LuaState> load_state = lang->get_load_state();
 	ERR_FAIL_COND_V(load_state.is_null(), ERR_UNAVAILABLE);
 
+	// Default: isolated parser VM per script. Only share the parent's class VM when
+	// extending another Luau global class (super calls require the same lua_State).
+	Ref<LuaState> parse_vm;
+	{
+		LuauClassInfo extends_info;
+		LuauClassInfo::parse_global_class_metadata_from_source(source, &extends_info);
+		if (!extends_info.extends.is_empty() && ScriptServer::is_global_class(extends_info.extends)) {
+			const String base_path = ScriptServer::get_global_class_path(extends_info.extends);
+			if (!base_path.is_empty()) {
+				Ref<LuauScript> base_luau = ResourceLoader::load(base_path);
+				if (base_luau.is_valid() && base_luau->is_valid() && base_luau->get_class_vm().is_valid()) {
+					parse_vm = base_luau->get_class_vm();
+				}
+			}
+		}
+	}
+
 	unref_class_table(load_state);
 
 	LuauClassInfo new_info;
 	Ref<LuaState> new_class_vm;
 	int new_table_ref = LUA_NOREF;
-	Error err = LuauClassInfo::parse_from_source(load_state, source, get_path(), bytecode, new_info, new_class_vm, &new_table_ref);
+	const bool parsed_into_parent_vm = parse_vm.is_valid();
+
+	Error err = LuauClassInfo::parse_from_source(parse_vm, source, get_path(), bytecode, new_info, new_class_vm, &new_table_ref);
 	if (err != OK) {
 #ifdef TOOLS_ENABLED
 		if (tool || source.contains("@tool")) {
@@ -263,32 +300,41 @@ Error LuauScript::reload(bool p_keep_state) {
 	const StringName old_global_name = class_info.class_name;
 
 	class_info = new_info;
+
+	if (!class_info.extends.is_empty() && ScriptServer::is_global_class(class_info.extends)) {
+		const String base_path = ScriptServer::get_global_class_path(class_info.extends);
+		if (!base_path.is_empty()) {
+			Ref<LuauScript> base_luau = ResourceLoader::load(base_path);
+			if (base_luau.is_valid() && base_luau->is_valid()) {
+				merge_inherited_class_metadata(class_info, base_luau->get_class_info());
+			}
+		}
+	}
+
 	class_vm = new_class_vm;
 	class_table_ref = new_table_ref;
 	tool = class_info.tool;
 	valid = true;
 
-	bool global_class_changed = false;
 	if (old_global_name != class_info.class_name) {
 		if (old_global_name != StringName()) {
 			ScriptServer::remove_global_class(old_global_name);
-			global_class_changed = true;
 		}
 	}
 
 	if (class_info.class_name != StringName()) {
 		ScriptServer::add_global_class(class_info.class_name, get_instance_base_type(), lang->get_name(), get_path(), is_abstract(), is_tool());
-		global_class_changed = true;
 	} else if (old_global_name != StringName()) {
 		ScriptServer::remove_global_class(old_global_name);
-		global_class_changed = true;
 	}
 
-	if (global_class_changed) {
-		ScriptServer::save_global_classes();
-	}
+	// Do not call ScriptServer::save_global_classes() here. Reload can run while
+	// ResourceLoader is active; persisting global classes re-enters project I/O
+	// and matches GDScript (EditorFileSystem owns cache updates during scan).
 
-	if (class_vm.is_valid() && class_vm->is_valid()) {
+	// Child scripts parsed into the parent's class VM share require state; clearing
+	// package.loaded would break the parent and any live instances on that VM.
+	if (class_vm.is_valid() && class_vm->is_valid() && !parsed_into_parent_vm) {
 		luau_module::LuauRequire::invalidate_all(class_vm->get_lua_state());
 	}
 
@@ -394,6 +440,10 @@ bool LuauScript::get_property_default_value(const StringName &p_property, Varian
 			r_value = prop.default_value;
 			return true;
 		}
+	}
+	Ref<LuauScript> base_luau = get_base_script();
+	if (base_luau.is_valid() && base_luau->is_valid()) {
+		return base_luau->get_property_default_value(p_property, r_value);
 	}
 	return false;
 }
