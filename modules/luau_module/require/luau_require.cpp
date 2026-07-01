@@ -99,6 +99,21 @@ bool LuauRequire::searchpath(const String &p_name, const String &p_path, String 
 	r_filename = String();
 	String module_name = p_name;
 
+	if (module_name.begins_with("res://")) {
+		static const char *suffixes[] = { ".luau", ".lua", ".mod.luau", "/init.luau", nullptr };
+		if (FileAccess::exists(module_name)) {
+			r_filename = module_name;
+			return true;
+		}
+		for (const char **suffix = suffixes; *suffix; suffix++) {
+			const String candidate = module_name + *suffix;
+			if (FileAccess::exists(candidate)) {
+				r_filename = candidate;
+				return true;
+			}
+		}
+	}
+
 	if (!p_sep.is_empty() && !module_name.contains("/") && !module_name.contains("\\")) {
 		module_name = module_name.replace(p_sep, p_rep);
 	}
@@ -211,9 +226,17 @@ int LuauRequire::lua_require(lua_State *p_L) {
 
 		if (lua_isfunction(p_L, -2)) {
 			lua_pushvalue(p_L, -2);
-			lua_pushvalue(p_L, -2);
+			lua_pushvalue(p_L, -1);
+			lua_call(p_L, 1, 1);
+
+			if (!lua_isfunction(p_L, -1)) {
+				luaL_error(p_L, "module loader for '%s' did not return a function", modname);
+				return 0;
+			}
+
+			lua_pushvalue(p_L, -1);
 			lua_pushstring(p_L, modname);
-			lua_call(p_L, 2, 1);
+			lua_call(p_L, 1, 1);
 
 			const int result_index = lua_gettop(p_L);
 			lua_getfield(p_L, LUA_REGISTRYINDEX, PACKAGE_REGISTRY_KEY);
@@ -291,8 +314,10 @@ void LuauRequire::invalidate_module(lua_State *p_L, const String &p_module_name)
 
 	lua_getfield(p_L, -1, "loaded");
 	if (lua_istable(p_L, -1)) {
+		lua_setreadonly(p_L, -1, false);
 		lua_pushnil(p_L);
 		lua_setfield(p_L, -2, p_module_name.utf8().get_data());
+		lua_setreadonly(p_L, -1, true);
 	}
 	lua_pop(p_L, 2);
 }
@@ -306,7 +331,10 @@ void LuauRequire::invalidate_all(lua_State *p_L) {
 		return;
 	}
 
+	// Parser VMs are sandboxed; the global `package` table is read-only.
+	lua_setreadonly(p_L, -1, false);
 	lua_newtable(p_L);
 	lua_setfield(p_L, -2, "loaded");
+	lua_setreadonly(p_L, -1, true);
 	lua_pop(p_L, 1);
 }

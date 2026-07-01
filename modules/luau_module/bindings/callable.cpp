@@ -77,7 +77,12 @@ static int callable_call(lua_State *L) {
 
 	int arg_count = lua_gettop(L) - 1;
 	int expected_args = callable.get_argument_count();
-	int luastate_arg = callable.is_custom() && dynamic_cast<LuaStateBoundCallable *>(callable.get_custom());
+	int luastate_arg = 0;
+	if (callable.is_custom()) {
+		if (dynamic_cast<LuaStateBoundCallable *>(callable.get_custom())) {
+			luastate_arg = 1;
+		}
+	}
 	if (expected_args >= 0 && arg_count + luastate_arg < expected_args) {
 		luaL_error(L, "Too few arguments for Callable (expected at least %d, got %d)", expected_args, arg_count);
 	}
@@ -104,7 +109,11 @@ static int callable_call(lua_State *L) {
 #ifdef DEBUG_ENABLED
 	if (LuauScriptLanguage *lang = LuauScriptLanguage::get_singleton()) {
 		if (lang->is_profiling_active() && lang->is_profile_native_calls_enabled()) {
-			if (!callable.is_custom() || dynamic_cast<LuaCallable *>(callable.get_custom()) == nullptr) {
+			bool record_native = true;
+			if (callable.is_custom()) {
+				record_native = dynamic_cast<LuaCallable *>(callable.get_custom()) == nullptr;
+			}
+			if (record_native) {
 				String native_sig = callable.get_method().is_empty() ? Variant(callable).stringify() : String(callable.get_method());
 				lang->profile_record_native_call(StringName(native_sig), Time::get_singleton()->get_ticks_usec() - profile_start);
 			}
@@ -178,15 +187,17 @@ Callable luau_module::to_callable(lua_State *L, int p_index) {
 void luau_module::push_callable(lua_State *L, const Callable &p_callable) {
 	ERR_FAIL_COND_MSG(!lua_checkstack(L, 2), "push_callable(): Stack overflow. Cannot grow stack.");
 
-	LuaCallable *lc = dynamic_cast<LuaCallable *>(p_callable.get_custom());
-	if (lc) {
-		ERR_FAIL_COND_MSG(!lc->is_valid(), "push_callable(): LuaCallable is invalid.");
+	if (p_callable.is_custom()) {
+		LuaCallable *lc = dynamic_cast<LuaCallable *>(p_callable.get_custom());
+		if (lc) {
+			ERR_FAIL_COND_MSG(!lc->is_valid(), "push_callable(): LuaCallable is invalid.");
 
-		LuaState *callable_state = lc->get_lua_state();
-		ERR_FAIL_COND_MSG(callable_state->get_main_thread()->get_lua_state() != lua_mainthread(L), "push_callable(): Cannot push a Lua value from a different Luau VM.");
+			LuaState *callable_state = lc->get_lua_state();
+			ERR_FAIL_COND_MSG(callable_state->get_main_thread()->get_lua_state() != lua_mainthread(L), "push_callable(): Cannot push a Lua value from a different Luau VM.");
 
-		lua_getref(L, lc->get_lua_ref());
-		return;
+			lua_getref(L, lc->get_lua_ref());
+			return;
+		}
 	}
 
 	void *ptr = lua_newuserdatadtor(L, sizeof(Callable), callable_dtor);

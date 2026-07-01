@@ -81,6 +81,7 @@ struct LuauClassInfo {
 	static Error parse_from_object(const Ref<luau_module::LuaState> &p_state, int p_object_index, LuauClassInfo &r_info, int *r_table_ref = nullptr);
 	static Error parse_from_source(const Ref<luau_module::LuaState> &p_registry_state, const String &p_source, const String &p_path, PackedByteArray &r_bytecode, LuauClassInfo &r_info, Ref<luau_module::LuaState> &r_class_vm, int *r_table_ref = nullptr);
 	static Error parse_info_from_source(const Ref<luau_module::LuaState> &p_registry_state, const String &p_source, const String &p_path, PackedByteArray &r_bytecode, LuauClassInfo &r_info);
+	static void parse_global_class_metadata_from_source(const String &p_source, LuauClassInfo *r_info);
 
 	static void register_script_helpers(const Ref<luau_module::LuaState> &p_state);
 };

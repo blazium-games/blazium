@@ -110,12 +110,11 @@ bool LuauScriptDebugger::should_break_at(const String &p_source, int p_line) con
 
 	const String normalized = normalize_source_path(p_source);
 
-	if (EngineDebugger::is_active()) {
-		if (ScriptDebugger *script_debugger = EngineDebugger::get_script_debugger()) {
-			const StringName source_name(normalized);
-			if (script_debugger->is_breakpoint(p_line, source_name)) {
-				return true;
-			}
+	if (ScriptDebugger *script_debugger = EngineDebugger::get_script_debugger()) {
+		const String resolved = script_debugger->breakpoint_find_source(normalized);
+		const StringName source_name(resolved);
+		if (script_debugger->is_breakpoint(p_line, source_name)) {
+			return true;
 		}
 	}
 

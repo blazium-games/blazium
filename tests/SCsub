@@ -7,6 +7,19 @@ env.tests_sources = []
 
 env_tests = env.Clone()
 
+if env["module_luau_module_enabled"]:
+    luau_thirdparty = "#thirdparty/luau/"
+    env_tests.Append(
+        CPPPATH=[
+            "#modules/luau_module",
+            luau_thirdparty + "Common/include",
+            luau_thirdparty + "Ast/include",
+            luau_thirdparty + "Compiler/include",
+            luau_thirdparty + "VM/include",
+            luau_thirdparty + "VM/src",
+        ]
+    )
+
 # We must disable the THREAD_LOCAL entirely in doctest to prevent crashes on debugging
 # Since we link with /MT thread_local is always expired when the header is used
 # So the debugger crashes the engine and it causes weird errors

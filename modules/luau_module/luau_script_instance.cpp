@@ -48,6 +48,16 @@ using namespace luau_module;
 
 namespace {
 
+static int instance_emit_signal(lua_State *L) {
+	Object *owner = static_cast<Object *>(lua_touserdata(L, lua_upvalueindex(1)));
+	if (!owner) {
+		luaL_error(L, "emit_signal owner is null");
+	}
+	const StringName signal_name(luaL_checkstring(L, 1));
+	owner->emit_signal(signal_name);
+	return 0;
+}
+
 LuaState::Status traced_pcall(const Ref<LuaState> &p_state, int p_nargs, int p_nresults) {
 	bool tracing = false;
 	if (LuauScriptLanguage *lang = LuauScriptLanguage::get_singleton()) {
@@ -102,6 +112,11 @@ void LuauScriptInstance::create_instance_table() {
 	lua_getref(L, instance_table_ref);
 	push_object(L, owner, LUA_NOTAG);
 	lua_setfield(L, -2, "self");
+
+	lua_pushlightuserdata(L, owner);
+	lua_pushcclosurek(L, instance_emit_signal, "emit_signal", 1, nullptr);
+	lua_setfield(L, -2, "emit_signal");
+
 	lua_pop(L, 1);
 
 	install_super_table();
@@ -227,38 +242,41 @@ bool LuauScriptInstance::call_super_method(const StringName &p_method, const Var
 
 	ERR_FAIL_COND_V(vm_state.is_null(), false);
 
+	Ref<LuaState> base_vm = base_luau->get_class_vm();
+	ERR_FAIL_COND_V(base_vm.is_null() || !base_vm->is_valid(), false);
+	ERR_FAIL_COND_V(base_vm.ptr() != vm_state.ptr(), false);
+
 	int class_ref = base_luau->get_class_table_ref();
 	ERR_FAIL_COND_V(class_ref == LUA_NOREF, false);
 
-	vm_state->get_ref(class_ref);
-	vm_state->push_string_name(p_method);
-	vm_state->get_table(-2);
-	vm_state->remove(-2);
+	base_vm->get_ref(class_ref);
+	base_vm->raw_get_field(-1, p_method);
+	base_vm->remove(-2);
 
-	if (!vm_state->is_function(-1)) {
-		vm_state->pop(1);
+	if (!base_vm->is_function(-1)) {
+		base_vm->pop(1);
 		r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;
 		return false;
 	}
 
-	lua_getref(vm_state->get_lua_state(), instance_table_ref);
+	lua_getref(base_vm->get_lua_state(), instance_table_ref);
 	for (int i = 0; i < p_argcount; i++) {
-		vm_state->push_variant(*p_args[i]);
+		base_vm->push_variant(*p_args[i]);
 	}
 
-	LuaState::Status status = traced_pcall(vm_state, p_argcount + 1, p_expected_results);
+	LuaState::Status status = traced_pcall(base_vm, p_argcount + 1, p_expected_results);
 	if (status != LuaState::STATUS_OK) {
-		if (vm_state->get_top() > 0) {
-			ERR_PRINT(String("LuauScriptInstance::call_super_method error in ") + p_method + ": " + vm_state->to_string_inplace(-1));
+		if (base_vm->get_top() > 0) {
+			ERR_PRINT(String("LuauScriptInstance::call_super_method error in ") + p_method + ": " + base_vm->to_string_inplace(-1));
 		}
-		vm_state->set_top(0);
+		base_vm->set_top(0);
 		r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;
 		return false;
 	}
 
 	if (p_expected_results > 0) {
-		r_ret = to_variant(vm_state->get_lua_state(), -1);
-		vm_state->pop(p_expected_results);
+		r_ret = to_variant(base_vm->get_lua_state(), -1);
+		base_vm->pop(p_expected_results);
 	}
 
 	return true;
@@ -287,12 +305,12 @@ static int super_method_trampoline(lua_State *L) {
 
 	Callable::CallError err;
 	Variant ret;
-	if (!data->instance->call_super_method(data->method, args, count, ret, err, 1)) {
+	// Lifecycle hooks like _ready are void; expecting a return value breaks pcall.
+	if (!data->instance->call_super_method(data->method, args, count, ret, err, 0)) {
 		luaL_error(L, "super.%s failed", String(data->method).utf8().get_data());
 		return 0;
 	}
-	push_variant(L, ret);
-	return 1;
+	return 0;
 }
 
 } //namespace
@@ -417,10 +435,14 @@ void LuauScriptInstance::validate_property(PropertyInfo &p_property) const {
 	const Variant property = property_dict;
 	const Variant *args[1] = { &property };
 	Callable::CallError err;
-	Variant unused;
+	Variant ret;
 	LuauScriptInstance *mutable_this = const_cast<LuauScriptInstance *>(this);
-	if (mutable_this->call_method("_validate_property", args, 1, unused, err, 0) && err.error == Callable::CallError::CALL_OK) {
-		p_property = PropertyInfo::from_dict(property_dict);
+	if (mutable_this->call_method("_validate_property", args, 1, ret, err, 1) && err.error == Callable::CallError::CALL_OK) {
+		if (ret.get_type() == Variant::DICTIONARY) {
+			p_property = PropertyInfo::from_dict(ret);
+		} else {
+			p_property = PropertyInfo::from_dict(property_dict);
+		}
 	}
 }
 

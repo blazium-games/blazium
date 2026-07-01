@@ -49,6 +49,7 @@
 #endif
 #include "core/config/project_settings.h"
 #include "core/error/error_macros.h"
+#include "core/io/file_access.h"
 #include "core/io/resource_loader.h"
 #include "core/math/expression.h"
 #include "core/object/script_language.h"
@@ -64,6 +65,9 @@ void LuauScriptLanguage::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_built_in_templates", "object"), &LuauScriptLanguage::_get_built_in_templates_bind);
 	ClassDB::bind_method(D_METHOD("add_global_constant", "variable", "value"), &LuauScriptLanguage::add_global_constant);
 	ClassDB::bind_method(D_METHOD("debug_should_break_at", "source", "line"), &LuauScriptLanguage::debug_should_break_at);
+	ClassDB::bind_method(D_METHOD("validate", "source", "path", "functions"), &LuauScriptLanguage::validate_script, DEFVAL(Variant()));
+	ClassDB::bind_method(D_METHOD("find_function", "function", "code"), &LuauScriptLanguage::find_function);
+	ClassDB::bind_method(D_METHOD("get_public_constants"), &LuauScriptLanguage::get_public_constants_bind);
 	ClassDB::bind_static_method("LuauScriptLanguage", D_METHOD("get_singleton"), &LuauScriptLanguage::get_singleton);
 }
 
@@ -315,6 +319,37 @@ bool LuauScriptLanguage::validate(const String &p_script, const String &p_path, 
 #endif
 
 	return type_ok;
+}
+
+Dictionary LuauScriptLanguage::validate_script(const String &p_script, const String &p_path, const Variant &p_functions) const {
+	Array errors;
+
+	List<String> functions;
+	List<String> *functions_ptr = nullptr;
+	if (p_functions.get_type() == Variant::ARRAY) {
+		const Array fn_array = p_functions;
+		for (int i = 0; i < fn_array.size(); i++) {
+			functions.push_back(fn_array[i]);
+		}
+		functions_ptr = &functions;
+	}
+
+	List<ScriptError> error_list;
+	const bool ok = validate(p_script, p_path, functions_ptr, &error_list, nullptr, nullptr);
+
+	for (const ScriptError &err : error_list) {
+		Dictionary entry;
+		entry["path"] = err.path;
+		entry["line"] = err.line;
+		entry["column"] = err.column;
+		entry["message"] = err.message;
+		errors.push_back(entry);
+	}
+
+	Dictionary result;
+	result["valid"] = ok;
+	result["errors"] = errors;
+	return result;
 }
 
 Error LuauScriptLanguage::complete_code(const String &p_code, const String &p_path, Object *p_owner, List<CodeCompletionOption> *r_options, bool &r_force, String &r_call_hint) {
@@ -738,6 +773,20 @@ void LuauScriptLanguage::get_public_constants(List<Pair<String, Variant>> *p_con
 	}
 }
 
+Array LuauScriptLanguage::get_public_constants_bind() const {
+	Array r_constants;
+
+	List<Pair<String, Variant>> constants;
+	get_public_constants(&constants);
+	for (const Pair<String, Variant> &pair : constants) {
+		Array entry;
+		entry.push_back(pair.first);
+		entry.push_back(pair.second);
+		r_constants.push_back(entry);
+	}
+	return r_constants;
+}
+
 void LuauScriptLanguage::get_public_annotations(List<MethodInfo> *p_annotations) const {
 	if (!p_annotations) {
 		return;
@@ -958,28 +1007,55 @@ bool LuauScriptLanguage::debug_should_break_at(const String &p_source, int p_lin
 }
 
 String LuauScriptLanguage::get_global_class_name(const String &p_path, String *r_base_type, String *r_icon_path, bool *r_is_abstract, bool *r_is_tool) const {
-	Ref<LuauScript> scr = ResourceLoader::load(p_path);
-	if (scr.is_null() || !scr->is_valid()) {
+	/* **WARNING**
+	 *
+	 * Do not load scripts here. EditorFileSystem calls this while scanning global
+	 * classes, before dependencies exist and while the filesystem scan is active.
+	 * Full ResourceLoader::load() can re-enter the scan and crash the editor.
+	 */
+	String source_path = p_path;
+	const String ext = source_path.get_extension().to_lower();
+	if (ext == "luauc") {
+		const String luau_path = source_path.get_basename() + ".luau";
+		if (FileAccess::exists(luau_path)) {
+			source_path = luau_path;
+		}
+	} else if (ext != "luau" && ext != "lua") {
+		return String();
+	}
+
+	Error err = OK;
+	Ref<FileAccess> file = FileAccess::open(source_path, FileAccess::READ, &err);
+	if (err != OK) {
+		return String();
+	}
+
+	const String source = file->get_as_text();
+	LuauClassInfo info;
+	LuauClassInfo::parse_global_class_metadata_from_source(source, &info);
+	if (info.class_name.is_empty()) {
 		return String();
 	}
 
 	if (r_base_type) {
-		*r_base_type = scr->get_instance_base_type();
+		if (ClassDB::class_exists(info.extends)) {
+			*r_base_type = info.extends;
+		} else if (ScriptServer::is_global_class(info.extends)) {
+			*r_base_type = ScriptServer::get_global_class_native_base(info.extends);
+		} else {
+			*r_base_type = info.extends;
+		}
 	}
 	if (r_icon_path) {
-#ifdef TOOLS_ENABLED
-		*r_icon_path = scr->get_class_icon_path();
-#else
-		*r_icon_path = scr->get_class_info().icon_path;
-#endif
+		*r_icon_path = info.icon_path;
 	}
 	if (r_is_abstract) {
-		*r_is_abstract = scr->is_abstract();
+		*r_is_abstract = info.abstract;
 	}
 	if (r_is_tool) {
-		*r_is_tool = scr->is_tool();
+		*r_is_tool = info.tool;
 	}
-	return scr->get_global_name();
+	return info.class_name;
 }
 
 LuauScriptLanguage::LuauScriptLanguage() {
