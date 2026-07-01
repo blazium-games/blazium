@@ -288,6 +288,9 @@ void Steam::_dispatch_callbacks() {
 						}
 					}
 				}
+			} else if (callback.m_iCallback == SteamInventoryDefinitionUpdate::k_iCallback) {
+				// SteamInventoryDefinitionUpdate_t has no payload fields (m_cubParam is 0).
+				_handle_callback(callback.m_iCallback, callback.m_pubParam, callback.m_cubParam);
 			} else if (callback.m_pubParam && callback.m_cubParam > 0) {
 				_handle_callback(callback.m_iCallback, callback.m_pubParam, callback.m_cubParam);
 			}
