@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="BlaziumFGDBaseClass" inherits="BlaziumFGDEntityClass" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		FGD base class definition.
+	</brief_description>
+	<description>
+		FGD base class definition. Portions derived from func-godot (MIT License).
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="prefix" type="String" setter="set_prefix" getter="get_prefix" overrides="BlaziumFGDEntityClass" default="&quot;@BaseClass&quot;" />
+	</members>
+</class>

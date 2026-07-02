@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ResourceImporterQuakeWad" inherits="ResourceImporter" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Imports Quake WAD texture archives.
+	</brief_description>
+	<description>
+		Imports Quake WAD texture archives. Portions derived from func-godot (MIT License).
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="generate_mipmaps" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="palette_file" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+	</members>
+</class>

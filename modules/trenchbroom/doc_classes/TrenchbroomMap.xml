@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TrenchbroomMap" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Builds a 3D scene from Quake MAP or Valve VMF files using Blazium Trenchbroom map settings.
+	</brief_description>
+	<description>
+		TrenchbroomMap parses map files, generates brush geometry, and assembles entity nodes according to [BlaziumFGDFile] definitions.
+	</description>
+	<tutorials>
+		<link title="Trenchbroom Module Tests">https://github.com/blazium-games/trenchbroom_module_tests</link>
+	</tutorials>
+	<methods>
+		<method name="build">
+			<return type="void" />
+			<description>
+				Parses the configured map file and builds child nodes.
+			</description>
+		</method>
+		<method name="clear_children">
+			<return type="void" />
+			<description>
+				Removes all child nodes from this map node.
+			</description>
+		</method>
+		<method name="parse_map_data">
+			<return type="Dictionary" />
+			<param index="0" name="map_file" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="verify">
+			<return type="int" enum="Error" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="_build_func" type="Callable" setter="" getter="_get_build_func" default="Callable()">
+		</member>
+		<member name="_clear_func" type="Callable" setter="" getter="_get_clear_func" default="Callable()">
+		</member>
+		<member name="build_flags" type="int" setter="set_build_flags" getter="get_build_flags" default="0">
+			Bitmask of [enum BuildFlags] options applied during [method build].
+		</member>
+		<member name="global_map_file" type="String" setter="set_global_map_file" getter="get_global_map_file" default="&quot;&quot;">
+			Absolute or UID path to a MAP or VMF file outside the project.
+		</member>
+		<member name="hyperplane_size" type="float" setter="set_hyperplane_size" getter="get_hyperplane_size" default="512.0">
+			Size of the oversized clipping plane used during brush CSG face generation.
+		</member>
+		<member name="local_map_file" type="String" setter="set_local_map_file" getter="get_local_map_file" default="&quot;&quot;">
+			Path to a project-local MAP or VMF file.
+		</member>
+		<member name="map_settings" type="TrenchbroomMapSettings" setter="set_map_settings" getter="get_map_settings">
+			Map build settings including FGD definitions and texture paths.
+		</member>
+	</members>
+	<signals>
+		<signal name="build_complete">
+			<description>
+				Emitted when map build completes successfully.
+			</description>
+		</signal>
+		<signal name="build_failed">
+			<description>
+				Emitted when map build fails.
+			</description>
+		</signal>
+		<signal name="build_progress">
+			<param index="0" name="step" type="String" />
+			<param index="1" name="progress" type="float" />
+			<description>
+				Emitted during map build with the current step name and progress from 0 to 1.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="UNWRAP_UV2" value="1" enum="BuildFlags" is_bitfield="true">
+			Generates UV2 lightmap coordinates during build.
+		</constant>
+		<constant name="SHOW_PROFILE_INFO" value="2" enum="BuildFlags" is_bitfield="true">
+			Prints profiling information during build.
+		</constant>
+		<constant name="DISABLE_SMOOTHING" value="4" enum="BuildFlags" is_bitfield="true">
+			Disables smooth shading on generated meshes.
+		</constant>
+		<constant name="INCLUDE_CORDON_VOLUMES" value="8" enum="BuildFlags" is_bitfield="true">
+			Includes Hammer cordon volumes in the build output.
+		</constant>
+	</constants>
+</class>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="BlaziumFGDPointClassDisplayDescriptor" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Display descriptor for point class editor models.
+	</brief_description>
+	<description>
+		Display descriptor for point class editor models. Portions derived from func-godot (MIT License).
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="conditional" type="String" setter="set_conditional" getter="get_conditional" default="&quot;&quot;">
+		</member>
+		<member name="display_asset_path" type="String" setter="set_display_asset_path" getter="get_display_asset_path" default="&quot;&quot;">
+		</member>
+		<member name="frame" type="String" setter="set_frame" getter="get_frame" default="&quot;&quot;">
+		</member>
+		<member name="scale" type="String" setter="set_scale" getter="get_scale" default="&quot;&quot;">
+		</member>
+		<member name="skin" type="String" setter="set_skin" getter="get_skin" default="&quot;&quot;">
+		</member>
+	</members>
+</class>
