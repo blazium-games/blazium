@@ -171,10 +171,11 @@ String ENetPacketUtils::decode_json(const PackedByteArray &p_data) {
 	ERR_FAIL_COND_V(p_data[0] != PACKET_TYPE_JSON, String());
 
 	uint32_t len = decode_uint32(p_data.ptr() + 1);
-	ERR_FAIL_COND_V(p_data.size() < (int)(len + 5), String());
+	ERR_FAIL_COND_V(len > (uint32_t)(p_data.size() - 5), String());
 
 	String json;
-	json.parse_utf8((const char *)(p_data.ptr() + 5), len);
+	Error err = json.parse_utf8((const char *)(p_data.ptr() + 5), (int)len);
+	ERR_FAIL_COND_V(err != OK, String());
 	return json;
 }
 
@@ -183,10 +184,11 @@ String ENetPacketUtils::decode_string(const PackedByteArray &p_data) {
 	ERR_FAIL_COND_V(p_data[0] != PACKET_TYPE_STRING, String());
 
 	uint32_t len = decode_uint32(p_data.ptr() + 1);
-	ERR_FAIL_COND_V(p_data.size() < (int)(len + 5), String());
+	ERR_FAIL_COND_V(len > (uint32_t)(p_data.size() - 5), String());
 
 	String str;
-	str.parse_utf8((const char *)(p_data.ptr() + 5), len);
+	Error err = str.parse_utf8((const char *)(p_data.ptr() + 5), (int)len);
+	ERR_FAIL_COND_V(err != OK, String());
 	return str;
 }
 
