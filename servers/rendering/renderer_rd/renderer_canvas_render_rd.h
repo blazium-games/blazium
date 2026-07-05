@@ -411,6 +411,10 @@ class RendererCanvasRenderRD : public RendererCanvasRender {
 	RID default_canvas_group_material;
 	RID default_clip_children_material;
 	RID default_clip_children_shader;
+	RID default_mask_parent_material;
+	RID default_mask_parent_shader;
+	RID default_mask_parent_subtract_material;
+	RID default_mask_parent_subtract_shader;
 
 	RS::CanvasItemTextureFilter default_filter = RS::CANVAS_ITEM_TEXTURE_FILTER_LINEAR;
 	RS::CanvasItemTextureRepeat default_repeat = RS::CANVAS_ITEM_TEXTURE_REPEAT_DISABLED;

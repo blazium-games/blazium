@@ -600,6 +600,11 @@
 		<member name="light_mask" type="int" setter="set_light_mask" getter="get_light_mask" default="1">
 			The rendering layers in which this [CanvasItem] responds to [Light2D] nodes.
 		</member>
+		<member name="mask_parent" type="int" setter="set_mask_parent" getter="get_mask_parent" enum="CanvasItem.MaskParentMode" default="0">
+			If not [constant MASK_PARENT_DISABLED], this [CanvasItem] is not drawn on its own. Instead, its opaque pixels are used as an alpha mask for its parent [CanvasItem]. With [constant MASK_PARENT_INTERSECT] the parent is only visible where this node is opaque; with [constant MASK_PARENT_SUBTRACT] the parent is hidden where this node is opaque. This is the inverse of [member clip_children], and lets a child (for example a [Sprite2D]) mask its parent without any [BackBufferCopy] setup.
+			[b]Note:[/b] The parent must itself draw something (for example a [Sprite2D], [TextureRect] or [Polygon2D]) for the mask to have a visible effect. Masking a non-drawing parent such as a plain [Node2D] produces no visible result, since there is nothing for the mask to shape. Also has no effect if the parent is not a [CanvasItem], or when set on a [CanvasGroup].
+			[b]Note:[/b] On the Compatibility rendering method, soft (anti-aliased or gradient) mask edges require [member ProjectSettings.rendering/viewport/hdr_2d] to be enabled, or the Forward+ rendering method, to render smoothly. Without one of these, the back buffer only has 2 bits of alpha precision and soft edges appear dithered.
+		</member>
 		<member name="material" type="Material" setter="set_material" getter="get_material">
 			The material applied to this [CanvasItem].
 		</member>
@@ -744,6 +749,18 @@
 		</constant>
 		<constant name="CLIP_CHILDREN_MAX" value="3" enum="ClipChildrenMode">
 			Represents the size of the [enum ClipChildrenMode] enum.
+		</constant>
+		<constant name="MASK_PARENT_DISABLED" value="0" enum="MaskParentMode">
+			The node is drawn normally and does not mask its parent.
+		</constant>
+		<constant name="MASK_PARENT_INTERSECT" value="1" enum="MaskParentMode">
+			The node is not drawn; the parent is only visible where this node is opaque.
+		</constant>
+		<constant name="MASK_PARENT_SUBTRACT" value="2" enum="MaskParentMode">
+			The node is not drawn; the parent is hidden where this node is opaque (cuts a hole).
+		</constant>
+		<constant name="MASK_PARENT_MAX" value="3" enum="MaskParentMode">
+			Represents the size of the [enum MaskParentMode] enum.
 		</constant>
 	</constants>
 </class>

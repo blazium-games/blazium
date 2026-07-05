@@ -540,6 +540,15 @@
 				Sets the light [param mask] for the canvas item specified by the [param item] RID. Equivalent to [member CanvasItem.light_mask].
 			</description>
 		</method>
+		<method name="canvas_item_set_mask_parent">
+			<return type="void" />
+			<param index="0" name="item" type="RID" />
+			<param index="1" name="mode" type="int" enum="RenderingServer.CanvasGroupMode" />
+			<description>
+				Marks the canvas item specified by the [param item] RID as a mask for its parent: it is not drawn itself, but its opaque pixels define where the parent remains visible. [param mode] must be [constant CANVAS_GROUP_MODE_DISABLED] (off), [constant CANVAS_GROUP_MODE_MASK_PARENT] (parent kept where this item is opaque) or [constant CANVAS_GROUP_MODE_MASK_PARENT_SUBTRACT] (parent hidden where this item is opaque). The parent is promoted to the matching group automatically, so no [BackBufferCopy] is required.
+				[b]Note:[/b] The equivalent node functionality is found in [member CanvasItem.mask_parent].
+			</description>
+		</method>
 		<method name="canvas_item_set_material">
 			<return type="void" />
 			<param index="0" name="item" type="RID" />
@@ -5654,6 +5663,12 @@
 			Parent is used for clipping child, but parent is also drawn underneath child as normal before clipping child to its visible area.
 		</constant>
 		<constant name="CANVAS_GROUP_MODE_TRANSPARENT" value="3" enum="CanvasGroupMode">
+		</constant>
+		<constant name="CANVAS_GROUP_MODE_MASK_PARENT" value="4" enum="CanvasGroupMode">
+			Applied automatically to the parent of a [CanvasItem] that has [member CanvasItem.mask_parent] enabled. The parent becomes the group owner: it is routed through the back buffer and remains visible only where the masking child's pixels are opaque. Not meant to be set directly.
+		</constant>
+		<constant name="CANVAS_GROUP_MODE_MASK_PARENT_SUBTRACT" value="5" enum="CanvasGroupMode">
+			Like [constant CANVAS_GROUP_MODE_MASK_PARENT], but the parent is hidden where the masking child is opaque instead of kept.
 		</constant>
 		<constant name="CANVAS_LIGHT_MODE_POINT" value="0" enum="CanvasLightMode">
 			2D point light (see [PointLight2D]).
