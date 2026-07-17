@@ -338,6 +338,10 @@ void ScriptEditorDebugger::_select_thread(int p_index) {
 	_thread_debug_enter(debugging_thread_id);
 }
 
+static bool _is_style_warning_name(const String &p_name) {
+	return p_name.ends_with("_NAMING_CONVENTION") || p_name.ends_with("_TRAILING_COMMA") || p_name == "HEXADECIMAL_CASE";
+}
+
 void ScriptEditorDebugger::_parse_message(const String &p_msg, uint64_t p_thread_id, const Array &p_data) {
 	emit_signal(SNAME("debug_data"), p_msg, p_data);
 	if (p_msg == "debug_enter") {
@@ -587,8 +591,12 @@ void ScriptEditorDebugger::_parse_message(const String &p_msg, uint64_t p_thread
 		String tooltip = oe.warning ? TTR("Warning:") : TTR("Error:");
 
 		TreeItem *error = error_tree->create_item(r);
+		const bool is_style_warning = oe.warning && _is_style_warning_name(oe.error);
 		if (oe.warning) {
 			error->set_meta("_is_warning", true);
+			if (is_style_warning) {
+				error->set_meta("_is_style_warning", true);
+			}
 		} else {
 			error->set_meta("_is_error", true);
 		}
@@ -598,7 +606,14 @@ void ScriptEditorDebugger::_parse_message(const String &p_msg, uint64_t p_thread
 		error->set_text(0, time);
 		error->set_text_alignment(0, HORIZONTAL_ALIGNMENT_LEFT);
 
-		const Color color = get_theme_color(oe.warning ? SNAME("warning_color") : SNAME("error_color"), EditorStringName(Editor));
+		Color color;
+		if (is_style_warning) {
+			color = has_theme_color(SNAME("style_warning_color"), EditorStringName(Editor))
+					? get_theme_color(SNAME("style_warning_color"), EditorStringName(Editor))
+					: Color(0.68, 0.5, 0.93);
+		} else {
+			color = get_theme_color(oe.warning ? SNAME("warning_color") : SNAME("error_color"), EditorStringName(Editor));
+		}
 		error->set_custom_color(0, color);
 		error->set_custom_color(1, color);
 
@@ -931,7 +946,14 @@ void ScriptEditorDebugger::_notification(int p_what) {
 			if (error_root) {
 				TreeItem *error = error_root->get_first_child();
 				while (error) {
-					if (error->has_meta("_is_warning")) {
+					if (error->has_meta("_is_style_warning")) {
+						const Color sc = has_theme_color(SNAME("style_warning_color"), EditorStringName(Editor))
+								? get_theme_color(SNAME("style_warning_color"), EditorStringName(Editor))
+								: Color(0.68, 0.5, 0.93);
+						error->set_icon(0, get_editor_theme_icon(SNAME("Warning")));
+						error->set_custom_color(0, sc);
+						error->set_custom_color(1, sc);
+					} else if (error->has_meta("_is_warning")) {
 						error->set_icon(0, get_editor_theme_icon(SNAME("Warning")));
 						error->set_custom_color(0, get_theme_color(SNAME("warning_color"), EditorStringName(Editor)));
 						error->set_custom_color(1, get_theme_color(SNAME("warning_color"), EditorStringName(Editor)));

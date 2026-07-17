@@ -1688,6 +1688,39 @@
 			Specifies the maximum number of log files allowed (used for rotation). Set to [code]1[/code] to disable log file rotation.
 			If the [code]--log-file &lt;file&gt;[/code] [url=$DOCS_URL/tutorials/editor/command_line_tutorial.html]command line argument[/url] is used, log rotation is always disabled.
 		</member>
+		<member name="debug/gdscript/style_checks/class_naming_convention" type="int" setter="" getter="" default="0">
+			When set to [code]warn[/code] or [code]error[/code], produces a warning or an error respectively when a class name is not written in [code]PascalCase[/code], as recommended by the [url=https://docs.blazium.app/tutorials/scripting/gdscript/gdscript_styleguide.html]GDScript style guide[/url]. This check is disabled by default.
+		</member>
+		<member name="debug/gdscript/style_checks/constant_naming_convention" type="int" setter="" getter="" default="0">
+			When set to [code]warn[/code] or [code]error[/code], produces a warning or an error respectively when a constant name is not written in [code]CONSTANT_CASE[/code], as recommended by the [url=https://docs.blazium.app/tutorials/scripting/gdscript/gdscript_styleguide.html]GDScript style guide[/url]. Names in [code]PascalCase[/code] are also accepted, for example a [code]const[/code] that holds a preloaded script or scene. This check is disabled by default.
+		</member>
+		<member name="debug/gdscript/style_checks/enum_naming_convention" type="int" setter="" getter="" default="0">
+			When set to [code]warn[/code] or [code]error[/code], produces a warning or an error respectively when a enum name is not written in [code]PascalCase[/code], as recommended by the [url=https://docs.blazium.app/tutorials/scripting/gdscript/gdscript_styleguide.html]GDScript style guide[/url]. This check is disabled by default.
+		</member>
+		<member name="debug/gdscript/style_checks/enum_value_naming_convention" type="int" setter="" getter="" default="0">
+			When set to [code]warn[/code] or [code]error[/code], produces a warning or an error respectively when a enum value is not written in [code]CONSTANT_CASE[/code], as recommended by the [url=https://docs.blazium.app/tutorials/scripting/gdscript/gdscript_styleguide.html]GDScript style guide[/url]. This check is disabled by default.
+		</member>
+		<member name="debug/gdscript/style_checks/file_naming_convention" type="int" setter="" getter="" default="0">
+			When set to [code]warn[/code] or [code]error[/code], produces a warning or an error respectively when a script file name is not written in [code]snake_case[/code], as recommended by the [url=https://docs.blazium.app/tutorials/scripting/gdscript/gdscript_styleguide.html]GDScript style guide[/url]. Built-in scripts are never reported, as they have no file name of their own. This check is disabled by default.
+		</member>
+		<member name="debug/gdscript/style_checks/function_naming_convention" type="int" setter="" getter="" default="0">
+			When set to [code]warn[/code] or [code]error[/code], produces a warning or an error respectively when a function name is not written in [code]snake_case[/code], as recommended by the [url=https://docs.blazium.app/tutorials/scripting/gdscript/gdscript_styleguide.html]GDScript style guide[/url]. This check is disabled by default.
+		</member>
+		<member name="debug/gdscript/style_checks/hexadecimal_case" type="int" setter="" getter="" default="0">
+			When set to [code]warn[/code] or [code]error[/code], produces a warning or an error respectively when a hexadecimal number uses lowercase letters, for example [code]0xfb8c0b[/code] instead of [code]0xFB8C0B[/code], as recommended by the [url=https://docs.blazium.app/tutorials/scripting/gdscript/gdscript_styleguide.html]GDScript style guide[/url]. This check is disabled by default.
+		</member>
+		<member name="debug/gdscript/style_checks/parameter_naming_convention" type="int" setter="" getter="" default="0">
+			When set to [code]warn[/code] or [code]error[/code], produces a warning or an error respectively when a function or signal parameter name is not written in [code]snake_case[/code], as recommended by the [url=https://docs.blazium.app/tutorials/scripting/gdscript/gdscript_styleguide.html]GDScript style guide[/url]. This check is disabled by default.
+		</member>
+		<member name="debug/gdscript/style_checks/signal_naming_convention" type="int" setter="" getter="" default="0">
+			When set to [code]warn[/code] or [code]error[/code], produces a warning or an error respectively when a signal name is not written in [code]snake_case[/code], as recommended by the [url=https://docs.blazium.app/tutorials/scripting/gdscript/gdscript_styleguide.html]GDScript style guide[/url]. This check is disabled by default.
+		</member>
+		<member name="debug/gdscript/style_checks/trailing_comma" type="int" setter="" getter="" default="0">
+			When set to [code]warn[/code] or [code]error[/code], produces a warning or an error respectively when the last element of an array, dictionary or enum is not followed by a trailing comma while the closing bracket is on its own line, or is followed by one while the closing bracket is on the same line, as recommended by the [url=https://docs.blazium.app/tutorials/scripting/gdscript/gdscript_styleguide.html]GDScript style guide[/url]. This check is disabled by default.
+		</member>
+		<member name="debug/gdscript/style_checks/variable_naming_convention" type="int" setter="" getter="" default="0">
+			When set to [code]warn[/code] or [code]error[/code], produces a warning or an error respectively when a variable name is not written in [code]snake_case[/code], as recommended by the [url=https://docs.blazium.app/tutorials/scripting/gdscript/gdscript_styleguide.html]GDScript style guide[/url]. This check is disabled by default.
+		</member>
 		<member name="debug/gdscript/warnings/assert_always_false" type="int" setter="" getter="" default="1">
 			When set to [code]warn[/code] or [code]error[/code], produces a warning or an error respectively when an [code]assert[/code] call always evaluates to [code]false[/code].
 		</member>
