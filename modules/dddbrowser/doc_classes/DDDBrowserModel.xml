@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DDDBrowserModel" inherits="MeshInstance3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Mesh model instance with optional collider and Luau script for DDDBrowser export.
+	</brief_description>
+	<description>
+		Extends [MeshInstance3D] with schema-aligned collider and instance script fields used by [DDDBrowserExporter].
+		[member script_path] must point at a DDDBrowser lifecycle [code].luau[/code] module (not a Blazium gdclass). Export sets [code]instances[].script.file[/code] to the script [b]asset id[/b].
+		[member script_data] is exported as [code]script.data[/code] and available in DDDBrowser as [code]self.data[/code] (including [code]boundingRadius[/code] for interact radius).
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="collider_box_size" type="Vector3" setter="set_collider_box_size" getter="get_collider_box_size" default="Vector3(1, 1, 1)">
+		</member>
+		<member name="collider_half_height" type="float" setter="set_collider_half_height" getter="get_collider_half_height" default="1.0">
+		</member>
+		<member name="collider_radius" type="float" setter="set_collider_radius" getter="get_collider_radius" default="0.5">
+		</member>
+		<member name="collider_type" type="int" setter="set_collider_type" getter="get_collider_type" enum="DDDBrowserModel.ColliderType" default="0">
+		</member>
+		<member name="pin_script_sha256" type="bool" setter="set_pin_script_sha256" getter="get_pin_script_sha256" default="true">
+		</member>
+		<member name="script_data" type="Dictionary" setter="set_script_data" getter="get_script_data" default="{}">
+		</member>
+		<member name="script_path" type="String" setter="set_script_path" getter="get_script_path" default="&quot;&quot;">
+		</member>
+	</members>
+	<constants>
+		<constant name="COLLIDER_NONE" value="0" enum="ColliderType">
+		</constant>
+		<constant name="COLLIDER_BOX" value="1" enum="ColliderType">
+		</constant>
+		<constant name="COLLIDER_SPHERE" value="2" enum="ColliderType">
+		</constant>
+		<constant name="COLLIDER_CAPSULE" value="3" enum="ColliderType">
+		</constant>
+		<constant name="COLLIDER_CYLINDER" value="4" enum="ColliderType">
+		</constant>
+	</constants>
+</class>
