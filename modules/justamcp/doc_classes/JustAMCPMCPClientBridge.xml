@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPMCPClientBridge" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		MCP tools for bridging to remote MCP servers.
+	</brief_description>
+	<description>
+		Exposes tools that list configured bridges, discover remote tools, and forward tool or resource calls to allow-listed remote MCP endpoints. Used by [JustAMCPToolExecutor] when MCP client bridging is enabled.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="execute_tool">
+			<return type="Dictionary" />
+			<param index="0" name="tool_name" type="String" />
+			<param index="1" name="arguments" type="Dictionary" />
+			<description>
+				Executes the MCP client-bridge tool named by [param tool_name] with [param arguments] and returns the tool response dictionary.
+			</description>
+		</method>
+		<method name="provide_tool_schemas">
+			<return type="Array" />
+			<param index="0" name="register_only" type="bool" default="false" />
+			<param index="1" name="ignore_settings" type="bool" default="false" />
+			<param index="2" name="include_disabled_tools" type="bool" default="false" />
+			<description>
+				Returns MCP JSON schema dictionaries for client-bridge tools. Set [param register_only] for registration metadata only, or [param ignore_settings] to bypass editor filtering.
+			</description>
+		</method>
+	</methods>
+</class>

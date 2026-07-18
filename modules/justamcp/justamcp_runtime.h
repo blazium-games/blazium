@@ -31,6 +31,7 @@
 
 #include "core/io/stream_peer_tcp.h"
 #include "core/io/tcp_server.h"
+#include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "core/os/mutex.h"
 #include "core/os/thread.h"
@@ -55,20 +56,17 @@ private:
 	HashMap<String, Callable> watched_signals;
 	HashMap<String, Callable> _custom_commands;
 
-	// Screenshot rate limiting
 	static const int _SCREENSHOT_RATE_MAX = 10;
 	static const int _SCREENSHOT_RATE_WINDOW_MS = 1000;
 	Vector<uint64_t> _screenshot_timestamps;
 
 	class JustAMCPToolExecutor *executor = nullptr;
 
-	// Error log capture
 	Vector<Dictionary> _error_log;
 	Mutex _error_log_mutex;
 	PrintHandlerList _print_handler;
 	static void _print_handler_callback(void *p_user_data, const String &p_string, bool p_error, bool p_rich);
 
-	// Blocklist for call_node_method and eval_expression
 	static const char *_BLOCKED_METHODS[];
 	static const char *_EVAL_BLOCKED_PATTERNS[];
 
@@ -81,14 +79,12 @@ public:
 	Dictionary execute_command(const String &p_command, const Dictionary &p_params);
 
 private:
-	// Existing commands
 	Dictionary _cmd_get_tree(const Dictionary &p_params);
 	Dictionary _cmd_get_node(const Dictionary &p_params);
 	Dictionary _cmd_set_property(const Dictionary &p_params);
 	Dictionary _cmd_call_method(const Dictionary &p_params);
 	Dictionary _cmd_get_metrics(const Dictionary &p_params);
 
-	// Runtime interaction commands
 	Dictionary _cmd_capture_screenshot(const Dictionary &p_params);
 	Dictionary _cmd_capture_viewport(const Dictionary &p_params);
 	Dictionary _cmd_inject_action(const Dictionary &p_params);
@@ -98,7 +94,6 @@ private:
 	Dictionary _cmd_watch_signal(const Dictionary &p_params);
 	Dictionary _cmd_unwatch_signal(const Dictionary &p_params);
 
-	// New Blazium commands
 	Dictionary _cmd_inject_drag(const Dictionary &p_params);
 	Dictionary _cmd_inject_scroll(const Dictionary &p_params);
 	Dictionary _cmd_inject_gesture(const Dictionary &p_params);
@@ -124,7 +119,6 @@ private:
 	Dictionary _cmd_move_node(const Dictionary &p_params);
 	Dictionary _cmd_monitor_properties(const Dictionary &p_params);
 
-	// Helpers
 	void _find_nodes_recursive(Node *p_node, const String &p_name, const String &p_type, const String &p_group, int p_limit, Array &r_results);
 	void _find_nodes_by_script_recursive(Node *p_node, const String &p_script_path, const String &p_class_name, int p_limit, Array &r_results);
 	void _find_ui_elements_recursive(Node *p_node, const String &p_text, const String &p_type, bool p_visible_only, int p_limit, Array &r_results);
@@ -139,8 +133,10 @@ private:
 	Dictionary _cmd_list_tools(const Dictionary &p_params);
 	Dictionary _cmd_diagnose(const Dictionary &p_params);
 	Dictionary _cmd_get_log_tail(const Dictionary &p_params);
+	Dictionary _cmd_tags_get_on_asset(const Dictionary &p_params);
+	Dictionary _cmd_tags_list(const Dictionary &p_params);
+	Dictionary _cmd_tags_find_assets(const Dictionary &p_params);
 
-	// Serialization
 	Dictionary _serialize_node_tree(Node *p_node, int p_depth, int p_max_depth, bool p_include_properties);
 	Dictionary _serialize_node(Node *p_node, bool p_include_properties);
 	Variant _serialize_value(const Variant &p_value);
@@ -163,7 +159,6 @@ public:
 	void set_enabled(bool p_enabled);
 	bool is_enabled() const;
 
-	// Log capture called by print handler
 	void push_error_log(const String &p_message, bool p_is_error);
 
 	void register_custom_command(const String &p_name, const Callable &p_callable);

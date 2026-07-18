@@ -74,6 +74,14 @@ bool justamcp_pagination_decode_cursor(const String &p_cursor, int &r_offset) {
 		return false;
 	}
 
+	for (int i = 0; i < raw.size(); i++) {
+		if (raw[i] == (uint8_t)'-') {
+			raw.write[i] = (uint8_t)'+';
+		} else if (raw[i] == (uint8_t)'_') {
+			raw.write[i] = (uint8_t)'/';
+		}
+	}
+
 	size_t out_len = 0;
 	const size_t max_len = (raw.size() * 3) / 4 + 4;
 	PackedByteArray decoded;
@@ -105,7 +113,9 @@ String justamcp_pagination_encode_cursor(int p_offset) {
 	payload[1] = CURSOR_MAGIC_1;
 	payload[2] = CURSOR_VERSION;
 	encode_uint32((uint32_t)p_offset, &payload[3]);
-	return CryptoCore::b64_encode_str(payload, CURSOR_PAYLOAD_SIZE);
+	String encoded = CryptoCore::b64_encode_str(payload, CURSOR_PAYLOAD_SIZE);
+
+	return encoded.replace("+", "-").replace("/", "_");
 }
 
 static Dictionary _pagination_error_invalid_cursor() {
@@ -147,10 +157,21 @@ Dictionary justamcp_pagination_slice_array(const Array &p_items, const String &p
 }
 
 Dictionary justamcp_pagination_slice_strings(const Vector<String> &p_items, const String &p_cursor, const String &p_result_key) {
-	Array arr;
-	arr.resize(p_items.size());
-	for (int i = 0; i < p_items.size(); i++) {
-		arr[i] = p_items[i];
+	int offset = 0;
+	if (!justamcp_pagination_decode_cursor(p_cursor, offset)) {
+		return _pagination_error_invalid_cursor();
 	}
-	return justamcp_pagination_slice_array(arr, p_cursor, p_result_key);
+	if (offset < 0) {
+		return _pagination_error_invalid_cursor();
+	}
+	if (offset >= p_items.size()) {
+		return _pagination_slice_at_offset(Array(), offset, p_items.size(), p_result_key);
+	}
+
+	const int page_size = justamcp_pagination_page_size();
+	Array page;
+	for (int i = offset; i < p_items.size() && page.size() < page_size; i++) {
+		page.push_back(p_items[i]);
+	}
+	return _pagination_slice_at_offset(page, offset, p_items.size(), p_result_key);
 }

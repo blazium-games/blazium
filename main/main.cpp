@@ -2420,34 +2420,6 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		BLOCK_DEVICE("0x8086", "0x193B"); // Intel(R) Iris Pro Graphics 580, Gen9, Skylake
 		BLOCK_DEVICE("Intel", "Intel(R) Iris Pro Graphics P580");
 		BLOCK_DEVICE("0x8086", "0x193D"); // Intel(R) Iris Pro Graphics P580, Gen9, Skylake
-		BLOCK_DEVICE("Intel", "Intel(R) HD Graphics 610");
-		BLOCK_DEVICE("0x8086", "0x5902"); // Intel(R) HD Graphics 610, Gen9.5, Kaby Lake
-		BLOCK_DEVICE("0x8086", "0x5906");
-		BLOCK_DEVICE("0x8086", "0x5908");
-		BLOCK_DEVICE("0x8086", "0x590A");
-		BLOCK_DEVICE("0x8086", "0x590B");
-		BLOCK_DEVICE("0x8086", "0x590E");
-		BLOCK_DEVICE("Intel", "Intel(R) HD Graphics 615");
-		BLOCK_DEVICE("0x8086", "0x5913"); // Intel(R) HD Graphics 615, Gen9.5, Kaby Lake
-		BLOCK_DEVICE("0x8086", "0x5915");
-		BLOCK_DEVICE("0x8086", "0x591E");
-		BLOCK_DEVICE("Intel", "Intel(R) HD Graphics 620");
-		BLOCK_DEVICE("0x8086", "0x5916"); // Intel(R) HD Graphics 620, Gen9.5, Kaby Lake
-		BLOCK_DEVICE("0x8086", "0x5917");
-		BLOCK_DEVICE("0x8086", "0x5921");
-		BLOCK_DEVICE("Intel", "Intel(R) HD Graphics 630");
-		BLOCK_DEVICE("0x8086", "0x5912"); // Intel(R) HD Graphics 630, Gen9.5, Kaby Lake
-		BLOCK_DEVICE("0x8086", "0x591B");
-		BLOCK_DEVICE("Intel", "Intel(R) HD Graphics 635");
-		BLOCK_DEVICE("0x8086", "0x5923"); // Intel(R) HD Graphics 635, Gen9.5, Kaby Lake
-		BLOCK_DEVICE("Intel", "Intel(R) Iris Plus Graphics 640");
-		BLOCK_DEVICE("0x8086", "0x5926"); // Intel(R) Iris Plus Graphics 640, Gen9.5, Kaby Lake
-		BLOCK_DEVICE("Intel", "Intel(R) Iris Plus Graphics 650");
-		BLOCK_DEVICE("0x8086", "0x5927"); // Iris Plus Graphics 650, Gen9.5, Kaby Lake
-		BLOCK_DEVICE("0x8086", "0x593B");
-		BLOCK_DEVICE("Intel", "Intel(R) HD Graphics P630");
-		BLOCK_DEVICE("0x8086", "0x591A"); // Intel(R) HD Graphics P630, Gen9.5, Kaby Lake
-		BLOCK_DEVICE("0x8086", "0x591D");
 
 #undef BLOCK_DEVICE
 

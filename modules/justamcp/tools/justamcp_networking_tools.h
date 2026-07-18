@@ -58,8 +58,10 @@ public:
 	Dictionary networking_setup_sync(const Dictionary &p_args);
 	Dictionary networking_get_info(const Dictionary &p_args);
 
+	Dictionary execute_tool(const String &p_tool_name, const Dictionary &p_args);
+
 	JustAMCPNetworkingTools() {}
 	~JustAMCPNetworkingTools() {}
 };
 
-#endif // TOOLS_ENABLED
+#endif

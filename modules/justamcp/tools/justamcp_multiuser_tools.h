@@ -54,8 +54,10 @@ public:
 	Dictionary multiuser_kick_peer(const Dictionary &p_args);
 	Dictionary multiuser_trigger_autowork(const Dictionary &p_args);
 
+	Dictionary execute_tool(const String &p_tool_name, const Dictionary &p_args);
+
 	JustAMCPMultiuserTools() {}
 	~JustAMCPMultiuserTools() {}
 };
 
-#endif // MODULE_MULTIUSER_EDITOR_ENABLED
+#endif

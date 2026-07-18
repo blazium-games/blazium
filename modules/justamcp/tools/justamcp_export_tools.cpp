@@ -28,58 +28,89 @@
 /**************************************************************************/
 
 #include "justamcp_export_tools.h"
+#include "../justamcp_server.h"
 #include "../justamcp_tool_context.h"
 #include "core/config/project_settings.h"
 #include "core/io/config_file.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
+#include "core/object/worker_thread_pool.h"
 #include "core/os/os.h"
+#include "core/os/thread.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_settings.h"
 #endif
 
-static inline Dictionary _MCP_SUCCESS(const Variant &data) {
-	Dictionary r;
-	r["ok"] = true;
-	r["result"] = data;
-	return r;
-}
-static inline Dictionary _MCP_ERROR_INTERNAL(int code, const String &msg) {
-	Dictionary e, r;
-	e["code"] = code;
-	e["message"] = msg;
-	r["ok"] = false;
-	r["error"] = e;
-	return r;
-}
-[[maybe_unused]] static inline Dictionary _MCP_ERROR_DATA(int code, const String &msg, const Variant &data) {
-	Dictionary e, r;
-	e["code"] = code;
-	e["message"] = msg;
-	e["data"] = data;
-	r["ok"] = false;
-	r["error"] = e;
-	return r;
-}
-#undef MCP_SUCCESS
-#undef MCP_ERROR
-#undef MCP_ERROR_DATA
-#undef MCP_INVALID_PARAMS
-#undef MCP_NOT_FOUND
-#undef MCP_INTERNAL
-#define MCP_SUCCESS(data) _MCP_SUCCESS(data)
-#define MCP_ERROR(code, msg) _MCP_ERROR_INTERNAL(code, msg)
-#define MCP_ERROR_DATA(code, msg, data) _MCP_ERROR_DATA(code, msg, data)
-#define MCP_INVALID_PARAMS(msg) _MCP_ERROR_INTERNAL(-32602, msg)
-#define MCP_NOT_FOUND(msg) _MCP_ERROR_DATA(-32001, String(msg) + " not found", Dictionary())
-#define MCP_INTERNAL(msg) _MCP_ERROR_INTERNAL(-32603, String("Internal error: ") + msg)
+#include "../justamcp_mcp_tool_macros.h"
 
 void JustAMCPExportTools::_bind_methods() {}
 
 JustAMCPExportTools::JustAMCPExportTools() {}
 
 JustAMCPExportTools::~JustAMCPExportTools() {}
+
+Dictionary JustAMCPExportTools::_execute_blocking_tool_sync(const String &p_tool_name, const Dictionary &p_args) {
+	if (p_tool_name == "list_android_devices") {
+		return _list_android_devices(p_args);
+	}
+	if (p_tool_name == "deploy_to_android") {
+		return _deploy_to_android(p_args);
+	}
+	Dictionary err;
+	err["ok"] = false;
+	err["error"] = "Unknown blocking export tool: " + p_tool_name;
+	return err;
+}
+
+struct JustAMCPExportBlockingJob {
+	JustAMCPExportTools *tools = nullptr;
+	String tool_name;
+	Dictionary args;
+	Variant request_id;
+};
+
+static void _justamcp_export_blocking_worker(void *p_userdata) {
+	JustAMCPExportBlockingJob *job = static_cast<JustAMCPExportBlockingJob *>(p_userdata);
+	Dictionary result;
+	if (job && job->tools) {
+		result = job->tools->_execute_blocking_tool_sync(job->tool_name, job->args);
+	} else {
+		result["ok"] = false;
+		result["error"] = "Export blocking job missing tools instance";
+	}
+	const Variant request_id = job ? job->request_id : Variant();
+	if (job) {
+		memdelete(job);
+	}
+	JustAMCPServer *server = JustAMCPServer::get_singleton();
+	if (server && request_id.get_type() != Variant::NIL) {
+		server->call_deferred(SNAME("_deferred_complete_tool_dict"), request_id, result);
+	}
+}
+
+bool JustAMCPExportTools::_try_schedule_blocking_tool(const String &p_tool_name, const Dictionary &p_args, Dictionary &r_pending) const {
+	if (!Thread::is_main_thread()) {
+		return false;
+	}
+	const Variant request_id = justamcp_get_active_tool_request_id();
+	if (request_id.get_type() == Variant::NIL) {
+		return false;
+	}
+	WorkerThreadPool *pool = WorkerThreadPool::get_singleton();
+	if (!pool) {
+		return false;
+	}
+	JustAMCPExportBlockingJob *job = memnew(JustAMCPExportBlockingJob);
+	job->tools = const_cast<JustAMCPExportTools *>(this);
+	job->tool_name = p_tool_name;
+	job->args = p_args;
+	job->request_id = request_id;
+	pool->add_native_task(&_justamcp_export_blocking_worker, job, true, "JustAMCPExportADB");
+	r_pending["ok"] = true;
+	r_pending["_justamcp_async_pending"] = true;
+	return true;
+}
 
 Dictionary JustAMCPExportTools::execute_tool(const String &p_tool_name, const Dictionary &p_args) {
 	if (p_tool_name == "list_export_presets") {
@@ -88,12 +119,21 @@ Dictionary JustAMCPExportTools::execute_tool(const String &p_tool_name, const Di
 		return _export_project(p_args);
 	} else if (p_tool_name == "get_export_info") {
 		return _get_export_info(p_args);
-	} else if (p_tool_name == "list_android_devices") {
-		return _list_android_devices(p_args);
+	} else if (p_tool_name == "list_android_devices" || p_tool_name == "deploy_to_android") {
+		Dictionary pending;
+		if (_try_schedule_blocking_tool(p_tool_name, p_args, pending)) {
+			return pending;
+		}
+		if (Thread::is_main_thread()) {
+			Dictionary err;
+			err["ok"] = false;
+			err["error"] = "Export/ADB tools require async WorkerThreadPool scheduling on the main thread";
+			err["_justamcp_async_required"] = true;
+			return err;
+		}
+		return _execute_blocking_tool_sync(p_tool_name, p_args);
 	} else if (p_tool_name == "get_android_preset_info") {
 		return _get_android_preset_info(p_args);
-	} else if (p_tool_name == "deploy_to_android") {
-		return _deploy_to_android(p_args);
 	}
 
 	Dictionary err;
@@ -101,7 +141,7 @@ Dictionary JustAMCPExportTools::execute_tool(const String &p_tool_name, const Di
 	err["message"] = "Method not found: " + p_tool_name;
 	Dictionary res;
 	res["error"] = err;
-	return res;
+	return Dictionary();
 }
 
 String JustAMCPExportTools::_resolve_adb_path() const {
@@ -117,10 +157,18 @@ String JustAMCPExportTools::_resolve_adb_path() const {
 }
 
 Dictionary JustAMCPExportTools::_run_blocking(const String &p_command, const List<String> &p_args) const {
+	Dictionary ret;
+	if (Thread::is_main_thread()) {
+		ret["ok"] = false;
+		ret["error_code"] = FAILED;
+		ret["exit_code"] = -1;
+		ret["stdout"] = "";
+		ret["error"] = "OS::execute refused on main thread";
+		return ret;
+	}
 	String output;
 	int exit_code = 0;
 	Error err = OS::get_singleton()->execute(p_command, p_args, &output, &exit_code, true);
-	Dictionary ret;
 	ret["ok"] = err == OK;
 	ret["error_code"] = err;
 	ret["exit_code"] = exit_code;

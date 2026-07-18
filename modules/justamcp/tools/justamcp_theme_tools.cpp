@@ -30,54 +30,17 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_theme_tools.h"
+#include "../justamcp_editor_filesystem.h"
+#include "../justamcp_editor_scene_access.h"
 #include "core/io/resource_saver.h"
 #include "core/math/expression.h"
-#include "editor/editor_file_system.h"
-#include "editor/editor_interface.h"
-#include "editor/editor_node.h"
-#include "justamcp_tool_executor.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/control.h"
 #include "scene/gui/margin_container.h"
 #include "scene/resources/style_box_flat.h"
 #include "scene/resources/theme.h"
 
-// Helper macros for returning errors analogous to base_command.gd
-static inline Dictionary _MCP_SUCCESS(const Variant &data) {
-	Dictionary r;
-	r["ok"] = true;
-	r["result"] = data;
-	return r;
-}
-static inline Dictionary _MCP_ERROR_INTERNAL(int code, const String &msg) {
-	Dictionary e, r;
-	e["code"] = code;
-	e["message"] = msg;
-	r["ok"] = false;
-	r["error"] = e;
-	return r;
-}
-[[maybe_unused]] static inline Dictionary _MCP_ERROR_DATA(int code, const String &msg, const Variant &data) {
-	Dictionary e, r;
-	e["code"] = code;
-	e["message"] = msg;
-	e["data"] = data;
-	r["ok"] = false;
-	r["error"] = e;
-	return r;
-}
-#undef MCP_SUCCESS
-#undef MCP_ERROR
-#undef MCP_ERROR_DATA
-#undef MCP_INVALID_PARAMS
-#undef MCP_NOT_FOUND
-#undef MCP_INTERNAL
-#define MCP_SUCCESS(data) return _MCP_SUCCESS(data)
-#define MCP_ERROR(code, msg) return _MCP_ERROR_INTERNAL(code, msg)
-#define MCP_ERROR_DATA(code, msg, data) return _MCP_ERROR_DATA(code, msg, data)
-#define MCP_INVALID_PARAMS(msg) return _MCP_ERROR_INTERNAL(-32602, msg)
-#define MCP_NOT_FOUND(msg) return _MCP_ERROR_DATA(-32001, String(msg) + " not found", Dictionary())
-#define MCP_INTERNAL(msg) return _MCP_ERROR_INTERNAL(-32603, String("Internal error: ") + msg)
+#include "../justamcp_mcp_tool_macros.h"
 
 JustAMCPThemeTools::JustAMCPThemeTools() {
 }
@@ -85,21 +48,11 @@ JustAMCPThemeTools::JustAMCPThemeTools() {
 JustAMCPThemeTools::~JustAMCPThemeTools() {
 }
 
-Node *JustAMCPThemeTools::_get_edited_root() {
-	if (JustAMCPToolExecutor::get_test_scene_root()) {
-		return JustAMCPToolExecutor::get_test_scene_root();
-	}
-	if (!EditorNode::get_singleton() || !EditorInterface::get_singleton()) {
-		return nullptr;
-	}
-	return EditorInterface::get_singleton()->get_edited_scene_root();
-}
-
 Node *JustAMCPThemeTools::_find_node_by_path(const String &p_path) {
 	if (p_path == "." || p_path.is_empty()) {
-		return _get_edited_root();
+		return JustAMCPEditorSceneAccess::get_edited_root();
 	}
-	Node *root = _get_edited_root();
+	Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 	if (!root) {
 		return nullptr;
 	}
@@ -110,13 +63,13 @@ Dictionary JustAMCPThemeTools::execute_tool(const String &p_tool_name, const Dic
 	if (p_tool_name == "create_theme") {
 		return create_theme(p_args);
 	}
-	if (p_tool_name == "set_theme_color") {
+	if (p_tool_name == "set_theme_color" || p_tool_name == "set_control_theme_color") {
 		return set_theme_color(p_args);
 	}
 	if (p_tool_name == "set_theme_constant") {
 		return set_theme_constant(p_args);
 	}
-	if (p_tool_name == "set_theme_font_size") {
+	if (p_tool_name == "set_theme_font_size" || p_tool_name == "set_control_theme_font_size") {
 		return set_theme_font_size(p_args);
 	}
 	if (p_tool_name == "set_theme_stylebox") {
@@ -129,12 +82,12 @@ Dictionary JustAMCPThemeTools::execute_tool(const String &p_tool_name, const Dic
 		return get_theme_info(p_args);
 	}
 
-	MCP_ERROR(-32601, "Method not found: " + p_tool_name);
+	return Dictionary();
 }
 
 Dictionary JustAMCPThemeTools::create_theme(const Dictionary &p_params) {
 	if (!p_params.has("path")) {
-		MCP_INVALID_PARAMS("Missing path");
+		return MCP_INVALID_PARAMS("Missing path");
 	}
 	String path = p_params["path"];
 
@@ -148,28 +101,26 @@ Dictionary JustAMCPThemeTools::create_theme(const Dictionary &p_params) {
 
 	Error err = ResourceSaver::save(theme, path);
 	if (err != OK) {
-		MCP_ERROR(-32000, "Failed to save theme");
+		return MCP_ERROR(-32000, "Failed to save theme");
 	}
 
-	if (EditorFileSystem::get_singleton()) {
-		EditorFileSystem::get_singleton()->scan();
-	}
+	JustAMCPEditorFilesystem::refresh_path(path);
 
 	Dictionary res;
 	res["path"] = path;
 	res["created"] = true;
-	MCP_SUCCESS(res);
+	return MCP_SUCCESS(res);
 }
 
 Dictionary JustAMCPThemeTools::set_theme_color(const Dictionary &p_params) {
 	if (!p_params.has("node_path")) {
-		MCP_INVALID_PARAMS("Missing node_path");
+		return MCP_INVALID_PARAMS("Missing node_path");
 	}
 	if (!p_params.has("name")) {
-		MCP_INVALID_PARAMS("Missing name");
+		return MCP_INVALID_PARAMS("Missing name");
 	}
 	if (!p_params.has("color")) {
-		MCP_INVALID_PARAMS("Missing color");
+		return MCP_INVALID_PARAMS("Missing color");
 	}
 
 	String node_path = p_params["node_path"];
@@ -179,7 +130,7 @@ Dictionary JustAMCPThemeTools::set_theme_color(const Dictionary &p_params) {
 	Node *node = _find_node_by_path(node_path);
 	Control *control = Object::cast_to<Control>(node);
 	if (!control) {
-		MCP_ERROR(-32000, "Node is not a Control");
+		return MCP_ERROR(-32000, "Node is not a Control");
 	}
 
 	Color color = Color(color_str);
@@ -189,15 +140,15 @@ Dictionary JustAMCPThemeTools::set_theme_color(const Dictionary &p_params) {
 	res["node_path"] = node_path;
 	res["name"] = color_name;
 	res["color"] = color_str;
-	MCP_SUCCESS(res);
+	return MCP_SUCCESS(res);
 }
 
 Dictionary JustAMCPThemeTools::set_theme_constant(const Dictionary &p_params) {
 	if (!p_params.has("node_path")) {
-		MCP_INVALID_PARAMS("Missing node_path");
+		return MCP_INVALID_PARAMS("Missing node_path");
 	}
 	if (!p_params.has("name")) {
-		MCP_INVALID_PARAMS("Missing name");
+		return MCP_INVALID_PARAMS("Missing name");
 	}
 
 	String node_path = p_params["node_path"];
@@ -207,7 +158,7 @@ Dictionary JustAMCPThemeTools::set_theme_constant(const Dictionary &p_params) {
 	Node *node = _find_node_by_path(node_path);
 	Control *control = Object::cast_to<Control>(node);
 	if (!control) {
-		MCP_ERROR(-32000, "Node is not a Control");
+		return MCP_ERROR(-32000, "Node is not a Control");
 	}
 
 	control->add_theme_constant_override(const_name, value);
@@ -216,15 +167,15 @@ Dictionary JustAMCPThemeTools::set_theme_constant(const Dictionary &p_params) {
 	res["node_path"] = node_path;
 	res["name"] = const_name;
 	res["value"] = value;
-	MCP_SUCCESS(res);
+	return MCP_SUCCESS(res);
 }
 
 Dictionary JustAMCPThemeTools::set_theme_font_size(const Dictionary &p_params) {
 	if (!p_params.has("node_path")) {
-		MCP_INVALID_PARAMS("Missing node_path");
+		return MCP_INVALID_PARAMS("Missing node_path");
 	}
 	if (!p_params.has("name")) {
-		MCP_INVALID_PARAMS("Missing name");
+		return MCP_INVALID_PARAMS("Missing name");
 	}
 
 	String node_path = p_params["node_path"];
@@ -234,7 +185,7 @@ Dictionary JustAMCPThemeTools::set_theme_font_size(const Dictionary &p_params) {
 	Node *node = _find_node_by_path(node_path);
 	Control *control = Object::cast_to<Control>(node);
 	if (!control) {
-		MCP_ERROR(-32000, "Node is not a Control");
+		return MCP_ERROR(-32000, "Node is not a Control");
 	}
 
 	control->add_theme_font_size_override(font_name, size);
@@ -243,15 +194,15 @@ Dictionary JustAMCPThemeTools::set_theme_font_size(const Dictionary &p_params) {
 	res["node_path"] = node_path;
 	res["name"] = font_name;
 	res["size"] = size;
-	MCP_SUCCESS(res);
+	return MCP_SUCCESS(res);
 }
 
 Dictionary JustAMCPThemeTools::set_theme_stylebox(const Dictionary &p_params) {
 	if (!p_params.has("node_path")) {
-		MCP_INVALID_PARAMS("Missing node_path");
+		return MCP_INVALID_PARAMS("Missing node_path");
 	}
 	if (!p_params.has("name")) {
-		MCP_INVALID_PARAMS("Missing name");
+		return MCP_INVALID_PARAMS("Missing name");
 	}
 
 	String node_path = p_params["node_path"];
@@ -260,7 +211,7 @@ Dictionary JustAMCPThemeTools::set_theme_stylebox(const Dictionary &p_params) {
 	Node *node = _find_node_by_path(node_path);
 	Control *control = Object::cast_to<Control>(node);
 	if (!control) {
-		MCP_ERROR(-32000, "Node is not a Control");
+		return MCP_ERROR(-32000, "Node is not a Control");
 	}
 
 	Ref<StyleBoxFlat> stylebox;
@@ -294,19 +245,19 @@ Dictionary JustAMCPThemeTools::set_theme_stylebox(const Dictionary &p_params) {
 	res["node_path"] = node_path;
 	res["name"] = style_name;
 	res["type"] = "StyleBoxFlat";
-	MCP_SUCCESS(res);
+	return MCP_SUCCESS(res);
 }
 
 Dictionary JustAMCPThemeTools::setup_control(const Dictionary &p_params) {
 	if (!p_params.has("node_path")) {
-		MCP_INVALID_PARAMS("Missing node_path");
+		return MCP_INVALID_PARAMS("Missing node_path");
 	}
 	String node_path = p_params["node_path"];
 
 	Node *node = _find_node_by_path(node_path);
 	Control *control = Object::cast_to<Control>(node);
 	if (!control) {
-		MCP_ERROR(-32000, "Node is not a Control");
+		return MCP_ERROR(-32000, "Node is not a Control");
 	}
 
 	Array applied;
@@ -466,19 +417,19 @@ Dictionary JustAMCPThemeTools::setup_control(const Dictionary &p_params) {
 	res["node_path"] = node_path;
 	res["applied"] = applied;
 	res["count"] = applied.size();
-	MCP_SUCCESS(res);
+	return MCP_SUCCESS(res);
 }
 
 Dictionary JustAMCPThemeTools::get_theme_info(const Dictionary &p_params) {
 	if (!p_params.has("node_path")) {
-		MCP_INVALID_PARAMS("Missing node_path");
+		return MCP_INVALID_PARAMS("Missing node_path");
 	}
 	String node_path = p_params["node_path"];
 
 	Node *node = _find_node_by_path(node_path);
 	Control *control = Object::cast_to<Control>(node);
 	if (!control) {
-		MCP_ERROR(-32000, "Node is not a Control");
+		return MCP_ERROR(-32000, "Node is not a Control");
 	}
 
 	Dictionary info;
@@ -534,7 +485,7 @@ Dictionary JustAMCPThemeTools::get_theme_info(const Dictionary &p_params) {
 	overrides["styleboxes"] = styleboxes;
 
 	info["overrides"] = overrides;
-	MCP_SUCCESS(info);
+	return MCP_SUCCESS(info);
 }
 
-#endif // TOOLS_ENABLED
+#endif

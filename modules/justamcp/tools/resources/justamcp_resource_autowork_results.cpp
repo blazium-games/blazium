@@ -30,6 +30,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_resource_autowork_results.h"
+#include "../../justamcp_read_limits.h"
 #include "core/io/file_access.h"
 #include "core/os/os.h"
 
@@ -70,20 +71,26 @@ Dictionary JustAMCPResourceAutoworkResults::read_resource(const String &p_uri) {
 	}
 
 	String content = "No recent test logs have been found for the Autowork directory in this project context.";
-	// Check user space or res space for autowork output logs natively.
+
 	String p_json = "user://autowork_results.json";
 	String p_xml = "user://autowork_results.xml";
 
 	if (FileAccess::exists(p_json)) {
-		Ref<FileAccess> f = FileAccess::open(p_json, FileAccess::READ);
-		if (f.is_valid()) {
-			content = f->get_as_utf8_string();
+		String text;
+		int64_t size = 0;
+		Dictionary read_err;
+		if (!justamcp_read_utf8_within_limit(p_json, JUSTAMCP_MAX_SYNC_READ_BYTES, text, size, read_err)) {
+			return read_err;
 		}
+		content = text;
 	} else if (FileAccess::exists(p_xml)) {
-		Ref<FileAccess> f = FileAccess::open(p_xml, FileAccess::READ);
-		if (f.is_valid()) {
-			content = f->get_as_utf8_string();
+		String text;
+		int64_t size = 0;
+		Dictionary read_err;
+		if (!justamcp_read_utf8_within_limit(p_xml, JUSTAMCP_MAX_SYNC_READ_BYTES, text, size, read_err)) {
+			return read_err;
 		}
+		content = text;
 	}
 
 	Array contents;
@@ -98,4 +105,4 @@ Dictionary JustAMCPResourceAutoworkResults::read_resource(const String &p_uri) {
 	return result;
 }
 
-#endif // TOOLS_ENABLED
+#endif

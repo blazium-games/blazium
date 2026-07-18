@@ -37,6 +37,8 @@
 #include "modules/autowork/autowork_main.h"
 #include "modules/justamcp/justamcp_editor_plugin.h"
 
+#include "core/io/dir_access.h"
+#include "core/os/os.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
 
@@ -54,6 +56,9 @@ static Dictionary _execute_autowork(Autowork *p_autowork) {
 	if (justamcp_is_cancel_requested()) {
 		result["ok"] = false;
 		result["error"] = "cancelled";
+		if (p_autowork) {
+			p_autowork->queue_free();
+		}
 		return result;
 	}
 	justamcp_report_progress(0, 1, "Running autowork tests");
@@ -64,7 +69,20 @@ static Dictionary _execute_autowork(Autowork *p_autowork) {
 		tree->get_root()->add_child(p_autowork);
 	}
 
+	const uint64_t started_usec = OS::get_singleton()->get_ticks_usec();
+	const uint64_t max_usec = 30ULL * 1000ULL * 1000ULL;
 	p_autowork->run_tests();
+	if (justamcp_is_cancel_requested() || (OS::get_singleton()->get_ticks_usec() - started_usec) > max_usec) {
+		if (justamcp_is_cancel_requested()) {
+			result["ok"] = false;
+			result["error"] = "cancelled";
+			if (tree) {
+				tree->get_root()->remove_child(p_autowork);
+			}
+			p_autowork->queue_free();
+			return result;
+		}
+	}
 
 	result["ok"] = true;
 
@@ -140,7 +158,12 @@ Dictionary JustAMCPAutoworkTools::execute_tool(const String &p_tool_name, const 
 			return _nested_autowork_error();
 		}
 		Autowork *aw = memnew(Autowork);
-		aw->add_directory("res://");
+
+		if (DirAccess::exists("res://test")) {
+			aw->add_directory("res://test");
+		} else {
+			aw->add_directory("res://");
+		}
 		return _execute_autowork(aw);
 	}
 
@@ -184,8 +207,8 @@ Dictionary JustAMCPAutoworkTools::execute_tool(const String &p_tool_name, const 
 		return _execute_autowork(aw);
 	}
 
-	return _mcp_tool_error(-32601, "Unknown tool: " + p_tool_name);
+	return Dictionary();
 }
 
-#endif // MODULE_AUTOWORK_ENABLED
-#endif // TOOLS_ENABLED
+#endif
+#endif

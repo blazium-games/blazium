@@ -51,4 +51,4 @@ public:
 	~JustAMCPResourceVideoRecordings();
 };
 
-#endif // TOOLS_ENABLED
+#endif

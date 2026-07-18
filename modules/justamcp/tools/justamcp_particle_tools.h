@@ -40,7 +40,6 @@ class JustAMCPParticleTools : public Object {
 private:
 	EditorPlugin *editor_plugin = nullptr;
 
-	Node *_get_edited_root();
 	Node *_find_node_by_path(const String &p_path);
 	Node *_get_particles_node_any(const String &p_path);
 	Color _parse_color(const String &p_color_str);

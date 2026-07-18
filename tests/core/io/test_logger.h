@@ -30,6 +30,7 @@
 
 #pragma once
 
+#include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
 #include "core/io/logger.h"
 #include "modules/regex/regex.h"
@@ -39,28 +40,36 @@ namespace TestLogger {
 
 constexpr int sleep_duration = 1200000;
 
-void initialize_logs() {
-	ProjectSettings::get_singleton()->set_setting("application/config/name", "godot_tests");
-	DirAccess::make_dir_recursive_absolute(OS::get_singleton()->get_user_data_dir().path_join("logs"));
-}
+struct LogTestContext {
+	Variant saved_project_name;
 
-void cleanup_logs() {
-	ProjectSettings::get_singleton()->set_setting("application/config/name", "godot_tests");
-	Ref<DirAccess> dir = DirAccess::open("user://logs");
-	dir->list_dir_begin();
-	String file = dir->get_next();
-	while (file != "") {
-		if (file.match("*.log")) {
-			dir->remove(file);
-		}
-		file = dir->get_next();
+	LogTestContext() {
+		ProjectSettings *ps = ProjectSettings::get_singleton();
+		saved_project_name = ps->get_setting("application/config/name");
+		ps->set_setting("application/config/name", "godot_tests");
+		DirAccess::make_dir_recursive_absolute(OS::get_singleton()->get_user_data_dir().path_join("logs"));
 	}
-	DirAccess::remove_absolute(OS::get_singleton()->get_user_data_dir().path_join("logs"));
-	DirAccess::remove_absolute(OS::get_singleton()->get_user_data_dir());
-}
+
+	~LogTestContext() {
+		Ref<DirAccess> dir = DirAccess::open("user://logs");
+		if (dir.is_valid()) {
+			dir->list_dir_begin();
+			String file = dir->get_next();
+			while (file != "") {
+				if (file.match("*.log")) {
+					dir->remove(file);
+				}
+				file = dir->get_next();
+			}
+		}
+		DirAccess::remove_absolute(OS::get_singleton()->get_user_data_dir().path_join("logs"));
+		DirAccess::remove_absolute(OS::get_singleton()->get_user_data_dir());
+		ProjectSettings::get_singleton()->set_setting("application/config/name", saved_project_name);
+	}
+};
 
 TEST_CASE("[Logger][RotatedFileLogger] Creates the first log file and logs on it") {
-	initialize_logs();
+	LogTestContext log_ctx;
 
 	String waiting_for_godot = "Waiting for Godot";
 	RotatedFileLogger logger("user://logs/godot.log");
@@ -70,8 +79,6 @@ TEST_CASE("[Logger][RotatedFileLogger] Creates the first log file and logs on it
 	Ref<FileAccess> log = FileAccess::open("user://logs/godot.log", FileAccess::READ, &err);
 	CHECK_EQ(err, Error::OK);
 	CHECK_EQ(log->get_as_text(), waiting_for_godot);
-
-	cleanup_logs();
 }
 
 void get_log_files(Vector<String> &log_files) {
@@ -92,7 +99,7 @@ void get_log_files(Vector<String> &log_files) {
 
 // All things related to log file rotation are in the same test because testing it require some sleeps.
 TEST_CASE("[Logger][RotatedFileLogger] Rotates logs files") {
-	initialize_logs();
+	LogTestContext log_ctx;
 
 	Vector<String> all_waiting_for_godot;
 
@@ -138,12 +145,10 @@ TEST_CASE("[Logger][RotatedFileLogger] Rotates logs files") {
 		REQUIRE_EQ(err, Error::OK);
 		CHECK_EQ(log_file->get_as_text(), all_waiting_for_godot[i]);
 	}
-
-	cleanup_logs();
 }
 
 TEST_CASE("[Logger][CompositeLogger] Logs the same into multiple loggers") {
-	initialize_logs();
+	LogTestContext log_ctx;
 
 	Vector<Logger *> all_loggers;
 	all_loggers.push_back(memnew(RotatedFileLogger("user://logs/godot_logger_1.log", 1)));
@@ -157,11 +162,11 @@ TEST_CASE("[Logger][CompositeLogger] Logs the same into multiple loggers") {
 	Ref<FileAccess> log = FileAccess::open("user://logs/godot_logger_1.log", FileAccess::READ, &err);
 	CHECK_EQ(err, Error::OK);
 	CHECK_EQ(log->get_as_text(), waiting_for_godot);
+
+	err = Error::OK;
 	log = FileAccess::open("user://logs/godot_logger_2.log", FileAccess::READ, &err);
 	CHECK_EQ(err, Error::OK);
 	CHECK_EQ(log->get_as_text(), waiting_for_godot);
-
-	cleanup_logs();
 }
 
 } // namespace TestLogger

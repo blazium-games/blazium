@@ -68,6 +68,7 @@ void HTTPServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_cors_origin"), &HTTPServer::get_cors_origin);
 	ClassDB::bind_method(D_METHOD("set_max_request_size", "size"), &HTTPServer::set_max_request_size);
 	ClassDB::bind_method(D_METHOD("get_max_request_size"), &HTTPServer::get_max_request_size);
+	ClassDB::bind_method(D_METHOD("complete_response", "client_id", "response"), &HTTPServer::complete_response);
 
 	// Signals
 	ADD_SIGNAL(MethodInfo("sse_connection_opened", PropertyInfo(Variant::INT, "connection_id"), PropertyInfo(Variant::STRING, "path"), PropertyInfo(Variant::DICTIONARY, "headers")));
@@ -207,7 +208,7 @@ void HTTPServer::_poll_client(int p_client_id, ClientConnection &p_client) {
 	}
 
 	// SSE connections don't need to read requests
-	if (p_client.is_sse) {
+	if (p_client.is_sse || p_client.is_held) {
 		return;
 	}
 
@@ -332,6 +333,7 @@ void HTTPServer::_parse_and_dispatch_request(int p_client_id, ClientConnection &
 	context->set_body(body);
 	context->set_client_ip(p_client.tcp->get_connected_host());
 	context->set_client_port(p_client.tcp->get_connected_port());
+	context->set_client_id(p_client_id);
 
 	_dispatch_request(p_client_id, p_client, context);
 }
@@ -427,6 +429,13 @@ void HTTPServer::_dispatch_request(int p_client_id, ClientConnection &p_client, 
 		}
 
 		emit_signal("sse_connection_opened", sse_id, p_context->get_path(), p_context->get_headers());
+		return;
+	}
+
+	// Hold client for async completion (JSON POST offload).
+	if (response->is_held()) {
+		response->set_held_client_id(p_client_id);
+		p_client.is_held = true;
 		return;
 	}
 
@@ -833,6 +842,27 @@ void HTTPServer::set_max_request_size(int p_size) {
 
 int HTTPServer::get_max_request_size() const {
 	return max_request_size;
+}
+
+Error HTTPServer::complete_response(int p_client_id, const Ref<HTTPResponse> &p_response) {
+	MutexLock lock(server_lock);
+	if (!clients.has(p_client_id)) {
+		return ERR_DOES_NOT_EXIST;
+	}
+	ClientConnection &client = clients[p_client_id];
+	if (!client.is_held) {
+		return ERR_INVALID_PARAMETER;
+	}
+	Ref<HTTPResponse> response = p_response;
+	if (response.is_null()) {
+		_send_error(p_client_id, client, 500, "Internal Server Error");
+		_clear_client(p_client_id);
+		return ERR_INVALID_PARAMETER;
+	}
+	client.is_held = false;
+	_send_response(p_client_id, client, response);
+	_clear_client(p_client_id);
+	return OK;
 }
 
 HTTPServer::HTTPServer() {

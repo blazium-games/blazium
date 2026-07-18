@@ -30,8 +30,6 @@
 #include "justamcp_physics_tools.h"
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_interface.h"
-#include "editor/editor_node.h"
 #include "editor/editor_undo_redo_manager.h"
 #endif
 
@@ -64,63 +62,16 @@
 #include "scene/resources/3d/capsule_shape_3d.h"
 #include "scene/resources/3d/sphere_shape_3d.h"
 
-static inline Dictionary _MCP_SUCCESS(const Variant &data) {
-	Dictionary r;
-	r["ok"] = true;
-	r["result"] = data;
-	return r;
-}
-static inline Dictionary _MCP_ERROR_INTERNAL(int code, const String &msg) {
-	Dictionary e, r;
-	e["code"] = code;
-	e["message"] = msg;
-	r["ok"] = false;
-	r["error"] = e;
-	return r;
-}
-[[maybe_unused]] static inline Dictionary _MCP_ERROR_DATA(int code, const String &msg, const Variant &data) {
-	Dictionary e, r;
-	e["code"] = code;
-	e["message"] = msg;
-	e["data"] = data;
-	r["ok"] = false;
-	r["error"] = e;
-	return r;
-}
-#undef MCP_SUCCESS
-#undef MCP_ERROR
-#undef MCP_ERROR_DATA
-#undef MCP_INVALID_PARAMS
-#undef MCP_NOT_FOUND
-#undef MCP_INTERNAL
-#define MCP_SUCCESS(data) _MCP_SUCCESS(data)
-#define MCP_ERROR(code, msg) _MCP_ERROR_INTERNAL(code, msg)
-#define MCP_ERROR_DATA(code, msg, data) _MCP_ERROR_DATA(code, msg, data)
-#define MCP_INVALID_PARAMS(msg) _MCP_ERROR_INTERNAL(-32602, msg)
-#define MCP_NOT_FOUND(msg) _MCP_ERROR_DATA(-32001, String(msg) + " not found", Dictionary())
-#define MCP_INTERNAL(msg) _MCP_ERROR_INTERNAL(-32603, String("Internal error: ") + msg)
+#include "../justamcp_editor_scene_access.h"
+#include "../justamcp_mcp_tool_macros.h"
 
 void JustAMCPPhysicsTools::_bind_methods() {}
 
 JustAMCPPhysicsTools::JustAMCPPhysicsTools() {}
 JustAMCPPhysicsTools::~JustAMCPPhysicsTools() {}
 
-#include "justamcp_tool_executor.h"
-
-Node *JustAMCPPhysicsTools::_get_edited_root() {
-#ifdef TOOLS_ENABLED
-	if (JustAMCPToolExecutor::get_test_scene_root()) {
-		return JustAMCPToolExecutor::get_test_scene_root();
-	}
-	if (EditorNode::get_singleton() && EditorInterface::get_singleton()) {
-		return EditorInterface::get_singleton()->get_edited_scene_root();
-	}
-#endif
-	return nullptr;
-}
-
 Node *JustAMCPPhysicsTools::_find_node_by_path(const String &p_path) {
-	Node *root = _get_edited_root();
+	Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 	if (!root) {
 		return nullptr;
 	}
@@ -183,7 +134,7 @@ Dictionary JustAMCPPhysicsTools::execute_tool(const String &p_tool_name, const D
 	err["message"] = "Method not found: " + p_tool_name;
 	Dictionary res;
 	res["error"] = err;
-	return res;
+	return Dictionary();
 }
 
 Dictionary JustAMCPPhysicsTools::_setup_collision(const Dictionary &p_params) {
@@ -197,7 +148,7 @@ Dictionary JustAMCPPhysicsTools::_setup_collision(const Dictionary &p_params) {
 	}
 	String shape_name = p_params["shape"];
 
-	Node *root = _get_edited_root();
+	Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 	if (!root) {
 		return MCP_ERROR(-32000, "No scene is currently open");
 	}
@@ -331,7 +282,6 @@ Dictionary JustAMCPPhysicsTools::_autofit(const Dictionary &p_params) {
 	String source_path = p_params.get("source_path", "");
 	Node *source = nullptr;
 	if (source_path.is_empty()) {
-		// Try to find a sibling MeshInstance3D or Sprite2D
 		Node *parent = node->get_parent();
 		if (parent) {
 			for (int i = 0; i < parent->get_child_count(); i++) {
@@ -446,7 +396,6 @@ Dictionary JustAMCPPhysicsTools::_set_physics_layers(const Dictionary &p_params)
 	uint32_t current_layer = 1;
 	uint32_t current_mask = 1;
 
-	// Read current using reflection
 	bool valid_layer = false;
 	bool valid_mask = false;
 	Variant vlayer = node->get("collision_layer", &valid_layer);
@@ -469,7 +418,6 @@ Dictionary JustAMCPPhysicsTools::_set_physics_layers(const Dictionary &p_params)
 		current_mask = int(p_params["mask"]);
 	}
 
-	// Apply via reflection
 	if (valid_layer) {
 		node->set("collision_layer", current_layer);
 	}
@@ -522,7 +470,7 @@ Dictionary JustAMCPPhysicsTools::_add_raycast(const Dictionary &p_params) {
 	}
 	String parent_path = p_params["parent_path"];
 
-	Node *root = _get_edited_root();
+	Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 	if (!root) {
 		return MCP_ERROR(-32000, "No scene is currently open");
 	}
@@ -586,7 +534,7 @@ Dictionary JustAMCPPhysicsTools::_setup_physics_body(const Dictionary &p_params)
 	}
 	String body_type = p_params["body_type"];
 
-	Node *root = _get_edited_root();
+	Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 	if (!root) {
 		return MCP_ERROR(-32000, "No scene is currently open");
 	}
@@ -631,7 +579,6 @@ Dictionary JustAMCPPhysicsTools::_setup_physics_body(const Dictionary &p_params)
 
 	body->set_name(p_params.get("name", String(body->get_class())));
 
-	// Apply layers if provided
 	if (p_params.has("collision_layer")) {
 		body->set("collision_layer", int(p_params["collision_layer"]));
 	}

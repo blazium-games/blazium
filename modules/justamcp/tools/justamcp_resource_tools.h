@@ -31,6 +31,7 @@
 
 #ifdef TOOLS_ENABLED
 
+#include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "scene/main/node.h"
 #include "scene/resources/theme.h"
@@ -68,21 +69,22 @@ public:
 	Dictionary set_theme_font_size(const Dictionary &p_args);
 	Dictionary apply_theme_shader(const Dictionary &p_args);
 	Dictionary resource_import_asset(const Dictionary &p_args);
+	Dictionary execute_tool(const String &p_tool_name, const Dictionary &p_args);
 
 private:
 	String _ensure_res_path(const String &p_path);
-	void _refresh_filesystem();
+	void _refresh_filesystem(const String &p_path = String());
 	Variant _parse_value(const Variant &p_value);
 	void _set_resource_properties(Ref<Resource> p_resource, const Variant &p_properties);
 	Dictionary _parse_properties_dict(const Variant &p_raw);
 	Ref<Theme> _load_theme(const String &p_theme_path);
 	Error _save_scene_root(Node *p_root, const String &p_scene_path);
 	String _get_theme_shader_code(const String &p_theme, const String &p_effect);
-	void _list_resources_recursive(const String &p_path, const String &p_type_filter, Array &r_results);
+	void _list_resources_recursive(const String &p_path, const String &p_type_filter, Array &r_results, int p_max_results = 500);
 
 public:
 	JustAMCPResourceTools();
 	~JustAMCPResourceTools();
 };
 
-#endif // TOOLS_ENABLED
+#endif

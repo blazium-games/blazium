@@ -61,6 +61,7 @@ class HTTPServer : public Object {
 		Vector<uint8_t> req_buf;
 		int req_pos = 0;
 		bool is_sse = false;
+		bool is_held = false;
 		int sse_connection_id = 0;
 		bool headers_parsed = false;
 		int header_length = 0;
@@ -148,6 +149,9 @@ public:
 	String get_cors_origin() const;
 	void set_max_request_size(int p_size);
 	int get_max_request_size() const;
+
+	// Async hold-client completion (handler called hold(); later complete from main/worker).
+	Error complete_response(int p_client_id, const Ref<HTTPResponse> &p_response);
 
 	HTTPServer();
 	~HTTPServer();

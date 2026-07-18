@@ -151,4 +151,4 @@ Dictionary JustAMCPPromptAutoworkFailureAnalyzer::complete(const Dictionary &p_a
 	return completion;
 }
 
-#endif // TOOLS_ENABLED
+#endif

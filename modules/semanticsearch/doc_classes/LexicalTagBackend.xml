@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="LexicalTagBackend" inherits="SemanticSearchBackend" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Semantic search backend backed by the lexical asset tag index.
+	</brief_description>
+	<description>
+		Delegates search, similarity, rebuild, and stats calls to [SemanticAssetIndex]. This is the default lightweight backend when embedding providers are not required.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="find_similar" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="limit" type="int" default="10" />
+			<description>
+				Returns up to [param limit] assets similar to the indexed asset at [param path].
+			</description>
+		</method>
+		<method name="get_stats" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns statistics from the underlying [SemanticAssetIndex].
+			</description>
+		</method>
+		<method name="rebuild">
+			<return type="int" enum="Error" />
+			<description>
+				Rebuilds the lexical index via [method SemanticAssetIndex.rebuild_index]. Returns [constant OK] on success, or an [enum Error] if the index is unavailable.
+			</description>
+		</method>
+		<method name="search" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="query" type="String" />
+			<param index="1" name="limit" type="int" default="20" />
+			<description>
+				Searches indexed assets for [param query] and returns up to [param limit] matches.
+			</description>
+		</method>
+	</methods>
+</class>

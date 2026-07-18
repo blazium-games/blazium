@@ -30,6 +30,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_prompt_editor_state.h"
+#include "../../justamcp_editor_scene_access.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
 
@@ -80,7 +81,7 @@ Dictionary JustAMCPPromptEditorState::get_messages(const Dictionary &p_args) {
 			summary += "Selection size: " + itos(selected.size()) + ". ";
 		}
 		if (target == "all" || target == "active_scene") {
-			Node *edited = EditorInterface::get_singleton()->get_edited_scene_root();
+			Node *edited = JustAMCPEditorSceneAccess::get_edited_root();
 			summary += edited ? ("Active Scene: " + edited->get_name() + ". ") : "No Active Scene. ";
 		}
 	} else {
@@ -127,4 +128,4 @@ Dictionary JustAMCPPromptEditorState::complete(const Dictionary &p_argument) {
 	return completion;
 }
 
-#endif // TOOLS_ENABLED
+#endif

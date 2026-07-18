@@ -946,6 +946,8 @@ public:
 	void save_all_scenes();
 	void save_scene_if_open(const String &p_scene_path);
 	void save_scene_list(const HashSet<String> &p_scene_paths);
+	/// Close an open scene tab by index (-1 = current). Does not prompt; caller may save first.
+	void close_scene(int p_idx = -1);
 	void save_before_run();
 	void try_autosave();
 	void restart_editor(bool p_goto_project_manager = false);

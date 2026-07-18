@@ -42,3 +42,7 @@ Dictionary justamcp_pagination_slice_array(const Array &p_items, const String &p
 Dictionary justamcp_pagination_slice_strings(const Vector<String> &p_items, const String &p_cursor, const String &p_result_key);
 
 String justamcp_pagination_cursor_from_uri_suffix(const String &p_suffix);
+
+inline String justamcp_pagination_next_uri(const String &p_base_uri, const String &p_cursor) {
+	return p_base_uri + "/cursor/" + p_cursor;
+}

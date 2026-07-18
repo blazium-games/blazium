@@ -37,6 +37,16 @@
 				Adds a custom HTTP header to the response. The [param name] is the header name and [param value] is the header value.
 			</description>
 		</method>
+		<method name="hold">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="is_held" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
 		<method name="is_sse_response" qualifiers="const">
 			<return type="bool" />
 			<description>

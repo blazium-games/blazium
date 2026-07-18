@@ -28,28 +28,24 @@
 /**************************************************************************/
 
 #include "justamcp_asset_tools.h"
-#include "../justamcp_editor_plugin.h"
+#include "../justamcp_editor_filesystem.h"
 
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
 #include "core/io/image.h"
 
-// #ifdef TOOLS_ENABLED
-#include "editor/editor_file_system.h"
-#include "editor/editor_interface.h"
-// #endif
-
 void JustAMCPAssetTools::_bind_methods() {}
 
 Dictionary JustAMCPAssetTools::execute_tool(const String &p_tool_name, const Dictionary &p_args) {
-	if (p_tool_name == "generate_2d_asset") {
+	String tool_name = p_tool_name;
+	if (tool_name.begins_with("asset_")) {
+		tool_name = tool_name.substr(String("asset_").length());
+	}
+	if (tool_name == "generate_2d_asset") {
 		return generate_2d_asset(p_args);
 	}
 
-	Dictionary ret;
-	ret["ok"] = false;
-	ret["error"] = "Unknown asset tool: " + p_tool_name;
-	return ret;
+	return Dictionary();
 }
 
 Dictionary JustAMCPAssetTools::generate_2d_asset(const Dictionary &p_args) {
@@ -114,10 +110,7 @@ Dictionary JustAMCPAssetTools::generate_2d_asset(const Dictionary &p_args) {
 		return ret;
 	}
 
-	// Refresh filesystem if in editor
-	if (editor_plugin && editor_plugin->get_editor_interface()) {
-		editor_plugin->get_editor_interface()->get_resource_file_system()->scan();
-	}
+	JustAMCPEditorFilesystem::refresh_path(full_path);
 
 	Dictionary ret;
 	ret["ok"] = true;

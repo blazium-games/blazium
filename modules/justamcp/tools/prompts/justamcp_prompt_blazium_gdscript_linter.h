@@ -49,4 +49,4 @@ public:
 	~JustAMCPPromptBlaziumGDScriptLinter();
 };
 
-#endif // TOOLS_ENABLED
+#endif

@@ -40,7 +40,6 @@ class JustAMCPBatchTools : public Object {
 private:
 	EditorPlugin *editor_plugin = nullptr;
 
-	Node *_get_edited_root();
 	Node *_find_node_by_path(const String &p_path);
 
 	Dictionary _find_nodes_by_type(const Dictionary &p_params);
@@ -57,7 +56,7 @@ private:
 	void _search_files_for_pattern(const String &p_path, const String &p_pattern, Array &r_matches, int p_max_results);
 
 	Dictionary _cross_scene_set_property(const Dictionary &p_params);
-	void _collect_scene_files(const String &p_path, Array &r_files, bool p_exclude_addons);
+	void _collect_scene_files(const String &p_path, Array &r_files, bool p_exclude_addons, int p_max_results);
 	void _cross_scene_set_recursive(Node *p_node, Node *p_root, const String &p_type_name, const String &p_property, const Variant &p_value, Array &r_affected);
 
 	Dictionary _get_scene_dependencies(const Dictionary &p_params);

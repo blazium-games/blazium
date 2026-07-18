@@ -38,13 +38,13 @@ class LuaDebug : public RefCounted {
 	GDCLASS(LuaDebug, RefCounted);
 
 private:
-	lua_Debug debug_info;
+	lua_Debug debug_info = {};
 
 protected:
 	static void _bind_methods();
 
 public:
-	LuaDebug() {}
+	LuaDebug() = default;
 	LuaDebug(lua_Debug p_debug_info) :
 			debug_info(p_debug_info) {}
 

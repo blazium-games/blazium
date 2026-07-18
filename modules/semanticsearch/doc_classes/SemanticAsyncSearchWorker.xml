@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SemanticAsyncSearchWorker" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Background worker that runs semantic asset searches off the main thread.
+	</brief_description>
+	<description>
+		Queues asynchronous semantic search jobs through the active [SemanticSearchBackend]. Poll jobs with [method poll_search] until they finish or are cancelled.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="cancel_search">
+			<return type="bool" />
+			<param index="0" name="job_id" type="String" />
+			<description>
+				Requests cancellation of the search job identified by [param job_id]. Returns [code]true[/code] when the job existed.
+			</description>
+		</method>
+		<method name="enqueue_search">
+			<return type="String" />
+			<param index="0" name="query" type="String" />
+			<param index="1" name="limit" type="int" default="20" />
+			<description>
+				Starts a background search for [param query] and returns a job id, or an empty string if the job could not be queued.
+			</description>
+		</method>
+		<method name="poll_search">
+			<return type="Dictionary" />
+			<param index="0" name="job_id" type="String" />
+			<description>
+				Returns status for [param job_id], including [code]ok[/code], [code]finished[/code], and [code]results[/code] when complete.
+			</description>
+		</method>
+	</methods>
+</class>

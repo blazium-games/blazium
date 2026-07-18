@@ -50,11 +50,13 @@ private:
 	String _resolve_adb_path() const;
 	Dictionary _run_blocking(const String &p_command, const List<String> &p_args) const;
 	Dictionary _find_android_preset(const String &p_preset_name, int p_preset_index) const;
+	bool _try_schedule_blocking_tool(const String &p_tool_name, const Dictionary &p_args, Dictionary &r_pending) const;
 
 protected:
 	static void _bind_methods();
 
 public:
+	Dictionary _execute_blocking_tool_sync(const String &p_tool_name, const Dictionary &p_args);
 	void set_editor_plugin(EditorPlugin *p_plugin) { editor_plugin = p_plugin; }
 	Dictionary execute_tool(const String &p_tool_name, const Dictionary &p_args);
 

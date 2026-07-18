@@ -57,4 +57,4 @@ public:
 	~JustAMCPPrompt();
 };
 
-#endif // TOOLS_ENABLED
+#endif

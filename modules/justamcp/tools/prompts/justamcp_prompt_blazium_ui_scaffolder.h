@@ -49,4 +49,4 @@ public:
 	~JustAMCPPromptBlaziumUIScaffolder();
 };
 
-#endif // TOOLS_ENABLED
+#endif

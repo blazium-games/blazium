@@ -33,6 +33,7 @@
 #include "../justamcp_pagination.h"
 #include "core/config/project_settings.h"
 #include "editor/editor_settings.h"
+#include "prompts/justamcp_prompt_asset_tagging_workflow.h"
 #include "prompts/justamcp_prompt_autowork_failure_analyzer.h"
 #include "prompts/justamcp_prompt_autowork_test_generator.h"
 #include "prompts/justamcp_prompt_blazium_context.h"
@@ -91,6 +92,9 @@ JustAMCPPromptExecutor::JustAMCPPromptExecutor() {
 	add_prompt(memnew(JustAMCPPromptBlaziumMultiplayerArchitect));
 	add_prompt(memnew(JustAMCPPromptBlaziumUIScaffolder));
 	add_prompt(memnew(JustAMCPPromptBlaziumShaderExpert));
+#ifdef MODULE_ASSETTAGS_ENABLED
+	add_prompt(memnew(JustAMCPPromptAssetTaggingWorkflow));
+#endif
 }
 
 JustAMCPPromptExecutor::~JustAMCPPromptExecutor() {}
@@ -162,4 +166,4 @@ Dictionary JustAMCPPromptExecutor::complete_prompt(const Dictionary &p_ref, cons
 	return result;
 }
 
-#endif // TOOLS_ENABLED
+#endif

@@ -64,8 +64,10 @@ public:
 	Dictionary navigation_set_layers(const Dictionary &p_args);
 	Dictionary navigation_get_info(const Dictionary &p_args);
 
+	Dictionary execute_tool(const String &p_tool_name, const Dictionary &p_args);
+
 	JustAMCPSpatialTools() {}
 	~JustAMCPSpatialTools() {}
 };
 
-#endif // TOOLS_ENABLED
+#endif

@@ -27,10 +27,44 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
+#include "justamcp_tool_context.h"
+
+#include "core/templates/vector.h"
+
+static thread_local Vector<Variant> g_justamcp_active_tool_request_stack;
+
+Variant justamcp_get_active_tool_request_id() {
+	if (g_justamcp_active_tool_request_stack.is_empty()) {
+		return Variant();
+	}
+	return g_justamcp_active_tool_request_stack[g_justamcp_active_tool_request_stack.size() - 1];
+}
+
+void justamcp_push_active_tool_request_id(const Variant &p_request_id) {
+	g_justamcp_active_tool_request_stack.push_back(p_request_id);
+}
+
+void justamcp_pop_active_tool_request_id() {
+	if (!g_justamcp_active_tool_request_stack.is_empty()) {
+		g_justamcp_active_tool_request_stack.resize(g_justamcp_active_tool_request_stack.size() - 1);
+	}
+}
+
 #ifdef TOOLS_ENABLED
 
-#include "justamcp_tool_context.h"
 #include "justamcp_server.h"
+
+JustAMCPToolContextScope::JustAMCPToolContextScope(const Variant &p_request_id) {
+	request_id = p_request_id;
+	justamcp_push_active_tool_request_id(p_request_id);
+	active = true;
+}
+
+JustAMCPToolContextScope::~JustAMCPToolContextScope() {
+	if (active) {
+		justamcp_pop_active_tool_request_id();
+	}
+}
 
 bool justamcp_is_cancel_requested() {
 	JustAMCPServer *server = JustAMCPServer::get_singleton();
@@ -54,4 +88,4 @@ String justamcp_get_active_progress_token() {
 	return server ? server->get_current_progress_token() : String();
 }
 
-#endif // TOOLS_ENABLED
+#endif

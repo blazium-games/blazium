@@ -31,6 +31,7 @@
 
 #ifdef TOOLS_ENABLED
 
+#include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "scene/main/node.h"
 
@@ -41,7 +42,6 @@ class JustAMCPTileMapTools : public Object {
 
 private:
 	JustAMCPEditorPlugin *editor_plugin = nullptr;
-	Node *_get_edited_root();
 	Node *_find_node_by_path(const String &p_path);
 
 public:
@@ -60,4 +60,4 @@ public:
 	~JustAMCPTileMapTools();
 };
 
-#endif // TOOLS_ENABLED
+#endif

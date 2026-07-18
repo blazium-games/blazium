@@ -49,4 +49,4 @@ public:
 	~JustAMCPPromptBlaziumShaderExpert();
 };
 
-#endif // TOOLS_ENABLED
+#endif

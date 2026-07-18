@@ -46,6 +46,7 @@ private:
 	String body;
 	IPAddress client_ip;
 	int client_port = 0;
+	int client_id = -1;
 
 protected:
 	static void _bind_methods();
@@ -61,6 +62,7 @@ public:
 	void set_body(const String &p_body);
 	void set_client_ip(const IPAddress &p_ip);
 	void set_client_port(int p_port);
+	void set_client_id(int p_client_id);
 
 	// Getters
 	String get_method() const;
@@ -72,6 +74,7 @@ public:
 	String get_body() const;
 	IPAddress get_client_ip() const;
 	int get_client_port() const;
+	int get_client_id() const;
 
 	// Utility methods
 	String get_header(const String &p_name, const String &p_default = "") const;

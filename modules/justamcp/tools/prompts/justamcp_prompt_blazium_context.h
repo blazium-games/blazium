@@ -49,4 +49,4 @@ public:
 	~JustAMCPPromptBlaziumContext();
 };
 
-#endif // TOOLS_ENABLED
+#endif

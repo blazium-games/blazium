@@ -29,6 +29,7 @@
 
 #pragma once
 
+#include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "scene/main/node.h"
 
@@ -71,7 +72,7 @@ public:
 private:
 	String _ensure_res_path(const String &p_path);
 	void _refresh_and_reload(const String &p_scene_path);
-	void _refresh_filesystem();
+	void _refresh_filesystem(const String &p_path = String());
 	void _reload_scene_in_editor(const String &p_scene_path);
 
 	Array _load_scene(const String &p_scene_path);

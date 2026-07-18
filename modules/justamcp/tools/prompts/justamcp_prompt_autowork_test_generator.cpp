@@ -144,4 +144,4 @@ Dictionary JustAMCPPromptAutoworkTestGenerator::complete(const Dictionary &p_arg
 	return completion;
 }
 
-#endif // TOOLS_ENABLED
+#endif

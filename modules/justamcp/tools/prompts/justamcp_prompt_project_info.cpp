@@ -78,4 +78,4 @@ Dictionary JustAMCPPromptProjectInfo::complete(const Dictionary &p_argument) {
 	return completion;
 }
 
-#endif // TOOLS_ENABLED
+#endif

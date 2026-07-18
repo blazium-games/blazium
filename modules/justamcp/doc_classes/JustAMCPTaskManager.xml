@@ -29,6 +29,7 @@
 		<method name="get_task_result">
 			<return type="Dictionary" />
 			<param index="0" name="task_id" type="String" />
+			<param index="1" name="wait" type="bool" default="false" />
 			<description>
 				Blocks until the task reaches a terminal state, then returns the stored MCP tool result (including [code]_meta[/code] related-task metadata). Unknown tasks return [code]-32602[/code].
 			</description>

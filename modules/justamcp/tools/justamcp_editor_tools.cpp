@@ -31,6 +31,7 @@
 
 #include "justamcp_editor_tools.h"
 #include "../justamcp_editor_plugin.h"
+#include "../justamcp_editor_scene_access.h"
 #include "../justamcp_pagination.h"
 #include "../justamcp_server.h"
 #include "../justamcp_tool_context.h"
@@ -140,7 +141,7 @@ Dictionary JustAMCPEditorTools::editor_select_node(const Dictionary &p_args) {
 		return result;
 	}
 
-	Node *root = editor_plugin->get_editor_interface()->get_edited_scene_root();
+	Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 	if (!root) {
 		result["ok"] = false;
 		result["error"] = "No scene is currently actively edited in the hierarchy.";
@@ -239,7 +240,7 @@ Dictionary JustAMCPEditorTools::editor_redo(const Dictionary &p_args) {
 
 Dictionary JustAMCPEditorTools::editor_take_screenshot(const Dictionary &p_args) {
 	Dictionary result;
-	// Godot Screen capture relies natively on DisplayServer mapping
+
 	if (DisplayServer::get_singleton()) {
 		Ref<Image> screenshot = DisplayServer::get_singleton()->screen_get_image();
 		if (screenshot.is_valid()) {
@@ -364,7 +365,7 @@ Dictionary JustAMCPEditorTools::editor_clear_output(const Dictionary &p_args) {
 	if (editor_plugin && editor_plugin->get_editor_interface()) {
 		result["ok"] = true;
 		result["message"] = "Output cleared successfully.";
-		// We execute the built in command assuming it exists in the editor context
+
 		EditorCommandPalette::get_singleton()->execute_command("editor/clear_output");
 		return result;
 	}
@@ -375,8 +376,7 @@ Dictionary JustAMCPEditorTools::editor_clear_output(const Dictionary &p_args) {
 
 Dictionary JustAMCPEditorTools::editor_screenshot_game(const Dictionary &p_args) {
 	Dictionary result;
-	// Wait, currently grabbing Editor viewport implicitly takes the entire screen,
-	// capturing the game requires isolating the Play window. We map to DisplayServer screen for now as runtime capture is OS specific.
+
 	if (DisplayServer::get_singleton()) {
 		Ref<Image> screenshot = DisplayServer::get_singleton()->screen_get_image();
 		if (screenshot.is_valid()) {
@@ -469,21 +469,15 @@ Dictionary JustAMCPEditorTools::editor_reload_project(const Dictionary &p_args) 
 		return result;
 	}
 	justamcp_report_progress(0, 1, "Requesting project reload");
-	bool save = p_args.get("save", true);
 	if (DisplayServer::get_singleton() && DisplayServer::get_singleton()->get_name() == "headless") {
 		result["ok"] = false;
 		result["error"] = "Project reload is unavailable in headless mode.";
 		return result;
 	}
-	if (EditorNode::get_singleton() && EditorInterface::get_singleton()) {
-		EditorInterface::get_singleton()->restart_editor(save);
-		result["ok"] = true;
-		result["save"] = save;
-		result["message"] = "Editor restart requested to reload the project.";
-		return result;
-	}
+
 	result["ok"] = false;
-	result["error"] = "Editor interface unavailable.";
+	result["error"] = "editor_reload_project refuses to restart the editor while MCP is serving (would drop the connection). Restart the editor process externally if a full project reload is required.";
+	result["save_requested"] = bool(p_args.get("save", true));
 	return result;
 }
 
@@ -507,7 +501,7 @@ Dictionary JustAMCPEditorTools::editor_get_signals(const Dictionary &p_args) {
 	Node *node = nullptr;
 
 	if (!node_path.is_empty() && EditorInterface::get_singleton()) {
-		Node *root = EditorInterface::get_singleton()->get_edited_scene_root();
+		Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 		if (root) {
 			node = node_path == "." ? root : root->get_node_or_null(NodePath(node_path));
 			if (!node && node_path.begins_with(String(root->get_name()) + "/")) {
@@ -558,4 +552,69 @@ Dictionary JustAMCPEditorTools::editor_get_signals(const Dictionary &p_args) {
 	return result;
 }
 
-#endif // TOOLS_ENABLED
+Dictionary JustAMCPEditorTools::execute_tool(const String &p_tool_name, const Dictionary &p_args) {
+	if (p_tool_name == "editor_play_scene") {
+		return editor_play_scene(p_args);
+	}
+	if (p_tool_name == "editor_play_main") {
+		return editor_play_main(p_args);
+	}
+	if (p_tool_name == "editor_stop_play") {
+		return editor_stop_play(p_args);
+	}
+	if (p_tool_name == "editor_is_playing") {
+		return editor_is_playing(p_args);
+	}
+	if (p_tool_name == "editor_select_node") {
+		return editor_select_node(p_args);
+	}
+	if (p_tool_name == "editor_get_selected") {
+		return editor_get_selected(p_args);
+	}
+	if (p_tool_name == "editor_undo") {
+		return editor_undo(p_args);
+	}
+	if (p_tool_name == "editor_redo") {
+		return editor_redo(p_args);
+	}
+	if (p_tool_name == "editor_take_screenshot") {
+		return editor_take_screenshot(p_args);
+	}
+	if (p_tool_name == "editor_set_main_screen") {
+		return editor_set_main_screen(p_args);
+	}
+	if (p_tool_name == "editor_open_scene") {
+		return editor_open_scene(p_args);
+	}
+	if (p_tool_name == "editor_get_settings") {
+		return editor_get_settings(p_args);
+	}
+	if (p_tool_name == "editor_set_settings") {
+		return editor_set_settings(p_args);
+	}
+	if (p_tool_name == "editor_clear_output") {
+		return editor_clear_output(p_args);
+	}
+	if (p_tool_name == "editor_screenshot_game") {
+		return editor_screenshot_game(p_args);
+	}
+	if (p_tool_name == "editor_get_output_log") {
+		return editor_get_output_log(p_args);
+	}
+	if (p_tool_name == "editor_get_errors") {
+		return editor_get_errors(p_args);
+	}
+	if (p_tool_name == "editor_reload_project") {
+		return editor_reload_project(p_args);
+	}
+	if (p_tool_name == "editor_save_all_scenes") {
+		return editor_save_all_scenes(p_args);
+	}
+	if (p_tool_name == "editor_get_signals") {
+		return editor_get_signals(p_args);
+	}
+
+	return Dictionary();
+}
+
+#endif

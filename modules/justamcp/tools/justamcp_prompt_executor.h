@@ -31,6 +31,7 @@
 
 #ifdef TOOLS_ENABLED
 
+#include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "prompts/justamcp_prompt.h"
 
@@ -60,4 +61,4 @@ public:
 	~JustAMCPPromptExecutor();
 };
 
-#endif // TOOLS_ENABLED
+#endif

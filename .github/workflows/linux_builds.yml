@@ -53,11 +53,13 @@ jobs:
             blazium-cpp: true
             cache-limit: 2
 
-          - name: Editor with doubles and GCC sanitizers (target=editor, tests=yes, dev_build=yes, scu_build=yes, precision=double, use_asan=yes, use_ubsan=yes, linker=mold)
+          - name: Editor with doubles and GCC sanitizers (target=editor, tests=yes, dev_build=yes, scu_build=yes, precision=double, use_asan=yes, use_ubsan=yes, linker=lld)
             cache-name: linux-editor-double-sanitizers
             target: editor
             # Debug symbols disabled as they're huge on this build and we hit the 14 GB limit for runners.
-            sconsflags: dev_build=yes scu_build=yes debug_symbols=no precision=double use_asan=yes use_ubsan=yes linker=mold
+            # Use lld instead of mold: ASAN+double+SCU editor binaries exceed mold's R_X86_64_PC32 range.
+            # medium code model keeps large ASAN/static-libstdc++ data from blowing 32-bit PC relocations.
+            sconsflags: dev_build=yes scu_build=yes debug_symbols=no precision=double use_asan=yes use_ubsan=yes linker=lld ccflags=-mcmodel=medium
             bin: ./bin/blazium.linuxbsd.editor.dev.tests.double.x86_64.san
             build-mono: false
             tests: true
@@ -157,9 +159,13 @@ jobs:
           python-version: 3.8
           scons-version: 4.0
 
-      - name: Install mold linker
+      - name: Install lld linker
         if: matrix.proj-test
-        uses: rui314/setup-mold@v1
+        run: |
+          # Doubles+GCC+ASAN editor links with -fuse-ld=lld; mold exceeds R_X86_64_PC32 range on this binary.
+          sudo apt-get update
+          sudo apt-get install -y lld
+          ld.lld --version
 
       - name: Compilation
         uses: ./.github/actions/godot-build

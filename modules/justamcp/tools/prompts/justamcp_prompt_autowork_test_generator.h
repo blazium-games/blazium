@@ -49,4 +49,4 @@ public:
 	~JustAMCPPromptAutoworkTestGenerator();
 };
 
-#endif // TOOLS_ENABLED
+#endif

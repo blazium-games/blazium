@@ -88,6 +88,8 @@ private:
 	void _on_server_status_changed(bool p_started);
 
 	void _on_tool_requested(const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args);
+	void _invalidate_subscribed_editor_resources();
+	void _on_filesystem_changed_for_subscriptions();
 
 protected:
 	static void _bind_methods();
@@ -102,4 +104,4 @@ public:
 	~JustAMCPEditorPlugin();
 };
 
-#endif // TOOLS_ENABLED
+#endif

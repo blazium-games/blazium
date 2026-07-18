@@ -49,4 +49,4 @@ public:
 	~JustAMCPPromptProjectInfo();
 };
 
-#endif // TOOLS_ENABLED
+#endif

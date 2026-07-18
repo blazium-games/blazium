@@ -29,6 +29,7 @@
 
 #include "justamcp_blueprint_tools.h"
 #include "../justamcp_editor_plugin.h"
+#include "../justamcp_editor_scene_access.h"
 
 #include "modules/noise/fastnoise_lite.h"
 #include "modules/noise/noise_texture_2d.h"
@@ -42,31 +43,30 @@
 #include "scene/resources/material.h"
 #include "scene/resources/particle_process_material.h"
 
-// #ifdef TOOLS_ENABLED
 #include "editor/editor_interface.h"
 #include "editor/editor_undo_redo_manager.h"
-// #endif
 
 void JustAMCPBlueprintTools::_bind_methods() {}
 
 Dictionary JustAMCPBlueprintTools::execute_tool(const String &p_tool_name, const Dictionary &p_args) {
-	if (p_tool_name == "create_particle_preset") {
+	String tool_name = p_tool_name;
+	if (tool_name.begins_with("blueprint_")) {
+		tool_name = tool_name.substr(String("blueprint_").length());
+	}
+	if (tool_name == "create_particle_preset") {
 		return create_particle_preset(p_args);
 	}
-	if (p_tool_name == "create_material_preset") {
+	if (tool_name == "create_material_preset") {
 		return create_material_preset(p_args);
 	}
-	if (p_tool_name == "setup_camera_preset") {
+	if (tool_name == "setup_camera_preset") {
 		return setup_camera_preset(p_args);
 	}
 	if (p_tool_name == "create_texture_preset") {
 		return create_texture_preset(p_args);
 	}
 
-	Dictionary ret;
-	ret["ok"] = false;
-	ret["error"] = "Unknown blueprint tool: " + p_tool_name;
-	return ret;
+	return Dictionary();
 }
 
 Dictionary JustAMCPBlueprintTools::create_particle_preset(const Dictionary &p_args) {
@@ -76,7 +76,7 @@ Dictionary JustAMCPBlueprintTools::create_particle_preset(const Dictionary &p_ar
 
 	Node *scene_root = nullptr;
 	if (editor_plugin && editor_plugin->get_editor_interface()) {
-		scene_root = editor_plugin->get_editor_interface()->get_edited_scene_root();
+		scene_root = JustAMCPEditorSceneAccess::get_edited_root();
 	}
 
 	if (!scene_root) {
@@ -107,7 +107,7 @@ Dictionary JustAMCPBlueprintTools::create_particle_preset(const Dictionary &p_ar
 		mat->set_spread(15.0);
 		mat->set_param_min(ParticleProcessMaterial::PARAM_INITIAL_LINEAR_VELOCITY, 2.0);
 		mat->set_param_max(ParticleProcessMaterial::PARAM_INITIAL_LINEAR_VELOCITY, 4.0);
-		mat->set_gravity(Vector3(0, 1, 0)); // buoyancy
+		mat->set_gravity(Vector3(0, 1, 0));
 		mat->set_param_min(ParticleProcessMaterial::PARAM_SCALE, 0.4);
 		mat->set_param_max(ParticleProcessMaterial::PARAM_SCALE, 0.8);
 		Ref<Gradient> grad;
@@ -263,7 +263,7 @@ Dictionary JustAMCPBlueprintTools::create_material_preset(const Dictionary &p_ar
 
 	Node *scene_root = nullptr;
 	if (editor_plugin && editor_plugin->get_editor_interface()) {
-		scene_root = editor_plugin->get_editor_interface()->get_edited_scene_root();
+		scene_root = JustAMCPEditorSceneAccess::get_edited_root();
 	}
 	if (!scene_root) {
 		Dictionary ret;
@@ -341,7 +341,7 @@ Dictionary JustAMCPBlueprintTools::setup_camera_preset(const Dictionary &p_args)
 
 	Node *scene_root = nullptr;
 	if (editor_plugin && editor_plugin->get_editor_interface()) {
-		scene_root = editor_plugin->get_editor_interface()->get_edited_scene_root();
+		scene_root = JustAMCPEditorSceneAccess::get_edited_root();
 	}
 	if (!scene_root) {
 		Dictionary ret;
@@ -429,7 +429,7 @@ Dictionary JustAMCPBlueprintTools::create_texture_preset(const Dictionary &p_arg
 
 	Node *scene_root = nullptr;
 	if (editor_plugin && editor_plugin->get_editor_interface()) {
-		scene_root = editor_plugin->get_editor_interface()->get_edited_scene_root();
+		scene_root = JustAMCPEditorSceneAccess::get_edited_root();
 	}
 	if (!scene_root) {
 		Dictionary ret;

@@ -51,6 +51,10 @@
 				Emitted when a file is moved from [param old_file] path to [param new_file] path.
 			</description>
 		</signal>
+		<signal name="files_selected">
+			<description>
+			</description>
+		</signal>
 		<signal name="folder_color_changed">
 			<description>
 				Emitted when folders change color.

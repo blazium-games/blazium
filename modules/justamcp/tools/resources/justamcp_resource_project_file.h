@@ -50,4 +50,4 @@ public:
 	~JustAMCPResourceProjectFile();
 };
 
-#endif // TOOLS_ENABLED
+#endif

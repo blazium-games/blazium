@@ -168,6 +168,7 @@ private:
 	MenuButton *file_list_button_sort = nullptr;
 
 	PackedStringArray searched_tokens;
+	PackedStringArray tag_search_tokens;
 	Vector<String> uncollapsed_paths_before_search;
 
 	TextureRect *search_icon = nullptr;
@@ -318,6 +319,7 @@ private:
 
 	void _search_changed(const String &p_text, const Control *p_from);
 	bool _matches_all_search_tokens(const String &p_text);
+	bool _matches_search_item(const String &p_text, const String &p_path = String());
 
 	MenuButton *_create_file_menu_button();
 	void _file_sort_popup(int p_id);

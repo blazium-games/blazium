@@ -29,8 +29,6 @@
 
 #pragma once
 
-// #ifdef TOOLS_ENABLED
-
 #include "core/object/class_db.h"
 #include "core/object/object.h"
 
@@ -45,7 +43,6 @@ class JustAMCPRuntimeTools : public Object {
 	int _recorded_frames = 0;
 	String _current_recording_dir;
 
-	// Print handling buffer could be managed here
 	Vector<String> _console_buffer;
 
 protected:
@@ -65,5 +62,3 @@ public:
 	JustAMCPRuntimeTools() {}
 	~JustAMCPRuntimeTools() {}
 };
-
-// #endif // TOOLS_ENABLED
