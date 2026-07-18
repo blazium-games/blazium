@@ -282,7 +282,9 @@ bool LuauScriptLanguage::validate(const String &p_script, const String &p_path, 
 		if (temp_state.is_valid()) {
 			LuauClassInfo::parse_info_from_source(temp_state, p_script, p_path, bytecode, info);
 			for (const KeyValue<StringName, LuauClassMethod> &pair : info.methods) {
-				r_functions->push_back(pair.key);
+				const int zero_based = LuauScript::find_member_line_in_source(p_script, pair.key);
+				const int one_based = zero_based >= 0 ? zero_based + 1 : 1;
+				r_functions->push_back(String(pair.key) + ":" + itos(one_based));
 			}
 		}
 	}

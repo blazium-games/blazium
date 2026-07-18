@@ -32,6 +32,7 @@
 #include "core/error/error_macros.h"
 
 #ifdef LUAU_MODULE_ANALYSIS_ENABLED
+#include "Luau/BuiltinDefinitions.h"
 #include "Luau/Config.h"
 #include "Luau/Error.h"
 #include "Luau/FileResolver.h"
@@ -99,6 +100,25 @@ static void push_lint_warning(const Luau::LintWarning &p_warning, List<ScriptLan
 	r_warnings->push_back(warning);
 }
 
+static void register_blazium_globals(Luau::Frontend &p_frontend) {
+	Luau::registerBuiltinGlobals(p_frontend, p_frontend.globals);
+
+	static const char *helpers[] = {
+		"gdclass",
+		"class",
+		"export",
+		"signal",
+		"await",
+		"wait",
+		"wait_signal",
+		"super",
+		nullptr,
+	};
+	for (const char **name = helpers; *name; name++) {
+		Luau::addGlobalBinding(p_frontend.globals, *name, p_frontend.builtinTypes->anyType, "@blazium");
+	}
+}
+
 } //namespace
 
 #endif
@@ -115,6 +135,7 @@ bool LuauTypecheck::analyze(const String &p_source, const String &p_path, List<S
 	Luau::FrontendOptions options;
 	options.runLintChecks = true;
 	Luau::Frontend frontend(&file_resolver, &config_resolver, options);
+	register_blazium_globals(frontend);
 
 	const Luau::CheckResult result = frontend.check(module_name);
 
