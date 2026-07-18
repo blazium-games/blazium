@@ -31,6 +31,10 @@
 
 #include "justamcp_prompt_blazium_context.h"
 
+#ifdef MODULE_ASSETTAGS_ENABLED
+#include "modules/assettags/asset_tag_manager.h"
+#endif
+
 void JustAMCPPromptBlaziumContext::_bind_methods() {}
 
 JustAMCPPromptBlaziumContext::JustAMCPPromptBlaziumContext() {}
@@ -64,11 +68,22 @@ Dictionary JustAMCPPromptBlaziumContext::get_messages(const Dictionary &p_args) 
 	String text = "The Blazium Engine MCP server is active and exposes tools, resources, prompts, and tasks over JSON-RPC.\n";
 	text += "Mode: " + mode + "\n\n";
 	text += "For substantial work, prefer the `blazium_project_intake` prompt first. It embeds project, scene, selection, and JustAMCP guide resources so the client starts with reliable context.\n";
-	text += "Use `blazium://guide/tool-index` and `blazium://guide/troubleshooting` for orientation, and prefer deterministic `blazium_*` tools for editor/runtime state, validation, tests, and resource reads.";
+	text += "Use `blazium://guide/tool-index` and `blazium://guide/troubleshooting` for orientation, and prefer deterministic `blazium_*` tools for editor/runtime state, validation, tests, and resource reads.\n";
+#ifdef MODULE_ASSETTAGS_ENABLED
+	if (AssetTagManager *tag_manager = AssetTagManager::get_singleton()) {
+		PackedStringArray tags = tag_manager->list_tags();
+		text += "\nAsset tags: " + itos(tags.size()) + " dictionary entries. Use `blazium://tags/dictionary`, `blazium_tags_*` tools, or the `blazium_asset_tagging_workflow` prompt for tagged asset search.\n";
+	} else {
+		text += "\nAsset tag tools are available via `blazium_tags_*` when the assettags module is loaded.\n";
+	}
+#endif
 
 	messages.push_back(_make_text_message(text));
 	messages.push_back(_make_resource_message("blazium://project/info"));
 	messages.push_back(_make_resource_message("blazium://guide/tool-index"));
+#ifdef MODULE_ASSETTAGS_ENABLED
+	messages.push_back(_make_resource_message("blazium://tags/dictionary"));
+#endif
 	result["messages"] = messages;
 	result["ok"] = true;
 	return result;
@@ -103,4 +118,4 @@ Dictionary JustAMCPPromptBlaziumContext::complete(const Dictionary &p_argument) 
 	return completion;
 }
 
-#endif // TOOLS_ENABLED
+#endif

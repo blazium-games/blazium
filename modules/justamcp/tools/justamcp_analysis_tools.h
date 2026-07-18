@@ -31,6 +31,7 @@
 
 #ifdef TOOLS_ENABLED
 
+#include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "scene/main/node.h"
 
@@ -42,18 +43,17 @@ class JustAMCPAnalysisTools : public Object {
 private:
 	JustAMCPEditorPlugin *editor_plugin = nullptr;
 
-	Node *_get_edited_root();
-
-	void _collect_files_by_ext(const String &p_path, const Vector<String> &p_extensions, Array &r_out, bool p_include_addons);
+	void _collect_files_by_ext(const String &p_path, const Vector<String> &p_extensions, Array &r_out, bool p_include_addons, int p_max_results = 2000);
 	String _read_file_text(const String &p_file_path);
+	Dictionary _read_file_text_checked(const String &p_file_path, String &r_text);
 
-	void _collect_signal_data(Node *p_node, Node *p_root, Array &r_out);
-	void _analyze_node(Node *p_node, Node *p_root, int p_depth, int &r_total_nodes, int &r_max_depth, Dictionary &r_types, Array &r_scripts, Dictionary &r_resources);
-	int _count_nodes_recursive(Node *p_node);
-	int _get_max_depth(Node *p_node, int p_current_depth);
+	void _collect_signal_data(Node *p_node, Node *p_root, Array &r_out, int p_max_nodes, bool &r_truncated);
+	void _analyze_node(Node *p_node, Node *p_root, int p_depth, int &r_total_nodes, int &r_max_depth, Dictionary &r_types, Array &r_scripts, Dictionary &r_resources, int p_max_nodes, bool &r_truncated);
+	int _count_nodes_recursive(Node *p_node, int p_max_nodes, bool &r_truncated);
+	int _get_max_depth(Node *p_node, int p_current_depth, int p_max_nodes, int &r_visited, bool &r_truncated);
 
 	void _dfs_detect_cycle(const String &p_node, const Dictionary &p_graph, Dictionary &p_visited, Array &p_path_stack, Array &p_cycles);
-	void _collect_statistics(const String &p_path, bool p_include_addons, Dictionary &r_file_counts);
+	void _collect_statistics(const String &p_path, bool p_include_addons, Dictionary &r_file_counts, int p_max_files, bool &r_truncated);
 
 public:
 	void set_editor_plugin(JustAMCPEditorPlugin *p_plugin) { editor_plugin = p_plugin; }
@@ -71,4 +71,4 @@ public:
 	~JustAMCPAnalysisTools();
 };
 
-#endif // TOOLS_ENABLED
+#endif

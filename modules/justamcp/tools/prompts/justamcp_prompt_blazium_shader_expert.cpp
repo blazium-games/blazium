@@ -125,4 +125,4 @@ Dictionary JustAMCPPromptBlaziumShaderExpert::complete(const Dictionary &p_argum
 	return completion;
 }
 
-#endif // TOOLS_ENABLED
+#endif

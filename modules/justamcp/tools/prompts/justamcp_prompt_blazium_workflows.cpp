@@ -504,4 +504,4 @@ Dictionary JustAMCPPromptBlaziumWorkflow::complete(const Dictionary &p_argument)
 	return _make_empty_completion();
 }
 
-#endif // TOOLS_ENABLED
+#endif

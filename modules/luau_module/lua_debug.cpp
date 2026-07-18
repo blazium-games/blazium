@@ -44,19 +44,19 @@ void LuaDebug::_bind_methods() {
 }
 
 String LuaDebug::get_name() const {
-	return String(debug_info.name);
+	return debug_info.name ? String(debug_info.name) : String();
 }
 
 String LuaDebug::get_what() const {
-	return String(debug_info.what);
+	return debug_info.what ? String(debug_info.what) : String();
 }
 
 String LuaDebug::get_source() const {
-	return String(debug_info.source);
+	return debug_info.source ? String(debug_info.source) : String();
 }
 
 String LuaDebug::get_short_src() const {
-	return String(debug_info.short_src);
+	return debug_info.short_src ? String(debug_info.short_src) : String();
 }
 
 int LuaDebug::get_line_defined() const {

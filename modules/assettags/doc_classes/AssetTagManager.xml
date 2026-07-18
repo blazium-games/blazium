@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AssetTagManager" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Manages the project asset tag dictionary.
+	</brief_description>
+	<description>
+		Singleton that stores hierarchical asset tags, supports CRUD operations, and validates tag hierarchy semantics.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="abort_batch">
+			<return type="void" />
+			<description>
+				Discards the active dictionary batch without persisting changes.
+			</description>
+		</method>
+		<method name="add_tag">
+			<return type="int" enum="Error" />
+			<param index="0" name="tag_name" type="String" />
+			<param index="1" name="comment" type="String" default="&quot;&quot;" />
+			<param index="2" name="source" type="String" default="&quot;default&quot;" />
+			<description>
+				Adds [param tag_name] to the dictionary with optional [param comment] and [param source]. Returns [constant OK] on success, or an [enum Error] if the name is invalid or already present.
+			</description>
+		</method>
+		<method name="begin_batch">
+			<return type="void" />
+			<description>
+				Starts a nested dictionary batch so multiple mutations can be committed together.
+			</description>
+		</method>
+		<method name="commit_batch">
+			<return type="int" enum="Error" />
+			<param index="0" name="persist" type="bool" default="true" />
+			<description>
+				Ends one batch level and optionally persists the dictionary when [param persist] is [code]true[/code]. Returns [constant OK] on success, or an [enum Error] if saving fails.
+			</description>
+		</method>
+		<method name="container_has_all" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="container" type="PackedStringArray" />
+			<param index="1" name="query_tags" type="PackedStringArray" />
+			<description>
+				Returns [code]true[/code] when [param container] matches every tag in [param query_tags], including hierarchical parent matches.
+			</description>
+		</method>
+		<method name="container_has_any" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="container" type="PackedStringArray" />
+			<param index="1" name="query_tags" type="PackedStringArray" />
+			<description>
+				Returns [code]true[/code] when [param container] matches at least one tag in [param query_tags].
+			</description>
+		</method>
+		<method name="container_has_tag" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="container" type="PackedStringArray" />
+			<param index="1" name="tag" type="String" />
+			<description>
+				Returns [code]true[/code] when [param container] contains [param tag] or a hierarchical child of it.
+			</description>
+		</method>
+		<method name="get_tag_info" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="tag_name" type="String" />
+			<description>
+				Returns metadata for [param tag_name], including comment and source fields when the tag exists.
+			</description>
+		</method>
+		<method name="has_tag_in_dictionary" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="tag_name" type="String" />
+			<description>
+				Returns [code]true[/code] when [param tag_name] exists in the dictionary after alias resolution.
+			</description>
+		</method>
+		<method name="list_all_tags" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				Returns every tag name currently stored in the dictionary.
+			</description>
+		</method>
+		<method name="list_tags" qualifiers="const">
+			<return type="PackedStringArray" />
+			<param index="0" name="parent_tag" type="String" default="&quot;&quot;" />
+			<description>
+				Returns direct child tags of [param parent_tag], or root tags when [param parent_tag] is empty.
+			</description>
+		</method>
+		<method name="load">
+			<return type="int" enum="Error" />
+			<description>
+				Loads the tag dictionary from disk. Returns [constant OK] on success, or an [enum Error] if the file cannot be read.
+			</description>
+		</method>
+		<method name="matches_tag" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="tag" type="String" />
+			<param index="1" name="query_tag" type="String" />
+			<description>
+				Returns [code]true[/code] when [param tag] equals [param query_tag] or is a hierarchical descendant of it.
+			</description>
+		</method>
+		<method name="remove_tag">
+			<return type="int" enum="Error" />
+			<param index="0" name="tag_name" type="String" />
+			<description>
+				Removes [param tag_name] from the dictionary and records a redirect. Returns [constant OK] on success, or an [enum Error] if the tag is missing.
+			</description>
+		</method>
+		<method name="rename_tag">
+			<return type="int" enum="Error" />
+			<param index="0" name="old_name" type="String" />
+			<param index="1" name="new_name" type="String" />
+			<description>
+				Renames [param old_name] to [param new_name] and updates redirects. Returns [constant OK] on success, or an [enum Error] if the rename is invalid.
+			</description>
+		</method>
+		<method name="resolve_tag_alias" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="tag_name" type="String" />
+			<description>
+				Resolves [param tag_name] through redirects and returns the canonical dictionary name.
+			</description>
+		</method>
+		<method name="save">
+			<return type="int" enum="Error" />
+			<description>
+				Persists the tag dictionary to disk. Returns [constant OK] on success, or an [enum Error] if writing fails.
+			</description>
+		</method>
+		<method name="update_tag_comment">
+			<return type="int" enum="Error" />
+			<param index="0" name="tag_name" type="String" />
+			<param index="1" name="comment" type="String" />
+			<description>
+				Sets the comment text for [param tag_name]. Returns [constant OK] on success, or an [enum Error] if the tag is missing.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="redirects_changed">
+			<description>
+				Emitted when tag rename/remove redirects are updated.
+			</description>
+		</signal>
+		<signal name="tag_dictionary_changed">
+			<description>
+				Emitted when the tag dictionary contents change.
+			</description>
+		</signal>
+	</signals>
+</class>

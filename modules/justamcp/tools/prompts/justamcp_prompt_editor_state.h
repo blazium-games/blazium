@@ -49,4 +49,4 @@ public:
 	~JustAMCPPromptEditorState();
 };
 
-#endif // TOOLS_ENABLED
+#endif

@@ -30,6 +30,12 @@
 
 #include "filesystem_dock.h"
 
+#include "modules/modules_enabled.gen.h"
+
+#ifdef MODULE_ASSETTAGS_ENABLED
+#include "modules/assettags/asset_tag_registry.h"
+#endif
+
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
@@ -454,7 +460,7 @@ void FileSystemDock::_update_tree(const Vector<String> &p_uncollapsed_paths, boo
 
 	// Create the remaining of the tree.
 	_create_tree(root, EditorFileSystem::get_singleton()->get_filesystem(), uncollapsed_paths, false);
-	if (!searched_tokens.is_empty()) {
+	if (!searched_tokens.is_empty() || !tag_search_tokens.is_empty()) {
 		_update_filtered_items();
 	}
 
@@ -672,6 +678,8 @@ void FileSystemDock::_tree_multi_selected(Object *p_item, int p_column, bool p_s
 	if (!updating_tree && display_mode != DISPLAY_MODE_TREE_ONLY) {
 		_update_file_list(false);
 	}
+
+	emit_signal(SNAME("files_selected"));
 }
 
 Vector<String> FileSystemDock::get_selected_paths() const {
@@ -778,7 +786,7 @@ bool FileSystemDock::_update_filtered_items(TreeItem *p_tree_item) {
 		keep_visible = _update_filtered_items(child) || keep_visible;
 	}
 
-	if (searched_tokens.is_empty()) {
+	if (searched_tokens.is_empty() && tag_search_tokens.is_empty()) {
 		item->set_visible(true);
 		// Always uncollapse root (the hidden item above res:// and favorites).
 		item->set_collapsed(item != tree->get_root() && !uncollapsed_paths_before_search.has(item->get_metadata(0)));
@@ -790,7 +798,7 @@ bool FileSystemDock::_update_filtered_items(TreeItem *p_tree_item) {
 	} else {
 		// res:// and favorites are always visible.
 		keep_visible = item == resources_item || item == favorites_item;
-		keep_visible = keep_visible || _matches_all_search_tokens(item->get_text(0));
+		keep_visible = keep_visible || _matches_search_item(item->get_text(0), String(item->get_metadata(0)));
 	}
 	item->set_visible(keep_visible);
 	return keep_visible;
@@ -884,7 +892,7 @@ void FileSystemDock::_search(EditorFileSystemDirectory *p_path, List<FileInfo> *
 	for (int i = 0; i < p_path->get_file_count(); i++) {
 		String file = p_path->get_file(i);
 
-		if (_matches_all_search_tokens(file)) {
+		if (_matches_search_item(file, p_path->get_file_path(i))) {
 			FileInfo file_info;
 			file_info.name = file;
 			file_info.type = p_path->get_file_type(i);
@@ -976,14 +984,14 @@ void FileSystemDock::_update_file_list(bool p_keep_selection) {
 			if (favorite == "res://") {
 				text = "/";
 				icon = folder_icon;
-				if (searched_tokens.is_empty() || _matches_all_search_tokens(text)) {
+				if ((searched_tokens.is_empty() && tag_search_tokens.is_empty()) || _matches_search_item(text, favorite)) {
 					files->add_item(text, icon, true);
 					files->set_item_metadata(-1, favorite);
 				}
 			} else if (favorite.ends_with("/")) {
 				text = favorite.substr(0, favorite.length() - 1).get_file();
 				icon = folder_icon;
-				if (searched_tokens.is_empty() || _matches_all_search_tokens(text)) {
+				if ((searched_tokens.is_empty() && tag_search_tokens.is_empty()) || _matches_search_item(text, favorite)) {
 					files->add_item(text, icon, true);
 					files->set_item_metadata(-1, favorite);
 				}
@@ -1005,7 +1013,7 @@ void FileSystemDock::_update_file_list(bool p_keep_selection) {
 					file_info.modified_time = 0;
 				}
 
-				if (searched_tokens.is_empty() || _matches_all_search_tokens(file_info.name)) {
+				if ((searched_tokens.is_empty() && tag_search_tokens.is_empty()) || _matches_search_item(file_info.name, file_info.path)) {
 					file_list.push_back(file_info);
 				}
 			}
@@ -1028,7 +1036,7 @@ void FileSystemDock::_update_file_list(bool p_keep_selection) {
 			return;
 		}
 
-		if (!searched_tokens.is_empty()) {
+		if (!searched_tokens.is_empty() || !tag_search_tokens.is_empty()) {
 			// Display the search results.
 			// Limit the number of results displayed to avoid an infinite loop.
 			_search(EditorFileSystem::get_singleton()->get_filesystem(), &file_list, 10000);
@@ -2641,13 +2649,26 @@ void FileSystemDock::_resource_created() {
 }
 
 void FileSystemDock::_search_changed(const String &p_text, const Control *p_from) {
-	if (searched_tokens.is_empty()) {
+	if (searched_tokens.is_empty() && tag_search_tokens.is_empty()) {
 		// Register the uncollapsed paths before they change.
 		uncollapsed_paths_before_search = get_uncollapsed_paths();
 	}
 
 	const String searched_string = p_text.to_lower();
-	searched_tokens = searched_string.split(" ", false);
+	PackedStringArray all_tokens = searched_string.split(" ", false);
+	searched_tokens.clear();
+	tag_search_tokens.clear();
+	for (int i = 0; i < all_tokens.size(); i++) {
+		const String token = all_tokens[i];
+		if (token.begins_with("tag:")) {
+			const String tag = token.substr(4);
+			if (!tag.is_empty()) {
+				tag_search_tokens.push_back(tag);
+			}
+		} else {
+			searched_tokens.push_back(token);
+		}
+	}
 
 	if (p_from == tree_search_box) {
 		file_list_search_box->set_text(searched_string);
@@ -2659,22 +2680,45 @@ void FileSystemDock::_search_changed(const String &p_text, const Control *p_from
 	if (display_mode == DISPLAY_MODE_HSPLIT || display_mode == DISPLAY_MODE_VSPLIT) {
 		_update_file_list(false);
 	}
-	if (searched_tokens.is_empty()) {
+	if (searched_tokens.is_empty() && tag_search_tokens.is_empty()) {
 		_navigate_to_path(current_path);
 	}
 }
 
-bool FileSystemDock::_matches_all_search_tokens(const String &p_text) {
-	if (searched_tokens.is_empty()) {
+bool FileSystemDock::_matches_search_item(const String &p_text, const String &p_path) {
+	if (searched_tokens.is_empty() && tag_search_tokens.is_empty()) {
 		return false;
 	}
-	const String s = p_text.to_lower();
-	for (const String &t : searched_tokens) {
-		if (!s.contains(t)) {
+
+	if (!searched_tokens.is_empty()) {
+		const String s = p_text.to_lower();
+		for (const String &t : searched_tokens) {
+			if (!s.contains(t)) {
+				return false;
+			}
+		}
+	}
+
+#ifdef MODULE_ASSETTAGS_ENABLED
+	if (!tag_search_tokens.is_empty()) {
+		if (p_path.is_empty() || !p_path.begins_with("res://") || p_path.ends_with("/")) {
+			return false;
+		}
+		AssetTagRegistry *registry = AssetTagRegistry::get_singleton();
+		if (!registry) {
+			return false;
+		}
+		if (!registry->asset_matches_tag_filter(p_path, tag_search_tokens, true)) {
 			return false;
 		}
 	}
+#endif
+
 	return true;
+}
+
+bool FileSystemDock::_matches_all_search_tokens(const String &p_text) {
+	return _matches_search_item(p_text);
 }
 
 void FileSystemDock::_rescan() {
@@ -3551,6 +3595,8 @@ void FileSystemDock::_file_multi_selected(int p_index, bool p_selected) {
 	// Update the import dock.
 	import_dock_needs_update = true;
 	callable_mp(this, &FileSystemDock::_update_import_dock).call_deferred();
+
+	emit_signal(SNAME("files_selected"));
 }
 
 void FileSystemDock::_tree_mouse_exited() {
@@ -3960,6 +4006,7 @@ void FileSystemDock::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("folder_color_changed"));
 
 	ADD_SIGNAL(MethodInfo("display_mode_changed"));
+	ADD_SIGNAL(MethodInfo("files_selected"));
 }
 
 void FileSystemDock::_save_layout_to_config(Ref<ConfigFile> p_layout, const String &p_section) const {

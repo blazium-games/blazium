@@ -29,6 +29,7 @@
 
 #pragma once
 
+#include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "scene/main/node.h"
 
@@ -58,11 +59,19 @@ public:
 	Dictionary get_project_info(const Dictionary &p_args);
 	Dictionary set_project_setting(const Dictionary &p_args);
 	Dictionary get_filesystem_tree(const Dictionary &p_args);
+	Dictionary search_files(const Dictionary &p_args);
+	Dictionary search_in_files(const Dictionary &p_args);
+	Dictionary uid_to_project_path(const Dictionary &p_args);
+	Dictionary project_path_to_uid(const Dictionary &p_args);
+	Dictionary add_autoload(const Dictionary &p_args);
+	Dictionary remove_autoload(const Dictionary &p_args);
 
 private:
-	void _collect_scripts(const String &p_path, Array &r_results, bool p_include_addons);
+	void _collect_matching_files(const String &p_path, const String &p_query, const String &p_file_type, Array &r_results, int p_max_results);
+	void _search_file_contents(const String &p_path, const String &p_query, bool p_regex, const String &p_file_type, Array &r_results, int p_max_results);
+	void _collect_scripts(const String &p_path, Array &r_results, bool p_include_addons, int p_max_results = 2000);
 	Dictionary _parse_script(const String &p_path, int p_lod);
-	void _collect_scenes(const String &p_path, Array &r_results, bool p_include_addons);
+	void _collect_scenes(const String &p_path, Array &r_results, bool p_include_addons, int p_max_results = 2000);
 	Dictionary _parse_scene(const String &p_path);
 	String _type_to_string(int p_type_id);
 	Variant _serialize_value(const Variant &p_value);

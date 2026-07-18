@@ -31,6 +31,7 @@
 
 #ifdef TOOLS_ENABLED
 
+#include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "scene/main/node.h"
 
@@ -86,9 +87,11 @@ public:
 	Dictionary setup_skeleton(const Dictionary &p_args);
 	Dictionary setup_occlusion(const Dictionary &p_args);
 
+	Dictionary execute_tool(const String &p_tool_name, const Dictionary &p_args);
+
 private:
 	void _refresh_and_reload(const String &p_scene_path);
-	void _refresh_filesystem();
+	void _refresh_filesystem(const String &p_changed_path = String());
 	void _deferred_refresh_filesystem();
 	void _reload_scene_in_editor(const String &p_scene_path);
 	String _ensure_res_path(const String &p_path);
@@ -106,11 +109,11 @@ private:
 	void _ensure_parent_dir_for_scene(const String &p_scene_path);
 	void _set_owner_recursive(Node *p_node, Node *p_scene_owner);
 	Dictionary _build_node_tree(Node *p_node, bool p_include_properties, int p_depth, int p_current_depth, const String &p_node_path);
-	void _collect_nodes_recursive(Node *p_node, const String &p_path, Array &r_out_nodes);
+	void _collect_nodes_recursive(Node *p_node, const String &p_path, Array &r_out_nodes, int p_max_nodes = 4096);
 
 public:
 	JustAMCPSceneTools();
 	~JustAMCPSceneTools();
 };
 
-#endif // TOOLS_ENABLED
+#endif

@@ -32,6 +32,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "core/doc_data.h"
+#include "core/object/class_db.h"
 #include "core/object/object.h"
 
 class DocTools;
@@ -61,4 +62,4 @@ public:
 	~JustAMCPDocumentationTools();
 };
 
-#endif // TOOLS_ENABLED
+#endif

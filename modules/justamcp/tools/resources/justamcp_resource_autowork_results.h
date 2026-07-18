@@ -50,4 +50,4 @@ public:
 	~JustAMCPResourceAutoworkResults();
 };
 
-#endif // TOOLS_ENABLED
+#endif

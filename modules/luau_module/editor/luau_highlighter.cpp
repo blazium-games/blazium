@@ -31,6 +31,7 @@
 
 #include "editor/luau_highlighter.h"
 
+#include "editor/editor_settings.h"
 #include "luau_script_language.h"
 #include "scene/gui/text_edit.h"
 
@@ -89,10 +90,27 @@ static bool is_keyword(const String &p_word) {
 }
 
 static void set_color(Dictionary &p_colors, int p_index, const Color &p_color) {
-	p_colors[p_index] = p_color;
+	Dictionary info;
+	info["color"] = p_color;
+	p_colors[p_index] = info;
 }
 
 } //namespace
+
+void LuauSyntaxHighlighter::_update_cache() {
+	keyword_color = EDITOR_GET("text_editor/theme/highlighting/keyword_color");
+	string_color = EDITOR_GET("text_editor/theme/highlighting/string_color");
+	number_color = EDITOR_GET("text_editor/theme/highlighting/number_color");
+	comment_color = EDITOR_GET("text_editor/theme/highlighting/comment_color");
+	annotation_color = EDITOR_GET("text_editor/theme/highlighting/gdscript/annotation_color");
+	function_color = EDITOR_GET("text_editor/theme/highlighting/function_color");
+	member_color = EDITOR_GET("text_editor/theme/highlighting/member_variable_color");
+	type_color = EDITOR_GET("text_editor/theme/highlighting/base_type_color");
+}
+
+void LuauSyntaxHighlighter::_clear_highlighting_cache() {
+	region_cache.clear();
+}
 
 Dictionary LuauSyntaxHighlighter::_get_line_syntax_highlighting_impl(int p_line) {
 	Dictionary colors;
@@ -100,15 +118,6 @@ Dictionary LuauSyntaxHighlighter::_get_line_syntax_highlighting_impl(int p_line)
 	if (!edit) {
 		return colors;
 	}
-
-	const Color keyword_color = edit->get_theme_color("keyword", "Editor");
-	const Color string_color = edit->get_theme_color("string", "Editor");
-	const Color number_color = edit->get_theme_color("number", "Editor");
-	const Color comment_color = edit->get_theme_color("comment", "Editor");
-	const Color annotation_color = edit->get_theme_color("annotation", "Editor");
-	const Color function_color = edit->has_theme_color("function", "Editor") ? edit->get_theme_color("function", "Editor") : keyword_color;
-	const Color member_color = edit->has_theme_color("member", "Editor") ? edit->get_theme_color("member", "Editor") : edit->get_theme_color("text_color", "Editor");
-	const Color type_color = edit->has_theme_color("type", "Editor") ? edit->get_theme_color("type", "Editor") : edit->get_theme_color("text_color", "Editor");
 
 	static const char *type_names[] = {
 		"Vector2",
@@ -263,7 +272,7 @@ String LuauSyntaxHighlighter::_get_name() const {
 
 PackedStringArray LuauSyntaxHighlighter::_get_supported_languages() const {
 	PackedStringArray languages;
-	languages.push_back("LuauScript");
+	languages.push_back("Luau");
 	return languages;
 }
 

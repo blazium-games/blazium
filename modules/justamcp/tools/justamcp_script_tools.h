@@ -40,11 +40,10 @@ class JustAMCPScriptTools : public Object {
 private:
 	EditorPlugin *editor_plugin = nullptr;
 
-	Node *_get_edited_root();
 	Node *_find_node_by_path(const String &p_path);
 
 	Dictionary _list_scripts(const Dictionary &p_params);
-	void _find_scripts(const String &p_path, bool p_recursive, Array &r_scripts);
+	void _find_scripts(const String &p_path, bool p_recursive, Array &r_scripts, int p_max_results = 2000);
 
 	Dictionary _read_script(const Dictionary &p_params);
 	Dictionary _create_script(const Dictionary &p_params);
@@ -63,7 +62,7 @@ private:
 	Dictionary _get_script_references(const Dictionary &p_params);
 
 	void _reload_script(const String &p_path);
-	void _find_references_recursive(const String &p_path, const String &p_script_path, Array &r_references);
+	void _find_references_recursive(const String &p_path, const String &p_script_path, Array &r_references, int p_max_results = 200);
 
 protected:
 	static void _bind_methods();

@@ -37,6 +37,20 @@
 #include "core/os/semaphore.h"
 #include "core/templates/hash_map.h"
 
+#ifdef THREADS_ENABLED
+#ifdef MINGW_ENABLED
+#define MINGW_STDTHREAD_REDUNDANCY_WARNING
+#include "thirdparty/mingw-std-threads/mingw.condition_variable.h"
+#include "thirdparty/mingw-std-threads/mingw.mutex.h"
+#define THREADING_NAMESPACE mingw_stdthread
+#else
+#include <condition_variable>
+#include <mutex>
+#define THREADING_NAMESPACE std
+#endif
+#include <chrono>
+#endif
+
 class JustAMCPServer;
 
 struct JustAMCPTaskRecord {
@@ -55,6 +69,11 @@ struct JustAMCPTaskRecord {
 	Dictionary stored_error;
 	bool has_stored_error = false;
 	Semaphore result_ready;
+#ifdef THREADS_ENABLED
+	mutable THREADING_NAMESPACE::mutex wait_mutex;
+	mutable THREADING_NAMESPACE::condition_variable wait_cv;
+	bool terminal_notified = false;
+#endif
 };
 
 class JustAMCPTaskManager : public Object {
@@ -80,7 +99,7 @@ public:
 	String create_task(int p_ttl_ms, int p_poll_interval_ms, const String &p_progress_token = String());
 	Dictionary list_tasks(const String &p_cursor = "");
 	Dictionary get_task(const String &p_task_id);
-	Dictionary get_task_result(const String &p_task_id);
+	Dictionary get_task_result(const String &p_task_id, bool p_wait = false);
 	Dictionary cancel_task(const String &p_task_id);
 
 	void complete_task(const String &p_task_id, const Dictionary &p_result, bool p_is_error = false);
@@ -90,8 +109,12 @@ public:
 	bool is_cancel_requested(const String &p_task_id) const;
 	String get_progress_token(const String &p_task_id) const;
 
+#ifdef TESTS_ENABLED
+	void test_backdate_task_created_usec(const String &p_task_id, uint64_t p_age_usec);
+#endif
+
 	JustAMCPTaskManager();
 	~JustAMCPTaskManager();
 };
 
-#endif // TOOLS_ENABLED
+#endif

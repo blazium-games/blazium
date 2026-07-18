@@ -1,6 +1,9 @@
 def can_build(env, platform):
     # Depending on websocket and mbedtls for networking
     env.module_add_dependencies("justamcp", ["websocket", "mbedtls"], True)
+    env.module_add_dependencies("justamcp", ["httpserver"], False)
+    env.module_add_dependencies("justamcp", ["assettags"], False)
+    env.module_add_dependencies("justamcp", ["semanticsearch"], False)
     return env.editor_build
 
 
@@ -42,8 +45,13 @@ def get_doc_classes():
         "JustAMCPResource",
         "JustAMCPResourceExecutor",
         "JustAMCPResourceProjectFile",
-        "JustAMCPResourceSystemLogs",
         "JustAMCPTaskManager",
+        "JustAMCPAssetTagsTools",
+        "JustAMCPToolsetRegistry",
+        "JustAMCPPromptAssetTaggingWorkflow",
+        "JustAMCPToolCategoryBridge",
+        "JustAMCPMCPClientBridge",
+        "JustAMCPSemanticSearchTools",
     ]
 
 

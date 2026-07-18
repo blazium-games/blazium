@@ -31,11 +31,17 @@
 
 #include "justamcp_editor_plugin.h"
 #include "justamcp_server.h"
+#include "justamcp_tool_context.h"
+#include "justamcp_tool_dispatch.h"
+#include "tools/justamcp_json_rpc_helpers.h"
 #include "tools/justamcp_prompt_executor.h"
 #include "tools/justamcp_resource_executor.h"
 #include "tools/justamcp_tool_executor.h"
+#include "tools/justamcp_tool_schema_cache.h"
 
 #include "core/config/project_settings.h"
+#include "editor/editor_file_system.h"
+#include "editor/editor_interface.h"
 #include "editor/editor_node.h"
 #include "editor/editor_settings.h"
 #include "scene/gui/box_container.h"
@@ -43,31 +49,8 @@
 #include "scene/gui/grid_container.h"
 #include "scene/gui/text_edit.h"
 #include "servers/display_server.h"
-
-static bool _justamcp_tool_error_is_cancelled(const Dictionary &p_result) {
-	const Variant err = p_result.get("error", Variant());
-	if (err.get_type() == Variant::STRING) {
-		return String(err) == "cancelled";
-	}
-	if (err.get_type() == Variant::DICTIONARY) {
-		return String(Dictionary(err).get("message", "")) == "cancelled";
-	}
-	return false;
-}
-
-static String _justamcp_tool_error_message(const Dictionary &p_result) {
-	const Variant err = p_result.get("error", Variant());
-	if (err.get_type() == Variant::DICTIONARY) {
-		const Dictionary err_dict = err;
-		if (err_dict.has("message")) {
-			return String(err_dict["message"]);
-		}
-	}
-	if (err.get_type() == Variant::STRING) {
-		return err;
-	}
-	return "Unknown error";
-}
+#include "tools/justamcp_resource_subscriptions.h"
+#include "tools/resources/justamcp_materials_resource_provider.h"
 
 void JustAMCPConfigUI::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_copy_pressed"), &JustAMCPConfigUI::_copy_pressed);
@@ -78,9 +61,8 @@ void JustAMCPConfigUI::_update_config() {
 	text_edit_antigravity->set_text(JustAMCPEditorPlugin::get_mcp_config_json(false));
 	text_edit_cursor->set_text(JustAMCPEditorPlugin::get_mcp_config_json(true));
 
-	JustAMCPToolExecutor exec;
-	int total_tools = exec.get_tool_schemas(false, true).size();
-	int active_tools = exec.get_tool_schemas(false, false).size();
+	int total_tools = JustAMCPToolSchemaCache::get_schemas(false, true, true, true).size();
+	int active_tools = JustAMCPToolSchemaCache::get_schemas(false, false, true, false).size();
 
 	JustAMCPResourceExecutor res_exec;
 	int total_res = res_exec.list_resources().get("resources", Array()).operator Array().size();
@@ -109,6 +91,7 @@ void JustAMCPConfigUI::_copy_pressed() {
 }
 
 void JustAMCPConfigUI::_on_settings_changed() {
+	JustAMCPJsonRpcHelpers::mark_mcp_tool_settings_dirty();
 	_update_config();
 }
 
@@ -190,7 +173,7 @@ bool JustAMCPConfigInspectorPlugin::parse_property(Object *p_object, const Varia
 	if (p_path == "blazium/justamcp/z_mcp_config" || p_path == "z_mcp_config") {
 		JustAMCPConfigUI *ui = memnew(JustAMCPConfigUI);
 		add_custom_control(ui);
-		return true; // Stop default property editor rendering mapping
+		return true;
 	}
 
 	String found_path = "";
@@ -264,6 +247,8 @@ bool JustAMCPConfigInspectorPlugin::parse_property(Object *p_object, const Varia
 
 void JustAMCPEditorPlugin::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_tool_requested", "request_id", "tool_name", "args"), &JustAMCPEditorPlugin::_on_tool_requested);
+	ClassDB::bind_method(D_METHOD("_invalidate_subscribed_editor_resources"), &JustAMCPEditorPlugin::_invalidate_subscribed_editor_resources);
+	ClassDB::bind_method(D_METHOD("_on_filesystem_changed_for_subscriptions"), &JustAMCPEditorPlugin::_on_filesystem_changed_for_subscriptions);
 	ClassDB::bind_method(D_METHOD("_show_configuration_dialog"), &JustAMCPEditorPlugin::_show_configuration_dialog);
 	ClassDB::bind_method(D_METHOD("_on_server_status_changed", "started"), &JustAMCPEditorPlugin::_on_server_status_changed);
 }
@@ -272,6 +257,17 @@ JustAMCPEditorPlugin::JustAMCPEditorPlugin() {
 }
 
 JustAMCPEditorPlugin::~JustAMCPEditorPlugin() {
+}
+
+void JustAMCPEditorPlugin::_invalidate_subscribed_editor_resources() {
+	JustAMCPResourceSubscriptions::notify_uri_changed("blazium://selection/current");
+	JustAMCPResourceSubscriptions::notify_uri_changed("blazium://scene/current");
+	JustAMCPResourceSubscriptions::notify_uri_changed("blazium://scene/hierarchy");
+	JustAMCPResourceSubscriptions::notify_uri_changed("blazium://editor/state");
+}
+
+void JustAMCPEditorPlugin::_on_filesystem_changed_for_subscriptions() {
+	JustAMCPResourceSubscriptions::notify_uri_changed("blazium://materials");
 }
 
 void JustAMCPEditorPlugin::_notification(int p_what) {
@@ -294,6 +290,7 @@ void JustAMCPEditorPlugin::_notification(int p_what) {
 			}
 
 			tool_executor = memnew(JustAMCPToolExecutor);
+			tool_executor->set_as_active_instance();
 			tool_executor->set_editor_plugin(this);
 
 			if (!mcp_server->is_connected("tool_requested", callable_mp(this, &JustAMCPEditorPlugin::_on_tool_requested))) {
@@ -311,11 +308,25 @@ void JustAMCPEditorPlugin::_notification(int p_what) {
 			inspector_plugin.instantiate();
 			EditorInspector::add_inspector_plugin(inspector_plugin);
 
-			// We only show the configuration dialog under Tools Menu
 			add_tool_menu_item("JustAMCP Configuration", callable_mp(this, &JustAMCPEditorPlugin::_show_configuration_dialog));
 
-			// DO NOT call add_autoload_singleton with a native C++ object here, it will crash
-			// register_types.cpp's Engine::add_singleton handles native registration natively without SceneTree polling.
+			if (editor_node) {
+				if (!editor_node->is_connected("scene_changed", callable_mp(this, &JustAMCPEditorPlugin::_invalidate_subscribed_editor_resources))) {
+					editor_node->connect("scene_changed", callable_mp(this, &JustAMCPEditorPlugin::_invalidate_subscribed_editor_resources));
+				}
+			}
+			if (EditorInterface::get_singleton() && EditorInterface::get_singleton()->get_selection()) {
+				EditorSelection *selection = EditorInterface::get_singleton()->get_selection();
+				if (!selection->is_connected("selection_changed", callable_mp(this, &JustAMCPEditorPlugin::_invalidate_subscribed_editor_resources))) {
+					selection->connect("selection_changed", callable_mp(this, &JustAMCPEditorPlugin::_invalidate_subscribed_editor_resources));
+				}
+			}
+			if (EditorFileSystem::get_singleton()) {
+				if (!EditorFileSystem::get_singleton()->is_connected("filesystem_changed", callable_mp(this, &JustAMCPEditorPlugin::_on_filesystem_changed_for_subscriptions))) {
+					EditorFileSystem::get_singleton()->connect("filesystem_changed", callable_mp(this, &JustAMCPEditorPlugin::_on_filesystem_changed_for_subscriptions));
+				}
+			}
+
 		} break;
 
 		case NOTIFICATION_EXIT_TREE: {
@@ -333,7 +344,7 @@ void JustAMCPEditorPlugin::_notification(int p_what) {
 				if (mcp_server->is_connected("server_status_changed", callable_mp(this, &JustAMCPEditorPlugin::_on_server_status_changed))) {
 					mcp_server->disconnect("server_status_changed", callable_mp(this, &JustAMCPEditorPlugin::_on_server_status_changed));
 				}
-				// Keep the MCP server alive on EditorNode for headless module test runs.
+
 				mcp_server = nullptr;
 			}
 
@@ -354,7 +365,7 @@ void JustAMCPEditorPlugin::_notification(int p_what) {
 void JustAMCPEditorPlugin::_setup_status_indicator() {
 	status_label = memnew(Label);
 	status_label->set_text("MCP Server Active");
-	status_label->add_theme_color_override("font_color", Color(0, 1, 0)); // GREEN
+	status_label->add_theme_color_override("font_color", Color(0, 1, 0));
 	status_label->add_theme_font_size_override("font_size", 12);
 	status_label->set_visible(mcp_server && mcp_server->is_server_started());
 	add_control_to_container(CONTAINER_TOOLBAR, status_label);
@@ -404,41 +415,7 @@ void JustAMCPEditorPlugin::_on_tool_requested(const Variant &p_request_id, const
 	if (!mcp_server) {
 		return;
 	}
-
-	if (!tool_executor) {
-		Dictionary payload;
-		payload["code"] = -32000;
-		payload["message"] = "JustAMCP tool executor is unavailable.";
-		mcp_server->send_tool_result(p_request_id, false, payload, "JustAMCP tool executor is unavailable.");
-		return;
-	}
-
-	if (mcp_server->is_current_tool_cancel_requested()) {
-		Dictionary cancelled;
-		cancelled["ok"] = false;
-		cancelled["error"] = "cancelled";
-		mcp_server->send_tool_result(p_request_id, false, cancelled, "cancelled");
-		return;
-	}
-
-	Dictionary result = tool_executor->execute_tool(p_tool_name, p_args);
-
-	if (mcp_server->is_current_tool_cancel_requested() && !_justamcp_tool_error_is_cancelled(result)) {
-		result["ok"] = false;
-		result["error"] = "cancelled";
-	}
-
-	bool success = result.get("ok", false);
-
-	if (success) {
-		Dictionary payload = result.duplicate();
-		payload.erase("ok");
-		mcp_server->send_tool_result(p_request_id, true, payload, "");
-	} else {
-		const String error_msg = _justamcp_tool_error_message(result);
-		const Variant payload = result.get("error", Variant());
-		mcp_server->send_tool_result(p_request_id, false, payload, error_msg);
-	}
+	JustAMCPToolDispatch::execute_and_send(mcp_server, tool_executor, p_request_id, p_tool_name, p_args);
 }
 
 String JustAMCPEditorPlugin::get_mcp_config_json(bool p_is_cursor) {
@@ -506,4 +483,4 @@ String JustAMCPEditorPlugin::get_mcp_config_json(bool p_is_cursor) {
 	return json_config;
 }
 
-#endif // TOOLS_ENABLED
+#endif

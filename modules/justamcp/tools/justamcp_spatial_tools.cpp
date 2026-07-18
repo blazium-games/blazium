@@ -31,6 +31,7 @@
 
 #include "justamcp_spatial_tools.h"
 #include "../justamcp_editor_plugin.h"
+#include "../justamcp_editor_scene_access.h"
 #include "editor/editor_interface.h"
 #include "scene/2d/navigation_agent_2d.h"
 #include "scene/2d/navigation_region_2d.h"
@@ -45,7 +46,7 @@ void JustAMCPSpatialTools::set_editor_plugin(JustAMCPEditorPlugin *p_plugin) {
 
 Node *JustAMCPSpatialTools::_get_scene_root() {
 	if (editor_plugin && editor_plugin->get_editor_interface()) {
-		return editor_plugin->get_editor_interface()->get_edited_scene_root();
+		return JustAMCPEditorSceneAccess::get_edited_root();
 	}
 	return nullptr;
 }
@@ -507,4 +508,29 @@ Dictionary JustAMCPSpatialTools::navigation_get_info(const Dictionary &p_args) {
 	return result;
 }
 
-#endif // TOOLS_ENABLED
+Dictionary JustAMCPSpatialTools::execute_tool(const String &p_tool_name, const Dictionary &p_args) {
+	if (p_tool_name == "spatial_analyze_layout") {
+		return spatial_analyze_layout(p_args);
+	}
+	if (p_tool_name == "spatial_suggest_placement") {
+		return spatial_suggest_placement(p_args);
+	}
+	if (p_tool_name == "spatial_detect_overlaps") {
+		return spatial_detect_overlaps(p_args);
+	}
+	if (p_tool_name == "spatial_measure_distance") {
+		return spatial_measure_distance(p_args);
+	}
+	if (p_tool_name == "spatial_bake_navigation") {
+		return spatial_bake_navigation(p_args);
+	}
+	if (p_tool_name == "navigation_set_layers") {
+		return navigation_set_layers(p_args);
+	}
+	if (p_tool_name == "navigation_get_info") {
+		return navigation_get_info(p_args);
+	}
+	return Dictionary();
+}
+
+#endif

@@ -3653,4 +3653,7 @@ EditorFileSystem::~EditorFileSystem() {
 	}
 	filesystem = nullptr;
 	ResourceSaver::set_get_resource_id_for_path(nullptr);
+	if (singleton == this) {
+		singleton = nullptr;
+	}
 }

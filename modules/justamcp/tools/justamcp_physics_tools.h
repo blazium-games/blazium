@@ -40,7 +40,6 @@ class JustAMCPPhysicsTools : public Object {
 private:
 	EditorPlugin *editor_plugin = nullptr;
 
-	Node *_get_edited_root();
 	Node *_find_node_by_path(const String &p_path);
 	String _detect_dimension(Node *p_node);
 

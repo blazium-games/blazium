@@ -28,6 +28,8 @@
 			<return type="Array" />
 			<param index="0" name="register_only" type="bool" default="false" />
 			<param index="1" name="ignore_settings" type="bool" default="false" />
+			<param index="2" name="apply_discovery_filter" type="bool" default="true" />
+			<param index="3" name="include_disabled_tools" type="bool" default="false" />
 			<description>
 				Returns MCP JSON schema dictionaries for the available tools. Set [param register_only] to return registration metadata only, or [param ignore_settings] to bypass editor filtering.
 			</description>

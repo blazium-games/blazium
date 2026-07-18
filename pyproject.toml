@@ -68,6 +68,7 @@ ignore-words-list = [
 	"cancelled",
 	"checkin",
 	"colour",
+	"crate",
 	"curvelinear",
 	"doubleclick",
 	"expct",

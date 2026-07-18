@@ -29,12 +29,27 @@
 
 #pragma once
 
-#include "core/string/ustring.h"
+#include "core/variant/variant.h"
+
+Variant justamcp_get_active_tool_request_id();
+void justamcp_push_active_tool_request_id(const Variant &p_request_id);
+void justamcp_pop_active_tool_request_id();
 
 #ifdef TOOLS_ENABLED
+
+#include "core/string/ustring.h"
+
+class JustAMCPToolContextScope {
+	Variant request_id;
+	bool active = false;
+
+public:
+	explicit JustAMCPToolContextScope(const Variant &p_request_id);
+	~JustAMCPToolContextScope();
+};
 
 bool justamcp_is_cancel_requested();
 void justamcp_report_progress(double p_progress, double p_total, const String &p_message);
 String justamcp_get_active_progress_token();
 
-#endif // TOOLS_ENABLED
+#endif

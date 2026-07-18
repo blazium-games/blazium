@@ -30,6 +30,9 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_analysis_tools.h"
+#include "../justamcp_editor_scene_access.h"
+#include "../justamcp_mcp_tool_macros.h"
+#include "../justamcp_read_limits.h"
 #include "core/config/project_settings.h"
 #include "core/error/error_macros.h"
 #include "core/io/dir_access.h"
@@ -38,50 +41,12 @@
 #include "core/object/script_language.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
-#include "justamcp_tool_executor.h"
 #include "scene/resources/packed_scene.h"
-
-// Helper macros for returning errors analogous to base_command.gd
-static inline Dictionary _MCP_SUCCESS(const Variant &data) {
-	Dictionary r;
-	r["ok"] = true;
-	r["result"] = data;
-	return r;
-}
-static inline Dictionary _MCP_ERROR_INTERNAL(int code, const String &msg) {
-	Dictionary e, r;
-	e["code"] = code;
-	e["message"] = msg;
-	r["ok"] = false;
-	r["error"] = e;
-	return r;
-}
-
-#undef MCP_SUCCESS
-#undef MCP_ERROR
-#undef MCP_INVALID_PARAMS
-#undef MCP_INTERNAL
-#define MCP_SUCCESS(data) _MCP_SUCCESS(data)
-#define MCP_ERROR(code, msg) _MCP_ERROR_INTERNAL(code, msg)
-#define MCP_INVALID_PARAMS(msg) _MCP_ERROR_INTERNAL(-32602, msg)
-#define MCP_INTERNAL(msg) _MCP_ERROR_INTERNAL(-32603, String("Internal error: ") + msg)
 
 JustAMCPAnalysisTools::JustAMCPAnalysisTools() {
 }
 
 JustAMCPAnalysisTools::~JustAMCPAnalysisTools() {
-}
-
-Node *JustAMCPAnalysisTools::_get_edited_root() {
-#ifdef TOOLS_ENABLED
-	if (JustAMCPToolExecutor::get_test_scene_root()) {
-		return JustAMCPToolExecutor::get_test_scene_root();
-	}
-#endif
-	if (!EditorNode::get_singleton() || !EditorInterface::get_singleton()) {
-		return nullptr;
-	}
-	return EditorInterface::get_singleton()->get_edited_scene_root();
 }
 
 Dictionary JustAMCPAnalysisTools::execute_tool(const String &p_tool_name, const Dictionary &p_args) {
@@ -104,10 +69,13 @@ Dictionary JustAMCPAnalysisTools::execute_tool(const String &p_tool_name, const 
 		return get_project_statistics(p_args);
 	}
 
-	return MCP_ERROR(-32601, "Method not found: " + p_tool_name);
+	return Dictionary();
 }
 
-void JustAMCPAnalysisTools::_collect_files_by_ext(const String &p_path, const Vector<String> &p_extensions, Array &r_out, bool p_include_addons) {
+void JustAMCPAnalysisTools::_collect_files_by_ext(const String &p_path, const Vector<String> &p_extensions, Array &r_out, bool p_include_addons, int p_max_results) {
+	if (p_max_results > 0 && r_out.size() >= p_max_results) {
+		return;
+	}
 	Ref<DirAccess> dir = DirAccess::open(p_path);
 	if (dir.is_null()) {
 		return;
@@ -117,6 +85,9 @@ void JustAMCPAnalysisTools::_collect_files_by_ext(const String &p_path, const Ve
 	String file_name = dir->get_next();
 
 	while (!file_name.is_empty()) {
+		if (p_max_results > 0 && r_out.size() >= p_max_results) {
+			break;
+		}
 		if (file_name.begins_with(".")) {
 			file_name = dir->get_next();
 			continue;
@@ -129,7 +100,7 @@ void JustAMCPAnalysisTools::_collect_files_by_ext(const String &p_path, const Ve
 				file_name = dir->get_next();
 				continue;
 			}
-			_collect_files_by_ext(full_path, p_extensions, r_out, p_include_addons);
+			_collect_files_by_ext(full_path, p_extensions, r_out, p_include_addons, p_max_results);
 		} else {
 			String ext = file_name.get_extension().to_lower();
 			if (p_extensions.has(ext)) {
@@ -143,16 +114,28 @@ void JustAMCPAnalysisTools::_collect_files_by_ext(const String &p_path, const Ve
 }
 
 String JustAMCPAnalysisTools::_read_file_text(const String &p_file_path) {
-	Ref<FileAccess> file = FileAccess::open(p_file_path, FileAccess::READ);
-	if (file.is_null()) {
-		return "";
+	String text;
+	int64_t size = 0;
+	Dictionary limit_err;
+	if (!justamcp_read_utf8_within_limit(p_file_path, JUSTAMCP_MAX_SYNC_READ_BYTES, text, size, limit_err)) {
+		return String();
 	}
-	return file->get_as_utf8_string();
+	return text;
+}
+
+Dictionary JustAMCPAnalysisTools::_read_file_text_checked(const String &p_file_path, String &r_text) {
+	int64_t size = 0;
+	Dictionary limit_err;
+	if (!justamcp_read_utf8_within_limit(p_file_path, JUSTAMCP_MAX_SYNC_READ_BYTES, r_text, size, limit_err)) {
+		return limit_err;
+	}
+	return Dictionary();
 }
 
 Dictionary JustAMCPAnalysisTools::find_unused_resources(const Dictionary &p_params) {
 	String path = p_params.get("path", "res://");
 	bool include_addons = p_params.get("include_addons", false);
+	int max_results = CLAMP(int(p_params.get("max_results", 2000)), 1, 10000);
 
 	Vector<String> resource_extensions;
 	resource_extensions.push_back("tres");
@@ -174,7 +157,7 @@ Dictionary JustAMCPAnalysisTools::find_unused_resources(const Dictionary &p_para
 	resource_extensions.push_back("anim");
 
 	Array all_resources;
-	_collect_files_by_ext(path, resource_extensions, all_resources, include_addons);
+	_collect_files_by_ext(path, resource_extensions, all_resources, include_addons, max_results);
 
 	Vector<String> ref_extensions;
 	ref_extensions.push_back("tscn");
@@ -184,13 +167,17 @@ Dictionary JustAMCPAnalysisTools::find_unused_resources(const Dictionary &p_para
 	ref_extensions.push_back("godot");
 
 	Array ref_files;
-	_collect_files_by_ext(path, ref_extensions, ref_files, include_addons);
+	_collect_files_by_ext(path, ref_extensions, ref_files, include_addons, max_results);
 
 	Dictionary referenced;
 	for (int i = 0; i < ref_files.size(); i++) {
 		String ref_file = ref_files[i];
-		String content = _read_file_text(ref_file);
-		if (content.is_empty()) {
+		String content;
+		Dictionary read_err = _read_file_text_checked(ref_file, content);
+		if (!read_err.is_empty()) {
+			if (read_err.has("max_bytes")) {
+				return read_err;
+			}
 			continue;
 		}
 
@@ -231,8 +218,12 @@ Dictionary JustAMCPAnalysisTools::find_unused_resources(const Dictionary &p_para
 	return MCP_SUCCESS(res);
 }
 
-void JustAMCPAnalysisTools::_collect_signal_data(Node *p_node, Node *p_root, Array &r_out) {
-	if (!p_node || !p_root) {
+void JustAMCPAnalysisTools::_collect_signal_data(Node *p_node, Node *p_root, Array &r_out, int p_max_nodes, bool &r_truncated) {
+	if (!p_node || !p_root || r_truncated) {
+		return;
+	}
+	if (p_max_nodes > 0 && r_out.size() >= p_max_nodes) {
+		r_truncated = true;
 		return;
 	}
 	String node_path = p_root->get_path_to(p_node);
@@ -281,6 +272,10 @@ void JustAMCPAnalysisTools::_collect_signal_data(Node *p_node, Node *p_root, Arr
 	}
 
 	if (signals_emitted.size() > 0 || signals_connected_to.size() > 0) {
+		if (p_max_nodes > 0 && r_out.size() >= p_max_nodes) {
+			r_truncated = true;
+			return;
+		}
 		Dictionary node_data;
 		node_data["name"] = p_node->get_name();
 		node_data["path"] = node_path;
@@ -291,27 +286,44 @@ void JustAMCPAnalysisTools::_collect_signal_data(Node *p_node, Node *p_root, Arr
 	}
 
 	for (int i = 0; i < p_node->get_child_count(); i++) {
-		_collect_signal_data(p_node->get_child(i), p_root, r_out);
+		_collect_signal_data(p_node->get_child(i), p_root, r_out, p_max_nodes, r_truncated);
+		if (r_truncated) {
+			return;
+		}
 	}
 }
 
 Dictionary JustAMCPAnalysisTools::analyze_signal_flow(const Dictionary &p_params) {
-	Node *root = _get_edited_root();
+	Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 	if (!root) {
 		return MCP_ERROR(-32000, "No scene is currently open");
 	}
 
+	const int max_nodes = CLAMP(int(p_params.get("max_nodes", 2000)), 1, 10000);
 	Array nodes_data;
-	_collect_signal_data(root, root, nodes_data);
+	bool truncated = false;
+	_collect_signal_data(root, root, nodes_data, max_nodes, truncated);
 
 	Dictionary res;
 	res["scene"] = root->get_scene_file_path();
 	res["nodes"] = nodes_data;
 	res["total_nodes"] = nodes_data.size();
+	res["truncated"] = truncated;
 	return MCP_SUCCESS(res);
 }
 
-void JustAMCPAnalysisTools::_analyze_node(Node *p_node, Node *p_root, int p_depth, int &r_total_nodes, int &r_max_depth, Dictionary &r_types, Array &r_scripts, Dictionary &r_resources) {
+void JustAMCPAnalysisTools::_analyze_node(Node *p_node, Node *p_root, int p_depth, int &r_total_nodes, int &r_max_depth, Dictionary &r_types, Array &r_scripts, Dictionary &r_resources, int p_max_nodes, bool &r_truncated) {
+	if (!p_node || r_truncated) {
+		return;
+	}
+	if (p_max_nodes > 0 && r_total_nodes >= p_max_nodes) {
+		r_truncated = true;
+		return;
+	}
+	r_total_nodes++;
+	if (p_depth > r_max_depth) {
+		r_max_depth = p_depth;
+	}
 	String type_name = p_node->get_class();
 	int tcount = r_types.get(type_name, 0);
 	r_types[type_name] = tcount + 1;
@@ -330,24 +342,49 @@ void JustAMCPAnalysisTools::_analyze_node(Node *p_node, Node *p_root, int p_dept
 	}
 
 	for (int i = 0; i < p_node->get_child_count(); i++) {
-		_analyze_node(p_node->get_child(i), p_root, p_depth + 1, r_total_nodes, r_max_depth, r_types, r_scripts, r_resources);
+		_analyze_node(p_node->get_child(i), p_root, p_depth + 1, r_total_nodes, r_max_depth, r_types, r_scripts, r_resources, p_max_nodes, r_truncated);
+		if (r_truncated) {
+			return;
+		}
 	}
 }
 
-int JustAMCPAnalysisTools::_count_nodes_recursive(Node *p_node) {
+int JustAMCPAnalysisTools::_count_nodes_recursive(Node *p_node, int p_max_nodes, bool &r_truncated) {
+	if (!p_node || r_truncated) {
+		return 0;
+	}
 	int count = 1;
+	if (p_max_nodes > 0 && count >= p_max_nodes) {
+		r_truncated = true;
+		return count;
+	}
 	for (int i = 0; i < p_node->get_child_count(); i++) {
-		count += _count_nodes_recursive(p_node->get_child(i));
+		count += _count_nodes_recursive(p_node->get_child(i), p_max_nodes > 0 ? p_max_nodes - count : 0, r_truncated);
+		if (r_truncated || (p_max_nodes > 0 && count >= p_max_nodes)) {
+			r_truncated = true;
+			return count;
+		}
 	}
 	return count;
 }
 
-int JustAMCPAnalysisTools::_get_max_depth(Node *p_node, int p_current_depth) {
+int JustAMCPAnalysisTools::_get_max_depth(Node *p_node, int p_current_depth, int p_max_nodes, int &r_visited, bool &r_truncated) {
+	if (!p_node || r_truncated) {
+		return p_current_depth;
+	}
+	r_visited++;
+	if (p_max_nodes > 0 && r_visited >= p_max_nodes) {
+		r_truncated = true;
+		return p_current_depth;
+	}
 	int max_d = p_current_depth;
 	for (int i = 0; i < p_node->get_child_count(); i++) {
-		int child_depth = _get_max_depth(p_node->get_child(i), p_current_depth + 1);
+		int child_depth = _get_max_depth(p_node->get_child(i), p_current_depth + 1, p_max_nodes, r_visited, r_truncated);
 		if (child_depth > max_d) {
 			max_d = child_depth;
+		}
+		if (r_truncated) {
+			return max_d;
 		}
 	}
 	return max_d;
@@ -355,12 +392,13 @@ int JustAMCPAnalysisTools::_get_max_depth(Node *p_node, int p_current_depth) {
 
 Dictionary JustAMCPAnalysisTools::analyze_scene_complexity(const Dictionary &p_params) {
 	String scene_path = p_params.get("path", "");
+	const int max_nodes = CLAMP(int(p_params.get("max_nodes", 2000)), 1, 10000);
 
 	Node *root = nullptr;
 	bool instantiated = false;
 
 	if (scene_path.is_empty()) {
-		root = _get_edited_root();
+		root = JustAMCPEditorSceneAccess::get_edited_root();
 		if (!root) {
 			return MCP_ERROR(-32000, "No scene is currently open");
 		}
@@ -383,11 +421,9 @@ Dictionary JustAMCPAnalysisTools::analyze_scene_complexity(const Dictionary &p_p
 	Array scripts_attached;
 	Dictionary resources_used;
 	Array issues;
+	bool truncated = false;
 
-	_analyze_node(root, root, 0, total_nodes, max_depth, types, scripts_attached, resources_used);
-
-	total_nodes = _count_nodes_recursive(root);
-	max_depth = _get_max_depth(root, 0);
+	_analyze_node(root, root, 0, total_nodes, max_depth, types, scripts_attached, resources_used, max_nodes, truncated);
 
 	if (total_nodes > 1000) {
 		Dictionary i;
@@ -425,6 +461,7 @@ Dictionary JustAMCPAnalysisTools::analyze_scene_complexity(const Dictionary &p_p
 	res["scripts_attached"] = scripts_attached;
 	res["unique_resource_count"] = resources_used.size();
 	res["issues"] = issues;
+	res["truncated"] = truncated;
 	return MCP_SUCCESS(res);
 }
 
@@ -436,6 +473,7 @@ Dictionary JustAMCPAnalysisTools::find_script_references(const Dictionary &p_par
 
 	String path = p_params.get("path", "res://");
 	bool include_addons = p_params.get("include_addons", false);
+	int max_results = CLAMP(int(p_params.get("max_results", 2000)), 1, 10000);
 
 	Vector<String> search_extensions;
 	search_extensions.push_back("tscn");
@@ -445,13 +483,17 @@ Dictionary JustAMCPAnalysisTools::find_script_references(const Dictionary &p_par
 	search_extensions.push_back("godot");
 
 	Array search_files;
-	_collect_files_by_ext(path, search_extensions, search_files, include_addons);
+	_collect_files_by_ext(path, search_extensions, search_files, include_addons, max_results);
 
 	Array references;
 	for (int i = 0; i < search_files.size(); i++) {
 		String fp = search_files[i];
-		String content = _read_file_text(fp);
-		if (content.is_empty()) {
+		String content;
+		Dictionary read_err = _read_file_text_checked(fp, content);
+		if (!read_err.is_empty()) {
+			if (read_err.has("max_bytes")) {
+				return read_err;
+			}
 			continue;
 		}
 
@@ -509,18 +551,23 @@ void JustAMCPAnalysisTools::_dfs_detect_cycle(const String &p_node, const Dictio
 Dictionary JustAMCPAnalysisTools::detect_circular_dependencies(const Dictionary &p_params) {
 	String path = p_params.get("path", "res://");
 	bool include_addons = p_params.get("include_addons", false);
+	int max_results = CLAMP(int(p_params.get("max_results", 2000)), 1, 10000);
 
 	Vector<String> tscn_exts;
 	tscn_exts.push_back("tscn");
 
 	Array tscn_files;
-	_collect_files_by_ext(path, tscn_exts, tscn_files, include_addons);
+	_collect_files_by_ext(path, tscn_exts, tscn_files, include_addons, max_results);
 
 	Dictionary dep_graph;
 	for (int i = 0; i < tscn_files.size(); i++) {
 		String tp = tscn_files[i];
-		String content = _read_file_text(tp);
-		if (content.is_empty()) {
+		String content;
+		Dictionary read_err = _read_file_text_checked(tp, content);
+		if (!read_err.is_empty()) {
+			if (read_err.has("max_bytes")) {
+				return read_err;
+			}
 			continue;
 		}
 
@@ -570,7 +617,10 @@ Dictionary JustAMCPAnalysisTools::detect_circular_dependencies(const Dictionary 
 	return MCP_SUCCESS(res);
 }
 
-void JustAMCPAnalysisTools::_collect_statistics(const String &p_path, bool p_include_addons, Dictionary &r_file_counts) {
+void JustAMCPAnalysisTools::_collect_statistics(const String &p_path, bool p_include_addons, Dictionary &r_file_counts, int p_max_files, bool &r_truncated) {
+	if (r_truncated) {
+		return;
+	}
 	Ref<DirAccess> dir = DirAccess::open(p_path);
 	if (dir.is_null()) {
 		return;
@@ -580,6 +630,10 @@ void JustAMCPAnalysisTools::_collect_statistics(const String &p_path, bool p_inc
 	String file_name = dir->get_next();
 
 	while (!file_name.is_empty()) {
+		if (p_max_files > 0 && int(r_file_counts.get("_total_files", 0)) >= p_max_files) {
+			r_truncated = true;
+			break;
+		}
 		if (file_name.begins_with(".")) {
 			file_name = dir->get_next();
 			continue;
@@ -592,7 +646,10 @@ void JustAMCPAnalysisTools::_collect_statistics(const String &p_path, bool p_inc
 				file_name = dir->get_next();
 				continue;
 			}
-			_collect_statistics(full_path, p_include_addons, r_file_counts);
+			_collect_statistics(full_path, p_include_addons, r_file_counts, p_max_files, r_truncated);
+			if (r_truncated) {
+				break;
+			}
 		} else {
 			String ext = file_name.get_extension().to_lower();
 			int current_ext_count = r_file_counts.get(ext, 0);
@@ -627,9 +684,11 @@ void JustAMCPAnalysisTools::_collect_statistics(const String &p_path, bool p_inc
 Dictionary JustAMCPAnalysisTools::get_project_statistics(const Dictionary &p_params) {
 	String path = p_params.get("path", "res://");
 	bool include_addons = p_params.get("include_addons", false);
+	const int max_files = CLAMP(int(p_params.get("max_files", 2000)), 1, 10000);
 
 	Dictionary file_counts;
-	_collect_statistics(path, include_addons, file_counts);
+	bool truncated = false;
+	_collect_statistics(path, include_addons, file_counts, max_files, truncated);
 
 	int total_script_lines = file_counts.get("_total_script_lines", 0);
 	int scene_count = file_counts.get("_scene_count", 0);
@@ -683,7 +742,8 @@ Dictionary JustAMCPAnalysisTools::get_project_statistics(const Dictionary &p_par
 	res["resource_count"] = resource_count;
 	res["autoloads"] = autoloads;
 	res["plugins"] = plugins;
+	res["truncated"] = truncated;
 	return MCP_SUCCESS(res);
 }
 
-#endif // TOOLS_ENABLED
+#endif

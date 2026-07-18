@@ -42,6 +42,7 @@ void HTTPRequestContext::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_body", "body"), &HTTPRequestContext::set_body);
 	ClassDB::bind_method(D_METHOD("set_client_ip", "ip"), &HTTPRequestContext::set_client_ip);
 	ClassDB::bind_method(D_METHOD("set_client_port", "port"), &HTTPRequestContext::set_client_port);
+	ClassDB::bind_method(D_METHOD("set_client_id", "client_id"), &HTTPRequestContext::set_client_id);
 
 	// Getters
 	ClassDB::bind_method(D_METHOD("get_method"), &HTTPRequestContext::get_method);
@@ -53,6 +54,7 @@ void HTTPRequestContext::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_body"), &HTTPRequestContext::get_body);
 	ClassDB::bind_method(D_METHOD("get_client_ip"), &HTTPRequestContext::get_client_ip);
 	ClassDB::bind_method(D_METHOD("get_client_port"), &HTTPRequestContext::get_client_port);
+	ClassDB::bind_method(D_METHOD("get_client_id"), &HTTPRequestContext::get_client_id);
 
 	// Utility methods
 	ClassDB::bind_method(D_METHOD("get_header", "name", "default_value"), &HTTPRequestContext::get_header, DEFVAL(""));
@@ -115,6 +117,10 @@ void HTTPRequestContext::set_client_port(int p_port) {
 	client_port = p_port;
 }
 
+void HTTPRequestContext::set_client_id(int p_client_id) {
+	client_id = p_client_id;
+}
+
 // Getters
 String HTTPRequestContext::get_method() const {
 	return method;
@@ -150,6 +156,10 @@ IPAddress HTTPRequestContext::get_client_ip() const {
 
 int HTTPRequestContext::get_client_port() const {
 	return client_port;
+}
+
+int HTTPRequestContext::get_client_id() const {
+	return client_id;
 }
 
 // Utility methods

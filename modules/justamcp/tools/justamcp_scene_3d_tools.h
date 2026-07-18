@@ -31,6 +31,7 @@
 
 #ifdef TOOLS_ENABLED
 
+#include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "scene/main/node.h"
 
@@ -42,7 +43,6 @@ class JustAMCPScene3DTools : public Object {
 private:
 	JustAMCPEditorPlugin *editor_plugin = nullptr;
 
-	Node *_get_edited_root();
 	Node *_find_node_by_path(const String &p_path);
 	void _add_child_with_undo(Node *p_node, Node *p_parent, Node *p_root, const String &p_action_name);
 
@@ -66,4 +66,4 @@ public:
 	~JustAMCPScene3DTools();
 };
 
-#endif // TOOLS_ENABLED
+#endif

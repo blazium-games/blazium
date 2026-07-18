@@ -49,4 +49,4 @@ public:
 	~JustAMCPPromptBlaziumMultiplayerArchitect();
 };
 
-#endif // TOOLS_ENABLED
+#endif

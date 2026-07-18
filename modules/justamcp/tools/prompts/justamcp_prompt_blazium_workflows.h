@@ -71,4 +71,4 @@ public:
 	~JustAMCPPromptBlaziumWorkflow();
 };
 
-#endif // TOOLS_ENABLED
+#endif

@@ -43,6 +43,8 @@ void HTTPResponse::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_headers"), &HTTPResponse::get_headers);
 	ClassDB::bind_method(D_METHOD("start_sse"), &HTTPResponse::start_sse);
 	ClassDB::bind_method(D_METHOD("is_sse_response"), &HTTPResponse::is_sse_response);
+	ClassDB::bind_method(D_METHOD("hold"), &HTTPResponse::hold);
+	ClassDB::bind_method(D_METHOD("is_held"), &HTTPResponse::is_held);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "status_code"), "set_status", "get_status");
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "body"), "set_body", "get_body");
@@ -95,11 +97,28 @@ void HTTPResponse::start_sse() {
 	set_content_type("text/event-stream");
 	add_header("Cache-Control", "no-cache");
 	add_header("Connection", "keep-alive");
-	add_header("Access-Control-Allow-Origin", "*");
+	// Do not set Access-Control-Allow-Origin here. Callers (e.g. JustAMCP) apply
+	// origin-checked CORS headers so SSE cannot bypass non-localhost ACAO policy.
 }
 
 bool HTTPResponse::is_sse_response() const {
 	return is_sse;
+}
+
+void HTTPResponse::hold() {
+	hold_response = true;
+}
+
+bool HTTPResponse::is_held() const {
+	return hold_response;
+}
+
+void HTTPResponse::set_held_client_id(int p_client_id) {
+	held_client_id = p_client_id;
+}
+
+int HTTPResponse::get_held_client_id() const {
+	return held_client_id;
 }
 
 bool HTTPResponse::is_file() const {

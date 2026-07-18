@@ -441,11 +441,21 @@
 		<member name="audio/video/video_delay_compensation_ms" type="int" setter="" getter="" default="0">
 			Setting to hardcode audio delay when playing video. Best to leave this unchanged unless you know what you are doing.
 		</member>
+		<member name="blazium/assettags/strict_paths" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/assettags/strict_tags" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/assettags/taggable_extensions" type="String" setter="" getter="" default="&quot;glb,gltf,obj,fbx,blend,png,jpg,jpeg,webp,svg,exr,bmp,tga,tscn,scn,gd,luau,cs,tres,material,gdshader,gdshaderinc,res,remap&quot;">
+		</member>
 		<member name="blazium/autowork/e2e_enabled" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], the Autowork framework will boot its WebSocket E2E server on startup, enabling orchestration from standard web runners (e.g. Playwright, Jest, Cypress).
 		</member>
+		<member name="blazium/justamcp/allow_execute_tool_bypass" type="bool" setter="" getter="" default="false">
+		</member>
 		<member name="blazium/justamcp/bind_to_localhost_only" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], the JustAMCP HTTP server listens only on [code]127.0.0.1[/code]. Disable only on trusted networks when remote MCP clients must connect.
+		</member>
+		<member name="blazium/justamcp/bridge_url_allow_hosts" type="Array" setter="" getter="" default="[]">
 		</member>
 		<member name="blazium/justamcp/client_id" type="String" setter="" getter="" default="&quot;&quot;">
 			OAuth 2.0 client identifier used when [member blazium/justamcp/oauth_enabled] is [code]true[/code]. Can also be supplied via the [code]--mcp-client-id[/code] command-line argument.
@@ -456,8 +466,10 @@
 		<member name="blazium/justamcp/disable_game_mcp" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], disables the Model Context Protocol (MCP) server from running alongside exported builds or game tests. Ensure this is marked true for strict production releases to deny introspection.
 		</member>
-		<member name="blazium/justamcp/enable_debug_logging" type="bool" setter="" getter="" default="true">
+		<member name="blazium/justamcp/enable_debug_logging" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], JustAMCP sends JSON-RPC method names, validation failures, and HTTP payload traces to connected MCP clients as [code]debug[/code] log notifications ([code]logger: justamcp[/code]).
+		</member>
+		<member name="blazium/justamcp/enable_toolset_discovery" type="bool" setter="" getter="" default="true">
 		</member>
 		<member name="blazium/justamcp/forward_engine_logs" type="bool" setter="" getter="" default="true">
 			If [code]true[/code] and the JustAMCP server is running, engine [code]print[/code] output is forwarded to MCP clients via [code]notifications/message[/code] ([code]logger: engine[/code]). Respects the client's [code]logging/setLevel[/code] minimum severity.
@@ -465,8 +477,16 @@
 		<member name="blazium/justamcp/game_control_enabled" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], allows AI interacting via JustAMCP to natively trigger in-game commands and inputs over the pipeline, granting them orchestration control over gameplay mechanics.
 		</member>
+		<member name="blazium/justamcp/in_flight_cancel_deadline_ms" type="int" setter="" getter="" default="5000">
+		</member>
 		<member name="blazium/justamcp/list_page_size" type="int" setter="" getter="" default="50">
 			Maximum items per page for MCP list operations and paginated log reads ([code]tools/list[/code], [code]resources/list[/code], [code]blazium://logs/...[/code], etc.).
+		</member>
+		<member name="blazium/justamcp/max_enqueue_per_sec_per_session" type="int" setter="" getter="" default="10">
+		</member>
+		<member name="blazium/justamcp/max_pending_per_session" type="int" setter="" getter="" default="8">
+		</member>
+		<member name="blazium/justamcp/mcp_clients" type="Array" setter="" getter="" default="[]">
 		</member>
 		<member name="blazium/justamcp/mcp_log_buffer_size" type="int" setter="" getter="" default="500">
 			Maximum buffered MCP [code]notifications/message[/code] entries retained for replay when clients missed SSE.
@@ -476,6 +496,10 @@
 		</member>
 		<member name="blazium/justamcp/override_editor_settings" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], JustAMCP reads server, tool, prompt, and resource toggles from [ProjectSettings] instead of [EditorSettings]. Automatically enabled in headless mode and when using [code]--enable-mcp[/code].
+		</member>
+		<member name="blazium/justamcp/parallel_readonly_lane" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/pending_post_sse_timeout_sec" type="int" setter="" getter="" default="120">
 		</member>
 		<member name="blazium/justamcp/prompts/analyze_autowork_test_failures" type="String" setter="" getter="">
 			Read-only MCP prompt template registered as [code]analyze_autowork_test_failures[/code]. Description: Diagnoses failing Autowork test output or Godot stack traces and returns structured root-cause analysis with corrected GDScript.
@@ -525,8 +549,24 @@
 		<member name="blazium/justamcp/prompts/project_info" type="String" setter="" getter="">
 			Read-only MCP prompt template registered as [code]project_info[/code]. Description: Retrieves the core Godot Project metadata natively.
 		</member>
+		<member name="blazium/justamcp/readonly_worker_concurrency" type="int" setter="" getter="" default="2">
+		</member>
+		<member name="blazium/justamcp/request_route_ttl_sec" type="int" setter="" getter="" default="3600">
+		</member>
 		<member name="blazium/justamcp/resources/Asset Generation Guide" type="String" setter="" getter="">
 			Read-only MCP resource metadata for [code]Asset Generation Guide[/code]. Description: How SVG-to-PNG asset generation works and how sizing options are applied.
+		</member>
+		<member name="blazium/justamcp/resources/Asset Tag Dictionary" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Asset Tag Dictionary (Paginated)" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Asset Tagging Guide" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Asset Tags" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Assets By Tag" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Assets By Tag (Paginated)" type="String" setter="" getter="">
 		</member>
 		<member name="blazium/justamcp/resources/Autowork Latest Results" type="String" setter="" getter="">
 			Read-only MCP resource metadata for [code]Autowork Latest Results[/code]. Description: Streams the latest JUnit/JSON test results generated by the Autowork Godot testing framework directly into memory.
@@ -557,6 +597,8 @@
 		</member>
 		<member name="blazium/justamcp/resources/MCP Log Notifications" type="String" setter="" getter="">
 			Read-only MCP resource metadata for [code]MCP Log Notifications[/code]. Description: Paginated buffered MCP notifications/message history. Use blazium://logs/mcp/start for the first page.
+		</member>
+		<member name="blazium/justamcp/resources/MCP Sessions" type="String" setter="" getter="">
 		</member>
 		<member name="blazium/justamcp/resources/Materials" type="String" setter="" getter="">
 			Read-only MCP resource metadata for [code]Materials[/code]. Description: Material resources found under res://.
@@ -597,8 +639,23 @@
 		<member name="blazium/justamcp/resources/Script Source" type="String" setter="" getter="">
 			Read-only MCP resource metadata for [code]Script Source[/code]. Description: Read a script by omitting the res:// prefix, such as blazium://script/scripts/player.gd.
 		</member>
-		<member name="blazium/justamcp/resources/System Logs" type="String" setter="" getter="">
-			Read-only MCP resource metadata for [code]System Logs[/code]. Description: Recent engine log lines captured by JustAMCP.
+		<member name="blazium/justamcp/resources/Semantic Asset Entry" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Semantic Index Rebuild" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Semantic Index Stats" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Semantic Search" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Semantic Search (Limited)" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Semantic Search (Paginated)" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Semantic Search (Tag Filtered)" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Semantic Similar Assets" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Semantic Similar Assets (Limited)" type="String" setter="" getter="">
 		</member>
 		<member name="blazium/justamcp/resources/System Logs (Paginated)" type="String" setter="" getter="">
 			Read-only MCP resource metadata for [code]System Logs (Paginated)[/code]. Description: Paginated engine log lines as JSON. Use blazium://system/logs/start for the first page.
@@ -630,10 +687,14 @@
 		<member name="blazium/justamcp/session_ttl_seconds" type="int" setter="" getter="" default="3600">
 			Idle lifetime in seconds for Streamable HTTP [code]MCP-Session-Id[/code] sessions. Expired sessions return HTTP 404 until the client re-initializes. Set to [code]0[/code] to disable expiry.
 		</member>
+		<member name="blazium/justamcp/stateless_tool_blocking" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/stateless_tool_timeout_ms" type="int" setter="" getter="" default="120000">
+		</member>
 		<member name="blazium/justamcp/streamable_http_allowed_origin" type="String" setter="" getter="" default="&quot;&quot;">
 			When [member blazium/justamcp/streamable_http_strict_origin] is [code]true[/code], only requests whose [code]Origin[/code] header matches this value are accepted on [code]/mcp[/code]. Leave empty to reject all cross-origin requests when strict mode is enabled.
 		</member>
-		<member name="blazium/justamcp/streamable_http_strict_origin" type="bool" setter="" getter="" default="false">
+		<member name="blazium/justamcp/streamable_http_strict_origin" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], Streamable HTTP [code]/mcp[/code] requests must include a valid [code]Origin[/code] header that matches [member blazium/justamcp/streamable_http_allowed_origin]. Ignored when [member blazium/justamcp/bind_to_localhost_only] is [code]true[/code].
 		</member>
 		<member name="blazium/justamcp/task_default_ttl_ms" type="int" setter="" getter="" default="600000">
@@ -644,6 +705,8 @@
 		</member>
 		<member name="blazium/justamcp/task_poll_interval_ms" type="int" setter="" getter="" default="1000">
 			Default suggested poll interval in milliseconds for MCP tasks.
+		</member>
+		<member name="blazium/justamcp/task_result_max_wait_ms" type="int" setter="" getter="" default="120000">
 		</member>
 		<member name="blazium/justamcp/tools/analysis_tools" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], enables the Analysis Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/analysis_tools/[/code] can be toggled separately.
@@ -990,20 +1053,17 @@
 		<member name="blazium/justamcp/tools/input_tools/blazium_simulate_touch" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_simulate_touch[/code] tool from the Input Tools family to MCP clients. Mocks screen touch interactions passing accurate index, position, and tap evaluation vectors cleanly bypassing OS screens.
 		</member>
-		<member name="blazium/justamcp/tools/multiuser_tools" type="bool" setter="" getter="" default="false">
-			If [code]true[/code], enables the Multiuser Editor Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/multiuser_tools/[/code] can be toggled separately.
+		<member name="blazium/justamcp/tools/mcp_client_tools" type="bool" setter="" getter="" default="false">
 		</member>
-		<member name="blazium/justamcp/tools/multiuser_tools/blazium_multiuser_get_status" type="bool" setter="" getter="" default="true">
-			If [code]true[/code], exposes the [code]blazium_multiuser_get_status[/code] tool from the Multiuser Editor Tools family to MCP clients. Returns the active collaborative session status, including the local peer ID and connection state natively out of the Multiplayer network node.
+		<member name="blazium/justamcp/tools/mcp_client_tools/blazium_mcp_client_add_bridge" type="bool" setter="" getter="" default="true">
 		</member>
-		<member name="blazium/justamcp/tools/multiuser_tools/blazium_multiuser_kick_peer" type="bool" setter="" getter="" default="true">
-			If [code]true[/code], exposes the [code]blazium_multiuser_kick_peer[/code] tool from the Multiuser Editor Tools family to MCP clients. Removes a target user peer explicitly from the host environment by ID (Action is silently ignored if the AI host agent lacks active networking privileges).
+		<member name="blazium/justamcp/tools/mcp_client_tools/blazium_mcp_client_call_remote_tool" type="bool" setter="" getter="" default="true">
 		</member>
-		<member name="blazium/justamcp/tools/multiuser_tools/blazium_multiuser_send_chat" type="bool" setter="" getter="" default="true">
-			If [code]true[/code], exposes the [code]blazium_multiuser_send_chat[/code] tool from the Multiuser Editor Tools family to MCP clients. Dispatches a global text string natively to all uniquely connected remote peer instances across the Editor environment.
+		<member name="blazium/justamcp/tools/mcp_client_tools/blazium_mcp_client_list_bridges" type="bool" setter="" getter="" default="true">
 		</member>
-		<member name="blazium/justamcp/tools/multiuser_tools/blazium_multiuser_trigger_autowork" type="bool" setter="" getter="" default="true">
-			If [code]true[/code], exposes the [code]blazium_multiuser_trigger_autowork[/code] tool from the Multiuser Editor Tools family to MCP clients. Issues a distributed RPC signaling all securely connected peers to automatically boot Godot's Autowork pipeline evaluating unit tests concurrently traversing the network.
+		<member name="blazium/justamcp/tools/mcp_client_tools/blazium_mcp_client_list_remote_tools" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/mcp_client_tools/blazium_mcp_client_read_remote_resource" type="bool" setter="" getter="" default="true">
 		</member>
 		<member name="blazium/justamcp/tools/networking_tools" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], enables the Networking Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/networking_tools/[/code] can be toggled separately.
@@ -1647,8 +1707,86 @@
 		<member name="blazium/justamcp/tools/tilemap_tools/blazium_tilemap_set_cell" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_tilemap_set_cell[/code] tool from the TileMap Tools family to MCP clients. Sets physical cell identifiers onto Grid memory iterations inside TileMapLayers natively.
 		</member>
+		<member name="blazium/justamcp/toolsets/Analysis" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Animation" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Asset" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/AssetTags" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Audio" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Autowork" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Batch" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Blueprint" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Documentation" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Draw" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Editor" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Environment" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Export" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Input" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/MCPClient" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Multiuser" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Networking" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Node" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Particle" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Physics" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Profiling" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Project" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Resource" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Runtime" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Scene" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Scene3D" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Script" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/SemanticSearch" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Shader" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Spatial" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Theme" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/TileMap" type="bool" setter="" getter="" default="true">
+		</member>
 		<member name="blazium/justamcp/z_mcp_config" type="String" setter="" getter="" default="&quot;&quot;">
 			Advanced JustAMCP JSON configuration managed by the editor plugin UI. Stores supplemental MCP server options not exposed as individual project settings.
+		</member>
+		<member name="blazium/semanticsearch/async_job_ttl_ms" type="int" setter="" getter="" default="1800000">
+		</member>
+		<member name="blazium/semanticsearch/backend" type="String" setter="" getter="" default="&quot;lexical&quot;">
+		</member>
+		<member name="blazium/semanticsearch/embedding_http_timeout_ms" type="int" setter="" getter="" default="30000">
+		</member>
+		<member name="blazium/semanticsearch/embedding_http_url" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+		<member name="blazium/semanticsearch/embedding_provider" type="String" setter="" getter="" default="&quot;hash_vector&quot;">
+		</member>
+		<member name="blazium/semanticsearch/max_concurrent_async_jobs" type="int" setter="" getter="" default="8">
+		</member>
+		<member name="blazium/semanticsearch/scan_filesystem" type="bool" setter="" getter="" default="false">
 		</member>
 		<member name="collada/use_ambient" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], ambient lights will be imported from COLLADA models as [DirectionalLight3D]. If [code]false[/code], ambient lights will be ignored.

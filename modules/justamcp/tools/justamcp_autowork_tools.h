@@ -59,5 +59,5 @@ public:
 	~JustAMCPAutoworkTools();
 };
 
-#endif // MODULE_AUTOWORK_ENABLED
-#endif // TOOLS_ENABLED
+#endif
+#endif

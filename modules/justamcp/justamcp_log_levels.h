@@ -31,7 +31,6 @@
 
 #include "core/string/ustring.h"
 
-// RFC 5424 syslog severity levels (MCP logging utility).
 bool justamcp_log_level_is_valid(const String &p_level);
 int justamcp_log_level_rank(const String &p_level);
 bool justamcp_log_level_passes(const String &p_message_level, const String &p_min_level);

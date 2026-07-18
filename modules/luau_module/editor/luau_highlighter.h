@@ -39,10 +39,21 @@ class LuauSyntaxHighlighter : public EditorSyntaxHighlighter {
 
 	HashMap<int, int> region_cache;
 
+	Color keyword_color;
+	Color string_color;
+	Color number_color;
+	Color comment_color;
+	Color annotation_color;
+	Color function_color;
+	Color member_color;
+	Color type_color;
+
 protected:
 	static void _bind_methods() {}
 
 public:
+	virtual void _update_cache() override;
+	virtual void _clear_highlighting_cache() override;
 	virtual Dictionary _get_line_syntax_highlighting_impl(int p_line) override;
 	virtual String _get_name() const override;
 	virtual PackedStringArray _get_supported_languages() const override;

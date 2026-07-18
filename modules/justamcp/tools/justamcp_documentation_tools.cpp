@@ -266,13 +266,7 @@ Dictionary JustAMCPDocumentationTools::execute_tool(const String &p_tool_name, c
 		return get_member_documentation(p_args);
 	}
 
-	Dictionary ret;
-
-	ret["ok"] = false;
-
-	ret["error"] = "Unknown documentation tool: " + p_tool_name;
-
-	return ret;
+	return Dictionary();
 }
 
 Dictionary JustAMCPDocumentationTools::list_classes(const Dictionary &p_args) {
@@ -529,4 +523,4 @@ Dictionary JustAMCPDocumentationTools::get_member_documentation(const Dictionary
 	return ret;
 }
 
-#endif // TOOLS_ENABLED
+#endif

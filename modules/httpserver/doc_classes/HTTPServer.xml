@@ -43,6 +43,13 @@
 				Closes an active Server-Sent Events connection with the given [param connection_id]. Emits [signal sse_connection_closed].
 			</description>
 		</method>
+		<method name="complete_response">
+			<return type="int" enum="Error" />
+			<param index="0" name="client_id" type="int" />
+			<param index="1" name="response" type="HTTPResponse" />
+			<description>
+			</description>
+		</method>
 		<method name="enable_directory_listing">
 			<return type="void" />
 			<param index="0" name="enable" type="bool" />

@@ -27,6 +27,11 @@
 		<link title="HTTPServer Developer Examples">https://github.com/blazium-games/httpserver_module_tests</link>
 	</tutorials>
 	<methods>
+		<method name="get_client_id" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
 		<method name="get_header" qualifiers="const">
 			<return type="String" />
 			<param index="0" name="name" type="String" />
@@ -87,6 +92,12 @@
 			<return type="Dictionary" />
 			<description>
 				Parses the request body as JSON and returns a dictionary. Returns an empty dictionary if the body is not valid JSON or is not a JSON object.
+			</description>
+		</method>
+		<method name="set_client_id">
+			<return type="void" />
+			<param index="0" name="client_id" type="int" />
+			<description>
 			</description>
 		</method>
 	</methods>

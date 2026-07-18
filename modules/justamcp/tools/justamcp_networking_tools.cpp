@@ -31,6 +31,7 @@
 
 #include "justamcp_networking_tools.h"
 #include "../justamcp_editor_plugin.h"
+#include "../justamcp_editor_scene_access.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_undo_redo_manager.h"
 #include "scene/main/http_request.h"
@@ -47,7 +48,7 @@ void JustAMCPNetworkingTools::set_editor_plugin(JustAMCPEditorPlugin *p_plugin) 
 
 Node *JustAMCPNetworkingTools::_get_scene_root() {
 	if (editor_plugin && editor_plugin->get_editor_interface()) {
-		return editor_plugin->get_editor_interface()->get_edited_scene_root();
+		return JustAMCPEditorSceneAccess::get_edited_root();
 	}
 	return nullptr;
 }
@@ -312,4 +313,26 @@ Dictionary JustAMCPNetworkingTools::networking_get_info(const Dictionary &p_args
 	return result;
 }
 
-#endif // TOOLS_ENABLED
+Dictionary JustAMCPNetworkingTools::execute_tool(const String &p_tool_name, const Dictionary &p_args) {
+	if (p_tool_name == "networking_create_http_request") {
+		return networking_create_http_request(p_args);
+	}
+	if (p_tool_name == "networking_setup_websocket") {
+		return networking_setup_websocket(p_args);
+	}
+	if (p_tool_name == "networking_setup_multiplayer") {
+		return networking_setup_multiplayer(p_args);
+	}
+	if (p_tool_name == "networking_setup_rpc") {
+		return networking_setup_rpc(p_args);
+	}
+	if (p_tool_name == "networking_setup_sync") {
+		return networking_setup_sync(p_args);
+	}
+	if (p_tool_name == "networking_get_info") {
+		return networking_get_info(p_args);
+	}
+	return Dictionary();
+}
+
+#endif

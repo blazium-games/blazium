@@ -27,10 +27,9 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-// #ifdef TOOLS_ENABLED
-
 #include "justamcp_runtime_tools.h"
 #include "../justamcp_editor_plugin.h"
+#include "../justamcp_editor_scene_access.h"
 #include "core/io/dir_access.h"
 #include "core/io/image.h"
 #include "core/math/expression.h"
@@ -57,7 +56,7 @@ Dictionary JustAMCPRuntimeTools::runtime_execute_gdscript(const Dictionary &p_ar
 
 	Node *base_obj = nullptr;
 	if (editor_plugin && editor_plugin->get_editor_interface() && !target_path.is_empty()) {
-		Node *root = editor_plugin->get_editor_interface()->get_edited_scene_root();
+		Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 		if (root) {
 			if (target_path == "." || target_path == "/root") {
 				base_obj = root;
@@ -67,7 +66,6 @@ Dictionary JustAMCPRuntimeTools::runtime_execute_gdscript(const Dictionary &p_ar
 		}
 	}
 
-	// Try Expression First
 	Expression expr;
 	Error expr_err = expr.parse(code_snippet);
 	if (expr_err == OK) {
@@ -89,7 +87,6 @@ Dictionary JustAMCPRuntimeTools::runtime_execute_gdscript(const Dictionary &p_ar
 		}
 	}
 
-	// Fallback to Script wrapper execution
 	String full_script = "extends RefCounted\n";
 	full_script += "func eval(node_ref: Node) -> Variant:\n";
 
@@ -124,7 +121,6 @@ Dictionary JustAMCPRuntimeTools::runtime_execute_gdscript(const Dictionary &p_ar
 		Array args;
 		args.push_back(base_obj);
 
-		// If the user's snippet doesn't return anything or lacks eval params structure, we call eval
 		const Variant *argptrs[1];
 		argptrs[0] = &args[0];
 
@@ -175,7 +171,7 @@ Dictionary JustAMCPRuntimeTools::runtime_signal_emit(const Dictionary &p_args) {
 
 	Node *base_obj = nullptr;
 	if (editor_plugin && editor_plugin->get_editor_interface() && !target_path.is_empty()) {
-		Node *root = editor_plugin->get_editor_interface()->get_edited_scene_root();
+		Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 		if (root) {
 			if (target_path == "." || target_path == "/root") {
 				base_obj = root;
@@ -339,7 +335,6 @@ Dictionary JustAMCPRuntimeTools::runtime_record_video(const Dictionary &p_args) 
 			if (!dir->dir_exists(".video_recordings")) {
 				dir->make_dir(".video_recordings");
 			} else {
-				// Clear old frames?
 				Ref<DirAccess> old_dir = DirAccess::open(_current_recording_dir);
 				if (old_dir.is_valid()) {
 					old_dir->list_dir_begin();
@@ -358,8 +353,8 @@ Dictionary JustAMCPRuntimeTools::runtime_record_video(const Dictionary &p_args) 
 		_recording_video = true;
 		_recorded_frames = 0;
 
-		if (editor_plugin && editor_plugin->get_editor_interface() && editor_plugin->get_editor_interface()->get_edited_scene_root()) {
-			SceneTree *tree = editor_plugin->get_editor_interface()->get_edited_scene_root()->get_tree();
+		if (editor_plugin && editor_plugin->get_editor_interface() && JustAMCPEditorSceneAccess::get_edited_root()) {
+			SceneTree *tree = JustAMCPEditorSceneAccess::get_edited_root()->get_tree();
 			if (tree && !tree->is_connected("process_frame", callable_mp(this, &JustAMCPRuntimeTools::_on_process_frame))) {
 				tree->connect("process_frame", callable_mp(this, &JustAMCPRuntimeTools::_on_process_frame));
 			}
@@ -377,8 +372,8 @@ Dictionary JustAMCPRuntimeTools::runtime_record_video(const Dictionary &p_args) 
 
 		_recording_video = false;
 
-		if (editor_plugin && editor_plugin->get_editor_interface() && editor_plugin->get_editor_interface()->get_edited_scene_root()) {
-			SceneTree *tree = editor_plugin->get_editor_interface()->get_edited_scene_root()->get_tree();
+		if (editor_plugin && editor_plugin->get_editor_interface() && JustAMCPEditorSceneAccess::get_edited_root()) {
+			SceneTree *tree = JustAMCPEditorSceneAccess::get_edited_root()->get_tree();
 			if (tree && tree->is_connected("process_frame", callable_mp(this, &JustAMCPRuntimeTools::_on_process_frame))) {
 				tree->disconnect("process_frame", callable_mp(this, &JustAMCPRuntimeTools::_on_process_frame));
 			}
@@ -398,21 +393,20 @@ Dictionary JustAMCPRuntimeTools::runtime_record_video(const Dictionary &p_args) 
 }
 
 Dictionary JustAMCPRuntimeTools::execute_tool(const String &p_tool_name, const Dictionary &p_args) {
-	if (p_tool_name == "runtime_execute_gdscript") {
+	if (p_tool_name == "runtime_execute_gdscript" || p_tool_name == "execute_gdscript_snippet") {
 		return runtime_execute_gdscript(p_args);
-	} else if (p_tool_name == "runtime_signal_emit") {
+	}
+	if (p_tool_name == "runtime_signal_emit" || p_tool_name == "signal_emit") {
 		return runtime_signal_emit(p_args);
-	} else if (p_tool_name == "runtime_capture_output") {
+	}
+	if (p_tool_name == "runtime_capture_output") {
 		return runtime_capture_output(p_args);
-	} else if (p_tool_name == "runtime_compare_screenshots") {
+	}
+	if (p_tool_name == "runtime_compare_screenshots") {
 		return runtime_compare_screenshots(p_args);
-	} else if (p_tool_name == "runtime_record_video") {
+	}
+	if (p_tool_name == "runtime_record_video") {
 		return runtime_record_video(p_args);
 	}
-	Dictionary ret;
-	ret["ok"] = false;
-	ret["error"] = "Unknown runtime tool: " + p_tool_name;
-	return ret;
+	return Dictionary();
 }
-
-// #endif // TOOLS_ENABLED

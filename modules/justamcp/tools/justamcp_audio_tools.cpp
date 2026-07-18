@@ -29,11 +29,6 @@
 
 #include "justamcp_audio_tools.h"
 
-#ifdef TOOLS_ENABLED
-#include "editor/editor_interface.h"
-#include "editor/editor_node.h"
-#endif
-
 #include "core/io/resource_loader.h"
 #include "scene/2d/audio_stream_player_2d.h"
 #include "scene/3d/audio_stream_player_3d.h"
@@ -41,63 +36,16 @@
 #include "servers/audio/audio_effect.h"
 #include "servers/audio_server.h"
 
-static inline Dictionary _MCP_SUCCESS(const Variant &data) {
-	Dictionary r;
-	r["ok"] = true;
-	r["result"] = data;
-	return r;
-}
-static inline Dictionary _MCP_ERROR_INTERNAL(int code, const String &msg) {
-	Dictionary e, r;
-	e["code"] = code;
-	e["message"] = msg;
-	r["ok"] = false;
-	r["error"] = e;
-	return r;
-}
-[[maybe_unused]] static inline Dictionary _MCP_ERROR_DATA(int code, const String &msg, const Variant &data) {
-	Dictionary e, r;
-	e["code"] = code;
-	e["message"] = msg;
-	e["data"] = data;
-	r["ok"] = false;
-	r["error"] = e;
-	return r;
-}
-#undef MCP_SUCCESS
-#undef MCP_ERROR
-#undef MCP_ERROR_DATA
-#undef MCP_INVALID_PARAMS
-#undef MCP_NOT_FOUND
-#undef MCP_INTERNAL
-#define MCP_SUCCESS(data) _MCP_SUCCESS(data)
-#define MCP_ERROR(code, msg) _MCP_ERROR_INTERNAL(code, msg)
-#define MCP_ERROR_DATA(code, msg, data) _MCP_ERROR_DATA(code, msg, data)
-#define MCP_INVALID_PARAMS(msg) _MCP_ERROR_INTERNAL(-32602, msg)
-#define MCP_NOT_FOUND(msg) _MCP_ERROR_DATA(-32001, String(msg) + " not found", Dictionary())
-#define MCP_INTERNAL(msg) _MCP_ERROR_INTERNAL(-32603, String("Internal error: ") + msg)
+#include "../justamcp_editor_scene_access.h"
+#include "../justamcp_mcp_tool_macros.h"
 
 void JustAMCPAudioTools::_bind_methods() {}
 
 JustAMCPAudioTools::JustAMCPAudioTools() {}
 JustAMCPAudioTools::~JustAMCPAudioTools() {}
 
-#include "justamcp_tool_executor.h"
-
-Node *JustAMCPAudioTools::_get_edited_root() {
-#ifdef TOOLS_ENABLED
-	if (JustAMCPToolExecutor::get_test_scene_root()) {
-		return JustAMCPToolExecutor::get_test_scene_root();
-	}
-	if (EditorNode::get_singleton() && EditorInterface::get_singleton()) {
-		return EditorInterface::get_singleton()->get_edited_scene_root();
-	}
-#endif
-	return nullptr;
-}
-
 Node *JustAMCPAudioTools::_find_node_by_path(const String &p_path) {
-	Node *root = _get_edited_root();
+	Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 	if (!root) {
 		return nullptr;
 	}
@@ -143,7 +91,7 @@ Dictionary JustAMCPAudioTools::execute_tool(const String &p_tool_name, const Dic
 	err["message"] = "Method not found: " + p_tool_name;
 	Dictionary res;
 	res["error"] = err;
-	return res;
+	return Dictionary();
 }
 
 Dictionary JustAMCPAudioTools::_get_effect_params(Object *p_effect) {
@@ -381,7 +329,7 @@ Dictionary JustAMCPAudioTools::_add_audio_player(const Dictionary &p_params) {
 	String player_name = p_params["name"];
 	String player_type = p_params.has("type") ? String(p_params["type"]) : "AudioStreamPlayer";
 
-	Node *root = _get_edited_root();
+	Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 	if (!root) {
 		return MCP_ERROR(-32000, "No scene is currently open");
 	}
@@ -493,11 +441,11 @@ void JustAMCPAudioTools::_collect_audio_players(Node *p_node, Array &r_result) {
 	if (p_node->is_class("AudioStreamPlayer") || p_node->is_class("AudioStreamPlayer2D") || p_node->is_class("AudioStreamPlayer3D")) {
 		Dictionary info;
 		info["name"] = p_node->get_name();
-		Node *root = _get_edited_root();
+		Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 		if (root) {
 			info["path"] = root->get_path_to(p_node);
 		} else {
-			info["path"] = String(p_node->get_name()); // fallback
+			info["path"] = String(p_node->get_name());
 		}
 		info["type"] = p_node->get_class();
 		info["volume_db"] = p_node->get("volume_db");

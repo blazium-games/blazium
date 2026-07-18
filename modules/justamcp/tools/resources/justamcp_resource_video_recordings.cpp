@@ -98,4 +98,4 @@ Dictionary JustAMCPResourceVideoRecordings::read_resource(const String &p_uri) {
 	return result;
 }
 
-#endif // TOOLS_ENABLED
+#endif

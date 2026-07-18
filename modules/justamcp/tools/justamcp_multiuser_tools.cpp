@@ -54,8 +54,6 @@ Dictionary JustAMCPMultiuserTools::multiuser_get_status(const Dictionary &p_args
 	result["is_connected"] = plugin->is_session_connected();
 	result["local_peer_id"] = plugin->get_local_peer_id();
 
-	// We could grab more depth, but EditorPlugin exposes basic session status natively.
-	// If the AI needs to know the specific peer count, we can expose get_network() from plugin but currently it's internal.
 	return result;
 }
 
@@ -111,5 +109,21 @@ Dictionary JustAMCPMultiuserTools::multiuser_trigger_autowork(const Dictionary &
 	return result;
 }
 
-#endif // TOOLS_ENABLED
-#endif // MODULE_MULTIUSER_EDITOR_ENABLED
+Dictionary JustAMCPMultiuserTools::execute_tool(const String &p_tool_name, const Dictionary &p_args) {
+	if (p_tool_name == "multiuser_get_status") {
+		return multiuser_get_status(p_args);
+	}
+	if (p_tool_name == "multiuser_send_chat") {
+		return multiuser_send_chat(p_args);
+	}
+	if (p_tool_name == "multiuser_kick_peer") {
+		return multiuser_kick_peer(p_args);
+	}
+	if (p_tool_name == "multiuser_trigger_autowork") {
+		return multiuser_trigger_autowork(p_args);
+	}
+	return Dictionary();
+}
+
+#endif
+#endif

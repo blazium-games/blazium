@@ -41,4 +41,4 @@ void JustAMCPResource::_bind_methods() {
 JustAMCPResource::JustAMCPResource() {}
 JustAMCPResource::~JustAMCPResource() {}
 
-#endif // TOOLS_ENABLED
+#endif

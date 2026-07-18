@@ -34,12 +34,21 @@
 #include "../justamcp_server.h"
 #include "core/config/project_settings.h"
 #include "core/crypto/crypto_core.h"
+#include "core/os/os.h"
+#include "core/os/thread.h"
 #include "core/os/time.h"
+
+static int _justamcp_task_result_max_wait_ms() {
+	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/task_result_max_wait_ms")) {
+		return int(GLOBAL_GET("blazium/justamcp/task_result_max_wait_ms"));
+	}
+	return 120000;
+}
 
 void JustAMCPTaskManager::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("list_tasks", "cursor"), &JustAMCPTaskManager::list_tasks, DEFVAL(""));
 	ClassDB::bind_method(D_METHOD("get_task", "task_id"), &JustAMCPTaskManager::get_task);
-	ClassDB::bind_method(D_METHOD("get_task_result", "task_id"), &JustAMCPTaskManager::get_task_result);
+	ClassDB::bind_method(D_METHOD("get_task_result", "task_id", "wait"), &JustAMCPTaskManager::get_task_result, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("cancel_task", "task_id"), &JustAMCPTaskManager::cancel_task);
 }
 
@@ -175,7 +184,7 @@ Dictionary JustAMCPTaskManager::get_task(const String &p_task_id) {
 	return result;
 }
 
-Dictionary JustAMCPTaskManager::get_task_result(const String &p_task_id) {
+Dictionary JustAMCPTaskManager::get_task_result(const String &p_task_id, bool p_wait) {
 	bool wait_for_terminal = false;
 	{
 		MutexLock lock(tasks_mutex);
@@ -188,20 +197,56 @@ Dictionary JustAMCPTaskManager::get_task_result(const String &p_task_id) {
 			return err;
 		}
 		if (!_is_terminal_status(tasks[p_task_id]->status)) {
+			if (!p_wait) {
+				lock.temp_unlock();
+				return get_task(p_task_id);
+			}
 			wait_for_terminal = true;
 		}
 	}
 
 	if (wait_for_terminal) {
-		Semaphore *ready = nullptr;
+		int timeout_ms = _justamcp_task_result_max_wait_ms();
 		{
 			MutexLock lock(tasks_mutex);
-			if (tasks.has(p_task_id) && tasks[p_task_id]) {
-				ready = &tasks[p_task_id]->result_ready;
+			if (tasks.has(p_task_id) && tasks[p_task_id] && tasks[p_task_id]->ttl_ms > 0) {
+				const uint64_t now_usec = Time::get_singleton()->get_ticks_usec();
+				const uint64_t age_ms = (now_usec - tasks[p_task_id]->created_at_usec) / 1000;
+				const int remaining_ms = tasks[p_task_id]->ttl_ms - int(age_ms);
+				if (remaining_ms > 0 && remaining_ms < timeout_ms) {
+					timeout_ms = remaining_ms;
+				}
 			}
 		}
-		if (ready) {
-			ready->wait();
+
+		bool timed_out = false;
+#ifdef THREADS_ENABLED
+		JustAMCPTaskRecord *task_ptr = nullptr;
+		{
+			MutexLock lock(tasks_mutex);
+			if (tasks.has(p_task_id)) {
+				task_ptr = tasks[p_task_id];
+			}
+		}
+		if (task_ptr) {
+			THREADING_NAMESPACE::unique_lock<THREADING_NAMESPACE::mutex> wait_lock(task_ptr->wait_mutex);
+			timed_out = !task_ptr->wait_cv.wait_for(wait_lock, std::chrono::milliseconds(timeout_ms), [&]() {
+				MutexLock lock(tasks_mutex);
+				if (!tasks.has(p_task_id) || !tasks[p_task_id]) {
+					return true;
+				}
+				return _is_terminal_status(tasks[p_task_id]->status) || tasks[p_task_id]->terminal_notified;
+			});
+		}
+#else
+		timed_out = false;
+#endif
+		if (timed_out) {
+			Dictionary err;
+			err["ok"] = false;
+			err["error_code"] = -32003;
+			err["error"] = "Task result wait timed out.";
+			return err;
 		}
 	}
 
@@ -279,6 +324,13 @@ void JustAMCPTaskManager::complete_task(const String &p_task_id, const Dictionar
 	task->last_updated_at = _iso_timestamp_now();
 	task->is_terminal = true;
 	task->result_ready.post();
+#ifdef THREADS_ENABLED
+	task->terminal_notified = true;
+	{
+		THREADING_NAMESPACE::lock_guard<THREADING_NAMESPACE::mutex> wait_lock(task->wait_mutex);
+		task->wait_cv.notify_all();
+	}
+#endif
 	lock.temp_unlock();
 	_notify_status(p_task_id);
 }
@@ -302,6 +354,13 @@ void JustAMCPTaskManager::fail_task(const String &p_task_id, const String &p_err
 	err["message"] = p_error;
 	task->stored_error = err;
 	task->result_ready.post();
+#ifdef THREADS_ENABLED
+	task->terminal_notified = true;
+	{
+		THREADING_NAMESPACE::lock_guard<THREADING_NAMESPACE::mutex> wait_lock(task->wait_mutex);
+		task->wait_cv.notify_all();
+	}
+#endif
 	lock.temp_unlock();
 	_notify_status(p_task_id);
 }
@@ -331,6 +390,13 @@ void JustAMCPTaskManager::cancel_task_execution(const String &p_task_id, const S
 	stored["isError"] = true;
 	task->stored_result = stored;
 	task->result_ready.post();
+#ifdef THREADS_ENABLED
+	task->terminal_notified = true;
+	{
+		THREADING_NAMESPACE::lock_guard<THREADING_NAMESPACE::mutex> wait_lock(task->wait_mutex);
+		task->wait_cv.notify_all();
+	}
+#endif
 	lock.temp_unlock();
 	_notify_status(p_task_id);
 }
@@ -351,4 +417,15 @@ String JustAMCPTaskManager::get_progress_token(const String &p_task_id) const {
 	return tasks[p_task_id]->progress_token;
 }
 
-#endif // TOOLS_ENABLED
+#ifdef TESTS_ENABLED
+void JustAMCPTaskManager::test_backdate_task_created_usec(const String &p_task_id, uint64_t p_age_usec) {
+	MutexLock lock(tasks_mutex);
+	if (!tasks.has(p_task_id) || !tasks[p_task_id]) {
+		return;
+	}
+	const uint64_t now_usec = Time::get_singleton()->get_ticks_usec();
+	tasks[p_task_id]->created_at_usec = now_usec > p_age_usec ? now_usec - p_age_usec : 0;
+}
+#endif
+
+#endif

@@ -49,4 +49,4 @@ public:
 	~JustAMCPPromptBlaziumOptimization();
 };
 
-#endif // TOOLS_ENABLED
+#endif

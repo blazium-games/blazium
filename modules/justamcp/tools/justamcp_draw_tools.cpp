@@ -29,16 +29,15 @@
 
 #include "justamcp_draw_tools.h"
 #include "../justamcp_editor_plugin.h"
+#include "../justamcp_editor_scene_access.h"
 
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "modules/gdscript/gdscript.h"
 #include "scene/gui/control.h"
 
-// #ifdef TOOLS_ENABLED
 #include "editor/editor_interface.h"
 #include "editor/editor_undo_redo_manager.h"
-// #endif
 
 void JustAMCPDrawTools::_bind_methods() {}
 
@@ -79,10 +78,7 @@ Dictionary JustAMCPDrawTools::execute_tool(const String &p_tool_name, const Dict
 		return control_draw_recipe(p_args);
 	}
 
-	Dictionary ret;
-	ret["ok"] = false;
-	ret["error"] = "Unknown draw tool: " + p_tool_name;
-	return ret;
+	return Dictionary();
 }
 
 Dictionary JustAMCPDrawTools::control_draw_recipe(const Dictionary &p_args) {
@@ -99,7 +95,7 @@ Dictionary JustAMCPDrawTools::control_draw_recipe(const Dictionary &p_args) {
 
 	Node *scene_root = nullptr;
 	if (editor_plugin && editor_plugin->get_editor_interface()) {
-		scene_root = editor_plugin->get_editor_interface()->get_edited_scene_root();
+		scene_root = JustAMCPEditorSceneAccess::get_edited_root();
 	}
 
 	if (!scene_root) {

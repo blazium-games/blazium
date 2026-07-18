@@ -49,4 +49,4 @@ public:
 	~JustAMCPPromptAutoworkFailureAnalyzer();
 };
 
-#endif // TOOLS_ENABLED
+#endif

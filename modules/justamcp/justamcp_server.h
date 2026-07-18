@@ -34,6 +34,7 @@
 
 #include "core/os/mutex.h"
 #include "core/templates/hash_map.h"
+#include "core/templates/hash_set.h"
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 #include "core/os/semaphore.h"
@@ -43,31 +44,19 @@
 #endif
 
 #include "core/string/print_string.h"
+#include "justamcp_notification_bus.h"
+#include "mcp_tool_queue.h"
+#include "mcp_tool_queue_entry.h"
+
+class JustAMCPNotificationBus;
 
 class MCPSessionManager;
-
-struct MCPToolQueueEntry {
-	Variant request_id;
-	String tool_name;
-	Dictionary args;
-	Ref<HTTPResponse> stateless_response;
-	Dictionary rpc_result;
-	Semaphore done_semaphore;
-	bool has_stateless_response = false;
-	String task_id;
-	String progress_token;
-	bool is_task_augmented = false;
-	bool pending_task_dispatch = false;
-	int pending_task_ttl_ms = 0;
-	int pending_task_poll_interval_ms = 0;
-	bool cancel_requested = false;
-	String session_id;
-	int sse_connection_id = -1;
-};
 
 struct JustAMCPActiveProgressContext {
 	String task_id;
 	Variant request_id;
+	String session_id;
+	int connection_id = -1;
 	uint64_t last_emit_usec = 0;
 };
 
@@ -75,21 +64,33 @@ class JustAMCPServer : public Node {
 	GDCLASS(JustAMCPServer, Node);
 
 	friend class MCPSessionManager;
+	friend class JustAMCPJsonRpcTransport;
+	friend class JustAMCPJsonRpcRouter;
+	friend class JustAMCPNotificationBus;
 
 private:
 	MCPSessionManager *session_manager = nullptr;
+	JustAMCPNotificationBus notification_bus;
 	String transport_negotiated_protocol = "2024-11-05";
-	Mutex tool_queue_mutex;
-	Vector<MCPToolQueueEntry *> tool_queue;
-	MCPToolQueueEntry *current_tool_entry = nullptr;
-	bool tool_queue_processing = false;
-	static const int TOOL_QUEUE_MAX = 32;
+	MCPToolQueue mcp_tool_queue;
 
-	Mutex progress_mutex;
+	Mutex routing_mutex;
 	HashMap<String, JustAMCPActiveProgressContext> active_progress_tokens;
+	HashMap<String, JustAMCPActiveProgressContext> active_task_routes;
 
 	int current_sse_connection_id = -1;
 	bool server_started = false;
+	int active_listening_port = -1;
+	HashMap<String, Vector<uint64_t>> session_enqueue_timestamps_usec;
+	Mutex session_enqueue_rate_mutex;
+
+	HashSet<String> completed_tool_request_tombstones;
+	Vector<String> completed_tool_request_tombstone_order;
+	static const int COMPLETED_TOOL_REQUEST_TOMBSTONE_MAX = 2048;
+	mutable Mutex completed_tool_request_mutex;
+#ifdef TESTS_ENABLED
+	mutable Dictionary test_last_send_tool_result;
+#endif
 	String minimum_log_level = "info";
 	Mutex minimum_log_level_mutex;
 
@@ -101,11 +102,19 @@ private:
 	class JustAMCPPromptExecutor *prompt_executor = nullptr;
 	class JustAMCPResourceExecutor *resource_executor = nullptr;
 	class JustAMCPTaskManager *task_manager = nullptr;
+#ifdef TOOLS_ENABLED
+	class JustAMCPToolExecutor *headless_tool_executor = nullptr;
+	void _on_headless_tool_requested(const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args);
+	void _ensure_headless_tool_executor();
+#endif
+	HashSet<String> subscribed_resources;
+	mutable Mutex subscribed_resources_mutex;
 
 	void _setup_settings();
 	void _start_server();
 	void _stop_server();
 	void _on_settings_changed();
+	int _resolve_listening_port_from_settings() const;
 
 	static JustAMCPServer *singleton;
 	Vector<String> engine_logs;
@@ -129,16 +138,28 @@ private:
 	void _send_sse_routed(const String &p_json_string, const String &p_session_id, int p_connection_id);
 	void _on_sse_connection_opened(int p_connection_id, const String &p_path, const Dictionary &p_headers);
 	void _on_sse_connection_closed(int p_connection_id);
+	void _deferred_post_sse_json_rpc(int p_connection_id, const String &p_session_id, const Dictionary &p_payload);
+	void _deferred_legacy_message_json_rpc(const String &p_body, const String &p_session_id_param);
+	void _deferred_held_json_rpc(int p_client_id, const String &p_body, const String &p_session_id, const Ref<HTTPResponse> &p_response);
+	void _deferred_sse_replay(int p_connection_id, const String &p_last_event_id);
 	bool _validate_mcp_oauth(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
 	MCPToolQueueEntry *_enqueue_tool_request(const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args, Ref<HTTPResponse> p_response, Dictionary &r_queue_full_error, const Dictionary &p_options = Dictionary());
 	void _dispatch_task_augmented_tools_call(const Variant &p_request_id);
 	void _process_pending_tools();
+	void _fail_and_remove_task_dispatch_entry(MCPToolQueueEntry *p_entry);
+	void _complete_tool_entry(MCPToolQueueEntry *p_entry, const Dictionary &p_rpc_result);
 	void _complete_current_tool_request(const Dictionary &p_rpc_result);
 	void _complete_task_tool_entry(MCPToolQueueEntry *p_entry, bool p_success, const Variant &p_result, const String &p_error);
+	void _insert_tool_result_tombstone(const String &p_tombstone_key);
+	bool _has_tool_result_tombstone(const String &p_tombstone_key) const;
+	void _enforce_in_flight_cancel_deadline(const Variant &p_request_id);
+	void _deferred_complete_tool_dict(const Variant &p_request_id, const Dictionary &p_result);
 	Dictionary _format_tool_result_dict(bool p_success, const Variant &p_result, const String &p_error) const;
 	Dictionary _build_create_task_result(const String &p_task_id) const;
 	void _register_progress_token(const String &p_token, const String &p_task_id, const Variant &p_request_id);
 	void _unregister_progress_token(const String &p_token);
+	void _register_task_route(const String &p_task_id, const String &p_session_id, int p_connection_id);
+	void _unregister_task_route(const String &p_task_id);
 	void _clear_tool_queue();
 	bool _wait_for_stateless_tool_entry(MCPToolQueueEntry *p_entry, int p_timeout_ms);
 	Dictionary _stateless_tool_timeout_error(const Variant &p_request_id) const;
@@ -162,22 +183,55 @@ public:
 	void broadcast_tools_list_changed();
 	void broadcast_resources_list_changed();
 	void broadcast_resource_updated(const String &p_uri);
+	void subscribe_resource(const String &p_uri);
+	void unsubscribe_resource(const String &p_uri);
+	bool is_resource_subscribed(const String &p_uri) const;
 	void send_log_message(const String &p_level, const String &p_logger, const Variant &p_data = Variant());
 	void send_progress_notification(const String &p_token, double p_progress, double p_total, const String &p_message);
 	void report_tool_progress(const String &p_token, double p_progress, double p_total, const String &p_message);
 	void broadcast_task_status(const String &p_task_id);
-	void _on_request_cancelled(const Variant &p_request_id, const String &p_reason);
+	void _on_request_cancelled(const Variant &p_request_id, const String &p_reason, const String &p_caller_session_id = String());
 	bool is_current_tool_cancel_requested() const;
+	bool is_tool_cancel_requested(const Variant &p_request_id) const;
 	String get_current_progress_token() const;
+	String get_tool_progress_token(const Variant &p_request_id) const;
 	String get_current_task_id() const;
 	bool is_task_cancel_requested(const String &p_task_id) const;
 	void request_task_queue_cancel(const String &p_task_id);
 
 	static JustAMCPServer *get_singleton();
 	Vector<String> get_engine_logs();
+	Dictionary get_engine_logs_page(const String &p_cursor);
 	Dictionary get_mcp_notification_log_page(const String &p_cursor);
 
+#ifdef TESTS_ENABLED
+	MCPToolQueueEntry *test_enqueue_tool_request(const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args, Dictionary &r_queue_full_error);
+	void test_set_in_flight_entries(MCPToolQueueEntry *p_write, MCPToolQueueEntry *p_readonly);
+	bool test_get_tool_queue_processing() const;
+	void test_stop_server();
+	void test_clear_tool_queue();
+	MCPToolQueueEntry *test_get_in_flight_write() const;
+	MCPToolQueueEntry *test_get_in_flight_readonly() const;
+	static int test_tool_queue_max() { return MCPToolQueue::max_size(); }
+	void test_dispatch_task_augmented_tools_call(const Variant &p_request_id) { _dispatch_task_augmented_tools_call(p_request_id); }
+	void test_process_pending_tools() { _process_pending_tools(); }
+	void test_enforce_in_flight_cancel_deadline(const Variant &p_request_id) { _enforce_in_flight_cancel_deadline(p_request_id); }
+	void test_complete_current_tool_request(const Dictionary &p_rpc_result) { _complete_current_tool_request(p_rpc_result); }
+	void test_insert_tool_result_tombstone(const String &p_tombstone_key) { _insert_tool_result_tombstone(p_tombstone_key); }
+	void test_register_task_route(const String &p_task_id, const String &p_session_id, int p_connection_id);
+	bool test_get_active_task_route(const String &p_task_id, String &r_session_id, int &r_connection_id) const;
+	void test_set_current_sse_connection_id(int p_connection_id);
+	int test_count_notification_broadcast_targets() const;
+	MCPSessionManager *test_get_session_manager() const;
+	Dictionary test_peek_last_send_tool_result() const;
+	void test_clear_last_send_tool_result();
+	bool test_validate_mcp_oauth(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
+	void test_handle_mcp_stateless_post(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
+	void test_handle_message_post(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
+#endif
+
 	bool is_server_started() const { return server_started; }
+	int get_pending_tool_queue_size();
 
 	JustAMCPServer();
 	~JustAMCPServer();

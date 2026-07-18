@@ -49,4 +49,4 @@ public:
 	~JustAMCPPromptBlaziumSceneArchitect();
 };
 
-#endif // TOOLS_ENABLED
+#endif

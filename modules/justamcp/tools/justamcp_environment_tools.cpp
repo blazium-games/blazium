@@ -29,6 +29,7 @@
 
 #include "justamcp_environment_tools.h"
 #include "../justamcp_editor_plugin.h"
+#include "../justamcp_editor_scene_access.h"
 
 #include "scene/3d/world_environment.h"
 #include "scene/main/node.h"
@@ -37,22 +38,17 @@
 #include "scene/resources/environment.h"
 #include "scene/resources/sky.h"
 
-// #ifdef TOOLS_ENABLED
 #include "editor/editor_interface.h"
 #include "editor/editor_undo_redo_manager.h"
-// #endif
 
 void JustAMCPEnvironmentTools::_bind_methods() {}
 
 Dictionary JustAMCPEnvironmentTools::execute_tool(const String &p_tool_name, const Dictionary &p_args) {
-	if (p_tool_name == "create_environment") {
+	if (p_tool_name == "create_environment" || p_tool_name == "environment_create") {
 		return create_environment(p_args);
 	}
 
-	Dictionary ret;
-	ret["ok"] = false;
-	ret["error"] = "Unknown environment tool: " + p_tool_name;
-	return ret;
+	return Dictionary();
 }
 
 Dictionary JustAMCPEnvironmentTools::create_environment(const Dictionary &p_args) {
@@ -62,7 +58,7 @@ Dictionary JustAMCPEnvironmentTools::create_environment(const Dictionary &p_args
 
 	Node *scene_root = nullptr;
 	if (editor_plugin && editor_plugin->get_editor_interface()) {
-		scene_root = editor_plugin->get_editor_interface()->get_edited_scene_root();
+		scene_root = JustAMCPEditorSceneAccess::get_edited_root();
 	}
 
 	if (!scene_root) {
@@ -136,7 +132,6 @@ Dictionary JustAMCPEnvironmentTools::create_environment(const Dictionary &p_args
 		env->set_volumetric_fog_enabled(true);
 		env->set_volumetric_fog_density(0.03);
 	} else {
-		// Default/Clear
 		if (sky_mat.is_valid()) {
 			sky_mat->set_sky_top_color(Color(0.38, 0.45, 0.55));
 			sky_mat->set_sky_horizon_color(Color(0.65, 0.67, 0.7));

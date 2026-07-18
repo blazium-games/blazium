@@ -30,6 +30,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_resource_project_file.h"
+#include "../../justamcp_read_limits.h"
 #include "core/io/file_access.h"
 
 void JustAMCPResourceProjectFile::_bind_methods() {}
@@ -38,7 +39,7 @@ JustAMCPResourceProjectFile::JustAMCPResourceProjectFile() {}
 JustAMCPResourceProjectFile::~JustAMCPResourceProjectFile() {}
 
 String JustAMCPResourceProjectFile::get_uri() const {
-	return "res://{path}"; // Wildcard binding!
+	return "res://{path}";
 }
 
 String JustAMCPResourceProjectFile::get_name() const {
@@ -46,7 +47,7 @@ String JustAMCPResourceProjectFile::get_name() const {
 }
 
 bool JustAMCPResourceProjectFile::is_template() const {
-	return true; // We flag as a template explicitly!
+	return true;
 }
 
 Dictionary JustAMCPResourceProjectFile::get_schema() const {
@@ -63,9 +64,13 @@ Dictionary JustAMCPResourceProjectFile::read_resource(const String &p_uri) {
 
 	if (p_uri.begins_with("res://")) {
 		if (FileAccess::exists(p_uri)) {
+			int64_t file_size = 0;
+			if (!justamcp_file_within_read_limit(p_uri, JUSTAMCP_MAX_SYNC_READ_BYTES, file_size)) {
+				return justamcp_read_limit_error(p_uri, file_size, JUSTAMCP_MAX_SYNC_READ_BYTES);
+			}
 			Ref<FileAccess> file = FileAccess::open(p_uri, FileAccess::READ);
 			if (file.is_valid()) {
-				String raw_text = file->get_as_text(); // Simple text reader
+				String raw_text = file->get_as_text();
 				result["ok"] = true;
 
 				Array contents;
@@ -91,4 +96,4 @@ Dictionary JustAMCPResourceProjectFile::read_resource(const String &p_uri) {
 	return result;
 }
 
-#endif // TOOLS_ENABLED
+#endif

@@ -150,4 +150,4 @@ Dictionary JustAMCPPrompt::_make_empty_completion() {
 	return completion;
 }
 
-#endif // TOOLS_ENABLED
+#endif

@@ -47,23 +47,35 @@ namespace TestProjectSettings {
 // TODO: Handle some cases failing on release builds. See: https://github.com/godotengine/godot/pull/88452
 #ifdef TOOLS_ENABLED
 TEST_CASE("[ProjectSettings] Get existing setting") {
-	CHECK(ProjectSettings::get_singleton()->has_setting("application/config/name"));
+	ProjectSettings *ps = ProjectSettings::get_singleton();
+	const Variant saved_name = ps->get_setting("application/config/name");
+	ps->set_setting("application/config/name", "ProjectSettings Test");
 
-	Variant variant = ProjectSettings::get_singleton()->get_setting("application/config/name");
+	CHECK(ps->has_setting("application/config/name"));
+
+	Variant variant = ps->get_setting("application/config/name");
 	CHECK_EQ(variant.get_type(), Variant::STRING);
 
 	String name = variant;
-	CHECK_EQ(name, "GDScript Integration Test Suite");
+	CHECK_EQ(name, "ProjectSettings Test");
+
+	ps->set_setting("application/config/name", saved_name);
 }
 
 TEST_CASE("[ProjectSettings] Default value is ignored if setting exists") {
-	CHECK(ProjectSettings::get_singleton()->has_setting("application/config/name"));
+	ProjectSettings *ps = ProjectSettings::get_singleton();
+	const Variant saved_name = ps->get_setting("application/config/name");
+	ps->set_setting("application/config/name", "ProjectSettings Test");
 
-	Variant variant = ProjectSettings::get_singleton()->get_setting("application/config/name", "SomeDefaultValue");
+	CHECK(ps->has_setting("application/config/name"));
+
+	Variant variant = ps->get_setting("application/config/name", "SomeDefaultValue");
 	CHECK_EQ(variant.get_type(), Variant::STRING);
 
 	String name = variant;
-	CHECK_EQ(name, "GDScript Integration Test Suite");
+	CHECK_EQ(name, "ProjectSettings Test");
+
+	ps->set_setting("application/config/name", saved_name);
 }
 #endif // TOOLS_ENABLED
 
@@ -90,21 +102,28 @@ TEST_CASE("[ProjectSettings] Non existing setting should return default value") 
 }
 
 TEST_CASE("[ProjectSettings] Set value should be returned when retrieved") {
-	CHECK_FALSE(ProjectSettings::get_singleton()->has_setting("my_custom_setting"));
+	const String custom_setting = "my_custom_setting";
+	if (ProjectSettings::get_singleton()->has_setting(custom_setting)) {
+		ProjectSettings::get_singleton()->clear(custom_setting);
+	}
 
-	Variant variant = ProjectSettings::get_singleton()->get_setting("my_custom_setting");
+	CHECK_FALSE(ProjectSettings::get_singleton()->has_setting(custom_setting));
+
+	Variant variant = ProjectSettings::get_singleton()->get_setting(custom_setting);
 	CHECK_EQ(variant.get_type(), Variant::NIL);
 
-	ProjectSettings::get_singleton()->set_setting("my_custom_setting", true);
-	CHECK(ProjectSettings::get_singleton()->has_setting("my_custom_setting"));
+	ProjectSettings::get_singleton()->set_setting(custom_setting, true);
+	CHECK(ProjectSettings::get_singleton()->has_setting(custom_setting));
 
-	variant = ProjectSettings::get_singleton()->get_setting("my_custom_setting");
+	variant = ProjectSettings::get_singleton()->get_setting(custom_setting);
 	CHECK_EQ(variant.get_type(), Variant::BOOL);
 
 	bool value = variant;
 	CHECK_EQ(true, value);
 
-	CHECK(ProjectSettings::get_singleton()->has_setting("my_custom_setting"));
+	CHECK(ProjectSettings::get_singleton()->has_setting(custom_setting));
+	ProjectSettings::get_singleton()->clear(custom_setting);
+	CHECK_FALSE(ProjectSettings::get_singleton()->has_setting(custom_setting));
 }
 
 TEST_CASE("[ProjectSettings] localize_path") {

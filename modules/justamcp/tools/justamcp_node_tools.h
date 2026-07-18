@@ -40,7 +40,6 @@ class JustAMCPNodeTools : public Object {
 private:
 	EditorPlugin *editor_plugin = nullptr;
 
-	Node *_get_edited_root();
 	Node *_find_node_by_path(const String &p_path);
 	void _set_owner_recursive(Node *p_node, Node *p_owner);
 

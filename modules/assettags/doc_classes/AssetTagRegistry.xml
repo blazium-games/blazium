@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AssetTagRegistry" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Reverse index of asset paths by tag.
+	</brief_description>
+	<description>
+		Stores and queries per-asset tag assignments for editor search and MCP tools.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="abort_batch">
+			<return type="void" />
+			<description>
+				Discards the active index batch without persisting pending path changes.
+			</description>
+		</method>
+		<method name="add_tags_to_asset">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="tags" type="PackedStringArray" />
+			<description>
+				Adds [param tags] to the asset at [param path]. Returns [constant OK] on success, or an [enum Error] if the update fails.
+			</description>
+		</method>
+		<method name="asset_matches_tag_filter" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="tag_tokens" type="PackedStringArray" />
+			<param index="2" name="require_all" type="bool" default="true" />
+			<description>
+				Returns [code]true[/code] when the asset at [param path] matches [param tag_tokens]. When [param require_all] is [code]true[/code], every token must match.
+			</description>
+		</method>
+		<method name="begin_batch">
+			<return type="void" />
+			<description>
+				Starts a nested index batch so multiple asset tag mutations can be committed together.
+			</description>
+		</method>
+		<method name="cancel_opened_batch">
+			<return type="void" />
+			<description>
+				Aborts every nested open batch and restores the previous index state.
+			</description>
+		</method>
+		<method name="commit_batch">
+			<return type="int" enum="Error" />
+			<description>
+				Ends one batch level and persists dirty index paths when the outermost batch closes. Returns [constant OK] on success, or an [enum Error] if saving fails.
+			</description>
+		</method>
+		<method name="find_assets_by_tag" qualifiers="const">
+			<return type="PackedStringArray" />
+			<param index="0" name="tag" type="String" />
+			<param index="1" name="match_parent" type="bool" default="true" />
+			<description>
+				Returns asset paths tagged with [param tag]. When [param match_parent] is [code]true[/code], hierarchical children of [param tag] also match.
+			</description>
+		</method>
+		<method name="get_indexed_paths" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				Returns every asset path currently present in the tag index.
+			</description>
+		</method>
+		<method name="get_tags_for_asset" qualifiers="const">
+			<return type="PackedStringArray" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Returns the tags assigned to the asset at [param path].
+			</description>
+		</method>
+		<method name="get_unused_tags" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				Returns dictionary tags that are not assigned to any indexed asset.
+			</description>
+		</method>
+		<method name="load">
+			<return type="int" enum="Error" />
+			<description>
+				Loads the asset tag index from disk. Returns [constant OK] on success, or an [enum Error] if the index cannot be read.
+			</description>
+		</method>
+		<method name="prune_removed_paths">
+			<return type="void" />
+			<description>
+				Immediately removes index entries whose asset paths no longer exist on disk.
+			</description>
+		</method>
+		<method name="remove_tags_from_asset">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="tags" type="PackedStringArray" />
+			<description>
+				Removes [param tags] from the asset at [param path]. Returns [constant OK] on success, or an [enum Error] if the update fails.
+			</description>
+		</method>
+		<method name="rename_asset_path">
+			<return type="bool" />
+			<param index="0" name="old_path" type="String" />
+			<param index="1" name="new_path" type="String" />
+			<description>
+				Moves indexed tags from [param old_path] to [param new_path]. Returns [code]true[/code] when the path was remapped.
+			</description>
+		</method>
+		<method name="rescan">
+			<return type="int" enum="Error" />
+			<description>
+				Rebuilds the reverse lookup from the current index and persists it. Returns [constant OK] on success, or an [enum Error] if saving fails.
+			</description>
+		</method>
+		<method name="save">
+			<return type="int" enum="Error" />
+			<description>
+				Persists the asset tag index to disk. Returns [constant OK] on success, or an [enum Error] if writing fails.
+			</description>
+		</method>
+		<method name="schedule_prune_removed_paths">
+			<return type="void" />
+			<description>
+				Schedules a debounced call to [method prune_removed_paths].
+			</description>
+		</method>
+		<method name="search_assets" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="tags" type="PackedStringArray" />
+			<param index="1" name="type_filter" type="String" default="&quot;&quot;" />
+			<param index="2" name="path_glob" type="String" default="&quot;&quot;" />
+			<param index="3" name="path_regex" type="String" default="&quot;&quot;" />
+			<param index="4" name="require_all" type="bool" default="true" />
+			<description>
+				Searches indexed assets by [param tags] with optional type and path filters. Returns a result dictionary containing matching paths and metadata.
+			</description>
+		</method>
+		<method name="set_tags_for_asset">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="tags" type="PackedStringArray" />
+			<description>
+				Replaces all tags on the asset at [param path] with [param tags]. Returns [constant OK] on success, or an [enum Error] if the update fails.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="asset_tags_batch_changed">
+			<param index="0" name="paths" type="PackedStringArray" />
+			<description>
+				Emitted after a batch commit with the list of asset [param paths] whose tags changed.
+			</description>
+		</signal>
+		<signal name="asset_tags_changed">
+			<param index="0" name="path" type="String" />
+			<description>
+				Emitted when tags change for a single asset [param path] outside a batch.
+			</description>
+		</signal>
+		<signal name="index_reloaded">
+			<description>
+				Emitted when the asset tag index is reloaded from disk.
+			</description>
+		</signal>
+	</signals>
+</class>

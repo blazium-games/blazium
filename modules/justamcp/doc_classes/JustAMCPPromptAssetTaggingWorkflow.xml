@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPPromptAssetTaggingWorkflow" inherits="JustAMCPPrompt" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		MCP prompt that guides AI agents through asset tagging workflows.
+	</brief_description>
+	<description>
+		Provides a step-by-step workflow for listing project tags, assigning tags to assets, and verifying assignments using JustAMCP asset tag tools and resources.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

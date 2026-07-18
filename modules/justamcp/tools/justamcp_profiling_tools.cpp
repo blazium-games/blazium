@@ -30,42 +30,7 @@
 #include "justamcp_profiling_tools.h"
 #include "main/performance.h"
 
-// Helper macros for returning errors analogous to base_command.gd
-static inline Dictionary _MCP_SUCCESS(const Variant &data) {
-	Dictionary r;
-	r["ok"] = true;
-	r["result"] = data;
-	return r;
-}
-static inline Dictionary _MCP_ERROR_INTERNAL(int code, const String &msg) {
-	Dictionary e, r;
-	e["code"] = code;
-	e["message"] = msg;
-	r["ok"] = false;
-	r["error"] = e;
-	return r;
-}
-[[maybe_unused]] static inline Dictionary _MCP_ERROR_DATA(int code, const String &msg, const Variant &data) {
-	Dictionary e, r;
-	e["code"] = code;
-	e["message"] = msg;
-	e["data"] = data;
-	r["ok"] = false;
-	r["error"] = e;
-	return r;
-}
-#undef MCP_SUCCESS
-#undef MCP_ERROR
-#undef MCP_ERROR_DATA
-#undef MCP_INVALID_PARAMS
-#undef MCP_NOT_FOUND
-#undef MCP_INTERNAL
-#define MCP_SUCCESS(data) return _MCP_SUCCESS(data)
-#define MCP_ERROR(code, msg) return _MCP_ERROR_INTERNAL(code, msg)
-#define MCP_ERROR_DATA(code, msg, data) return _MCP_ERROR_DATA(code, msg, data)
-#define MCP_INVALID_PARAMS(msg) return _MCP_ERROR_INTERNAL(-32602, msg)
-#define MCP_NOT_FOUND(msg) return _MCP_ERROR_DATA(-32001, String(msg) + " not found", Dictionary())
-#define MCP_INTERNAL(msg) return _MCP_ERROR_INTERNAL(-32603, String("Internal error: ") + msg)
+#include "../justamcp_mcp_tool_macros.h"
 
 void JustAMCPProfilingTools::_bind_methods() {}
 
@@ -89,14 +54,14 @@ Dictionary JustAMCPProfilingTools::execute_tool(const String &p_tool_name, const
 	err["message"] = "Method not found: " + p_tool_name;
 	Dictionary res;
 	res["error"] = err;
-	return res;
+	return Dictionary();
 }
 
 Dictionary JustAMCPProfilingTools::_get_performance_monitors(const Dictionary &p_params) {
 	Dictionary monitors;
 	Performance *perf = Performance::get_singleton();
 	if (!perf) {
-		MCP_ERROR(-32603, "Performance singleton is not available");
+		return MCP_ERROR(-32603, "Performance singleton is not available");
 	}
 
 	monitors["fps"] = perf->get_monitor(Performance::TIME_FPS);
@@ -142,18 +107,18 @@ Dictionary JustAMCPProfilingTools::_get_performance_monitors(const Dictionary &p
 		Dictionary res;
 		res["monitors"] = filtered;
 		res["category"] = category;
-		MCP_SUCCESS(res);
+		return MCP_SUCCESS(res);
 	}
 
 	Dictionary res;
 	res["monitors"] = monitors;
-	MCP_SUCCESS(res);
+	return MCP_SUCCESS(res);
 }
 
 Dictionary JustAMCPProfilingTools::_get_editor_performance(const Dictionary &p_params) {
 	Performance *perf = Performance::get_singleton();
 	if (!perf) {
-		MCP_ERROR(-32603, "Performance singleton is not available");
+		return MCP_ERROR(-32603, "Performance singleton is not available");
 	}
 
 	Dictionary summary;
@@ -166,13 +131,13 @@ Dictionary JustAMCPProfilingTools::_get_editor_performance(const Dictionary &p_p
 	summary["memory_static_mb"] = double(perf->get_monitor(Performance::MEMORY_STATIC)) / (1024.0 * 1024.0);
 	summary["video_mem_mb"] = double(perf->get_monitor(Performance::RENDER_VIDEO_MEM_USED)) / (1024.0 * 1024.0);
 
-	MCP_SUCCESS(summary);
+	return MCP_SUCCESS(summary);
 }
 
 Dictionary JustAMCPProfilingTools::_detect_bottlenecks(const Dictionary &p_params) {
 	Performance *perf = Performance::get_singleton();
 	if (!perf) {
-		MCP_ERROR(-32603, "Performance singleton is not available");
+		return MCP_ERROR(-32603, "Performance singleton is not available");
 	}
 
 	double fps = perf->get_monitor(Performance::TIME_FPS);
@@ -251,13 +216,13 @@ Dictionary JustAMCPProfilingTools::_detect_bottlenecks(const Dictionary &p_param
 	res["issue_count"] = issues.size();
 	res["issues"] = issues;
 	res["summary"] = summary;
-	MCP_SUCCESS(res);
+	return MCP_SUCCESS(res);
 }
 
 Dictionary JustAMCPProfilingTools::_monitor_thresholds(const Dictionary &p_params) {
 	Performance *perf = Performance::get_singleton();
 	if (!perf) {
-		MCP_ERROR(-32603, "Performance singleton is not available");
+		return MCP_ERROR(-32603, "Performance singleton is not available");
 	}
 
 	double fps_min = p_params.has("fps_min") ? double(p_params["fps_min"]) : 30.0;
@@ -301,5 +266,5 @@ Dictionary JustAMCPProfilingTools::_monitor_thresholds(const Dictionary &p_param
 	res["current"] = current;
 	res["alerts"] = alerts;
 	res["alert_count"] = alerts.size();
-	MCP_SUCCESS(res);
+	return MCP_SUCCESS(res);
 }

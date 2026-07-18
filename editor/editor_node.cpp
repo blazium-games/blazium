@@ -2123,6 +2123,27 @@ void EditorNode::save_scene_if_open(const String &p_scene_path) {
 	}
 }
 
+void EditorNode::close_scene(int p_idx) {
+	if (p_idx < 0) {
+		p_idx = editor_data.get_edited_scene();
+	}
+	ERR_FAIL_INDEX(p_idx, editor_data.get_edited_scene_count());
+
+	Node *scene = editor_data.get_edited_scene_root(p_idx);
+	if (scene != nullptr) {
+		const String scene_filename = scene->get_scene_file_path();
+		if (!scene_filename.is_empty()) {
+			previous_scenes.push_back(scene_filename);
+		}
+	}
+
+	_remove_scene(p_idx);
+	if (scene_tabs) {
+		scene_tabs->update_scene_tabs();
+	}
+	save_editor_layout_delayed();
+}
+
 void EditorNode::save_scene_list(const HashSet<String> &p_scene_paths) {
 	for (int i = 0; i < editor_data.get_edited_scene_count(); i++) {
 		Node *scene = editor_data.get_edited_scene_root(i);

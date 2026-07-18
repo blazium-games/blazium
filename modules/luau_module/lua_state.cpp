@@ -46,6 +46,10 @@
 #include "core/object/class_db.h"
 #include "core/variant/variant.h"
 
+#include "Luau/Bytecode.h"
+
+#include <cstring>
+
 VARIANT_ENUM_CAST(luau_module::LuaState::ValueType);
 VARIANT_ENUM_CAST(luau_module::LuaState::Status);
 VARIANT_ENUM_CAST(luau_module::LuaState::CoStatus);
@@ -505,6 +509,7 @@ bool LuaState::is_thread_reset() {
 
 int LuaState::abs_index(int p_index) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), 0, "Lua state is invalid. Cannot convert to absolute index.");
+	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), 0, vformat("LuaState.abs_index(%d): Invalid stack index. Stack has %d elements.", p_index, lua_gettop(L)));
 	return lua_absindex(L, p_index);
 }
 
@@ -515,8 +520,14 @@ int LuaState::get_top() {
 
 void LuaState::set_top(int p_index) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot set stack top.");
-	ERR_FAIL_COND_MSG(p_index < 0 && -p_index > lua_gettop(L),
-			vformat("LuaState.set_top(%d): Invalid stack index. Stack has %d elements.", p_index, lua_gettop(L)));
+	if (p_index < 0) {
+		ERR_FAIL_COND_MSG(-p_index > lua_gettop(L),
+				vformat("LuaState.set_top(%d): Invalid stack index. Stack has %d elements.", p_index, lua_gettop(L)));
+	} else if (p_index > lua_gettop(L)) {
+		ERR_FAIL_COND_MSG(p_index > 1024, vformat("LuaState.set_top(%d): Absolute top exceeds safe ClassDB limit.", p_index));
+		ERR_FAIL_COND_MSG(!lua_checkstack(L, p_index - lua_gettop(L)),
+				vformat("LuaState.set_top(%d): Stack overflow. Cannot grow stack.", p_index));
+	}
 
 	lua_settop(L, p_index);
 }
@@ -570,11 +581,16 @@ void LuaState::replace(int p_index) {
 
 bool LuaState::check_stack(int p_size) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), false, "Lua state is invalid. Cannot grow stack.");
+	ERR_FAIL_COND_V_MSG(p_size < 0, false, vformat("LuaState.check_stack(%d): size cannot be negative.", p_size));
+	ERR_FAIL_COND_V_MSG(p_size > 1024, false, vformat("LuaState.check_stack(%d): size exceeds safe ClassDB limit.", p_size));
 	return lua_checkstack(L, p_size) != 0;
 }
 
 void LuaState::raw_check_stack(int p_size) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot grow stack.");
+	ERR_FAIL_COND_MSG(p_size < 0, vformat("LuaState.raw_check_stack(%d): size cannot be negative.", p_size));
+	ERR_FAIL_COND_MSG(p_size > 1024, vformat("LuaState.raw_check_stack(%d): size exceeds safe ClassDB limit.", p_size));
+	ERR_FAIL_COND_MSG(!lua_checkstack(L, p_size), vformat("LuaState.raw_check_stack(%d): Stack overflow. Cannot grow stack.", p_size));
 	lua_rawcheckstack(L, p_size);
 }
 
@@ -705,14 +721,18 @@ bool LuaState::is_none_or_nil(int p_index) {
 
 StringName LuaState::type_name(ValueType p_type) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), StringName(), "Lua state is invalid. Cannot get type name.");
-	return StringName(lua_typename(L, static_cast<int>(p_type)));
+	const int type_id = static_cast<int>(p_type);
+	ERR_FAIL_COND_V_MSG(type_id != LUA_TNONE && (type_id < 0 || type_id >= LUA_T_COUNT), StringName(),
+			vformat("LuaState.type_name(%d): Invalid type id.", type_id));
+	return StringName(lua_typename(L, type_id));
 }
 
 bool LuaState::equal(int p_index1, int p_index2) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), false, "Lua state is invalid. Cannot compare values.");
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index1), false, vformat("LuaState.equal(%d, %d): First index is invalid. Stack has %d elements.", p_index1, p_index2, lua_gettop(L)));
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index2), false, vformat("LuaState.equal(%d, %d): Second index is invalid. Stack has %d elements.", p_index1, p_index2, lua_gettop(L)));
-	return lua_equal(L, p_index1, p_index2) != 0;
+	// ClassDB is not a protected Luau frame; avoid metamethod __eq which can longjmp.
+	return lua_rawequal(L, p_index1, p_index2) != 0;
 }
 
 bool LuaState::raw_equal(int p_index1, int p_index2) {
@@ -726,7 +746,27 @@ bool LuaState::less_than(int p_index1, int p_index2) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), false, "Lua state is invalid. Cannot compare values.");
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index1), false, vformat("LuaState.less_than(%d, %d): First index is invalid. Stack has %d elements.", p_index1, p_index2, lua_gettop(L)));
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index2), false, vformat("LuaState.less_than(%d, %d): Second index is invalid. Stack has %d elements.", p_index1, p_index2, lua_gettop(L)));
-	return lua_lessthan(L, p_index1, p_index2) != 0;
+	// Avoid metamethod __lt from ClassDB; only compare numbers/strings/vectors directly.
+	const int t1 = lua_type(L, p_index1);
+	const int t2 = lua_type(L, p_index2);
+	if (t1 != t2) {
+		return false;
+	}
+	if (t1 == LUA_TNUMBER) {
+		return lua_tonumber(L, p_index1) < lua_tonumber(L, p_index2);
+	}
+	if (t1 == LUA_TSTRING) {
+		size_t l1 = 0;
+		size_t l2 = 0;
+		const char *s1 = lua_tolstring(L, p_index1, &l1);
+		const char *s2 = lua_tolstring(L, p_index2, &l2);
+		if (!s1 || !s2) {
+			return false;
+		}
+		const int cmp = memcmp(s1, s2, MIN(l1, l2));
+		return cmp < 0 || (cmp == 0 && l1 < l2);
+	}
+	return false;
 }
 
 double LuaState::to_number(int p_index) {
@@ -955,30 +995,35 @@ LuaState::ValueType LuaState::get_table(int p_index) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), static_cast<ValueType>(LUA_TNONE), "Lua state is invalid. Cannot get table value.");
 
 	int top = lua_gettop(L);
+	ERR_FAIL_COND_V_MSG(top < 1, static_cast<ValueType>(LUA_TNONE), "LuaState.get_table(): Need key on stack.");
 	ERR_FAIL_COND_V_MSG(p_index == -1 || p_index == top, static_cast<ValueType>(LUA_TNONE), vformat("LuaState.get_table(%d): Table index cannot be the key (at index %d).", p_index, top));
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), static_cast<ValueType>(LUA_TNONE), vformat("LuaState.get_table(%d): Invalid table index. Stack has %d elements.", p_index, top));
+	// Avoid __index metamethod longjmp from ClassDB; only raw-get tables.
+	ERR_FAIL_COND_V_MSG(!lua_istable(L, p_index), static_cast<ValueType>(LUA_TNONE), vformat("LuaState.get_table(%d): Expected table.", p_index));
 
-	return static_cast<ValueType>(lua_gettable(L, p_index));
+	return static_cast<ValueType>(lua_rawget(L, p_index));
 }
 
 LuaState::ValueType LuaState::get_field(int p_index, const StringName &p_key) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), static_cast<ValueType>(LUA_TNONE), "Lua state is invalid. Cannot get field.");
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), static_cast<ValueType>(LUA_TNONE), vformat("LuaState.get_field(%d, \"%s\"): Invalid table index. Stack has %d elements.", p_index, p_key, lua_gettop(L)));
+	ERR_FAIL_COND_V_MSG(!lua_istable(L, p_index), static_cast<ValueType>(LUA_TNONE), vformat("LuaState.get_field(%d, \"%s\"): Expected table.", p_index, p_key));
 	ERR_FAIL_COND_V_MSG(!lua_checkstack(L, 1), static_cast<ValueType>(LUA_TNONE), "LuaState.get_field(): Stack overflow. Cannot grow stack.");
 
-	return static_cast<ValueType>(lua_getfield(L, p_index, char_string(p_key).get_data()));
+	return static_cast<ValueType>(lua_rawgetfield(L, p_index, char_string(p_key).get_data()));
 }
 
 LuaState::ValueType LuaState::get_global(const StringName &p_key) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), static_cast<ValueType>(LUA_TNONE), "Lua state is invalid. Cannot get global variable.");
 	ERR_FAIL_COND_V_MSG(!lua_checkstack(L, 1), static_cast<ValueType>(LUA_TNONE), "LuaState.get_global(): Stack overflow. Cannot grow stack.");
 
-	return static_cast<ValueType>(lua_getglobal(L, char_string(p_key).get_data()));
+	return static_cast<ValueType>(lua_rawgetfield(L, LUA_GLOBALSINDEX, char_string(p_key).get_data()));
 }
 
 LuaState::ValueType LuaState::raw_get_field(int p_index, const StringName &p_key) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), static_cast<ValueType>(LUA_TNONE), "Lua state is invalid. Cannot raw get field.");
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), static_cast<ValueType>(LUA_TNONE), vformat("LuaState.raw_get_field(%d, \"%s\"): Invalid table index. Stack has %d elements.", p_index, p_key, lua_gettop(L)));
+	ERR_FAIL_COND_V_MSG(!lua_istable(L, p_index), static_cast<ValueType>(LUA_TNONE), vformat("LuaState.raw_get_field(%d, \"%s\"): Expected table.", p_index, p_key));
 	ERR_FAIL_COND_V_MSG(!lua_checkstack(L, 1), static_cast<ValueType>(LUA_TNONE), "LuaState.raw_get_field(): Stack overflow. Cannot grow stack.");
 
 	return static_cast<ValueType>(lua_rawgetfield(L, p_index, char_string(p_key).get_data()));
@@ -988,8 +1033,10 @@ LuaState::ValueType LuaState::raw_get(int p_index) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), static_cast<ValueType>(LUA_TNONE), "Lua state is invalid. Cannot raw get.");
 
 	int top = lua_gettop(L);
+	ERR_FAIL_COND_V_MSG(top < 1, static_cast<ValueType>(LUA_TNONE), "LuaState.raw_get(): Need key on stack.");
 	ERR_FAIL_COND_V_MSG(p_index == -1 || p_index == top, static_cast<ValueType>(LUA_TNONE), vformat("LuaState.raw_get(%d): Table index cannot be the key (at index %d).", p_index, top));
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), static_cast<ValueType>(LUA_TNONE), vformat("LuaState.raw_get(%d): Invalid table index. Stack has %d elements.", p_index, top));
+	ERR_FAIL_COND_V_MSG(!lua_istable(L, p_index), static_cast<ValueType>(LUA_TNONE), vformat("LuaState.raw_get(%d): Expected table.", p_index));
 
 	return static_cast<ValueType>(lua_rawget(L, p_index));
 }
@@ -997,6 +1044,7 @@ LuaState::ValueType LuaState::raw_get(int p_index) {
 LuaState::ValueType LuaState::raw_geti(int p_stack_index, int p_table_index) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), static_cast<ValueType>(LUA_TNONE), "Lua state is invalid. Cannot raw get index.");
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_stack_index), static_cast<ValueType>(LUA_TNONE), vformat("LuaState.raw_geti(%d, %d): Invalid table index. Stack has %d elements.", p_stack_index, p_table_index, lua_gettop(L)));
+	ERR_FAIL_COND_V_MSG(!lua_istable(L, p_stack_index), static_cast<ValueType>(LUA_TNONE), vformat("LuaState.raw_geti(%d, %d): Expected table.", p_stack_index, p_table_index));
 	ERR_FAIL_COND_V_MSG(!lua_checkstack(L, 1), static_cast<ValueType>(LUA_TNONE), "LuaState.raw_geti(): Stack overflow. Cannot grow stack.");
 
 	return static_cast<ValueType>(lua_rawgeti(L, p_stack_index, p_table_index));
@@ -1004,6 +1052,9 @@ LuaState::ValueType LuaState::raw_geti(int p_stack_index, int p_table_index) {
 
 void LuaState::create_table(int p_narr, int p_nrec) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot create table.");
+	ERR_FAIL_COND_MSG(p_narr < 0 || p_nrec < 0, vformat("LuaState.create_table(%d, %d): sizes cannot be negative.", p_narr, p_nrec));
+	// Cap fuzzer/abuse sizes so ClassDB callers cannot force pathological allocations.
+	ERR_FAIL_COND_MSG(p_narr > 1024 || p_nrec > 1024, vformat("LuaState.create_table(%d, %d): sizes exceed safe ClassDB limit.", p_narr, p_nrec));
 	ERR_FAIL_COND_MSG(!lua_checkstack(L, 1), "LuaState.create_table(): Stack overflow. Cannot grow stack.");
 	lua_createtable(L, p_narr, p_nrec);
 }
@@ -1011,6 +1062,7 @@ void LuaState::create_table(int p_narr, int p_nrec) {
 void LuaState::set_read_only(int p_index, bool p_enabled) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot set read-only status.");
 	ERR_FAIL_COND_MSG(!is_valid_index(p_index), vformat("LuaState.set_read_only(%d, %s): Invalid stack index. Stack has %d elements.", p_index, p_enabled ? "true" : "false", lua_gettop(L)));
+	ERR_FAIL_COND_MSG(!lua_istable(L, p_index), vformat("LuaState.set_read_only(%d): Expected table.", p_index));
 
 	lua_setreadonly(L, p_index, p_enabled ? 1 : 0);
 }
@@ -1018,6 +1070,7 @@ void LuaState::set_read_only(int p_index, bool p_enabled) {
 bool LuaState::get_read_only(int p_index) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), false, "Lua state is invalid. Cannot get read-only status.");
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), false, vformat("LuaState.get_read_only(%d): Invalid stack index. Stack has %d elements.", p_index, lua_gettop(L)));
+	ERR_FAIL_COND_V_MSG(!lua_istable(L, p_index), false, vformat("LuaState.get_read_only(%d): Expected table.", p_index));
 
 	return lua_getreadonly(L, p_index) != 0;
 }
@@ -1025,6 +1078,7 @@ bool LuaState::get_read_only(int p_index) {
 void LuaState::set_safe_env(int p_index, bool p_enabled) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot set safe environment status.");
 	ERR_FAIL_COND_MSG(!is_valid_index(p_index), vformat("LuaState.set_safe_env(%d, %s): Invalid stack index. Stack has %d elements.", p_index, p_enabled ? "true" : "false", lua_gettop(L)));
+	ERR_FAIL_COND_MSG(!lua_istable(L, p_index), vformat("LuaState.set_safe_env(%d): Expected table.", p_index));
 
 	lua_setsafeenv(L, p_index, p_enabled ? 1 : 0);
 }
@@ -1049,23 +1103,29 @@ void LuaState::set_table(int p_index) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot set table value.");
 
 	int top = lua_gettop(L);
+	ERR_FAIL_COND_MSG(top < 2, vformat("LuaState.set_table(%d): Need key and value on stack. Stack has %d elements.", p_index, top));
 	ERR_FAIL_COND_MSG(p_index == -1 || p_index == top, vformat("LuaState.set_table(%d): Table index cannot be the value (at index %d).", p_index, top));
 	ERR_FAIL_COND_MSG(p_index == -2 || p_index == top - 1, vformat("LuaState.set_table(%d): Table index cannot be the key (at index %d).", p_index, top - 1));
 
 	ERR_FAIL_COND_MSG(!is_valid_index(p_index), vformat("LuaState.set_table(%d): Invalid table index. Stack has %d elements.", p_index, top));
+	ERR_FAIL_COND_MSG(!lua_istable(L, p_index), vformat("LuaState.set_table(%d): Expected table.", p_index));
+	ERR_FAIL_COND_MSG(lua_getreadonly(L, p_index), vformat("LuaState.set_table(%d): Table is read-only.", p_index));
 
-	lua_settable(L, p_index);
+	lua_rawset(L, p_index);
 }
 
 void LuaState::set_field(int p_index, const StringName &p_key) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot set field.");
 
 	int top = lua_gettop(L);
+	ERR_FAIL_COND_MSG(top < 1, vformat("LuaState.set_field(%d, \"%s\"): Need value on stack. Stack has %d elements.", p_index, p_key, top));
 	ERR_FAIL_COND_MSG(p_index == -1 || p_index == top, vformat("LuaState.set_field(%d, \"%s\"): Table index cannot be the value (at index %d).", p_index, p_key, top));
 
 	ERR_FAIL_COND_MSG(!is_valid_index(p_index), vformat("LuaState.set_field(%d, \"%s\"): Invalid table index. Stack has %d elements.", p_index, p_key, top));
+	ERR_FAIL_COND_MSG(!lua_istable(L, p_index), vformat("LuaState.set_field(%d, \"%s\"): Expected table.", p_index, p_key));
+	ERR_FAIL_COND_MSG(lua_getreadonly(L, p_index), vformat("LuaState.set_field(%d, \"%s\"): Table is read-only.", p_index, p_key));
 
-	lua_setfield(L, p_index, char_string(p_key).get_data());
+	lua_rawsetfield(L, p_index, char_string(p_key).get_data());
 }
 
 void LuaState::set_global(const StringName &p_key) {
@@ -1074,15 +1134,18 @@ void LuaState::set_global(const StringName &p_key) {
 	int top = lua_gettop(L);
 	ERR_FAIL_COND_MSG(top < 1, vformat("LuaState.set_global(): Need value on stack. Stack has %d elements.", top));
 
-	lua_setglobal(L, char_string(p_key).get_data());
+	lua_rawsetfield(L, LUA_GLOBALSINDEX, char_string(p_key).get_data());
 }
 
 void LuaState::raw_set_field(int p_index, const StringName &p_key) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot raw set field.");
 
 	int top = lua_gettop(L);
+	ERR_FAIL_COND_MSG(top < 1, vformat("LuaState.raw_set_field(%d, \"%s\"): Need value on stack. Stack has %d elements.", p_index, p_key, top));
 	ERR_FAIL_COND_MSG(p_index == -1 || p_index == top, vformat("LuaState.raw_set_field(%d, \"%s\"): Table index cannot be the value (at index %d).", p_index, p_key, top));
 	ERR_FAIL_COND_MSG(!is_valid_index(p_index), vformat("LuaState.raw_set_field(%d, \"%s\"): Invalid table index. Stack has %d elements.", p_index, p_key, top));
+	ERR_FAIL_COND_MSG(!lua_istable(L, p_index), vformat("LuaState.raw_set_field(%d, \"%s\"): Expected table.", p_index, p_key));
+	ERR_FAIL_COND_MSG(lua_getreadonly(L, p_index), vformat("LuaState.raw_set_field(%d, \"%s\"): Table is read-only.", p_index, p_key));
 
 	lua_rawsetfield(L, p_index, char_string(p_key).get_data());
 }
@@ -1091,10 +1154,13 @@ void LuaState::raw_set(int p_index) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot raw set.");
 
 	int top = lua_gettop(L);
+	ERR_FAIL_COND_MSG(top < 2, vformat("LuaState.raw_set(%d): Need key and value on stack. Stack has %d elements.", p_index, top));
 	ERR_FAIL_COND_MSG(p_index == -1 || p_index == top, vformat("LuaState.raw_set(%d): Table index cannot be the value (at index %d).", p_index, top));
 	ERR_FAIL_COND_MSG(p_index == -2 || p_index == top - 1, vformat("LuaState.raw_set(%d): Table index cannot be the key (at index %d).", p_index, top - 1));
 
 	ERR_FAIL_COND_MSG(!is_valid_index(p_index), vformat("LuaState.raw_set(%d): Invalid table index. Stack has %d elements.", p_index, top));
+	ERR_FAIL_COND_MSG(!lua_istable(L, p_index), vformat("LuaState.raw_set(%d): Expected table.", p_index));
+	ERR_FAIL_COND_MSG(lua_getreadonly(L, p_index), vformat("LuaState.raw_set(%d): Table is read-only.", p_index));
 
 	lua_rawset(L, p_index);
 }
@@ -1103,9 +1169,12 @@ void LuaState::raw_seti(int p_stack_index, int p_table_index) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot raw set index.");
 
 	int top = lua_gettop(L);
+	ERR_FAIL_COND_MSG(top < 1, vformat("LuaState.raw_seti(%d, %d): Need value on stack. Stack has %d elements.", p_stack_index, p_table_index, top));
 	ERR_FAIL_COND_MSG(p_stack_index == -1 || p_stack_index == top, vformat("LuaState.raw_seti(%d, %d): Index of table cannot be the value (at index %d).", p_stack_index, p_table_index, top));
 
 	ERR_FAIL_COND_MSG(!is_valid_index(p_stack_index), vformat("LuaState.raw_seti(%d, %d): Invalid stack index. Stack has %d elements.", p_stack_index, p_table_index, top));
+	ERR_FAIL_COND_MSG(!lua_istable(L, p_stack_index), vformat("LuaState.raw_seti(%d, %d): Expected table.", p_stack_index, p_table_index));
+	ERR_FAIL_COND_MSG(lua_getreadonly(L, p_stack_index), vformat("LuaState.raw_seti(%d, %d): Table is read-only.", p_stack_index, p_table_index));
 
 	lua_rawseti(L, p_stack_index, p_table_index);
 }
@@ -1114,9 +1183,12 @@ void LuaState::set_metatable(int p_index) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot set metatable.");
 
 	int top = lua_gettop(L);
+	ERR_FAIL_COND_MSG(top < 1, vformat("LuaState.set_metatable(%d): Need metatable (or nil) on stack. Stack has %d elements.", p_index, top));
 	ERR_FAIL_COND_MSG(p_index == -1 || p_index == top, vformat("LuaState.set_metatable(%d): Index cannot be the metatable (at index %d).", p_index, top));
 
 	ERR_FAIL_COND_MSG(!is_valid_index(p_index), vformat("LuaState.set_metatable(%d): Invalid stack index. Stack has %d elements.", p_index, top));
+	ERR_FAIL_COND_MSG(!lua_istable(L, -1) && !lua_isnil(L, -1), vformat("LuaState.set_metatable(%d): Metatable must be a table or nil.", p_index));
+	ERR_FAIL_COND_MSG(lua_istable(L, p_index) && lua_getreadonly(L, p_index), vformat("LuaState.set_metatable(%d): Table is read-only.", p_index));
 
 	lua_setmetatable(L, p_index);
 }
@@ -1125,15 +1197,27 @@ bool LuaState::set_fenv(int p_index) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), false, "Lua state is invalid. Cannot set fenv.");
 
 	int top = lua_gettop(L);
+	ERR_FAIL_COND_V_MSG(top < 1, false, vformat("LuaState.set_fenv(%d): Need environment table on stack. Stack has %d elements.", p_index, top));
 	ERR_FAIL_COND_V_MSG(p_index == -1 || p_index == top, false, vformat("LuaState.set_fenv(%d): Index cannot be the environment table (at index %d).", p_index, top));
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), false, vformat("LuaState.set_fenv(%d): Invalid stack index. Stack has %d elements.", p_index, top));
+	ERR_FAIL_COND_V_MSG(!lua_istable(L, -1), false, vformat("LuaState.set_fenv(%d): Environment must be a table.", p_index));
 
 	return lua_setfenv(L, p_index) != 0;
 }
 
 bool LuaState::load_bytecode(const PackedByteArray &p_bytecode, const String &p_chunk_name, int p_env) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), false, "Lua state is invalid. Cannot load bytecode.");
+	ERR_FAIL_COND_V_MSG(p_bytecode.is_empty(), false, "LuaState.load_bytecode(): Bytecode is empty.");
+	// Cap untrusted ClassDB payloads; luau_load has no internal bounds checks on malformed blobs.
+	ERR_FAIL_COND_V_MSG(p_bytecode.size() > (1 << 20), false, vformat("LuaState.load_bytecode(): Bytecode size %d exceeds safe ClassDB limit.", p_bytecode.size()));
+	ERR_FAIL_COND_V_MSG(p_env != 0 && !is_valid_index(p_env), false, vformat("LuaState.load_bytecode(..., %d): Invalid environment index. Stack has %d elements.", p_env, lua_gettop(L)));
+	ERR_FAIL_COND_V_MSG(p_env != 0 && !lua_istable(L, p_env), false, vformat("LuaState.load_bytecode(..., %d): Environment index is not a table.", p_env));
 	ERR_FAIL_COND_V_MSG(!lua_checkstack(L, 1), false, "LuaState.load_bytecode(): Stack overflow. Cannot grow stack.");
+
+	const uint8_t version = p_bytecode[0];
+	// version == 0 is a compile-error payload (safe). Other versions must look like Luau bytecode.
+	ERR_FAIL_COND_V_MSG(version != 0 && (version < LBC_VERSION_MIN || version > LBC_VERSION_MAX), false,
+			vformat("LuaState.load_bytecode(): Unsupported bytecode version %d.", version));
 
 	return luau_load(L, p_chunk_name.utf8().get_data(), reinterpret_cast<const char *>(p_bytecode.ptr()), p_bytecode.size(), p_env) == 0;
 }
@@ -1154,6 +1238,7 @@ LuaState::Status LuaState::pcall(int p_nargs, int p_nresults, int p_errfunc) {
 LuaState::Status LuaState::cpcall(Callable p_callable) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), static_cast<Status>(LUA_ERRMEM), "Lua state is invalid. Cannot pcall function.");
 	ERR_FAIL_COND_V_MSG(!p_callable.is_valid(), static_cast<Status>(LUA_ERRMEM), "LuaState.cpcall: Callable is invalid.");
+	ERR_FAIL_COND_V_MSG(!lua_checkstack(L, 2), static_cast<Status>(LUA_ERRMEM), "LuaState.cpcall(): Stack overflow. Cannot grow stack.");
 
 	lua_pushcfunction(L, cpcall_wrapper, "cpcall");
 	lua_pushlightuserdata(L, &p_callable);
@@ -1163,18 +1248,24 @@ LuaState::Status LuaState::cpcall(Callable p_callable) {
 
 void LuaState::yield(int p_nresults) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot yield.");
+	ERR_FAIL_COND_MSG(p_nresults < 0, vformat("LuaState.yield(%d): nresults cannot be negative.", p_nresults));
 	ERR_FAIL_COND_MSG(lua_gettop(L) < p_nresults, "LuaState.yield(): Not enough values on the stack to yield.");
-	lua_yield(L, p_nresults);
+	// ClassDB/MethodBind is not a protected Luau frame; yielding would corrupt VM status.
+	ERR_FAIL_MSG("LuaState.yield(): Yielding from engine bindings is not supported outside a protected Lua call.");
 }
 
 void LuaState::break_execution() {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot break.");
-	::lua_break(L);
+	// ClassDB/MethodBind is not a protected Luau frame; breaking would corrupt VM status.
+	ERR_FAIL_MSG("LuaState.break_execution(): Breaking from engine bindings is not supported outside a protected Lua call.");
 }
 
 LuaState::Status LuaState::resume(int p_narg, LuaState *p_from) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), static_cast<Status>(LUA_ERRMEM), "Lua state is invalid. Cannot resume execution.");
+	ERR_FAIL_COND_V_MSG(p_narg < 0, static_cast<Status>(LUA_ERRMEM), vformat("LuaState.resume(%d): narg cannot be negative.", p_narg));
 	ERR_FAIL_COND_V_MSG(lua_gettop(L) < p_narg, static_cast<Status>(LUA_ERRMEM), vformat("LuaState.resume(%d): Not enough values on the stack to resume.", p_narg));
+	ERR_FAIL_COND_V_MSG(p_from && !p_from->is_valid(), static_cast<Status>(LUA_ERRMEM), "LuaState.resume(): From state is invalid.");
+	ERR_FAIL_COND_V_MSG(p_from && get_main_thread() != p_from->get_main_thread(), static_cast<Status>(LUA_ERRMEM), "LuaState.resume(): Cannot resume across different Luau VMs.");
 
 	int status = lua_resume(L, p_from ? p_from->L : nullptr, p_narg);
 	return static_cast<Status>(status);
@@ -1182,6 +1273,8 @@ LuaState::Status LuaState::resume(int p_narg, LuaState *p_from) {
 
 LuaState::Status LuaState::resume_error(LuaState *p_from) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), static_cast<Status>(LUA_ERRMEM), "Lua state is invalid. Cannot resume execution.");
+	ERR_FAIL_COND_V_MSG(p_from && !p_from->is_valid(), static_cast<Status>(LUA_ERRMEM), "LuaState.resume_error(): From state is invalid.");
+	ERR_FAIL_COND_V_MSG(p_from && get_main_thread() != p_from->get_main_thread(), static_cast<Status>(LUA_ERRMEM), "LuaState.resume_error(): Cannot resume across different Luau VMs.");
 
 	int status = lua_resumeerror(L, p_from ? p_from->L : nullptr);
 	return static_cast<Status>(status);
@@ -1212,18 +1305,21 @@ int LuaState::gc(GCOp p_what, int p_data) {
 
 void LuaState::set_memory_category(int p_category) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot set memory category.");
+	ERR_FAIL_COND_MSG(p_category < 0 || p_category >= LUA_MEMORY_CATEGORIES, vformat("LuaState.set_memory_category(%d): category out of range.", p_category));
 	lua_setmemcat(L, p_category);
 }
 
 uint64_t LuaState::get_total_bytes(int p_category) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), 0, "Lua state is invalid. Cannot get total bytes.");
+	ERR_FAIL_COND_V_MSG(p_category < 0 || p_category >= LUA_MEMORY_CATEGORIES, 0, vformat("LuaState.get_total_bytes(%d): category out of range.", p_category));
 	return lua_totalbytes(L, p_category);
 }
 
 void LuaState::error() {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot raise error.");
 	ERR_FAIL_COND_MSG(lua_gettop(L) < 1, "LuaState.error(): Need error object on stack.");
-	lua_error(L);
+	// ClassDB/MethodBind is not a protected Luau frame; lua_error would abort the process.
+	ERR_FAIL_MSG("LuaState.error(): Raising Lua errors from engine bindings is not supported outside a protected Lua call.");
 }
 
 bool LuaState::next(int p_index) {
@@ -1235,16 +1331,18 @@ bool LuaState::next(int p_index) {
 
 	ERR_FAIL_COND_V_MSG(p_index == -1 || p_index == top, false, vformat("LuaState.next(%d): Table index cannot be the key (at index %d).", p_index, top));
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), false, vformat("LuaState.next(%d): Invalid table index. Stack has %d elements.", p_index, top));
+	ERR_FAIL_COND_V_MSG(!lua_istable(L, p_index), false, vformat("LuaState.next(%d): Expected table.", p_index));
 
 	return lua_next(L, p_index) != 0;
 }
 
 int LuaState::raw_iter(int p_index, int p_iter) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), -1, "Lua state is invalid. Cannot raw iterate table.");
-	ERR_FAIL_COND_V_MSG(!lua_checkstack(L, 2), false, vformat("LuaState.raw_iter(%d, %d): Stack overflow. Cannot grow stack.", p_index, p_iter));
+	ERR_FAIL_COND_V_MSG(!lua_checkstack(L, 2), -1, vformat("LuaState.raw_iter(%d, %d): Stack overflow. Cannot grow stack.", p_index, p_iter));
 
 	ERR_FAIL_COND_V_MSG(p_iter < 0, -1, vformat("LuaState.raw_iter(%d, %d): Invalid iterator.", p_index, p_iter));
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), -1, vformat("LuaState.raw_iter(%d, %d): Invalid table index. Stack has %d elements.", p_index, p_iter, lua_gettop(L)));
+	ERR_FAIL_COND_V_MSG(!lua_istable(L, p_index), -1, vformat("LuaState.raw_iter(%d, %d): Expected table.", p_index, p_iter));
 
 	return lua_rawiter(L, p_index, p_iter);
 }
@@ -1256,6 +1354,8 @@ void LuaState::concat(int p_count) {
 
 	int top = lua_gettop(L);
 	ERR_FAIL_COND_MSG(top < p_count, vformat("LuaState.concat(%d): Not enough values on the stack to concatenate. Stack has %d elements.", p_count, top));
+	// Avoid metamethod __concat longjmp from ClassDB.
+	ERR_FAIL_COND_MSG(p_count >= 2, "LuaState.concat(): Concatenation from engine bindings is only supported for 0 or 1 values.");
 
 	lua_concat(L, p_count);
 }
@@ -1263,6 +1363,7 @@ void LuaState::concat(int p_count) {
 void LuaState::set_full_userdata_tag(int p_index, int p_tag) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot set full userdata tag.");
 	ERR_FAIL_COND_MSG(!is_valid_index(p_index), vformat("LuaState.set_full_userdata_tag(%d, %d): Invalid stack index. Stack has %d elements.", p_index, p_tag, lua_gettop(L)));
+	ERR_FAIL_COND_MSG(lua_type(L, p_index) != LUA_TUSERDATA, vformat("LuaState.set_full_userdata_tag(%d, %d): Expected full userdata.", p_index, p_tag));
 	ERR_FAIL_COND_MSG(p_tag < 0 || p_tag >= LUA_UTAG_LIMIT, vformat("LuaState.set_full_userdata_tag(%d, %d): Invalid tag.", p_index, p_tag));
 
 	update_full_object_tag(L, p_index, p_tag);
@@ -1274,6 +1375,13 @@ void LuaState::set_full_userdata_metatable(int p_tag) {
 
 	int top = lua_gettop(L);
 	ERR_FAIL_COND_MSG(top < 1, vformat("LuaState.set_full_userdata_metatable(%d): Expected metatable at top of stack. Stack has %d elements.", p_tag, top));
+	ERR_FAIL_COND_MSG(!lua_istable(L, -1), vformat("LuaState.set_full_userdata_metatable(%d): Expected table.", p_tag));
+	ERR_FAIL_COND_MSG(!lua_checkstack(L, 1), vformat("LuaState.set_full_userdata_metatable(%d): Stack overflow. Cannot grow stack.", p_tag));
+
+	lua_getuserdatametatable(L, p_tag);
+	const bool already_set = !lua_isnil(L, -1);
+	lua_pop(L, 1);
+	ERR_FAIL_COND_MSG(already_set, vformat("LuaState.set_full_userdata_metatable(%d): Metatable already assigned for tag.", p_tag));
 
 	lua_setuserdatametatable(L, p_tag);
 }
@@ -1304,6 +1412,7 @@ StringName LuaState::get_light_userdata_name(int p_tag) {
 void LuaState::clone_function(int p_index) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot clone function.");
 	ERR_FAIL_COND_MSG(!is_valid_index(p_index), vformat("LuaState.clone_function(%d): Invalid stack index. Stack has %d elements.", p_index, lua_gettop(L)));
+	ERR_FAIL_COND_MSG(!lua_isLfunction(L, p_index), vformat("LuaState.clone_function(%d): Expected Lua function.", p_index));
 	ERR_FAIL_COND_MSG(!lua_checkstack(L, 1), vformat("LuaState.clone_function(%d): Stack overflow. Cannot grow stack.", p_index));
 
 	lua_clonefunction(L, p_index);
@@ -1312,6 +1421,7 @@ void LuaState::clone_function(int p_index) {
 void LuaState::clear_table(int p_index) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot clear table.");
 	ERR_FAIL_COND_MSG(!is_valid_index(p_index), vformat("LuaState.clear_table(%d): Invalid stack index. Stack has %d elements.", p_index, lua_gettop(L)));
+	ERR_FAIL_COND_MSG(!lua_istable(L, p_index), vformat("LuaState.clear_table(%d): Expected table.", p_index));
 
 	lua_cleartable(L, p_index);
 }
@@ -1319,6 +1429,7 @@ void LuaState::clear_table(int p_index) {
 void LuaState::clone_table(int p_index) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot clone table.");
 	ERR_FAIL_COND_MSG(!is_valid_index(p_index), vformat("LuaState.clone_table(%d): Invalid stack index. Stack has %d elements.", p_index, lua_gettop(L)));
+	ERR_FAIL_COND_MSG(!lua_istable(L, p_index), vformat("LuaState.clone_table(%d): Expected table.", p_index));
 	ERR_FAIL_COND_MSG(!lua_checkstack(L, 1), vformat("LuaState.clone_table(%d): Stack overflow. Cannot grow stack.", p_index));
 
 	lua_clonetable(L, p_index);
@@ -1333,6 +1444,7 @@ int LuaState::ref(int p_index) {
 
 void LuaState::get_ref(int p_ref) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot get reference.");
+	ERR_FAIL_COND_MSG(p_ref < 0, vformat("LuaState.get_ref(%d): Invalid reference.", p_ref));
 	ERR_FAIL_COND_MSG(!lua_checkstack(L, 1), "LuaState.getref(): Stack overflow. Cannot grow stack.");
 
 	lua_getref(L, p_ref);
@@ -1340,6 +1452,7 @@ void LuaState::get_ref(int p_ref) {
 
 void LuaState::unref(int p_ref) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot release reference.");
+	ERR_FAIL_COND_MSG(p_ref < 0, vformat("LuaState.unref(%d): Invalid reference.", p_ref));
 	lua_unref(L, p_ref);
 }
 
@@ -1436,6 +1549,7 @@ void LuaState::set_interrupts(bool p_enabled) {
 int LuaState::set_breakpoint(int p_funcindex, int p_nline, bool p_enabled) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), -1, "Lua state is invalid. Cannot set breakpoint.");
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_funcindex), -1, vformat("LuaState.set_breakpoint(%d, %d, %s): Invalid function index. Stack has %d elements.", p_funcindex, p_nline, p_enabled ? "true" : "false", lua_gettop(L)));
+	ERR_FAIL_COND_V_MSG(!lua_isLfunction(L, p_funcindex), -1, vformat("LuaState.set_breakpoint(%d, %d, %s): Expected Lua function.", p_funcindex, p_nline, p_enabled ? "true" : "false"));
 
 	return lua_breakpoint(L, p_funcindex, p_nline, p_enabled);
 }
@@ -1443,6 +1557,8 @@ int LuaState::set_breakpoint(int p_funcindex, int p_nline, bool p_enabled) {
 void LuaState::get_coverage(int p_funcindex, Callable p_callback) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot get coverage.");
 	ERR_FAIL_COND_MSG(!is_valid_index(p_funcindex), vformat("LuaState.get_coverage(%d, ...): Invalid function index. Stack has %d elements.", p_funcindex, lua_gettop(L)));
+	ERR_FAIL_COND_MSG(!lua_isLfunction(L, p_funcindex), vformat("LuaState.get_coverage(%d, ...): Expected Lua function.", p_funcindex));
+	ERR_FAIL_COND_MSG(!p_callback.is_valid(), vformat("LuaState.get_coverage(%d, ...): Callable is invalid.", p_funcindex));
 
 	lua_getcoverage(L, p_funcindex, static_cast<void *>(&p_callback), &coverage_wrapper);
 }
@@ -1460,14 +1576,14 @@ String LuaState::debug_trace() {
 
 void LuaState::register_library(const StringName &p_lib_name, const Dictionary &p_functions) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot register library.");
+	ERR_FAIL_COND_MSG(p_lib_name.is_empty(), "LuaState.register_library: lib_name is required.");
+	ERR_FAIL_COND_MSG(p_functions.size() > 256, vformat("LuaState.register_library(%s): too many functions for safe ClassDB use.", p_lib_name));
 	ERR_FAIL_COND_MSG(!lua_checkstack(L, 3), vformat("LuaState.register_library(%s): Stack overflow. Cannot grow stack.", p_lib_name));
 
-	if (!p_lib_name.is_empty()) {
-		luaL_Reg reg[] = {
-			{ NULL, NULL }
-		};
-		luaL_register(L, char_string(p_lib_name).get_data(), reg);
-	}
+	luaL_Reg reg[] = {
+		{ NULL, NULL }
+	};
+	luaL_register(L, char_string(p_lib_name).get_data(), reg);
 
 	for (const Variant &key : p_functions.keys()) {
 		const Variant &value = p_functions[key];
@@ -1490,29 +1606,34 @@ bool LuaState::call_meta(int p_index, const StringName &p_field) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), false, "Lua state is invalid. Cannot call meta method.");
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), false, vformat("LuaState.call_meta(%d, \"%s\"): Invalid stack index. Stack has %d elements.", p_index, p_field, lua_gettop(L)));
 
-	return luaL_callmeta(L, p_index, char_string(p_field).get_data()) != 0;
+	// luaL_callmeta can throw into an unprotected MethodBind frame; only invoke when a metamethod exists.
+	if (luaL_getmetafield(L, p_index, char_string(p_field).get_data()) == 0) {
+		return false;
+	}
+	lua_pop(L, 1);
+	ERR_FAIL_V_MSG(false, vformat("LuaState.call_meta(%d, \"%s\"): Calling metamethods from engine bindings is not supported outside a protected Lua call.", p_index, p_field));
 }
 
 void LuaState::type_error(int p_index, const StringName &p_expected) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot raise type error.");
 	ERR_FAIL_COND_MSG(!is_valid_index(p_index), vformat("LuaState.type_error(%d, \"%s\"): Invalid stack index. Stack has %d elements.", p_index, p_expected, lua_gettop(L)));
-
-	luaL_typeerror(L, p_index, char_string(p_expected).get_data());
+	ERR_FAIL_MSG(vformat("LuaState.type_error(%d, \"%s\"): Raising Lua type errors from engine bindings is not supported outside a protected Lua call.", p_index, p_expected));
 }
 
 void LuaState::arg_error(int p_index, const String &p_message) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot raise argument error.");
 	ERR_FAIL_COND_MSG(!is_valid_index(p_index), vformat("LuaState.arg_error(%d, \"%s\"): Invalid stack index. Stack has %d elements.", p_index, p_message, lua_gettop(L)));
-
-	luaL_argerror(L, p_index, p_message.utf8().get_data());
+	ERR_FAIL_MSG(vformat("LuaState.arg_error(%d, \"%s\"): Raising Lua argument errors from engine bindings is not supported outside a protected Lua call.", p_index, p_message));
 }
 
 String LuaState::enforce_string_inplace(int p_index) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), String(), "Lua state is invalid. Cannot enforce string.");
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), String(), vformat("LuaState.enforce_string_inplace(%d): Invalid stack index. Stack has %d elements.", p_index, lua_gettop(L)));
+	ERR_FAIL_COND_V_MSG(lua_type(L, p_index) != LUA_TSTRING, String(), vformat("LuaState.enforce_string_inplace(%d): Expected string.", p_index));
 
-	size_t len;
-	const char *str = luaL_checklstring(L, p_index, &len);
+	size_t len = 0;
+	const char *str = lua_tolstring(L, p_index, &len);
+	ERR_FAIL_COND_V_MSG(!str, String(), vformat("LuaState.enforce_string_inplace(%d): Expected string.", p_index));
 	return String::utf8(str, len);
 }
 
@@ -1520,24 +1641,25 @@ String LuaState::opt_string_inplace(int p_index, const String &p_default) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), p_default, "Lua state is invalid. Cannot get optional string.");
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), p_default, vformat("LuaState.opt_string(%d, \"%s\"): Invalid stack index. Stack has %d elements.", p_index, p_default, lua_gettop(L)));
 
-	size_t len;
-	const char *str = luaL_optlstring(L, p_index, NULL, &len);
-	if (str) {
-		return String::utf8(str, len);
-	} else {
+	if (lua_isnoneornil(L, p_index)) {
 		return p_default;
 	}
+	ERR_FAIL_COND_V_MSG(lua_type(L, p_index) != LUA_TSTRING && lua_type(L, p_index) != LUA_TNUMBER, p_default, vformat("LuaState.opt_string(%d): Expected string or number.", p_index));
+
+	size_t len = 0;
+	const char *str = lua_tolstring(L, p_index, &len);
+	if (str) {
+		return String::utf8(str, len);
+	}
+	return p_default;
 }
 
 StringName LuaState::enforce_string_name(int p_index) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), StringName(), "Lua state is invalid. Cannot convert to StringName.");
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), StringName(), vformat("LuaState.to_string_name(%d): Invalid stack index. Stack has %d elements.", p_index, lua_gettop(L)));
+	ERR_FAIL_COND_V_MSG(lua_type(L, p_index) != LUA_TSTRING, StringName(), vformat("LuaState.enforce_string_name(%d): Expected string.", p_index));
 
-	if (lua_type(L, p_index) == LUA_TSTRING) {
-		return luau_module::to_string_name(L, p_index);
-	} else {
-		luaL_typeerror(L, p_index, "string");
-	}
+	return luau_module::to_string_name(L, p_index);
 }
 
 StringName LuaState::opt_string_name(int p_index, const StringName &p_default) {
@@ -1555,49 +1677,74 @@ double LuaState::enforce_number(int p_index) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), 0.0, "Lua state is invalid. Cannot enforce number.");
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), 0.0, vformat("LuaState.enforce_number(%d): Invalid stack index. Stack has %d elements.", p_index, lua_gettop(L)));
 
-	return luaL_checknumber(L, p_index);
+	int is_num = 0;
+	const double value = lua_tonumberx(L, p_index, &is_num);
+	ERR_FAIL_COND_V_MSG(!is_num, 0.0, vformat("LuaState.enforce_number(%d): Expected number.", p_index));
+	return value;
 }
 
 double LuaState::opt_number(int p_index, double p_default) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), p_default, "Lua state is invalid. Cannot get optional number.");
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), p_default, vformat("LuaState.opt_number(%d, %f): Invalid stack index. Stack has %d elements.", p_index, p_default, lua_gettop(L)));
 
-	return luaL_optnumber(L, p_index, p_default);
+	if (lua_isnoneornil(L, p_index)) {
+		return p_default;
+	}
+	int is_num = 0;
+	const double value = lua_tonumberx(L, p_index, &is_num);
+	ERR_FAIL_COND_V_MSG(!is_num, p_default, vformat("LuaState.opt_number(%d): Expected number.", p_index));
+	return value;
 }
 
 bool LuaState::enforce_boolean(int p_index) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), false, "Lua state is invalid. Cannot enforce boolean.");
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), false, vformat("LuaState.enforce_boolean(%d): Invalid stack index. Stack has %d elements.", p_index, lua_gettop(L)));
+	ERR_FAIL_COND_V_MSG(lua_type(L, p_index) != LUA_TBOOLEAN, false, vformat("LuaState.enforce_boolean(%d): Expected boolean.", p_index));
 
-	return luaL_checkboolean(L, p_index);
+	return lua_toboolean(L, p_index) != 0;
 }
 
 bool LuaState::opt_boolean(int p_index, bool p_default) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), p_default, "Lua state is invalid. Cannot get optional boolean.");
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), p_default, vformat("LuaState.opt_boolean(%d, %s): Invalid stack index. Stack has %d elements.", p_index, p_default ? "true" : "false", lua_gettop(L)));
 
-	return luaL_optboolean(L, p_index, p_default);
+	if (lua_isnoneornil(L, p_index)) {
+		return p_default;
+	}
+	ERR_FAIL_COND_V_MSG(lua_type(L, p_index) != LUA_TBOOLEAN, p_default, vformat("LuaState.opt_boolean(%d): Expected boolean.", p_index));
+	return lua_toboolean(L, p_index) != 0;
 }
 
 int LuaState::enforce_integer(int p_index) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), 0, "Lua state is invalid. Cannot enforce integer.");
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), 0, vformat("LuaState.enforce_integer(%d): Invalid stack index. Stack has %d elements.", p_index, lua_gettop(L)));
 
-	return luaL_checkinteger(L, p_index);
+	int is_num = 0;
+	const double value = lua_tonumberx(L, p_index, &is_num);
+	ERR_FAIL_COND_V_MSG(!is_num, 0, vformat("LuaState.enforce_integer(%d): Expected number.", p_index));
+	return static_cast<int>(value);
 }
 
 int LuaState::opt_integer(int p_index, int p_default) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), p_default, "Lua state is invalid. Cannot get optional integer.");
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), p_default, vformat("LuaState.opt_integer(%d, %d): Invalid stack index. Stack has %d elements.", p_index, p_default, lua_gettop(L)));
 
-	return luaL_optinteger(L, p_index, p_default);
+	if (lua_isnoneornil(L, p_index)) {
+		return p_default;
+	}
+	int is_num = 0;
+	const double value = lua_tonumberx(L, p_index, &is_num);
+	ERR_FAIL_COND_V_MSG(!is_num, p_default, vformat("LuaState.opt_integer(%d): Expected number.", p_index));
+	return static_cast<int>(value);
 }
 
 Vector3 LuaState::enforce_vector3(int p_index) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), Vector3(), "Lua state is invalid. Cannot enforce Vector3.");
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), Vector3(), vformat("LuaState.enforce_vector3(%d): Invalid stack index. Stack has %d elements.", p_index, lua_gettop(L)));
+	ERR_FAIL_COND_V_MSG(lua_type(L, p_index) != LUA_TVECTOR, Vector3(), vformat("LuaState.enforce_vector3(%d): Expected vector.", p_index));
 
-	const float *vec = luaL_checkvector(L, p_index);
+	const float *vec = lua_tovector(L, p_index);
+	ERR_FAIL_COND_V_MSG(!vec, Vector3(), vformat("LuaState.enforce_vector3(%d): Expected vector.", p_index));
 	return Vector3(vec[0], vec[1], vec[2]);
 }
 
@@ -1605,40 +1752,46 @@ Vector3 LuaState::opt_vector3(int p_index, const Vector3 &p_default) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), p_default, "Lua state is invalid. Cannot get optional Vector3.");
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), p_default, vformat("LuaState.opt_vector3(%d, %s): Invalid stack index. Stack has %d elements.", p_index, p_default, lua_gettop(L)));
 
-	const float *vec = luaL_optvector(L, p_index, NULL);
-	if (vec) {
-		return Vector3(vec[0], vec[1], vec[2]);
-	} else {
+	if (lua_isnoneornil(L, p_index)) {
 		return p_default;
 	}
+	ERR_FAIL_COND_V_MSG(lua_type(L, p_index) != LUA_TVECTOR, p_default, vformat("LuaState.opt_vector3(%d): Expected vector.", p_index));
+	const float *vec = lua_tovector(L, p_index);
+	if (vec) {
+		return Vector3(vec[0], vec[1], vec[2]);
+	}
+	return p_default;
 }
 
 void LuaState::enforce_stack(int p_size, const String &p_message) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot enforce stack size.");
-	luaL_checkstack(L, p_size, p_message.utf8().get_data());
+	ERR_FAIL_COND_MSG(p_size < 0, vformat("LuaState.enforce_stack(%d): size cannot be negative.", p_size));
+	ERR_FAIL_COND_MSG(p_size > 1024, vformat("LuaState.enforce_stack(%d): size exceeds safe ClassDB limit.", p_size));
+	ERR_FAIL_COND_MSG(!lua_checkstack(L, p_size), p_message.is_empty() ? String("LuaState.enforce_stack: Stack overflow.") : p_message);
 }
 
 void LuaState::enforce_type(int p_index, ValueType p_type) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot enforce type.");
 	ERR_FAIL_COND_MSG(!is_valid_index(p_index), vformat("LuaState.enforce_type(%d, %d): Invalid stack index. Stack has %d elements.", p_index, static_cast<int>(p_type), lua_gettop(L)));
-
-	luaL_checktype(L, p_index, static_cast<int>(p_type));
+	ERR_FAIL_COND_MSG(lua_type(L, p_index) != static_cast<int>(p_type), vformat("LuaState.enforce_type(%d, %d): Unexpected type.", p_index, static_cast<int>(p_type)));
 }
 
 void LuaState::enforce_any(int p_index) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot enforce any type.");
 	ERR_FAIL_COND_MSG(!is_valid_index(p_index), vformat("LuaState.enforce_any(%d): Invalid stack index. Stack has %d elements.", p_index, lua_gettop(L)));
-
-	luaL_checkany(L, p_index);
+	ERR_FAIL_COND_MSG(lua_type(L, p_index) == LUA_TNONE, vformat("LuaState.enforce_any(%d): Expected a value.", p_index));
 }
 
 bool LuaState::new_metatable_named(const StringName &p_name) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), false, "Lua state is invalid. Cannot create new metatable.");
+	ERR_FAIL_COND_V_MSG(p_name.is_empty(), false, "LuaState.new_metatable_named(): name is required.");
+	ERR_FAIL_COND_V_MSG(!lua_checkstack(L, 2), false, vformat("LuaState.new_metatable_named(\"%s\"): Stack overflow. Cannot grow stack.", p_name));
 	return luaL_newmetatable(L, char_string(p_name).get_data()) != 0;
 }
 
 LuaState::ValueType LuaState::get_metatable_named(const StringName &p_name) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), static_cast<ValueType>(LUA_TNONE), "Lua state is invalid. Cannot get metatable.");
+	ERR_FAIL_COND_V_MSG(p_name.is_empty(), static_cast<ValueType>(LUA_TNONE), "LuaState.get_metatable_named(): name is required.");
 	ERR_FAIL_COND_V_MSG(!lua_checkstack(L, 1), static_cast<ValueType>(LUA_TNONE), vformat("LuaState.get_metatable_named(\"%s\"): Stack overflow. Cannot grow stack.", p_name));
 
 	return static_cast<ValueType>(luaL_getmetatable(L, char_string(p_name).get_data()));
@@ -1647,8 +1800,17 @@ LuaState::ValueType LuaState::get_metatable_named(const StringName &p_name) {
 Object *LuaState::enforce_full_userdata(int p_index, const StringName &p_name) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), nullptr, "Lua state is invalid. Cannot enforce userdata.");
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), nullptr, vformat("LuaState.enforce_userdata(%d, \"%s\"): Invalid stack index. Stack has %d elements.", p_index, p_name, lua_gettop(L)));
+	ERR_FAIL_COND_V_MSG(!lua_checkstack(L, 2), nullptr, vformat("LuaState.enforce_full_userdata(%d, \"%s\"): Stack overflow. Cannot grow stack.", p_index, p_name));
 
-	void *ud = luaL_checkudata(L, p_index, char_string(p_name).get_data());
+	void *ud = lua_touserdata(L, p_index);
+	ERR_FAIL_COND_V_MSG(!ud, nullptr, vformat("LuaState.enforce_full_userdata(%d, \"%s\"): Expected userdata.", p_index, p_name));
+	if (!lua_getmetatable(L, p_index)) {
+		ERR_FAIL_V_MSG(nullptr, vformat("LuaState.enforce_full_userdata(%d, \"%s\"): Expected userdata with metatable.", p_index, p_name));
+	}
+	lua_getfield(L, LUA_REGISTRYINDEX, char_string(p_name).get_data());
+	const bool matches = lua_rawequal(L, -1, -2) != 0;
+	lua_pop(L, 2);
+	ERR_FAIL_COND_V_MSG(!matches, nullptr, vformat("LuaState.enforce_full_userdata(%d, \"%s\"): Unexpected userdata type.", p_index, p_name));
 	return static_cast<Object *>(ud);
 }
 
@@ -1656,8 +1818,9 @@ PackedByteArray LuaState::enforce_buffer(int p_index) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), PackedByteArray(), "Lua state is invalid. Cannot enforce buffer.");
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), PackedByteArray(), vformat("LuaState.enforce_buffer(%d): Invalid stack index. Stack has %d elements.", p_index, lua_gettop(L)));
 
-	size_t size;
-	void *buf = luaL_checkbuffer(L, p_index, &size);
+	size_t size = 0;
+	void *buf = lua_tobuffer(L, p_index, &size);
+	ERR_FAIL_COND_V_MSG(!buf, PackedByteArray(), vformat("LuaState.enforce_buffer(%d): Expected buffer.", p_index));
 
 	PackedByteArray byte_array;
 	byte_array.resize(size);
@@ -1668,6 +1831,8 @@ PackedByteArray LuaState::enforce_buffer(int p_index) {
 
 void LuaState::print_where(int p_level) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot print where.");
+	ERR_FAIL_COND_MSG(p_level < 0, vformat("LuaState.print_where(%d): level cannot be negative.", p_level));
+	ERR_FAIL_COND_MSG(!lua_checkstack(L, 1), vformat("LuaState.print_where(%d): Stack overflow. Cannot grow stack.", p_level));
 	luaL_where(L, p_level);
 }
 
@@ -1682,8 +1847,7 @@ int LuaState::enforce_option(int p_index, const PackedStringArray &p_options, co
 		}
 	}
 
-	arg_error(p_index, vformat("invalid option '%s'", name));
-	return -1;
+	ERR_FAIL_V_MSG(-1, vformat("LuaState.enforce_option(%d): invalid option '%s'", p_index, name));
 }
 
 String LuaState::push_as_string(int p_index) {
@@ -1691,13 +1855,19 @@ String LuaState::push_as_string(int p_index) {
 	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), String(), vformat("LuaState.push_as_string(%d): Invalid stack index. Stack has %d elements.", p_index, lua_gettop(L)));
 	ERR_FAIL_COND_V_MSG(!lua_checkstack(L, 1), String(), vformat("LuaState.push_as_string(%d): Stack overflow. Cannot grow stack.", p_index));
 
-	size_t len;
-	const char *str = luaL_tolstring(L, p_index, &len);
-	if (str) {
-		return String::utf8(str, len);
-	} else {
-		return String();
+	// Avoid luaL_tolstring: it may call __tostring via unprotected lua_call.
+	const int abs = lua_absindex(L, p_index);
+	if (lua_type(L, abs) == LUA_TSTRING || lua_type(L, abs) == LUA_TNUMBER) {
+		size_t len = 0;
+		const char *str = lua_tolstring(L, abs, &len);
+		if (str) {
+			lua_pushvalue(L, abs);
+			return String::utf8(str, len);
+		}
 	}
+	const char *type_name_cstr = luaL_typename(L, abs);
+	lua_pushstring(L, type_name_cstr ? type_name_cstr : "unknown");
+	return String(type_name_cstr ? type_name_cstr : "unknown");
 }
 
 StringName LuaState::type_name_for_value(int p_index) {
@@ -1772,51 +1942,63 @@ void LuaState::sandbox_thread() {
 
 bool LuaState::is_array(int p_index) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), false, "Lua state is invalid. Cannot check if value is array.");
+	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), false, vformat("LuaState.is_array(%d): Invalid stack index. Stack has %d elements.", p_index, lua_gettop(L)));
 	return luau_module::is_array(L, p_index);
 }
 
 bool LuaState::is_object(int p_index, int p_tag) {
-	ERR_FAIL_COND_V_MSG(!is_valid(), false, "Lua state is invalid. Cannot check if value is array.");
+	ERR_FAIL_COND_V_MSG(!is_valid(), false, "Lua state is invalid. Cannot check if value is object.");
+	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), false, vformat("LuaState.is_object(%d): Invalid stack index. Stack has %d elements.", p_index, lua_gettop(L)));
 	return luau_module::is_object(L, p_index, p_tag);
 }
 
 Array LuaState::to_array(int p_index) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), Array(), "Lua state is invalid. Cannot convert to Array.");
+	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), Array(), vformat("LuaState.to_array(%d): Invalid stack index. Stack has %d elements.", p_index, lua_gettop(L)));
 	return luau_module::to_array(L, p_index);
 }
 
 Callable LuaState::to_callable(int p_index) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), Callable(), "Lua state is invalid. Cannot convert to Callable.");
+	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), Callable(), vformat("LuaState.to_callable(%d): Invalid stack index. Stack has %d elements.", p_index, lua_gettop(L)));
 	return luau_module::to_callable(L, p_index);
 }
 
 Dictionary LuaState::to_dictionary(int p_index) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), Dictionary(), "Lua state is invalid. Cannot convert to Dictionary.");
+	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), Dictionary(), vformat("LuaState.to_dictionary(%d): Invalid stack index. Stack has %d elements.", p_index, lua_gettop(L)));
 	return luau_module::to_dictionary(L, p_index);
 }
 
 Variant LuaState::to_variant(int p_index) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), Variant(), "Lua state is invalid. Cannot convert to Variant.");
+	ERR_FAIL_COND_V_MSG(!is_valid_index(p_index), Variant(), vformat("LuaState.to_variant(%d): Invalid stack index. Stack has %d elements.", p_index, lua_gettop(L)));
 	return luau_module::to_variant(L, p_index);
 }
 
 void LuaState::push_array(const Array &p_arr) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot push Array.");
+	ERR_FAIL_COND_MSG(p_arr.size() > 1024, vformat("LuaState.push_array(): Array size %d exceeds safe ClassDB limit.", p_arr.size()));
+	ERR_FAIL_COND_MSG(!lua_checkstack(L, 2), "LuaState.push_array(): Stack overflow. Cannot grow stack.");
 	luau_module::push_array(L, p_arr);
 }
 
 void LuaState::push_callable(const Callable &p_callable) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot push Callable.");
+	ERR_FAIL_COND_MSG(!lua_checkstack(L, 1), "LuaState.push_callable(): Stack overflow. Cannot grow stack.");
 	luau_module::push_callable(L, p_callable);
 }
 
 void LuaState::push_dictionary(const Dictionary &p_dict) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot push Dictionary.");
+	ERR_FAIL_COND_MSG(p_dict.size() > 1024, vformat("LuaState.push_dictionary(): Dictionary size %d exceeds safe ClassDB limit.", p_dict.size()));
+	ERR_FAIL_COND_MSG(!lua_checkstack(L, 3), "LuaState.push_dictionary(): Stack overflow. Cannot grow stack.");
 	luau_module::push_dictionary(L, p_dict);
 }
 
 void LuaState::push_variant(const Variant &p_value) {
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot push Variant.");
+	ERR_FAIL_COND_MSG(!lua_checkstack(L, 2), "LuaState.push_variant(): Stack overflow. Cannot grow stack.");
 	luau_module::push_variant(L, p_value);
 }
 
@@ -1832,13 +2014,22 @@ bool LuaState::load_string(const String &p_code, const String &p_chunk_name, int
 }
 
 LuaState::Status LuaState::do_string(const String &p_code, const String &p_chunk_name, int p_env, int p_nargs, int p_nresults, int p_errfunc) {
+	ERR_FAIL_COND_V_MSG(!is_valid(), static_cast<Status>(LUA_ERRMEM), "Lua state is invalid. Cannot do string.");
 	if (load_string(p_code, p_chunk_name.is_empty() ? p_code : p_chunk_name, p_env)) {
 		return pcall(p_nargs, p_nresults, p_errfunc);
-	} else {
-		const char *err_msg = lua_tostring(L, -1);
-		ERR_PRINT(vformat("Failed to load Lua chunk \"%s\": %s", p_chunk_name, err_msg));
-		return static_cast<Status>(LUA_ERRSYNTAX);
 	}
+
+	// load_bytecode may soft-fail without pushing an error object (e.g. invalid env).
+	String err_msg = "unknown load error";
+	if (is_valid() && lua_gettop(L) > 0) {
+		size_t len = 0;
+		const char *str = lua_tolstring(L, -1, &len);
+		if (str) {
+			err_msg = String::utf8(str, len);
+		}
+	}
+	ERR_PRINT(vformat("Failed to load Lua chunk \"%s\": %s", p_chunk_name, err_msg));
+	return static_cast<Status>(LUA_ERRSYNTAX);
 }
 
 Callable LuaState::bind_callable(const Callable &p_callable) {
@@ -1852,6 +2043,7 @@ void LuaState::set_call_metamethod(int p_metatable_index, const Callable &p_call
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot set metamethod.");
 	ERR_FAIL_COND_MSG(!is_valid_index(p_metatable_index), vformat("LuaState.set_call_metamethod(%d): Invalid stack index. Stack has %d elements.", p_metatable_index, lua_gettop(L)));
 	ERR_FAIL_COND_MSG(!lua_istable(L, p_metatable_index), vformat("LuaState.set_call_metamethod(%d): Index is not a table.", p_metatable_index));
+	ERR_FAIL_COND_MSG(!p_callable.is_valid(), vformat("LuaState.set_call_metamethod(%d): Callable is invalid.", p_metatable_index));
 	ERR_FAIL_COND_MSG(!lua_checkstack(L, 1), vformat("LuaState.set_call_metamethod(%d): Stack overflow. Cannot grow stack.", p_metatable_index));
 
 	int abs_index = lua_absindex(L, p_metatable_index);
@@ -1865,6 +2057,7 @@ void LuaState::set_index_metamethod(int p_metatable_index, const Callable &p_cal
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot set metamethod.");
 	ERR_FAIL_COND_MSG(!is_valid_index(p_metatable_index), vformat("LuaState.set_index_metamethod(%d): Invalid stack index. Stack has %d elements.", p_metatable_index, lua_gettop(L)));
 	ERR_FAIL_COND_MSG(!lua_istable(L, p_metatable_index), vformat("LuaState.set_index_metamethod(%d): Index is not a table.", p_metatable_index));
+	ERR_FAIL_COND_MSG(!p_callable.is_valid(), vformat("LuaState.set_index_metamethod(%d): Callable is invalid.", p_metatable_index));
 	ERR_FAIL_COND_MSG(!lua_checkstack(L, 1), vformat("LuaState.set_index_metamethod(%d): Stack overflow. Cannot grow stack.", p_metatable_index));
 
 	int abs_index = lua_absindex(L, p_metatable_index);
@@ -1878,6 +2071,7 @@ void LuaState::set_newindex_metamethod(int p_metatable_index, const Callable &p_
 	ERR_FAIL_COND_MSG(!is_valid(), "Lua state is invalid. Cannot set metamethod.");
 	ERR_FAIL_COND_MSG(!is_valid_index(p_metatable_index), vformat("LuaState.set_newindex_metamethod(%d): Invalid stack index. Stack has %d elements.", p_metatable_index, lua_gettop(L)));
 	ERR_FAIL_COND_MSG(!lua_istable(L, p_metatable_index), vformat("LuaState.set_newindex_metamethod(%d): Index is not a table.", p_metatable_index));
+	ERR_FAIL_COND_MSG(!p_callable.is_valid(), vformat("LuaState.set_newindex_metamethod(%d): Callable is invalid.", p_metatable_index));
 	ERR_FAIL_COND_MSG(!lua_checkstack(L, 1), vformat("LuaState.set_newindex_metamethod(%d): Stack overflow. Cannot grow stack.", p_metatable_index));
 
 	int abs_index = lua_absindex(L, p_metatable_index);
@@ -1905,7 +2099,9 @@ Ref<LuaState> LuaState::find_or_create_lua_state(lua_State *p_L) {
 }
 
 void LuaState::open_library(lua_CFunction func, const char *name) {
+	ERR_FAIL_COND_MSG(!lua_checkstack(L, 2), vformat("LuaState.open_library(%s): Stack overflow. Cannot grow stack.", name));
 	lua_pushcfunction(L, func, name);
 	lua_pushstring(L, name);
-	lua_call(L, 1, 0);
+	const int status = lua_pcall(L, 1, 0, 0);
+	ERR_FAIL_COND_MSG(status != LUA_OK, vformat("LuaState.open_library(%s): Failed with status %d.", name, status));
 }

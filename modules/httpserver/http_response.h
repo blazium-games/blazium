@@ -43,6 +43,8 @@ private:
 	bool is_sse = false;
 	bool is_file_response = false;
 	bool sent = false;
+	bool hold_response = false;
+	int held_client_id = -1;
 
 protected:
 	static void _bind_methods();
@@ -65,6 +67,12 @@ public:
 	// SSE
 	void start_sse();
 	bool is_sse_response() const;
+
+	// Hold client: handler returns without sending; complete later via HTTPServer::complete_response.
+	void hold();
+	bool is_held() const;
+	void set_held_client_id(int p_client_id);
+	int get_held_client_id() const;
 
 	// Internal
 	bool is_file() const;

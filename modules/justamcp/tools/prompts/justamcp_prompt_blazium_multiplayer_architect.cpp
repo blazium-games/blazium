@@ -123,4 +123,4 @@ Dictionary JustAMCPPromptBlaziumMultiplayerArchitect::complete(const Dictionary 
 	return completion;
 }
 
-#endif // TOOLS_ENABLED
+#endif

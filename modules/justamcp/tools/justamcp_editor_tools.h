@@ -71,8 +71,10 @@ public:
 	Dictionary editor_save_all_scenes(const Dictionary &p_args);
 	Dictionary editor_get_signals(const Dictionary &p_args);
 
+	Dictionary execute_tool(const String &p_tool_name, const Dictionary &p_args);
+
 	JustAMCPEditorTools() {}
 	~JustAMCPEditorTools() {}
 };
 
-#endif // TOOLS_ENABLED
+#endif

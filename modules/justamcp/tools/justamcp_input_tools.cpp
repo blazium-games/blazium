@@ -32,34 +32,33 @@
 #include "core/io/file_access.h"
 #include "core/io/json.h"
 
-static inline Dictionary _MCP_SUCCESS(const Variant &data) {
-	Dictionary r;
-	r["ok"] = true;
-	r["result"] = data;
-	return r;
-}
-static inline Dictionary _MCP_ERROR_INTERNAL(int code, const String &msg) {
-	Dictionary e, r;
-	e["code"] = code;
-	e["message"] = msg;
-	r["ok"] = false;
-	r["error"] = e;
-	return r;
-}
+#include "../justamcp_mcp_tool_macros.h"
+#include "../justamcp_runtime.h"
 
-#undef MCP_SUCCESS
-#undef MCP_ERROR
-#undef MCP_INVALID_PARAMS
-#undef MCP_INTERNAL
-#define MCP_SUCCESS(data) _MCP_SUCCESS(data)
-#define MCP_ERROR(code, msg) _MCP_ERROR_INTERNAL(code, msg)
-#define MCP_INVALID_PARAMS(msg) _MCP_ERROR_INTERNAL(-32602, msg)
-#define MCP_INTERNAL(msg) _MCP_ERROR_INTERNAL(-32603, String("Internal error: ") + msg)
+#ifdef TOOLS_ENABLED
+#include "editor/editor_interface.h"
+#endif
 
 void JustAMCPInputTools::_bind_methods() {}
 
 JustAMCPInputTools::JustAMCPInputTools() {}
 JustAMCPInputTools::~JustAMCPInputTools() {}
+
+static bool _justamcp_game_input_bridge_active() {
+#ifdef TOOLS_ENABLED
+
+	if (EditorInterface::get_singleton() && EditorInterface::get_singleton()->is_playing_scene()) {
+		return true;
+	}
+	return false;
+#else
+	return JustAMCPRuntime::get_singleton() != nullptr;
+#endif
+}
+
+static Dictionary _justamcp_input_bridge_inactive_error() {
+	return MCP_ERROR(-32000, "Game input bridge inactive. Start play mode with MCP enabled before simulating input.");
+}
 
 void JustAMCPInputTools::_write_commands(const Array &p_events) {
 	String json = JSON::stringify(p_events);
@@ -106,10 +105,13 @@ Dictionary JustAMCPInputTools::execute_tool(const String &p_tool_name, const Dic
 	err["message"] = "Method not found: " + p_tool_name;
 	Dictionary res;
 	res["error"] = err;
-	return res;
+	return Dictionary();
 }
 
 Dictionary JustAMCPInputTools::_simulate_key(const Dictionary &p_params) {
+	if (!_justamcp_game_input_bridge_active()) {
+		return _justamcp_input_bridge_inactive_error();
+	}
 	if (!p_params.has("keycode")) {
 		return MCP_INVALID_PARAMS("Missing param: keycode");
 	}
@@ -139,7 +141,10 @@ Dictionary JustAMCPInputTools::_simulate_key(const Dictionary &p_params) {
 }
 
 Dictionary JustAMCPInputTools::_simulate_mouse_click(const Dictionary &p_params) {
-	int button = p_params.has("button") ? int(p_params["button"]) : 1; // MOUSE_BUTTON_LEFT
+	if (!_justamcp_game_input_bridge_active()) {
+		return _justamcp_input_bridge_inactive_error();
+	}
+	int button = p_params.has("button") ? int(p_params["button"]) : 1;
 	bool pressed = p_params.has("pressed") ? bool(p_params["pressed"]) : true;
 	bool double_click = p_params.has("double_click") ? bool(p_params["double_click"]) : false;
 	bool auto_release = p_params.has("auto_release") ? bool(p_params["auto_release"]) : true;
@@ -193,6 +198,9 @@ Dictionary JustAMCPInputTools::_simulate_mouse_click(const Dictionary &p_params)
 }
 
 Dictionary JustAMCPInputTools::_simulate_mouse_move(const Dictionary &p_params) {
+	if (!_justamcp_game_input_bridge_active()) {
+		return _justamcp_input_bridge_inactive_error();
+	}
 	float x = p_params.has("x") ? float(p_params["x"]) : 0.0;
 	float y = p_params.has("y") ? float(p_params["y"]) : 0.0;
 	float rel_x = p_params.has("relative_x") ? float(p_params["relative_x"]) : 0.0;
@@ -227,6 +235,9 @@ Dictionary JustAMCPInputTools::_simulate_mouse_move(const Dictionary &p_params) 
 }
 
 Dictionary JustAMCPInputTools::_simulate_action(const Dictionary &p_params) {
+	if (!_justamcp_game_input_bridge_active()) {
+		return _justamcp_input_bridge_inactive_error();
+	}
 	if (!p_params.has("action")) {
 		return MCP_INVALID_PARAMS("Missing param: action");
 	}
@@ -252,6 +263,9 @@ Dictionary JustAMCPInputTools::_simulate_action(const Dictionary &p_params) {
 }
 
 Dictionary JustAMCPInputTools::_simulate_touch(const Dictionary &p_params) {
+	if (!_justamcp_game_input_bridge_active()) {
+		return _justamcp_input_bridge_inactive_error();
+	}
 	int index = p_params.has("index") ? int(p_params["index"]) : 0;
 	Dictionary position = p_params.get("position", Dictionary());
 	float x = p_params.has("x") ? float(p_params["x"]) : float(position.get("x", 0.0));
@@ -281,6 +295,9 @@ Dictionary JustAMCPInputTools::_simulate_touch(const Dictionary &p_params) {
 }
 
 Dictionary JustAMCPInputTools::_simulate_gamepad(const Dictionary &p_params) {
+	if (!_justamcp_game_input_bridge_active()) {
+		return _justamcp_input_bridge_inactive_error();
+	}
 	int device = p_params.has("device") ? int(p_params["device"]) : 0;
 
 	Dictionary event;
@@ -310,6 +327,9 @@ Dictionary JustAMCPInputTools::_simulate_gamepad(const Dictionary &p_params) {
 }
 
 Dictionary JustAMCPInputTools::_simulate_sequence(const Dictionary &p_params) {
+	if (!_justamcp_game_input_bridge_active()) {
+		return _justamcp_input_bridge_inactive_error();
+	}
 	if (!p_params.has("events") || p_params["events"].get_type() != Variant::ARRAY) {
 		return MCP_INVALID_PARAMS("Missing required parameter: events (Array)");
 	}
@@ -355,7 +375,7 @@ Dictionary JustAMCPInputTools::_simulate_sequence(const Dictionary &p_params) {
 
 Dictionary JustAMCPInputTools::_input_record(const Dictionary &p_args) {
 	Dictionary result;
-	bool state = p_args.get("state", true); // true = record, false = stop
+	bool state = p_args.get("state", true);
 
 	Dictionary event;
 	event["type"] = "meta";

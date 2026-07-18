@@ -29,18 +29,12 @@
 
 #pragma once
 
+#include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "scene/main/node.h"
 
 class JustAMCPEditorPlugin;
 class JustAMCPAnalysisTools;
-class JustAMCPSceneTools;
-class JustAMCPResourceTools;
-class JustAMCPAnimationTools;
-class JustAMCPEditorTools;
-class JustAMCPNetworkingTools;
-class JustAMCPProjectTools;
-class JustAMCPAssetTools;
 #include "justamcp_analysis_tools.h"
 #include "justamcp_animation_tools.h"
 #include "justamcp_asset_tools.h"
@@ -58,6 +52,8 @@ class JustAMCPAssetTools;
 #include "justamcp_particle_tools.h"
 #include "justamcp_physics_tools.h"
 #include "justamcp_project_tools.h"
+#include "justamcp_resource_tools.h"
+#include "justamcp_scene_tools.h"
 class JustAMCPProfilingTools;
 class JustAMCPSpatialTools;
 class JustAMCPRuntimeTools;
@@ -78,6 +74,8 @@ class JustAMCPMultiuserTools;
 
 class JustAMCPToolExecutor : public Object {
 	GDCLASS(JustAMCPToolExecutor, Object);
+
+	friend class JustAMCPCategoryExecutorDispatch;
 
 private:
 	JustAMCPEditorPlugin *editor_plugin = nullptr;
@@ -113,6 +111,7 @@ private:
 	JustAMCPMultiuserTools *multiuser_tools = nullptr;
 
 	bool initialized = false;
+	bool allow_disabled_dispatch = false;
 
 	void _init_tools();
 
@@ -122,10 +121,20 @@ protected:
 public:
 	void set_editor_plugin(JustAMCPEditorPlugin *p_plugin);
 	Dictionary execute_tool(const String &p_tool_name, const Dictionary &p_args);
+	Dictionary execute_composite_tool(const String &p_internal_name, const Dictionary &p_args);
+	Dictionary execute_tool_direct(const String &p_tool_name, const Dictionary &p_args);
+	Dictionary execute_registry_category_tool(const String &p_category, const String &p_tool_name, const Dictionary &p_args);
+	Dictionary execute_module_category_tool(const String &p_category, const String &p_internal_name, const Dictionary &p_args);
 
 	static void register_tool_settings();
-	static Array get_tool_schemas(bool p_register_only = false, bool p_ignore_settings = false);
+	static Array get_tool_schemas(bool p_register_only = false, bool p_ignore_settings = false, bool p_apply_discovery_filter = true, bool p_include_disabled_tools = false);
+	static Array collect_tool_schemas_for_category(const String &p_category, bool p_register_only = false, bool p_ignore_settings = false, bool p_include_disabled_tools = false);
+	static Array get_tool_schemas_for_category(const String &p_category, bool p_register_only = false, bool p_ignore_settings = false, bool p_include_disabled_tools = false);
 	static Dictionary list_tools(const String &p_cursor = "");
+
+	static JustAMCPToolExecutor *active_instance;
+	static JustAMCPToolExecutor *get_active_instance();
+	void set_as_active_instance();
 
 	static Node *test_scene_root;
 	static void set_test_scene_root(Node *p_node);

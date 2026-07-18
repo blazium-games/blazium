@@ -28,12 +28,13 @@
 /**************************************************************************/
 
 #include "justamcp_batch_tools.h"
+#include "../justamcp_editor_filesystem.h"
+#include "../justamcp_editor_scene_access.h"
+#include "../justamcp_read_limits.h"
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
-#include "editor/editor_undo_redo_manager.h"
 #endif
 
 #include "core/io/dir_access.h"
@@ -44,63 +45,15 @@
 #include "modules/regex/regex.h"
 #include "scene/resources/packed_scene.h"
 
-static inline Dictionary _MCP_SUCCESS(const Variant &data) {
-	Dictionary r;
-	r["ok"] = true;
-	r["result"] = data;
-	return r;
-}
-static inline Dictionary _MCP_ERROR_INTERNAL(int code, const String &msg) {
-	Dictionary e, r;
-	e["code"] = code;
-	e["message"] = msg;
-	r["ok"] = false;
-	r["error"] = e;
-	return r;
-}
-[[maybe_unused]] static inline Dictionary _MCP_ERROR_DATA(int code, const String &msg, const Variant &data) {
-	Dictionary e, r;
-	e["code"] = code;
-	e["message"] = msg;
-	e["data"] = data;
-	r["ok"] = false;
-	r["error"] = e;
-	return r;
-}
-#undef MCP_SUCCESS
-#undef MCP_ERROR
-#undef MCP_ERROR_DATA
-#undef MCP_INVALID_PARAMS
-#undef MCP_NOT_FOUND
-#undef MCP_INTERNAL
-#define MCP_SUCCESS(data) _MCP_SUCCESS(data)
-#define MCP_ERROR(code, msg) _MCP_ERROR_INTERNAL(code, msg)
-#define MCP_ERROR_DATA(code, msg, data) _MCP_ERROR_DATA(code, msg, data)
-#define MCP_INVALID_PARAMS(msg) _MCP_ERROR_INTERNAL(-32602, msg)
-#define MCP_NOT_FOUND(msg) _MCP_ERROR_DATA(-32001, String(msg) + " not found", Dictionary())
-#define MCP_INTERNAL(msg) _MCP_ERROR_INTERNAL(-32603, String("Internal error: ") + msg)
+#include "../justamcp_mcp_tool_macros.h"
 
 void JustAMCPBatchTools::_bind_methods() {}
 
 JustAMCPBatchTools::JustAMCPBatchTools() {}
 JustAMCPBatchTools::~JustAMCPBatchTools() {}
 
-#include "justamcp_tool_executor.h"
-
-Node *JustAMCPBatchTools::_get_edited_root() {
-#ifdef TOOLS_ENABLED
-	if (JustAMCPToolExecutor::get_test_scene_root()) {
-		return JustAMCPToolExecutor::get_test_scene_root();
-	}
-	if (EditorNode::get_singleton() && EditorInterface::get_singleton()) {
-		return EditorInterface::get_singleton()->get_edited_scene_root();
-	}
-#endif
-	return nullptr;
-}
-
 Node *JustAMCPBatchTools::_find_node_by_path(const String &p_path) {
-	Node *root = _get_edited_root();
+	Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 	if (!root) {
 		return nullptr;
 	}
@@ -149,7 +102,7 @@ Dictionary JustAMCPBatchTools::execute_tool(const String &p_tool_name, const Dic
 	err["message"] = "Method not found: " + p_tool_name;
 	Dictionary res;
 	res["error"] = err;
-	return res;
+	return Dictionary();
 }
 
 Dictionary JustAMCPBatchTools::_find_nodes_by_type(const Dictionary &p_params) {
@@ -158,7 +111,7 @@ Dictionary JustAMCPBatchTools::_find_nodes_by_type(const Dictionary &p_params) {
 	}
 	String type_name = p_params["type"];
 
-	Node *root = _get_edited_root();
+	Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 	if (!root) {
 		return MCP_ERROR(-32000, "No scene is currently open");
 	}
@@ -176,7 +129,7 @@ Dictionary JustAMCPBatchTools::_find_nodes_by_type(const Dictionary &p_params) {
 
 void JustAMCPBatchTools::_search_by_type(Node *p_node, const String &p_type_name, bool p_recursive, Array &r_matches) {
 	if (p_node->is_class(p_type_name) || String(p_node->get_class()) == p_type_name) {
-		Node *root = _get_edited_root();
+		Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 		if (root) {
 			Dictionary m;
 			m["name"] = p_node->get_name();
@@ -193,7 +146,7 @@ void JustAMCPBatchTools::_search_by_type(Node *p_node, const String &p_type_name
 }
 
 Dictionary JustAMCPBatchTools::_find_signal_connections(const Dictionary &p_params) {
-	Node *root = _get_edited_root();
+	Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 	if (!root) {
 		return MCP_ERROR(-32000, "No scene is currently open");
 	}
@@ -277,7 +230,7 @@ Dictionary JustAMCPBatchTools::_batch_set_property(const Dictionary &p_params) {
 		}
 	}
 
-	Node *root = _get_edited_root();
+	Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 	if (!root) {
 		return MCP_ERROR(-32000, "No scene is currently open");
 	}
@@ -306,7 +259,7 @@ void JustAMCPBatchTools::_batch_set_recursive(Node *p_node, Node *p_root, const 
 }
 
 Dictionary JustAMCPBatchTools::_batch_add_nodes(const Dictionary &p_params) {
-	Node *root = _get_edited_root();
+	Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 	if (!root) {
 		return MCP_ERROR(-32000, "No scene is currently open");
 	}
@@ -403,6 +356,11 @@ void JustAMCPBatchTools::_search_files_for_pattern(const String &p_path, const S
 		if (dir->current_is_dir()) {
 			_search_files_for_pattern(full_path, p_pattern, r_matches, p_max_results);
 		} else if (file_name.get_extension() == "tscn" || file_name.get_extension() == "gd" || file_name.get_extension() == "tres" || file_name.get_extension() == "gdshader") {
+			int64_t file_size = 0;
+			if (!justamcp_file_within_read_limit(full_path, JUSTAMCP_MAX_SYNC_READ_BYTES, file_size)) {
+				file_name = dir->get_next();
+				continue;
+			}
 			Ref<FileAccess> file = FileAccess::open(full_path, FileAccess::READ);
 			if (file.is_valid()) {
 				String content = file->get_as_text();
@@ -457,11 +415,17 @@ Dictionary JustAMCPBatchTools::_cross_scene_set_property(const Dictionary &p_par
 
 	String path_filter = p_params.has("path_filter") ? String(p_params["path_filter"]) : "res://";
 	bool exclude_addons = p_params.has("exclude_addons") ? bool(p_params["exclude_addons"]) : true;
+	const int max_results = CLAMP(int(p_params.get("max_results", 200)), 1, 2000);
+
+	if (path_filter == "res://" || path_filter.is_empty()) {
+		return MCP_ERROR(-32602, "cross_scene_set_property requires a narrower path_filter than res:// (pass a subdirectory).");
+	}
 
 	Array scenes_affected;
 	int total_nodes = 0;
 	Array scene_files;
-	_collect_scene_files(path_filter, scene_files, exclude_addons);
+	_collect_scene_files(path_filter, scene_files, exclude_addons, max_results);
+	const bool truncated = scene_files.size() >= max_results;
 
 	for (int i = 0; i < scene_files.size(); i++) {
 		String scene_path = scene_files[i];
@@ -496,8 +460,14 @@ Dictionary JustAMCPBatchTools::_cross_scene_set_property(const Dictionary &p_par
 	}
 
 #ifdef TOOLS_ENABLED
-	if (!scenes_affected.is_empty() && EditorFileSystem::get_singleton()) {
-		EditorFileSystem::get_singleton()->scan();
+	if (!scenes_affected.is_empty()) {
+		for (int i = 0; i < scenes_affected.size(); i++) {
+			Dictionary d = scenes_affected[i];
+			String scene_path = d.get("scene", "");
+			if (!scene_path.is_empty()) {
+				JustAMCPEditorFilesystem::refresh_path(scene_path);
+			}
+		}
 	}
 #endif
 
@@ -507,10 +477,14 @@ Dictionary JustAMCPBatchTools::_cross_scene_set_property(const Dictionary &p_par
 	res["scenes_affected"] = scenes_affected;
 	res["total_scenes"] = scenes_affected.size();
 	res["total_nodes"] = total_nodes;
+	res["truncated"] = truncated;
 	return MCP_SUCCESS(res);
 }
 
-void JustAMCPBatchTools::_collect_scene_files(const String &p_path, Array &r_files, bool p_exclude_addons) {
+void JustAMCPBatchTools::_collect_scene_files(const String &p_path, Array &r_files, bool p_exclude_addons, int p_max_results) {
+	if (p_max_results > 0 && r_files.size() >= p_max_results) {
+		return;
+	}
 	Ref<DirAccess> dir = DirAccess::open(p_path);
 	if (dir.is_null()) {
 		return;
@@ -519,6 +493,9 @@ void JustAMCPBatchTools::_collect_scene_files(const String &p_path, Array &r_fil
 	dir->list_dir_begin();
 	String file_name = dir->get_next();
 	while (!file_name.is_empty()) {
+		if (p_max_results > 0 && r_files.size() >= p_max_results) {
+			break;
+		}
 		if (file_name.begins_with(".")) {
 			file_name = dir->get_next();
 			continue;
@@ -529,7 +506,7 @@ void JustAMCPBatchTools::_collect_scene_files(const String &p_path, Array &r_fil
 				file_name = dir->get_next();
 				continue;
 			}
-			_collect_scene_files(full_path, r_files, p_exclude_addons);
+			_collect_scene_files(full_path, r_files, p_exclude_addons, p_max_results);
 		} else if (file_name.get_extension() == "tscn") {
 			r_files.push_back(full_path);
 		}
