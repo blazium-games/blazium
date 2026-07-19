@@ -644,6 +644,8 @@ void ScriptTextEditor::_update_background_color() {
 
 	// Set the warning background.
 	if (warning_line_color.a != 0.0) {
+		Color style_line_color = Color(0.68, 0.5, 0.93);
+		style_line_color.a = warning_line_color.a;
 		for (const ScriptLanguage::Warning &warning : warnings) {
 			int warning_start_line = CLAMP(warning.start_line - 1, 0, te->get_line_count() - 1);
 			int warning_end_line = CLAMP(warning.end_line - 1, 0, te->get_line_count() - 1);
@@ -652,10 +654,11 @@ void ScriptTextEditor::_update_background_color() {
 			// If the warning highlight is too long, only highlight the start line.
 			const int warning_max_lines = 20;
 
-			te->set_line_background_color(folded_line_header, warning_line_color);
+			const Color line_color = warning.is_style ? style_line_color : warning_line_color;
+			te->set_line_background_color(folded_line_header, line_color);
 			if (warning_end_line - warning_start_line < warning_max_lines) {
 				for (int i = warning_start_line + 1; i <= warning_end_line; i++) {
-					te->set_line_background_color(i, warning_line_color);
+					te->set_line_background_color(i, line_color);
 				}
 			}
 		}
@@ -914,6 +917,9 @@ void ScriptTextEditor::_update_warnings() {
 	}
 
 	// Add script warnings.
+	const Color style_warning_color = warnings_panel->has_theme_color(SNAME("style_warning_color"), EditorStringName(Editor))
+			? warnings_panel->get_theme_color(SNAME("style_warning_color"), EditorStringName(Editor))
+			: Color(0.68, 0.5, 0.93);
 	warnings_panel->push_table(3);
 	for (const ScriptLanguage::Warning &w : warnings) {
 		Dictionary ignore_meta;
@@ -930,14 +936,20 @@ void ScriptTextEditor::_update_warnings() {
 
 		warnings_panel->push_cell();
 		warnings_panel->push_meta(w.start_line - 1);
-		warnings_panel->push_color(warnings_panel->get_theme_color(SNAME("warning_color"), EditorStringName(Editor)));
+		warnings_panel->push_color(w.is_style ? style_warning_color : warnings_panel->get_theme_color(SNAME("warning_color"), EditorStringName(Editor)));
 		warnings_panel->add_text(vformat(TTR("Line %d (%s):"), w.start_line, w.string_code));
 		warnings_panel->pop(); // Color.
 		warnings_panel->pop(); // Meta goto.
 		warnings_panel->pop(); // Cell.
 
 		warnings_panel->push_cell();
-		warnings_panel->add_text(w.message);
+		if (w.is_style) {
+			warnings_panel->push_color(style_warning_color);
+			warnings_panel->add_text(w.message);
+			warnings_panel->pop();
+		} else {
+			warnings_panel->add_text(w.message);
+		}
 		warnings_panel->add_newline();
 		warnings_panel->pop(); // Cell.
 	}

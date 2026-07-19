@@ -148,6 +148,7 @@ bool GDScriptLanguage::validate(const String &p_script, const String &p_path, Li
 			w.rightmost_column = warn.rightmost_column;
 			w.code = (int)warn.code;
 			w.string_code = GDScriptWarning::get_name_from_code(warn.code);
+			w.is_style = GDScriptWarning::is_style_warning(warn.code);
 			w.message = warn.get_message();
 			r_warnings->push_back(w);
 		}

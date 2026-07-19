@@ -226,6 +226,7 @@ public:
 		int code;
 		String string_code;
 		String message;
+		bool is_style = false;
 	};
 
 	struct ScriptError {

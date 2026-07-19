@@ -213,6 +213,141 @@ void GDScriptParser::push_warning(const Node *p_source, GDScriptWarning::Code p_
 	pending_warnings.push_back(pw);
 }
 
+static bool _style_strip(const String &p_name, String &r_core) {
+	int begin = 0;
+	int end = p_name.length();
+	while (begin < end && p_name[begin] == '_') {
+		begin++;
+	}
+	while (end > begin && p_name[end - 1] == '_') {
+		end--;
+	}
+	if (begin >= end) {
+		return false;
+	}
+	r_core = p_name.substr(begin, end - begin);
+	const char32_t first = r_core[0];
+	if (first >= '0' && first <= '9') {
+		return false;
+	}
+	return true;
+}
+
+static bool _style_is_snake_case(const String &p_name) {
+	String core;
+	if (!_style_strip(p_name, core)) {
+		return true;
+	}
+	for (int i = 0; i < core.length(); i++) {
+		const char32_t c = core[i];
+		if (c >= 'A' && c <= 'Z') {
+			return false;
+		}
+	}
+	return true;
+}
+
+static bool _style_is_constant_case(const String &p_name) {
+	String core;
+	if (!_style_strip(p_name, core)) {
+		return true;
+	}
+	for (int i = 0; i < core.length(); i++) {
+		const char32_t c = core[i];
+		if (c >= 'a' && c <= 'z') {
+			return false;
+		}
+	}
+	return true;
+}
+
+static bool _style_is_pascal_case(const String &p_name) {
+	String core;
+	if (!_style_strip(p_name, core)) {
+		return true;
+	}
+	const char32_t first = core[0];
+	if (first < 'A' || first > 'Z') {
+		return false;
+	}
+	if (core.find_char('_') != -1) {
+		return false;
+	}
+	return true;
+}
+
+void GDScriptParser::check_identifier_style(const IdentifierNode *p_identifier, GDScriptWarning::Code p_code) {
+	if (p_identifier == nullptr || p_identifier->name == StringName()) {
+		return;
+	}
+	const String name = String(p_identifier->name);
+	bool ok = true;
+	switch (p_code) {
+		case GDScriptWarning::CLASS_NAMING_CONVENTION:
+		case GDScriptWarning::ENUM_NAMING_CONVENTION:
+			ok = _style_is_pascal_case(name);
+			break;
+		case GDScriptWarning::FUNCTION_NAMING_CONVENTION:
+		case GDScriptWarning::VARIABLE_NAMING_CONVENTION:
+		case GDScriptWarning::SIGNAL_NAMING_CONVENTION:
+		case GDScriptWarning::PARAMETER_NAMING_CONVENTION:
+			ok = _style_is_snake_case(name);
+			break;
+		case GDScriptWarning::CONSTANT_NAMING_CONVENTION:
+			ok = _style_is_constant_case(name) || _style_is_pascal_case(name);
+			break;
+		case GDScriptWarning::ENUM_VALUE_NAMING_CONVENTION:
+			ok = _style_is_constant_case(name);
+			break;
+		default:
+			return;
+	}
+	if (!ok) {
+		push_warning(p_identifier, p_code, name);
+	}
+}
+
+void GDScriptParser::check_file_style() {
+	if (script_path.is_empty() || script_path.contains("::")) {
+		return;
+	}
+	const String file_name = script_path.get_file();
+	if (_style_is_snake_case(file_name.get_basename())) {
+		return;
+	}
+	Node *nd = alloc_node<PassNode>();
+	nd->start_line = 1;
+	nd->start_column = 0;
+	nd->end_line = 1;
+	nd->leftmost_column = 0;
+	nd->rightmost_column = 0;
+	push_warning(nd, GDScriptWarning::FILE_NAMING_CONVENTION, file_name);
+}
+
+void GDScriptParser::check_trailing_comma(const Node *p_list, const Node *p_last_element, bool p_has_trailing_comma, const String &p_kind) {
+	if (p_last_element == nullptr) {
+		return;
+	}
+	const bool comma_expected = p_list->end_line > p_last_element->end_line;
+	if (comma_expected && !p_has_trailing_comma) {
+		push_warning(p_last_element, GDScriptWarning::MISSING_TRAILING_COMMA, p_kind);
+	} else if (!comma_expected && p_has_trailing_comma) {
+		push_warning(p_last_element, GDScriptWarning::UNNECESSARY_TRAILING_COMMA, p_kind);
+	}
+}
+
+void GDScriptParser::check_hexadecimal_case(const Node *p_source, const String &p_text) {
+	if (!p_text.begins_with("0x") && !p_text.begins_with("0X")) {
+		return;
+	}
+	for (int i = 2; i < p_text.length(); i++) {
+		if (p_text[i] >= 'a' && p_text[i] <= 'f') {
+			push_warning(p_source, GDScriptWarning::HEXADECIMAL_CASE, p_text);
+			return;
+		}
+	}
+}
+
 void GDScriptParser::apply_pending_warnings() {
 	for (const PendingWarning &pw : pending_warnings) {
 		if (warning_ignored_lines[pw.code].has(pw.source->start_line)) {
@@ -410,6 +545,8 @@ Error GDScriptParser::parse(const String &p_source_code, const String &p_script_
 		nd->rightmost_column = 0;
 		push_warning(nd, GDScriptWarning::EMPTY_FILE);
 	}
+
+	check_file_style();
 #endif
 
 	push_multiline(false); // Keep one for the whole parsing.
@@ -846,6 +983,9 @@ GDScriptParser::ClassNode *GDScriptParser::parse_class(bool p_is_static) {
 
 	if (consume(GDScriptTokenizer::Token::IDENTIFIER, R"(Expected identifier for the class name after "class".)")) {
 		n_class->identifier = parse_identifier();
+#ifdef DEBUG_ENABLED
+		check_identifier_style(n_class->identifier, GDScriptWarning::CLASS_NAMING_CONVENTION);
+#endif
 		if (n_class->outer) {
 			String fqcn = n_class->outer->fqcn;
 			if (fqcn.is_empty()) {
@@ -894,6 +1034,9 @@ void GDScriptParser::parse_class_name() {
 	if (consume(GDScriptTokenizer::Token::IDENTIFIER, R"(Expected identifier for the global class name after "class_name".)")) {
 		current_class->identifier = parse_identifier();
 		current_class->fqcn = String(current_class->identifier->name);
+#ifdef DEBUG_ENABLED
+		check_identifier_style(current_class->identifier, GDScriptWarning::CLASS_NAMING_CONVENTION);
+#endif
 	}
 
 	if (match(GDScriptTokenizer::Token::EXTENDS)) {
@@ -1116,6 +1259,9 @@ GDScriptParser::VariableNode *GDScriptParser::parse_variable(bool p_is_static, b
 
 	variable->identifier = parse_identifier();
 	variable->export_info.name = variable->identifier->name;
+#ifdef DEBUG_ENABLED
+	check_identifier_style(variable->identifier, GDScriptWarning::VARIABLE_NAMING_CONVENTION);
+#endif
 	variable->is_static = p_is_static;
 
 	if (match(GDScriptTokenizer::Token::COLON)) {
@@ -1351,6 +1497,9 @@ GDScriptParser::ConstantNode *GDScriptParser::parse_constant(bool p_is_static) {
 	}
 
 	constant->identifier = parse_identifier();
+#ifdef DEBUG_ENABLED
+	check_identifier_style(constant->identifier, GDScriptWarning::CONSTANT_NAMING_CONVENTION);
+#endif
 
 	if (match(GDScriptTokenizer::Token::COLON)) {
 		if (check((GDScriptTokenizer::Token::EQUAL))) {
@@ -1389,6 +1538,9 @@ GDScriptParser::ParameterNode *GDScriptParser::parse_parameter() {
 
 	ParameterNode *parameter = alloc_node<ParameterNode>();
 	parameter->identifier = parse_identifier();
+#ifdef DEBUG_ENABLED
+	check_identifier_style(parameter->identifier, GDScriptWarning::PARAMETER_NAMING_CONVENTION);
+#endif
 
 	if (match(GDScriptTokenizer::Token::COLON)) {
 		if (check((GDScriptTokenizer::Token::EQUAL))) {
@@ -1419,6 +1571,9 @@ GDScriptParser::SignalNode *GDScriptParser::parse_signal(bool p_is_static) {
 	}
 
 	signal->identifier = parse_identifier();
+#ifdef DEBUG_ENABLED
+	check_identifier_style(signal->identifier, GDScriptWarning::SIGNAL_NAMING_CONVENTION);
+#endif
 
 	if (check(GDScriptTokenizer::Token::PARENTHESIS_OPEN)) {
 		push_multiline(true);
@@ -1462,6 +1617,9 @@ GDScriptParser::EnumNode *GDScriptParser::parse_enum(bool p_is_static) {
 	if (match(GDScriptTokenizer::Token::IDENTIFIER)) {
 		enum_node->identifier = parse_identifier();
 		named = true;
+#ifdef DEBUG_ENABLED
+		check_identifier_style(enum_node->identifier, GDScriptWarning::ENUM_NAMING_CONVENTION);
+#endif
 	}
 
 	push_multiline(true);
@@ -1477,8 +1635,15 @@ GDScriptParser::EnumNode *GDScriptParser::parse_enum(bool p_is_static) {
 	GDScriptLanguage::get_singleton()->get_public_functions(&gdscript_funcs);
 #endif
 
+#ifdef DEBUG_ENABLED
+	bool has_trailing_comma = false;
+#endif
+
 	do {
 		if (check(GDScriptTokenizer::Token::BRACE_CLOSE)) {
+#ifdef DEBUG_ENABLED
+			has_trailing_comma = !enum_node->values.is_empty();
+#endif
 			break; // Allow trailing comma.
 		}
 		if (consume(GDScriptTokenizer::Token::IDENTIFIER, R"(Expected identifier for enum key.)")) {
@@ -1487,6 +1652,9 @@ GDScriptParser::EnumNode *GDScriptParser::parse_enum(bool p_is_static) {
 			EnumNode::Value item;
 			item.identifier = identifier;
 			item.parent_enum = enum_node;
+#ifdef DEBUG_ENABLED
+			check_identifier_style(item.identifier, GDScriptWarning::ENUM_VALUE_NAMING_CONVENTION);
+#endif
 			item.line = previous.start_line;
 			item.leftmost_column = previous.leftmost_column;
 			item.rightmost_column = previous.rightmost_column;
@@ -1548,6 +1716,14 @@ GDScriptParser::EnumNode *GDScriptParser::parse_enum(bool p_is_static) {
 	pop_multiline();
 	consume(GDScriptTokenizer::Token::BRACE_CLOSE, R"(Expected closing "}" for enum.)");
 	complete_extents(enum_node);
+#ifdef DEBUG_ENABLED
+	const Node *last_enum_element = nullptr;
+	if (!enum_node->values.is_empty()) {
+		const EnumNode::Value &last_value = enum_node->values[enum_node->values.size() - 1];
+		last_enum_element = last_value.custom_value != nullptr ? last_value.custom_value : last_value.identifier;
+	}
+	check_trailing_comma(enum_node, last_enum_element, has_trailing_comma, "enum");
+#endif
 	end_statement("enum");
 
 	return enum_node;
@@ -1623,6 +1799,9 @@ GDScriptParser::FunctionNode *GDScriptParser::parse_function(bool p_is_static) {
 
 	function->identifier = parse_identifier();
 	function->is_static = p_is_static;
+#ifdef DEBUG_ENABLED
+	check_identifier_style(function->identifier, GDScriptWarning::FUNCTION_NAMING_CONVENTION);
+#endif
 
 	SuiteNode *body = alloc_node<SuiteNode>();
 
@@ -2707,6 +2886,9 @@ GDScriptParser::ExpressionNode *GDScriptParser::parse_literal(ExpressionNode *p_
 	update_extents(literal);
 	make_completion_context(COMPLETION_NONE, literal, -1);
 	complete_extents(literal);
+#ifdef DEBUG_ENABLED
+	check_hexadecimal_case(literal, previous.source);
+#endif
 	return literal;
 }
 
@@ -3070,10 +3252,17 @@ GDScriptParser::ExpressionNode *GDScriptParser::parse_await(ExpressionNode *p_pr
 GDScriptParser::ExpressionNode *GDScriptParser::parse_array(ExpressionNode *p_previous_operand, bool p_can_assign) {
 	ArrayNode *array = alloc_node<ArrayNode>();
 
+#ifdef DEBUG_ENABLED
+	bool has_trailing_comma = false;
+#endif
+
 	if (!check(GDScriptTokenizer::Token::BRACKET_CLOSE)) {
 		do {
 			if (check(GDScriptTokenizer::Token::BRACKET_CLOSE)) {
 				// Allow for trailing comma.
+#ifdef DEBUG_ENABLED
+				has_trailing_comma = true;
+#endif
 				break;
 			}
 
@@ -3088,6 +3277,9 @@ GDScriptParser::ExpressionNode *GDScriptParser::parse_array(ExpressionNode *p_pr
 	pop_multiline();
 	consume(GDScriptTokenizer::Token::BRACKET_CLOSE, R"(Expected closing "]" after array elements.)");
 	complete_extents(array);
+#ifdef DEBUG_ENABLED
+	check_trailing_comma(array, array->elements.is_empty() ? nullptr : array->elements[array->elements.size() - 1], has_trailing_comma, "array");
+#endif
 
 	return array;
 }
@@ -3096,10 +3288,17 @@ GDScriptParser::ExpressionNode *GDScriptParser::parse_dictionary(ExpressionNode 
 	DictionaryNode *dictionary = alloc_node<DictionaryNode>();
 
 	bool decided_style = false;
+#ifdef DEBUG_ENABLED
+	bool has_trailing_comma = false;
+#endif
+
 	if (!check(GDScriptTokenizer::Token::BRACE_CLOSE)) {
 		do {
 			if (check(GDScriptTokenizer::Token::BRACE_CLOSE)) {
 				// Allow for trailing comma.
+#ifdef DEBUG_ENABLED
+				has_trailing_comma = true;
+#endif
 				break;
 			}
 
@@ -3193,6 +3392,9 @@ GDScriptParser::ExpressionNode *GDScriptParser::parse_dictionary(ExpressionNode 
 	pop_multiline();
 	consume(GDScriptTokenizer::Token::BRACE_CLOSE, R"(Expected closing "}" after dictionary elements.)");
 	complete_extents(dictionary);
+#ifdef DEBUG_ENABLED
+	check_trailing_comma(dictionary, dictionary->elements.is_empty() ? nullptr : dictionary->elements[dictionary->elements.size() - 1].value, has_trailing_comma, "dictionary");
+#endif
 
 	return dictionary;
 }

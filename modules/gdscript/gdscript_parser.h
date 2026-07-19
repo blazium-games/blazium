@@ -1455,6 +1455,10 @@ private:
 		push_warning(p_source, p_code, Vector<String>{ p_symbols... });
 	}
 	void apply_pending_warnings();
+	void check_identifier_style(const IdentifierNode *p_identifier, GDScriptWarning::Code p_code);
+	void check_file_style();
+	void check_trailing_comma(const Node *p_list, const Node *p_last_element, bool p_has_trailing_comma, const String &p_kind);
+	void check_hexadecimal_case(const Node *p_source, const String &p_text);
 #endif
 	// Setting p_force to false will prevent the completion context from being update if a context was already set before.
 	// This should only be done when we push context before we consumed any tokens for the corresponding structure.

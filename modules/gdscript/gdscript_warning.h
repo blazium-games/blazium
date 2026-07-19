@@ -89,6 +89,18 @@ public:
 		NATIVE_METHOD_OVERRIDE, // The script method overrides a native one, this may not work as intended.
 		GET_NODE_DEFAULT_WITHOUT_ONREADY, // A class variable uses `get_node()` (or the `$` notation) as its default value, but does not use the @onready annotation.
 		ONREADY_WITH_EXPORT, // The `@onready` annotation will set the value after `@export` which is likely not intended.
+		FUNCTION_NAMING_CONVENTION,
+		CLASS_NAMING_CONVENTION,
+		VARIABLE_NAMING_CONVENTION,
+		CONSTANT_NAMING_CONVENTION,
+		SIGNAL_NAMING_CONVENTION,
+		ENUM_NAMING_CONVENTION,
+		ENUM_VALUE_NAMING_CONVENTION,
+		PARAMETER_NAMING_CONVENTION,
+		FILE_NAMING_CONVENTION,
+		MISSING_TRAILING_COMMA,
+		UNNECESSARY_TRAILING_COMMA,
+		HEXADECIMAL_CASE,
 #ifndef DISABLE_DEPRECATED
 		PROPERTY_USED_AS_FUNCTION, // Function not found, but there's a property with the same name.
 		CONSTANT_USED_AS_FUNCTION, // Function not found, but there's a constant with the same name.
@@ -146,6 +158,18 @@ public:
 		ERROR, // NATIVE_METHOD_OVERRIDE // May not work as expected.
 		ERROR, // GET_NODE_DEFAULT_WITHOUT_ONREADY // May not work as expected.
 		ERROR, // ONREADY_WITH_EXPORT // May not work as expected.
+		IGNORE, // FUNCTION_NAMING_CONVENTION
+		IGNORE, // CLASS_NAMING_CONVENTION
+		IGNORE, // VARIABLE_NAMING_CONVENTION
+		IGNORE, // CONSTANT_NAMING_CONVENTION
+		IGNORE, // SIGNAL_NAMING_CONVENTION
+		IGNORE, // ENUM_NAMING_CONVENTION
+		IGNORE, // ENUM_VALUE_NAMING_CONVENTION
+		IGNORE, // PARAMETER_NAMING_CONVENTION
+		IGNORE, // FILE_NAMING_CONVENTION
+		IGNORE, // MISSING_TRAILING_COMMA
+		IGNORE, // UNNECESSARY_TRAILING_COMMA
+		IGNORE, // HEXADECIMAL_CASE
 #ifndef DISABLE_DEPRECATED
 		WARN, // PROPERTY_USED_AS_FUNCTION
 		WARN, // CONSTANT_USED_AS_FUNCTION
@@ -165,6 +189,9 @@ public:
 	static int get_default_value(Code p_code);
 	static PropertyInfo get_property_info(Code p_code);
 	static String get_name_from_code(Code p_code);
+	static bool is_style_warning(Code p_code) {
+		return p_code >= FUNCTION_NAMING_CONVENTION && p_code <= HEXADECIMAL_CASE;
+	}
 	static String get_settings_path_from_code(Code p_code);
 	static Code get_code_from_name(const String &p_name);
 };

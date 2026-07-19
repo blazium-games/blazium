@@ -1,0 +1,19 @@
+GDTEST_OK
+~~ WARNING at line 1: (SIGNAL_NAMING_CONVENTION) The signal name "HealthChanged" does not follow the GDScript style guide (expected snake_case).
+~~ WARNING at line 3: (ENUM_NAMING_CONVENTION) The enum name "player_state" does not follow the GDScript style guide (expected PascalCase).
+~~ WARNING at line 4: (ENUM_VALUE_NAMING_CONVENTION) The enum value "idle" does not follow the GDScript style guide (expected CONSTANT_CASE).
+~~ WARNING at line 5: (ENUM_VALUE_NAMING_CONVENTION) The enum value "Running" does not follow the GDScript style guide (expected CONSTANT_CASE).
+~~ WARNING at line 8: (CONSTANT_NAMING_CONVENTION) The constant name "maxHealth" does not follow the GDScript style guide (expected CONSTANT_CASE).
+~~ WARNING at line 10: (VARIABLE_NAMING_CONVENTION) The variable name "currentHealth" does not follow the GDScript style guide (expected snake_case).
+~~ WARNING at line 12: (CLASS_NAMING_CONVENTION) The class name "inventory_slot" does not follow the GDScript style guide (expected PascalCase).
+~~ WARNING at line 15: (FUNCTION_NAMING_CONVENTION) The function name "TakeDamage" does not follow the GDScript style guide (expected snake_case).
+~~ WARNING at line 15: (PARAMETER_NAMING_CONVENTION) The parameter name "Amount" does not follow the GDScript style guide (expected snake_case).
+~~ WARNING at line 28: (MISSING_TRAILING_COMMA) Missing trailing comma after the last element of this enum, as recommended by the GDScript style guide when the closing bracket is on its own line.
+~~ WARNING at line 31: (UNNECESSARY_TRAILING_COMMA) Unnecessary trailing comma after the last element of this enum, as the GDScript style guide only recommends one when the closing bracket is on its own line.
+~~ WARNING at line 34: (UNNECESSARY_TRAILING_COMMA) Unnecessary trailing comma after the last element of this array, as the GDScript style guide only recommends one when the closing bracket is on its own line.
+~~ WARNING at line 36: (UNNECESSARY_TRAILING_COMMA) Unnecessary trailing comma after the last element of this dictionary, as the GDScript style guide only recommends one when the closing bracket is on its own line.
+~~ WARNING at line 45: (MISSING_TRAILING_COMMA) Missing trailing comma after the last element of this array, as recommended by the GDScript style guide when the closing bracket is on its own line.
+~~ WARNING at line 51: (MISSING_TRAILING_COMMA) Missing trailing comma after the last element of this dictionary, as recommended by the GDScript style guide when the closing bracket is on its own line.
+~~ WARNING at line 59: (HEXADECIMAL_CASE) The hexadecimal number "0xfb8c0b" does not follow the GDScript style guide (expected uppercase letters).
+~~ WARNING at line 61: (HEXADECIMAL_CASE) The hexadecimal number "0xffff_f8f8_0000" does not follow the GDScript style guide (expected uppercase letters).
+~~ WARNING at line 67: (HEXADECIMAL_CASE) The hexadecimal number "0xDEADbeef" does not follow the GDScript style guide (expected uppercase letters).

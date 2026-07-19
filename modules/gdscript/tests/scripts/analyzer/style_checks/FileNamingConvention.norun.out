@@ -1,0 +1,2 @@
+GDTEST_OK
+~~ WARNING at line 1: (FILE_NAMING_CONVENTION) The file name "FileNamingConvention.norun.gd" does not follow the GDScript style guide (expected snake_case).
