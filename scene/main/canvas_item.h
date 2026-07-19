@@ -71,6 +71,13 @@ public:
 		CLIP_CHILDREN_MAX,
 	};
 
+	enum MaskParentMode {
+		MASK_PARENT_DISABLED,
+		MASK_PARENT_INTERSECT, // Parent kept where this node is opaque (clip mask).
+		MASK_PARENT_SUBTRACT, // Parent hidden where this node is opaque (cut a hole).
+		MASK_PARENT_MAX,
+	};
+
 private:
 	mutable SelfList<Node>
 			xform_change;
@@ -113,6 +120,8 @@ private:
 
 	ClipChildrenMode clip_children_mode = CLIP_CHILDREN_DISABLED;
 
+	MaskParentMode mask_parent_mode = MASK_PARENT_DISABLED;
+
 	mutable RS::CanvasItemTextureFilter texture_filter_cache = RS::CANVAS_ITEM_TEXTURE_FILTER_LINEAR;
 	mutable RS::CanvasItemTextureRepeat texture_repeat_cache = RS::CANVAS_ITEM_TEXTURE_REPEAT_DISABLED;
 	TextureFilter texture_filter = TEXTURE_FILTER_PARENT_NODE;
@@ -138,6 +147,7 @@ private:
 
 	void _enter_canvas();
 	void _exit_canvas();
+	void _refresh_mask_parent(bool p_force_disable = false);
 
 	void _window_visibility_changed();
 
@@ -256,6 +266,9 @@ public:
 
 	void set_clip_children_mode(ClipChildrenMode p_clip_mode);
 	ClipChildrenMode get_clip_children_mode() const;
+
+	void set_mask_parent(MaskParentMode p_mode);
+	MaskParentMode get_mask_parent() const;
 
 	virtual void set_light_mask(int p_light_mask);
 	int get_light_mask() const;
@@ -400,7 +413,7 @@ public:
 VARIANT_ENUM_CAST(CanvasItem::TextureFilter)
 VARIANT_ENUM_CAST(CanvasItem::TextureRepeat)
 VARIANT_ENUM_CAST(CanvasItem::ClipChildrenMode)
-
+VARIANT_ENUM_CAST(CanvasItem::MaskParentMode)
 class CanvasTexture : public Texture2D {
 	GDCLASS(CanvasTexture, Texture2D);
 	OBJ_SAVE_TYPE(Texture2D); // Saves derived classes with common type so they can be interchanged.

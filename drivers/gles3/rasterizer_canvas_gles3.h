@@ -335,6 +335,10 @@ public:
 	RID default_canvas_group_shader;
 	RID default_clip_children_material;
 	RID default_clip_children_shader;
+	RID default_mask_parent_material;
+	RID default_mask_parent_shader;
+	RID default_mask_parent_subtract_material;
+	RID default_mask_parent_subtract_shader;
 
 	typedef void Texture;
 

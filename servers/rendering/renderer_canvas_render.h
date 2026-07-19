@@ -323,15 +323,16 @@ public:
 		bool use_identity_transform : 1;
 
 		struct CanvasGroup {
-			RS::CanvasGroupMode mode;
-			bool fit_empty;
-			float fit_margin;
-			bool blur_mipmaps;
-			float clear_margin;
+			RS::CanvasGroupMode mode = RS::CANVAS_GROUP_MODE_DISABLED;
+			bool fit_empty = false;
+			float fit_margin = 0.0;
+			bool blur_mipmaps = false;
+			float clear_margin = 5.0;
 		};
 
 		CanvasGroup *canvas_group = nullptr;
 		bool use_canvas_group = false;
+		bool mask_parent = false;
 		int light_mask;
 		int z_final;
 
@@ -476,6 +477,7 @@ public:
 			material_owner = nullptr;
 			copy_back_buffer = nullptr;
 			distance_field = false;
+			mask_parent = false;
 			light_masked = false;
 			update_when_visible = false;
 			z_final = 0;

@@ -1540,9 +1540,13 @@ public:
 		CANVAS_GROUP_MODE_CLIP_ONLY,
 		CANVAS_GROUP_MODE_CLIP_AND_DRAW,
 		CANVAS_GROUP_MODE_TRANSPARENT,
+		CANVAS_GROUP_MODE_MASK_PARENT,
+		CANVAS_GROUP_MODE_MASK_PARENT_SUBTRACT,
 	};
 
 	virtual void canvas_item_set_canvas_group_mode(RID p_item, CanvasGroupMode p_mode, float p_clear_margin = 5.0, bool p_fit_empty = false, float p_fit_margin = 0.0, bool p_blur_mipmaps = false) = 0;
+
+	virtual void canvas_item_set_mask_parent(RID p_item, CanvasGroupMode p_mode) = 0;
 
 	virtual void canvas_item_set_debug_redraw(bool p_enabled) = 0;
 	virtual bool canvas_item_get_debug_redraw() const = 0;
