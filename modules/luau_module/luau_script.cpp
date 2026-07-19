@@ -172,18 +172,50 @@ bool LuauScript::inherits_script(const Ref<Script> &p_script) const {
 }
 
 StringName LuauScript::get_instance_base_type() const {
-	if (class_info.extends.is_empty()) {
-		return StringName("RefCounted");
+	StringName resolved;
+	if (!class_info.extends.is_empty()) {
+		if (ClassDB::class_exists(class_info.extends)) {
+			resolved = class_info.extends;
+		} else if (ScriptServer::is_global_class(class_info.extends)) {
+			resolved = ScriptServer::get_global_class_native_base(class_info.extends);
+		}
 	}
-	if (ClassDB::class_exists(class_info.extends)) {
-		return class_info.extends;
+	if (resolved == StringName()) {
+		Ref<Script> base = get_base_script();
+		if (base.is_valid() && base->is_valid()) {
+			resolved = base->get_instance_base_type();
+		}
 	}
-	if (ScriptServer::is_global_class(class_info.extends)) {
-		return ScriptServer::get_global_class_native_base(class_info.extends);
+
+	// When class_info was never parsed (defaults to RefCounted) but EditorFileSystem
+	// already registered the global class, prefer ScriptServer's native base so
+	// Add Child Node can instantiate a Node instead of a RefCounted (#723).
+	const bool needs_fallback = resolved == StringName() || resolved == StringName("RefCounted");
+	if (needs_fallback) {
+		if (class_info.class_name != StringName() && ScriptServer::is_global_class(class_info.class_name)) {
+			const StringName native = ScriptServer::get_global_class_native_base(class_info.class_name);
+			if (native != StringName() && ClassDB::class_exists(native)) {
+				return native;
+			}
+		}
+		const String path = get_path();
+		if (!path.is_empty()) {
+			List<StringName> classes;
+			ScriptServer::get_global_class_list(&classes);
+			for (const StringName &c : classes) {
+				if (ScriptServer::get_global_class_path(c) == path) {
+					const StringName native = ScriptServer::get_global_class_native_base(c);
+					if (native != StringName() && ClassDB::class_exists(native)) {
+						return native;
+					}
+					break;
+				}
+			}
+		}
 	}
-	Ref<Script> base = get_base_script();
-	if (base.is_valid() && base->is_valid()) {
-		return base->get_instance_base_type();
+
+	if (resolved != StringName()) {
+		return resolved;
 	}
 	return StringName("RefCounted");
 }
@@ -291,6 +323,8 @@ Error LuauScript::reload(bool p_keep_state) {
 			placeholder_fallback_enabled = true;
 		}
 #endif
+		// Keep extends/class_name for editor create (Add Child Node) even when parse fails.
+		LuauClassInfo::parse_global_class_metadata_from_source(source, &class_info);
 		reloading = false;
 		return err;
 	}

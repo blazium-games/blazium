@@ -31,11 +31,13 @@
 
 #include "tests/test_macros.h"
 
+#include "modules/luau_module/analysis/luau_typecheck.h"
 #include "modules/luau_module/luau.h"
 #include "modules/luau_module/luau_bytecode_format.h"
 #include "modules/luau_module/luau_class_info.h"
 #include "modules/luau_module/luau_codegen.h"
 #include "modules/luau_module/luau_compile_result.h"
+#include "modules/luau_module/luau_script_language.h"
 
 namespace TestLuauModule {
 
@@ -96,6 +98,48 @@ return TableDslNode
 	CHECK(info.class_name == StringName("LuauFixtureTableDsl"));
 	CHECK(info.extends == "Node");
 	CHECK(info.tool);
+}
+
+TEST_CASE("[Modules][LuauModule] typecheck recognizes gdclass global") {
+	List<ScriptLanguage::ScriptError> errors;
+	const bool ok = luau_module::LuauTypecheck::analyze("return gdclass({})", "res://gdclass_fixture.luau", &errors, nullptr);
+	for (const ScriptLanguage::ScriptError &err : errors) {
+		CHECK(err.message.find("Unknown global 'gdclass'") < 0);
+	}
+#ifdef LUAU_MODULE_ANALYSIS_ENABLED
+	CHECK(ok);
+#else
+	(void)ok;
+#endif
+}
+
+TEST_CASE("[Modules][LuauModule] validate function entries include line numbers") {
+	LuauScriptLanguage *lang = LuauScriptLanguage::get_singleton();
+	REQUIRE(lang != nullptr);
+
+	const String source = R"(
+local NodeScript = {
+	extends = "Node",
+}
+function NodeScript:_ready()
+end
+return NodeScript
+)";
+
+	List<String> functions;
+	List<ScriptLanguage::ScriptError> errors;
+	const bool ok = lang->validate(source, "res://validate_line_fixture.luau", &functions, &errors, nullptr, nullptr);
+	CHECK(ok);
+
+	bool found_ready = false;
+	for (const String &entry : functions) {
+		if (entry.get_slicec(':', 0) == "_ready") {
+			found_ready = true;
+			CHECK(entry.get_slicec(':', 1).to_int() > 0);
+			break;
+		}
+	}
+	CHECK(found_ready);
 }
 
 } //namespace TestLuauModule
