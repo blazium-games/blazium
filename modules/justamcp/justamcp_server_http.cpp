@@ -304,7 +304,8 @@ void JustAMCPServer::_deferred_post_sse_json_rpc(int p_connection_id, const Stri
 	if (!session_manager) {
 		return;
 	}
-	const Dictionary result = JustAMCPJsonRpcTransport::handle_json_rpc_parsed(this, p_payload, Ref<HTTPResponse>(), p_session_id);
+	const Dictionary result = JustAMCPJsonRpcTransport::sanitize_wire_rpc(
+			JustAMCPJsonRpcTransport::handle_json_rpc_parsed(this, p_payload, Ref<HTTPResponse>(), p_session_id));
 	if (!result.is_empty()) {
 		session_manager->send_json_on_connection(p_connection_id, JSON::stringify(result));
 		session_manager->complete_post_sse_stream(p_connection_id);
@@ -313,7 +314,7 @@ void JustAMCPServer::_deferred_post_sse_json_rpc(int p_connection_id, const Stri
 }
 
 void JustAMCPServer::_deferred_legacy_message_json_rpc(const String &p_body, const String &p_session_id_param) {
-	Dictionary result = _handle_json_rpc(p_body, Ref<HTTPResponse>());
+	Dictionary result = JustAMCPJsonRpcTransport::sanitize_wire_rpc(_handle_json_rpc(p_body, Ref<HTTPResponse>()));
 	if (result.is_empty()) {
 		return;
 	}
@@ -350,7 +351,7 @@ void JustAMCPServer::_deferred_held_json_rpc(int p_client_id, const String &p_bo
 			response->set_body("");
 		} else {
 			response->set_status(200);
-			response->set_json(result);
+			response->set_json(JustAMCPJsonRpcTransport::sanitize_wire_rpc(result));
 		}
 	}
 	if (HTTPServer::get_singleton()) {
@@ -447,7 +448,7 @@ void JustAMCPServer::_handle_mcp_stateless_post(Ref<HTTPRequestContext> p_contex
 				_mcp_debug_log("Stateless POST Replying HTTP 200 with Result JSON payload: " + JSON::stringify(result));
 			}
 			p_response->set_status(200);
-			p_response->set_json(result);
+			p_response->set_json(JustAMCPJsonRpcTransport::sanitize_wire_rpc(result));
 		}
 	}
 }

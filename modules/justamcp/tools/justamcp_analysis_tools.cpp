@@ -226,7 +226,7 @@ void JustAMCPAnalysisTools::_collect_signal_data(Node *p_node, Node *p_root, Arr
 		r_truncated = true;
 		return;
 	}
-	String node_path = p_root->get_path_to(p_node);
+	String node_path = JustAMCPEditorSceneAccess::safe_path_to(p_root, p_node);
 	Array signals_emitted;
 	Array signals_connected_to;
 
@@ -246,7 +246,7 @@ void JustAMCPAnalysisTools::_collect_signal_data(Node *p_node, Node *p_root, Arr
 				String target_path = "";
 				if (target_node) {
 					if (target_node == p_root || p_root->is_ancestor_of(target_node)) {
-						target_path = p_root->get_path_to(target_node);
+						target_path = JustAMCPEditorSceneAccess::safe_path_to(p_root, target_node);
 					} else {
 						target_path = target_node->get_name();
 					}
@@ -334,7 +334,7 @@ void JustAMCPAnalysisTools::_analyze_node(Node *p_node, Node *p_root, int p_dept
 		if (!script_path.is_empty()) {
 			Dictionary sd;
 			if (p_root && p_node) {
-				sd["node"] = String(p_root->get_path_to(p_node));
+				sd["node"] = String(JustAMCPEditorSceneAccess::safe_path_to(p_root, p_node));
 			}
 			sd["script"] = script_path;
 			r_scripts.push_back(sd);

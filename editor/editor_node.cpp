@@ -192,13 +192,14 @@ bool EditorProgress::step(const String &p_state, int p_step, bool p_force_refres
 }
 
 EditorProgress::EditorProgress(const String &p_task, const String &p_label, int p_amount, bool p_can_cancel, bool p_force_background) {
-	if (!p_force_background && Thread::is_main_thread()) {
+	const bool use_background = p_force_background || (Thread::is_main_thread() && MessageQueue::get_singleton()->is_flushing());
+	if (!use_background && Thread::is_main_thread()) {
 		EditorNode::progress_add_task(p_task, p_label, p_amount, p_can_cancel);
 	} else {
 		EditorNode::progress_add_task_bg(p_task, p_label, p_amount);
 	}
 	task = p_task;
-	force_background = p_force_background;
+	force_background = use_background;
 }
 
 EditorProgress::~EditorProgress() {

@@ -74,4 +74,14 @@ inline Node *find_node_in_edited_scene(const String &p_path) {
 	return find_node(get_edited_root(), p_path);
 }
 
+inline String safe_path_to(Node *p_root, Node *p_node) {
+	if (!p_root || !p_node) {
+		return String();
+	}
+	if (p_node == p_root || p_root->is_ancestor_of(p_node)) {
+		return p_root->get_path_to(p_node);
+	}
+	return String(p_node->get_name());
+}
+
 } //namespace JustAMCPEditorSceneAccess

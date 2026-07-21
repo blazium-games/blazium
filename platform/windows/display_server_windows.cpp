@@ -1398,18 +1398,8 @@ Color DisplayServerWindows::screen_get_pixel(const Point2i &p_position) const {
 }
 
 Ref<Image> DisplayServerWindows::screen_get_image(int p_screen) const {
+	p_screen = _get_screen_index(p_screen);
 	ERR_FAIL_INDEX_V(p_screen, get_screen_count(), Ref<Image>());
-
-	switch (p_screen) {
-		case SCREEN_PRIMARY: {
-			p_screen = get_primary_screen();
-		} break;
-		case SCREEN_OF_MAIN_WINDOW: {
-			p_screen = window_get_current_screen(MAIN_WINDOW_ID);
-		} break;
-		default:
-			break;
-	}
 
 	Point2i pos = screen_get_position(p_screen) + _get_screens_origin();
 	Size2i size = screen_get_size(p_screen);

@@ -32,6 +32,7 @@
 #include "justamcp_mcp_client_bridge.h"
 
 #include "../justamcp_server.h"
+#include "../justamcp_session_manager.h"
 #include "../justamcp_tool_context.h"
 #include "justamcp_tool_schema_builder.h"
 
@@ -132,7 +133,7 @@ Error JustAMCPMCPClientBridge::_ensure_initialized(const String &p_bridge_name) 
 		}
 	}
 	Dictionary init_params;
-	init_params["protocolVersion"] = _get_bridge_config(p_bridge_name).get("protocol_version", "2025-03-26");
+	init_params["protocolVersion"] = _get_bridge_config(p_bridge_name).get("protocol_version", MCPSessionManager::latest_protocol_version());
 	Dictionary init_result = _rpc_request(p_bridge_name, "initialize", init_params);
 	if (!init_result.get("ok", false)) {
 		return ERR_CANT_CONNECT;
@@ -192,7 +193,7 @@ Dictionary JustAMCPMCPClientBridge::_rpc_request_sync(const String &p_bridge_nam
 		port = scheme == "https" ? 443 : 80;
 	}
 
-	const String protocol = bridge.get("protocol_version", "2025-03-26");
+	const String protocol = bridge.get("protocol_version", MCPSessionManager::latest_protocol_version());
 
 	Ref<HTTPClient> client = HTTPClient::create();
 	Ref<TLSOptions> tls;
@@ -522,7 +523,7 @@ Dictionary JustAMCPMCPClientBridge::add_bridge(const Dictionary &p_args) {
 	Dictionary bridge;
 	bridge["name"] = name;
 	bridge["url"] = url;
-	bridge["protocol_version"] = p_args.get("protocol_version", "2025-03-26");
+	bridge["protocol_version"] = p_args.get("protocol_version", MCPSessionManager::latest_protocol_version());
 	if (p_args.has("auth_token")) {
 		bridge["auth_token"] = p_args.get("auth_token", "");
 	}

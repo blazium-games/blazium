@@ -57,6 +57,22 @@ void MCPSessionManager::clear_all() {
 	request_router.clear_all();
 }
 
+String MCPSessionManager::negotiate_protocol_version(const String &p_client_version) {
+	static const char *preferred[] = {
+		"2025-11-25",
+		"2025-06-18",
+		"2025-03-26",
+		"2024-11-05",
+		nullptr
+	};
+	for (int i = 0; preferred[i]; i++) {
+		if (p_client_version == preferred[i]) {
+			return String(preferred[i]);
+		}
+	}
+	return latest_protocol_version();
+}
+
 #if defined(MODULE_HTTPSERVER_ENABLED)
 
 static String _get_header_from_dict(const Dictionary &p_headers, const String &p_name) {
@@ -202,22 +218,6 @@ bool MCPSessionManager::accepts_event_stream(const Ref<HTTPRequestContext> &p_co
 		return false;
 	}
 	return accept.contains("text/event-stream") || accept.contains("*/*");
-}
-
-String MCPSessionManager::negotiate_protocol_version(const String &p_client_version) {
-	static const char *preferred[] = {
-		"2025-11-25",
-		"2025-06-18",
-		"2025-03-26",
-		"2024-11-05",
-		nullptr
-	};
-	for (int i = 0; preferred[i]; i++) {
-		if (p_client_version == preferred[i]) {
-			return String(preferred[i]);
-		}
-	}
-	return String("2024-11-05");
 }
 
 void MCPSessionManager::apply_cors_headers(Ref<HTTPResponse> p_response, const Ref<HTTPRequestContext> &p_context) const {

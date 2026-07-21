@@ -36,6 +36,7 @@
 #include "core/io/file_access.h"
 #include "core/io/json.h"
 #include "core/os/os.h"
+#include "core/os/thread.h"
 #include "editor/editor_file_system.h"
 #include "editor/editor_settings.h"
 #include "justamcp_resource_manifest.h"
@@ -94,7 +95,9 @@ JustAMCPResourceExecutor::JustAMCPResourceExecutor() {
 	add_resource(memnew(JustAMCPResourceProjectFile));
 	add_resource(memnew(JustAMCPResourceVideoRecordings));
 	add_resource(memnew(JustAMCPResourceAutoworkResults));
-	if (EditorFileSystem::get_singleton()) {
+	// EditorFileSystem is a Node; connect only from the main thread. Ephemeral executors
+	// created on WorkerThreadPool (e.g. get_guide) must not touch EFS signals.
+	if (Thread::is_main_thread() && EditorFileSystem::get_singleton()) {
 		const Callable cb = callable_mp_static(&JustAMCPResourceExecutor::_on_filesystem_changed);
 		if (!EditorFileSystem::get_singleton()->is_connected("filesystem_changed", cb)) {
 			EditorFileSystem::get_singleton()->connect("filesystem_changed", cb);
@@ -113,7 +116,7 @@ void JustAMCPResourceExecutor::_on_filesystem_changed() {
 }
 
 JustAMCPResourceExecutor::~JustAMCPResourceExecutor() {
-	if (EditorFileSystem::get_singleton()) {
+	if (Thread::is_main_thread() && EditorFileSystem::get_singleton()) {
 		const Callable cb = callable_mp_static(&JustAMCPResourceExecutor::_on_filesystem_changed);
 		if (EditorFileSystem::get_singleton()->is_connected("filesystem_changed", cb)) {
 			EditorFileSystem::get_singleton()->disconnect("filesystem_changed", cb);

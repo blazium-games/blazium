@@ -366,8 +366,12 @@ Dictionary JustAMCPScriptTools::_delete_script(const Dictionary &p_params) {
 		return MCP_INVALID_PARAMS("Missing param: path");
 	}
 	String path = p_params["path"];
+	const String ext = path.get_extension().to_lower();
+	if (ext != "gd" && ext != "cs") {
+		return MCP_INVALID_PARAMS("delete_script path must be a script file (.gd, .cs)");
+	}
 	const String main_scene = ProjectSettings::get_singleton() ? String(ProjectSettings::get_singleton()->get_setting("application/run/main_scene", "")) : String();
-	if (path == "res://project.godot" || path == "res://export_presets.cfg" || path == "res://main.gd" || (!main_scene.is_empty() && path == main_scene.get_basename() + ".gd")) {
+	if (path == "res://project.godot" || path == "res://export_presets.cfg" || path == "res://main.gd" || path == "res://main.tscn" || (!main_scene.is_empty() && (path == main_scene || path == main_scene.get_basename() + ".gd"))) {
 		return MCP_ERROR(-32000, "Refusing to delete protected project path: " + path);
 	}
 	if (!FileAccess::exists(path)) {
@@ -433,7 +437,7 @@ Dictionary JustAMCPScriptTools::_attach_script(const Dictionary &p_params) {
 		}
 		node->set_script(loaded_script);
 		Dictionary res;
-		res["node_path"] = root->get_path_to(node);
+		res["node_path"] = JustAMCPEditorSceneAccess::safe_path_to(root, node);
 		res["script_path"] = script_path;
 		res["attached"] = true;
 		return MCP_SUCCESS(res);
@@ -507,7 +511,7 @@ Dictionary JustAMCPScriptTools::_detach_script(const Dictionary &p_params) {
 	}
 	node->set_script(Variant());
 	Dictionary res;
-	res["node_path"] = root->get_path_to(node);
+	res["node_path"] = JustAMCPEditorSceneAccess::safe_path_to(root, node);
 	res["detached"] = true;
 	return MCP_SUCCESS(res);
 }

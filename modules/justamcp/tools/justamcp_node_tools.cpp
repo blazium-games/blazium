@@ -51,7 +51,12 @@ Node *JustAMCPNodeTools::_find_node_by_path(const String &p_path) {
 }
 
 void JustAMCPNodeTools::_set_owner_recursive(Node *p_node, Node *p_owner) {
-	p_node->set_owner(p_owner);
+	if (!p_node || !p_owner) {
+		return;
+	}
+	if (p_node == p_owner || p_owner->is_ancestor_of(p_node)) {
+		p_node->set_owner(p_owner);
+	}
 	for (int i = 0; i < p_node->get_child_count(); i++) {
 		_set_owner_recursive(p_node->get_child(i), p_owner);
 	}
@@ -198,7 +203,7 @@ Dictionary JustAMCPNodeTools::_add_node(const Dictionary &p_params) {
 #endif
 
 	Dictionary res;
-	res["node_path"] = root->get_path_to(node);
+	res["node_path"] = JustAMCPEditorSceneAccess::safe_path_to(root, node);
 	res["type"] = type;
 	res["name"] = node->get_name();
 	return MCP_SUCCESS(res);
@@ -232,8 +237,9 @@ Dictionary JustAMCPNodeTools::_delete_node(const Dictionary &p_params) {
 		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
 		ur->create_action("MCP: Delete " + node_name);
 		ur->add_do_method(parent, "remove_child", node);
-		ur->add_undo_method(parent, "add_child", node);
+		// Undo runs reverse of registration: add_child must run before set_owner.
 		ur->add_undo_method(node, "set_owner", root);
+		ur->add_undo_method(parent, "add_child", node);
 		ur->add_undo_reference(node);
 		ur->commit_action();
 	} else {
@@ -265,14 +271,21 @@ Dictionary JustAMCPNodeTools::_duplicate_node(const Dictionary &p_params) {
 	if (!node) {
 		return MCP_NOT_FOUND("Node '" + node_path + "'");
 	}
+	if (node == root) {
+		return MCP_INVALID_PARAMS("Cannot duplicate the scene root; choose a child node_path");
+	}
 
 	if (new_name.is_empty()) {
 		new_name = String(node->get_name()) + "_copy";
 	}
 
+	Node *parent = node->get_parent();
+	if (!parent || (parent != root && !root->is_ancestor_of(parent))) {
+		return MCP_INVALID_PARAMS("Cannot duplicate node outside the edited scene tree");
+	}
+
 	Node *dup = node->duplicate();
 	dup->set_name(new_name);
-	Node *parent = node->get_parent();
 
 #ifdef TOOLS_ENABLED
 	if (EditorUndoRedoManager::get_singleton()) {
@@ -286,7 +299,9 @@ Dictionary JustAMCPNodeTools::_duplicate_node(const Dictionary &p_params) {
 	} else {
 #endif
 		parent->add_child(dup);
-		dup->set_owner(root);
+		if (root->is_ancestor_of(dup) || parent == root) {
+			dup->set_owner(root);
+		}
 #ifdef TOOLS_ENABLED
 	}
 #endif
@@ -294,8 +309,8 @@ Dictionary JustAMCPNodeTools::_duplicate_node(const Dictionary &p_params) {
 	_set_owner_recursive(dup, root);
 
 	Dictionary res;
-	res["original"] = root->get_path_to(node);
-	res["duplicate"] = root->get_path_to(dup);
+	res["original"] = JustAMCPEditorSceneAccess::safe_path_to(root, node);
+	res["duplicate"] = String(JustAMCPEditorSceneAccess::safe_path_to(root, dup));
 	res["name"] = dup->get_name();
 	return MCP_SUCCESS(res);
 }
@@ -358,9 +373,9 @@ Dictionary JustAMCPNodeTools::_move_node(const Dictionary &p_params) {
 
 	Dictionary res;
 	res["node"] = node->get_name();
-	res["old_parent"] = root->get_path_to(old_parent);
-	res["new_parent"] = root->get_path_to(new_parent);
-	res["new_path"] = root->get_path_to(node);
+	res["old_parent"] = JustAMCPEditorSceneAccess::safe_path_to(root, old_parent);
+	res["new_parent"] = JustAMCPEditorSceneAccess::safe_path_to(root, new_parent);
+	res["new_path"] = JustAMCPEditorSceneAccess::safe_path_to(root, node);
 	return MCP_SUCCESS(res);
 }
 
@@ -410,7 +425,7 @@ Dictionary JustAMCPNodeTools::_update_property(const Dictionary &p_params) {
 #endif
 
 	Dictionary res;
-	res["node"] = root->get_path_to(node);
+	res["node"] = JustAMCPEditorSceneAccess::safe_path_to(root, node);
 	res["property"] = property;
 	res["old_value"] = old_value;
 	res["new_value"] = node->get(property);
@@ -448,7 +463,7 @@ Dictionary JustAMCPNodeTools::_get_node_properties(const Dictionary &p_params) {
 	}
 
 	Dictionary res;
-	res["node_path"] = root->get_path_to(node);
+	res["node_path"] = JustAMCPEditorSceneAccess::safe_path_to(root, node);
 	res["type"] = node->get_class();
 	res["properties"] = props;
 	return MCP_SUCCESS(res);
@@ -518,7 +533,7 @@ Dictionary JustAMCPNodeTools::_add_resource(const Dictionary &p_params) {
 #endif
 
 	Dictionary res;
-	res["node_path"] = root->get_path_to(node);
+	res["node_path"] = JustAMCPEditorSceneAccess::safe_path_to(root, node);
 	res["property"] = property;
 	res["resource_type"] = resource_type;
 	return MCP_SUCCESS(res);

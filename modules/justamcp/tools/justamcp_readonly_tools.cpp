@@ -132,6 +132,7 @@ bool JustAMCPReadonlyTools::is_readonly_tool(const String &p_tool_name) {
 		"get_guide",
 		"list_toolsets",
 		"describe_toolset",
+		"wait",
 		nullptr,
 	};
 	for (int i = 0; k_readonly_tools[i] != nullptr; i++) {
@@ -169,6 +170,7 @@ bool JustAMCPReadonlyTools::is_worker_safe_tool(const String &p_tool_name) {
 		"search_in_files",
 		"uid_to_project_path",
 		"project_path_to_uid",
+		"wait",
 		nullptr,
 	};
 	for (int i = 0; k_worker_safe_tools[i] != nullptr; i++) {

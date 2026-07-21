@@ -99,12 +99,15 @@ bool MCPSessionManager::handle_mcp_get(const Ref<HTTPRequestContext> &p_context,
 
 	MutexLock lock(mutex);
 	_expire_sessions();
-	if (!_get_session(session_id)) {
+	MCPSession *session = _get_session(session_id);
+	if (!session) {
 		p_response->set_status(404);
 		p_response->set_body("Unknown or expired MCP session");
 		return true;
 	}
-	_touch_session(*_get_session(session_id));
+	_touch_session(*session);
+	// Prefer session-negotiated version when the client omits MCP-Protocol-Version.
+	owner->transport_negotiated_protocol = session->negotiated_protocol;
 	lock.temp_unlock();
 
 	apply_cors_headers(p_response, p_context);

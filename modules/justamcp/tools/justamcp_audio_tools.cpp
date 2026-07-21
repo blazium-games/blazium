@@ -443,7 +443,7 @@ void JustAMCPAudioTools::_collect_audio_players(Node *p_node, Array &r_result) {
 		info["name"] = p_node->get_name();
 		Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 		if (root) {
-			info["path"] = root->get_path_to(p_node);
+			info["path"] = JustAMCPEditorSceneAccess::safe_path_to(root, p_node);
 		} else {
 			info["path"] = String(p_node->get_name());
 		}

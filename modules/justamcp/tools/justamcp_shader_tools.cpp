@@ -44,6 +44,10 @@
 
 #include "../justamcp_mcp_tool_macros.h"
 
+static bool _justamcp_is_shader_path(const String &p_path) {
+	return p_path.get_extension().to_lower() == "gdshader" || p_path.get_extension().to_lower() == "gdshaderinc";
+}
+
 JustAMCPShaderTools::JustAMCPShaderTools() {
 }
 
@@ -89,6 +93,12 @@ Dictionary JustAMCPShaderTools::create_shader(const Dictionary &p_params) {
 		return MCP_INVALID_PARAMS("Missing path");
 	}
 	String path = p_params["path"];
+	if (!_justamcp_is_shader_path(path)) {
+		return MCP_INVALID_PARAMS("Shader path must end with .gdshader or .gdshaderinc");
+	}
+	if (path.ends_with(".tscn") || path.ends_with(".tres") || path == "res://main.tscn") {
+		return MCP_ERROR(-32000, "Refusing to overwrite non-shader path: " + path);
+	}
 	String content = p_params.has("content") ? String(p_params["content"]) : "";
 	String shader_type = p_params.has("shader_type") ? String(p_params["shader_type"]) : "spatial";
 
@@ -132,6 +142,9 @@ Dictionary JustAMCPShaderTools::read_shader(const Dictionary &p_params) {
 		return MCP_INVALID_PARAMS("Missing path");
 	}
 	String path = p_params["path"];
+	if (!_justamcp_is_shader_path(path)) {
+		return MCP_INVALID_PARAMS("Shader path must end with .gdshader or .gdshaderinc");
+	}
 
 	if (!FileAccess::exists(path)) {
 		return MCP_ERROR(-32000, "Shader not found: " + path);
@@ -159,6 +172,9 @@ Dictionary JustAMCPShaderTools::edit_shader(const Dictionary &p_params) {
 		return MCP_INVALID_PARAMS("Missing path");
 	}
 	String path = p_params["path"];
+	if (!_justamcp_is_shader_path(path)) {
+		return MCP_INVALID_PARAMS("Shader path must end with .gdshader or .gdshaderinc");
+	}
 
 	if (!FileAccess::exists(path)) {
 		return MCP_ERROR(-32000, "Shader not found: " + path);
@@ -167,11 +183,15 @@ Dictionary JustAMCPShaderTools::edit_shader(const Dictionary &p_params) {
 	int changes_made = 0;
 
 	if (p_params.has("content")) {
+		const String content = p_params["content"];
+		if (content.is_empty()) {
+			return MCP_INVALID_PARAMS("content must be non-empty when replacing shader source");
+		}
 		Ref<FileAccess> file = FileAccess::open(path, FileAccess::WRITE);
 		if (file.is_null()) {
 			return MCP_ERROR(-32000, "Cannot write shader: " + path);
 		}
-		file->store_string(p_params["content"]);
+		file->store_string(content);
 		file->close();
 		changes_made = 1;
 	} else if (p_params.has("replacements") && p_params["replacements"].get_type() == Variant::ARRAY) {

@@ -35,7 +35,7 @@
 
 void test_justamcp_ok_false_stays_handled();
 void test_justamcp_empty_category_result_unhandled();
-void test_justamcp_sse_bound_worker_safe_uses_main();
+void test_justamcp_sse_bound_worker_safe_uses_worker();
 void test_justamcp_crash_guards_bundle();
 
 TEST_CASE("[Modules][JustAMCP] ok false stays handled") {
@@ -46,8 +46,8 @@ TEST_CASE("[Modules][JustAMCP] empty category result unhandled") {
 	test_justamcp_empty_category_result_unhandled();
 }
 
-TEST_CASE("[Modules][JustAMCP] sse bound worker safe uses main") {
-	test_justamcp_sse_bound_worker_safe_uses_main();
+TEST_CASE("[Modules][JustAMCP] sse bound worker safe uses worker") {
+	test_justamcp_sse_bound_worker_safe_uses_worker();
 }
 
 TEST_CASE("[Modules][JustAMCP] crash guards bundle") {

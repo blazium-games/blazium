@@ -108,7 +108,7 @@ void JustAMCPServer::_complete_task_tool_entry(MCPToolQueueEntry *p_entry, bool 
 	}
 
 	memdelete(completed_entry);
-	call_deferred(SNAME("_process_pending_tools"));
+	_schedule_process_pending_tools();
 }
 
 void JustAMCPServer::_on_request_cancelled(const Variant &p_request_id, const String &p_reason, const String &p_caller_session_id) {

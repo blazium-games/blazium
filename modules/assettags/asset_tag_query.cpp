@@ -31,6 +31,7 @@
 
 #include "asset_tag_manager.h"
 
+#include "core/os/thread.h"
 #include "modules/regex/regex.h"
 
 #ifdef TOOLS_ENABLED
@@ -151,7 +152,7 @@ Dictionary AssetTagQuery::search_assets(
 			return;
 		}
 #ifdef TOOLS_ENABLED
-		if (!p_type_filter.is_empty() && EditorFileSystem::get_singleton()) {
+		if (!p_type_filter.is_empty() && EditorFileSystem::get_singleton() && Thread::is_main_thread()) {
 			const String file_type = EditorFileSystem::get_singleton()->get_file_type(p_path);
 			if (file_type != p_type_filter) {
 				return;

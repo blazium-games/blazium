@@ -43,6 +43,10 @@
 
 #include "../justamcp_mcp_tool_macros.h"
 
+static String _justamcp_safe_path_to(Node *p_root, Node *p_node) {
+	return JustAMCPEditorSceneAccess::safe_path_to(p_root, p_node);
+}
+
 Dictionary JustAMCPNodeTools::_set_anchor_preset(const Dictionary &p_params) {
 	if (!p_params.has("node_path")) {
 		return MCP_INVALID_PARAMS("Missing param: node_path");
@@ -129,7 +133,7 @@ Dictionary JustAMCPNodeTools::_set_anchor_preset(const Dictionary &p_params) {
 #endif
 
 	Dictionary res;
-	res["node_path"] = root->get_path_to(control);
+	res["node_path"] = _justamcp_safe_path_to(root, control);
 	res["preset"] = preset_name;
 	return MCP_SUCCESS(res);
 }
@@ -174,7 +178,7 @@ Dictionary JustAMCPNodeTools::_rename_node(const Dictionary &p_params) {
 	Dictionary res;
 	res["old_name"] = old_name;
 	res["new_name"] = node->get_name();
-	res["node_path"] = root->get_path_to(node);
+	res["node_path"] = _justamcp_safe_path_to(root, node);
 	return MCP_SUCCESS(res);
 }
 
@@ -225,9 +229,9 @@ Dictionary JustAMCPNodeTools::_connect_signal(const Dictionary &p_params) {
 	source->connect(signal_name, conn);
 
 	Dictionary res;
-	res["source"] = root->get_path_to(source);
+	res["source"] = _justamcp_safe_path_to(root, source);
 	res["signal"] = signal_name;
-	res["target"] = root->get_path_to(target);
+	res["target"] = _justamcp_safe_path_to(root, target);
 	res["method"] = method_name;
 	res["connected"] = true;
 	return MCP_SUCCESS(res);
@@ -275,9 +279,9 @@ Dictionary JustAMCPNodeTools::_disconnect_signal(const Dictionary &p_params) {
 	source->disconnect(signal_name, conn);
 
 	Dictionary res;
-	res["source"] = root->get_path_to(source);
+	res["source"] = _justamcp_safe_path_to(root, source);
 	res["signal"] = signal_name;
-	res["target"] = root->get_path_to(target);
+	res["target"] = _justamcp_safe_path_to(root, target);
 	res["method"] = method_name;
 	res["disconnected"] = true;
 	return MCP_SUCCESS(res);
@@ -309,7 +313,7 @@ Dictionary JustAMCPNodeTools::_get_node_groups(const Dictionary &p_params) {
 	}
 
 	Dictionary res;
-	res["node_path"] = root->get_path_to(node);
+	res["node_path"] = _justamcp_safe_path_to(root, node);
 	res["groups"] = groups;
 	res["count"] = groups.size();
 	return MCP_SUCCESS(res);
@@ -362,7 +366,7 @@ Dictionary JustAMCPNodeTools::_set_node_groups(const Dictionary &p_params) {
 	}
 
 	Dictionary res;
-	res["node_path"] = root->get_path_to(node);
+	res["node_path"] = _justamcp_safe_path_to(root, node);
 	res["groups"] = desired_groups;
 	res["added"] = added;
 	res["removed"] = removed;
@@ -394,7 +398,7 @@ void JustAMCPNodeTools::_find_in_group_recursive(Node *p_node, Node *p_root, con
 	if (p_node->is_in_group(p_group_name)) {
 		Dictionary m;
 		m["name"] = p_node->get_name();
-		m["path"] = p_root->get_path_to(p_node);
+		m["path"] = _justamcp_safe_path_to(p_root, p_node);
 		m["type"] = p_node->get_class();
 		r_matches.push_back(m);
 	}

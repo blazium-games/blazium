@@ -458,7 +458,12 @@ void JustAMCPSceneTools::_ensure_parent_dir_for_scene(const String &p_scene_path
 }
 
 void JustAMCPSceneTools::_set_owner_recursive(Node *p_node, Node *p_scene_owner) {
-	p_node->set_owner(p_scene_owner);
+	if (!p_node || !p_scene_owner) {
+		return;
+	}
+	if (p_node == p_scene_owner || p_scene_owner->is_ancestor_of(p_node)) {
+		p_node->set_owner(p_scene_owner);
+	}
 	for (int i = 0; i < p_node->get_child_count(); i++) {
 		Node *child = p_node->get_child(i);
 		_set_owner_recursive(child, p_scene_owner);

@@ -39,6 +39,7 @@
 #include "justamcp_tool_context.h"
 #include "justamcp_tool_dispatch.h"
 #include "justamcp_tool_queue_state.h"
+#include "scene/main/scene_tree.h"
 #include "tools/justamcp_json_rpc_helpers.h"
 #include "tools/justamcp_readonly_tools.h"
 #include "tools/justamcp_task_manager.h"
@@ -89,7 +90,7 @@ void JustAMCPServer::_fail_and_remove_task_dispatch_entry(MCPToolQueueEntry *p_e
 	}
 	_unregister_task_route(p_entry->task_id);
 	memdelete(p_entry);
-	call_deferred(SNAME("_process_pending_tools"));
+	_schedule_process_pending_tools();
 }
 
 MCPToolQueueEntry *JustAMCPServer::_enqueue_tool_request(const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args, Ref<HTTPResponse> p_response, Dictionary &r_queue_full_error, const Dictionary &p_options) {
@@ -255,7 +256,7 @@ void JustAMCPServer::_dispatch_task_augmented_tools_call(const Variant &p_reques
 			_send_sse_routed(JSON::stringify(entry->rpc_result), session_id, sse_connection_id);
 		}
 		memdelete(entry);
-		call_deferred(SNAME("_process_pending_tools"));
+		_schedule_process_pending_tools();
 		return;
 	}
 
@@ -332,10 +333,10 @@ void JustAMCPServer::_dispatch_task_augmented_tools_call(const Variant &p_reques
 
 	if (has_stateless) {
 		entry->signal_completion();
-		call_deferred(SNAME("_process_pending_tools"));
+		_schedule_process_pending_tools();
 	} else if (send_sse) {
 		_send_sse_routed(JSON::stringify(rpc_result), session_id, sse_connection_id);
-		call_deferred(SNAME("_process_pending_tools"));
+		_schedule_process_pending_tools();
 	}
 #else
 	(void)ttl_ms;
@@ -344,7 +345,23 @@ void JustAMCPServer::_dispatch_task_augmented_tools_call(const Variant &p_reques
 #endif
 }
 
+void JustAMCPServer::_schedule_process_pending_tools() {
+	if (pending_tools_drain_scheduled) {
+		return;
+	}
+	pending_tools_drain_scheduled = true;
+	// Prefer call_deferred so POST-SSE tools/call emits the first JSON-RPC message
+	// without waiting for the next rendered process_frame (Cursor discovery timeouts).
+	call_deferred(SNAME("_process_pending_tools"));
+}
+
+void JustAMCPServer::_on_pending_tools_process_frame() {
+	pending_tools_drain_scheduled = false;
+	_process_pending_tools();
+}
+
 void JustAMCPServer::_process_pending_tools() {
+	pending_tools_drain_scheduled = false;
 	MCPToolQueueEntry *entry = nullptr;
 	bool readonly_lane = false;
 	const int max_readonly = _justamcp_readonly_worker_concurrency();
@@ -393,18 +410,20 @@ void JustAMCPServer::_process_pending_tools() {
 		JustAMCPToolQueueState::sync_processing_flag(mcp_tool_queue.current_write, mcp_tool_queue.current_readonly_inflight, mcp_tool_queue.processing);
 	}
 
-	const bool schedule_worker = readonly_lane && max_readonly > 0 && entry->sse_connection_id < 0 && JustAMCPReadonlyTools::is_worker_safe_tool(entry->tool_name);
+	// Offload worker-safe tools (including wait) whenever the readonly lane is active.
+	// Do not require max_readonly > 0: concurrency 0 still used to mean "serialize readonly",
+	// but sleep/IO-safe tools must not freeze the main thread with delay_usec / blocking work.
+	const bool schedule_worker = readonly_lane && JustAMCPReadonlyTools::is_worker_safe_tool(entry->tool_name);
 	if (schedule_worker && JustAMCPToolDispatch::try_schedule_worker_execute(this, entry->request_id, entry->tool_name, entry->args)) {
 		if (max_readonly > 1) {
+			// Fan out more worker-safe tools in this flush; main-thread tools yield via next-frame scheduling.
 			call_deferred(SNAME("_process_pending_tools"));
 		}
 		return;
 	}
 
+	// One main-thread tool per drain; completion schedules the next on process_frame.
 	emit_signal("tool_requested", entry->request_id, entry->tool_name, entry->args);
-	if (readonly_lane && max_readonly > 1) {
-		call_deferred(SNAME("_process_pending_tools"));
-	}
 }
 
 void JustAMCPServer::_complete_tool_entry(MCPToolQueueEntry *p_entry, const Dictionary &p_rpc_result) {
@@ -445,7 +464,7 @@ void JustAMCPServer::_complete_tool_entry(MCPToolQueueEntry *p_entry, const Dict
 	}
 
 	memdelete(p_entry);
-	call_deferred(SNAME("_process_pending_tools"));
+	_schedule_process_pending_tools();
 }
 
 void JustAMCPServer::_insert_tool_result_tombstone(const String &p_tombstone_key) {

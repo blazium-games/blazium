@@ -158,6 +158,11 @@ bool JustAMCPToolDispatch::try_schedule_worker_execute(JustAMCPServer *p_server,
 	job->request_id = p_request_id;
 	job->tool_name = p_tool_name;
 	job->args = p_args;
-	pool->add_native_task(&_justamcp_worker_tool_execute, job, true, "JustAMCPWorkerSafeTool");
+	const WorkerThreadPool::TaskID task_id = pool->add_native_task(&_justamcp_worker_tool_execute, job, true, "JustAMCPWorkerSafeTool");
+	if (task_id == WorkerThreadPool::INVALID_TASK_ID) {
+		memdelete(job);
+		return false;
+	}
+	executor->track_worker_task(task_id);
 	return true;
 }
