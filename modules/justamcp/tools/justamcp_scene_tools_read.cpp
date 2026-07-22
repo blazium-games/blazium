@@ -376,7 +376,12 @@ Dictionary JustAMCPSceneTools::list_connections(const Dictionary &p_args) {
 				Object *target_obj = callable.get_object();
 				String target_path = "";
 				if (target_obj && Object::cast_to<Node>(target_obj)) {
-					target_path = root->get_path_to(Object::cast_to<Node>(target_obj));
+					Node *target_node = Object::cast_to<Node>(target_obj);
+					if (target_node == root || root->is_ancestor_of(target_node)) {
+						target_path = root->get_path_to(target_node);
+					} else {
+						target_path = String(target_node->get_name());
+					}
 				}
 				Dictionary c_info;
 				c_info["sourceNodePath"] = path;

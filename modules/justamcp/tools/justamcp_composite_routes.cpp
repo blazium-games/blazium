@@ -37,8 +37,10 @@
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
 #include "core/os/os.h"
+#include "core/os/thread.h"
 #include "justamcp_profiling_tools.h"
 #include "justamcp_script_tools.h"
+#include "servers/display_server.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_file_system.h"
@@ -249,7 +251,8 @@ Dictionary JustAMCPToolExecutor::execute_composite_tool(const String &p_internal
 		Dictionary ret;
 #ifdef TOOLS_ENABLED
 		if (EditorFileSystem::get_singleton()) {
-			EditorFileSystem::get_singleton()->scan();
+			// Always defer: sync scan() during process_frame tool drain freezes the editor.
+			EditorFileSystem::get_singleton()->call_deferred(SNAME("scan"));
 			ret["ok"] = true;
 			ret["message"] = "Editor filesystem rescan requested.";
 			return ret;
@@ -443,7 +446,20 @@ Dictionary JustAMCPToolExecutor::execute_composite_tool(const String &p_internal
 			ms = int(double(p_args.get("seconds", 0.0)) * 1000.0);
 		}
 		ms = CLAMP(ms, 0, 5000);
-		OS::get_singleton()->delay_usec(uint64_t(ms) * 1000ULL);
+		// Prefer WorkerThreadPool (wait is worker-safe). Never block the main thread with a long delay_usec.
+		if (Thread::is_main_thread()) {
+			const uint64_t end_ms = OS::get_singleton()->get_ticks_msec() + uint64_t(ms);
+			while (OS::get_singleton()->get_ticks_msec() < end_ms) {
+				const uint64_t remaining = end_ms - OS::get_singleton()->get_ticks_msec();
+				const uint64_t slice_ms = MIN(remaining, (uint64_t)8);
+				OS::get_singleton()->delay_usec(slice_ms * 1000ULL);
+				if (DisplayServer::get_singleton()) {
+					DisplayServer::get_singleton()->process_events();
+				}
+			}
+		} else {
+			OS::get_singleton()->delay_usec(uint64_t(ms) * 1000ULL);
+		}
 		Dictionary ret;
 		ret["ok"] = true;
 		ret["waited_ms"] = ms;

@@ -122,6 +122,17 @@ Dictionary JustAMCPSceneTools::add_node(const Dictionary &p_args) {
 	new_node->set_name(node_name);
 	_set_node_properties(new_node, properties);
 
+	if (parent != root && !root->is_ancestor_of(parent)) {
+		memdelete(new_node);
+		if (!is_active) {
+			memdelete(root);
+		}
+		Dictionary ret;
+		ret["ok"] = false;
+		ret["error"] = "Parent must be inside the scene tree rooted at the edited scene";
+		return ret;
+	}
+
 	if (is_active) {
 		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
 		ur->create_action(TTR("AI Local: Add Node"), UndoRedo::MERGE_DISABLE, parent);
@@ -323,8 +334,9 @@ Dictionary JustAMCPSceneTools::delete_node(const Dictionary &p_args) {
 		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
 		ur->create_action(TTR("AI Local: Delete Node"), UndoRedo::MERGE_DISABLE, node);
 		ur->add_do_method(parent, "remove_child", node);
-		ur->add_undo_method(parent, "add_child", node, true);
+		// Undo runs reverse of registration: add_child must run before set_owner.
 		ur->add_undo_method(node, "set_owner", root);
+		ur->add_undo_method(parent, "add_child", node, true);
 		ur->add_undo_reference(node);
 		ur->commit_action(true);
 	} else {
@@ -385,6 +397,16 @@ Dictionary JustAMCPSceneTools::duplicate_node(const Dictionary &p_args) {
 		return ret;
 	}
 
+	if (source == root) {
+		if (!is_active) {
+			memdelete(root);
+		}
+		Dictionary ret;
+		ret["ok"] = false;
+		ret["error"] = "Cannot duplicate the scene root; choose a child node_path";
+		return ret;
+	}
+
 	Node *target_parent = source->get_parent();
 	if (!parent_path.is_empty()) {
 		target_parent = _find_node(root, parent_path);
@@ -396,6 +418,15 @@ Dictionary JustAMCPSceneTools::duplicate_node(const Dictionary &p_args) {
 		Dictionary ret;
 		ret["ok"] = false;
 		ret["error"] = "Parent not found: " + parent_path;
+		return ret;
+	}
+	if (target_parent != root && !root->is_ancestor_of(target_parent)) {
+		if (!is_active) {
+			memdelete(root);
+		}
+		Dictionary ret;
+		ret["ok"] = false;
+		ret["error"] = "Parent must be inside the scene tree rooted at the edited scene";
 		return ret;
 	}
 
@@ -416,7 +447,9 @@ Dictionary JustAMCPSceneTools::duplicate_node(const Dictionary &p_args) {
 		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
 		ur->create_action(TTR("AI Local: Duplicate Node"), UndoRedo::MERGE_DISABLE, duplicated_node);
 		ur->add_do_method(target_parent, "add_child", duplicated_node, true);
-		ur->add_do_method(duplicated_node, "set_owner", root);
+		if (root->is_ancestor_of(target_parent) || target_parent == root) {
+			ur->add_do_method(duplicated_node, "set_owner", root);
+		}
 		ur->add_do_reference(duplicated_node);
 		ur->add_undo_method(target_parent, "remove_child", duplicated_node);
 		ur->commit_action(true);

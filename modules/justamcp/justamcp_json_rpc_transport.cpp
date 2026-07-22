@@ -52,6 +52,17 @@ bool JustAMCPJsonRpcTransport::_is_http_transport(Ref<HTTPResponse> p_response) 
 	return p_response.is_valid();
 }
 
+Dictionary JustAMCPJsonRpcTransport::sanitize_wire_rpc(const Dictionary &p_rpc) {
+	if (p_rpc.is_empty()) {
+		return p_rpc;
+	}
+	Dictionary out = p_rpc.duplicate();
+	out.erase("handled");
+	out.erase("subscription_uri");
+	out.erase("subscription_action");
+	return out;
+}
+
 Dictionary JustAMCPJsonRpcTransport::handle_json_rpc(JustAMCPServer *p_server, const String &p_body, Ref<HTTPResponse> p_response, const String &p_caller_session_id) {
 	if (!p_server) {
 		return Dictionary();
@@ -79,6 +90,10 @@ Dictionary JustAMCPJsonRpcTransport::handle_json_rpc(JustAMCPServer *p_server, c
 			error_dict["code"] = -32600;
 			error_dict["message"] = "JSON-RPC batch requests are not supported for protocol " + p_server->transport_negotiated_protocol;
 			err["error"] = error_dict;
+			if (p_response.is_valid() && !p_response->is_sent()) {
+				p_response->set_status(400);
+				p_response->set_json(err);
+			}
 			return err;
 		}
 	}
@@ -123,11 +138,40 @@ Dictionary JustAMCPJsonRpcTransport::_handle_json_rpc_payload(JustAMCPServer *p_
 	Variant req_id_var;
 	if (payload.has("id")) {
 		req_id_var = payload["id"];
+		if (req_id_var.get_type() == Variant::NIL) {
+			Dictionary err;
+			err["jsonrpc"] = "2.0";
+			err["id"] = Variant();
+			Dictionary error_dict;
+			error_dict["code"] = -32600;
+			error_dict["message"] = "Invalid Request: id must not be null";
+			err["error"] = error_dict;
+			if (p_response.is_valid() && !p_response->is_sent()) {
+				p_response->set_status(400);
+				p_response->set_json(err);
+			}
+			return err;
+		}
 		if (req_id_var.get_type() == Variant::FLOAT) {
 			double d = req_id_var;
 			if (Math::is_equal_approx(d, Math::round(d))) {
 				req_id_var = (int64_t)Math::round(d);
 			}
+		}
+		const Variant::Type id_type = req_id_var.get_type();
+		if (id_type != Variant::INT && id_type != Variant::STRING) {
+			Dictionary err;
+			err["jsonrpc"] = "2.0";
+			err["id"] = req_id_var;
+			Dictionary error_dict;
+			error_dict["code"] = -32600;
+			error_dict["message"] = "Invalid Request: id must be a string or integer";
+			err["error"] = error_dict;
+			if (p_response.is_valid() && !p_response->is_sent()) {
+				p_response->set_status(400);
+				p_response->set_json(err);
+			}
+			return err;
 		}
 	}
 
@@ -215,12 +259,16 @@ Dictionary JustAMCPJsonRpcTransport::_handle_json_rpc_payload(JustAMCPServer *p_
 	if (method == "tools/list") {
 		const String cursor = JustAMCPJsonRpcRouter::extract_list_cursor(payload);
 #ifdef TOOLS_ENABLED
-		return JustAMCPJsonRpcRouter::route_tools_list(cursor, req_id_var);
+		Dictionary routed = JustAMCPJsonRpcRouter::route_tools_list(cursor, req_id_var);
+		routed.erase("handled");
+		return routed;
 #else
 		Dictionary empty;
 		empty["ok"] = true;
 		empty["tools"] = Array();
-		return JustAMCPJsonRpcRouter::finalize_list_result(empty, req_id_var);
+		Dictionary routed = JustAMCPJsonRpcRouter::finalize_list_result(empty, req_id_var);
+		routed.erase("handled");
+		return routed;
 #endif
 	}
 
@@ -454,7 +502,7 @@ Dictionary JustAMCPJsonRpcTransport::_handle_json_rpc_payload(JustAMCPServer *p_
 			p_server->_register_progress_token(progress_token, String(), req_id_var);
 		}
 
-		p_server->call_deferred(SNAME("_process_pending_tools"));
+		p_server->_schedule_process_pending_tools();
 		return wait_stateless_result(entry, false);
 	}
 

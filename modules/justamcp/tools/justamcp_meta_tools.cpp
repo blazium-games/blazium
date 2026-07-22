@@ -31,6 +31,7 @@
 
 #include "justamcp_meta_tools.h"
 
+#include "../justamcp_server.h"
 #include "justamcp_resource_executor.h"
 #include "justamcp_tool_executor.h"
 #include "justamcp_tool_schema_cache.h"
@@ -94,8 +95,19 @@ Dictionary JustAMCPMetaTools::execute(JustAMCPToolExecutor *p_executor, const St
 			result["resource_template"] = "blazium://guide/{topic}";
 			return result;
 		}
-		JustAMCPResourceExecutor resource_executor;
-		const Dictionary resource = resource_executor.read_resource("blazium://guide/" + topic);
+		JustAMCPResourceExecutor *resource_executor = nullptr;
+		if (JustAMCPServer::get_singleton()) {
+			resource_executor = JustAMCPServer::get_singleton()->get_resource_executor();
+		}
+		Dictionary resource;
+		if (resource_executor) {
+			resource = resource_executor->read_resource("blazium://guide/" + topic);
+		} else {
+			// Avoid stack-allocating when the server executor exists: its dtor would
+			// disconnect the shared EditorFileSystem callback on the main thread.
+			JustAMCPResourceExecutor local_executor;
+			resource = local_executor.read_resource("blazium://guide/" + topic);
+		}
 		if (!resource.get("ok", false)) {
 			return resource;
 		}

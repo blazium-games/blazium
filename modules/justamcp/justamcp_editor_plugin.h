@@ -48,6 +48,7 @@ class JustAMCPConfigUI : public MarginContainer {
 	TabContainer *tab_container = nullptr;
 	TextEdit *text_edit_antigravity = nullptr;
 	TextEdit *text_edit_cursor = nullptr;
+	TextEdit *text_edit_opencode = nullptr;
 	Button *copy_button = nullptr;
 
 	Label *stats_tools_label = nullptr;
@@ -98,7 +99,12 @@ protected:
 public:
 	virtual String get_plugin_name() const override { return "JustAMCP"; }
 	bool has_main_screen() const override { return false; }
-	static String get_mcp_config_json(bool p_is_cursor = false);
+	enum MCPConfigClient {
+		MCP_CONFIG_ANTIGRAVITY = 0,
+		MCP_CONFIG_CURSOR = 1,
+		MCP_CONFIG_OPENCODE = 2,
+	};
+	static String get_mcp_config_json(MCPConfigClient p_client = MCP_CONFIG_ANTIGRAVITY);
 
 	JustAMCPEditorPlugin();
 	~JustAMCPEditorPlugin();

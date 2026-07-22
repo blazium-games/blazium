@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  justamcp_json_rpc_transport.h                                         */
+/*  test_justamcp_toolset_schema_gate.h                                   */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             BLAZIUM ENGINE                             */
@@ -29,26 +29,10 @@
 
 #pragma once
 
-#include "modules/modules_enabled.gen.h"
+#include "tests/test_macros.h"
 
-#if defined(MODULE_HTTPSERVER_ENABLED)
+void test_justamcp_toolset_schema_gate();
 
-#include "core/variant/dictionary.h"
-#include "core/variant/variant.h"
-
-class JustAMCPServer;
-class HTTPResponse;
-
-class JustAMCPJsonRpcTransport {
-public:
-	static Dictionary handle_json_rpc(JustAMCPServer *p_server, const String &p_body, Ref<HTTPResponse> p_response, const String &p_caller_session_id = String());
-	static Dictionary handle_json_rpc_parsed(JustAMCPServer *p_server, const Dictionary &p_payload, Ref<HTTPResponse> p_response, const String &p_caller_session_id = String());
-	// Strip internal router keys before HTTP/SSE emission (Cursor Zod rejects "handled").
-	static Dictionary sanitize_wire_rpc(const Dictionary &p_rpc);
-
-private:
-	static bool _is_http_transport(Ref<HTTPResponse> p_response);
-	static Dictionary _handle_json_rpc_payload(JustAMCPServer *p_server, const Dictionary &p_payload, Ref<HTTPResponse> p_response, const String &p_caller_session_id);
-};
-
-#endif
+TEST_CASE("[Modules][JustAMCP] toolset schema gate") {
+	test_justamcp_toolset_schema_gate();
+}

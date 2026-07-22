@@ -33,6 +33,7 @@
 
 #include "../../justamcp_pagination.h"
 #include "core/io/json.h"
+#include "core/os/thread.h"
 #include "editor/editor_file_system.h"
 
 static Dictionary g_materials_cache_payload;
@@ -73,7 +74,7 @@ static void _collect_materials_from_efs(EditorFileSystemDirectory *p_dir, Array 
 
 static void _rebuild_materials_cache() {
 	Array materials;
-	if (EditorFileSystem::get_singleton() && EditorFileSystem::get_singleton()->get_filesystem()) {
+	if (Thread::is_main_thread() && EditorFileSystem::get_singleton() && EditorFileSystem::get_singleton()->get_filesystem()) {
 		_collect_materials_from_efs(EditorFileSystem::get_singleton()->get_filesystem(), materials);
 	}
 	g_materials_cache_payload["materials"] = materials;

@@ -103,6 +103,35 @@ void test_justamcp_json_rpc_tools_call_e2e() {
 	CHECK(server.get_pending_tool_queue_size() == 0);
 }
 
+void test_justamcp_json_rpc_tools_list_strips_handled() {
+	JustAMCPTestServerFixture fixture;
+	JustAMCPServer &server = fixture.get_server();
+	const String body = "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/list\",\"params\":{}}";
+	Dictionary result = JustAMCPJsonRpcTransport::handle_json_rpc(&server, body, Ref<HTTPResponse>());
+	CHECK(result.has("result"));
+	CHECK(result.has("jsonrpc"));
+	CHECK(result.has("id"));
+	CHECK(!result.has("handled"));
+	CHECK(!result.has("subscription_uri"));
+	CHECK(!result.has("subscription_action"));
+	Dictionary sanitized = JustAMCPJsonRpcTransport::sanitize_wire_rpc(result);
+	CHECK(!sanitized.has("handled"));
+	CHECK(sanitized.has("result"));
+
+	Dictionary with_internal;
+	with_internal["handled"] = true;
+	with_internal["subscription_uri"] = "blazium://x";
+	with_internal["subscription_action"] = "subscribe";
+	with_internal["jsonrpc"] = "2.0";
+	with_internal["id"] = 1;
+	with_internal["result"] = Dictionary();
+	Dictionary cleaned = JustAMCPJsonRpcTransport::sanitize_wire_rpc(with_internal);
+	CHECK(!cleaned.has("handled"));
+	CHECK(!cleaned.has("subscription_uri"));
+	CHECK(!cleaned.has("subscription_action"));
+	CHECK(cleaned.has("result"));
+}
+
 #endif
 
 #endif

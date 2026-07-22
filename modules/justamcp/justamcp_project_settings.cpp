@@ -170,7 +170,6 @@ void JustAMCPProjectSettings::register_editor_settings() {
 
 	EDITOR_DEF_BASIC("blazium/justamcp/mcp_clients", Array());
 	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::ARRAY, "blazium/justamcp/mcp_clients"));
-
 	EDITOR_DEF_BASIC("blazium/justamcp/bridge_url_allow_hosts", Array());
 	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::ARRAY, "blazium/justamcp/bridge_url_allow_hosts"));
 

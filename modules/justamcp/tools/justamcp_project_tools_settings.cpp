@@ -36,6 +36,39 @@
 #include "core/io/file_access.h"
 #include "core/io/json.h"
 
+// Prefer Ref<JSON>::parse over JSON::parse_string so plain strings (e.g. "JustAMCP")
+// do not ERR_PRINT via the global parse helper.
+static bool _justamcp_looks_like_json(const String &p_s) {
+	const String t = p_s.strip_edges();
+	if (t.is_empty()) {
+		return false;
+	}
+	const char32_t c = t[0];
+	if (c == '{' || c == '[' || c == '"') {
+		return true;
+	}
+	if (t == "true" || t == "false" || t == "null") {
+		return true;
+	}
+	if (c == '-' || (c >= '0' && c <= '9')) {
+		return t.is_valid_float() || t.is_valid_int();
+	}
+	return false;
+}
+
+static Variant _justamcp_try_parse_json_quiet(const String &p_s) {
+	const String t = p_s.strip_edges();
+	if (!_justamcp_looks_like_json(t)) {
+		return Variant();
+	}
+	Ref<JSON> json;
+	json.instantiate();
+	if (json->parse(t) != OK) {
+		return Variant();
+	}
+	return json->get_data();
+}
+
 Dictionary JustAMCPProjectTools::list_settings(const Dictionary &p_args) {
 	String category = p_args.get("category", "");
 	const int max_results = CLAMP(int(p_args.get("max_results", category.is_empty() ? 500 : 2000)), 1, 10000);
@@ -362,7 +395,7 @@ static Array _parse_input_events_variant(const Variant &p_events) {
 	Array source;
 	if (p_events.get_type() == Variant::STRING) {
 		String json_str = p_events;
-		Variant parsed = JSON::parse_string(json_str);
+		Variant parsed = _justamcp_try_parse_json_quiet(json_str);
 		if (parsed.get_type() == Variant::ARRAY) {
 			source = parsed;
 		} else if (parsed.get_type() == Variant::DICTIONARY) {
@@ -390,7 +423,7 @@ static Array _parse_input_events_variant(const Variant &p_events) {
 			continue;
 		}
 		if (item.get_type() == Variant::STRING) {
-			Variant parsed = JSON::parse_string(item);
+			Variant parsed = _justamcp_try_parse_json_quiet(item);
 			if (parsed.get_type() == Variant::DICTIONARY) {
 				Ref<InputEvent> ev = _input_event_from_dictionary(parsed);
 				if (ev.is_valid()) {
@@ -523,7 +556,7 @@ Dictionary JustAMCPProjectTools::set_project_setting(const Dictionary &p_args) {
 	Variant value = p_args.get("value", Variant());
 	if (value.get_type() == Variant::STRING) {
 		String s = value;
-		Variant parsed = JSON::parse_string(s);
+		Variant parsed = _justamcp_try_parse_json_quiet(s);
 		if (parsed.get_type() != Variant::NIL) {
 			value = parsed;
 		}

@@ -113,6 +113,7 @@
 #include "tests/test_justamcp_pending_survives_get_close.cpp"
 #include "tests/test_justamcp_phase_k.cpp"
 #include "tests/test_justamcp_post_sse_async_keeps_open.cpp"
+#include "tests/test_justamcp_protocol_versions.cpp"
 #include "tests/test_justamcp_registry_dispatch.cpp"
 #include "tests/test_justamcp_resource_providers.cpp"
 #include "tests/test_justamcp_resource_read_caps.cpp"
@@ -132,6 +133,7 @@
 #include "tests/test_justamcp_tool_dispatcher.cpp"
 #include "tests/test_justamcp_tool_schema_builder.cpp"
 #include "tests/test_justamcp_tool_schema_cache.cpp"
+#include "tests/test_justamcp_toolset_schema_gate.cpp"
 #endif
 
 #ifndef TOOLS_ENABLED
@@ -276,6 +278,11 @@ void initialize_justamcp_module(ModuleInitializationLevel p_level) {
 	}
 	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
 		JustAMCPProjectSettings::register_project_settings();
+		// Register EditorSettings early so EDITOR_GET / inspector never WARN on missing JustAMCP keys
+		// before the MCP server starts (register_editor_settings is idempotent).
+		if (EditorSettings::get_singleton()) {
+			JustAMCPProjectSettings::register_editor_settings();
+		}
 		if (EditorSettings::get_singleton() && !EditorSettings::get_singleton()->has_setting("blazium/justamcp/enable_toolset_discovery")) {
 			EditorSettings::get_singleton()->set_setting("blazium/justamcp/enable_toolset_discovery", true);
 		}

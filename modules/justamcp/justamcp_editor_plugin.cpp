@@ -30,6 +30,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_editor_plugin.h"
+#include "justamcp_project_settings.h"
 #include "justamcp_server.h"
 #include "justamcp_tool_context.h"
 #include "justamcp_tool_dispatch.h"
@@ -58,8 +59,9 @@ void JustAMCPConfigUI::_bind_methods() {
 }
 
 void JustAMCPConfigUI::_update_config() {
-	text_edit_antigravity->set_text(JustAMCPEditorPlugin::get_mcp_config_json(false));
-	text_edit_cursor->set_text(JustAMCPEditorPlugin::get_mcp_config_json(true));
+	text_edit_antigravity->set_text(JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_ANTIGRAVITY));
+	text_edit_cursor->set_text(JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_CURSOR));
+	text_edit_opencode->set_text(JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_OPENCODE));
 
 	int total_tools = JustAMCPToolSchemaCache::get_schemas(false, true, true, true).size();
 	int active_tools = JustAMCPToolSchemaCache::get_schemas(false, false, true, false).size();
@@ -82,11 +84,13 @@ void JustAMCPConfigUI::_update_config() {
 }
 
 void JustAMCPConfigUI::_copy_pressed() {
-	int current_tab = tab_container->get_current_tab();
+	const int current_tab = tab_container->get_current_tab();
 	if (current_tab == 0) {
 		DisplayServer::get_singleton()->clipboard_set(text_edit_antigravity->get_text());
-	} else {
+	} else if (current_tab == 1) {
 		DisplayServer::get_singleton()->clipboard_set(text_edit_cursor->get_text());
+	} else {
+		DisplayServer::get_singleton()->clipboard_set(text_edit_opencode->get_text());
 	}
 }
 
@@ -154,6 +158,12 @@ JustAMCPConfigUI::JustAMCPConfigUI() {
 	text_edit_cursor->set_custom_minimum_size(Size2(0, 200));
 	text_edit_cursor->set_editable(false);
 	tab_container->add_child(text_edit_cursor);
+
+	text_edit_opencode = memnew(TextEdit);
+	text_edit_opencode->set_name("OpenCode");
+	text_edit_opencode->set_custom_minimum_size(Size2(0, 200));
+	text_edit_opencode->set_editable(false);
+	tab_container->add_child(text_edit_opencode);
 
 	copy_button = memnew(Button);
 	copy_button->set_text("Copy Config to Clipboard");
@@ -273,6 +283,9 @@ void JustAMCPEditorPlugin::_on_filesystem_changed_for_subscriptions() {
 void JustAMCPEditorPlugin::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE: {
+			if (EditorSettings::get_singleton()) {
+				JustAMCPProjectSettings::register_editor_settings();
+			}
 			EditorNode *editor_node = EditorNode::get_singleton();
 			if (editor_node) {
 				mcp_server = Object::cast_to<JustAMCPServer>(editor_node->get_node_or_null(NodePath("JustAMCPServer")));
@@ -397,15 +410,22 @@ void JustAMCPEditorPlugin::_show_configuration_dialog() {
 	text_edit_ag->set_name("AntiGravity");
 	text_edit_ag->set_v_size_flags(Control::SIZE_EXPAND_FILL);
 	text_edit_ag->set_editable(false);
-	text_edit_ag->set_text(JustAMCPEditorPlugin::get_mcp_config_json(false));
+	text_edit_ag->set_text(JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_ANTIGRAVITY));
 	tab_container->add_child(text_edit_ag);
 
 	TextEdit *text_edit_cursor = memnew(TextEdit);
 	text_edit_cursor->set_name("Cursor");
 	text_edit_cursor->set_v_size_flags(Control::SIZE_EXPAND_FILL);
 	text_edit_cursor->set_editable(false);
-	text_edit_cursor->set_text(JustAMCPEditorPlugin::get_mcp_config_json(true));
+	text_edit_cursor->set_text(JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_CURSOR));
 	tab_container->add_child(text_edit_cursor);
+
+	TextEdit *text_edit_opencode = memnew(TextEdit);
+	text_edit_opencode->set_name("OpenCode");
+	text_edit_opencode->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+	text_edit_opencode->set_editable(false);
+	text_edit_opencode->set_text(JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_OPENCODE));
+	tab_container->add_child(text_edit_opencode);
 
 	EditorNode::get_singleton()->get_gui_base()->add_child(dialog);
 	dialog->popup_centered();
@@ -418,7 +438,7 @@ void JustAMCPEditorPlugin::_on_tool_requested(const Variant &p_request_id, const
 	JustAMCPToolDispatch::execute_and_send(mcp_server, tool_executor, p_request_id, p_tool_name, p_args);
 }
 
-String JustAMCPEditorPlugin::get_mcp_config_json(bool p_is_cursor) {
+String JustAMCPEditorPlugin::get_mcp_config_json(MCPConfigClient p_client) {
 	int port = 6506;
 	bool oauth_enabled = false;
 	String client_id = "";
@@ -459,13 +479,29 @@ String JustAMCPEditorPlugin::get_mcp_config_json(bool p_is_cursor) {
 		}
 	}
 
+	const String mcp_url = "http://127.0.0.1:" + itos(port) + "/mcp";
+
+	if (p_client == MCP_CONFIG_OPENCODE) {
+		String json_config = "{\n";
+		json_config += "  \"$schema\": \"https://opencode.ai/config.json\",\n";
+		json_config += "  \"mcp\": {\n";
+		json_config += "    \"blazium-mcp\": {\n";
+		json_config += "      \"type\": \"remote\",\n";
+		json_config += "      \"url\": \"" + mcp_url + "\",\n";
+		json_config += "      \"enabled\": true\n";
+		json_config += "    }\n";
+		json_config += "  }\n";
+		json_config += "}";
+		return json_config;
+	}
+
 	String json_config = "{\n";
 	json_config += "  \"mcpServers\": {\n";
 	json_config += "    \"blazium-mcp\": {\n";
-	if (p_is_cursor) {
-		json_config += "      \"url\": \"http://127.0.0.1:" + itos(port) + "/sse\"";
+	if (p_client == MCP_CONFIG_CURSOR) {
+		json_config += "      \"url\": \"" + mcp_url + "\"";
 	} else {
-		json_config += "      \"serverUrl\": \"http://127.0.0.1:" + itos(port) + "/mcp\"";
+		json_config += "      \"serverUrl\": \"" + mcp_url + "\"";
 	}
 
 	if (oauth_enabled && (!client_id.is_empty() || !client_secret.is_empty())) {

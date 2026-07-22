@@ -37,6 +37,7 @@
 #include "modules/modules_enabled.gen.h"
 
 #ifdef TOOLS_ENABLED
+#include "core/os/thread.h"
 #include "editor/editor_file_system.h"
 #endif
 
@@ -53,7 +54,7 @@ void _fill_text_fields_from_path(const String &p_path, SemanticAssetEntry &r_ent
 	r_entry.asset_class = String();
 	r_entry.path_segments = String();
 #ifdef TOOLS_ENABLED
-	if (EditorFileSystem::get_singleton()) {
+	if (Thread::is_main_thread() && EditorFileSystem::get_singleton()) {
 		r_entry.asset_class = EditorFileSystem::get_singleton()->get_file_type(p_path);
 		if (!r_entry.asset_class.is_empty()) {
 			r_entry.caption += " " + r_entry.asset_class;

@@ -57,7 +57,7 @@ struct MCPSSEStream {
 
 struct MCPSession {
 	String session_id;
-	String negotiated_protocol = "2024-11-05";
+	String negotiated_protocol = "2025-11-25";
 	uint64_t created_usec = 0;
 	uint64_t last_activity_usec = 0;
 	bool initialized = false;
@@ -95,6 +95,10 @@ public:
 
 	void clear_all();
 
+	// Latest supported MCP protocol; used when the client omits or sends an unknown version.
+	static String latest_protocol_version() { return String("2025-11-25"); }
+	static String negotiate_protocol_version(const String &p_client_version);
+
 #if defined(MODULE_HTTPSERVER_ENABLED)
 	static String get_header(const Ref<HTTPRequestContext> &p_context, const String &p_name);
 	static bool validate_origin(const Ref<HTTPRequestContext> &p_context);
@@ -103,7 +107,6 @@ public:
 	static bool validate_protocol_header(const Ref<HTTPRequestContext> &p_context, String &r_error);
 	static bool accepts_json_and_sse(const Ref<HTTPRequestContext> &p_context);
 	static bool accepts_event_stream(const Ref<HTTPRequestContext> &p_context);
-	static String negotiate_protocol_version(const String &p_client_version);
 
 	void apply_cors_headers(Ref<HTTPResponse> p_response, const Ref<HTTPRequestContext> &p_context) const;
 	void handle_cors_preflight(const Ref<HTTPRequestContext> &p_context, Ref<HTTPResponse> p_response) const;

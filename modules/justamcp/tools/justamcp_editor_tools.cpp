@@ -36,9 +36,9 @@
 #include "../justamcp_server.h"
 #include "../justamcp_tool_context.h"
 #include "core/io/file_access.h"
-#include "editor/editor_command_palette.h"
 #include "editor/editor_data.h"
 #include "editor/editor_interface.h"
+#include "editor/editor_log.h"
 #include "editor/editor_node.h"
 #include "editor/editor_settings.h"
 #include "editor/editor_undo_redo_manager.h"
@@ -242,7 +242,8 @@ Dictionary JustAMCPEditorTools::editor_take_screenshot(const Dictionary &p_args)
 	Dictionary result;
 
 	if (DisplayServer::get_singleton()) {
-		Ref<Image> screenshot = DisplayServer::get_singleton()->screen_get_image();
+		const int screen = DisplayServer::get_singleton()->get_primary_screen();
+		Ref<Image> screenshot = DisplayServer::get_singleton()->screen_get_image(screen);
 		if (screenshot.is_valid()) {
 			String output_path = "res://.screenshot.png";
 			Error err = screenshot->save_png(output_path);
@@ -362,15 +363,14 @@ Dictionary JustAMCPEditorTools::editor_set_settings(const Dictionary &p_args) {
 
 Dictionary JustAMCPEditorTools::editor_clear_output(const Dictionary &p_args) {
 	Dictionary result;
-	if (editor_plugin && editor_plugin->get_editor_interface()) {
+	if (EditorNode::get_log()) {
+		EditorNode::get_log()->clear();
 		result["ok"] = true;
 		result["message"] = "Output cleared successfully.";
-
-		EditorCommandPalette::get_singleton()->execute_command("editor/clear_output");
 		return result;
 	}
 	result["ok"] = false;
-	result["error"] = "Editor Interface Unavailable";
+	result["error"] = "Editor log is unavailable.";
 	return result;
 }
 
@@ -378,7 +378,8 @@ Dictionary JustAMCPEditorTools::editor_screenshot_game(const Dictionary &p_args)
 	Dictionary result;
 
 	if (DisplayServer::get_singleton()) {
-		Ref<Image> screenshot = DisplayServer::get_singleton()->screen_get_image();
+		const int screen = DisplayServer::get_singleton()->get_primary_screen();
+		Ref<Image> screenshot = DisplayServer::get_singleton()->screen_get_image(screen);
 		if (screenshot.is_valid()) {
 			String output_path = "res://.screenshot_game.png";
 			Error err = screenshot->save_png(output_path);

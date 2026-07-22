@@ -45,6 +45,7 @@
 #include "core/io/image_loader.h"
 #include "core/io/json.h"
 #include "core/io/resource_saver.h"
+#include "core/os/thread.h"
 #include "editor/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
@@ -221,7 +222,7 @@ void JustAMCPResourceTools::_list_resources_recursive(const String &p_path, cons
 				item["extension"] = ext;
 				if (!p_type_filter.is_empty()) {
 					String efs_type;
-					if (EditorFileSystem::get_singleton()) {
+					if (Thread::is_main_thread() && EditorFileSystem::get_singleton()) {
 						efs_type = EditorFileSystem::get_singleton()->get_file_type(full_path);
 					}
 					if (!efs_type.is_empty()) {
@@ -408,14 +409,15 @@ Dictionary JustAMCPResourceTools::edit_resource_file(const Dictionary &p_args) {
 		_set_resource_properties(resource, p_args["properties"]);
 	}
 	Error err = ResourceSaver::save(resource, res_path);
-	_refresh_filesystem(res_path);
 
 	Dictionary ret;
 	ret["ok"] = err == OK;
 	ret["path"] = res_path;
 	if (err != OK) {
 		ret["error"] = "Failed to save resource: " + itos(err);
+		return ret;
 	}
+	_refresh_filesystem(res_path);
 	return ret;
 }
 
@@ -490,7 +492,6 @@ Dictionary JustAMCPResourceTools::save_resource_as(const Dictionary &p_args) {
 		DirAccess::make_dir_recursive_absolute(dir_path);
 	}
 	Error err = ResourceSaver::save(resource, dest_path);
-	_refresh_filesystem(dest_path);
 
 	Dictionary ret;
 	ret["ok"] = err == OK;
@@ -498,7 +499,9 @@ Dictionary JustAMCPResourceTools::save_resource_as(const Dictionary &p_args) {
 	ret["path"] = dest_path;
 	if (err != OK) {
 		ret["error"] = "Failed to save resource: " + itos(err);
+		return ret;
 	}
+	_refresh_filesystem(dest_path);
 	return ret;
 }
 
@@ -529,10 +532,22 @@ Dictionary JustAMCPResourceTools::get_resource_dependencies(const Dictionary &p_
 Dictionary JustAMCPResourceTools::import_asset_copy(const Dictionary &p_args) {
 	String source_path = p_args.get("source_path", "");
 	String dest_path = _ensure_res_path(p_args.get("dest_path", ""));
-	if (source_path.is_empty() || dest_path == "res://") {
+	if (source_path.is_empty() || dest_path == "res://" || dest_path == "res://test") {
 		Dictionary ret;
 		ret["ok"] = false;
 		ret["error"] = "source_path and dest_path are required.";
+		return ret;
+	}
+	if (dest_path.get_file().is_empty() || dest_path.get_extension().is_empty() || DirAccess::dir_exists_absolute(dest_path)) {
+		Dictionary ret;
+		ret["ok"] = false;
+		ret["error"] = "dest_path must be a file path with an extension, not a directory: " + dest_path;
+		return ret;
+	}
+	if (!FileAccess::exists(source_path)) {
+		Dictionary ret;
+		ret["ok"] = false;
+		ret["error"] = "source_path not found: " + source_path;
 		return ret;
 	}
 	String dir_path = dest_path.get_base_dir();
@@ -540,7 +555,6 @@ Dictionary JustAMCPResourceTools::import_asset_copy(const Dictionary &p_args) {
 		DirAccess::make_dir_recursive_absolute(dir_path);
 	}
 	Error err = DirAccess::copy_absolute(source_path, dest_path);
-	_refresh_filesystem(dest_path);
 
 	Dictionary ret;
 	ret["ok"] = err == OK;
@@ -548,7 +562,9 @@ Dictionary JustAMCPResourceTools::import_asset_copy(const Dictionary &p_args) {
 	ret["destination"] = dest_path;
 	if (err != OK) {
 		ret["error"] = "Failed to copy asset: " + itos(err);
+		return ret;
 	}
+	_refresh_filesystem(dest_path);
 	return ret;
 }
 
@@ -610,17 +626,24 @@ Dictionary JustAMCPResourceTools::manage_resource_autoloads(const Dictionary &p_
 
 Dictionary JustAMCPResourceTools::resource_import_asset(const Dictionary &p_args) {
 	String res_path = _ensure_res_path(p_args.get("path", ""));
-	if (res_path == "res://") {
+	if (res_path == "res://" || res_path == "res://test") {
 		Dictionary ret;
 		ret["ok"] = false;
 		ret["error"] = "path is required for import_asset.";
+		return ret;
+	}
+	if (res_path.get_file().is_empty() || res_path.get_extension().is_empty() || DirAccess::dir_exists_absolute(res_path)) {
+		Dictionary ret;
+		ret["ok"] = false;
+		ret["error"] = "path must be a file with an extension, not a directory: " + res_path;
 		return ret;
 	}
 
 	if (editor_plugin && editor_plugin->get_editor_interface() && EditorFileSystem::get_singleton()) {
 		Vector<String> files;
 		files.push_back(res_path);
-		EditorFileSystem::get_singleton()->reimport_files(files);
+		// Always defer: sync reimport during process_frame tool drain freezes the editor.
+		EditorFileSystem::get_singleton()->call_deferred(SNAME("reimport_files"), files);
 		Dictionary ret;
 		ret["ok"] = true;
 		ret["path"] = res_path;

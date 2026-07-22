@@ -204,7 +204,9 @@ bool MCPSessionManager::handle_mcp_post(const Ref<HTTPRequestContext> &p_context
 	const bool is_initialize = method == "initialize";
 
 	String session_id = get_header(p_context, "MCP-Session-Id");
-	const bool streamable_client = !session_id.is_empty() || (is_initialize && accepts_json_and_sse(p_context));
+	// Always treat initialize as Streamable HTTP so clients that send only
+	// Accept: application/json still receive MCP-Session-Id for tools/list.
+	const bool streamable_client = !session_id.is_empty() || is_initialize || accepts_json_and_sse(p_context);
 
 	if (!streamable_client) {
 		return false;
@@ -213,29 +215,23 @@ bool MCPSessionManager::handle_mcp_post(const Ref<HTTPRequestContext> &p_context
 	if (!session_id.is_empty()) {
 		MutexLock lock(mutex);
 		_expire_sessions();
-		if (!_get_session(session_id)) {
+		MCPSession *session = _get_session(session_id);
+		if (!session) {
 			p_response->set_status(404);
 			p_response->set_body("Unknown or expired MCP session");
 			return true;
 		}
-		_touch_session(*_get_session(session_id));
+		_touch_session(*session);
+		// Prefer session-negotiated version when the client omits MCP-Protocol-Version.
+		owner->transport_negotiated_protocol = session->negotiated_protocol;
 	} else if (!is_initialize) {
 		p_response->set_status(400);
 		p_response->set_body("Missing MCP-Session-Id");
 		return true;
 	}
 
-	if (!is_initialize && !session_id.is_empty()) {
-		MutexLock lock(mutex);
-		MCPSession *session = _get_session(session_id);
-		if (session && (session->negotiated_protocol == "2025-06-18" || session->negotiated_protocol == "2025-11-25")) {
-			if (get_header(p_context, "MCP-Protocol-Version").is_empty()) {
-				p_response->set_status(400);
-				p_response->set_body("Missing MCP-Protocol-Version");
-				return true;
-			}
-		}
-	}
+	// MCP-Protocol-Version may be omitted after initialize; reuse session.negotiated_protocol
+	// (validate_protocol_header already rejects unsupported header values with 400).
 
 	if (is_initialize && session_id.is_empty()) {
 		MCPSession session;
@@ -245,7 +241,7 @@ bool MCPSessionManager::handle_mcp_post(const Ref<HTTPRequestContext> &p_context
 		session.negotiated_protocol = negotiate_protocol_version(
 				payload.has("params") && Dictionary(payload["params"]).has("protocolVersion")
 						? String(Dictionary(payload["params"])["protocolVersion"])
-						: String("2024-11-05"));
+						: latest_protocol_version());
 		{
 			MutexLock lock(mutex);
 			sessions.insert(session.session_id, session);
@@ -256,7 +252,11 @@ bool MCPSessionManager::handle_mcp_post(const Ref<HTTPRequestContext> &p_context
 		p_response->add_header("MCP-Session-Id", session_id);
 	}
 
-	const bool wants_sse = accepts_json_and_sse(p_context) && !is_notification && method != "initialize";
+	// Dual Accept upgrades to POST-SSE only for long-running RPCs. Sync discovery
+	// methods (tools/list, prompts/list, resources/*, ping, …) stay on the JSON/held
+	// path so Cursor live tool discovery is not starved waiting for an SSE message.
+	const bool async_rpc = (method == "tools/call");
+	const bool wants_sse = accepts_json_and_sse(p_context) && !is_notification && method != "initialize" && async_rpc;
 	if (wants_sse) {
 		{
 			MutexLock lock(mutex);
@@ -320,7 +320,7 @@ bool MCPSessionManager::handle_mcp_post(const Ref<HTTPRequestContext> &p_context
 			p_response->set_body("");
 		} else {
 			p_response->set_status(200);
-			p_response->set_json(result);
+			p_response->set_json(JustAMCPJsonRpcTransport::sanitize_wire_rpc(result));
 		}
 	}
 	return true;

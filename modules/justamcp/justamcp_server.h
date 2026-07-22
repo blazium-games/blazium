@@ -71,7 +71,7 @@ class JustAMCPServer : public Node {
 private:
 	MCPSessionManager *session_manager = nullptr;
 	JustAMCPNotificationBus notification_bus;
-	String transport_negotiated_protocol = "2024-11-05";
+	String transport_negotiated_protocol = "2025-11-25";
 	MCPToolQueue mcp_tool_queue;
 
 	Mutex routing_mutex;
@@ -146,6 +146,9 @@ private:
 	MCPToolQueueEntry *_enqueue_tool_request(const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args, Ref<HTTPResponse> p_response, Dictionary &r_queue_full_error, const Dictionary &p_options = Dictionary());
 	void _dispatch_task_augmented_tools_call(const Variant &p_request_id);
 	void _process_pending_tools();
+	void _schedule_process_pending_tools();
+	void _on_pending_tools_process_frame();
+	bool pending_tools_drain_scheduled = false;
 	void _fail_and_remove_task_dispatch_entry(MCPToolQueueEntry *p_entry);
 	void _complete_tool_entry(MCPToolQueueEntry *p_entry, const Dictionary &p_rpc_result);
 	void _complete_current_tool_request(const Dictionary &p_rpc_result);
@@ -200,6 +203,7 @@ public:
 	void request_task_queue_cancel(const String &p_task_id);
 
 	static JustAMCPServer *get_singleton();
+	class JustAMCPResourceExecutor *get_resource_executor() const { return resource_executor; }
 	Vector<String> get_engine_logs();
 	Dictionary get_engine_logs_page(const String &p_cursor);
 	Dictionary get_mcp_notification_log_page(const String &p_cursor);
@@ -225,6 +229,8 @@ public:
 	MCPSessionManager *test_get_session_manager() const;
 	Dictionary test_peek_last_send_tool_result() const;
 	void test_clear_last_send_tool_result();
+	String test_get_transport_negotiated_protocol() const { return transport_negotiated_protocol; }
+	void test_set_transport_negotiated_protocol(const String &p_protocol) { transport_negotiated_protocol = p_protocol; }
 	bool test_validate_mcp_oauth(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
 	void test_handle_mcp_stateless_post(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
 	void test_handle_message_post(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);

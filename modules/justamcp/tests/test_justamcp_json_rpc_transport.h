@@ -36,9 +36,14 @@ void test_justamcp_json_rpc_request_ids_equal();
 void test_justamcp_tool_queue_full();
 void test_justamcp_in_flight_cancel_flag_only();
 void test_justamcp_json_rpc_tools_call_e2e();
+void test_justamcp_json_rpc_tools_list_strips_handled();
 
 TEST_CASE("[Modules][JustAMCP] json rpc tools call e2e") {
 	test_justamcp_json_rpc_tools_call_e2e();
+}
+
+TEST_CASE("[Modules][JustAMCP] json rpc tools/list strips handled") {
+	test_justamcp_json_rpc_tools_list_strips_handled();
 }
 
 TEST_CASE("[Modules][JustAMCP] json rpc transport invalid json") {

@@ -31,6 +31,9 @@
 
 #include "core/object/class_db.h"
 #include "core/object/object.h"
+#include "core/object/worker_thread_pool.h"
+#include "core/os/mutex.h"
+#include "core/templates/vector.h"
 #include "scene/main/node.h"
 
 class JustAMCPEditorPlugin;
@@ -113,7 +116,11 @@ private:
 	bool initialized = false;
 	bool allow_disabled_dispatch = false;
 
+	Mutex pending_worker_task_mutex;
+	Vector<WorkerThreadPool::TaskID> pending_worker_task_ids;
+
 	void _init_tools();
+	void _wait_for_tracked_worker_tasks();
 
 protected:
 	static void _bind_methods();
@@ -135,6 +142,7 @@ public:
 	static JustAMCPToolExecutor *active_instance;
 	static JustAMCPToolExecutor *get_active_instance();
 	void set_as_active_instance();
+	void track_worker_task(WorkerThreadPool::TaskID p_task_id);
 
 	static Node *test_scene_root;
 	static void set_test_scene_root(Node *p_node);

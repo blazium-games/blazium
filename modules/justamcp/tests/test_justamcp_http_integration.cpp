@@ -37,6 +37,10 @@
 #include "../justamcp_server.h"
 #include "../justamcp_session_manager.h"
 
+#ifdef TOOLS_ENABLED
+#include "../justamcp_editor_plugin.h"
+#endif
+
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
 #include "modules/httpserver/http_request_context.h"
@@ -91,6 +95,26 @@ void test_justamcp_http_initialize_creates_session() {
 	const int status = response->get_status();
 	const bool acceptable_status = status == 200 ? true : status == 202;
 	CHECK(acceptable_status);
+	const String session_header = _get_response_header(response, "MCP-Session-Id");
+	CHECK(!session_header.is_empty());
+	CHECK(session_manager->session_exists(session_header));
+}
+
+void test_justamcp_http_initialize_json_only_accept_creates_session() {
+	JustAMCPTestServerFixture fixture;
+	JustAMCPServer &server = fixture.get_server();
+	MCPSessionManager *session_manager = server.test_get_session_manager();
+	TEST_FAIL_COND(session_manager == nullptr, "Session manager is required");
+
+	Dictionary headers;
+	headers["Accept"] = "application/json";
+	headers["Content-Type"] = "application/json";
+
+	const String body = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"json-only\",\"version\":\"1.0\"}}}";
+	Ref<HTTPResponse> response;
+	response.instantiate();
+	const bool handled = session_manager->handle_mcp_post(_make_test_context("POST", headers, body), response);
+	CHECK(handled);
 	const String session_header = _get_response_header(response, "MCP-Session-Id");
 	CHECK(!session_header.is_empty());
 	CHECK(session_manager->session_exists(session_header));
@@ -229,8 +253,146 @@ void test_justamcp_legacy_sse_broadcast_tracking() {
 	CHECK(server.test_count_notification_broadcast_targets() == 1);
 }
 
+void test_justamcp_mcp_config_json_uses_streamable_mcp_path() {
+#ifdef TOOLS_ENABLED
+	const String cursor_cfg = JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_CURSOR);
+	const String ag_cfg = JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_ANTIGRAVITY);
+	const String opencode_cfg = JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_OPENCODE);
+	CHECK(cursor_cfg.contains("/mcp"));
+	CHECK(!cursor_cfg.contains("/sse"));
+	CHECK(ag_cfg.contains("/mcp"));
+	CHECK(!ag_cfg.contains("\"/sse\""));
+	CHECK(opencode_cfg.contains("\"$schema\": \"https://opencode.ai/config.json\""));
+	CHECK(opencode_cfg.contains("\"type\": \"remote\""));
+	CHECK(opencode_cfg.contains("/mcp"));
+	CHECK(opencode_cfg.contains("\"enabled\": true"));
+#else
+	SUCCEED();
+#endif
+}
+
+void test_justamcp_http_catalogs_after_initialize() {
+	JustAMCPTestServerFixture fixture;
+	JustAMCPServer &server = fixture.get_server();
+	MCPSessionManager *session_manager = server.test_get_session_manager();
+	TEST_FAIL_COND(session_manager == nullptr, "Session manager is required");
+
+	Dictionary init_headers;
+	init_headers["Accept"] = "application/json";
+	init_headers["Content-Type"] = "application/json";
+	const String init_body = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"catalog\",\"version\":\"1.0\"}}}";
+	Ref<HTTPResponse> init_response;
+	init_response.instantiate();
+	CHECK(session_manager->handle_mcp_post(_make_test_context("POST", init_headers, init_body), init_response));
+	const String session_id = _get_response_header(init_response, "MCP-Session-Id");
+	CHECK(!session_id.is_empty());
+
+	Dictionary headers = init_headers;
+	headers["MCP-Session-Id"] = session_id;
+
+	const char *methods[] = { "tools/list", "prompts/list", "resources/list", "resources/templates/list", nullptr };
+	const char *result_keys[] = { "tools", "prompts", "resources", "resourceTemplates", nullptr };
+	for (int i = 0; methods[i]; i++) {
+		const String body = "{\"jsonrpc\":\"2.0\",\"id\":" + itos(i + 2) + ",\"method\":\"" + String(methods[i]) + "\",\"params\":{}}";
+		Ref<HTTPResponse> response;
+		response.instantiate();
+		CHECK(session_manager->handle_mcp_post(_make_test_context("POST", headers, body), response));
+		const int status = response->get_status();
+		const bool ok_status = status == 200 || status == 202;
+		CHECK(ok_status);
+		if (response->get_body().is_empty()) {
+			continue;
+		}
+		Ref<JSON> json;
+		json.instantiate();
+		CHECK(json->parse(response->get_body()) == OK);
+		CHECK(json->get_data().get_type() == Variant::DICTIONARY);
+		Dictionary root = json->get_data();
+		CHECK(!root.has("error"));
+		CHECK(root.has("result"));
+		CHECK(Dictionary(root["result"]).has(result_keys[i]));
+	}
+}
+
+void test_justamcp_http_dual_accept_tools_list_returns_json() {
+	JustAMCPTestServerFixture fixture;
+	JustAMCPServer &server = fixture.get_server();
+	MCPSessionManager *session_manager = server.test_get_session_manager();
+	TEST_FAIL_COND(session_manager == nullptr, "Session manager is required");
+
+	const String init_body = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"dual-list\",\"version\":\"1.0\"}}}";
+	Ref<HTTPResponse> init_response;
+	init_response.instantiate();
+	CHECK(session_manager->handle_mcp_post(_make_test_context("POST", _streamable_headers(), init_body), init_response));
+	const String session_id = _get_response_header(init_response, "MCP-Session-Id");
+	CHECK(!session_id.is_empty());
+
+	const String list_body = "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/list\",\"params\":{}}";
+	Ref<HTTPResponse> response;
+	response.instantiate();
+	CHECK(session_manager->handle_mcp_post(_make_test_context("POST", _streamable_headers(session_id), list_body), response));
+	CHECK(!response->is_sse_response());
+	CHECK(response->get_status() == 200);
+	CHECK(!response->get_body().is_empty());
+	CHECK(session_manager->test_peek_pending_post_sse_body(session_id).is_empty());
+
+	Ref<JSON> json;
+	json.instantiate();
+	CHECK(json->parse(response->get_body()) == OK);
+	CHECK(json->get_data().get_type() == Variant::DICTIONARY);
+	Dictionary root = json->get_data();
+	CHECK(!root.has("error"));
+	CHECK(!root.has("handled"));
+	CHECK(root.has("jsonrpc"));
+	CHECK(root.has("result"));
+	Dictionary result = root["result"];
+	CHECK(result.has("tools"));
+	CHECK(Array(result["tools"]).size() > 0);
+}
+
+void test_justamcp_http_dual_accept_tools_call_uses_sse() {
+	JustAMCPTestServerFixture fixture;
+	JustAMCPServer &server = fixture.get_server();
+	MCPSessionManager *session_manager = server.test_get_session_manager();
+	TEST_FAIL_COND(session_manager == nullptr, "Session manager is required");
+
+	const String init_body = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"dual-call\",\"version\":\"1.0\"}}}";
+	Ref<HTTPResponse> init_response;
+	init_response.instantiate();
+	CHECK(session_manager->handle_mcp_post(_make_test_context("POST", _streamable_headers(), init_body), init_response));
+	const String session_id = _get_response_header(init_response, "MCP-Session-Id");
+	CHECK(!session_id.is_empty());
+
+	const String tool_body = "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"blazium_list_toolsets\",\"arguments\":{}}}";
+	Ref<HTTPResponse> sse;
+	sse.instantiate();
+	CHECK(session_manager->handle_mcp_post(_make_test_context("POST", _streamable_headers(session_id), tool_body), sse));
+	CHECK(sse->is_sse_response());
+	CHECK(sse->get_status() != 409);
+	CHECK(session_manager->test_peek_pending_post_sse_body(session_id).contains("tools/call"));
+}
+
+void test_justamcp_mcp_config_client_field_shapes() {
+#ifdef TOOLS_ENABLED
+	const String cursor_cfg = JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_CURSOR);
+	const String ag_cfg = JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_ANTIGRAVITY);
+	const String opencode_cfg = JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_OPENCODE);
+	CHECK(cursor_cfg.contains("\"url\":"));
+	CHECK(!cursor_cfg.contains("\"serverUrl\":"));
+	CHECK(ag_cfg.contains("\"serverUrl\":"));
+	CHECK(!ag_cfg.contains("\"url\": \"http://"));
+	CHECK(opencode_cfg.contains("\"mcp\":"));
+	CHECK(opencode_cfg.contains("\"blazium-mcp\":"));
+#else
+	SUCCEED();
+#endif
+}
+
 #else
 void test_justamcp_http_initialize_creates_session() {
+	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required for HTTP integration tests");
+}
+void test_justamcp_http_initialize_json_only_accept_creates_session() {
 	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required for HTTP integration tests");
 }
 void test_justamcp_http_post_sse_conflict_409() {
@@ -255,6 +417,15 @@ void test_justamcp_orphan_send_tool_result_route_fallback() {
 	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required for HTTP integration tests");
 }
 void test_justamcp_legacy_sse_broadcast_tracking() {
+	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required for HTTP integration tests");
+}
+void test_justamcp_mcp_config_json_uses_streamable_mcp_path() {
+	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required for HTTP integration tests");
+}
+void test_justamcp_http_catalogs_after_initialize() {
+	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required for HTTP integration tests");
+}
+void test_justamcp_mcp_config_client_field_shapes() {
 	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required for HTTP integration tests");
 }
 #endif

@@ -84,13 +84,15 @@ static void _on_tool_requested_probe(const Variant &p_request_id, const String &
 	s_tool_requested_name = p_tool_name;
 }
 
-void test_justamcp_sse_bound_worker_safe_uses_main() {
+void test_justamcp_sse_bound_worker_safe_uses_worker() {
 #if defined(MODULE_HTTPSERVER_ENABLED)
 	const int prev = int(GLOBAL_GET("blazium/justamcp/readonly_worker_concurrency"));
 	ProjectSettings::get_singleton()->set_setting("blazium/justamcp/readonly_worker_concurrency", 2);
 
 	JustAMCPTestServerFixture fixture;
 	JustAMCPServer &server = fixture.get_server();
+	JustAMCPToolExecutor executor;
+	executor.set_as_active_instance();
 
 	s_tool_requested = false;
 	s_tool_requested_name = String();
@@ -103,8 +105,9 @@ void test_justamcp_sse_bound_worker_safe_uses_main() {
 	entry->sse_connection_id = 42;
 
 	server.test_process_pending_tools();
-	CHECK(s_tool_requested);
-	CHECK(s_tool_requested_name == "blazium_logs_read");
+	// SSE-bound worker-safe tools must schedule on WorkerThreadPool, not the main-thread signal path.
+	CHECK(!s_tool_requested);
+	CHECK(s_tool_requested_name.is_empty());
 
 	server.disconnect("tool_requested", callable_mp_static(_on_tool_requested_probe));
 	ProjectSettings::get_singleton()->set_setting("blazium/justamcp/readonly_worker_concurrency", prev);

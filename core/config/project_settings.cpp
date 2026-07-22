@@ -279,69 +279,71 @@ String ProjectSettings::globalize_path(const String &p_path) const {
 }
 
 bool ProjectSettings::_set(const StringName &p_name, const Variant &p_value) {
-	_THREAD_SAFE_METHOD_
+	// Keep CallQueue/MessageQueue acquisition out of the ProjectSettings mutex to
+	// avoid ThreadSanitizer lock-order inversion (settings M0 -> call_deferred M1).
+	{
+		_THREAD_SAFE_METHOD_
 
-	if (p_value.get_type() == Variant::NIL) {
-		props.erase(p_name);
-		if (p_name.operator String().begins_with("autoload/")) {
-			String node_name = p_name.operator String().split("/")[1];
-			if (autoloads.has(node_name)) {
-				remove_autoload(node_name);
-			}
-		} else if (p_name.operator String().begins_with("global_group/")) {
-			String group_name = p_name.operator String().get_slicec('/', 1);
-			if (global_groups.has(group_name)) {
-				remove_global_group(group_name);
-			}
-		}
-	} else {
-		if (p_name == CoreStringName(_custom_features)) {
-			Vector<String> custom_feature_array = String(p_value).split(",");
-			for (int i = 0; i < custom_feature_array.size(); i++) {
-				custom_features.insert(custom_feature_array[i]);
-			}
-			_queue_changed();
-			return true;
-		}
-
-		{ // Feature overrides.
-			int dot = p_name.operator String().find_char('.');
-			if (dot != -1) {
-				Vector<String> s = p_name.operator String().split(".");
-
-				for (int i = 1; i < s.size(); i++) {
-					String feature = s[i].strip_edges();
-					Pair<StringName, StringName> feature_override(feature, p_name);
-
-					if (!feature_overrides.has(s[0])) {
-						feature_overrides[s[0]] = LocalVector<Pair<StringName, StringName>>();
-					}
-
-					feature_overrides[s[0]].push_back(feature_override);
+		if (p_value.get_type() == Variant::NIL) {
+			props.erase(p_name);
+			if (p_name.operator String().begins_with("autoload/")) {
+				String node_name = p_name.operator String().split("/")[1];
+				if (autoloads.has(node_name)) {
+					remove_autoload(node_name);
+				}
+			} else if (p_name.operator String().begins_with("global_group/")) {
+				String group_name = p_name.operator String().get_slicec('/', 1);
+				if (global_groups.has(group_name)) {
+					remove_global_group(group_name);
 				}
 			}
-		}
-
-		if (props.has(p_name)) {
-			props[p_name].variant = p_value;
 		} else {
-			props[p_name] = VariantContainer(p_value, last_order++);
-		}
-		if (p_name.operator String().begins_with("autoload/")) {
-			String node_name = p_name.operator String().split("/")[1];
-			AutoloadInfo autoload;
-			autoload.name = node_name;
-			String path = p_value;
-			if (path.begins_with("*")) {
-				autoload.is_singleton = true;
-				autoload.path = path.substr(1).simplify_path();
+			if (p_name == CoreStringName(_custom_features)) {
+				Vector<String> custom_feature_array = String(p_value).split(",");
+				for (int i = 0; i < custom_feature_array.size(); i++) {
+					custom_features.insert(custom_feature_array[i]);
+				}
 			} else {
-				autoload.path = path.simplify_path();
+				{ // Feature overrides.
+					int dot = p_name.operator String().find_char('.');
+					if (dot != -1) {
+						Vector<String> s = p_name.operator String().split(".");
+
+						for (int i = 1; i < s.size(); i++) {
+							String feature = s[i].strip_edges();
+							Pair<StringName, StringName> feature_override(feature, p_name);
+
+							if (!feature_overrides.has(s[0])) {
+								feature_overrides[s[0]] = LocalVector<Pair<StringName, StringName>>();
+							}
+
+							feature_overrides[s[0]].push_back(feature_override);
+						}
+					}
+				}
+
+				if (props.has(p_name)) {
+					props[p_name].variant = p_value;
+				} else {
+					props[p_name] = VariantContainer(p_value, last_order++);
+				}
+				if (p_name.operator String().begins_with("autoload/")) {
+					String node_name = p_name.operator String().split("/")[1];
+					AutoloadInfo autoload;
+					autoload.name = node_name;
+					String path = p_value;
+					if (path.begins_with("*")) {
+						autoload.is_singleton = true;
+						autoload.path = path.substr(1).simplify_path();
+					} else {
+						autoload.path = path.simplify_path();
+					}
+					add_autoload(autoload);
+				} else if (p_name.operator String().begins_with("global_group/")) {
+					String group_name = p_name.operator String().get_slicec('/', 1);
+					add_global_group(group_name, p_value);
+				}
 			}
-			add_autoload(autoload);
-		} else if (p_name.operator String().begins_with("global_group/")) {
-			String group_name = p_name.operator String().get_slicec('/', 1);
-			add_global_group(group_name, p_value);
 		}
 	}
 

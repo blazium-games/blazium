@@ -114,6 +114,30 @@ void JustAMCPToolExecutor::set_as_active_instance() {
 	active_instance = this;
 }
 
+void JustAMCPToolExecutor::track_worker_task(WorkerThreadPool::TaskID p_task_id) {
+	if (p_task_id == WorkerThreadPool::INVALID_TASK_ID) {
+		return;
+	}
+	MutexLock lock(pending_worker_task_mutex);
+	pending_worker_task_ids.push_back(p_task_id);
+}
+
+void JustAMCPToolExecutor::_wait_for_tracked_worker_tasks() {
+	Vector<WorkerThreadPool::TaskID> ids;
+	{
+		MutexLock lock(pending_worker_task_mutex);
+		ids = pending_worker_task_ids;
+		pending_worker_task_ids.clear();
+	}
+	WorkerThreadPool *pool = WorkerThreadPool::get_singleton();
+	if (!pool) {
+		return;
+	}
+	for (int i = 0; i < ids.size(); i++) {
+		pool->wait_for_task_completion(ids[i]);
+	}
+}
+
 void JustAMCPToolExecutor::set_test_scene_root(Node *p_node) {
 	test_scene_root = p_node;
 }
@@ -129,9 +153,12 @@ JustAMCPToolExecutor::JustAMCPToolExecutor() {
 }
 
 JustAMCPToolExecutor::~JustAMCPToolExecutor() {
+	// Stop accepting new worker jobs that would capture this pointer, then drain
+	// in-flight WorkerThreadPool tasks before tearing member tools down.
 	if (active_instance == this) {
 		active_instance = nullptr;
 	}
+	_wait_for_tracked_worker_tasks();
 	if (scene_tools) {
 		memdelete(scene_tools);
 	}

@@ -133,7 +133,7 @@ void JustAMCPBatchTools::_search_by_type(Node *p_node, const String &p_type_name
 		if (root) {
 			Dictionary m;
 			m["name"] = p_node->get_name();
-			m["path"] = root->get_path_to(p_node);
+			m["path"] = JustAMCPEditorSceneAccess::safe_path_to(root, p_node);
 			m["type"] = p_node->get_class();
 			r_matches.push_back(m);
 		}
@@ -164,7 +164,7 @@ Dictionary JustAMCPBatchTools::_find_signal_connections(const Dictionary &p_para
 }
 
 void JustAMCPBatchTools::_collect_signals(Node *p_node, Node *p_root, const String &p_signal_filter, const String &p_node_filter, Array &r_connections) {
-	String node_path = p_root->get_path_to(p_node);
+	String node_path = JustAMCPEditorSceneAccess::safe_path_to(p_root, p_node);
 
 	if (p_node_filter.is_empty() || node_path.contains(p_node_filter)) {
 		List<MethodInfo> signals;
@@ -186,7 +186,7 @@ void JustAMCPBatchTools::_collect_signals(Node *p_node, Node *p_root, const Stri
 				Node *target_node = Object::cast_to<Node>(target_obj);
 				if (target_node) {
 					if (target_node == p_root || p_root->is_ancestor_of(target_node)) {
-						d["target"] = p_root->get_path_to(target_node);
+						d["target"] = JustAMCPEditorSceneAccess::safe_path_to(p_root, target_node);
 					} else {
 						d["target"] = target_node->get_name();
 					}
@@ -250,7 +250,7 @@ void JustAMCPBatchTools::_batch_set_recursive(Node *p_node, Node *p_root, const 
 		bool valid = false;
 		p_node->set(p_property, p_value, &valid);
 		if (valid) {
-			r_affected.push_back(p_root->get_path_to(p_node));
+			r_affected.push_back(JustAMCPEditorSceneAccess::safe_path_to(p_root, p_node));
 		}
 	}
 	for (int i = 0; i < p_node->get_child_count(); i++) {
@@ -303,7 +303,7 @@ Dictionary JustAMCPBatchTools::_batch_add_nodes(const Dictionary &p_params) {
 		Dictionary info;
 		info["name"] = node->get_name();
 		info["type"] = node->get_class();
-		info["path"] = root->get_path_to(node);
+		info["path"] = JustAMCPEditorSceneAccess::safe_path_to(root, node);
 		created.push_back(info);
 	}
 
@@ -520,7 +520,7 @@ void JustAMCPBatchTools::_cross_scene_set_recursive(Node *p_node, Node *p_root, 
 		bool valid = false;
 		p_node->set(p_property, p_value, &valid);
 		if (valid) {
-			r_affected.push_back(p_root->get_path_to(p_node));
+			r_affected.push_back(JustAMCPEditorSceneAccess::safe_path_to(p_root, p_node));
 		}
 	}
 	for (int i = 0; i < p_node->get_child_count(); i++) {

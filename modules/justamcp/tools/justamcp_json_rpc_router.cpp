@@ -320,10 +320,10 @@ Dictionary JustAMCPJsonRpcRouter::route_initialize(JustAMCPServer *p_server, con
 		return empty;
 	}
 	const Dictionary params = p_payload["params"];
-	if (!params.has("protocolVersion") || params["protocolVersion"].get_type() != Variant::STRING) {
-		return empty;
+	String client_protocol = MCPSessionManager::latest_protocol_version();
+	if (params.has("protocolVersion") && params["protocolVersion"].get_type() == Variant::STRING) {
+		client_protocol = String(params["protocolVersion"]);
 	}
-	const String client_protocol = String(params["protocolVersion"]);
 	p_server->transport_negotiated_protocol = MCPSessionManager::negotiate_protocol_version(client_protocol);
 
 	Dictionary result;

@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  justamcp_json_rpc_transport.h                                         */
+/*  test_justamcp_protocol_versions.h                                     */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             BLAZIUM ENGINE                             */
@@ -29,26 +29,45 @@
 
 #pragma once
 
-#include "modules/modules_enabled.gen.h"
+#include "tests/test_macros.h"
 
-#if defined(MODULE_HTTPSERVER_ENABLED)
+void test_justamcp_negotiate_protocol_versions();
+void test_justamcp_validate_protocol_header_rejects_unknown();
+void test_justamcp_http_initialize_all_protocol_versions();
+void test_justamcp_http_protocol_header_falls_back_to_session();
+void test_justamcp_http_protocol_header_optional_for_older_versions();
+void test_justamcp_batch_rejected_for_newer_protocols();
+void test_justamcp_http_list_toolsets_smoke_per_strict_protocol();
+void test_justamcp_json_rpc_rejects_null_id();
 
-#include "core/variant/dictionary.h"
-#include "core/variant/variant.h"
+TEST_CASE("[Modules][JustAMCP] negotiate protocol versions") {
+	test_justamcp_negotiate_protocol_versions();
+}
 
-class JustAMCPServer;
-class HTTPResponse;
+TEST_CASE("[Modules][JustAMCP] validate protocol header rejects unknown") {
+	test_justamcp_validate_protocol_header_rejects_unknown();
+}
 
-class JustAMCPJsonRpcTransport {
-public:
-	static Dictionary handle_json_rpc(JustAMCPServer *p_server, const String &p_body, Ref<HTTPResponse> p_response, const String &p_caller_session_id = String());
-	static Dictionary handle_json_rpc_parsed(JustAMCPServer *p_server, const Dictionary &p_payload, Ref<HTTPResponse> p_response, const String &p_caller_session_id = String());
-	// Strip internal router keys before HTTP/SSE emission (Cursor Zod rejects "handled").
-	static Dictionary sanitize_wire_rpc(const Dictionary &p_rpc);
+TEST_CASE("[Modules][JustAMCP] http initialize all protocol versions") {
+	test_justamcp_http_initialize_all_protocol_versions();
+}
 
-private:
-	static bool _is_http_transport(Ref<HTTPResponse> p_response);
-	static Dictionary _handle_json_rpc_payload(JustAMCPServer *p_server, const Dictionary &p_payload, Ref<HTTPResponse> p_response, const String &p_caller_session_id);
-};
+TEST_CASE("[Modules][JustAMCP] http protocol header falls back to session") {
+	test_justamcp_http_protocol_header_falls_back_to_session();
+}
 
-#endif
+TEST_CASE("[Modules][JustAMCP] http protocol header optional for older versions") {
+	test_justamcp_http_protocol_header_optional_for_older_versions();
+}
+
+TEST_CASE("[Modules][JustAMCP] batch rejected for newer protocols") {
+	test_justamcp_batch_rejected_for_newer_protocols();
+}
+
+TEST_CASE("[Modules][JustAMCP] http list toolsets smoke per strict protocol") {
+	test_justamcp_http_list_toolsets_smoke_per_strict_protocol();
+}
+
+TEST_CASE("[Modules][JustAMCP] json-rpc rejects null id") {
+	test_justamcp_json_rpc_rejects_null_id();
+}
