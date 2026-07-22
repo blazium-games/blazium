@@ -19,3 +19,11 @@ func test():
 	"""
 	@warning_ignore("standalone_ternary")
 	1 if 2 else 3 # Produces `STANDALONE_TERNARY` instead.
+	# Logical `and`/`or` short-circuit can conditionally execute a call, which is a
+	# valid effect, so these should not produce `STANDALONE_EXPRESSION` (GH-47088):
+	_a and absi(5)
+	_a or absi(6)
+	absi(7) and _a
+	_a and (_a or absi(8))
+	# A logical operator with no side effect is still reported:
+	_a and _a

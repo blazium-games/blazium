@@ -2023,6 +2023,33 @@ GDScriptParser::SuiteNode *GDScriptParser::parse_suite(const String &p_context, 
 	return suite;
 }
 
+#ifdef DEBUG_ENABLED
+// Returns true if using the expression as a standalone statement can still have a
+// side effect, e.g. a call reached through the short-circuit evaluation of a logical
+// `and`/`or`. Used to avoid a false STANDALONE_EXPRESSION warning. See GH-47088.
+static bool _is_standalone_expression_effective(const GDScriptParser::ExpressionNode *p_expression) {
+	if (p_expression == nullptr) {
+		return false;
+	}
+	switch (p_expression->type) {
+		case GDScriptParser::Node::CALL:
+		case GDScriptParser::Node::AWAIT:
+		case GDScriptParser::Node::ASSIGNMENT:
+			return true;
+		case GDScriptParser::Node::BINARY_OPERATOR: {
+			const GDScriptParser::BinaryOpNode *bin_op = static_cast<const GDScriptParser::BinaryOpNode *>(p_expression);
+			// Only `and`/`or` short-circuit; either operand may hold the conditionally executed effect.
+			if (bin_op->operation == GDScriptParser::BinaryOpNode::OP_LOGIC_AND || bin_op->operation == GDScriptParser::BinaryOpNode::OP_LOGIC_OR) {
+				return _is_standalone_expression_effective(bin_op->left_operand) || _is_standalone_expression_effective(bin_op->right_operand);
+			}
+			return false;
+		}
+		default:
+			return false;
+	}
+}
+#endif // DEBUG_ENABLED
+
 GDScriptParser::Node *GDScriptParser::parse_statement() {
 	Node *result = nullptr;
 #ifdef DEBUG_ENABLED
@@ -2181,6 +2208,13 @@ GDScriptParser::Node *GDScriptParser::parse_statement() {
 						break;
 					case Node::TERNARY_OPERATOR:
 						push_warning(expression, GDScriptWarning::STANDALONE_TERNARY);
+						break;
+					case Node::BINARY_OPERATOR:
+						// A logical `and`/`or` used as a statement can call a function through
+						// short-circuit evaluation, which is a valid effect. Only warn otherwise.
+						if (!_is_standalone_expression_effective(expression)) {
+							push_warning(expression, GDScriptWarning::STANDALONE_EXPRESSION);
+						}
 						break;
 					default:
 						push_warning(expression, GDScriptWarning::STANDALONE_EXPRESSION);

@@ -185,6 +185,41 @@ public:
 };
 
 template <>
+class OperatorEvaluatorDivNZ<int64_t, int64_t, int64_t> {
+	// `INT64_MIN / -1` overflows signed integer division and raises a hardware
+	// exception (SIGFPE / #DE) on most CPUs. Since `x / -1 == -x`, compute the
+	// `-1` divisor case via unsigned negation, which is well-defined and wraps
+	// `INT64_MIN` back to `INT64_MIN` — consistent with the two's-complement
+	// wrapping that GDScript integer +, - and * already use on overflow. GH-26131.
+	static _FORCE_INLINE_ int64_t _div(int64_t a, int64_t b) {
+		if (unlikely(b == -1)) {
+			return int64_t(0 - uint64_t(a));
+		}
+		return a / b;
+	}
+
+public:
+	static void evaluate(const Variant &p_left, const Variant &p_right, Variant *r_ret, bool &r_valid) {
+		const int64_t &a = *VariantGetInternalPtr<int64_t>::get_ptr(&p_left);
+		const int64_t &b = *VariantGetInternalPtr<int64_t>::get_ptr(&p_right);
+		if (b == 0) {
+			r_valid = false;
+			*r_ret = "Division by zero error";
+			return;
+		}
+		*r_ret = _div(a, b);
+		r_valid = true;
+	}
+	static inline void validated_evaluate(const Variant *left, const Variant *right, Variant *r_ret) {
+		*VariantGetInternalPtr<int64_t>::get_ptr(r_ret) = _div(*VariantGetInternalPtr<int64_t>::get_ptr(left), *VariantGetInternalPtr<int64_t>::get_ptr(right));
+	}
+	static void ptr_evaluate(const void *left, const void *right, void *r_ret) {
+		PtrToArg<int64_t>::encode(_div(PtrToArg<int64_t>::convert(left), PtrToArg<int64_t>::convert(right)), r_ret);
+	}
+	static Variant::Type get_return_type() { return GetTypeInfo<int64_t>::VARIANT_TYPE; }
+};
+
+template <>
 class OperatorEvaluatorDivNZ<Vector2i, Vector2i, Vector2i> {
 public:
 	static void evaluate(const Variant &p_left, const Variant &p_right, Variant *r_ret, bool &r_valid) {
@@ -295,6 +330,39 @@ public:
 		PtrToArg<R>::encode(PtrToArg<A>::convert(left) % PtrToArg<B>::convert(right), r_ret);
 	}
 	static Variant::Type get_return_type() { return GetTypeInfo<R>::VARIANT_TYPE; }
+};
+
+template <>
+class OperatorEvaluatorModNZ<int64_t, int64_t, int64_t> {
+	// `INT64_MIN % -1` overflows the underlying signed division and raises a
+	// hardware exception (SIGFPE / #DE) on most CPUs, even though the result is
+	// mathematically 0. `x % -1 == 0` for all `x`, so short-circuit it. GH-26131.
+	static _FORCE_INLINE_ int64_t _mod(int64_t a, int64_t b) {
+		if (unlikely(b == -1)) {
+			return 0;
+		}
+		return a % b;
+	}
+
+public:
+	static void evaluate(const Variant &p_left, const Variant &p_right, Variant *r_ret, bool &r_valid) {
+		const int64_t &a = *VariantGetInternalPtr<int64_t>::get_ptr(&p_left);
+		const int64_t &b = *VariantGetInternalPtr<int64_t>::get_ptr(&p_right);
+		if (b == 0) {
+			r_valid = false;
+			*r_ret = "Modulo by zero error";
+			return;
+		}
+		*r_ret = _mod(a, b);
+		r_valid = true;
+	}
+	static inline void validated_evaluate(const Variant *left, const Variant *right, Variant *r_ret) {
+		*VariantGetInternalPtr<int64_t>::get_ptr(r_ret) = _mod(*VariantGetInternalPtr<int64_t>::get_ptr(left), *VariantGetInternalPtr<int64_t>::get_ptr(right));
+	}
+	static void ptr_evaluate(const void *left, const void *right, void *r_ret) {
+		PtrToArg<int64_t>::encode(_mod(PtrToArg<int64_t>::convert(left), PtrToArg<int64_t>::convert(right)), r_ret);
+	}
+	static Variant::Type get_return_type() { return GetTypeInfo<int64_t>::VARIANT_TYPE; }
 };
 
 template <>
