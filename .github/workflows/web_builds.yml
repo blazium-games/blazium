@@ -52,6 +52,11 @@ jobs:
         run: |
           emcc -v
 
+      - name: Install p7zip for web template ZIP compression
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y p7zip-full
+
       - name: Restore Godot build cache
         uses: ./.github/actions/godot-cache-restore
         with:

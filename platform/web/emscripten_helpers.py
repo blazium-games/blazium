@@ -1,5 +1,7 @@
 import json
 import os
+import shutil
+import subprocess
 
 from SCons.Util import WhereIs
 
@@ -117,12 +119,30 @@ def create_template_zip(env, js, wasm, side):
         out_files.append(zip_dir.File(binary_name + ".youtube.playables.js"))
 
     zip_files = env.InstallAs(out_files, in_files)
-    env.Zip(
-        "#bin/blazium",
-        zip_files,
-        ZIPROOT=zip_dir,
-        ZIPSUFFIX="${PROGSUFFIX}${ZIPSUFFIX}",
-    )
+
+    # Prefer 7z-created ZIP (better DEFLATE) over SCons Zip / Info-ZIP; keep .zip format.
+    zip_root_path = zip_dir.get_abspath()
+
+    def zip_with_7z(target, source, env):
+        sevenz = shutil.which("7z") or shutil.which("7za")
+        if not sevenz:
+            raise RuntimeError(
+                "7z/7za is required to create web template ZIP archives. "
+                "Install p7zip-full (Linux) or sevenzip (Homebrew)."
+            )
+        archive = target[0].get_abspath()
+        if os.path.isfile(archive):
+            os.remove(archive)
+        subprocess.check_call(
+            [sevenz, "a", "-tzip", "-bso0", "-bd", "-mx=9", archive, "."],
+            cwd=zip_root_path,
+        )
+
+    # Same naming as former env.Zip(..., ZIPSUFFIX="${PROGSUFFIX}${ZIPSUFFIX}").
+    if "ZIPSUFFIX" not in env:
+        env["ZIPSUFFIX"] = ".zip"
+    zip_target = "#bin/blazium${PROGSUFFIX}${ZIPSUFFIX}"
+    env.Command(zip_target, zip_files, env.Action(zip_with_7z, "Compressing $TARGET with 7z..."))
 
 
 def get_template_zip_path(env):
