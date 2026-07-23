@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DDDBrowserLevel" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Root node for authoring a DDDBrowser level in the editor.
+	</brief_description>
+	<description>
+		Holds scene metadata used by [DDDBrowserExporter]: name, rating, skybox (uri or six faces), world, gameType, movement bounds, autosave notification, and manifest URL.
+		[member gamemode_file] should be a [code].luau[/code] path; export copies it into [code]scripts/[/code] and emits [code]gamemode.file[/code] as the [b]filename[/b] (for example [code]gamemode_template.luau[/code]), which is what DDDBrowser resolves—not an asset id.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="author" type="String" setter="set_author" getter="get_author" default="&quot;&quot;">
+		</member>
+		<member name="autosave_color" type="Color" setter="set_autosave_color" getter="get_autosave_color" default="Color(1, 1, 1, 1)">
+		</member>
+		<member name="autosave_font" type="String" setter="set_autosave_font" getter="get_autosave_font" default="&quot;&quot;">
+		</member>
+		<member name="autosave_text" type="String" setter="set_autosave_text" getter="get_autosave_text" default="&quot;Game Saved&quot;">
+		</member>
+		<member name="autosave_x" type="float" setter="set_autosave_x" getter="get_autosave_x" default="0.0">
+		</member>
+		<member name="autosave_y" type="float" setter="set_autosave_y" getter="get_autosave_y" default="0.0">
+		</member>
+		<member name="base_url" type="String" setter="set_base_url" getter="get_base_url" default="&quot;&quot;">
+		</member>
+		<member name="bounds_max" type="Vector3" setter="set_bounds_max" getter="get_bounds_max" default="Vector3(100, 100, 100)">
+		</member>
+		<member name="bounds_min" type="Vector3" setter="set_bounds_min" getter="get_bounds_min" default="Vector3(-100, -100, -100)">
+		</member>
+		<member name="description" type="String" setter="set_description" getter="get_description" default="&quot;&quot;">
+		</member>
+		<member name="export_movement_bounds" type="bool" setter="set_export_movement_bounds" getter="get_export_movement_bounds" default="false">
+		</member>
+		<member name="game_type" type="int" setter="set_game_type" getter="get_game_type" enum="DDDBrowserLevel.GameType" default="0">
+		</member>
+		<member name="gamemode_file" type="String" setter="set_gamemode_file" getter="get_gamemode_file" default="&quot;&quot;">
+		</member>
+		<member name="manifest_url" type="String" setter="set_manifest_url" getter="get_manifest_url" default="&quot;&quot;">
+		</member>
+		<member name="rating" type="int" setter="set_rating" getter="get_rating" enum="DDDBrowserLevel.Rating" default="0">
+		</member>
+		<member name="scene_id" type="String" setter="set_scene_id" getter="get_scene_id" default="&quot;&quot;">
+		</member>
+		<member name="scene_name" type="String" setter="set_scene_name" getter="get_scene_name" default="&quot;Exported Scene&quot;">
+		</member>
+		<member name="schema_version" type="String" setter="set_schema_version" getter="get_schema_version" default="&quot;1.0&quot;">
+		</member>
+		<member name="skybox_nx" type="String" setter="set_skybox_nx" getter="get_skybox_nx" default="&quot;&quot;">
+		</member>
+		<member name="skybox_ny" type="String" setter="set_skybox_ny" getter="get_skybox_ny" default="&quot;&quot;">
+		</member>
+		<member name="skybox_nz" type="String" setter="set_skybox_nz" getter="get_skybox_nz" default="&quot;&quot;">
+		</member>
+		<member name="skybox_px" type="String" setter="set_skybox_px" getter="get_skybox_px" default="&quot;&quot;">
+		</member>
+		<member name="skybox_py" type="String" setter="set_skybox_py" getter="get_skybox_py" default="&quot;&quot;">
+		</member>
+		<member name="skybox_pz" type="String" setter="set_skybox_pz" getter="get_skybox_pz" default="&quot;&quot;">
+		</member>
+		<member name="skybox_rotation" type="Vector3" setter="set_skybox_rotation" getter="get_skybox_rotation" default="Vector3(0, 0, 0)">
+		</member>
+		<member name="skybox_uri" type="String" setter="set_skybox_uri" getter="get_skybox_uri" default="&quot;&quot;">
+		</member>
+		<member name="thumbnail_url" type="String" setter="set_thumbnail_url" getter="get_thumbnail_url" default="&quot;&quot;">
+		</member>
+		<member name="use_autosave_notification" type="bool" setter="set_use_autosave_notification" getter="get_use_autosave_notification" default="false">
+		</member>
+		<member name="version" type="String" setter="set_version" getter="get_version" default="&quot;1.0&quot;">
+		</member>
+		<member name="world_id" type="String" setter="set_world_id" getter="get_world_id" default="&quot;&quot;">
+		</member>
+		<member name="world_position" type="Vector3" setter="set_world_position" getter="get_world_position" default="Vector3(0, 0, 0)">
+		</member>
+	</members>
+	<constants>
+		<constant name="RATING_GENERAL" value="0" enum="Rating">
+		</constant>
+		<constant name="RATING_MODERATE" value="1" enum="Rating">
+		</constant>
+		<constant name="RATING_ADULT" value="2" enum="Rating">
+		</constant>
+		<constant name="GAME_TYPE_NONE" value="0" enum="GameType">
+		</constant>
+		<constant name="GAME_TYPE_FPS" value="1" enum="GameType">
+		</constant>
+	</constants>
+</class>

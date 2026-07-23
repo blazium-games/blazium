@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DDDBrowserScript" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Luau script asset for DDDBrowser levels (not a Blazium [LuauScript] / gdclass).
+	</brief_description>
+	<description>
+		Asset-only node that exports a [code].luau[/code] file into [code]assets[][/code] with [code]mediaType[/code] [code]application/x-luau[/code].
+		Classic scripts [code]return[/code] a table with DDDBrowser lifecycle methods ([code]on_start[/code], [code]on_update[/code], etc.) and use [code skip-lint]Engine[/code] / [code skip-lint]Scene[/code] / [code skip-lint]Gamemode[/code] / [code]localStorage[/code].
+		For Blazium Luau [code]gdclass[/code] behaviors, attach a [LuauScript] to the instance node (e.g. [MeshInstance3D]) instead; the exporter passthroughs source and DDDBrowser runs [code]_ready[/code] / [code]_process[/code] via its compatibility layer. Use right-click [b]Check DDD Luau[/b] to compile-check with DDD API stubs.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="asset_id" type="String" setter="set_asset_id" getter="get_asset_id" default="&quot;&quot;">
+		</member>
+		<member name="pin_sha256" type="bool" setter="set_pin_sha256" getter="get_pin_sha256" default="true">
+		</member>
+		<member name="source_path" type="String" setter="set_source_path" getter="get_source_path" default="&quot;&quot;">
+		</member>
+	</members>
+</class>
