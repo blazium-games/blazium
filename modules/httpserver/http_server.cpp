@@ -167,8 +167,8 @@ void HTTPServer::_poll() {
 	for (KeyValue<int, ClientConnection> &E : clients) {
 		_poll_client(E.key, E.value);
 
-		// Check timeout (10 seconds for regular requests)
-		if (!E.value.is_sse && OS::get_singleton()->get_ticks_usec() - E.value.time > 10000000) {
+		// Check timeout (10 seconds for regular requests). Held async clients and SSE wait longer.
+		if (!E.value.is_sse && !E.value.is_held && OS::get_singleton()->get_ticks_usec() - E.value.time > 10000000) {
 			clients_to_remove.push_back(E.key);
 		}
 	}

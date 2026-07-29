@@ -162,13 +162,18 @@ bool RemoteControlServer::configured_allow_eval() {
 }
 
 bool RemoteControlServer::_authorized(const Ref<HTTPRequestContext> &p_context, Ref<HTTPResponse> p_response) const {
-	if (token.is_empty()) {
+	String current_token;
+	{
+		MutexLock lock(server_state_mutex);
+		current_token = token;
+	}
+	if (current_token.is_empty()) {
 		return true;
 	}
 	String auth = p_context->get_header("Authorization");
-	String expected = "Bearer " + token;
+	String expected = "Bearer " + current_token;
 	String alt = p_context->get_header("X-Remote-Control-Token");
-	if (auth == expected || alt == token) {
+	if (auth == expected || alt == current_token) {
 		return true;
 	}
 	_json_error(p_response, 401, "Unauthorized");
@@ -184,20 +189,35 @@ void RemoteControlServer::_json_error(Ref<HTTPResponse> p_response, int p_status
 }
 
 Dictionary RemoteControlServer::_build_status() const {
+	bool is_started = false;
+	int port = 0;
+	String address;
+	bool eval_allowed = false;
+	bool token_required = false;
+	String instance_id;
+	{
+		MutexLock lock(server_state_mutex);
+		is_started = started;
+		port = active_port;
+		address = bind_address;
+		eval_allowed = allow_eval;
+		token_required = !token.is_empty();
+		instance_id = remote_instance_id;
+	}
 	Dictionary status;
 	status["ok"] = true;
 	status["module"] = "remote_control";
-	status["started"] = started;
-	status["port"] = active_port > 0 ? active_port : (HTTPServer::get_singleton() ? HTTPServer::get_singleton()->get_port() : configured_port());
-	status["bind_address"] = bind_address;
+	status["started"] = is_started;
+	status["port"] = port > 0 ? port : (HTTPServer::get_singleton() ? HTTPServer::get_singleton()->get_port() : configured_port());
+	status["bind_address"] = address;
 	status["pid"] = OS::get_singleton()->get_process_id();
 	status["project_path"] = ProjectSettings::get_singleton()->get_resource_path();
 	status["project_name"] = ProjectSettings::get_singleton()->get_setting("application/config/name", "");
 	status["engine_version"] = Engine::get_singleton()->get_version_info();
-	status["allow_eval"] = allow_eval;
+	status["allow_eval"] = eval_allowed;
 	status["luau_eval_available"] = _luau_eval_available();
-	status["token_required"] = !token.is_empty();
-	status["instance_id"] = remote_instance_id;
+	status["token_required"] = token_required;
+	status["instance_id"] = instance_id;
 #ifdef TOOLS_ENABLED
 	status["mode"] = "editor";
 #else
@@ -235,7 +255,10 @@ void RemoteControlServer::_handle_health(Ref<HTTPRequestContext> p_context, Ref<
 	Dictionary body;
 	body["ok"] = true;
 	body["status"] = "ok";
-	body["instance_id"] = remote_instance_id;
+	{
+		MutexLock lock(server_state_mutex);
+		body["instance_id"] = remote_instance_id;
+	}
 	p_response->set_json(body);
 }
 
@@ -262,10 +285,13 @@ void RemoteControlServer::_handle_instance(Ref<HTTPRequestContext> p_context, Re
 		_json_error(p_response, 400, "instance_id must be 6 chars from 23456789ABCDEFGHJKLMNPQRSTUVWXYZ");
 		return;
 	}
-	remote_instance_id = id;
+	{
+		MutexLock lock(server_state_mutex);
+		remote_instance_id = id;
+	}
 	Dictionary ret;
 	ret["ok"] = true;
-	ret["instance_id"] = remote_instance_id;
+	ret["instance_id"] = id;
 	p_response->set_json(ret);
 }
 
@@ -302,9 +328,15 @@ void RemoteControlServer::_deferred_exec(int p_client_id, String p_command, Dict
 
 void RemoteControlServer::_deferred_eval(int p_client_id, String p_expression, String p_language) {
 	Dictionary result = eval_expression(p_expression, p_language);
+	int status = 400;
+	if (bool(result.get("ok", false))) {
+		status = 200;
+	} else if (String(result.get("error", "")).contains("not available")) {
+		status = 503;
+	}
 	Ref<HTTPResponse> response;
 	response.instantiate();
-	response->set_status(bool(result.get("ok", false)) ? 200 : 400);
+	response->set_status(status);
 	response->set_json(result);
 	if (HTTPServer::get_singleton()) {
 		HTTPServer::get_singleton()->complete_response(p_client_id, response);
@@ -334,16 +366,21 @@ void RemoteControlServer::_handle_exec(Ref<HTTPRequestContext> p_context, Ref<HT
 		return;
 	}
 
-	Dictionary result = RemoteControlRegistry::get_singleton()->execute(command, args);
-	p_response->set_status(bool(result.get("ok", false)) ? 200 : 400);
-	p_response->set_json(result);
+	const int client_id = p_context->get_client_id();
+	p_response->hold();
+	call_deferred(SNAME("_deferred_exec"), client_id, command, args);
 }
 
 void RemoteControlServer::_handle_eval(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
 	if (!_authorized(p_context, p_response)) {
 		return;
 	}
-	if (!allow_eval) {
+	bool eval_allowed = false;
+	{
+		MutexLock lock(server_state_mutex);
+		eval_allowed = allow_eval;
+	}
+	if (!eval_allowed) {
 		_json_error(p_response, 403, "Eval is disabled. Enable blazium/remote_control/allow_eval.");
 		return;
 	}
@@ -357,15 +394,10 @@ void RemoteControlServer::_handle_eval(Ref<HTTPRequestContext> p_context, Ref<HT
 	Dictionary body = json.get_data();
 	String expression = body.get("expression", body.get("expr", ""));
 	String language = body.get("language", body.get("lang", "gdscript"));
-	Dictionary result = eval_expression(expression, language);
-	int status = 400;
-	if (bool(result.get("ok", false))) {
-		status = 200;
-	} else if (String(result.get("error", "")).contains("not available")) {
-		status = 503;
-	}
-	p_response->set_status(status);
-	p_response->set_json(result);
+
+	const int client_id = p_context->get_client_id();
+	p_response->hold();
+	call_deferred(SNAME("_deferred_eval"), client_id, expression, language);
 }
 
 void RemoteControlServer::_handle_cors(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
@@ -586,29 +618,33 @@ void RemoteControlServer::_unregister_routes() {
 }
 
 Error RemoteControlServer::start() {
-	if (started) {
-		return OK;
+	{
+		MutexLock lock(server_state_mutex);
+		if (started) {
+			return OK;
+		}
 	}
 
 	HTTPServer *http = HTTPServer::get_singleton();
 	ERR_FAIL_NULL_V_MSG(http, ERR_UNAVAILABLE, "HTTPServer module singleton is not available.");
 
-	token = configured_token();
-	allow_eval = configured_allow_eval();
-	bind_address = configured_bind_address();
+	const String cfg_token = configured_token();
+	const bool cfg_allow_eval = configured_allow_eval();
+	const String cfg_bind = configured_bind_address();
 	const int port = configured_port();
 
-	owns_listen = false;
+	bool did_own_listen = false;
+	int listen_port = 0;
 	if (!http->is_listening()) {
-		Error err = http->listen(port, bind_address, false);
+		Error err = http->listen(port, cfg_bind, false);
 		if (err != OK) {
-			ERR_PRINT(vformat("RemoteControl: failed to listen on %s:%d (error %d)", bind_address, port, err));
+			ERR_PRINT(vformat("RemoteControl: failed to listen on %s:%d (error %d)", cfg_bind, port, err));
 			return err;
 		}
-		owns_listen = true;
-		active_port = port;
+		did_own_listen = true;
+		listen_port = port;
 	} else {
-		active_port = http->get_port();
+		listen_port = http->get_port();
 	}
 
 	http->set_cors_enabled(true);
@@ -618,31 +654,46 @@ Error RemoteControlServer::start() {
 		RemoteControlRegistry::get_singleton()->register_builtins();
 	}
 
-	started = true;
-	print_line(vformat("RemoteControl: listening on %s:%d (routes /v1/*)", bind_address, active_port));
+	{
+		MutexLock lock(server_state_mutex);
+		token = cfg_token;
+		allow_eval = cfg_allow_eval;
+		bind_address = cfg_bind;
+		owns_listen = did_own_listen;
+		active_port = listen_port;
+		started = true;
+	}
+	print_line(vformat("RemoteControl: listening on %s:%d (routes /v1/*)", cfg_bind, listen_port));
 	return OK;
 }
 
 void RemoteControlServer::stop() {
-	if (!started) {
-		return;
+	bool should_stop_listen = false;
+	{
+		MutexLock lock(server_state_mutex);
+		if (!started) {
+			return;
+		}
+		should_stop_listen = owns_listen;
+		owns_listen = false;
+		started = false;
+		active_port = 0;
 	}
 	_unregister_routes();
 	HTTPServer *http = HTTPServer::get_singleton();
-	if (http && owns_listen && http->is_listening()) {
+	if (http && should_stop_listen && http->is_listening()) {
 		http->stop();
 	}
-	owns_listen = false;
-	started = false;
-	active_port = 0;
 	print_line("RemoteControl: stopped");
 }
 
 bool RemoteControlServer::is_started() const {
+	MutexLock lock(server_state_mutex);
 	return started;
 }
 
 int RemoteControlServer::get_port() const {
+	MutexLock lock(server_state_mutex);
 	return active_port;
 }
 
@@ -651,28 +702,34 @@ Dictionary RemoteControlServer::get_status() const {
 }
 
 void RemoteControlServer::set_allow_eval(bool p_allow) {
+	MutexLock lock(server_state_mutex);
 	allow_eval = p_allow;
 }
 
 bool RemoteControlServer::get_allow_eval() const {
+	MutexLock lock(server_state_mutex);
 	return allow_eval;
 }
 
 void RemoteControlServer::set_token(const String &p_token) {
+	MutexLock lock(server_state_mutex);
 	token = p_token;
 }
 
 String RemoteControlServer::get_token() const {
+	MutexLock lock(server_state_mutex);
 	return token;
 }
 
 void RemoteControlServer::set_remote_instance_id(const String &p_id) {
 	const String id = p_id.strip_edges().to_upper();
 	ERR_FAIL_COND_MSG(!_is_valid_instance_id(id) && !id.is_empty(), "Invalid remote_control instance_id");
+	MutexLock lock(server_state_mutex);
 	remote_instance_id = id;
 }
 
 String RemoteControlServer::get_remote_instance_id() const {
+	MutexLock lock(server_state_mutex);
 	return remote_instance_id;
 }
 
@@ -841,10 +898,12 @@ void RemoteControlServer::clear_error_breaks() {
 }
 
 bool RemoteControlServer::is_autowork_running() const {
+	MutexLock lock(autowork_mutex);
 	return autowork_job_running;
 }
 
 Dictionary RemoteControlServer::get_autowork_status() const {
+	MutexLock lock(autowork_mutex);
 	Dictionary ret = autowork_job_status;
 	ret["ok"] = true;
 	ret["job_id"] = autowork_job_id;
@@ -854,6 +913,7 @@ Dictionary RemoteControlServer::get_autowork_status() const {
 }
 
 Dictionary RemoteControlServer::get_autowork_results() const {
+	MutexLock lock(autowork_mutex);
 	Dictionary ret;
 	ret["ok"] = true;
 	ret["job_id"] = autowork_job_id;
@@ -870,44 +930,36 @@ Dictionary RemoteControlServer::start_autowork_job(const Dictionary &p_args) {
 	err["error"] = "Autowork module not available";
 	return err;
 #else
-	if (autowork_job_running) {
-		Dictionary err;
-		err["ok"] = false;
-		err["error"] = "autowork already running";
-		err["job_id"] = autowork_job_id;
-		err["state"] = autowork_job_state;
-		return err;
-	}
-
-	SceneTree *tree = Object::cast_to<SceneTree>(OS::get_singleton()->get_main_loop());
-	if (tree && tree->get_root()) {
-		for (int i = 0; i < tree->get_root()->get_child_count(); i++) {
-			Node *child = tree->get_root()->get_child(i);
-			if (child && child->is_class("Autowork")) {
-				Dictionary err;
-				err["ok"] = false;
-				err["error"] = "autowork already running";
-				return err;
-			}
+	String job_id;
+	{
+		MutexLock lock(autowork_mutex);
+		if (autowork_job_running) {
+			Dictionary err;
+			err["ok"] = false;
+			err["error"] = "autowork already running";
+			err["job_id"] = autowork_job_id;
+			err["state"] = autowork_job_state;
+			return err;
 		}
-	}
 
-	autowork_job_id = vformat("aw-%d", (int64_t)Time::get_singleton()->get_unix_time_from_system());
-	autowork_job_state = "running";
-	autowork_job_running = true;
-	autowork_job_results = Dictionary();
-	autowork_job_status = Dictionary();
-	autowork_job_status["pass_count"] = 0;
-	autowork_job_status["fail_count"] = 0;
-	autowork_job_status["assert_count"] = 0;
-	autowork_job_status["test_count"] = 0;
-	autowork_job_status["pending_count"] = 0;
+		job_id = vformat("aw-%d", (int64_t)Time::get_singleton()->get_unix_time_from_system());
+		autowork_job_id = job_id;
+		autowork_job_state = "running";
+		autowork_job_running = true;
+		autowork_job_results = Dictionary();
+		autowork_job_status = Dictionary();
+		autowork_job_status["pass_count"] = 0;
+		autowork_job_status["fail_count"] = 0;
+		autowork_job_status["assert_count"] = 0;
+		autowork_job_status["test_count"] = 0;
+		autowork_job_status["pending_count"] = 0;
+	}
 
 	call_deferred(SNAME("_deferred_run_autowork"), p_args);
 
 	Dictionary ret;
 	ret["ok"] = true;
-	ret["job_id"] = autowork_job_id;
+	ret["job_id"] = job_id;
 	ret["state"] = "running";
 	return ret;
 #endif
@@ -916,10 +968,25 @@ Dictionary RemoteControlServer::start_autowork_job(const Dictionary &p_args) {
 void RemoteControlServer::_deferred_run_autowork(Dictionary p_args) {
 #if !defined(MODULE_AUTOWORK_ENABLED)
 	(void)p_args;
+	MutexLock lock(autowork_mutex);
 	autowork_job_running = false;
 	autowork_job_state = "failed";
 	autowork_job_status["error"] = "Autowork module not available";
 #else
+	SceneTree *tree = Object::cast_to<SceneTree>(OS::get_singleton()->get_main_loop());
+	if (tree && tree->get_root()) {
+		for (int i = 0; i < tree->get_root()->get_child_count(); i++) {
+			Node *child = tree->get_root()->get_child(i);
+			if (child && child->is_class("Autowork")) {
+				MutexLock lock(autowork_mutex);
+				autowork_job_running = false;
+				autowork_job_state = "failed";
+				autowork_job_status["error"] = "autowork already running";
+				return;
+			}
+		}
+	}
+
 	Autowork *aw = memnew(Autowork);
 	String dir = p_args.get("dir", "");
 	String file = p_args.get("file", "");
@@ -927,6 +994,11 @@ void RemoteControlServer::_deferred_run_autowork(Dictionary p_args) {
 	String prefix = p_args.get("prefix", "");
 	String suffix = p_args.get("suffix", "");
 	(void)p_args.get("include_subdirs", true);
+	String results_path;
+	{
+		MutexLock lock(autowork_mutex);
+		results_path = autowork_results_path;
+	}
 
 	if (!file.is_empty()) {
 		aw->add_script(file);
@@ -941,7 +1013,6 @@ void RemoteControlServer::_deferred_run_autowork(Dictionary p_args) {
 		aw->set_test(test_name);
 	}
 
-	SceneTree *tree = Object::cast_to<SceneTree>(OS::get_singleton()->get_main_loop());
 	if (tree && tree->get_root()) {
 		aw->set_name("RemoteControl_AutoworkInstance");
 		tree->get_root()->add_child(aw);
@@ -973,14 +1044,17 @@ void RemoteControlServer::_deferred_run_autowork(Dictionary p_args) {
 				failures.push_back(f);
 			}
 		}
-		aw->get_logger()->export_json(autowork_results_path);
+		aw->get_logger()->export_json(results_path);
 	}
 	payload["failures"] = failures;
 
-	autowork_job_status = payload;
-	autowork_job_results = payload;
-	autowork_job_state = "done";
-	autowork_job_running = false;
+	{
+		MutexLock lock(autowork_mutex);
+		autowork_job_status = payload;
+		autowork_job_results = payload;
+		autowork_job_state = "done";
+		autowork_job_running = false;
+	}
 
 	if (tree && tree->get_root() && aw->get_parent()) {
 		tree->get_root()->remove_child(aw);

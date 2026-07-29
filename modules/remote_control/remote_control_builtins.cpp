@@ -33,18 +33,27 @@
 #include "remote_control_server.h"
 
 #include "core/config/project_settings.h"
+#include "core/crypto/crypto_core.h"
 #include "core/io/file_access.h"
+#include "core/io/image.h"
 #include "core/os/os.h"
+#include "scene/gui/control.h"
 #include "scene/main/node.h"
 #include "scene/main/scene_tree.h"
+#include "scene/main/viewport.h"
 #include "scene/main/window.h"
+#include "servers/display_server.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/debugger/editor_debugger_node.h"
 #include "editor/debugger/script_editor_debugger.h"
 #include "editor/editor_file_system.h"
 #include "editor/editor_interface.h"
+#include "editor/editor_main_screen.h"
+#include "editor/editor_node.h"
 #include "editor/gui/editor_run_bar.h"
+#include "editor/plugins/embedded_process.h"
+#include "scene/gui/button.h"
 #endif
 
 static Dictionary _ok(const Dictionary &p_extra = Dictionary()) {
@@ -225,6 +234,32 @@ Dictionary remote_control_cmd_call_method(const Dictionary &p_args) {
 	return _ok(ret);
 }
 
+#ifdef TOOLS_ENABLED
+static Dictionary _play_status_fields() {
+	Dictionary ret;
+	EditorInterface *ei = EditorInterface::get_singleton();
+	const bool playing = ei && ei->is_playing_scene();
+	ret["playing"] = playing;
+	if (ei) {
+		ret["scene"] = ei->get_playing_scene();
+	} else {
+		ret["scene"] = String();
+	}
+	bool paused = false;
+	if (EditorRunBar::get_singleton() && EditorRunBar::get_singleton()->get_pause_button()) {
+		paused = EditorRunBar::get_singleton()->get_pause_button()->is_pressed();
+	}
+	if (EditorDebuggerNode::get_singleton()) {
+		ScriptEditorDebugger *dbg = EditorDebuggerNode::get_singleton()->get_current_debugger();
+		if (dbg && dbg->is_breaked()) {
+			paused = true;
+		}
+	}
+	ret["paused"] = paused;
+	return ret;
+}
+#endif
+
 Dictionary remote_control_cmd_play_main_scene(const Dictionary &p_args) {
 #ifdef TOOLS_ENABLED
 	(void)p_args;
@@ -232,13 +267,55 @@ Dictionary remote_control_cmd_play_main_scene(const Dictionary &p_args) {
 		return _err("EditorInterface not available");
 	}
 	EditorInterface::get_singleton()->call_deferred("play_main_scene");
-	Dictionary ret;
+	Dictionary ret = _play_status_fields();
 	ret["playing"] = true;
 	ret["deferred"] = true;
 	return _ok(ret);
 #else
 	(void)p_args;
 	return _err("play_main_scene is only available in the editor");
+#endif
+}
+
+Dictionary remote_control_cmd_play_current_scene(const Dictionary &p_args) {
+#ifdef TOOLS_ENABLED
+	(void)p_args;
+	if (!EditorInterface::get_singleton()) {
+		return _err("EditorInterface not available");
+	}
+	EditorInterface::get_singleton()->call_deferred("play_current_scene");
+	Dictionary ret = _play_status_fields();
+	ret["playing"] = true;
+	ret["deferred"] = true;
+	return _ok(ret);
+#else
+	(void)p_args;
+	return _err("play_current_scene is only available in the editor");
+#endif
+}
+
+Dictionary remote_control_cmd_play_custom_scene(const Dictionary &p_args) {
+#ifdef TOOLS_ENABLED
+	if (!EditorInterface::get_singleton()) {
+		return _err("EditorInterface not available");
+	}
+	String path = String(p_args.get("scene", p_args.get("path", ""))).strip_edges();
+	if (path.is_empty()) {
+		return _err("scene/path is required for play_custom_scene");
+	}
+	const String ext = path.get_extension().to_lower();
+	if (ext != "tscn" && ext != "scn") {
+		return _err("scene path must end with .tscn or .scn");
+	}
+	EditorInterface::get_singleton()->call_deferred("play_custom_scene", path);
+	Dictionary ret = _play_status_fields();
+	ret["playing"] = true;
+	ret["scene"] = path;
+	ret["deferred"] = true;
+	return _ok(ret);
+#else
+	(void)p_args;
+	return _err("play_custom_scene is only available in the editor");
 #endif
 }
 
@@ -249,13 +326,245 @@ Dictionary remote_control_cmd_stop_playing(const Dictionary &p_args) {
 		return _err("EditorInterface not available");
 	}
 	EditorInterface::get_singleton()->call_deferred("stop_playing_scene");
-	Dictionary ret;
+	Dictionary ret = _play_status_fields();
 	ret["playing"] = false;
+	ret["paused"] = false;
 	ret["deferred"] = true;
 	return _ok(ret);
 #else
 	(void)p_args;
 	return _err("stop_playing is only available in the editor");
+#endif
+}
+
+Dictionary remote_control_cmd_pause_playing(const Dictionary &p_args) {
+#ifdef TOOLS_ENABLED
+	(void)p_args;
+	if (!EditorInterface::get_singleton()) {
+		return _err("EditorInterface not available");
+	}
+	if (!EditorInterface::get_singleton()->is_playing_scene()) {
+		return _err("No scene is currently playing");
+	}
+	if (!EditorRunBar::get_singleton() || !EditorRunBar::get_singleton()->get_pause_button()) {
+		return _err("EditorRunBar pause button not available");
+	}
+	if (!EditorDebuggerNode::get_singleton()) {
+		return _err("EditorDebuggerNode not available");
+	}
+	Button *pause_button = EditorRunBar::get_singleton()->get_pause_button();
+	pause_button->set_pressed(true);
+	ScriptEditorDebugger *dbg = EditorDebuggerNode::get_singleton()->get_current_debugger();
+	if (dbg && !dbg->is_breaked()) {
+		EditorDebuggerNode::get_singleton()->debug_break();
+	}
+	Dictionary ret = _play_status_fields();
+	ret["paused"] = true;
+	return _ok(ret);
+#else
+	(void)p_args;
+	return _err("pause_playing is only available in the editor");
+#endif
+}
+
+Dictionary remote_control_cmd_resume_playing(const Dictionary &p_args) {
+#ifdef TOOLS_ENABLED
+	(void)p_args;
+	if (!EditorInterface::get_singleton()) {
+		return _err("EditorInterface not available");
+	}
+	if (!EditorInterface::get_singleton()->is_playing_scene()) {
+		return _err("No scene is currently playing");
+	}
+	if (!EditorRunBar::get_singleton() || !EditorRunBar::get_singleton()->get_pause_button()) {
+		return _err("EditorRunBar pause button not available");
+	}
+	if (!EditorDebuggerNode::get_singleton()) {
+		return _err("EditorDebuggerNode not available");
+	}
+	Button *pause_button = EditorRunBar::get_singleton()->get_pause_button();
+	pause_button->set_pressed(false);
+	ScriptEditorDebugger *dbg = EditorDebuggerNode::get_singleton()->get_current_debugger();
+	if (dbg && dbg->is_breaked()) {
+		EditorDebuggerNode::get_singleton()->debug_continue();
+	}
+	Dictionary ret = _play_status_fields();
+	ret["paused"] = false;
+	return _ok(ret);
+#else
+	(void)p_args;
+	return _err("resume_playing is only available in the editor");
+#endif
+}
+
+Dictionary remote_control_cmd_play_status(const Dictionary &p_args) {
+#ifdef TOOLS_ENABLED
+	(void)p_args;
+	if (!EditorInterface::get_singleton()) {
+		return _err("EditorInterface not available");
+	}
+	return _ok(_play_status_fields());
+#else
+	(void)p_args;
+	return _err("play_status is only available in the editor");
+#endif
+}
+
+static Dictionary _snapshot_from_image(const Ref<Image> &p_img, const String &p_source, const String &p_optional_path) {
+	if (p_img.is_null() || p_img->is_empty()) {
+		return _err("Captured image is empty");
+	}
+	Vector<uint8_t> png = p_img->save_png_to_buffer();
+	if (png.is_empty()) {
+		return _err("Failed to encode PNG");
+	}
+	Dictionary ret;
+	ret["png_base64"] = CryptoCore::b64_encode_str(png.ptr(), png.size());
+	ret["width"] = p_img->get_width();
+	ret["height"] = p_img->get_height();
+	ret["mime"] = "image/png";
+	ret["source"] = p_source;
+
+	const String path = p_optional_path.strip_edges();
+	if (!path.is_empty()) {
+		Error err = p_img->save_png(path);
+		if (err != OK) {
+			return _err(vformat("Failed to save PNG to %s", path));
+		}
+		ret["path"] = path;
+	}
+	return _ok(ret);
+}
+
+static Dictionary _snapshot_runtime_viewport(const String &p_optional_path) {
+	SceneTree *tree = _scene_tree();
+	if (!tree || !tree->get_root()) {
+		return _err("SceneTree root not available");
+	}
+	Ref<ViewportTexture> texture = tree->get_root()->get_texture();
+	if (texture.is_null()) {
+		return _err("Root viewport texture not available");
+	}
+	Ref<Image> img = texture->get_image();
+	return _snapshot_from_image(img, "runtime_viewport", p_optional_path);
+}
+
+#ifdef TOOLS_ENABLED
+static EmbeddedProcess *_find_embedded_process(Node *p_node) {
+	if (!p_node) {
+		return nullptr;
+	}
+	EmbeddedProcess *ep = Object::cast_to<EmbeddedProcess>(p_node);
+	if (ep && ep->is_embedding_completed()) {
+		return ep;
+	}
+	for (int i = 0; i < p_node->get_child_count(); i++) {
+		EmbeddedProcess *found = _find_embedded_process(p_node->get_child(i));
+		if (found) {
+			return found;
+		}
+	}
+	return nullptr;
+}
+#endif
+
+Dictionary remote_control_cmd_snapshot_editor(const Dictionary &p_args) {
+#ifdef TOOLS_ENABLED
+	const String path = String(p_args.get("path", "")).strip_edges();
+	if (!EditorNode::get_singleton() || !EditorNode::get_editor_main_screen()) {
+		return _err("Editor main screen not available");
+	}
+	Control *main_screen_control = EditorNode::get_editor_main_screen()->get_control();
+	if (!main_screen_control) {
+		return _err("Cannot get the editor main screen control");
+	}
+	Viewport *viewport = main_screen_control->get_viewport();
+	if (!viewport) {
+		return _err("Cannot get a viewport from the editor main screen");
+	}
+	Ref<ViewportTexture> texture = viewport->get_texture();
+	if (texture.is_null()) {
+		return _err("Cannot get a viewport texture from the editor main screen");
+	}
+	Ref<Image> img = texture->get_image();
+	return _snapshot_from_image(img, "editor_viewport", path);
+#else
+	(void)p_args;
+	return _err("snapshot_editor is only available in the editor");
+#endif
+}
+
+Dictionary remote_control_cmd_snapshot_scene(const Dictionary &p_args) {
+	const String path = String(p_args.get("path", "")).strip_edges();
+
+#if !defined(TOOLS_ENABLED)
+	return _snapshot_runtime_viewport(path);
+#else
+	// Runtime remote_control in a playing game process.
+	if (!EditorInterface::get_singleton()) {
+		Dictionary ret = _snapshot_runtime_viewport(path);
+		if (bool(ret.get("ok", false))) {
+			return ret;
+		}
+		return _err("EditorInterface not available");
+	}
+
+	Dictionary status;
+	if (RemoteControlServer::get_singleton()) {
+		status = RemoteControlServer::get_singleton()->get_status();
+	}
+	if (String(status.get("mode", "editor")) == "runtime") {
+		Dictionary ret = _snapshot_runtime_viewport(path);
+		if (bool(ret.get("ok", false))) {
+			Dictionary play = _play_status_fields();
+			ret["playing"] = play.get("playing", false);
+			ret["paused"] = play.get("paused", false);
+			ret["scene"] = play.get("scene", String());
+		}
+		return ret;
+	}
+
+	if (!EditorInterface::get_singleton()->is_playing_scene()) {
+		return _err("No scene is currently playing");
+	}
+
+	Dictionary play = _play_status_fields();
+	Dictionary ret;
+
+	EmbeddedProcess *embedded = nullptr;
+	if (EditorInterface::get_singleton()->get_base_control()) {
+		embedded = _find_embedded_process(EditorInterface::get_singleton()->get_base_control());
+	}
+	if (!embedded && EditorNode::get_singleton()) {
+		embedded = _find_embedded_process(EditorNode::get_singleton());
+	}
+
+	if (embedded && DisplayServer::get_singleton()) {
+		const Rect2i rect = embedded->get_screen_embedded_window_rect();
+		if (rect.size.x > 0 && rect.size.y > 0) {
+			Ref<Image> img = DisplayServer::get_singleton()->screen_get_image_rect(rect);
+			ret = _snapshot_from_image(img, "embedded_game", path);
+			if (bool(ret.get("ok", false))) {
+				ret["playing"] = play.get("playing", true);
+				ret["paused"] = play.get("paused", false);
+				ret["scene"] = play.get("scene", String());
+				return ret;
+			}
+		}
+	}
+
+	if (!DisplayServer::get_singleton()) {
+		return _err("DisplayServer not available");
+	}
+	const int screen = DisplayServer::get_singleton()->get_primary_screen();
+	Ref<Image> img = DisplayServer::get_singleton()->screen_get_image(screen);
+	ret = _snapshot_from_image(img, "screen", path);
+	if (bool(ret.get("ok", false))) {
+		ret["playing"] = play.get("playing", true);
+		ret["paused"] = play.get("paused", false);
+		ret["scene"] = play.get("scene", String());
+	}
+	return ret;
 #endif
 }
 
@@ -556,8 +865,22 @@ void remote_control_register_builtin_commands(RemoteControlRegistry *p_registry)
 	p_registry->register_command("get_node", callable_mp_static(remote_control_cmd_get_node), "Node info by path");
 	p_registry->register_command("set_property", callable_mp_static(remote_control_cmd_set_property), "Set a node property");
 	p_registry->register_command("call_method", callable_mp_static(remote_control_cmd_call_method), "Call an allowlisted node method");
-	p_registry->register_command("play_main_scene", callable_mp_static(remote_control_cmd_play_main_scene), "Start play mode (editor)");
+	p_registry->register_command("play_main_scene", callable_mp_static(remote_control_cmd_play_main_scene), "Play project main/default scene (editor)");
+	p_registry->register_command("play_default_scene", callable_mp_static(remote_control_cmd_play_main_scene), "Alias for play_main_scene");
+	p_registry->register_command("play_current_scene", callable_mp_static(remote_control_cmd_play_current_scene), "Play currently edited scene (editor)");
+	p_registry->register_command("play_custom_scene", callable_mp_static(remote_control_cmd_play_custom_scene), "Play scene by path args.scene/path (editor)");
 	p_registry->register_command("stop_playing", callable_mp_static(remote_control_cmd_stop_playing), "Stop play mode (editor)");
+	p_registry->register_command("stop_scene", callable_mp_static(remote_control_cmd_stop_playing), "Alias for stop_playing");
+	p_registry->register_command("pause_playing", callable_mp_static(remote_control_cmd_pause_playing), "Pause running project (editor debugger break)");
+	p_registry->register_command("pause_scene", callable_mp_static(remote_control_cmd_pause_playing), "Alias for pause_playing");
+	p_registry->register_command("resume_playing", callable_mp_static(remote_control_cmd_resume_playing), "Resume from pause (editor)");
+	p_registry->register_command("resume_scene", callable_mp_static(remote_control_cmd_resume_playing), "Alias for resume_playing");
+	p_registry->register_command("play_status", callable_mp_static(remote_control_cmd_play_status), "Report play/pause state (editor)");
+	p_registry->register_command("snapshot_editor", callable_mp_static(remote_control_cmd_snapshot_editor), "Capture editor main-screen PNG (base64)");
+	p_registry->register_command("take_editor_screenshot", callable_mp_static(remote_control_cmd_snapshot_editor), "Alias for snapshot_editor");
+	p_registry->register_command("snapshot_scene", callable_mp_static(remote_control_cmd_snapshot_scene), "Capture playing/paused scene PNG (base64)");
+	p_registry->register_command("snapshot_play", callable_mp_static(remote_control_cmd_snapshot_scene), "Alias for snapshot_scene");
+	p_registry->register_command("take_game_screenshot", callable_mp_static(remote_control_cmd_snapshot_scene), "Alias for snapshot_scene");
 	p_registry->register_command("save_scene", callable_mp_static(remote_control_cmd_save_scene), "Save current edited scene (editor)");
 	p_registry->register_command("reload_filesystem", callable_mp_static(remote_control_cmd_reload_filesystem), "Rescan editor filesystem");
 

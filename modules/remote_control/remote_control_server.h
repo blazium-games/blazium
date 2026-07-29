@@ -64,6 +64,7 @@ private:
 	String token;
 	String remote_instance_id;
 	bool allow_eval = false;
+	mutable Mutex server_state_mutex;
 
 	PrintHandlerList print_handler;
 	mutable Mutex log_mutex;
@@ -73,6 +74,7 @@ private:
 	mutable Mutex error_breaks_mutex;
 	LocalVector<Dictionary> error_breaks;
 
+	mutable Mutex autowork_mutex;
 	String autowork_job_id;
 	String autowork_job_state = "idle"; // idle|running|done|failed
 	Dictionary autowork_job_status;

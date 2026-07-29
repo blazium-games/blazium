@@ -58,33 +58,42 @@ void RemoteControlRegistry::register_command(const String &p_name, const Callabl
 	entry.description = p_description;
 	entry.schema = p_schema;
 	entry.callable = p_callable;
+	MutexLock lock(mutex);
 	commands[p_name] = entry;
 }
 
 void RemoteControlRegistry::unregister_command(const String &p_name) {
+	MutexLock lock(mutex);
 	commands.erase(p_name);
 }
 
 bool RemoteControlRegistry::has_command(const String &p_name) const {
+	MutexLock lock(mutex);
 	return commands.has(p_name);
 }
 
 Dictionary RemoteControlRegistry::execute(const String &p_name, const Dictionary &p_args) {
+	Callable callable;
+	{
+		MutexLock lock(mutex);
+		if (!commands.has(p_name)) {
+			Dictionary ret;
+			ret["ok"] = false;
+			ret["error"] = "Unknown command: " + p_name;
+			return ret;
+		}
+		const CommandEntry &entry = commands[p_name];
+		if (!entry.callable.is_valid()) {
+			Dictionary ret;
+			ret["ok"] = false;
+			ret["error"] = "Command callable is no longer valid: " + p_name;
+			return ret;
+		}
+		callable = entry.callable;
+	}
+
 	Dictionary ret;
-	if (!commands.has(p_name)) {
-		ret["ok"] = false;
-		ret["error"] = "Unknown command: " + p_name;
-		return ret;
-	}
-
-	const CommandEntry &entry = commands[p_name];
-	if (!entry.callable.is_valid()) {
-		ret["ok"] = false;
-		ret["error"] = "Command callable is no longer valid: " + p_name;
-		return ret;
-	}
-
-	Variant call_ret = entry.callable.call(p_args);
+	Variant call_ret = callable.call(p_args);
 	if (call_ret.get_type() == Variant::DICTIONARY) {
 		Dictionary payload = call_ret;
 		if (!payload.has("ok")) {
@@ -99,14 +108,22 @@ Dictionary RemoteControlRegistry::execute(const String &p_name, const Dictionary
 }
 
 Array RemoteControlRegistry::list_commands() const {
-	Array out;
-	List<String> keys;
-	for (const KeyValue<String, CommandEntry> &E : commands) {
-		keys.push_back(E.key);
+	List<CommandEntry> entries;
+	{
+		MutexLock lock(mutex);
+		for (const KeyValue<String, CommandEntry> &E : commands) {
+			entries.push_back(E.value);
+		}
 	}
-	keys.sort();
-	for (const String &key : keys) {
-		const CommandEntry &entry = commands[key];
+	struct SortByName {
+		bool operator()(const CommandEntry &a, const CommandEntry &b) const {
+			return a.name < b.name;
+		}
+	};
+	entries.sort_custom<SortByName>();
+
+	Array out;
+	for (const CommandEntry &entry : entries) {
 		Dictionary item;
 		item["name"] = entry.name;
 		item["description"] = entry.description;
@@ -117,6 +134,7 @@ Array RemoteControlRegistry::list_commands() const {
 }
 
 void RemoteControlRegistry::clear() {
+	MutexLock lock(mutex);
 	commands.clear();
 }
 

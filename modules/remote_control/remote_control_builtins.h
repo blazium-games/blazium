@@ -44,7 +44,14 @@ Dictionary remote_control_cmd_get_node(const Dictionary &p_args);
 Dictionary remote_control_cmd_set_property(const Dictionary &p_args);
 Dictionary remote_control_cmd_call_method(const Dictionary &p_args);
 Dictionary remote_control_cmd_play_main_scene(const Dictionary &p_args);
+Dictionary remote_control_cmd_play_current_scene(const Dictionary &p_args);
+Dictionary remote_control_cmd_play_custom_scene(const Dictionary &p_args);
 Dictionary remote_control_cmd_stop_playing(const Dictionary &p_args);
+Dictionary remote_control_cmd_pause_playing(const Dictionary &p_args);
+Dictionary remote_control_cmd_resume_playing(const Dictionary &p_args);
+Dictionary remote_control_cmd_play_status(const Dictionary &p_args);
+Dictionary remote_control_cmd_snapshot_editor(const Dictionary &p_args);
+Dictionary remote_control_cmd_snapshot_scene(const Dictionary &p_args);
 Dictionary remote_control_cmd_save_scene(const Dictionary &p_args);
 Dictionary remote_control_cmd_reload_filesystem(const Dictionary &p_args);
 

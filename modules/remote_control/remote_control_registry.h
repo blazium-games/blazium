@@ -31,6 +31,7 @@
 
 #include "core/object/class_db.h"
 #include "core/object/object.h"
+#include "core/os/mutex.h"
 #include "core/templates/hash_map.h"
 #include "core/variant/callable.h"
 #include "core/variant/dictionary.h"
@@ -46,6 +47,7 @@ class RemoteControlRegistry : public Object {
 	};
 
 	static RemoteControlRegistry *singleton;
+	mutable Mutex mutex;
 	HashMap<String, CommandEntry> commands;
 
 protected:
