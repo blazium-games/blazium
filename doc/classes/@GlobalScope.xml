@@ -1660,6 +1660,12 @@
 		<member name="ProjectSettings" type="ProjectSettings" setter="" getter="">
 			The [ProjectSettings] singleton.
 		</member>
+		<member name="RemoteControlRegistry" type="RemoteControlRegistry" setter="" getter="">
+			The [RemoteControlRegistry] singleton.
+		</member>
+		<member name="RemoteControlServer" type="RemoteControlServer" setter="" getter="">
+			The [RemoteControlServer] singleton.
+		</member>
 		<member name="RenderingServer" type="RenderingServer" setter="" getter="">
 			The [RenderingServer] singleton.
 		</member>

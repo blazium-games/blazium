@@ -1774,6 +1774,24 @@
 		<member name="blazium/justamcp/z_mcp_config" type="String" setter="" getter="" default="&quot;&quot;">
 			Advanced JustAMCP JSON configuration managed by the editor plugin UI. Stores supplemental MCP server options not exposed as individual project settings.
 		</member>
+		<member name="blazium/remote_control/allow_eval" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], [RemoteControlServer] allows [code]POST /v1/eval[/code] expression evaluation.
+		</member>
+		<member name="blazium/remote_control/allow_runtime" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], remote control may start in exported/runtime builds (not only the editor).
+		</member>
+		<member name="blazium/remote_control/bind_address" type="String" setter="" getter="" default="&quot;127.0.0.1&quot;">
+			Address [RemoteControlServer] binds to. Prefer localhost for safety.
+		</member>
+		<member name="blazium/remote_control/server_enabled" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], start [RemoteControlServer] when the editor (or allowed runtime) launches. Can also be forced with [code]--enable-remote-control[/code].
+		</member>
+		<member name="blazium/remote_control/server_port" type="int" setter="" getter="" default="6507">
+			TCP port for the remote control HTTP API. Override with [code]--remote-control-port=&lt;port&gt;[/code].
+		</member>
+		<member name="blazium/remote_control/token" type="String" setter="" getter="" default="&quot;&quot;">
+			Optional auth token for remote control requests. Override with [code]--remote-control-token=&lt;token&gt;[/code].
+		</member>
 		<member name="blazium/semanticsearch/async_job_ttl_ms" type="int" setter="" getter="" default="1800000">
 		</member>
 		<member name="blazium/semanticsearch/backend" type="String" setter="" getter="" default="&quot;lexical&quot;">

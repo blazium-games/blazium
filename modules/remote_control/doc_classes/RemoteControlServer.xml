@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RemoteControlServer" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		HTTP remote control server for the Blazium editor and optional game runtime.
+	</brief_description>
+	<description>
+		Exposes a localhost JSON HTTP API on [code]/v1/*[/code] using the [HTTPServer] singleton so [code]blazium-cli remote[/code] (and other clients) can query status, list commands, execute registered commands, read paginated engine logs ([code]GET /v1/logs[/code]), inspect debugger/Autowork state via [code]/v1/exec[/code], and optionally evaluate expressions.
+		Enable with ProjectSettings [code]blazium/remote_control/server_enabled[/code] or command-line [code]--enable-remote-control[/code]. Port and auth: [code]--remote-control-port=&lt;port&gt;[/code] (default [code]6507[/code], or [code]blazium/remote_control/server_port[/code]) and [code]--remote-control-token=&lt;token&gt;[/code] (or [code]blazium/remote_control/token[/code]). Default bind is [code]127.0.0.1:6507[/code].
+		[code]POST /v1/eval[/code] accepts [code]{ "expression": "...", "language": "gdscript" | "luau" }[/code]. Luau requires the [code]luau_module[/code] and is sandboxed. Prefer [code]blazium-cli remote[/code] as the client surface.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="eval_expression" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="expression" type="String" />
+			<param index="1" name="language" type="String" default="&quot;gdscript&quot;" />
+			<description>
+				Evaluates [param expression] as GDScript ([Expression]) or Luau ([param language] [code]gdscript[/code]/[code]gd[/code] or [code]luau[/code]/[code]lua[/code]) when [member allow_eval] is enabled.
+			</description>
+		</method>
+		<method name="get_port" qualifiers="const">
+			<return type="int" />
+			<description>
+				Active listening port.
+			</description>
+		</method>
+		<method name="get_status" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Status payload (project path, pid, mode, port, [code]instance_id[/code], [code]luau_eval_available[/code], etc.).
+			</description>
+		</method>
+		<method name="is_started" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns whether remote control routes are active.
+			</description>
+		</method>
+		<method name="start">
+			<return type="int" enum="Error" />
+			<description>
+				Starts listening (if needed) and registers [code]/v1/*[/code] routes.
+			</description>
+		</method>
+		<method name="stop">
+			<return type="void" />
+			<description>
+				Unregisters routes and stops the HTTP listener if this server started it.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="allow_eval" type="bool" setter="set_allow_eval" getter="get_allow_eval" default="false">
+			When true, [code]POST /v1/eval[/code] is permitted.
+		</member>
+		<member name="remote_instance_id" type="String" setter="set_remote_instance_id" getter="get_remote_instance_id" default="&quot;&quot;">
+			Short id for this editor process, assigned after startup by [code]blazium-cli[/code] ([code]POST /v1/instance[/code]). Exposed on [code]/v1/health[/code] and [code]/v1/status[/code] as [code]instance_id[/code].
+		</member>
+		<member name="token" type="String" setter="set_token" getter="get_token" default="&quot;&quot;">
+			Optional bearer token. When set, clients must send [code]Authorization: Bearer &lt;token&gt;[/code] or [code]X-Remote-Control-Token[/code].
+		</member>
+	</members>
+</class>

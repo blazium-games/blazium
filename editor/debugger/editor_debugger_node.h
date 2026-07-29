@@ -190,6 +190,10 @@ public:
 	bool is_skip_breakpoints() const;
 	void set_breakpoint(const String &p_path, int p_line, bool p_enabled);
 	void set_breakpoints(const String &p_path, const Array &p_lines);
+	Array get_breakpoints_list() const;
+	Array get_error_list() const;
+	Array get_stack_frames() const;
+	void clear_errors();
 	void reload_all_scripts();
 	void reload_scripts(const Vector<String> &p_script_paths);
 
