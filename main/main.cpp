@@ -688,6 +688,13 @@ void Main::print_help(const char *p_binary) {
 	print_help_option("--mcp-client-secret <secret>", "Force override the MCP OAuth Client Secret dynamically.\n");
 #endif
 
+#ifdef MODULE_REMOTE_CONTROL_ENABLED
+	print_help_title("Remote Control Options");
+	print_help_option("--enable-remote-control", "Start the remote_control HTTP API (localhost JSON /v1/* for blazium-cli remote).\n");
+	print_help_option("--remote-control-port=<port>", "Bind port for remote_control (default: 6507, or ProjectSettings blazium/remote_control/server_port).\n");
+	print_help_option("--remote-control-token=<token>", "Require Authorization: Bearer / X-Remote-Control-Token for remote_control requests.\n");
+#endif
+
 // AUTOWORK
 #ifdef MODULE_AUTOWORK_ENABLED
 	print_help_title("Autowork options");

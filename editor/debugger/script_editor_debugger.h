@@ -280,6 +280,10 @@ public:
 	String get_stack_script_file() const;
 	int get_stack_script_line() const;
 	int get_stack_script_frame() const;
+	String get_break_reason() const;
+	Array get_stack_frames() const;
+	Array get_error_list() const;
+	void clear_errors();
 
 	bool request_stack_dump(const int &p_frame);
 

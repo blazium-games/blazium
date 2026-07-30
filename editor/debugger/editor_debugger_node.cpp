@@ -638,6 +638,34 @@ void EditorDebuggerNode::set_breakpoints(const String &p_path, const Array &p_li
 	}
 }
 
+Array EditorDebuggerNode::get_breakpoints_list() const {
+	Array out;
+	for (const KeyValue<Breakpoint, bool> &E : breakpoints) {
+		Dictionary d;
+		d["path"] = E.key.source;
+		d["line"] = E.key.line;
+		d["enabled"] = E.value;
+		out.push_back(d);
+	}
+	return out;
+}
+
+Array EditorDebuggerNode::get_error_list() const {
+	ScriptEditorDebugger *dbg = get_current_debugger();
+	return dbg ? dbg->get_error_list() : Array();
+}
+
+Array EditorDebuggerNode::get_stack_frames() const {
+	ScriptEditorDebugger *dbg = get_current_debugger();
+	return dbg ? dbg->get_stack_frames() : Array();
+}
+
+void EditorDebuggerNode::clear_errors() {
+	_for_all(tabs, [&](ScriptEditorDebugger *dbg) {
+		dbg->clear_errors();
+	});
+}
+
 void EditorDebuggerNode::reload_all_scripts() {
 	_for_all(tabs, [&](ScriptEditorDebugger *dbg) {
 		dbg->reload_all_scripts();

@@ -1420,6 +1420,82 @@ int ScriptEditorDebugger::get_stack_script_frame() const {
 	return d["frame"];
 }
 
+String ScriptEditorDebugger::get_break_reason() const {
+	return reason ? reason->get_text() : String();
+}
+
+Array ScriptEditorDebugger::get_stack_frames() const {
+	Array frames;
+	if (!stack_dump) {
+		return frames;
+	}
+	TreeItem *root = stack_dump->get_root();
+	if (!root) {
+		return frames;
+	}
+	TreeItem *item = root->get_first_child();
+	while (item) {
+		Dictionary d = item->get_metadata(0);
+		if (!d.is_empty()) {
+			frames.push_back(d);
+		}
+		item = item->get_next();
+	}
+	return frames;
+}
+
+Array ScriptEditorDebugger::get_error_list() const {
+	Array errors;
+	if (!error_tree) {
+		return errors;
+	}
+	TreeItem *root = error_tree->get_root();
+	if (!root) {
+		return errors;
+	}
+	TreeItem *item = root->get_first_child();
+	while (item) {
+		Dictionary entry;
+		const bool is_warning = item->has_meta("_is_warning");
+		entry["type"] = is_warning ? "warning" : "error";
+		entry["time"] = item->get_text(0);
+		entry["message"] = item->get_text(1);
+		String source;
+		int line = 0;
+		Array stack_trace;
+		TreeItem *child = item->get_first_child();
+		while (child) {
+			Dictionary frame;
+			frame["label"] = child->get_text(0);
+			frame["text"] = child->get_text(1);
+			Variant meta = child->get_metadata(0);
+			if (meta.get_type() == Variant::ARRAY) {
+				Array m = meta;
+				if (m.size() >= 2) {
+					frame["file"] = m[0];
+					frame["line"] = m[1];
+					if (source.is_empty()) {
+						source = m[0];
+						line = m[1];
+					}
+				}
+			}
+			stack_trace.push_back(frame);
+			child = child->get_next();
+		}
+		entry["source"] = source;
+		entry["line"] = line;
+		entry["stack_trace"] = stack_trace;
+		errors.push_back(entry);
+		item = item->get_next();
+	}
+	return errors;
+}
+
+void ScriptEditorDebugger::clear_errors() {
+	_clear_errors_list();
+}
+
 bool ScriptEditorDebugger::request_stack_dump(const int &p_frame) {
 	ERR_FAIL_COND_V(!is_session_active() || p_frame < 0, false);
 

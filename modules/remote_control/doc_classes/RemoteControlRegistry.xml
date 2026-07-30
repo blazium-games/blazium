@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RemoteControlRegistry" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Registry of remote control commands exposed over HTTP and to scripts.
+	</brief_description>
+	<description>
+		Engine singleton that stores named commands as callables. Built-in commands are registered when [RemoteControlServer] starts. Projects can add custom commands with [method register_command].
+		Commands are invoked via [code]POST /v1/exec[/code] with body [code]{ "command": "name", "args": {} }[/code] or through [method execute].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="clear">
+			<return type="void" />
+			<description>
+				Removes all registered commands.
+			</description>
+		</method>
+		<method name="execute">
+			<return type="Dictionary" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="args" type="Dictionary" />
+			<description>
+				Executes a registered command and returns its result dictionary.
+			</description>
+		</method>
+		<method name="has_command" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Returns whether [param name] is registered.
+			</description>
+		</method>
+		<method name="list_commands" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns an array of command metadata dictionaries ([code]name[/code], [code]description[/code], [code]schema[/code]).
+			</description>
+		</method>
+		<method name="register_builtins">
+			<return type="void" />
+			<description>
+				Registers the built-in remote control command set.
+			</description>
+		</method>
+		<method name="register_command">
+			<return type="void" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="callable" type="Callable" />
+			<param index="2" name="description" type="String" default="&quot;&quot;" />
+			<param index="3" name="schema" type="Dictionary" default="{}" />
+			<description>
+				Registers a command. The callable receives a single [Dictionary] of args and should return a [Dictionary] result.
+			</description>
+		</method>
+		<method name="unregister_command">
+			<return type="void" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Removes a registered command.
+			</description>
+		</method>
+	</methods>
+</class>
