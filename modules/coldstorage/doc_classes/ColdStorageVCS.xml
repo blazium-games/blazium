@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ColdStorageVCS" inherits="EditorVCSInterface" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Editor VCS provider backed by the ColdStorage client SDK.
+	</brief_description>
+	<description>
+		Implements [EditorVCSInterface] against a ColdStorage ([code]cstoraged[/code]) server. Stage maps to open-for-add/edit/delete, commit maps to submit, and pull/fetch map to sync.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

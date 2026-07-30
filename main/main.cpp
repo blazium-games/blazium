@@ -664,7 +664,7 @@ void Main::print_help(const char *p_binary) {
 	print_help_option("--create-project <path>", "Create a new project at the given path and exit.\n", CLI_OPTION_AVAILABILITY_EDITOR);
 	print_help_option("--name <name>", "Project display name (used with --create-project).\n", CLI_OPTION_AVAILABILITY_EDITOR);
 	print_help_option("--renderer <type>", "Renderer: forward_plus, mobile, or gl_compatibility (used with --create-project).\n", CLI_OPTION_AVAILABILITY_EDITOR);
-	print_help_option("--vcs <none|git>", "Version control metadata to generate (used with --create-project).\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--vcs <none|git|coldstorage>", "Version control metadata to generate (used with --create-project).\n", CLI_OPTION_AVAILABILITY_EDITOR);
 	print_help_option("--force", "Allow creating a project in a non-empty directory (used with --create-project).\n", CLI_OPTION_AVAILABILITY_EDITOR);
 	print_help_option("--edit", "Open the newly created project in the editor (used with --create-project).\n", CLI_OPTION_AVAILABILITY_EDITOR);
 	print_help_option("--dump-gdextension-interface", "Generate a GDExtension header file \"gdextension_interface.h\" in the current folder. This file is the base file required to implement a GDExtension.\n", CLI_OPTION_AVAILABILITY_EDITOR);
@@ -1943,8 +1943,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 
 #ifdef TOOLS_ENABLED
 	if (create_project_cli) {
-		if (create_project_vcs != "none" && create_project_vcs != "git") {
-			OS::get_singleton()->print("Invalid --vcs value. Expected none or git.\n");
+		if (create_project_vcs != "none" && create_project_vcs != "git" && create_project_vcs != "coldstorage") {
+			OS::get_singleton()->print("Invalid --vcs value. Expected none, git, or coldstorage.\n");
 			goto error;
 		}
 
@@ -3911,6 +3911,8 @@ int Main::start() {
 		options.allow_nonempty = create_project_force;
 		if (create_project_vcs == "none") {
 			options.vcs = EditorVCSInterface::VCSMetadata::NONE;
+		} else if (create_project_vcs == "coldstorage") {
+			options.vcs = EditorVCSInterface::VCSMetadata::COLDSTORAGE;
 		} else {
 			options.vcs = EditorVCSInterface::VCSMetadata::GIT;
 		}

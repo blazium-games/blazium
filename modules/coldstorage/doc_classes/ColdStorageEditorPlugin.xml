@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ColdStorageEditorPlugin" inherits="EditorPlugin" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Editor plugin for ColdStorage configuration, status, and CLI autoconnect.
+	</brief_description>
+	<description>
+		Adds Project menu [b]ColdStorage Configuration[/b], toolbar connection status, and deferred startup for [code]--enable-coldstorage[/code] CLI flags.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>
