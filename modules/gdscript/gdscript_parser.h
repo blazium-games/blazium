@@ -1331,6 +1331,8 @@ private:
 	bool for_completion = false;
 	bool parse_body = true;
 	bool panic_mode = false;
+	int last_list_separator_line = -1;
+	int last_list_separator_column = -1;
 	bool can_break = false;
 	bool can_continue = false;
 	List<bool> multiline_stack;
@@ -1448,6 +1450,7 @@ private:
 	}
 	void clear();
 	void push_error(const String &p_message, const Node *p_origin = nullptr);
+	void push_error(const String &p_message, const GDScriptTokenizer::Token &p_origin);
 #ifdef DEBUG_ENABLED
 	void push_warning(const Node *p_source, GDScriptWarning::Code p_code, const Vector<String> &p_symbols);
 	template <typename... Symbols>
@@ -1476,6 +1479,7 @@ private:
 	bool match(GDScriptTokenizer::Token::Type p_token_type);
 	bool check(GDScriptTokenizer::Token::Type p_token_type) const;
 	bool consume(GDScriptTokenizer::Token::Type p_token_type, const String &p_error_message);
+	bool match_list_separator(const String &p_context, GDScriptTokenizer::Token::Type p_terminator = GDScriptTokenizer::Token::TK_MAX);
 	bool is_at_end() const;
 	bool is_statement_end_token() const;
 	bool is_statement_end() const;

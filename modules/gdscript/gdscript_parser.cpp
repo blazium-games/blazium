@@ -188,6 +188,11 @@ void GDScriptParser::push_error(const String &p_message, const Node *p_origin) {
 	}
 }
 
+void GDScriptParser::push_error(const String &p_message, const GDScriptTokenizer::Token &p_origin) {
+	panic_mode = true;
+	errors.push_back({ p_message, p_origin.start_line, p_origin.start_column });
+}
+
 #ifdef DEBUG_ENABLED
 void GDScriptParser::push_warning(const Node *p_source, GDScriptWarning::Code p_code, const Vector<String> &p_symbols) {
 	ERR_FAIL_NULL(p_source);
@@ -655,6 +660,27 @@ bool GDScriptParser::consume(GDScriptTokenizer::Token::Type p_token_type, const 
 	}
 	push_error(p_error_message);
 	return false;
+}
+
+bool GDScriptParser::match_list_separator(const String &p_context, GDScriptTokenizer::Token::Type p_terminator) {
+	if (match(GDScriptTokenizer::Token::COMMA)) {
+		return true;
+	}
+	if (is_at_end() || check(p_terminator)) {
+		return false;
+	}
+	if (get_rule(current.type)->prefix == nullptr) {
+		return false;
+	}
+	// Only report a missing separator once per token. Reaching the same token twice in a row
+	// means the calling loop did not consume anything, so continuing would loop forever.
+	if (current.start_line == last_list_separator_line && current.start_column == last_list_separator_column) {
+		return false;
+	}
+	last_list_separator_line = current.start_line;
+	last_list_separator_column = current.start_column;
+	push_error(vformat(R"(Expected "," between %s.)", p_context), current);
+	return true;
 }
 
 bool GDScriptParser::is_at_end() const {
@@ -1598,7 +1624,7 @@ GDScriptParser::SignalNode *GDScriptParser::parse_signal(bool p_is_static) {
 				signal->parameters_indices[parameter->identifier->name] = signal->parameters.size();
 				signal->parameters.push_back(parameter);
 			}
-		} while (match(GDScriptTokenizer::Token::COMMA) && !is_at_end());
+		} while (match_list_separator("signal parameters", GDScriptTokenizer::Token::PARENTHESIS_CLOSE) && !is_at_end());
 
 		pop_multiline();
 		consume(GDScriptTokenizer::Token::PARENTHESIS_CLOSE, R"*(Expected closing ")" after signal parameters.)*");
@@ -1646,45 +1672,46 @@ GDScriptParser::EnumNode *GDScriptParser::parse_enum(bool p_is_static) {
 #endif
 			break; // Allow trailing comma.
 		}
-		if (consume(GDScriptTokenizer::Token::IDENTIFIER, R"(Expected identifier for enum key.)")) {
-			GDScriptParser::IdentifierNode *identifier = parse_identifier();
+		if (!consume(GDScriptTokenizer::Token::IDENTIFIER, R"(Expected identifier for enum key.)")) {
+			break; // Nothing was consumed, so stop to avoid an infinite loop.
+		}
+		GDScriptParser::IdentifierNode *identifier = parse_identifier();
 
-			EnumNode::Value item;
-			item.identifier = identifier;
-			item.parent_enum = enum_node;
+		EnumNode::Value item;
+		item.identifier = identifier;
+		item.parent_enum = enum_node;
 #ifdef DEBUG_ENABLED
-			check_identifier_style(item.identifier, GDScriptWarning::ENUM_VALUE_NAMING_CONVENTION);
+		check_identifier_style(item.identifier, GDScriptWarning::ENUM_VALUE_NAMING_CONVENTION);
 #endif
-			item.line = previous.start_line;
-			item.leftmost_column = previous.leftmost_column;
-			item.rightmost_column = previous.rightmost_column;
+		item.line = previous.start_line;
+		item.leftmost_column = previous.leftmost_column;
+		item.rightmost_column = previous.rightmost_column;
 
-			if (elements.has(item.identifier->name)) {
-				push_error(vformat(R"(Name "%s" was already in this enum (at line %d).)", item.identifier->name, elements[item.identifier->name]), item.identifier);
-			} else if (!named) {
-				if (current_class->members_indices.has(item.identifier->name)) {
-					push_error(vformat(R"(Name "%s" is already used as a class %s.)", item.identifier->name, current_class->get_member(item.identifier->name).get_type_name()));
-				}
-			}
-
-			elements[item.identifier->name] = item.line;
-
-			if (match(GDScriptTokenizer::Token::EQUAL)) {
-				ExpressionNode *value = parse_expression(false);
-				if (value == nullptr) {
-					push_error(R"(Expected expression value after "=".)");
-				}
-				item.custom_value = value;
-			}
-
-			item.index = enum_node->values.size();
-			enum_node->values.push_back(item);
-			if (!named) {
-				// Add as member of current class.
-				current_class->add_member(item);
+		if (elements.has(item.identifier->name)) {
+			push_error(vformat(R"(Name "%s" was already in this enum (at line %d).)", item.identifier->name, elements[item.identifier->name]), item.identifier);
+		} else if (!named) {
+			if (current_class->members_indices.has(item.identifier->name)) {
+				push_error(vformat(R"(Name "%s" is already used as a class %s.)", item.identifier->name, current_class->get_member(item.identifier->name).get_type_name()));
 			}
 		}
-	} while (match(GDScriptTokenizer::Token::COMMA));
+
+		elements[item.identifier->name] = item.line;
+
+		if (match(GDScriptTokenizer::Token::EQUAL)) {
+			ExpressionNode *value = parse_expression(false);
+			if (value == nullptr) {
+				push_error(R"(Expected expression value after "=".)");
+			}
+			item.custom_value = value;
+		}
+
+		item.index = enum_node->values.size();
+		enum_node->values.push_back(item);
+		if (!named) {
+			// Add as member of current class.
+			current_class->add_member(item);
+		}
+	} while (match_list_separator("enum values", GDScriptTokenizer::Token::BRACE_CLOSE));
 
 #ifdef TOOLS_ENABLED
 	// Enum values documentation.
@@ -1756,7 +1783,7 @@ void GDScriptParser::parse_function_signature(FunctionNode *p_function, SuiteNod
 				p_function->parameters.push_back(parameter);
 				p_body->add_local(parameter, current_function);
 			}
-		} while (match(GDScriptTokenizer::Token::COMMA));
+		} while (match_list_separator(vformat("%s parameters", p_type), GDScriptTokenizer::Token::PARENTHESIS_CLOSE));
 	}
 
 	pop_multiline();
@@ -1888,7 +1915,7 @@ GDScriptParser::AnnotationNode *GDScriptParser::parse_annotation(uint32_t p_vali
 			}
 
 			argument_index++;
-		} while (match(GDScriptTokenizer::Token::COMMA) && !is_at_end());
+		} while (match_list_separator("annotation arguments", GDScriptTokenizer::Token::PARENTHESIS_CLOSE) && !is_at_end());
 
 		pop_multiline();
 		consume(GDScriptTokenizer::Token::PARENTHESIS_CLOSE, R"*(Expected ")" after annotation arguments.)*");
@@ -2542,7 +2569,7 @@ GDScriptParser::MatchBranchNode *GDScriptParser::parse_match_branch() {
 			branch->has_wildcard = true;
 		}
 		branch->patterns.push_back(pattern);
-	} while (match(GDScriptTokenizer::Token::COMMA));
+	} while (match_list_separator(R"("match" patterns)", GDScriptTokenizer::Token::COLON));
 
 	if (branch->patterns.is_empty()) {
 		push_error(R"(No pattern found for "match" branch.)");
@@ -2661,7 +2688,7 @@ GDScriptParser::PatternNode *GDScriptParser::parse_match_pattern(PatternNode *p_
 					pattern->rest_used = true;
 				}
 				pattern->array.push_back(sub_pattern);
-			} while (match(GDScriptTokenizer::Token::COMMA));
+			} while (match_list_separator("array pattern elements", GDScriptTokenizer::Token::BRACKET_CLOSE));
 			consume(GDScriptTokenizer::Token::BRACKET_CLOSE, R"(Expected "]" to close the array pattern.)");
 			pop_multiline();
 			break;
@@ -2709,7 +2736,7 @@ GDScriptParser::PatternNode *GDScriptParser::parse_match_pattern(PatternNode *p_
 						pattern->dictionary.push_back({ key, nullptr });
 					}
 				}
-			} while (match(GDScriptTokenizer::Token::COMMA));
+			} while (match_list_separator("dictionary pattern elements", GDScriptTokenizer::Token::BRACE_CLOSE));
 			consume(GDScriptTokenizer::Token::BRACE_CLOSE, R"(Expected "}" to close the dictionary pattern.)");
 			pop_multiline();
 			break;
@@ -3306,7 +3333,7 @@ GDScriptParser::ExpressionNode *GDScriptParser::parse_array(ExpressionNode *p_pr
 			} else {
 				array->elements.push_back(element);
 			}
-		} while (match(GDScriptTokenizer::Token::COMMA) && !is_at_end());
+		} while (match_list_separator("array elements", GDScriptTokenizer::Token::BRACKET_CLOSE) && !is_at_end());
 	}
 	pop_multiline();
 	consume(GDScriptTokenizer::Token::BRACKET_CLOSE, R"(Expected closing "]" after array elements.)");
@@ -3408,20 +3435,7 @@ GDScriptParser::ExpressionNode *GDScriptParser::parse_dictionary(ExpressionNode 
 			if (key != nullptr && value != nullptr) {
 				dictionary->elements.push_back({ key, value });
 			}
-
-			if (!check(GDScriptTokenizer::Token::BRACE_CLOSE)) {
-				switch (current.type) {
-					case GDScriptTokenizer::Token::IDENTIFIER:
-					case GDScriptTokenizer::Token::LITERAL:
-					case GDScriptTokenizer::Token::BRACKET_OPEN:
-					case GDScriptTokenizer::Token::PARENTHESIS_OPEN:
-						push_error(R"(Expected ',' between dictionary entries.)");
-						break;
-					default:
-						break;
-				}
-			}
-		} while (match(GDScriptTokenizer::Token::COMMA) && !is_at_end());
+		} while (match_list_separator("dictionary elements", GDScriptTokenizer::Token::BRACE_CLOSE) && !is_at_end());
 	}
 	pop_multiline();
 	consume(GDScriptTokenizer::Token::BRACE_CLOSE, R"(Expected closing "}" after dictionary elements.)");
@@ -3613,7 +3627,7 @@ GDScriptParser::ExpressionNode *GDScriptParser::parse_call(ExpressionNode *p_pre
 
 		ct = COMPLETION_CALL_ARGUMENTS;
 		argument_index++;
-	} while (match(GDScriptTokenizer::Token::COMMA));
+	} while (match_list_separator("call arguments", GDScriptTokenizer::Token::PARENTHESIS_CLOSE));
 	pop_completion_call();
 
 	pop_multiline();
@@ -3943,7 +3957,7 @@ GDScriptParser::TypeNode *GDScriptParser::parse_type(bool p_allow_void) {
 				type->container_types.append(container_type);
 			}
 			first_pass = false;
-		} while (match(GDScriptTokenizer::Token::COMMA));
+		} while (match_list_separator("collection type parameters", GDScriptTokenizer::Token::BRACKET_CLOSE));
 		consume(GDScriptTokenizer::Token::BRACKET_CLOSE, R"(Expected closing "]" after collection type.)");
 		if (type != nullptr) {
 			complete_extents(type);
