@@ -98,9 +98,7 @@ Dictionary JustAMCPRemoteControlTools::remote_control_status(const Dictionary &p
 	if (!server) {
 		return _make_error("RemoteControlServer not available");
 	}
-	Dictionary result = server->get_status();
-	result["ok"] = true;
-	return result;
+	return server->get_status();
 }
 
 Dictionary JustAMCPRemoteControlTools::remote_control_exec(const Dictionary &p_args) {
