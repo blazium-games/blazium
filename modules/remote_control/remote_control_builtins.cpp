@@ -56,6 +56,14 @@
 #include "scene/gui/button.h"
 #endif
 
+#include "modules/modules_enabled.gen.h"
+
+#ifdef MODULE_JUSTAMCP_ENABLED
+#ifdef TOOLS_ENABLED
+#include "modules/justamcp/justamcp_server.h"
+#endif
+#endif
+
 static Dictionary _ok(const Dictionary &p_extra = Dictionary()) {
 	Dictionary ret = p_extra;
 	ret["ok"] = true;
@@ -500,7 +508,7 @@ Dictionary remote_control_cmd_snapshot_scene(const Dictionary &p_args) {
 #if !defined(TOOLS_ENABLED)
 	return _snapshot_runtime_viewport(path);
 #else
-	// Runtime remote_control in a playing game process.
+
 	if (!EditorInterface::get_singleton()) {
 		Dictionary ret = _snapshot_runtime_viewport(path);
 		if (bool(ret.get("ok", false))) {
@@ -854,6 +862,43 @@ Dictionary remote_control_cmd_autowork_results(const Dictionary &p_args) {
 	return RemoteControlServer::get_singleton()->get_autowork_results();
 }
 
+Dictionary remote_control_cmd_focus_window(const Dictionary &p_args) {
+	(void)p_args;
+	if (!DisplayServer::get_singleton()) {
+		return _err("DisplayServer not available");
+	}
+	DisplayServer::get_singleton()->window_move_to_foreground();
+	DisplayServer::get_singleton()->window_request_attention();
+	Dictionary ret;
+	ret["focused"] = true;
+	return _ok(ret);
+}
+
+Dictionary remote_control_cmd_mcp_status(const Dictionary &p_args) {
+	(void)p_args;
+	Dictionary ret;
+#ifdef MODULE_JUSTAMCP_ENABLED
+#ifdef TOOLS_ENABLED
+	JustAMCPServer *server = JustAMCPServer::get_singleton();
+	const bool started = server && server->is_server_started();
+	ret["available"] = true;
+	ret["started"] = started;
+	ret["port"] = started && server ? server->get_listening_port() : -1;
+#else
+	ret["available"] = false;
+	ret["started"] = false;
+	ret["port"] = -1;
+	ret["reason"] = "JustAMCP is editor-only";
+#endif
+#else
+	ret["available"] = false;
+	ret["started"] = false;
+	ret["port"] = -1;
+	ret["reason"] = "JustAMCP module not compiled in";
+#endif
+	return _ok(ret);
+}
+
 void remote_control_register_builtin_commands(RemoteControlRegistry *p_registry) {
 	ERR_FAIL_NULL(p_registry);
 
@@ -896,4 +941,7 @@ void remote_control_register_builtin_commands(RemoteControlRegistry *p_registry)
 	p_registry->register_command("autowork_run", callable_mp_static(remote_control_cmd_autowork_run), "Start Autowork job");
 	p_registry->register_command("autowork_status", callable_mp_static(remote_control_cmd_autowork_status), "Autowork job status");
 	p_registry->register_command("autowork_results", callable_mp_static(remote_control_cmd_autowork_results), "Autowork job results");
+	p_registry->register_command("focus_window", callable_mp_static(remote_control_cmd_focus_window), "Bring editor/game window to front");
+	p_registry->register_command("bring_to_front", callable_mp_static(remote_control_cmd_focus_window), "Alias for focus_window");
+	p_registry->register_command("mcp_status", callable_mp_static(remote_control_cmd_mcp_status), "JustAMCP server status (port/started)");
 }

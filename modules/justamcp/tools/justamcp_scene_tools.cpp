@@ -124,7 +124,6 @@ String JustAMCPSceneTools::_to_scene_res_path(const String &p_project_path, cons
 		return p;
 	}
 
-	// Absolute filesystem paths (tests / external tooling) stay absolute when present.
 	if (p.is_absolute_path() && FileAccess::exists(p)) {
 		return p;
 	}

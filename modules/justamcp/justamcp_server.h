@@ -237,6 +237,7 @@ public:
 #endif
 
 	bool is_server_started() const { return server_started; }
+	int get_listening_port() const { return active_listening_port; }
 	int get_pending_tool_queue_size();
 
 	JustAMCPServer();

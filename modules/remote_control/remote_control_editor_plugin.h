@@ -44,6 +44,7 @@ class RemoteControlEditorPlugin : public EditorPlugin {
 	void _on_debugger_breaked(bool p_breaked, bool p_can_debug);
 
 protected:
+	static void _bind_methods();
 	void _notification(int p_what);
 
 public:

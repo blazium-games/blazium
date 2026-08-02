@@ -627,6 +627,18 @@ def Run(env, function):
     return Action(function, "$GENCOMSTR")
 
 
+def add_hub_register_post_action(env, prog):
+    """After linking an editor binary, optionally register it with Blazium Hub via blazium-cli."""
+    if not getattr(env, "editor_build", False):
+        return
+    if not env.get("hub_register", False):
+        return
+    # Late import so non-hub_register builds do not require the helper module.
+    from misc.scripts import hub_register_editor
+
+    env.AddPostAction(prog, env.Run(hub_register_editor.scons_post_action))
+
+
 def detect_darwin_sdk_path(platform, env):
     sdk_name = ""
     if platform == "macos":

@@ -77,6 +77,7 @@ sources += res_obj
 
 prog = env.add_program("#bin/blazium", sources, PROGSUFFIX=env["PROGSUFFIX"])
 arrange_program_clean(prog)
+methods.add_hub_register_post_action(env, prog)
 
 if env.msvc:
     env.Depends(prog, "godot.natvis")

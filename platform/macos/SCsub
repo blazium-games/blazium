@@ -9,6 +9,7 @@ import subprocess
 
 import platform_macos_builders
 
+import methods
 from platform_methods import get_build_version, lipo
 
 
@@ -145,6 +146,7 @@ shutil.copy(
 )
 
 prog = env.add_program("#bin/blazium", files)
+methods.add_hub_register_post_action(env, prog)
 
 if env["debug_symbols"] and env["separate_debug_symbols"]:
     env.AddPostAction(prog, env.Run(platform_macos_builders.make_debug_macos))

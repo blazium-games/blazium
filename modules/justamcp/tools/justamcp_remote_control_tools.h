@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  remote_control_editor_plugin.cpp                                      */
+/*  justamcp_remote_control_tools.h                                       */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             BLAZIUM ENGINE                             */
@@ -27,80 +27,38 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
+#pragma once
+
 #ifdef TOOLS_ENABLED
 
-#include "remote_control_editor_plugin.h"
+#include "modules/modules_enabled.gen.h"
 
-#include "remote_control_server.h"
+#ifdef MODULE_REMOTE_CONTROL_ENABLED
 
-#include "editor/debugger/editor_debugger_node.h"
-#include "editor/debugger/script_editor_debugger.h"
+#include "core/object/class_db.h"
+#include "core/object/object.h"
 
-void RemoteControlEditorPlugin::_try_start() {
-	if (!RemoteControlServer::get_singleton()) {
-		return;
-	}
-	if (RemoteControlServer::get_singleton()->is_started()) {
-		_connect_debugger_hooks();
-		return;
-	}
-	if (RemoteControlServer::should_enable_from_cmdline_or_settings()) {
-		RemoteControlServer::get_singleton()->start();
-	}
-	_connect_debugger_hooks();
-}
+class JustAMCPRemoteControlTools : public Object {
+	GDCLASS(JustAMCPRemoteControlTools, Object);
 
-void RemoteControlEditorPlugin::_try_stop() {
-}
+protected:
+	static void _bind_methods();
 
-void RemoteControlEditorPlugin::_connect_debugger_hooks() {
-	if (debugger_hooks_connected) {
-		return;
-	}
-	EditorDebuggerNode *debugger_node = EditorDebuggerNode::get_singleton();
-	if (!debugger_node) {
-		return;
-	}
-	debugger_node->connect("breaked", callable_mp(this, &RemoteControlEditorPlugin::_on_debugger_breaked));
-	debugger_hooks_connected = true;
-}
+	Dictionary _make_error(const String &p_message) const;
 
-void RemoteControlEditorPlugin::_on_debugger_breaked(bool p_breaked, bool p_can_debug) {
-	(void)p_can_debug;
-	if (!p_breaked || !RemoteControlServer::get_singleton()) {
-		return;
-	}
-	EditorDebuggerNode *debugger_node = EditorDebuggerNode::get_singleton();
-	if (!debugger_node) {
-		return;
-	}
-	ScriptEditorDebugger *dbg = debugger_node->get_current_debugger();
-	if (!dbg) {
-		return;
-	}
-	const String reason = dbg->get_break_reason();
+public:
+	static Array get_tool_schemas(bool p_register_only = false, bool p_ignore_settings = false, bool p_include_disabled_tools = false);
+	Array provide_tool_schemas(bool p_register_only = false, bool p_ignore_settings = false, bool p_include_disabled_tools = false);
+	Dictionary execute_tool(const String &p_tool_name, const Dictionary &p_args);
 
-	const String lower = reason.to_lower();
-	if (!(lower.contains("error") || lower.contains("exception") || dbg->get_error_count() > 0)) {
-		return;
-	}
-	RemoteControlServer::get_singleton()->record_error_break(dbg->get_stack_script_file(), dbg->get_stack_script_line(), reason);
-}
+	Dictionary remote_control_status(const Dictionary &p_args);
+	Dictionary remote_control_exec(const Dictionary &p_args);
+	Dictionary remote_control_eval(const Dictionary &p_args);
+	Dictionary remote_control_instance(const Dictionary &p_args);
 
-void RemoteControlEditorPlugin::_notification(int p_what) {
-	switch (p_what) {
-		case NOTIFICATION_ENTER_TREE: {
-			_try_start();
-		} break;
-		default:
-			break;
-	}
-}
+	JustAMCPRemoteControlTools();
+	~JustAMCPRemoteControlTools();
+};
 
-void RemoteControlEditorPlugin::_bind_methods() {
-}
-
-RemoteControlEditorPlugin::RemoteControlEditorPlugin() {
-}
-
+#endif
 #endif

@@ -145,8 +145,7 @@ void JustAMCPServer::_on_request_cancelled(const Variant &p_request_id, const St
 			cancel_associated_task = true;
 			task_id_to_cancel = target->task_id;
 		}
-		// Dispatcher cleared pending_task_dispatch and still owns the entry until it
-		// finishes create/re-lock; deleting here races with that thread.
+
 		if (target->is_task_augmented && !target->pending_task_dispatch && target->task_id.is_empty()) {
 			defer_cleanup_to_dispatcher = true;
 		}
@@ -173,7 +172,7 @@ void JustAMCPServer::_on_request_cancelled(const Variant &p_request_id, const St
 			if (!still) {
 				return;
 			}
-			// Dispatcher may have claimed the entry after our first unlock.
+
 			if (still->is_task_augmented && !still->pending_task_dispatch && still->task_id.is_empty()) {
 				return;
 			}

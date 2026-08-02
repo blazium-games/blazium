@@ -106,7 +106,7 @@ bool MCPSessionManager::handle_mcp_get(const Ref<HTTPRequestContext> &p_context,
 		return true;
 	}
 	_touch_session(*session);
-	// Prefer session-negotiated version when the client omits MCP-Protocol-Version.
+
 	owner->transport_negotiated_protocol = session->negotiated_protocol;
 	lock.temp_unlock();
 

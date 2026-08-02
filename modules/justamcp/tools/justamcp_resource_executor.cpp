@@ -95,8 +95,7 @@ JustAMCPResourceExecutor::JustAMCPResourceExecutor() {
 	add_resource(memnew(JustAMCPResourceProjectFile));
 	add_resource(memnew(JustAMCPResourceVideoRecordings));
 	add_resource(memnew(JustAMCPResourceAutoworkResults));
-	// EditorFileSystem is a Node; connect only from the main thread. Ephemeral executors
-	// created on WorkerThreadPool (e.g. get_guide) must not touch EFS signals.
+
 	if (Thread::is_main_thread() && EditorFileSystem::get_singleton()) {
 		const Callable cb = callable_mp_static(&JustAMCPResourceExecutor::_on_filesystem_changed);
 		if (!EditorFileSystem::get_singleton()->is_connected("filesystem_changed", cb)) {

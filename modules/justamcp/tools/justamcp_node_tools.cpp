@@ -237,7 +237,7 @@ Dictionary JustAMCPNodeTools::_delete_node(const Dictionary &p_params) {
 		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
 		ur->create_action("MCP: Delete " + node_name);
 		ur->add_do_method(parent, "remove_child", node);
-		// Undo runs reverse of registration: add_child must run before set_owner.
+
 		ur->add_undo_method(node, "set_owner", root);
 		ur->add_undo_method(parent, "add_child", node);
 		ur->add_undo_reference(node);

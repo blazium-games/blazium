@@ -147,14 +147,12 @@ Node *JustAMCPToolExecutor::get_test_scene_root() {
 
 JustAMCPToolExecutor::JustAMCPToolExecutor() {
 #ifdef TESTS_ENABLED
-	// Unit tests construct bare executors and expect tools immediately.
+
 	_init_tools();
 #endif
 }
 
 JustAMCPToolExecutor::~JustAMCPToolExecutor() {
-	// Stop accepting new worker jobs that would capture this pointer, then drain
-	// in-flight WorkerThreadPool tasks before tearing member tools down.
 	if (active_instance == this) {
 		active_instance = nullptr;
 	}

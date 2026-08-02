@@ -4,6 +4,7 @@ def can_build(env, platform):
     env.module_add_dependencies("justamcp", ["httpserver"], False)
     env.module_add_dependencies("justamcp", ["assettags"], False)
     env.module_add_dependencies("justamcp", ["semanticsearch"], False)
+    env.module_add_dependencies("justamcp", ["remote_control"], False)
     return env.editor_build
 
 

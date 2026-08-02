@@ -105,7 +105,7 @@ void test_justamcp_sse_bound_worker_safe_uses_worker() {
 	entry->sse_connection_id = 42;
 
 	server.test_process_pending_tools();
-	// SSE-bound worker-safe tools must schedule on WorkerThreadPool, not the main-thread signal path.
+
 	CHECK(!s_tool_requested);
 	CHECK(s_tool_requested_name.is_empty());
 

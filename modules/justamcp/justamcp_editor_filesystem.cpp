@@ -41,7 +41,7 @@ void refresh_path(const String &p_path) {
 	if (p_path.is_empty() || !EditorFileSystem::get_singleton()) {
 		return;
 	}
-	// EditorFileSystem is a Node; never call it off the main thread.
+
 	if (Thread::is_main_thread()) {
 		EditorFileSystem::get_singleton()->update_file(p_path);
 	} else {

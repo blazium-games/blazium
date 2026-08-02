@@ -43,7 +43,7 @@ class JustAMCPJsonRpcTransport {
 public:
 	static Dictionary handle_json_rpc(JustAMCPServer *p_server, const String &p_body, Ref<HTTPResponse> p_response, const String &p_caller_session_id = String());
 	static Dictionary handle_json_rpc_parsed(JustAMCPServer *p_server, const Dictionary &p_payload, Ref<HTTPResponse> p_response, const String &p_caller_session_id = String());
-	// Strip internal router keys before HTTP/SSE emission (Cursor Zod rejects "handled").
+
 	static Dictionary sanitize_wire_rpc(const Dictionary &p_rpc);
 
 private:
