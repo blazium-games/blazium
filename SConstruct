@@ -231,6 +231,18 @@ opts.Add(
         False,
     )
 )
+opts.Add(
+    BoolVariable(
+        "update_version_from_git",
+        "Before build, set EXTERNAL_* version from nearest v* git tag (+ commits) via misc/scripts/update_version_from_git.py",
+        False,
+    )
+)
+opts.Add(
+    "update_version_status",
+    "Override external_status when update_version_from_git=yes (empty = script default)",
+    "",
+)
 opts.Add("build_profile", "Path to a file containing a feature build profile", "")
 opts.Add(BoolVariable("modules_enabled_by_default", "If no, disable all modules except ones explicitly enabled", True))
 opts.Add(BoolVariable("no_editor_splash", "Don't use the custom splash screen for the editor", True))
@@ -984,6 +996,29 @@ if env.editor_build:
     # And check if they are met.
     if not env.module_check_dependencies("editor"):
         print_error("Not all modules required by editor builds are enabled.")
+        Exit(255)
+
+if env.get("update_version_from_git", False):
+    try:
+        from misc.scripts import update_version_from_git as uvfg
+
+        repo_root = uvfg.find_repo_root(str(methods.base_folder))
+        status_override = env.get("update_version_status", "")
+        if status_override == "":
+            status_override = None
+        git_version = uvfg.compute_version(repo_root, status_override)
+        uvfg.apply_version_to_environ(git_version)
+        uvfg.update_version_py(os.path.join(repo_root, "version.py"), git_version)
+        print_info(
+            "update_version_from_git: "
+            f"{git_version['external_major']}.{git_version['external_minor']}.{git_version['external_patch']}"
+            f"-{git_version['external_status']} "
+            f"(tag {git_version['tag']} +{git_version['commits_after_tag']} commits)"
+        )
+        print_info("Leave version.py uncommitted; restore with: git checkout -- version.py")
+    except SystemExit as exc:
+        msg = exc.code if isinstance(exc.code, str) else (str(exc) if exc.args else "update_version_from_git failed")
+        print_error(msg)
         Exit(255)
 
 env.version_info = methods.get_version_info(env.module_version_string)
