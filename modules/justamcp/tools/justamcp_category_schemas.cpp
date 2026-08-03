@@ -396,7 +396,7 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "query", "string", "path", "string", "file_type", "string", "max_results", "number" }, Vector<String>{ "query" }, "forbidden", "worker");
 	add_schema("search_in_files", "Searches file contents using string matching or regex.",
 			Vector<String>{ "query", "string", "path", "string", "max_results", "number", "regex", "boolean", "file_type", "string" }, Vector<String>{ "query" }, "forbidden", "worker");
-	add_schema("set_project_setting", "Sets a specific global setting in project.godot.",
+	add_schema("set_project_setting", "Sets a specific global setting in the project settings file (project.blazium or project.godot).",
 			Vector<String>{ "key", "string", "value", "string" }, Vector<String>{ "key", "value" });
 	add_schema("uid_to_project_path", "Resolves a Godot UID representation to an absolute res:// path.",
 			Vector<String>{ "uid", "string" }, Vector<String>{ "uid" }, "forbidden", "worker");

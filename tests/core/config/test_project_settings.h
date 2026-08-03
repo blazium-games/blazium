@@ -32,8 +32,10 @@
 
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
+#include "core/io/file_access.h"
 #include "core/variant/variant.h"
 #include "tests/test_macros.h"
+#include "tests/test_utils.h"
 
 class TestProjectSettingsInternalsAccessor {
 public:
@@ -175,6 +177,53 @@ TEST_CASE("[ProjectSettings] localize_path") {
 #endif
 
 	TestProjectSettingsInternalsAccessor::resource_path() = old_resource_path;
+}
+
+TEST_CASE("[ProjectSettings] is_project_settings_file") {
+	CHECK(ProjectSettings::is_project_settings_file("project.blazium"));
+	CHECK(ProjectSettings::is_project_settings_file("project.godot"));
+	CHECK(ProjectSettings::is_project_settings_file("res://project.blazium"));
+	CHECK(ProjectSettings::is_project_settings_file("C:/games/my_game/project.godot"));
+	CHECK_FALSE(ProjectSettings::is_project_settings_file("project.binary"));
+	CHECK_FALSE(ProjectSettings::is_project_settings_file("project.cfg"));
+	CHECK_FALSE(ProjectSettings::is_project_settings_file("my_project.godot"));
+	CHECK_FALSE(ProjectSettings::is_project_settings_file(""));
+}
+
+TEST_CASE("[ProjectSettings] get_project_settings_file_name prefers blazium") {
+	const String temp_dir = TestUtils::get_temp_path("project_settings_dual_name");
+	DirAccess::make_dir_recursive_absolute(temp_dir);
+
+	const String blazium_path = temp_dir.path_join(ProjectSettings::PROJECT_FILE_BLAZIUM);
+	const String godot_path = temp_dir.path_join(ProjectSettings::PROJECT_FILE_GODOT);
+
+	// Clean up from any previous run.
+	DirAccess::remove_absolute(blazium_path);
+	DirAccess::remove_absolute(godot_path);
+
+	CHECK(ProjectSettings::get_project_settings_file_name(temp_dir, false).is_empty());
+	CHECK_FALSE(ProjectSettings::project_settings_exists(temp_dir));
+
+	{
+		Ref<FileAccess> f = FileAccess::open(godot_path, FileAccess::WRITE);
+		REQUIRE(f.is_valid());
+		f->store_string("; godot\n");
+	}
+	CHECK_EQ(ProjectSettings::get_project_settings_file_name(temp_dir, false), String(ProjectSettings::PROJECT_FILE_GODOT));
+	CHECK(ProjectSettings::project_settings_exists(temp_dir));
+
+	{
+		Ref<FileAccess> f = FileAccess::open(blazium_path, FileAccess::WRITE);
+		REQUIRE(f.is_valid());
+		f->store_string("; blazium\n");
+	}
+	CHECK_EQ(ProjectSettings::get_project_settings_file_name(temp_dir, false), String(ProjectSettings::PROJECT_FILE_BLAZIUM));
+
+	DirAccess::remove_absolute(blazium_path);
+	CHECK_EQ(ProjectSettings::get_project_settings_file_name(temp_dir, false), String(ProjectSettings::PROJECT_FILE_GODOT));
+
+	DirAccess::remove_absolute(godot_path);
+	DirAccess::remove_absolute(temp_dir);
 }
 
 } // namespace TestProjectSettings

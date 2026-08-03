@@ -2862,9 +2862,9 @@ bool MultiuserEditorPlugin::_is_inside_loaded_project(String *r_reason) const {
 		}
 		return false;
 	}
-	if (!FileAccess::exists("res://project.godot") && !FileAccess::exists("res://project.binary")) {
+	if (!ProjectSettings::project_settings_exists("res://") && !FileAccess::exists(String("res://") + ProjectSettings::PROJECT_FILE_BINARY)) {
 		if (r_reason) {
-			*r_reason = "no project.godot or project.binary at res://";
+			*r_reason = "no project.blazium/project.godot or project.binary at res://";
 		}
 		return false;
 	}

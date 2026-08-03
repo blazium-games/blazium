@@ -32,6 +32,7 @@
 
 #ifndef DISABLE_DEPRECATED
 
+#include "core/config/project_settings.h"
 #include "core/error/error_macros.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
@@ -337,16 +338,17 @@ bool ProjectConverter3To4::convert() {
 	{
 		String converter_text = "; Project was converted by built-in tool to Godot 4";
 
-		ERR_FAIL_COND_V_MSG(!FileAccess::exists("project.godot"), false, "Current working directory doesn't contain a \"project.godot\" file for a Godot 3 project.");
+		const String project_file = ProjectSettings::get_project_settings_file_name(".", false);
+		ERR_FAIL_COND_V_MSG(project_file.is_empty(), false, "Current working directory doesn't contain a \"project.blazium\" or \"project.godot\" file for a Godot 3 project.");
 
 		Error err = OK;
-		String project_godot_content = FileAccess::get_file_as_string("project.godot", &err);
+		String project_godot_content = FileAccess::get_file_as_string(project_file, &err);
 
-		ERR_FAIL_COND_V_MSG(err != OK, false, "Unable to read \"project.godot\".");
+		ERR_FAIL_COND_V_MSG(err != OK, false, vformat("Unable to read \"%s\".", project_file));
 		ERR_FAIL_COND_V_MSG(project_godot_content.contains(converter_text), false, "Project was already converted with this tool.");
 
-		Ref<FileAccess> file = FileAccess::open("project.godot", FileAccess::WRITE);
-		ERR_FAIL_COND_V_MSG(file.is_null(), false, "Unable to open \"project.godot\".");
+		Ref<FileAccess> file = FileAccess::open(project_file, FileAccess::WRITE);
+		ERR_FAIL_COND_V_MSG(file.is_null(), false, vformat("Unable to open \"%s\".", project_file));
 
 		file->store_string(converter_text + "\n" + project_godot_content);
 	}
@@ -451,7 +453,7 @@ bool ProjectConverter3To4::convert() {
 				rename_common(RenamesMap3To4::builtin_types_renames, reg_container.builtin_types_regexes, source_lines);
 
 				custom_rename(source_lines, "\\.shader", ".gdshader");
-			} else if (file_name.ends_with("project.godot")) {
+			} else if (ProjectSettings::is_project_settings_file(file_name)) {
 				rename_common(RenamesMap3To4::project_godot_renames, reg_container.project_godot_regexes, source_lines);
 				rename_common(RenamesMap3To4::builtin_types_renames, reg_container.builtin_types_regexes, source_lines);
 				rename_input_map_scancode(source_lines, reg_container);
@@ -542,12 +544,13 @@ bool ProjectConverter3To4::validate_conversion() {
 	{
 		String conventer_text = "; Project was converted by built-in tool to Godot 4";
 
-		ERR_FAIL_COND_V_MSG(!FileAccess::exists("project.godot"), false, "Current directory doesn't contain any Godot 3 project");
+		const String project_file = ProjectSettings::get_project_settings_file_name(".", false);
+		ERR_FAIL_COND_V_MSG(project_file.is_empty(), false, "Current directory doesn't contain any Godot 3 project");
 
 		Error err = OK;
-		String project_godot_content = FileAccess::get_file_as_string("project.godot", &err);
+		String project_godot_content = FileAccess::get_file_as_string(project_file, &err);
 
-		ERR_FAIL_COND_V_MSG(err != OK, false, "Failed to read content of \"project.godot\" file.");
+		ERR_FAIL_COND_V_MSG(err != OK, false, vformat("Failed to read content of \"%s\" file.", project_file));
 		ERR_FAIL_COND_V_MSG(project_godot_content.contains(conventer_text), false, "Project already was converted with this tool.");
 	}
 
@@ -636,7 +639,7 @@ bool ProjectConverter3To4::validate_conversion() {
 				changed_elements.append_array(check_for_rename_common(RenamesMap3To4::builtin_types_renames, reg_container.builtin_types_regexes, lines));
 
 				changed_elements.append_array(check_for_custom_rename(lines, "\\.shader", ".gdshader"));
-			} else if (file_name.ends_with("project.godot")) {
+			} else if (ProjectSettings::is_project_settings_file(file_name)) {
 				changed_elements.append_array(check_for_rename_common(RenamesMap3To4::project_godot_renames, reg_container.project_godot_regexes, lines));
 				changed_elements.append_array(check_for_rename_common(RenamesMap3To4::builtin_types_renames, reg_container.builtin_types_regexes, lines));
 				changed_elements.append_array(check_for_rename_input_map_scancode(lines, reg_container));
@@ -712,7 +715,7 @@ Vector<String> ProjectConverter3To4::check_for_files() {
 					directories_to_check.append(current_dir.path_join(file_name) + "/");
 				} else {
 					bool proper_extension = false;
-					if (file_name.ends_with(".gd") || file_name.ends_with(".shader") || file_name.ends_with(".gdshader") || file_name.ends_with(".tscn") || file_name.ends_with(".tres") || file_name.ends_with(".godot") || file_name.ends_with(".cs") || file_name.ends_with(".csproj") || file_name.ends_with(".import")) {
+					if (file_name.ends_with(".gd") || file_name.ends_with(".shader") || file_name.ends_with(".gdshader") || file_name.ends_with(".tscn") || file_name.ends_with(".tres") || file_name.ends_with(".godot") || file_name.ends_with(".blazium") || file_name.ends_with(".cs") || file_name.ends_with(".csproj") || file_name.ends_with(".import")) {
 						proper_extension = true;
 					}
 

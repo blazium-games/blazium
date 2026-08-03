@@ -115,7 +115,7 @@ Error ProjectCreator::create_project(const ProjectCreateOptions &p_options, Stri
 
 	Ref<DirAccess> d = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
 
-	if (d->file_exists(path.path_join("project.godot"))) {
+	if (ProjectSettings::project_settings_exists(path)) {
 		if (r_error) {
 			*r_error = "A project already exists at the specified path.";
 		}
@@ -181,10 +181,10 @@ Error ProjectCreator::create_project(const ProjectCreateOptions &p_options, Stri
 	initial_settings["application/config/name"] = project_name;
 	initial_settings["application/config/icon"] = "res://icon.svg";
 
-	Error err = ProjectSettings::get_singleton()->save_custom(path.path_join("project.godot"), initial_settings, Vector<String>(), false);
+	Error err = ProjectSettings::get_singleton()->save_custom(path.path_join(ProjectSettings::PROJECT_FILE_BLAZIUM), initial_settings, Vector<String>(), false);
 	if (err != OK) {
 		if (r_error) {
-			*r_error = "Couldn't create project.godot in project path.";
+			*r_error = vformat("Couldn't create %s in project path.", ProjectSettings::PROJECT_FILE_BLAZIUM);
 		}
 		return err;
 	}
