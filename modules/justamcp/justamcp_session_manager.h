@@ -95,7 +95,6 @@ public:
 
 	void clear_all();
 
-	// Latest supported MCP protocol; used when the client omits or sends an unknown version.
 	static String latest_protocol_version() { return String("2025-11-25"); }
 	static String negotiate_protocol_version(const String &p_client_version);
 

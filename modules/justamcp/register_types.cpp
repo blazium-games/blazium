@@ -30,6 +30,8 @@
 #include "register_types.h"
 #include "justamcp_project_settings.h"
 
+#include "modules/modules_enabled.gen.h"
+
 #include "justamcp_runtime.h"
 
 #ifdef TOOLS_ENABLED
@@ -51,6 +53,9 @@
 #include "tools/justamcp_asset_tags_tools.h"
 #include "tools/justamcp_category_registry.h"
 #include "tools/justamcp_mcp_client_bridge.h"
+#ifdef MODULE_REMOTE_CONTROL_ENABLED
+#include "tools/justamcp_remote_control_tools.h"
+#endif
 #include "tools/justamcp_node_tools.h"
 #include "tools/justamcp_particle_tools.h"
 #include "tools/justamcp_physics_tools.h"
@@ -278,8 +283,7 @@ void initialize_justamcp_module(ModuleInitializationLevel p_level) {
 	}
 	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
 		JustAMCPProjectSettings::register_project_settings();
-		// Register EditorSettings early so EDITOR_GET / inspector never WARN on missing JustAMCP keys
-		// before the MCP server starts (register_editor_settings is idempotent).
+
 		if (EditorSettings::get_singleton()) {
 			JustAMCPProjectSettings::register_editor_settings();
 		}
@@ -323,6 +327,18 @@ void initialize_justamcp_module(ModuleInitializationLevel p_level) {
 					mcp_client_bridge,
 					"mcp_client_tools");
 		}
+#ifdef MODULE_REMOTE_CONTROL_ENABLED
+		if (JustAMCPToolsetRegistry::get_singleton()) {
+			JustAMCPRemoteControlTools *remote_control_bridge = memnew(JustAMCPRemoteControlTools);
+			JustAMCPToolsetRegistry::get_singleton()->register_toolset_with_owner(
+					"RemoteControl",
+					"In-process bridge to the remote_control module.",
+					callable_mp(remote_control_bridge, &JustAMCPRemoteControlTools::provide_tool_schemas),
+					callable_mp(remote_control_bridge, &JustAMCPRemoteControlTools::execute_tool),
+					remote_control_bridge,
+					"remote_control_tools");
+		}
+#endif
 		_register_all_toolsets();
 		JustAMCPToolSchemaCache::get_schemas(false, false, false, false);
 		EditorPlugins::add_by_type<JustAMCPEditorPlugin>();

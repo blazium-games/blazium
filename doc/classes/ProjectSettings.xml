@@ -1751,6 +1751,8 @@
 		</member>
 		<member name="blazium/justamcp/toolsets/Project" type="bool" setter="" getter="" default="true">
 		</member>
+		<member name="blazium/justamcp/toolsets/RemoteControl" type="bool" setter="" getter="" default="true">
+		</member>
 		<member name="blazium/justamcp/toolsets/Resource" type="bool" setter="" getter="" default="true">
 		</member>
 		<member name="blazium/justamcp/toolsets/Runtime" type="bool" setter="" getter="" default="true">

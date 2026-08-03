@@ -204,8 +204,7 @@ bool MCPSessionManager::handle_mcp_post(const Ref<HTTPRequestContext> &p_context
 	const bool is_initialize = method == "initialize";
 
 	String session_id = get_header(p_context, "MCP-Session-Id");
-	// Always treat initialize as Streamable HTTP so clients that send only
-	// Accept: application/json still receive MCP-Session-Id for tools/list.
+
 	const bool streamable_client = !session_id.is_empty() || is_initialize || accepts_json_and_sse(p_context);
 
 	if (!streamable_client) {
@@ -222,16 +221,13 @@ bool MCPSessionManager::handle_mcp_post(const Ref<HTTPRequestContext> &p_context
 			return true;
 		}
 		_touch_session(*session);
-		// Prefer session-negotiated version when the client omits MCP-Protocol-Version.
+
 		owner->transport_negotiated_protocol = session->negotiated_protocol;
 	} else if (!is_initialize) {
 		p_response->set_status(400);
 		p_response->set_body("Missing MCP-Session-Id");
 		return true;
 	}
-
-	// MCP-Protocol-Version may be omitted after initialize; reuse session.negotiated_protocol
-	// (validate_protocol_header already rejects unsupported header values with 400).
 
 	if (is_initialize && session_id.is_empty()) {
 		MCPSession session;
@@ -252,9 +248,6 @@ bool MCPSessionManager::handle_mcp_post(const Ref<HTTPRequestContext> &p_context
 		p_response->add_header("MCP-Session-Id", session_id);
 	}
 
-	// Dual Accept upgrades to POST-SSE only for long-running RPCs. Sync discovery
-	// methods (tools/list, prompts/list, resources/*, ping, …) stay on the JSON/held
-	// path so Cursor live tool discovery is not starved waiting for an SSE message.
 	const bool async_rpc = (method == "tools/call");
 	const bool wants_sse = accepts_json_and_sse(p_context) && !is_notification && method != "initialize" && async_rpc;
 	if (wants_sse) {

@@ -642,7 +642,7 @@ Dictionary JustAMCPResourceTools::resource_import_asset(const Dictionary &p_args
 	if (editor_plugin && editor_plugin->get_editor_interface() && EditorFileSystem::get_singleton()) {
 		Vector<String> files;
 		files.push_back(res_path);
-		// Always defer: sync reimport during process_frame tool drain freezes the editor.
+
 		EditorFileSystem::get_singleton()->call_deferred(SNAME("reimport_files"), files);
 		Dictionary ret;
 		ret["ok"] = true;

@@ -310,7 +310,6 @@ void JustAMCPServer::_dispatch_task_augmented_tools_call(const Variant &p_reques
 			}
 #endif
 			if (!still_entry) {
-				// Entry already removed/deleted by another path; do not touch it.
 				return;
 			}
 			entry->rpc_result = _justamcp_task_dispatch_cancelled_rpc(p_request_id);
@@ -350,8 +349,7 @@ void JustAMCPServer::_schedule_process_pending_tools() {
 		return;
 	}
 	pending_tools_drain_scheduled = true;
-	// Prefer call_deferred so POST-SSE tools/call emits the first JSON-RPC message
-	// without waiting for the next rendered process_frame (Cursor discovery timeouts).
+
 	call_deferred(SNAME("_process_pending_tools"));
 }
 
@@ -410,19 +408,14 @@ void JustAMCPServer::_process_pending_tools() {
 		JustAMCPToolQueueState::sync_processing_flag(mcp_tool_queue.current_write, mcp_tool_queue.current_readonly_inflight, mcp_tool_queue.processing);
 	}
 
-	// Offload worker-safe tools (including wait) whenever the readonly lane is active.
-	// Do not require max_readonly > 0: concurrency 0 still used to mean "serialize readonly",
-	// but sleep/IO-safe tools must not freeze the main thread with delay_usec / blocking work.
 	const bool schedule_worker = readonly_lane && JustAMCPReadonlyTools::is_worker_safe_tool(entry->tool_name);
 	if (schedule_worker && JustAMCPToolDispatch::try_schedule_worker_execute(this, entry->request_id, entry->tool_name, entry->args)) {
 		if (max_readonly > 1) {
-			// Fan out more worker-safe tools in this flush; main-thread tools yield via next-frame scheduling.
 			call_deferred(SNAME("_process_pending_tools"));
 		}
 		return;
 	}
 
-	// One main-thread tool per drain; completion schedules the next on process_frame.
 	emit_signal("tool_requested", entry->request_id, entry->tool_name, entry->args);
 }
 

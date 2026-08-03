@@ -251,7 +251,6 @@ Dictionary JustAMCPToolExecutor::execute_composite_tool(const String &p_internal
 		Dictionary ret;
 #ifdef TOOLS_ENABLED
 		if (EditorFileSystem::get_singleton()) {
-			// Always defer: sync scan() during process_frame tool drain freezes the editor.
 			EditorFileSystem::get_singleton()->call_deferred(SNAME("scan"));
 			ret["ok"] = true;
 			ret["message"] = "Editor filesystem rescan requested.";
@@ -446,7 +445,7 @@ Dictionary JustAMCPToolExecutor::execute_composite_tool(const String &p_internal
 			ms = int(double(p_args.get("seconds", 0.0)) * 1000.0);
 		}
 		ms = CLAMP(ms, 0, 5000);
-		// Prefer WorkerThreadPool (wait is worker-safe). Never block the main thread with a long delay_usec.
+
 		if (Thread::is_main_thread()) {
 			const uint64_t end_ms = OS::get_singleton()->get_ticks_msec() + uint64_t(ms);
 			while (OS::get_singleton()->get_ticks_msec() < end_ms) {

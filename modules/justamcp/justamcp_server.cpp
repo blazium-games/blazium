@@ -294,7 +294,6 @@ JustAMCPServer::JustAMCPServer() {
 }
 
 JustAMCPServer::~JustAMCPServer() {
-	// Ephemeral ClassDB instances that did not claim the singleton never installed handlers or children.
 	if (singleton != this && !prompt_executor && !resource_executor && !task_manager
 #if defined(MODULE_HTTPSERVER_ENABLED)
 			&& !session_manager

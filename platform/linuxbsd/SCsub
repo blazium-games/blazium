@@ -5,6 +5,8 @@ Import("env")
 
 import platform_linuxbsd_builders
 
+import methods
+
 common_linuxbsd = [
     "crash_handler_linuxbsd.cpp",
     "os_linuxbsd.cpp",
@@ -40,6 +42,7 @@ if env["dbus"]:
         common_linuxbsd.append("dbus-so_wrap.c")
 
 prog = env.add_program("#bin/blazium", ["godot_linuxbsd.cpp"] + common_linuxbsd)
+methods.add_hub_register_post_action(env, prog)
 
 if env["debug_symbols"] and env["separate_debug_symbols"]:
     env.AddPostAction(prog, env.Run(platform_linuxbsd_builders.make_debug_linuxbsd))

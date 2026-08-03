@@ -62,7 +62,6 @@ void test_justamcp_toolset_schema_gate() {
 		}
 		expected_names.push_back(entry.display_name);
 
-		// Optional collaborative/autowork categories may register empty schema sets in headless tests.
 		if (entry.requires_multiuser || entry.requires_autowork) {
 			continue;
 		}

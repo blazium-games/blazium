@@ -48,8 +48,8 @@ public:
 private:
 	struct LogEntry {
 		uint64_t id = 0;
-		uint64_t ref_id = 0; // 0 = owns text; otherwise references another entry's text
-		int repeat = 0; // for ref entries: extra occurrences beyond the owner
+		uint64_t ref_id = 0;
+		int repeat = 0;
 		String text;
 		String level;
 		double time = 0.0;
@@ -76,7 +76,7 @@ private:
 
 	mutable Mutex autowork_mutex;
 	String autowork_job_id;
-	String autowork_job_state = "idle"; // idle|running|done|failed
+	String autowork_job_state = "idle";
 	Dictionary autowork_job_status;
 	Dictionary autowork_job_results;
 	String autowork_results_path = "user://autowork_results.json";

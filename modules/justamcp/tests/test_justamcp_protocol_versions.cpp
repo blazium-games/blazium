@@ -167,7 +167,7 @@ void test_justamcp_http_protocol_header_falls_back_to_session() {
 		const String session_id = _init_session(server, session_manager, protocol);
 
 		const String list_body = "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/list\",\"params\":{}}";
-		// Spec: if header is omitted, reuse the protocol negotiated at initialize.
+
 		Ref<HTTPResponse> missing;
 		missing.instantiate();
 		CHECK(session_manager->handle_mcp_post(_make_ctx("POST", _json_headers(session_id), list_body), missing));

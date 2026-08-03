@@ -103,8 +103,6 @@ Dictionary JustAMCPMetaTools::execute(JustAMCPToolExecutor *p_executor, const St
 		if (resource_executor) {
 			resource = resource_executor->read_resource("blazium://guide/" + topic);
 		} else {
-			// Avoid stack-allocating when the server executor exists: its dtor would
-			// disconnect the shared EditorFileSystem callback on the main thread.
 			JustAMCPResourceExecutor local_executor;
 			resource = local_executor.read_resource("blazium://guide/" + topic);
 		}

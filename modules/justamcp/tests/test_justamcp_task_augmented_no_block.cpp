@@ -50,7 +50,7 @@ void test_justamcp_task_augmented_http_returns_immediately() {
 	const Dictionary result = JustAMCPJsonRpcTransport::handle_json_rpc(&server, body, response);
 	const uint64_t elapsed_msec = OS::get_singleton()->get_ticks_msec() - start_msec;
 	CHECK(result.is_empty());
-	// ASAN/slow CI hosts can exceed a tight 50ms budget while still returning immediately.
+
 	CHECK(elapsed_msec < 500);
 	CHECK(server.get_pending_tool_queue_size() >= 1);
 	server.test_clear_tool_queue();

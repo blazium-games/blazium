@@ -334,7 +334,7 @@ Dictionary JustAMCPSceneTools::delete_node(const Dictionary &p_args) {
 		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
 		ur->create_action(TTR("AI Local: Delete Node"), UndoRedo::MERGE_DISABLE, node);
 		ur->add_do_method(parent, "remove_child", node);
-		// Undo runs reverse of registration: add_child must run before set_owner.
+
 		ur->add_undo_method(node, "set_owner", root);
 		ur->add_undo_method(parent, "add_child", node, true);
 		ur->add_undo_reference(node);

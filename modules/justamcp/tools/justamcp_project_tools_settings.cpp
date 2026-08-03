@@ -36,8 +36,6 @@
 #include "core/io/file_access.h"
 #include "core/io/json.h"
 
-// Prefer Ref<JSON>::parse over JSON::parse_string so plain strings (e.g. "JustAMCP")
-// do not ERR_PRINT via the global parse helper.
 static bool _justamcp_looks_like_json(const String &p_s) {
 	const String t = p_s.strip_edges();
 	if (t.is_empty()) {
