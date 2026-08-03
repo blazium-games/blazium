@@ -4,6 +4,7 @@
     <comment>Blazium Engine project</comment>
     <sub-class-of type="text/plain"/>
     <icon name="x-blazium-project"/>
+    <glob pattern="project.blazium"/>
     <glob pattern="project.godot"/>
   </mime-type>
 
@@ -22,7 +23,7 @@
     <glob pattern="*.escn"/>
   </mime-type>
 
-  <mime-type type="application/x-godot-shader">
+  <mime-type type="application/x-blazium-shader">
     <comment>Blazium Engine shader</comment>
     <sub-class-of type="text/plain"/>
     <icon name="x-blazium-shader"/>

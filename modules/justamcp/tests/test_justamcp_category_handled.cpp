@@ -137,6 +137,12 @@ void test_justamcp_crash_guards_bundle() {
 	CHECK(del_godot.has("ok"));
 	CHECK(!bool(del_godot.get("ok", true)));
 
+	Dictionary blazium_args;
+	blazium_args["path"] = "res://project.blazium";
+	Dictionary del_blazium = scene_tools.delete_scene_file(blazium_args);
+	CHECK(del_blazium.has("ok"));
+	CHECK(!bool(del_blazium.get("ok", true)));
+
 	JustAMCPToolExecutor executor;
 	Dictionary bad_script;
 	bad_script["path"] = "res://main.tscn";

@@ -149,7 +149,7 @@ Dictionary JustAMCPSceneTools::delete_scene_file(const Dictionary &p_args) {
 		return ret;
 	}
 	const String main_scene = ProjectSettings::get_singleton() ? String(ProjectSettings::get_singleton()->get_setting("application/run/main_scene", "")) : String();
-	if ((!main_scene.is_empty() && scene_path == main_scene) || scene_path == "res://project.godot" || scene_path.ends_with("/project.godot") || scene_path == "res://export_presets.cfg") {
+	if ((!main_scene.is_empty() && scene_path == main_scene) || ProjectSettings::is_project_settings_file(scene_path) || scene_path == "res://export_presets.cfg") {
 		Dictionary ret;
 		ret["ok"] = false;
 		ret["error"] = "Refusing to delete protected project path: " + scene_path;

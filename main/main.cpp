@@ -492,7 +492,7 @@ void Main::print_help(const char *p_binary) {
 	print_help_copyright("(c) 2024-present Blazium Engine contributors. (c) 2014-present Godot Engine contributors. (c) 2007-present Juan Linietsky, Ariel Manzur.");
 
 	print_help_title("Usage");
-	OS::get_singleton()->print("  %s \u001b[96m[options] [path to \"project.godot\" file]\u001b[0m\n", p_binary);
+	OS::get_singleton()->print("  %s \u001b[96m[options] [path to project settings file]\u001b[0m\n", p_binary);
 
 #if defined(TOOLS_ENABLED)
 	print_help_title("Option legend (this build = editor)");
@@ -532,9 +532,9 @@ void Main::print_help(const char *p_binary) {
 	print_help_option("--quit", "Quit after the first iteration.\n");
 	print_help_option("--quit-after <int>", "Quit after the given number of iterations. Set to 0 to disable.\n");
 	print_help_option("-l, --language <locale>", "Use a specific locale (<locale> being a two-letter code).\n");
-	print_help_option("--path <directory>", "Path to a project (<directory> must contain a \"project.godot\" file).\n");
+	print_help_option("--path <directory>", "Path to a project (<directory> must contain a \"project.blazium\" or \"project.godot\" file).\n");
 	print_help_option("--scene <path>", "Path or UID of a scene in the project that should be started.\n");
-	print_help_option("-u, --upwards", "Scan folders upwards for project.godot file.\n");
+	print_help_option("-u, --upwards", "Scan folders upwards for project.blazium or project.godot file.\n");
 	print_help_option("--main-pack <file>", "Path to a pack (.pck) file to load.\n");
 #ifdef DISABLE_DEPRECATED
 	print_help_option("--render-thread <mode>", "Render thread mode (\"safe\", \"separate\").\n");
@@ -1706,7 +1706,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 				OS::get_singleton()->print("Missing number of iterations, aborting.\n");
 				goto error;
 			}
-		} else if (arg.ends_with("project.godot")) {
+		} else if (ProjectSettings::is_project_settings_file(arg)) {
 			String path;
 			String file = arg;
 			int sep = MAX(file.rfind_char('/'), file.rfind_char('\\'));
