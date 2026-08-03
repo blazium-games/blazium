@@ -184,6 +184,10 @@
 		<member name="asset_library/use_threads" type="bool" setter="" getter="">
 			If [code]true[/code], the Asset Library uses multiple threads for its HTTP requests. This prevents the Asset Library from blocking the main thread for every loaded asset.
 		</member>
+		<member name="blazium/justamcp/bridge_url_allow_hosts" type="Array" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/mcp_clients" type="Array" setter="" getter="">
+		</member>
 		<member name="debugger/auto_switch_to_remote_scene_tree" type="bool" setter="" getter="">
 			If [code]true[/code], automatically switches to the [b]Remote[/b] scene tree when running the project from the editor. If [code]false[/code], stays on the [b]Local[/b] scene tree when running the project from the editor.
 			[b]Warning:[/b] Enabling this setting can cause stuttering when running a project with a large amount of nodes (typically a few thousands of nodes or more), even if the editor window isn't focused. This is due to the remote scene tree being updated every second regardless of whether the editor is focused.

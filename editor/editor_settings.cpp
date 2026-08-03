@@ -50,6 +50,7 @@
 #include "editor/editor_property_name_processor.h"
 #include "editor/editor_translation.h"
 #include "editor/engine_update_label.h"
+#include "modules/modules_enabled.gen.h" // For justamcp Array editor settings.
 #include "scene/gui/color_picker.h"
 #include "scene/main/node.h"
 #include "scene/main/scene_tree.h"
@@ -226,7 +227,12 @@ bool EditorSettings::_get(const StringName &p_name, Variant &r_ret) const {
 
 	const VariantContainer *v = props.getptr(p_name);
 	if (!v) {
-		WARN_PRINT("EditorSettings::_get - Property not found: " + String(p_name));
+		// Resource loaders probe Array properties with get() before set() while the
+		// settings file is still being applied (see resource_format_text.cpp). Module
+		// defaults may not be registered yet at that point; only warn after init.
+		if (initialized) {
+			WARN_PRINT("EditorSettings::_get - Property not found: " + String(p_name));
+		}
 		return false;
 	}
 	r_ret = v->variant;
@@ -1037,6 +1043,13 @@ void EditorSettings::_load_defaults(Ref<ConfigFile> p_extra_config) {
 	const String default_renderer = "forward_plus";
 #endif
 	EDITOR_SETTING_BASIC(Variant::STRING, PROPERTY_HINT_ENUM, "project_manager/default_renderer", default_renderer, "forward_plus,mobile,gl_compatibility")
+
+#ifdef MODULE_JUSTAMCP_ENABLED
+	// Array-typed JustAMCP settings must exist before editor_settings-*.tres is applied:
+	// resource_format_text probes Arrays with get() before set() and would otherwise miss them.
+	EDITOR_SETTING(Variant::ARRAY, PROPERTY_HINT_NONE, "blazium/justamcp/mcp_clients", Array(), "")
+	EDITOR_SETTING(Variant::ARRAY, PROPERTY_HINT_NONE, "blazium/justamcp/bridge_url_allow_hosts", Array(), "")
+#endif
 
 #undef EDITOR_SETTING
 #undef EDITOR_SETTING_BASIC
