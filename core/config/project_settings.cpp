@@ -743,9 +743,11 @@ Error ProjectSettings::_setup(const String &p_path, const String &p_main_pack, b
 		resource_path = current_dir;
 		resource_path = resource_path.replace("\\", "/"); // Windows path to Unix path just in case.
 		err = _load_project_settings(current_dir);
-		if (err == OK && !p_ignore_override) {
-			// Optional, we don't mind if it fails.
-			_load_settings_text(current_dir.path_join("override.cfg"));
+		if (err == OK) {
+			if (!p_ignore_override) {
+				// Optional, we don't mind if it fails.
+				_load_settings_text(current_dir.path_join("override.cfg"));
+			}
 			found = true;
 			break;
 		}

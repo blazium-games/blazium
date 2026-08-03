@@ -15,16 +15,16 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-AppComments=Godot Engine editor
+AppComments=Blazium Engine editor
 ChangesEnvironment=yes
-DefaultDirName={localappdata}\Godot
-DefaultGroupName=Godot Engine
+DefaultDirName={localappdata}\Blazium
+DefaultGroupName=Blazium Engine
 AllowNoIcons=yes
 UninstallDisplayIcon={app}\{#MyAppExeName}
 #ifdef App32Bit
-  OutputBaseFilename=godot-setup-x86
+  OutputBaseFilename=blazium-setup-x86
 #else
-  OutputBaseFilename=godot-setup-x86_64
+  OutputBaseFilename=blazium-setup-x86_64
   ArchitecturesAllowed=x64
   ArchitecturesInstallIn64BitMode=x64
 #endif
@@ -37,7 +37,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "modifypath"; Description: "Add Godot to PATH environment variable"
+Name: "modifypath"; Description: "Add Blazium to PATH environment variable"
 
 [Files]
 Source: "{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion

@@ -742,7 +742,7 @@ Error DisplayServerWindows::_file_dialog_with_options_show2(const String &p_titl
 
 	String appname;
 	if (Engine::get_singleton()->is_editor_hint()) {
-		appname = "Blazium.GodotEditor." + String(VERSION_BRANCH);
+		appname = "Blazium.Editor." + String(VERSION_BRANCH);
 	} else {
 		String name = GLOBAL_GET("application/config/name");
 		String version = GLOBAL_GET("application/config/version");
@@ -6382,7 +6382,7 @@ DisplayServer::WindowID DisplayServerWindows::_create_window(WindowMode p_mode, 
 			PROPVARIANT val;
 			String appname;
 			if (Engine::get_singleton()->is_editor_hint()) {
-				appname = "Blazium.GodotEditor." + String(EXTERNAL_VERSION_FULL_CONFIG);
+				appname = "Blazium.Editor." + String(EXTERNAL_VERSION_FULL_CONFIG);
 			} else {
 				String name = GLOBAL_GET("application/config/name");
 				String version = GLOBAL_GET("application/config/version");
@@ -6989,7 +6989,7 @@ DisplayServerWindows::DisplayServerWindows(const String &p_rendering_driver, Win
 #endif
 	String appname;
 	if (Engine::get_singleton()->is_editor_hint()) {
-		appname = "Blazium.GodotEditor." + String(EXTERNAL_VERSION_FULL_CONFIG);
+		appname = "Blazium.Editor." + String(EXTERNAL_VERSION_FULL_CONFIG);
 	} else {
 		String name = GLOBAL_GET("application/config/name");
 		String version = GLOBAL_GET("application/config/version");

@@ -33,9 +33,9 @@
         <meta-data
             android:name="app.blazium.editor.version"
             android:value="${godotEditorVersion}" />
-        <!-- Records the rendering method used by the Godot engine -->
+        <!-- Records the rendering method used by the Blazium engine -->
         <meta-data
-            android:name="org.godotengine.rendering.method"
+            android:name="app.blazium.rendering.method"
             android:value="${godotRenderingMethod}"/>
 
         <activity
