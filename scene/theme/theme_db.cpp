@@ -470,15 +470,11 @@ ThemeDB::~ThemeDB() {
 	// For technical reasons unit tests recreate and destroy the default
 	// theme over and over again. Make sure that finalize_theme() also
 	// frees any objects that can be recreated by initialize_theme*().
+	// Main::cleanup only deletes ThemeDB, so Blazium theme statics must be
+	// released here or ObjectDB reports hundreds of leaked StyleBox/Image refs.
 
-	_finalize_theme_contexts();
-
-	default_theme.unref();
+	finalize_theme();
 	project_theme.unref();
-
-	fallback_font.unref();
-	fallback_icon.unref();
-	fallback_stylebox.unref();
 
 	singleton = nullptr;
 }

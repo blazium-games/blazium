@@ -55,8 +55,16 @@ void JustAMCPResourceExecutor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_resource", "resource"), &JustAMCPResourceExecutor::add_resource);
 }
 
+static EditorFileSystem *_live_editor_filesystem() {
+	EditorFileSystem *efs = EditorFileSystem::get_singleton();
+	if (!efs || !efs->is_class("EditorFileSystem")) {
+		return nullptr;
+	}
+	return efs;
+}
+
 void JustAMCPResourceExecutor::register_settings() {
-	JustAMCPResourceExecutor exec;
+	JustAMCPResourceExecutor exec(false);
 
 	Dictionary resources_dict = exec.list_resources();
 	if (resources_dict.has("resources")) {
@@ -93,15 +101,17 @@ void JustAMCPResourceExecutor::register_settings() {
 	}
 }
 
-JustAMCPResourceExecutor::JustAMCPResourceExecutor() {
+JustAMCPResourceExecutor::JustAMCPResourceExecutor(bool p_watch_filesystem) {
 	add_resource(memnew(JustAMCPResourceProjectFile));
 	add_resource(memnew(JustAMCPResourceVideoRecordings));
 	add_resource(memnew(JustAMCPResourceAutoworkResults));
 
-	if (Thread::is_main_thread() && EditorFileSystem::get_singleton()) {
-		const Callable cb = callable_mp_static(&JustAMCPResourceExecutor::_on_filesystem_changed);
-		if (!EditorFileSystem::get_singleton()->is_connected("filesystem_changed", cb)) {
-			EditorFileSystem::get_singleton()->connect("filesystem_changed", cb);
+	if (p_watch_filesystem && Thread::is_main_thread()) {
+		if (EditorFileSystem *efs = _live_editor_filesystem()) {
+			const Callable cb = callable_mp_static(&JustAMCPResourceExecutor::_on_filesystem_changed);
+			if (!efs->is_connected("filesystem_changed", cb)) {
+				efs->connect("filesystem_changed", cb);
+			}
 		}
 	}
 }
@@ -117,10 +127,13 @@ void JustAMCPResourceExecutor::_on_filesystem_changed() {
 }
 
 JustAMCPResourceExecutor::~JustAMCPResourceExecutor() {
-	if (Thread::is_main_thread() && EditorFileSystem::get_singleton()) {
+	if (!Thread::is_main_thread()) {
+		return;
+	}
+	if (EditorFileSystem *efs = _live_editor_filesystem()) {
 		const Callable cb = callable_mp_static(&JustAMCPResourceExecutor::_on_filesystem_changed);
-		if (EditorFileSystem::get_singleton()->is_connected("filesystem_changed", cb)) {
-			EditorFileSystem::get_singleton()->disconnect("filesystem_changed", cb);
+		if (efs->has_signal("filesystem_changed") && efs->is_connected("filesystem_changed", cb)) {
+			efs->disconnect("filesystem_changed", cb);
 		}
 	}
 }

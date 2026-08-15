@@ -59,7 +59,7 @@ public:
 	Dictionary list_resource_templates(const String &cursor = "");
 	Dictionary read_resource(const String &p_uri);
 
-	JustAMCPResourceExecutor();
+	JustAMCPResourceExecutor(bool p_watch_filesystem = true);
 	~JustAMCPResourceExecutor();
 };
 

@@ -328,6 +328,8 @@ RID RenderSceneBuffersRD::_create_texture_from_format(const StringName &p_contex
 RID RenderSceneBuffersRD::create_texture_from_format(const StringName &p_context, const StringName &p_texture_name, const RD::TextureFormat &p_texture_format, RD::TextureView p_view, bool p_unique) {
 	// TODO p_unique, if p_unique is true, this is a texture that can be shared. This will be implemented later as an optimization.
 
+	ERR_FAIL_NULL_V(RD::get_singleton(), RID());
+
 	NTKey key(p_context, p_texture_name);
 
 	// check if this is a known texture
@@ -340,6 +342,10 @@ RID RenderSceneBuffersRD::create_texture_from_format(const StringName &p_context
 	named_texture.format = p_texture_format;
 	named_texture.is_unique = p_unique;
 	named_texture.texture = RD::get_singleton()->texture_create(p_texture_format, p_view);
+	if (named_texture.texture.is_null()) {
+		named_textures.erase(key);
+		return RID();
+	}
 
 	Array arr = { p_context, p_texture_name };
 	RD::get_singleton()->set_resource_name(named_texture.texture, String("RenderBuffer {0}/{1}").format(arr));
@@ -378,7 +384,12 @@ RID RenderSceneBuffersRD::create_texture_view(const StringName &p_context, const
 	view_texture.format = named_texture.format;
 	view_texture.is_unique = named_texture.is_unique;
 
+	ERR_FAIL_NULL_V(RD::get_singleton(), RID());
 	view_texture.texture = RD::get_singleton()->texture_create_shared(p_view, named_texture.texture);
+	if (view_texture.texture.is_null()) {
+		named_textures.erase(view_key);
+		return RID();
+	}
 
 	Array arr = { p_context, p_view_name };
 	RD::get_singleton()->set_resource_name(view_texture.texture, String("RenderBuffer View {0}/{1}").format(arr));

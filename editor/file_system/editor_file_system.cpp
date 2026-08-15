@@ -3825,6 +3825,9 @@ EditorFileSystem::EditorFileSystem() {
 }
 
 EditorFileSystem::~EditorFileSystem() {
+	if (singleton == this) {
+		singleton = nullptr;
+	}
 	if (filesystem) {
 		memdelete(filesystem);
 	}
