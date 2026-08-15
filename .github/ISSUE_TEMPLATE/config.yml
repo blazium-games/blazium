@@ -1,14 +1,10 @@
-blank_issues_enabled: false
+blank_issues_enabled: true
 
 contact_links:
-  - name: Godot proposals
-    url: https://github.com/godotengine/godot-proposals
-    about: Please submit feature proposals on the Godot proposals repository, not here.
+  - name: Blazium documentation repository
+    url: https://github.com/blazium-games/blazium-docs
+    about: Please report issues with documentation on the Blazium documentation repository, not here.
 
-  - name: Godot documentation repository
-    url: https://github.com/godotengine/godot-docs
-    about: Please report issues with documentation on the Godot documentation repository, not here.
-
-  - name: Godot community channels
-    url: https://godotengine.org/community
-    about: Please ask for technical support on one of the other community channels, not here.
+  - name: Blazium community
+    url: https://chat.blazium.app
+    about: Please ask for technical support on the Blazium Discord server, not here.

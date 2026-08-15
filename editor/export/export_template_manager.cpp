@@ -1590,7 +1590,7 @@ ExportTemplateManager::ExportTemplateManager() {
 	tpz_selection_dialog->set_access(FileDialog::ACCESS_FILESYSTEM);
 	tpz_selection_dialog->set_file_mode(FileDialog::FILE_MODE_OPEN_FILE);
 	tpz_selection_dialog->set_current_dir(EDITOR_DEF("_export_template_download_directory", ""));
-	tpz_selection_dialog->add_filter("*.tpz", TTRC("Godot Export Templates"));
+	tpz_selection_dialog->add_filter("*.tpz", TTRC("Blazium Export Templates"));
 	tpz_selection_dialog->connect("file_selected", callable_mp(this, &ExportTemplateManager::_tpz_file_selected));
 	add_child(tpz_selection_dialog);
 

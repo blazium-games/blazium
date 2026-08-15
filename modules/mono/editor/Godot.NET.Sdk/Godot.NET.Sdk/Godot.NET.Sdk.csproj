@@ -14,16 +14,16 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Description>MSBuild .NET Sdk for Godot projects.</Description>
-    <Authors>Godot Engine contributors</Authors>
+    <Description>MSBuild .NET Sdk for Blazium projects.</Description>
+    <Authors>Godot Engine contributors;Blazium Engine contributors</Authors>
 
-    <PackageId>Godot.NET.Sdk</PackageId>
+    <PackageId>Blazium.NET.Sdk</PackageId>
     <Version>4.7.1</Version>
     <PackageVersion>$(PackageVersion_Godot_NET_Sdk)</PackageVersion>
-    <RepositoryUrl>https://github.com/godotengine/godot/tree/master/modules/mono/editor/Godot.NET.Sdk</RepositoryUrl>
+    <RepositoryUrl>https://github.com/blazium-games/blazium/tree/master/modules/mono/editor/Godot.NET.Sdk</RepositoryUrl>
     <PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Copyright>Copyright (c) Godot Engine contributors</Copyright>
+    <Copyright>Copyright (c) Godot Engine contributors and Blazium Engine contributors</Copyright>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 

@@ -1,9 +1,9 @@
 name: Build godot-cpp
-description: Build godot-cpp with the provided options.
+description: Build godot-cpp or blazium-cpp with the provided options.
 
 inputs:
   bin:
-    description: Path to the Godot binary.
+    description: Path to the Godot/Blazium binary.
     required: true
     type: string
   scons-flags:
@@ -14,8 +14,16 @@ inputs:
     default: ${{ github.workspace }}/.scons_cache/
     type: string
   godot-cpp-branch:
-    description: The godot-cpp branch.
+    description: The C++ bindings branch.
     default: master
+    type: string
+  repository:
+    description: The C++ bindings repository.
+    default: godotengine/godot-cpp
+    type: string
+  checkout-path:
+    description: Directory to check the C++ bindings out into.
+    default: godot-cpp
     type: string
 
 runs:
@@ -25,9 +33,9 @@ runs:
       uses: actions/checkout@v6
       with:
         submodules: recursive
-        repository: godotengine/godot-cpp
+        repository: ${{ inputs.repository }}
         ref: ${{ inputs.godot-cpp-branch }}
-        path: godot-cpp
+        path: ${{ inputs.checkout-path }}
 
     - name: Extract API
       shell: sh
@@ -37,4 +45,4 @@ runs:
       shell: sh
       env:
         SCONS_CACHE: ${{ inputs.scons-cache }}
-      run: scons --directory=./godot-cpp/test "gdextension_dir=${{ github.workspace }}" ${{ inputs.scons-flags }}
+      run: scons --directory=./${{ inputs.checkout-path }}/test "gdextension_dir=${{ github.workspace }}" ${{ inputs.scons-flags }}

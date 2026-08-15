@@ -8,6 +8,7 @@ env:
   SCONS_FLAGS: >-
     dev_mode=yes
     module_text_server_fb_enabled=yes
+  BLAZIUM_BASE_BRANCH: blazium_4.7
 
 jobs:
   build-macos:

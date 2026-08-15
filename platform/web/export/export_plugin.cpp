@@ -34,6 +34,7 @@
 #include "run_icon_svg.gen.h"
 
 #include "core/config/project_settings.h"
+#include "core/io/compression.h"
 #include "core/io/dir_access.h"
 #include "core/io/zip_io.h"
 #include "core/os/os.h"
@@ -48,7 +49,7 @@
 #include "modules/modules_enabled.gen.h" // IWYU pragma: keep. For mono.
 #include "modules/svg/image_loader_svg.h"
 
-Error EditorExportPlatformWeb::_extract_template(const String &p_template, const String &p_dir, const String &p_name, bool pwa) {
+Error EditorExportPlatformWeb::_extract_template(const String &p_template, const String &p_dir, const String &p_name, bool pwa, bool p_compress_base_wasm, bool p_keep_uncompressed_wasm) {
 	Ref<FileAccess> io_fa;
 	zlib_filefunc_def io = zipio_create_io(&io_fa);
 	unzFile pkg = unzOpen2(p_template.utf8().get_data(), &io);
@@ -91,26 +92,43 @@ Error EditorExportPlatformWeb::_extract_template(const String &p_template, const
 
 		//write
 		String dst = p_dir.path_join(file.replace("blazium", p_name));
-		Ref<FileAccess> f = FileAccess::open(dst, FileAccess::WRITE);
-		if (f.is_null()) {
-			add_message(EXPORT_MESSAGE_ERROR, TTR("Prepare Templates"), vformat(TTR("Could not write file: \"%s\"."), dst));
-			unzClose(pkg);
-			return ERR_FILE_CANT_WRITE;
+		Error err;
+		if (dst.ends_with(".wasm") && p_compress_base_wasm) {
+			err = _write_or_error(data.ptr(), data.size(), dst + ".gz", "Prepare Templates", true);
+			if (err == OK && p_keep_uncompressed_wasm) {
+				err = _write_or_error(data.ptr(), data.size(), dst, "Prepare Templates", false);
+			}
+		} else {
+			err = _write_or_error(data.ptr(), data.size(), dst, "Prepare Templates", false);
 		}
-		f->store_buffer(data.ptr(), data.size());
+		if (err != OK) {
+			unzClose(pkg);
+			return err;
+		}
 
 	} while (unzGoToNextFile(pkg) == UNZ_OK);
 	unzClose(pkg);
 	return OK;
 }
 
-Error EditorExportPlatformWeb::_write_or_error(const uint8_t *p_content, int p_size, String p_path) {
+Error EditorExportPlatformWeb::_write_or_error(const uint8_t *p_content, int p_size, String p_path, String p_stage, bool p_compress) {
 	Ref<FileAccess> f = FileAccess::open(p_path, FileAccess::WRITE);
 	if (f.is_null()) {
-		add_message(EXPORT_MESSAGE_ERROR, TTR("Export"), vformat(TTR("Could not write file: \"%s\"."), p_path));
+		add_message(EXPORT_MESSAGE_ERROR, TTR(p_stage), vformat(TTR("Could not write file: \"%s\"."), p_path));
 		return ERR_FILE_CANT_WRITE;
 	}
-	f->store_buffer(p_content, p_size);
+	if (p_compress) {
+		PackedByteArray compressed_data;
+		compressed_data.resize(Compression::get_max_compressed_buffer_size(p_size, Compression::MODE_GZIP));
+		int compressed_size = Compression::compress(compressed_data.ptrw(), p_content, p_size, Compression::MODE_GZIP);
+		if (compressed_size < 0) {
+			add_message(EXPORT_MESSAGE_ERROR, TTR(p_stage), vformat(TTR("Could not compress file: \"%s\"."), p_path));
+			return ERR_FILE_CANT_WRITE;
+		}
+		f->store_buffer(compressed_data.ptr(), compressed_size);
+	} else {
+		f->store_buffer(p_content, p_size);
+	}
 	return OK;
 }
 
@@ -166,10 +184,65 @@ void EditorExportPlatformWeb::_fix_html(Vector<uint8_t> &p_html, const Ref<Edito
 		config["serviceWorker"] = p_name + ".service.worker.js";
 	}
 
+	String blazium_third_party;
+	const bool youtube_playable = p_preset->get("blazium/youtube_playable/enabled");
+	const bool discord_embed = p_preset->get("blazium/discord_embed/enabled");
+	if (youtube_playable || discord_embed) {
+		if (youtube_playable) {
+			blazium_third_party += R"(<script src="https://www.youtube.com/game_api/v1"></script>)";
+		}
+		blazium_third_party += R"(<script src=")" + p_name + ".third.party.js" + R"("></script>)";
+	}
+
+	String blazium_header_embeds;
+	if (p_preset->get("blazium/web_headers/enabled")) {
+		if (p_preset->has("blazium/web_headers/title")) {
+			blazium_header_embeds += "<meta property=\"og:title\" content=\"" + String(p_preset->get("blazium/web_headers/title")) + "\"/>\n";
+		}
+		if (p_preset->has("blazium/web_headers/description")) {
+			blazium_header_embeds += "<meta property=\"og:description\" content=\"" + String(p_preset->get("blazium/web_headers/description")) + "\"/>\n";
+		}
+		if (p_preset->has("blazium/web_headers/url")) {
+			blazium_header_embeds += "<meta property=\"og:url\" content=\"" + String(p_preset->get("blazium/web_headers/url")) + "\"/>\n";
+		}
+		if (p_preset->has("blazium/web_headers/image")) {
+			blazium_header_embeds += "<meta property=\"og:image\" content=\"" + String(p_preset->get("blazium/web_headers/image")) + "\"/>\n";
+		}
+		if (p_preset->has("blazium/web_headers/type")) {
+			blazium_header_embeds += "<meta property=\"og:type\" content=\"" + String(p_preset->get("blazium/web_headers/type")) + "\"/>\n";
+		}
+		if (p_preset->has("blazium/web_headers/site_name")) {
+			blazium_header_embeds += "<meta property=\"og:site_name\" content=\"" + String(p_preset->get("blazium/web_headers/site_name")) + "\"/>\n";
+		}
+	}
+	if (p_preset->get("blazium/social_headers/enabled")) {
+		if (p_preset->has("blazium/social_headers/title")) {
+			blazium_header_embeds += "<meta property=\"twitter:title\" content=\"" + String(p_preset->get("blazium/social_headers/title")) + "\"/>\n";
+		}
+		if (p_preset->has("blazium/social_headers/description")) {
+			blazium_header_embeds += "<meta property=\"twitter:description\" content=\"" + String(p_preset->get("blazium/social_headers/description")) + "\"/>\n";
+		}
+		if (p_preset->has("blazium/social_headers/url")) {
+			blazium_header_embeds += "<meta property=\"twitter:url\" content=\"" + String(p_preset->get("blazium/social_headers/url")) + "\"/>\n";
+		}
+		if (p_preset->has("blazium/social_headers/image")) {
+			blazium_header_embeds += "<meta property=\"twitter:image\" content=\"" + String(p_preset->get("blazium/social_headers/image")) + "\"/>\n";
+		}
+		if (p_preset->has("blazium/social_headers/site")) {
+			blazium_header_embeds += "<meta property=\"twitter:site\" content=\"" + String(p_preset->get("blazium/social_headers/site")) + "\"/>\n";
+		}
+		if (p_preset->has("blazium/social_headers/card")) {
+			blazium_header_embeds += "<meta property=\"twitter:card\" content=\"" + String(p_preset->get("blazium/social_headers/card")) + "\"/>\n";
+		}
+	}
+
 	// Replaces HTML string
 	const String str_config = Variant(config).to_json_string();
 	const String custom_head_include = p_preset->get("html/head_include");
 	HashMap<String, String> replaces;
+	replaces["$BLAZIUM_THIRD_PARTY"] = blazium_third_party;
+	replaces["$BLAZIUM_HEADER_EMBEDS"] = blazium_header_embeds;
+	replaces["$BLAZIUM_ENGINE_STARTER"] = p_name + ".engine.starter.js";
 	replaces["$GODOT_URL"] = p_name + ".js";
 	replaces["$GODOT_PROJECT_NAME"] = get_project_setting(p_preset, "application/config/name");
 	replaces["$GODOT_HEAD_INCLUDE"] = head_include + custom_head_include;
@@ -191,6 +264,99 @@ void EditorExportPlatformWeb::_fix_html(Vector<uint8_t> &p_html, const Ref<Edito
 	}
 
 	_replace_strings(replaces, p_html);
+}
+
+Error EditorExportPlatformWeb::_build_js_files(const Ref<EditorExportPreset> &p_preset, const String &p_path, BitField<EditorExportPlatform::DebugFlags> p_flags, const Vector<SharedObject> p_shared_objects, const Dictionary &p_file_sizes) {
+	Vector<uint8_t> third_party_js;
+	const String dir = p_path.get_base_dir();
+	const String name = p_path.get_file().get_basename();
+
+	String discord_embed_path = dir.path_join(name + ".discord.embed.js");
+	const bool discord_embed = p_preset->get("blazium/discord_embed/enabled");
+	if (discord_embed) {
+		Vector<uint8_t> discord_embed_js;
+		Ref<FileAccess> f = FileAccess::open(discord_embed_path, FileAccess::READ);
+		if (f.is_null()) {
+			add_message(EXPORT_MESSAGE_ERROR, TTR("BUILD_JS_FILES"), vformat(TTR("Could not read file: \"%s\"."), discord_embed_path));
+			return ERR_FILE_CANT_READ;
+		}
+		discord_embed_js.resize(f->get_length());
+		f->get_buffer(discord_embed_js.ptrw(), discord_embed_js.size());
+
+		HashMap<String, String> replaces;
+		replaces["$BLAZIUM_DISCORD_AUTODETECT"] = p_preset->get("blazium/discord_embed/autodetect") ? "true" : "false";
+		_replace_strings(replaces, discord_embed_js);
+		third_party_js.append_array(discord_embed_js);
+	}
+	DirAccess::remove_file_or_error(discord_embed_path);
+
+	String youtube_playables_path = dir.path_join(name + ".youtube.playables.js");
+	const bool youtube_playable = p_preset->get("blazium/youtube_playable/enabled");
+	if (youtube_playable) {
+		Vector<uint8_t> youtube_playables_js;
+		Ref<FileAccess> f = FileAccess::open(youtube_playables_path, FileAccess::READ);
+		if (f.is_null()) {
+			add_message(EXPORT_MESSAGE_ERROR, TTR("BUILD_JS_FILES"), vformat(TTR("Could not read file: \"%s\"."), youtube_playables_path));
+			return ERR_FILE_CANT_READ;
+		}
+		youtube_playables_js.resize(f->get_length());
+		f->get_buffer(youtube_playables_js.ptrw(), youtube_playables_js.size());
+		third_party_js.append_array(youtube_playables_js);
+	}
+	DirAccess::remove_file_or_error(youtube_playables_path);
+
+	if (youtube_playable || discord_embed) {
+		Error err = _write_or_error(third_party_js.ptr(), third_party_js.size(), dir.path_join(name + ".third.party.js"), "Export", false);
+		if (err != OK) {
+			return err;
+		}
+	}
+
+	String engine_starter_path = dir.path_join(name + ".engine.starter.js");
+	Vector<uint8_t> engine_starter_js;
+	{
+		Ref<FileAccess> f = FileAccess::open(engine_starter_path, FileAccess::READ);
+		if (f.is_null()) {
+			add_message(EXPORT_MESSAGE_ERROR, TTR("BUILD_JS_FILES"), vformat(TTR("Could not read file: \"%s\"."), engine_starter_path));
+			return ERR_FILE_CANT_READ;
+		}
+		engine_starter_js.resize(f->get_length());
+		f->get_buffer(engine_starter_js.ptrw(), engine_starter_js.size());
+	}
+
+	Dictionary engine_config;
+	engine_config["canvasResizePolicy"] = p_preset->get("html/canvas_resize_policy");
+	engine_config["experimentalVK"] = p_preset->get("html/experimental_virtual_keyboard");
+	engine_config["focusCanvas"] = p_preset->get("html/focus_canvas_on_start");
+	engine_config["executable"] = name;
+	engine_config["fileSizes"] = p_file_sizes;
+	engine_config["ensureCrossOriginIsolationHeaders"] = (bool)p_preset->get("progressive_web_app/ensure_cross_origin_isolation_headers");
+	engine_config["godotPoolSize"] = p_preset->get("threads/godot_pool_size");
+	engine_config["emscriptenPoolSize"] = p_preset->get("threads/emscripten_pool_size");
+
+	Array libs;
+	for (int i = 0; i < p_shared_objects.size(); i++) {
+		libs.push_back(p_shared_objects[i].path.get_file());
+	}
+	engine_config["gdextensionLibs"] = libs;
+
+	Array args;
+	Vector<String> flags = gen_export_flags(p_flags & (~DEBUG_FLAG_DUMB_CLIENT));
+	for (int i = 0; i < flags.size(); i++) {
+		args.push_back(flags[i]);
+	}
+	engine_config["args"] = args;
+
+	if (p_preset->get("progressive_web_app/enabled")) {
+		engine_config["serviceWorker"] = name + ".service.worker.js";
+	}
+
+	HashMap<String, String> replaces;
+	replaces["$GODOT_CONFIG"] = Variant(engine_config).to_json_string();
+	replaces["$GODOT_THREADS_ENABLED"] = p_preset->get("variant/thread_support") ? "true" : "false";
+	_replace_strings(replaces, engine_starter_js);
+
+	return _write_or_error(engine_starter_js.ptr(), engine_starter_js.size(), engine_starter_path, "Export", false);
 }
 
 Error EditorExportPlatformWeb::_add_manifest_icon(const Ref<EditorExportPreset> &p_preset, const String &p_path, const String &p_icon, int p_size, Array &r_arr) {
@@ -229,7 +395,7 @@ Error EditorExportPlatformWeb::_add_manifest_icon(const Ref<EditorExportPreset> 
 Error EditorExportPlatformWeb::_build_pwa(const Ref<EditorExportPreset> &p_preset, const String p_path, const Vector<SharedObject> &p_shared_objects) {
 	String proj_name = get_project_setting(p_preset, "application/config/name");
 	if (proj_name.is_empty()) {
-		proj_name = "Godot Game";
+		proj_name = "Blazium Game";
 	}
 
 	// Service worker
@@ -394,6 +560,30 @@ void EditorExportPlatformWeb::get_export_options(List<ExportOption> *r_options) 
 
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "threads/emscripten_pool_size"), 8));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "threads/godot_pool_size"), 4));
+
+	r_options->push_back(ExportOption(PropertyInfo(Variant::BOOL, "blazium/web_headers/enabled"), false, true));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "blazium/web_headers/title", PROPERTY_HINT_PLACEHOLDER_TEXT, "Web Title"), ""));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "blazium/web_headers/description", PROPERTY_HINT_PLACEHOLDER_TEXT, "Web Description"), ""));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "blazium/web_headers/url", PROPERTY_HINT_PLACEHOLDER_TEXT, "Web URL"), ""));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "blazium/web_headers/image", PROPERTY_HINT_PLACEHOLDER_TEXT, "Image URL"), ""));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "blazium/web_headers/type", PROPERTY_HINT_PLACEHOLDER_TEXT, "Web Type"), "website"));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "blazium/web_headers/site_name", PROPERTY_HINT_PLACEHOLDER_TEXT, "Site Name"), ""));
+
+	r_options->push_back(ExportOption(PropertyInfo(Variant::BOOL, "blazium/social_headers/enabled"), false, true));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "blazium/social_headers/title", PROPERTY_HINT_PLACEHOLDER_TEXT, "Social Title"), ""));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "blazium/social_headers/description", PROPERTY_HINT_PLACEHOLDER_TEXT, "Social Description"), ""));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "blazium/social_headers/url", PROPERTY_HINT_PLACEHOLDER_TEXT, "Social URL"), ""));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "blazium/social_headers/image", PROPERTY_HINT_PLACEHOLDER_TEXT, "Social Image URL"), ""));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "blazium/social_headers/site", PROPERTY_HINT_PLACEHOLDER_TEXT, "Social Site"), ""));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "blazium/social_headers/card", PROPERTY_HINT_PLACEHOLDER_TEXT, "Site Card"), ""));
+
+	r_options->push_back(ExportOption(PropertyInfo(Variant::BOOL, "blazium/discord_embed/enabled"), false, true));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::BOOL, "blazium/discord_embed/autodetect"), false));
+
+	r_options->push_back(ExportOption(PropertyInfo(Variant::BOOL, "blazium/youtube_playable/enabled"), false));
+
+	r_options->push_back(ExportOption(PropertyInfo(Variant::BOOL, "blazium/export_gzip_compressed_wasm/enabled"), false, true));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::BOOL, "blazium/export_gzip_compressed_wasm/keep_uncompressed_wasm"), false));
 }
 
 bool EditorExportPlatformWeb::get_export_option_visibility(const EditorExportPreset *p_preset, const String &p_option) const {
@@ -404,6 +594,18 @@ bool EditorExportPlatformWeb::get_export_option_visibility(const EditorExportPre
 
 	if (p_option == "threads/godot_pool_size" || p_option == "threads/emscripten_pool_size") {
 		return p_preset->get("variant/thread_support").operator bool();
+	}
+	if (p_option.begins_with("blazium/web_headers") && p_option != "blazium/web_headers/enabled") {
+		return p_preset->get("blazium/web_headers/enabled");
+	}
+	if (p_option.begins_with("blazium/social_headers") && p_option != "blazium/social_headers/enabled") {
+		return p_preset->get("blazium/social_headers/enabled");
+	}
+	if (p_option.begins_with("blazium/discord_embed") && p_option != "blazium/discord_embed/enabled") {
+		return p_preset->get("blazium/discord_embed/enabled");
+	}
+	if (p_option.begins_with("blazium/export_gzip_compressed_wasm") && p_option != "blazium/export_gzip_compressed_wasm/enabled") {
+		return p_preset->get("blazium/export_gzip_compressed_wasm/enabled");
 	}
 
 	return true;
@@ -424,7 +626,7 @@ Ref<Texture2D> EditorExportPlatformWeb::get_logo() const {
 bool EditorExportPlatformWeb::has_valid_export_configuration(const Ref<EditorExportPreset> &p_preset, String &r_error, bool &r_missing_templates, bool p_debug) const {
 #ifdef MODULE_MONO_ENABLED
 	// Don't check for additional errors, as this particular error cannot be resolved.
-	r_error += TTR("Exporting to Web is currently not supported in Godot 4 when using C#/.NET. Use Godot 3 to target Web with C#/Mono instead.") + "\n";
+	r_error += TTR("Exporting to Web is currently not supported in Blazium when using C#/.NET. Use Godot 3 to target Web with C#/Mono instead.") + "\n";
 	r_error += TTR("If this project does not use C#, use a non-C# editor build to export the project.") + "\n";
 	return false;
 #else
@@ -541,7 +743,12 @@ Error EditorExportPlatformWeb::export_project(const Ref<EditorExportPreset> &p_p
 	}
 
 	// Extract templates.
-	error = _extract_template(template_path, base_dir, base_name, pwa);
+	const bool compress_base_wasm = p_preset->get("blazium/export_gzip_compressed_wasm/enabled");
+	bool keep_uncompressed_wasm = false;
+	if (p_preset->has("blazium/export_gzip_compressed_wasm/keep_uncompressed_wasm")) {
+		keep_uncompressed_wasm = p_preset->get("blazium/export_gzip_compressed_wasm/keep_uncompressed_wasm");
+	}
+	error = _extract_template(template_path, base_dir, base_name, pwa, compress_base_wasm, keep_uncompressed_wasm);
 	if (error) {
 		// Message is supplied by the subroutine method.
 		return error;
@@ -553,7 +760,11 @@ Error EditorExportPlatformWeb::export_project(const Ref<EditorExportPreset> &p_p
 	if (f.is_valid()) {
 		file_sizes[pck_path.get_file()] = (uint64_t)f->get_length();
 	}
-	f = FileAccess::open(base_path + ".wasm", FileAccess::READ);
+	String wasm_path = base_path + ".wasm";
+	if (compress_base_wasm && !keep_uncompressed_wasm) {
+		wasm_path += ".gz";
+	}
+	f = FileAccess::open(wasm_path, FileAccess::READ);
 	if (f.is_valid()) {
 		file_sizes[base_name + ".wasm"] = (uint64_t)f->get_length();
 	}
@@ -578,6 +789,11 @@ Error EditorExportPlatformWeb::export_project(const Ref<EditorExportPreset> &p_p
 		return err;
 	}
 	html.resize(0);
+
+	err = _build_js_files(p_preset, p_path, p_flags, shared_objects, file_sizes);
+	if (err != OK) {
+		return err;
+	}
 
 	// Export splash (why?)
 	Ref<Image> splash = _get_project_splash(p_preset);
@@ -875,6 +1091,10 @@ Error EditorExportPlatformWeb::_export_project(const Ref<EditorExportPreset> &p_
 		DirAccess::remove_file_or_error(basepath + ".wasm");
 		DirAccess::remove_file_or_error(basepath + ".icon.png");
 		DirAccess::remove_file_or_error(basepath + ".apple-touch-icon.png");
+		DirAccess::remove_file_or_error(basepath + ".engine.starter.js");
+		DirAccess::remove_file_or_error(basepath + ".discord.embed.js");
+		DirAccess::remove_file_or_error(basepath + ".youtube.playables.js");
+		DirAccess::remove_file_or_error(basepath + ".third.party.js");
 	}
 	return err;
 }

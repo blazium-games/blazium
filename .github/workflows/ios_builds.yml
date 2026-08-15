@@ -9,6 +9,7 @@ env:
     dev_mode=yes
     module_text_server_fb_enabled=yes
     debug_symbols=no
+  BLAZIUM_BASE_BRANCH: blazium_4.7
 
 jobs:
   ios-template:

@@ -116,6 +116,12 @@ def create_template_zip(env, js, wasm, side):
         out_files.append(zip_dir.File(binary_name + ".service.worker.js"))
         in_files.append("#misc/dist/html/offline-export.html")
         out_files.append(zip_dir.File("blazium.offline.html"))
+        in_files.append("#misc/dist/html/engine-starter.js")
+        out_files.append(zip_dir.File(binary_name + ".engine.starter.js"))
+        in_files.append("#misc/dist/html/third_party_services/discord-embed.js")
+        out_files.append(zip_dir.File(binary_name + ".discord.embed.js"))
+        in_files.append("#misc/dist/html/third_party_services/youtube-playables.js")
+        out_files.append(zip_dir.File(binary_name + ".youtube.playables.js"))
 
     zip_files = env.NoCache(env.InstallAs(out_files, in_files))
     env.NoCache(

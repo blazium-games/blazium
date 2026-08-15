@@ -19,4 +19,4 @@ runs:
       uses: actions/cache/save@v5
       with:
         path: ${{ inputs.scons-cache }}
-        key: ${{ inputs.cache-name }}|${{ github.ref_name }}|${{ github.sha }}
+        key: ${{ inputs.cache-name }}|${{ env.BLAZIUM_BASE_BRANCH }}|${{ github.ref_name }}|${{ github.sha }}

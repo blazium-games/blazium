@@ -13,6 +13,7 @@ env:
     dev_mode=yes
     module_text_server_fb_enabled=yes
     swappy=yes
+  BLAZIUM_BASE_BRANCH: blazium_4.7
 
 jobs:
   build-android:

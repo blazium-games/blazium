@@ -10,6 +10,7 @@ env:
     debug_symbols=no
     use_closure_compiler=yes
   EM_VERSION: 4.0.11
+  BLAZIUM_BASE_BRANCH: blazium_4.7
 
 jobs:
   web-template:

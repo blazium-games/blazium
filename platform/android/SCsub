@@ -6,7 +6,7 @@ import sys
 
 import platform_android_builders
 
-from methods import print_warning
+from methods import get_version_info, print_warning
 
 Import("env")
 
@@ -98,6 +98,14 @@ if lib_arch_dir != "" and host_subpath != "":
     jni_libs_dir = "#platform/android/java/lib/libs/" + lib_tools_dir + lib_type_dir + "/"
     out_dir = jni_libs_dir + lib_arch_dir
     env_android.CommandNoCache(out_dir + "/libgodot_android.so", lib, Move("$TARGET", "$SOURCE"))
+
+    icon_channel = get_version_info("", True).get("external_status", "dev")
+    for mipmap_dir_name in ["mipmap", "mipmap-hdpi", "mipmap-mdpi", "mipmap-xhdpi", "mipmap-xxhdpi", "mipmap-xxxhdpi"]:
+        env_android.CommandNoCache(
+            "#platform/android/java/lib/src/main/res/" + mipmap_dir_name,
+            "#platform/android/icons/" + icon_channel + "/" + mipmap_dir_name,
+            Copy("$TARGET", "$SOURCE"),
+        )
 
     stl_lib_path = f"{env['ANDROID_NDK_ROOT']}/toolchains/llvm/prebuilt/{host_subpath}/sysroot/usr/lib/{triple_target_dir}/libc++_shared.so"
     env_android.CommandNoCache(out_dir + "/libc++_shared.so", stl_lib_path, Copy("$TARGET", "$SOURCE"))

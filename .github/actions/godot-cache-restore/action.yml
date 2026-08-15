@@ -16,8 +16,8 @@ runs:
       id: cache-ping
       with:
         path: ${{ inputs.scons-cache }}
-        key: ${{ inputs.cache-name }}|${{ github.event.repository.default_branch }}|${{ github.sha }}
-        restore-keys: ${{ inputs.cache-name }}|${{ github.event.repository.default_branch }}
+        key: ${{ inputs.cache-name }}|${{ env.BLAZIUM_BASE_BRANCH }}|${{ github.event.repository.default_branch }}|${{ github.sha }}
+        restore-keys: ${{ inputs.cache-name }}|${{ env.BLAZIUM_BASE_BRANCH }}|${{ github.event.repository.default_branch }}
 
     - name: Log default cache files
       if: steps.cache-ping.outputs.cache-matched-key && github.ref_name != github.event.repository.default_branch
@@ -31,8 +31,8 @@ runs:
       if: github.ref_name != github.event.repository.default_branch
       with:
         path: ${{ inputs.scons-cache }}
-        key: ${{ inputs.cache-name }}|${{ github.ref_name }}|${{ github.sha }}
-        restore-keys: ${{ inputs.cache-name }}|${{ github.ref_name }}
+        key: ${{ inputs.cache-name }}|${{ env.BLAZIUM_BASE_BRANCH }}|${{ github.ref_name }}|${{ github.sha }}
+        restore-keys: ${{ inputs.cache-name }}|${{ env.BLAZIUM_BASE_BRANCH }}|${{ github.ref_name }}
 
     - name: Store unix timestamp
       shell: sh

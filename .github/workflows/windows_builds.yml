@@ -12,6 +12,7 @@ env:
     module_xbox_module_enabled=no
   SCONS_CACHE_MSVC_CONFIG: true
   PYTHONIOENCODING: utf8
+  BLAZIUM_BASE_BRANCH: blazium_4.7
 
 jobs:
   build-windows:

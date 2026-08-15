@@ -5,13 +5,72 @@
 	</brief_description>
 	<description>
 		The Web exporter customizes how a web build is handled. In the editor's "Export" window, it is created when adding a new "Web" preset.
-		[b]Note:[/b] Godot on Web is rendered inside a [code]&lt;canvas&gt;[/code] tag. Normally, the canvas cannot be positioned or resized manually, but otherwise acts as the main [Window] of the application.
+		[b]Note:[/b] Blazium on Web is rendered inside a [code]&lt;canvas&gt;[/code] tag. Normally, the canvas cannot be positioned or resized manually, but otherwise acts as the main [Window] of the application.
 	</description>
 	<tutorials>
 		<link title="Exporting for the Web">$DOCS_URL/tutorials/export/exporting_for_web.html</link>
 		<link title="Web documentation index">$DOCS_URL/tutorials/platform/web/index.html</link>
 	</tutorials>
 	<members>
+		<member name="blazium/discord_embed/autodetect" type="bool" setter="" getter="">
+			Autodetect and patch the url to work with discord if running on discord domain.
+		</member>
+		<member name="blazium/discord_embed/enabled" type="bool" setter="" getter="">
+			Enable if you want to use discord embedded app feature.
+		</member>
+		<member name="blazium/export_gzip_compressed_wasm/enabled" type="bool" setter="" getter="">
+			Enable if you want to export the WASM file as a GZIP. Recommended when exporting for Youtube Playables.
+			[b]Note:[/b] Your web server will have to serve the [code]index.wasm.gz[/code] file when the client request for [code]index.wasm[/code].
+		</member>
+		<member name="blazium/export_gzip_compressed_wasm/keep_uncompressed_wasm" type="bool" setter="" getter="">
+			Enable if you want to keep the uncompressed base WASM file.
+			[b]Note:[/b] If you plan to serve either the compressed or uncompressed WASM file, the game loading progress bar may not accurately reflect actual loading times.
+		</member>
+		<member name="blazium/social_headers/card" type="String" setter="" getter="">
+			The card meta property of the web page.
+		</member>
+		<member name="blazium/social_headers/description" type="String" setter="" getter="">
+			The description meta property of the web page.
+		</member>
+		<member name="blazium/social_headers/enabled" type="bool" setter="" getter="">
+			Enable if you want to use social headers.
+		</member>
+		<member name="blazium/social_headers/image" type="String" setter="" getter="">
+			The image meta property of the web page.
+		</member>
+		<member name="blazium/social_headers/site" type="String" setter="" getter="">
+			The site meta property of the web page.
+		</member>
+		<member name="blazium/social_headers/title" type="String" setter="" getter="">
+			The title meta property of the web page.
+		</member>
+		<member name="blazium/social_headers/url" type="String" setter="" getter="">
+			The url meta property of the web page.
+		</member>
+		<member name="blazium/web_headers/description" type="String" setter="" getter="">
+			The description open graph property of the web page.
+		</member>
+		<member name="blazium/web_headers/enabled" type="bool" setter="" getter="">
+			Enable if you want to use web headers.
+		</member>
+		<member name="blazium/web_headers/image" type="String" setter="" getter="">
+			The image open graph property of the web page.
+		</member>
+		<member name="blazium/web_headers/site_name" type="String" setter="" getter="">
+			The site name open graph property of the web page.
+		</member>
+		<member name="blazium/web_headers/title" type="String" setter="" getter="">
+			The title open graph property of the web page.
+		</member>
+		<member name="blazium/web_headers/type" type="String" setter="" getter="">
+			The type open graph property of the web page.
+		</member>
+		<member name="blazium/web_headers/url" type="String" setter="" getter="">
+			The url open graph property of the web page.
+		</member>
+		<member name="blazium/youtube_playable/enabled" type="bool" setter="" getter="">
+			Enable if you want to use youtube playables feature.
+		</member>
 		<member name="custom_template/debug" type="String" setter="" getter="">
 			File path to the custom export template used for debug builds. If left empty, the default template is used.
 		</member>
@@ -19,7 +78,7 @@
 			File path to the custom export template used for release builds. If left empty, the default template is used.
 		</member>
 		<member name="html/canvas_resize_policy" type="int" setter="" getter="">
-			Determines how the canvas should be resized by Godot.
+			Determines how the canvas should be resized by Blazium.
 			- [b]None:[/b] The canvas is not automatically resized.
 			- [b]Project:[/b] The size of the canvas is dependent on the [ProjectSettings].
 			- [b]Adaptive:[/b] The canvas is automatically resized to fit as much of the web page as possible.
