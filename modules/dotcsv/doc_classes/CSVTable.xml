@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CSVTable" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Table-style query helper for CSV rows.
+	</brief_description>
+	<description>
+		CSVTable stores CSV data as an array of dictionaries and provides filtering, projection, renaming, grouping, indexing, and join helpers.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="apply_model" qualifiers="const">
+			<return type="CSVTable" />
+			<param index="0" name="model" type="CSVRowModel" />
+			<description>
+				Returns a table with each row cast by [param model].
+			</description>
+		</method>
+		<method name="build_index" qualifiers="const">
+			<return type="CSVIndex" />
+			<param index="0" name="column" type="StringName" />
+			<param index="1" name="unique" type="bool" default="false" />
+			<description>
+				Builds an index for [param column]. If [param unique] is [code]true[/code], duplicate keys are recorded by the returned [CSVIndex].
+			</description>
+		</method>
+		<method name="column_names" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				Returns all column names found across rows, preserving first-seen order.
+			</description>
+		</method>
+		<method name="distinct" qualifiers="const">
+			<return type="CSVTable" />
+			<param index="0" name="columns" type="PackedStringArray" default="PackedStringArray()" />
+			<description>
+				Returns a table containing the first row for each unique key. When [param columns] is empty, the entire row is used as the key.
+			</description>
+		</method>
+		<method name="drop_columns" qualifiers="const">
+			<return type="CSVTable" />
+			<param index="0" name="columns" type="PackedStringArray" />
+			<description>
+				Returns a table with [param columns] removed from every row.
+			</description>
+		</method>
+		<method name="filter_rows" qualifiers="const">
+			<return type="CSVTable" />
+			<param index="0" name="predicate" type="Callable" />
+			<description>
+				Returns rows for which [param predicate] returns a truthy value. The callable receives the row and row index.
+			</description>
+		</method>
+		<method name="from_csv" qualifiers="static">
+			<return type="CSVTable" />
+			<param index="0" name="csv" type="CSV" />
+			<description>
+				Creates a table from a [CSV] resource's rows.
+			</description>
+		</method>
+		<method name="from_file" qualifiers="static">
+			<return type="CSVTable" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="delimiter" type="String" default="&quot;,&quot;" />
+			<param index="2" name="options" type="Dictionary" default="{}" />
+			<description>
+				Loads a header-based CSV file into a table using [method CSVImporter.import_with_headers].
+			</description>
+		</method>
+		<method name="from_file_with_dialect" qualifiers="static">
+			<return type="CSVTable" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="dialect" type="CSVDialect" />
+			<description>
+				Creates a table by importing [param path] using [param dialect].
+			</description>
+		</method>
+		<method name="from_rows" qualifiers="static">
+			<return type="CSVTable" />
+			<param index="0" name="rows" type="Array" />
+			<description>
+				Creates a table from dictionary rows. Array rows are converted to dictionaries using numeric keys.
+			</description>
+		</method>
+		<method name="get_rows" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns a copy of the table rows.
+			</description>
+		</method>
+		<method name="group_by" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="column" type="StringName" />
+			<description>
+				Groups rows by [param column], returning a dictionary of key to row arrays.
+			</description>
+		</method>
+		<method name="inner_join" qualifiers="const">
+			<return type="CSVTable" />
+			<param index="0" name="other" type="CSVTable" />
+			<param index="1" name="left_column" type="StringName" />
+			<param index="2" name="right_column" type="StringName" />
+			<description>
+				Returns rows formed by joining this table to [param other] where the join columns match.
+			</description>
+		</method>
+		<method name="left_join" qualifiers="const">
+			<return type="CSVTable" />
+			<param index="0" name="other" type="CSVTable" />
+			<param index="1" name="left_column" type="StringName" />
+			<param index="2" name="right_column" type="StringName" />
+			<description>
+				Returns all rows from this table, joined to matching rows from [param other] when present.
+			</description>
+		</method>
+		<method name="limit" qualifiers="const">
+			<return type="CSVTable" />
+			<param index="0" name="count" type="int" />
+			<param index="1" name="offset" type="int" default="0" />
+			<description>
+				Returns up to [param count] rows, skipping the first [param offset] rows.
+			</description>
+		</method>
+		<method name="map_rows" qualifiers="const">
+			<return type="CSVTable" />
+			<param index="0" name="transform" type="Callable" />
+			<description>
+				Returns a table containing dictionaries returned by [param transform]. The callable receives the row and row index.
+			</description>
+		</method>
+		<method name="rename_columns" qualifiers="const">
+			<return type="CSVTable" />
+			<param index="0" name="map" type="Dictionary" />
+			<description>
+				Returns a table with columns renamed according to [param map].
+			</description>
+		</method>
+		<method name="row_count" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the number of rows.
+			</description>
+		</method>
+		<method name="select_columns" qualifiers="const">
+			<return type="CSVTable" />
+			<param index="0" name="columns" type="PackedStringArray" />
+			<description>
+				Returns a table containing only [param columns].
+			</description>
+		</method>
+		<method name="set_rows">
+			<return type="void" />
+			<param index="0" name="rows" type="Array" />
+			<description>
+				Replaces table rows.
+			</description>
+		</method>
+		<method name="sort_by" qualifiers="const">
+			<return type="CSVTable" />
+			<param index="0" name="column" type="StringName" />
+			<param index="1" name="ascending" type="bool" default="true" />
+			<description>
+				Returns a table stably sorted by [param column].
+			</description>
+		</method>
+		<method name="sort_by_columns" qualifiers="const">
+			<return type="CSVTable" />
+			<param index="0" name="columns" type="PackedStringArray" />
+			<param index="1" name="ascending" type="bool" default="true" />
+			<description>
+				Returns a table stably sorted by [param columns] in lexicographic order.
+			</description>
+		</method>
+		<method name="validate_model" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="model" type="CSVRowModel" />
+			<description>
+				Validates each row with [param model], returning row-indexed validation reports.
+			</description>
+		</method>
+		<method name="where_equals" qualifiers="const">
+			<return type="CSVTable" />
+			<param index="0" name="column" type="StringName" />
+			<param index="1" name="value" type="Variant" />
+			<description>
+				Returns rows where [param column] equals [param value].
+			</description>
+		</method>
+		<method name="where_in" qualifiers="const">
+			<return type="CSVTable" />
+			<param index="0" name="column" type="StringName" />
+			<param index="1" name="values" type="Array" />
+			<description>
+				Returns rows where [param column] matches any value in [param values].
+			</description>
+		</method>
+		<method name="with_column" qualifiers="const">
+			<return type="CSVTable" />
+			<param index="0" name="column" type="StringName" />
+			<param index="1" name="value_or_callable" type="Variant" />
+			<description>
+				Returns a table with [param column] set to a constant value, or to the result of a callable that receives the row and row index.
+			</description>
+		</method>
+	</methods>
+</class>

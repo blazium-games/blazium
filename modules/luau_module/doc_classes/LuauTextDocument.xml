@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="LuauTextDocument" inherits="RefCounted" experimental="" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="completion">
+			<return type="Array" />
+			<param index="0" name="params" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="definition">
+			<return type="Array" />
+			<param index="0" name="params" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="didChange">
+			<return type="void" />
+			<param index="0" name="params" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="didClose">
+			<return type="void" />
+			<param index="0" name="params" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="didOpen">
+			<return type="void" />
+			<param index="0" name="params" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="didSave">
+			<return type="void" />
+			<param index="0" name="params" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="documentSymbol">
+			<return type="Array" />
+			<param index="0" name="params" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="formatting">
+			<return type="Array" />
+			<param index="0" name="params" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="hover">
+			<return type="Variant" />
+			<param index="0" name="params" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

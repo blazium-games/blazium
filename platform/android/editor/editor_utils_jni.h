@@ -33,6 +33,6 @@
 #include <jni.h>
 
 extern "C" {
-JNIEXPORT void JNICALL Java_org_godotengine_godot_editor_utils_EditorUtils_runScene(JNIEnv *p_env, jclass, jstring p_scene, jobjectArray p_scene_args);
-JNIEXPORT void JNICALL Java_org_godotengine_godot_editor_utils_EditorUtils_toggleTitleBar(JNIEnv *p_env, jclass, jboolean p_enable);
+JNIEXPORT void JNICALL Java_app_blazium_godot_editor_utils_EditorUtils_runScene(JNIEnv *p_env, jclass, jstring p_scene, jobjectArray p_scene_args);
+JNIEXPORT void JNICALL Java_app_blazium_godot_editor_utils_EditorUtils_toggleTitleBar(JNIEnv *p_env, jclass, jboolean p_enable);
 }

@@ -28,7 +28,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.godot.editor.utils
+package app.blazium.godot.editor.utils
 
 /**
  * Utility class for accessing and using editor specific capabilities.

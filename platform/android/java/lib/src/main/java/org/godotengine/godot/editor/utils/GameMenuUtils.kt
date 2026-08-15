@@ -28,10 +28,10 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.godot.editor.utils
+package app.blazium.godot.editor.utils
 
 import android.util.Log
-import org.godotengine.godot.GodotLib
+import app.blazium.godot.GodotLib
 
 /**
  * Utility class for accessing and using game menu APIs.

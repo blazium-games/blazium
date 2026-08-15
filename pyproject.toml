@@ -76,6 +76,8 @@ skip = [
 	"platform/web/package-lock.json",
 ]
 ignore-words-list = [
+	"assettags",
+	"blazium",
 	"breaked",
 	"cancelled",
 	"checkin",
@@ -87,6 +89,8 @@ ignore-words-list = [
 	"gird",
 	"hel",
 	"inout",
+	"justamcp",
+	"luau",
 	"labelin",
 	"lod",
 	"masia",

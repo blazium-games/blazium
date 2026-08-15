@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPTaskManager" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Tracks long-running MCP tasks and their results.
+	</brief_description>
+	<description>
+		[JustAMCPTaskManager] stores task metadata for MCP operations that complete asynchronously. It generates task UUIDs, reports status transitions (including [code]notifications/tasks/status[/code] via [JustAMCPServer]), blocks [code]tasks/result[/code] until a terminal state, and records cancellation or failure.
+		Configure defaults with [member ProjectSettings.blazium/justamcp/task_default_ttl_ms], [member ProjectSettings.blazium/justamcp/task_poll_interval_ms], and [member ProjectSettings.blazium/justamcp/task_max_concurrent].
+		See the MCP [url=https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/tasks]Tasks[/url] utility.
+	</description>
+	<tutorials>
+		<link title="MCP Tasks">https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/tasks</link>
+	</tutorials>
+	<methods>
+		<method name="cancel_task">
+			<return type="Dictionary" />
+			<param index="0" name="task_id" type="String" />
+			<description>
+				Marks an active task as [code]cancelled[/code] unless it is already terminal. Returns an error if the task is unknown or already finished.
+			</description>
+		</method>
+		<method name="get_task">
+			<return type="Dictionary" />
+			<param index="0" name="task_id" type="String" />
+			<description>
+				Returns the current metadata for [param task_id], or an error dictionary if the task is unknown.
+			</description>
+		</method>
+		<method name="get_task_result">
+			<return type="Dictionary" />
+			<param index="0" name="task_id" type="String" />
+			<param index="1" name="wait" type="bool" default="false" />
+			<description>
+				Blocks until the task reaches a terminal state, then returns the stored MCP tool result (including [code]_meta[/code] related-task metadata). Unknown tasks return [code]-32602[/code].
+			</description>
+		</method>
+		<method name="list_tasks">
+			<return type="Dictionary" />
+			<param index="0" name="cursor" type="String" default="&quot;&quot;" />
+			<description>
+				Returns a paginated list of tracked tasks using opaque cursors.
+			</description>
+		</method>
+	</methods>
+</class>

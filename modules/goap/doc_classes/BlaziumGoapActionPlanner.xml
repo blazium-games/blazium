@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="BlaziumGoapActionPlanner" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		An internal backend node generating A* paths mapping GoapActions towards GoapGoals.
+	</brief_description>
+	<description>
+		[BlaziumGoapActionPlanner] is the primary logical processing engine used internally by [BlaziumGoapAgent]. It compiles a list of available actions and executes an AStar backward search resolving the sequence (the "Plan") that successfully transforms the current [BlaziumGoapWorldState] into the Goal's desired state requirements, choosing the shortest and cheapest cost structure.
+		[br]This node operates completely autonomously beneath the Agent.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_plan">
+			<return type="Array" />
+			<param index="0" name="goal" type="BlaziumGoapGoal" />
+			<param index="1" name="blackboard" type="Dictionary" default="{}" />
+			<description>
+				Generates and returns an array of [BlaziumGoapAction] instances representing the most cost-effective path to satisfy the given [param goal], starting from the provided [param blackboard] state natively. Returns an empty array if no path is found.
+			</description>
+		</method>
+		<method name="set_actions">
+			<return type="void" />
+			<param index="0" name="actions" type="BlaziumGoapAction[]" />
+			<description>
+				Sets the pool of actions the planner is allowed to use during the A* graph traversal.
+			</description>
+		</method>
+	</methods>
+</class>

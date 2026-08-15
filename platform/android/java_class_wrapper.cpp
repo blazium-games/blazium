@@ -973,7 +973,7 @@ bool JavaClassWrapper::_get_type_sig(JNIEnv *env, jobject obj, uint32_t &sig, St
 	} else if (str_type == "java.lang.CharSequence") {
 		t |= JavaClass::ARG_TYPE_CHARSEQUENCE;
 		strsig += "Ljava/lang/CharSequence;";
-	} else if (str_type == "org.godotengine.godot.variant.Callable") {
+	} else if (str_type == "app.blazium.godot.variant.Callable") {
 		t |= JavaClass::ARG_TYPE_CALLABLE;
 		strsig += "Lorg/godotengine/godot/variant/Callable;";
 	} else if (str_type == "java.lang.Boolean") {
@@ -1078,7 +1078,7 @@ bool JavaClass::_convert_object_to_variant(JNIEnv *env, jobject obj, Variant &va
 
 			if (java_class_wrapped.is_valid()) {
 				String cn = java_class_wrapped->get_java_class_name();
-				if (cn == "org.godotengine.godot.Dictionary") {
+				if (cn == "app.blazium.godot.Dictionary") {
 					var = _jobject_to_variant(env, obj);
 				} else {
 					Ref<JavaObject> ret = Ref<JavaObject>(memnew(JavaObject(java_class_wrapped, obj)));
@@ -1442,7 +1442,7 @@ bool JavaClass::_convert_object_to_variant(JNIEnv *env, jobject obj, Variant &va
 
 					if (java_class_wrapped.is_valid()) {
 						String cn = java_class_wrapped->get_java_class_name();
-						if (cn == "org.godotengine.godot.Dictionary") {
+						if (cn == "app.blazium.godot.Dictionary") {
 							ret[i] = _jobject_to_variant(env, obj);
 						} else {
 							Ref<JavaObject> java_obj_wrapped = Ref<JavaObject>(memnew(JavaObject(java_class_wrapped, obj)));

@@ -46,7 +46,7 @@ bool EngineUpdateLabel::_can_check_updates() const {
 void EngineUpdateLabel::_check_update() {
 	checked_update = true;
 	_set_status(UpdateStatus::BUSY);
-	http->request("https://godotengine.org/versions.json");
+	http->request(VERSION_URL);
 }
 
 void EngineUpdateLabel::_http_request_completed(int p_result, int p_response_code, const PackedStringArray &p_headers, const PackedByteArray &p_body) {
@@ -83,7 +83,7 @@ void EngineUpdateLabel::_http_request_completed(int p_result, int p_response_cod
 
 	UpdateMode update_mode = UpdateMode(int(EDITOR_GET("network/connection/check_for_updates")));
 	if (update_mode == UpdateMode::AUTO) {
-		if (_get_version_type(GODOT_VERSION_STATUS) == VersionType::STABLE) {
+		if (_get_version_type(EXTERNAL_VERSION_STATUS) == VersionType::STABLE) {
 			update_mode = UpdateMode::NEWEST_STABLE;
 		} else {
 			update_mode = UpdateMode::NEWEST_UNSTABLE;
@@ -103,7 +103,7 @@ void EngineUpdateLabel::_http_request_completed(int p_result, int p_response_cod
 		}
 
 		int minor = version_bits[1].to_int();
-		if (version_bits[0].to_int() != GODOT_VERSION_MAJOR || minor < GODOT_VERSION_MINOR) {
+		if (version_bits[0].to_int() != EXTERNAL_VERSION_MAJOR || minor < EXTERNAL_VERSION_MINOR) {
 			continue;
 		}
 
@@ -112,11 +112,11 @@ void EngineUpdateLabel::_http_request_completed(int p_result, int p_response_cod
 			patch = version_bits[2].to_int();
 		}
 
-		if (minor == GODOT_VERSION_MINOR && patch < GODOT_VERSION_PATCH) {
+		if (minor == EXTERNAL_VERSION_MINOR && patch < EXTERNAL_VERSION_PATCH) {
 			continue;
 		}
 
-		if (update_mode == UpdateMode::NEWEST_PATCH && minor > GODOT_VERSION_MINOR) {
+		if (update_mode == UpdateMode::NEWEST_PATCH && minor > EXTERNAL_VERSION_MINOR) {
 			continue;
 		}
 
@@ -131,7 +131,7 @@ void EngineUpdateLabel::_http_request_completed(int p_result, int p_response_cod
 		int release_index;
 		VersionType release_type = _get_version_type(release_string, &release_index);
 
-		if (minor > GODOT_VERSION_MINOR || patch > GODOT_VERSION_PATCH) {
+		if (minor > EXTERNAL_VERSION_MINOR || patch > EXTERNAL_VERSION_PATCH) {
 			if (stable_only && release_type != VersionType::STABLE) {
 				continue;
 			}
@@ -141,7 +141,7 @@ void EngineUpdateLabel::_http_request_completed(int p_result, int p_response_cod
 		}
 
 		int current_version_index;
-		VersionType current_version_type = _get_version_type(GODOT_VERSION_STATUS, &current_version_index);
+		VersionType current_version_type = _get_version_type(EXTERNAL_VERSION_STATUS, &current_version_index);
 
 		if (int(release_type) > int(current_version_type)) {
 			break;
@@ -294,7 +294,7 @@ void EngineUpdateLabel::pressed() {
 		} break;
 
 		case UpdateStatus::UPDATE_AVAILABLE: {
-			OS::get_singleton()->shell_open("https://godotengine.org/download/archive/" + available_newer_version);
+			OS::get_singleton()->shell_open("https://blazium.app/download");
 		} break;
 
 		default: {

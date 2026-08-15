@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CSVReader" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Streaming CSV reader with Variant conversion.
+	</brief_description>
+	<description>
+		CSVReader wraps [DSVReader] and converts each streamed field with [method CSVImporter.parse_record]. It can return each row as an [Array] or, when headers are enabled, as a [Dictionary] keyed by the first accepted row.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="close">
+			<return type="void" />
+			<description>
+				Closes the current file and resets the reader.
+			</description>
+		</method>
+		<method name="get_error" qualifiers="const">
+			<return type="int" enum="Error" />
+			<description>
+				Returns the last error from the underlying [DSVReader].
+			</description>
+		</method>
+		<method name="get_header_names" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				Returns the header names read from the first accepted row when [member headers] is enabled.
+			</description>
+		</method>
+		<method name="get_length" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the current file length in bytes, or [code]0[/code] when no file is open.
+			</description>
+		</method>
+		<method name="get_line" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the current one-based input line number.
+			</description>
+		</method>
+		<method name="get_position" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the current file byte position, or [code]0[/code] when no file is open.
+			</description>
+		</method>
+		<method name="is_eof" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when the file has been fully read and no parsed rows remain.
+			</description>
+		</method>
+		<method name="open">
+			<return type="int" enum="Error" />
+			<param index="0" name="file_path" type="String" />
+			<param index="1" name="delimiter" type="String" default="&quot;,&quot;" />
+			<param index="2" name="headers" type="bool" default="false" />
+			<param index="3" name="cast_fields" type="bool" default="true" />
+			<param index="4" name="options" type="Dictionary" default="{}" />
+			<description>
+				Opens [param file_path] for streaming reads. If [param headers] is [code]true[/code], the first accepted row is consumed as dictionary keys. If [param cast_fields] is [code]true[/code], each field is converted to a Variant.
+			</description>
+		</method>
+		<method name="open_with_dialect">
+			<return type="int" enum="Error" />
+			<param index="0" name="file_path" type="String" />
+			<param index="1" name="dialect" type="CSVDialect" />
+			<description>
+				Opens [param file_path] using [param dialect].
+			</description>
+		</method>
+		<method name="read_row">
+			<return type="Variant" />
+			<description>
+				Reads one row. Returns an [Array] when [member headers] is [code]false[/code], a [Dictionary] when [member headers] is [code]true[/code], or [code]null[/code] at EOF or after an error.
+			</description>
+		</method>
+		<method name="read_rows">
+			<return type="Array" />
+			<param index="0" name="max_rows" type="int" default="0" />
+			<description>
+				Reads up to [param max_rows] rows. If [param max_rows] is [code]0[/code], reads until EOF.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="cast_fields" type="bool" setter="set_cast_fields" getter="get_cast_fields" default="true">
+			If [code]true[/code], streamed fields are converted with [method CSVImporter.parse_record].
+		</member>
+		<member name="headers" type="bool" setter="set_headers" getter="get_headers" default="false">
+			If [code]true[/code], the first accepted row is used as dictionary keys for later rows.
+		</member>
+	</members>
+</class>

@@ -28,17 +28,17 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.editor
+package app.blazium.editor
 
 import android.os.Bundle
 import android.view.View
 import androidx.annotation.CallSuper
 import androidx.core.view.isVisible
-import org.godotengine.editor.embed.GameMenuFragment
-import org.godotengine.godot.GodotLib
-import org.godotengine.godot.editor.utils.GameMenuUtils
-import org.godotengine.godot.utils.ProcessPhoenix
-import org.godotengine.godot.xr.XRMode
+import app.blazium.editor.embed.GameMenuFragment
+import app.blazium.godot.GodotLib
+import app.blazium.godot.editor.utils.GameMenuUtils
+import app.blazium.godot.utils.ProcessPhoenix
+import app.blazium.godot.xr.XRMode
 import org.godotengine.openxr.vendors.utils.*
 
 /**

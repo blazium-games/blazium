@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="YoutubePlayablesClient" inherits="ThirdPartyClient" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Node for using the Youtube Playables SDK.
+	</brief_description>
+	<description>
+		Node for using the Youtube Playables SDK.
+		Implementation based on the official Youtube Playables SDK. Official documentation for this service on [url=https://developers.google.com/youtube/gaming/playables/reference/sdk]developers.google.com/youtube/gaming/playables/reference/sdk[/url].
+		You can test your game on [url=https://developers.google.com/youtube/gaming/playables/test_suite]developers.google.com/youtube/gaming/playables/test_suite[/url].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_language">
+			<return type="YoutubePlayablesResponse" />
+			<description>
+				Returns the [url=https://www.rfc-editor.org/info/bcp47]BCP-47[/url] language tag for the user's language set in YouTube.
+				[b]Note:[/b] this may be different than the system or browser language settings but should always match the language used in YouTube.
+				Returns an empty [String] if called outside the Youtube Playables environment.
+			</description>
+		</method>
+		<method name="get_sdk_version">
+			<return type="String" />
+			<description>
+				The YouTube Playables SDK version.
+				Returns an empty [String] if called outside the Youtube Playables environment.
+			</description>
+		</method>
+		<method name="is_audio_enabled">
+			<return type="bool" />
+			<description>
+				Returns whether the game audio is enabled in the YouTube settings.
+				Returns [code]true[/code] if called outside the Youtube Playables environment.
+			</description>
+		</method>
+		<method name="is_youtube_environment">
+			<return type="bool" />
+			<description>
+				Whether or not the game is running as a playable.
+				[codeblocks]
+				[gdscript]
+				if is_youtube_environment():
+				    print("Youtube Playables SDK version is " + get_sdk_version())
+				[/gdscript]
+				[/codeblocks]
+			</description>
+		</method>
+		<method name="load_data">
+			<return type="YoutubePlayablesResponse" />
+			<description>
+				Loads game data from the YouTube cloud in the form of a serialized string. This API is usually called before the game loads to resume the game state.
+				[codeblocks]
+				[gdscript]
+				var result: YoutubePlayablesResponse = await load_data().finished
+				if result.has_error():
+				    push_error(result.error)
+				    log_error()
+				else:
+				    var data: Dictionary = JSON.parse_string(result.data)
+				    print("Player is at level %d." % data["player_level"])
+				[/gdscript]
+				[/codeblocks]
+				[b]Note:[/b] Signed-out players are not supported. The [member YoutubePlayablesResult.data] will be empty.
+				[url=https://developers.google.com/youtube/gaming/playables/certification/requirements_integration#4_cloud_saves]Cloud saves requirements.[/url]
+			</description>
+		</method>
+		<method name="log_error">
+			<return type="void" />
+			<description>
+				Logs an error to YouTube.
+				[b]Note:[/b] This API is best-effort and rate-limited which can result in data loss.
+			</description>
+		</method>
+		<method name="log_warning">
+			<return type="void" />
+			<description>
+				Logs a warning to YouTube.
+				[b]Note:[/b] This API is best-effort and rate-limited which can result in data loss.
+			</description>
+		</method>
+		<method name="open_yt_content">
+			<return type="YoutubePlayablesResponse" />
+			<param index="0" name="video_id" type="String" />
+			<description>
+				Open a YouTube video given a valid [param video_id].
+				This will open the video in a new tab on web and in the miniplayer on mobile.
+			</description>
+		</method>
+		<method name="save_data">
+			<return type="YoutubePlayablesResponse" />
+			<param index="0" name="data" type="String" />
+			<description>
+				Saves game data to the YouTube cloud in the form of a serialized string.
+				It is recommended to save your data immediately after important milestones.
+				[codeblocks]
+				[gdscript]
+				var data: Dictionary = {"player_level": 42}
+				var result: YoutubePlayablesResult = await save_data(JSON.stringify(data)).finished
+				if result.has_error():
+				    push_error(result.error)
+				    log_error()
+				[/gdscript]
+				[/codeblocks]
+				[b]Note:[/b] Signed-out players are not supported. [signal YoutubePlayablesResponse.finished] returns without errors but the data is not be saved.
+				[url=https://developers.google.com/youtube/gaming/playables/certification/requirements_integration#4_cloud_saves]Cloud saves requirements.[/url]
+			</description>
+		</method>
+		<method name="send_score">
+			<return type="YoutubePlayablesResponse" />
+			<param index="0" name="value" type="int" />
+			<description>
+				Sends the user's best score to YouTube.
+				The score should represent one dimension of progress within the game. If there are multiple dimensions, the developer must choose one dimension to be consistent. Scores will be sorted and the highest score will be displayed in YouTube UI so any in-game high score UI should align with what is being sent through this API.
+				[url=https://developers.google.com/youtube/gaming/playables/certification/requirements_integration#3_user_scores]User scores requirements.[/url]
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="audio_enabled_change">
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				Emitted when the audio settings change event is fired from YouTube.
+				[url=https://developers.google.com/youtube/gaming/playables/certification/requirements_integration#5_mute_toggle]Mute toggle requirements.[/url]
+			</description>
+		</signal>
+		<signal name="pause">
+			<description>
+				Emitted when a pause game event is fired from YouTube.
+				When a pause game event is fired from YouTube, [signal audio_enabled_change] is emitted.
+				[b]Note:[/b] You have a short window to save any state before your game gets evicted.
+				[url=https://developers.google.com/youtube/gaming/playables/certification/requirements_integration#6_pause_and_resume]Pause and resume requirements.[/url]
+			</description>
+		</signal>
+		<signal name="resume">
+			<description>
+				Emitted when a resume game event is fired from YouTube.
+				When a resume game event is fired from YouTube, [signal audio_enabled_change] is emitted.
+				[url=https://developers.google.com/youtube/gaming/playables/certification/requirements_integration#6_pause_and_resume]Pause and resume requirements.[/url]
+			</description>
+		</signal>
+	</signals>
+</class>

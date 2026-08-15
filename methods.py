@@ -153,6 +153,13 @@ def get_version_info(module_version_string="", silent=False):
         "module_config": str(version.module_config) + module_version_string,
         "website": str(version.website),
         "docs_branch": str(version.docs),
+        "external_major": int(os.getenv("EXTERNAL_MAJOR", version.external_major)),
+        "external_minor": int(os.getenv("EXTERNAL_MINOR", version.external_minor)),
+        "external_patch": int(os.getenv("EXTERNAL_PATCH", version.external_patch)),
+        "external_status": os.getenv("EXTERNAL_STATUS", version.external_status),
+        "external_sha": os.getenv("EXTERNAL_SHA", version.external_sha),
+        "mirror_list": os.getenv("MIRROR_LIST_URL", version.mirror_list),
+        "version_url": os.getenv("VERSION_URL", version.version_url),
     }
 
     # For dev snapshots (alpha, beta, RC, etc.) we do not commit status change to Git,
@@ -265,7 +272,7 @@ def detect_modules(search_path, recursive=False):
         version_path = os.path.join(path, "version.py")
         if os.path.exists(version_path):
             with open(version_path, "r", encoding="utf-8") as f:
-                if 'short_name = "godot"' in f.read():
+                if 'short_name = "blazium"' in f.read():
                     return True
         return False
 
@@ -608,6 +615,23 @@ def Run(env, function, comstr="$GENCOMSTR"):
     from SCons.Script import Action
 
     return Action(function, comstr)
+
+
+def add_hub_register_post_action(env, prog):
+    """After linking an editor binary, optionally register it with Blazium Hub via blazium-cli."""
+    if not getattr(env, "editor_build", False):
+        return
+    if not env.get("hub_register", False):
+        return
+    # Late import so non-hub_register builds do not require the helper module.
+    import importlib.util
+
+    script_path = base_folder / "misc" / "scripts" / "hub_register_editor.py"
+    spec = importlib.util.spec_from_file_location("hub_register_editor", script_path)
+    hub_register_editor = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(hub_register_editor)
+
+    env.AddPostAction(prog, env.Run(hub_register_editor.scons_post_action))
 
 
 def detect_darwin_toolchain_path(env):
@@ -1233,7 +1257,7 @@ def generate_vs_project(env, original_args, project_name="godot"):
     others_active = []
 
     get_dependencies(
-        env.File(f"#bin/godot{env['PROGSUFFIX']}"), env, extensions, headers_active, sources_active, others_active
+        env.File(f"#bin/blazium{env['PROGSUFFIX']}"), env, extensions, headers_active, sources_active, others_active
     )
 
     all_items = []

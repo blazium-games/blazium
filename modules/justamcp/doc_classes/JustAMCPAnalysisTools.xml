@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPAnalysisTools" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Provides MCP tools for inspecting project and scene state.
+	</brief_description>
+	<description>
+		Registers analysis-oriented tool schemas used by [JustAMCPToolExecutor]. These tools help MCP clients inspect the current project, active scene, node metadata, and other editor state without requiring direct editor scripting.
+	</description>
+	<tutorials>
+		<link title="Model Context Protocol (MCP)">https://modelcontextprotocol.io/</link>
+	</tutorials>
+</class>

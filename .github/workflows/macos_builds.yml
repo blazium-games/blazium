@@ -22,13 +22,13 @@ jobs:
           - name: Editor (target=editor)
             cache-name: macos-editor
             target: editor
-            bin: ./bin/godot.macos.editor.universal
+            bin: ./bin/blazium.macos.editor.universal
 
           - name: Template (target=template_release)
             cache-name: macos-template
             target: template_release
             scons-flags: debug_symbols=no
-            bin: ./bin/godot.macos.template_release.universal
+            bin: ./bin/blazium.macos.template_release.universal
 
     steps:
       - name: Checkout
@@ -100,11 +100,11 @@ jobs:
 
       - name: Prepare artifact
         run: |
-          lipo -create ./bin/godot.macos.${{ matrix.target }}.x86_64 ./bin/godot.macos.${{ matrix.target }}.arm64 -output ./bin/godot.macos.${{ matrix.target }}.universal
-          rm ./bin/godot.macos.${{ matrix.target }}.x86_64 ./bin/godot.macos.${{ matrix.target }}.arm64
+          lipo -create ./bin/blazium.macos.${{ matrix.target }}.x86_64 ./bin/blazium.macos.${{ matrix.target }}.arm64 -output ./bin/blazium.macos.${{ matrix.target }}.universal
+          rm ./bin/blazium.macos.${{ matrix.target }}.x86_64 ./bin/blazium.macos.${{ matrix.target }}.arm64
           rm -rf ./bin/build_deps
-          strip bin/godot.*
-          chmod +x bin/godot.*
+          strip bin/blazium.*
+          chmod +x bin/blazium.*
 
       - name: Upload artifact
         uses: ./.github/actions/upload-artifact

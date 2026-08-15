@@ -179,7 +179,8 @@ repos:
             platform/(?!android|ios|linuxbsd|macos|web|windows)\w+/.*|
             platform/android/java/lib/src/main/java/org/godotengine/godot/gl/GLSurfaceView\.java|
             platform/android/java/lib/src/main/java/org/godotengine/godot/gl/EGLLogWrapper\.java|
-            platform/android/java/lib/src/main/java/org/godotengine/godot/utils/ProcessPhoenix\.java
+            platform/android/java/lib/src/main/java/org/godotengine/godot/utils/ProcessPhoenix\.java|
+            modules/(assettags|autowork|crowdcontrol|clickertools|dddbrowser|discord_module|dotcsv|dotenv|dotini|enet_server|goap|httpserver|ircclient|justamcp|jwttool|kickapi|luau_module|multiuser_editor|obsclient|rcon|remote_control|semanticsearch|socialexports|socketio|sqlite3|steam|town_sdk|twitchapi|tiled_importer|xbox_module)/
           )$
 
       - id: header-guards
@@ -219,6 +220,10 @@ repos:
 # Start of downstream pre-commit hooks.
 #
 # This is still the "repo: local" scope, so new local hooks can be defined directly at this indentation:
-#     - id: new-local-hook
+      - id: copyright-headers-blazium
+        name: copyright-headers-blazium
+        language: python
+        entry: python misc/scripts/copyright_headers.py --blazium
+        files: ^modules/(assettags|autowork|crowdcontrol|clickertools|dddbrowser|discord_module|dotcsv|dotenv|dotini|enet_server|goap|httpserver|ircclient|justamcp|jwttool|kickapi|luau_module|multiuser_editor|obsclient|rcon|remote_control|semanticsearch|socialexports|socketio|sqlite3|steam|town_sdk|twitchapi|tiled_importer|xbox_module)/.*\.(c|h|cpp|hpp|cc|hh|cxx|hxx|m|mm|inc|java)$
 # To add external repo hooks, bring the indentation back to:
 # - repo: my-remote-hook

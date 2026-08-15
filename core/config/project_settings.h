@@ -57,6 +57,13 @@ public:
 	static inline const String PROJECT_DATA_DIR_NAME_SUFFIX = "godot";
 	static inline const String EDITOR_SETTING_OVERRIDE_PREFIX = PNAME("editor_overrides") + String("/");
 
+	static constexpr const char *PROJECT_FILE_BLAZIUM = "project.blazium";
+	static constexpr const char *PROJECT_FILE_GODOT = "project.godot";
+	static constexpr const char *PROJECT_FILE_BINARY = "project.binary";
+
+	static String get_project_settings_file_name(const String &p_dir, bool p_warn_if_both = false);
+	static bool is_project_settings_file(const String &p_path);
+
 	// Properties that are not for built in values begin from this value, so builtin ones are displayed first.
 	constexpr static const int32_t NO_BUILTIN_ORDER_BASE = 1 << 16;
 
@@ -117,6 +124,7 @@ protected:
 	bool is_global_class_list_loaded = false;
 
 	String project_data_dir_name;
+	String project_settings_text_file = PROJECT_FILE_BLAZIUM;
 
 	bool _set(const StringName &p_name, const Variant &p_value);
 	bool _get(const StringName &p_name, Variant &r_ret) const;
@@ -132,6 +140,7 @@ protected:
 	Error _load_settings_text(const String &p_path);
 	Error _load_settings_binary(const String &p_path);
 	Error _load_settings_text_or_binary(const String &p_text_path, const String &p_bin_path);
+	Error _load_project_settings(const String &p_base_path);
 
 	Error _save_settings_text(const String &p_file, const RBMap<String, List<String>> &props, const CustomMap &p_custom = CustomMap(), const String &p_custom_features = String());
 	Error _save_settings_binary(const String &p_file, const RBMap<String, List<String>> &props, const CustomMap &p_custom = CustomMap(), const String &p_custom_features = String());

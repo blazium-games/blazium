@@ -1,0 +1,124 @@
+#!/usr/bin/env python
+from misc.utility.scons_hints import *
+
+Import("env")
+Import("env_modules")
+
+env_luau_module = env_modules.Clone()
+
+thirdparty_obj = []
+thirdparty_dir = "#thirdparty/luau/"
+
+platform = env["platform"]
+arch = env.get("arch", "")
+codegen_platform_supported = (
+    arch in ("x86_64", "arm64") and platform != "web" and platform in ("windows", "linuxbsd", "macos", "android", "ios")
+)
+
+analysis_enabled = env["module_luau_module_analysis"]
+codegen_enabled = env["module_luau_module_codegen"] and codegen_platform_supported
+
+luau_cpp_dirs = [
+    "Common/src",
+    "Ast/src",
+    "Compiler/src",
+    "VM/src",
+]
+
+if codegen_enabled:
+    luau_cpp_dirs.append("CodeGen/src")
+
+if analysis_enabled:
+    luau_cpp_dirs.extend(["Config/src", "EqSat/src", "Analysis/src"])
+
+thirdparty_sources = []
+for subdir in luau_cpp_dirs:
+    thirdparty_sources += env.Glob(thirdparty_dir + subdir + "/*.cpp")
+
+cpppath = [
+    "#modules/luau_module/",
+    "#modules/luau_module/bindings/",
+    thirdparty_dir + "Common/include",
+    thirdparty_dir + "Ast/include",
+    thirdparty_dir + "Compiler/include",
+    thirdparty_dir + "VM/include",
+    thirdparty_dir + "VM/src",
+]
+
+if codegen_enabled:
+    cpppath.append(thirdparty_dir + "CodeGen/include")
+
+if analysis_enabled:
+    cpppath.extend(
+        [
+            thirdparty_dir + "Config/include",
+            thirdparty_dir + "EqSat/include",
+            thirdparty_dir + "Analysis/include",
+        ]
+    )
+
+env_luau_module.Prepend(CPPPATH=cpppath)
+
+
+def enable_luau_exceptions(target_env):
+    # Luau Ast/Analysis uses C++ exceptions in headers and sources.
+    if env.msvc:
+        target_env.Append(CXXFLAGS=["/EHsc"])
+        target_env["CPPDEFINES"] = [
+            d for d in target_env["CPPDEFINES"] if not (isinstance(d, tuple) and d[0] == "_HAS_EXCEPTIONS")
+        ]
+        target_env.Append(CPPDEFINES=[("_HAS_EXCEPTIONS", 1)])
+        target_env.Append(CCFLAGS=["/fp:precise"])
+    else:
+        if "-fno-exceptions" in target_env["CXXFLAGS"]:
+            target_env["CXXFLAGS"].remove("-fno-exceptions")
+        target_env.Append(CXXFLAGS=["-fexceptions"])
+        if platform == "web":
+            # Emscripten C++ exceptions conflict with wasm sjlj used by SUPPORT_LONGJMP.
+            for flag_list_name in ("CCFLAGS", "LINKFLAGS"):
+                target_env[flag_list_name] = [
+                    flag
+                    for flag in target_env[flag_list_name]
+                    if not (isinstance(flag, str) and "SUPPORT_LONGJMP" in flag)
+                ]
+
+
+env_thirdparty = env_luau_module.Clone()
+env_thirdparty.disable_warnings()
+enable_luau_exceptions(env_thirdparty)
+
+env_thirdparty.add_source_files(thirdparty_obj, thirdparty_sources)
+env.modules_sources += thirdparty_obj
+
+module_obj = []
+
+env_luau_module.add_source_files(module_obj, "*.cpp")
+env_luau_module.add_source_files(module_obj, "bindings/*.cpp")
+env_luau_module.add_source_files(module_obj, "require/*.cpp")
+env_luau_module.add_source_files(module_obj, "debugger/*.cpp")
+env_luau_module.add_source_files(module_obj, "scheduler/*.cpp")
+
+env_analysis = env_luau_module.Clone()
+env_analysis.disable_warnings()
+enable_luau_exceptions(env_analysis)
+env_analysis.add_source_files(module_obj, "analysis/*.cpp")
+
+if env.editor_build:
+    env_luau_module.add_source_files(module_obj, "editor/*.cpp")
+    if env["module_jsonrpc_enabled"]:
+        env_luau_module.add_source_files(module_obj, "editor/lsp/*.cpp")
+    else:
+        env_luau_module.Append(CPPDEFINES=["LUAU_NO_LSP"])
+        env_luau_module.add_source_files(module_obj, "editor/lsp/luau_language_server.cpp")
+
+if env["platform"] == "web":
+    env_luau_module.add_source_files(module_obj, "web/*.cpp")
+
+if env["tests"]:
+    # test_main.cpp includes module test headers, which pull luau.h → lua.h.
+    env.Prepend(CPPPATH=cpppath)
+    env_luau_module.Append(CPPDEFINES=["TESTS_ENABLED"])
+    env_luau_module.add_source_files(module_obj, "tests/*.cpp")
+
+env.modules_sources += module_obj
+env.Depends(module_obj, thirdparty_obj)

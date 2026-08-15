@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPRuntime" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Engine singleton that hosts the JustAMCP runtime server.
+	</brief_description>
+	<description>
+		[JustAMCPRuntime] runs the local MCP endpoint and routes incoming commands to built-in tools, resources, prompts, or custom command callables. It is independent of the active [SceneTree], so it can keep serving editor automation while scenes are opened, closed, or changed.
+		[codeblock]
+		JustAMCPRuntime.port = 7777
+		JustAMCPRuntime.enabled = true
+
+		JustAMCPRuntime.register_custom_command("double", func(value):
+		    return value * 2
+		)
+
+		var result = JustAMCPRuntime.execute_command("run_custom_command", {
+		    "name": "double",
+		    "args": [21],
+		})
+		print(result["result"])
+		[/codeblock]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="execute_command">
+			<return type="Dictionary" />
+			<param index="0" name="command" type="String" />
+			<param index="1" name="params" type="Dictionary" />
+			<description>
+				Executes a runtime command with [param params] and returns the command result dictionary. Commands include built-in runtime operations, tool dispatch, resources, prompts, and [code]run_custom_command[/code].
+			</description>
+		</method>
+		<method name="poll">
+			<return type="void" />
+			<description>
+				Processes pending network activity for the runtime server, including new connections, inbound MCP payloads, and queued asynchronous work.
+			</description>
+		</method>
+		<method name="register_custom_command">
+			<return type="void" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="callable" type="Callable" />
+			<description>
+				Registers [param callable] under [param name] so MCP clients can invoke it with [code]execute_command("run_custom_command", {"name": name, "args": [...]})[/code]. Registering the same name replaces the previous callable.
+			</description>
+		</method>
+		<method name="unregister_custom_command">
+			<return type="void" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Removes the custom command registered as [param name]. Calls to [code]run_custom_command[/code] with that name will return an error after removal.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="enabled" type="bool" setter="set_enabled" getter="is_enabled" default="false">
+			When [code]true[/code], the runtime server is active and can accept MCP traffic. Setting it to [code]false[/code] stops serving runtime requests.
+		</member>
+		<member name="port" type="int" setter="set_port" getter="get_port" default="7777">
+			TCP port used by the JustAMCP runtime server. Change this before enabling the runtime when a project needs a non-default port.
+		</member>
+	</members>
+	<signals>
+		<signal name="client_connected">
+			<description>
+				Emitted when a new MCP client connects to the runtime server.
+			</description>
+		</signal>
+		<signal name="client_disconnected">
+			<description>
+				Emitted when an MCP client disconnects or the runtime closes its connection.
+			</description>
+		</signal>
+		<signal name="command_received">
+			<param index="0" name="command" type="String" />
+			<param index="1" name="params" type="Dictionary" />
+			<description>
+				Emitted after the runtime parses an incoming MCP command. The signal exposes the command name and decoded parameter dictionary before dispatch.
+			</description>
+		</signal>
+	</signals>
+</class>

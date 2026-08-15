@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPPromptEditorState" inherits="JustAMCPPrompt" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Provides a built-in prompt describing the current editor state.
+	</brief_description>
+	<description>
+		A [JustAMCPPrompt] implementation that summarizes the currently edited scene, selected nodes, and relevant editor context. Use it to give MCP clients situational awareness before they inspect or modify the project.
+	</description>
+	<tutorials>
+		<link title="Model Context Protocol (MCP)">https://modelcontextprotocol.io/</link>
+	</tutorials>
+</class>

@@ -28,13 +28,13 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.editor
+package app.blazium.editor
 
 import android.content.ComponentName
 import android.content.Intent
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.godotengine.godot.GodotActivity.Companion.EXTRA_COMMAND_LINE_PARAMS
+import app.blazium.godot.GodotActivity.Companion.EXTRA_COMMAND_LINE_PARAMS
 import org.junit.Test
 import org.junit.runner.RunWith
 import kotlin.test.assertEquals
@@ -51,8 +51,8 @@ class GodotEditorTest {
 		private val TAG = GodotEditorTest::class.simpleName
 
 		private val TEST_COMMAND_LINE_PARAMS = arrayOf("This is a test")
-		private const val PROJECT_MANAGER_CLASS_NAME = "org.godotengine.editor.ProjectManager"
-		private const val GODOT_EDITOR_CLASS_NAME = "org.godotengine.editor.GodotEditor"
+		private const val PROJECT_MANAGER_CLASS_NAME = "app.blazium.editor.ProjectManager"
+		private const val GODOT_EDITOR_CLASS_NAME = "app.blazium.editor.GodotEditor"
 	}
 
 	/**

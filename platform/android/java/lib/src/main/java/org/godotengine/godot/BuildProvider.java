@@ -28,9 +28,9 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.godot;
+package app.blazium.godot;
 
-import org.godotengine.godot.variant.Callable;
+import app.blazium.godot.variant.Callable;
 
 import androidx.annotation.NonNull;
 

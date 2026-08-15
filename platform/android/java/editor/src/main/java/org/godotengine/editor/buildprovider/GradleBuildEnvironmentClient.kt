@@ -28,7 +28,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.editor.buildprovider
+package app.blazium.editor.buildprovider
 
 import android.content.ComponentName
 import android.content.Context
@@ -111,7 +111,7 @@ internal class GradleBuildEnvironmentClient(private val context: Context) {
 		connecting = true;
 
 		val intent = Intent("org.godotengine.action.BUILD_PROVIDER").apply {
-			setPackage("org.godotengine.godot_gradle_build_environment")
+			setPackage("app.blazium.godot_gradle_build_environment")
 		}
 		val info = context.packageManager.resolveService(intent, 0)
 		if (info == null) {

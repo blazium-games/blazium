@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CSVIndex" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Lookup index for CSV table rows.
+	</brief_description>
+	<description>
+		CSVIndex stores a column-based lookup table built by [method CSVTable.build_index]. It supports fast single-row and multi-row lookups and can report duplicate keys when built in unique mode.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="duplicate_keys" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				Returns keys that appeared more than once when the index was built in unique mode.
+			</description>
+		</method>
+		<method name="get_all" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="value" type="Variant" />
+			<description>
+				Returns all rows matching [param value].
+			</description>
+		</method>
+		<method name="get_column" qualifiers="const">
+			<return type="StringName" />
+			<description>
+				Returns the indexed column name.
+			</description>
+		</method>
+		<method name="get_row" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="value" type="Variant" />
+			<description>
+				Returns the first row for [param value], or [code]null[/code] when no row matches.
+			</description>
+		</method>
+		<method name="has" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="value" type="Variant" />
+			<description>
+				Returns [code]true[/code] if at least one row matches [param value].
+			</description>
+		</method>
+		<method name="is_unique" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns whether the index was built in unique mode.
+			</description>
+		</method>
+	</methods>
+</class>

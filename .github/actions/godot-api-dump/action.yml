@@ -1,0 +1,25 @@
+name: Dump Blazium API
+description: Dump Blazium API for GDExtension
+
+inputs:
+  bin:
+    description: The path to the Blazium executable
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # Dump GDExtension interface and API
+    - name: Dump GDExtension interface and API for blazium-cpp build
+      shell: sh
+      run: |
+        ${{ inputs.bin }} --headless --dump-gdextension-interface --dump-extension-api
+        mkdir blazium-api
+        cp -f gdextension_interface.h blazium-api/
+        cp -f extension_api.json blazium-api/
+
+    - name: Upload API dump
+      uses: ./.github/actions/upload-artifact
+      with:
+        name: blazium-api-dump
+        path: ./blazium-api/*

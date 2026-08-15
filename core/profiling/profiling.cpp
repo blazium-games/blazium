@@ -225,11 +225,11 @@ void godot_init_profiler() {
 		return;
 	}
 	initialized = true;
-	apple::instruments::LOG = os_log_create("org.godotengine.godot", OS_LOG_CATEGORY_POINTS_OF_INTEREST);
+	apple::instruments::LOG = os_log_create("app.blazium.godot", OS_LOG_CATEGORY_POINTS_OF_INTEREST);
 #ifdef INSTRUMENTS_SAMPLE_CALLSTACKS
-	apple::instruments::LOG_TRACING = os_log_create("org.godotengine.godot", OS_LOG_CATEGORY_DYNAMIC_STACK_TRACING);
+	apple::instruments::LOG_TRACING = os_log_create("app.blazium.godot", OS_LOG_CATEGORY_DYNAMIC_STACK_TRACING);
 #else
-	apple::instruments::LOG_TRACING = os_log_create("org.godotengine.godot", "tracing");
+	apple::instruments::LOG_TRACING = os_log_create("app.blazium.godot", "tracing");
 #endif
 }
 

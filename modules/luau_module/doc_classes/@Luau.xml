@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="@Luau" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="await">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="class">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="export">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="gdclass">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="require">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="signal">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="wait">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="wait_signal">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<annotations>
+		<annotation name="@abstract">
+			<return type="void" />
+			<description>
+			</description>
+		</annotation>
+		<annotation name="@class">
+			<return type="void" />
+			<description>
+			</description>
+		</annotation>
+		<annotation name="@icon">
+			<return type="void" />
+			<description>
+			</description>
+		</annotation>
+		<annotation name="@property">
+			<return type="void" />
+			<description>
+			</description>
+		</annotation>
+		<annotation name="@registerMethod">
+			<return type="void" />
+			<description>
+			</description>
+		</annotation>
+		<annotation name="@rpc">
+			<return type="void" />
+			<description>
+			</description>
+		</annotation>
+		<annotation name="@tool">
+			<return type="void" />
+			<description>
+			</description>
+		</annotation>
+	</annotations>
+</class>

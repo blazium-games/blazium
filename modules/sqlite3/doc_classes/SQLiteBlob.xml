@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SQLiteBlob" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Provides incremental read and write access to a BLOB field.
+	</brief_description>
+	<description>
+		Represents a handle to a binary large object (BLOB) stored in a database.
+		This class allows efficient partial reading and writing of large binary data without loading the entire value into memory.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="close">
+			<return type="void" />
+			<description>
+				Closes the BLOB handle and releases any associated resources.
+				The object should not be used after calling this method.
+			</description>
+		</method>
+		<method name="get_size" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the total size of the BLOB in bytes.
+			</description>
+		</method>
+		<method name="read_chunk">
+			<return type="PackedByteArray" />
+			<param index="0" name="offset" type="int" />
+			<param index="1" name="length" type="int" />
+			<description>
+				Reads a portion of the BLOB starting at [param offset] and spanning [param length] bytes.
+
+				Returns the read data as a [PackedByteArray].
+				If the requested range exceeds the BLOB size, only the available data is returned.
+			</description>
+		</method>
+		<method name="write_chunk">
+			<return type="bool" />
+			<param index="0" name="offset" type="int" />
+			<param index="1" name="buffer" type="PackedByteArray" />
+			<description>
+				Writes the contents of [param buffer] into the BLOB starting at [param offset].
+
+				Returns [code]true[/code] if the write operation succeeds.
+				Writing beyond the current BLOB size is not allowed.
+			</description>
+		</method>
+	</methods>
+</class>

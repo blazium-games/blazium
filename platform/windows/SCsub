@@ -8,6 +8,7 @@ from pathlib import Path
 
 import platform_windows_builders
 
+import methods
 from methods import get_compiler_version, redirect_emitter
 
 sources = []
@@ -69,6 +70,19 @@ def arrange_program_clean(prog):
         Clean(prog, extra_files_to_clean)
 
 
+def rc_defs_builder(target, source, env):
+    dst = str(target[0])
+
+    with methods.generated_wrapper(dst) as file:
+        file.write(
+            """\
+#define ICON_PATH platform/windows/icons/blazium_{external_status}.ico
+#define ICON_WRAP_PATH platform/windows/icons/blazium_console_{external_status}.ico
+""".format(**methods.get_version_info())
+        )
+
+
+env.CommandNoCache("godot_rc_defs.gen.h", env.Value(methods.get_version_info()), env.Run(rc_defs_builder))
 env["BUILDERS"]["RES"].emitter = redirect_emitter
 if env.editor_build:
     res_file = "godot_res.rc"
@@ -77,7 +91,7 @@ else:
     res_file = "godot_res_template.rc"
     res_target = "godot_res_template" + env["OBJSUFFIX"]
 res_obj = env.RES(res_target, res_file)
-env.Depends(res_obj, "#core/version_generated.gen.h")
+env.Depends(res_obj, ["#core/version_generated.gen.h", "godot_rc_defs.gen.h"])
 
 env.add_source_files(sources, common_win)
 
@@ -112,11 +126,12 @@ if env["accesskit"] and not env.msvc:
     sources += env.DEFLIB("uiautomationcore")
 
 if env["library_type"] == "static_library":
-    prog = env.add_library("#bin/godot", sources, PROGSUFFIX=env["PROGSUFFIX"])
+    prog = env.add_library("#bin/blazium", sources, PROGSUFFIX=env["PROGSUFFIX"])
 elif env["library_type"] == "shared_library":
-    prog = env.add_shared_library("#bin/godot", sources, PROGSUFFIX=env["PROGSUFFIX"])
+    prog = env.add_shared_library("#bin/blazium", sources, PROGSUFFIX=env["PROGSUFFIX"])
 else:
-    prog = env.add_program("#bin/godot", sources, PROGSUFFIX=env["PROGSUFFIX"])
+    prog = env.add_program("#bin/blazium", sources, PROGSUFFIX=env["PROGSUFFIX"])
+methods.add_hub_register_post_action(env, prog)
 arrange_program_clean(prog)
 
 env.Depends(prog, "godot.manifest")
@@ -132,7 +147,7 @@ if env["windows_subsystem"] == "gui":
         res_wrap_file = "godot_res_wrap_template.rc"
         res_wrap_target = "godot_res_wrap_template" + env["OBJSUFFIX"]
     res_wrap_obj = env_wrap.RES(res_wrap_target, res_wrap_file)
-    env_wrap.Depends(res_wrap_obj, "#core/version_generated.gen.h")
+    env_wrap.Depends(res_wrap_obj, ["#core/version_generated.gen.h", "godot_rc_defs.gen.h"])
 
     if env.msvc:
         env_wrap.Append(LINKFLAGS=["/SUBSYSTEM:CONSOLE"])
@@ -141,7 +156,7 @@ if env["windows_subsystem"] == "gui":
         env_wrap.Append(LINKFLAGS=["-Wl,--subsystem,console"])
         env_wrap.Append(LIBS=["version"])
 
-    prog_wrap = env_wrap.add_program("#bin/godot", common_win_wrap + res_wrap_obj, PROGSUFFIX=env["PROGSUFFIX_WRAP"])
+    prog_wrap = env_wrap.add_program("#bin/blazium", common_win_wrap + res_wrap_obj, PROGSUFFIX=env["PROGSUFFIX_WRAP"])
     arrange_program_clean(prog_wrap)
     env_wrap.Depends(prog_wrap, prog)
     sources += common_win_wrap + res_wrap_obj

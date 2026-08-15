@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DDDBrowserTextbox" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		In-world textbox asset and instance for DDDBrowser levels.
+	</brief_description>
+	<description>
+		Exports a textbox asset plus a textbox instance. Optionally references a font asset id or a child [DDDBrowserFont].
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="color" type="Color" setter="set_color" getter="get_color" default="Color(1, 1, 1, 1)">
+		</member>
+		<member name="font_asset_id" type="String" setter="set_font_asset_id" getter="get_font_asset_id" default="&quot;&quot;">
+		</member>
+		<member name="font_size" type="float" setter="set_font_size" getter="get_font_size" default="16.0">
+		</member>
+		<member name="text" type="String" setter="set_text" getter="get_text" default="&quot;Hello&quot;">
+		</member>
+		<member name="title" type="String" setter="set_title" getter="get_title" default="&quot;&quot;">
+		</member>
+	</members>
+</class>

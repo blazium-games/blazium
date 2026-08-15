@@ -789,7 +789,8 @@ void ProjectList::save_config() {
 // Load project data from p_property_key and return it in a ProjectList::Item.
 // p_favorite is passed directly into the Item.
 ProjectList::Item ProjectList::load_project_data(const String &p_path, bool p_favorite) {
-	String conf = p_path.path_join("project.godot");
+	String conf_name = ProjectSettings::get_project_settings_file_name(p_path);
+	String conf = p_path.path_join(conf_name.is_empty() ? String(ProjectSettings::PROJECT_FILE_GODOT) : conf_name);
 	bool grayed = false;
 	bool missing = false;
 	bool recovery_mode = false;
@@ -1107,7 +1108,7 @@ void ProjectList::_scan_folder_recursive(const String &p_path, List<String> *r_p
 
 		if (da->current_is_dir() && n[0] != '.') {
 			_scan_folder_recursive(da->get_current_dir().path_join(n), r_projects, p_scan_active);
-		} else if (n == "project.godot") {
+		} else if (n == "project.godot" || n == "project.blazium") {
 			r_projects->push_back(da->get_current_dir());
 		}
 		n = da->get_next();

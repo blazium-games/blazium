@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TownSdkClient" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Client wrapper that connects the Blazium engine to a TownServer instance over ENet.
+	</brief_description>
+	<description>
+		`TownSdkClient` owns the low-level C++ SDK, exposes it to GDScript and GDNative, and emits signals for all incoming events from the server. The module instantiates a singleton automatically during engine startup, which can be retrieved through `TownSdkClient.get_singleton()` or `Engine.get_singleton("TownSDK")`. Call `poll()` once per frame (e.g. from `_process()`) to keep the client responsive.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="admin_broadcast">
+			<return type="void" />
+			<param index="0" name="message" type="String" />
+			<param index="1" name="is_alert" type="bool" default="false" />
+			<description>
+			</description>
+		</method>
+		<method name="admin_kick">
+			<return type="void" />
+			<param index="0" name="username" type="String" />
+			<param index="1" name="reason" type="String" default="&quot;&quot;" />
+			<description>
+			</description>
+		</method>
+		<method name="admin_reload">
+			<return type="void" />
+			<param index="0" name="scope" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="admin_stats_request">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="authenticate">
+			<return type="void" />
+			<param index="0" name="jwt_token" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="battle_action">
+			<return type="void" />
+			<param index="0" name="battle_id" type="String" />
+			<param index="1" name="action" type="int" enum="TownSdkClient.BattleAction" />
+			<param index="2" name="target_id" type="String" default="&quot;&quot;" />
+			<description>
+			</description>
+		</method>
+		<method name="clear_debug_log">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="connect_to_server">
+			<return type="bool" />
+			<param index="0" name="address" type="String" />
+			<param index="1" name="port" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="disconnect_from_server">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="enter_region">
+			<return type="void" />
+			<param index="0" name="region_id" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_debug_log" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+			</description>
+		</method>
+		<method name="get_last_error_message" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_last_info_message" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_last_warning_message" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_server_version" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_singleton" qualifiers="static">
+			<return type="TownSdkClient" />
+			<description>
+			</description>
+		</method>
+		<method name="is_client_connected" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="is_debug_logging_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="leave_battle">
+			<return type="void" />
+			<param index="0" name="battle_id" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="leave_region">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="manual_reconnect">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="poll">
+			<return type="void" />
+			<param index="0" name="delta" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="send_move">
+			<return type="void" />
+			<param index="0" name="held" type="int" />
+			<param index="1" name="delta" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_auto_reconnect">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_debug_logging_enabled">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<param index="1" name="history_limit" type="int" default="64" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="admin_broadcast_received">
+			<param index="0" name="payload" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="admin_kick_received">
+			<param index="0" name="payload" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="admin_reload_received">
+			<param index="0" name="payload" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="admin_stats_received">
+			<param index="0" name="payload" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="battle_end">
+			<param index="0" name="battle" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="battle_indicator_despawn">
+			<param index="0" name="indicator" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="battle_indicator_spawn">
+			<param index="0" name="indicator" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="battle_log">
+			<param index="0" name="log" type="String" />
+			<description>
+			</description>
+		</signal>
+		<signal name="battle_start">
+			<param index="0" name="battle" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="battle_state">
+			<param index="0" name="state" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="connected">
+			<description>
+			</description>
+		</signal>
+		<signal name="connection_failed">
+			<description>
+			</description>
+		</signal>
+		<signal name="disconnected">
+			<param index="0" name="reason" type="String" />
+			<description>
+			</description>
+		</signal>
+		<signal name="error">
+			<param index="0" name="message" type="String" />
+			<description>
+			</description>
+		</signal>
+		<signal name="move_state">
+			<param index="0" name="state" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="reconnect_failed">
+			<param index="0" name="reason" type="String" />
+			<description>
+			</description>
+		</signal>
+		<signal name="reconnected">
+			<param index="0" name="resume_state" type="Variant" />
+			<description>
+			</description>
+		</signal>
+		<signal name="reconnecting">
+			<param index="0" name="attempt" type="int" />
+			<param index="1" name="next_delay" type="float" />
+			<description>
+			</description>
+		</signal>
+		<signal name="snapshot_received">
+			<param index="0" name="snapshot" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="ACTION_ATTACK" value="0" enum="BattleAction">
+		</constant>
+		<constant name="ACTION_BLOCK" value="1" enum="BattleAction">
+		</constant>
+		<constant name="ACTION_DEFEND" value="2" enum="BattleAction">
+		</constant>
+	</constants>
+</class>

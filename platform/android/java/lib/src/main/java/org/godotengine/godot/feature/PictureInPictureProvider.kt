@@ -28,7 +28,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.godot.feature
+package app.blazium.godot.feature
 
 /**
  * Provides APIs to enable picture-in-picture.

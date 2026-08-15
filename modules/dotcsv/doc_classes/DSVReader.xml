@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DSVReader" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Streaming delimiter-separated value reader.
+	</brief_description>
+	<description>
+		DSVReader reads CSV, TSV, PSV, and other single-character delimiter-separated files one row at a time. It uses the same parser options as [DSVImporter] without loading the full file into memory.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="close">
+			<return type="void" />
+			<description>
+				Closes the current file and resets the reader.
+			</description>
+		</method>
+		<method name="get_error" qualifiers="const">
+			<return type="int" enum="Error" />
+			<description>
+				Returns the last error produced by [method open] or [method read_row].
+			</description>
+		</method>
+		<method name="get_length" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the current file length in bytes, or [code]0[/code] when no file is open.
+			</description>
+		</method>
+		<method name="get_line" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the current one-based input line number.
+			</description>
+		</method>
+		<method name="get_position" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the current file byte position, or [code]0[/code] when no file is open.
+			</description>
+		</method>
+		<method name="is_eof" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when the file has been fully read and no parsed rows remain.
+			</description>
+		</method>
+		<method name="open">
+			<return type="int" enum="Error" />
+			<param index="0" name="file_path" type="String" />
+			<param index="1" name="delimiter" type="String" default="&quot;,&quot;" />
+			<param index="2" name="options" type="Dictionary" default="{}" />
+			<description>
+				Opens [param file_path] for streaming reads. [param options] supports [code]trim_fields[/code], [code]skip_empty_rows[/code], [code]comment_prefixes[/code], [code]row_length_mode[/code], [code]null_values[/code], [code]true_values[/code], and [code]false_values[/code].
+			</description>
+		</method>
+		<method name="read_row">
+			<return type="PackedStringArray" />
+			<description>
+				Reads and returns the next parsed row. Returns an empty [PackedStringArray] at EOF or after a parse error.
+			</description>
+		</method>
+		<method name="read_rows">
+			<return type="Array" />
+			<param index="0" name="max_rows" type="int" default="0" />
+			<description>
+				Reads up to [param max_rows] rows. If [param max_rows] is [code]0[/code], reads until EOF.
+			</description>
+		</method>
+	</methods>
+</class>

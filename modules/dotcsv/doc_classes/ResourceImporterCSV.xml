@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ResourceImporterCSV" inherits="ResourceImporter" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Imports CSV, TSV, and PSV files as CSV resources.
+	</brief_description>
+	<description>
+		ResourceImporterCSV imports delimiter-separated source files into [CSV] resources for use in projects. It supports comma, semicolon, tab, and pipe delimiters, optional headers, parser options, and custom null and boolean mappings.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="comment_prefixes" type="String" setter="" getter="" default="&quot;&quot;">
+			Comma-separated prefixes for comment rows to skip during import.
+		</member>
+		<member name="delimiter" type="int" setter="" getter="" default="0">
+			Delimiter preset used to parse the source file.
+		</member>
+		<member name="false_values" type="String" setter="" getter="" default="&quot;&quot;">
+			Comma-separated field values to convert to [code]false[/code].
+		</member>
+		<member name="headers" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], uses the first accepted row as dictionary keys.
+		</member>
+		<member name="null_values" type="String" setter="" getter="" default="&quot;&quot;">
+			Comma-separated field values to convert to [code]null[/code].
+		</member>
+		<member name="row_length_mode" type="int" setter="" getter="" default="0">
+			Controls how short or long rows are handled during import.
+		</member>
+		<member name="skip_empty_rows" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], skips rows that contain only empty fields.
+		</member>
+		<member name="trim_fields" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], trims leading and trailing whitespace from unquoted fields.
+		</member>
+		<member name="true_values" type="String" setter="" getter="" default="&quot;&quot;">
+			Comma-separated field values to convert to [code]true[/code].
+		</member>
+	</members>
+</class>

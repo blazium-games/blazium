@@ -28,7 +28,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.editor
+package app.blazium.editor
 
 import android.Manifest
 import android.app.ActivityManager
@@ -56,23 +56,23 @@ import androidx.core.content.edit
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.isVisible
 import androidx.window.layout.WindowMetricsCalculator
-import org.godotengine.editor.buildprovider.GradleBuildProvider
-import org.godotengine.editor.embed.EmbeddedGodotGame
-import org.godotengine.editor.embed.GameMenuFragment
-import org.godotengine.editor.utils.signApk
-import org.godotengine.editor.utils.verifyApk
-import org.godotengine.godot.BuildProvider
-import org.godotengine.godot.Godot
-import org.godotengine.godot.GodotActivity
-import org.godotengine.godot.GodotLib
-import org.godotengine.godot.editor.utils.EditorUtils
-import org.godotengine.godot.editor.utils.GameMenuUtils
-import org.godotengine.godot.editor.utils.GameMenuUtils.GameEmbedMode
-import org.godotengine.godot.editor.utils.GameMenuUtils.fetchGameEmbedMode
-import org.godotengine.godot.error.Error
-import org.godotengine.godot.utils.DialogUtils
-import org.godotengine.godot.utils.PermissionsUtil
-import org.godotengine.godot.utils.ProcessPhoenix
+import app.blazium.editor.buildprovider.GradleBuildProvider
+import app.blazium.editor.embed.EmbeddedGodotGame
+import app.blazium.editor.embed.GameMenuFragment
+import app.blazium.editor.utils.signApk
+import app.blazium.editor.utils.verifyApk
+import app.blazium.godot.BuildProvider
+import app.blazium.godot.Godot
+import app.blazium.godot.GodotActivity
+import app.blazium.godot.GodotLib
+import app.blazium.godot.editor.utils.EditorUtils
+import app.blazium.godot.editor.utils.GameMenuUtils
+import app.blazium.godot.editor.utils.GameMenuUtils.GameEmbedMode
+import app.blazium.godot.editor.utils.GameMenuUtils.fetchGameEmbedMode
+import app.blazium.godot.error.Error
+import app.blazium.godot.utils.DialogUtils
+import app.blazium.godot.utils.PermissionsUtil
+import app.blazium.godot.utils.ProcessPhoenix
 import org.godotengine.openxr.vendors.utils.*
 import java.io.File
 import kotlin.math.min
@@ -170,7 +170,7 @@ abstract class BaseGodotEditor : GodotActivity(), GameMenuFragment.GameMenuListe
 			}
 
 			return try {
-				Class.forName("org.godotengine.editor.GodotEditorTest")
+				Class.forName("app.blazium.editor.GodotEditorTest")
 				true
 			} catch (_: ClassNotFoundException) {
 				false

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="BlaziumGoapAgent" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		An intelligent entity that evaluates goals and executes planned actions natively.
+	</brief_description>
+	<description>
+		[BlaziumGoapAgent] is the orchestration node of the native GOAP module. It requires a [BlaziumGoapWorldState], a container of [BlaziumGoapGoal]s, and a container of available [BlaziumGoapAction]s. On every process tick, it dynamically evaluates the highest priority active goal and instructs the planner to find the cheapest path of actions. It seamlessly switches goals mid-execution if real-time factors shift Native properties.
+		To use, attach this node to an Actor, set its container paths, and call `init(actor)`.
+
+		Example structural usage:
+		[codeblock]
+		var agent = BlaziumGoapAgent.new()
+		var action_container = Node.new()
+		var goal_container = Node.new()
+
+		action_container.add_child(GatherWood.new())
+		action_container.add_child(BuildCampfire.new())
+		goal_container.add_child(GoalSurvive.new())
+
+		agent.add_child(action_container)
+		agent.add_child(goal_container)
+
+		agent.goals_node = agent.get_path_to(goal_container)
+		agent.actions_node = agent.get_path_to(action_container)
+
+		actor.add_child(agent)
+		agent.init(actor)
+		[/codeblock]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="debug_select">
+			<return type="void" />
+			<description>
+				Forces the editor debugger visualizer to highlight this specific agent node for state tracking.
+			</description>
+		</method>
+		<method name="get_current_action" qualifiers="const">
+			<return type="BlaziumGoapAction" />
+			<description>
+				Returns the sequence action that the agent is currently attempting to loop via [method BlaziumGoapAction._perform]
+			</description>
+		</method>
+		<method name="get_world_state" qualifiers="const">
+			<return type="BlaziumGoapWorldState" />
+			<description>
+				Returns the global context dictionary attached to this agent.
+			</description>
+		</method>
+		<method name="init">
+			<return type="void" />
+			<param index="0" name="actor" type="Node" />
+			<description>
+				Must be called manually! Automatically compiles all child Actions and Goals natively mapping them back to the provided Actor node and starting the planning loop dynamically.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="actions_node" type="NodePath" setter="set_actions_path" getter="get_actions_path" default="NodePath(&quot;&quot;)">
+			NodePath pointing to the node parenting the [BlaziumGoapAction] instances available for compilation.
+		</member>
+		<member name="current_goal" type="BlaziumGoapGoal" setter="" getter="get_current_goal">
+			The Goal currently deemed highest priority natively guiding real-time pathing.
+		</member>
+		<member name="current_plan" type="Array" setter="" getter="get_current_plan" default="[]">
+			An iterated Array listing the actions strictly formulated by the ActionPlanner backwards A* search sequentially.
+		</member>
+		<member name="debug_enabled" type="bool" setter="set_debug_enabled" getter="is_debug_enabled" default="false">
+			Allows engine-remote profiler integration via native Godot debugger pipelines natively tracing tree states.
+		</member>
+		<member name="debug_prefix" type="String" setter="set_debug_prefix" getter="get_debug_prefix" default="&quot;goap&quot;">
+			Used dynamically to construct signal headers mapping internally to the Godot Editor tools plugin system.
+		</member>
+		<member name="goals_node" type="NodePath" setter="set_goals_path" getter="get_goals_path" default="NodePath(&quot;&quot;)">
+			NodePath pointing to the node parenting the [BlaziumGoapGoal] instances tracking priorities.
+		</member>
+	</members>
+	<signals>
+		<signal name="action_changed">
+			<param index="0" name="action" type="BlaziumGoapAction" />
+			<description>
+				Emitted explicitly whenever the Agent completes an action natively and prepares the subsequent execution block.
+			</description>
+		</signal>
+		<signal name="goal_changed">
+			<param index="0" name="goal" type="BlaziumGoapGoal" />
+			<description>
+				Emitted securely whenever evaluation natively overrides the prior goal in favor of a new priority struct.
+			</description>
+		</signal>
+		<signal name="plan_changed">
+			<param index="0" name="plan" type="Array" />
+			<description>
+				Fired safely whenever a real-time path needs absolute resolving natively altering sequence bounds securely!
+			</description>
+		</signal>
+	</signals>
+</class>

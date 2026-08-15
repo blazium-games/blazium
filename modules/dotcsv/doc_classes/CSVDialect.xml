@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CSVDialect" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Reusable CSV parsing profile.
+	</brief_description>
+	<description>
+		CSVDialect stores delimiter, header, casting, and parser option settings for common CSV variants. It can be created from built-in profiles, dictionaries, or inferred from a sample string.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="from_dictionary" qualifiers="static">
+			<return type="CSVDialect" />
+			<param index="0" name="data" type="Dictionary" />
+			<description>
+				Creates a dialect from a dictionary produced by [method to_dictionary].
+			</description>
+		</method>
+		<method name="from_profile" qualifiers="static">
+			<return type="CSVDialect" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Creates a built-in dialect profile. Supported names include [code]csv[/code], [code]rfc4180[/code], [code]tsv[/code], [code]excel[/code], and [code]pipes[/code].
+			</description>
+		</method>
+		<method name="import_file" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Imports [param path] using this dialect.
+			</description>
+		</method>
+		<method name="import_string" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="string" type="String" />
+			<description>
+				Imports [param string] using this dialect.
+			</description>
+		</method>
+		<method name="sniff" qualifiers="static">
+			<return type="CSVDialect" />
+			<param index="0" name="sample" type="String" />
+			<param index="1" name="options" type="Dictionary" default="{}" />
+			<description>
+				Infers a dialect from [param sample].
+			</description>
+		</method>
+		<method name="to_dictionary" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Serializes this dialect to a dictionary.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="cast_fields" type="bool" setter="set_cast_fields" getter="get_cast_fields" default="true">
+			If [code]true[/code], imported values are converted to typed values.
+		</member>
+		<member name="delimiter" type="String" setter="set_delimiter" getter="get_delimiter" default="&quot;,&quot;">
+			The delimiter used to split fields.
+		</member>
+		<member name="headers" type="bool" setter="set_headers" getter="get_headers" default="false">
+			If [code]true[/code], the first row is treated as headers.
+		</member>
+		<member name="options" type="Dictionary" setter="set_options" getter="get_options" default="{}">
+			Parser options used by this dialect.
+		</member>
+	</members>
+</class>

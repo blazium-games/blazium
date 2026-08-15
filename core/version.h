@@ -74,9 +74,26 @@
 // Example: "3.1.4.stable.mono.double.official"
 #define GODOT_VERSION_FULL_BUILD GODOT_VERSION_FULL_CONFIG "." GODOT_VERSION_BUILD
 
-// Same as above, but prepended with Godot's name and a cosmetic "v" for "version".
-// Example: "Godot v3.1.4.stable.official.mono.double"
-#define GODOT_VERSION_FULL_NAME GODOT_VERSION_NAME " v" GODOT_VERSION_FULL_BUILD
+// Blazium product version (independent of the Godot fork version).
+// Example: "0.6.0"
+#define EXTERNAL_VERSION_NUMBER _MKSTR(EXTERNAL_VERSION_MAJOR) "." _MKSTR(EXTERNAL_VERSION_MINOR) "." _MKSTR(EXTERNAL_VERSION_PATCH)
+
+// External version number encoded as hexadecimal int for easy comparison.
+#define EXTERNAL_VERSION_HEX 0x100000 * EXTERNAL_VERSION_MAJOR + 0x1000 * EXTERNAL_VERSION_MINOR + EXTERNAL_VERSION_PATCH
+
+// Example: "0.6.0.dev.mono.double"
+#ifdef REAL_T_IS_DOUBLE
+#define EXTERNAL_VERSION_FULL_CONFIG EXTERNAL_VERSION_NUMBER "." EXTERNAL_VERSION_STATUS GODOT_VERSION_MODULE_CONFIG ".double"
+#else
+#define EXTERNAL_VERSION_FULL_CONFIG EXTERNAL_VERSION_NUMBER "." EXTERNAL_VERSION_STATUS GODOT_VERSION_MODULE_CONFIG
+#endif
+
+// Example: "0.6.0.dev (4.7.1.stable.official)"
+#define EXTERNAL_VERSION_FULL_BUILD EXTERNAL_VERSION_FULL_CONFIG " (" GODOT_VERSION_FULL_BUILD ")"
+
+// Same as above, but prepended with the product name and a cosmetic "v" for "version".
+// Example: "Blazium Engine v0.6.0.dev (4.7.1.stable.official)"
+#define GODOT_VERSION_FULL_NAME GODOT_VERSION_NAME " v" EXTERNAL_VERSION_FULL_BUILD
 
 // Git commit hash, generated at build time in `core/version_hash.gen.cpp`.
 extern const char *const GODOT_VERSION_HASH;

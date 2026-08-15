@@ -28,7 +28,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.godot
+package app.blazium.godot
 
 import android.app.Activity
 import android.app.AlertDialog
@@ -54,25 +54,25 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import org.godotengine.godot.input.GodotEditText
-import org.godotengine.godot.input.GodotInputHandler
-import org.godotengine.godot.io.FilePicker
-import org.godotengine.godot.io.StorageScope
-import org.godotengine.godot.io.directory.DirectoryAccessHandler
-import org.godotengine.godot.io.file.FileAccessHandler
-import org.godotengine.godot.nativeapi.GodotNativeBridge
-import org.godotengine.godot.plugin.AndroidRuntimePlugin
-import org.godotengine.godot.plugin.GodotPlugin
-import org.godotengine.godot.plugin.GodotPluginRegistry
-import org.godotengine.godot.tts.GodotTTS
-import org.godotengine.godot.utils.GodotNetUtils
-import org.godotengine.godot.utils.PermissionsUtil
-import org.godotengine.godot.utils.PermissionsUtil.requestPermission
-import org.godotengine.godot.utils.beginBenchmarkMeasure
-import org.godotengine.godot.utils.benchmarkFile
-import org.godotengine.godot.utils.endBenchmarkMeasure
-import org.godotengine.godot.utils.useBenchmark
-import org.godotengine.godot.xr.XRMode
+import app.blazium.godot.input.GodotEditText
+import app.blazium.godot.input.GodotInputHandler
+import app.blazium.godot.io.FilePicker
+import app.blazium.godot.io.StorageScope
+import app.blazium.godot.io.directory.DirectoryAccessHandler
+import app.blazium.godot.io.file.FileAccessHandler
+import app.blazium.godot.nativeapi.GodotNativeBridge
+import app.blazium.godot.plugin.AndroidRuntimePlugin
+import app.blazium.godot.plugin.GodotPlugin
+import app.blazium.godot.plugin.GodotPluginRegistry
+import app.blazium.godot.tts.GodotTTS
+import app.blazium.godot.utils.GodotNetUtils
+import app.blazium.godot.utils.PermissionsUtil
+import app.blazium.godot.utils.PermissionsUtil.requestPermission
+import app.blazium.godot.utils.beginBenchmarkMeasure
+import app.blazium.godot.utils.benchmarkFile
+import app.blazium.godot.utils.endBenchmarkMeasure
+import app.blazium.godot.utils.useBenchmark
+import app.blazium.godot.xr.XRMode
 import java.util.*
 import java.util.concurrent.Callable
 import java.util.concurrent.FutureTask

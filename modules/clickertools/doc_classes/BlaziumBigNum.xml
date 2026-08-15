@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="BlaziumBigNum" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Number representation up to [code]1e(2^64)[/code], useful for incremental games.
+	</brief_description>
+	<description>
+		Number representation up to [code]1e(2^64)[/code], useful for incremental games.
+	</description>
+	<tutorials>
+		<link title="Clicker Tools Module Tests">https://github.com/blazium-games/clickertools_module_tests</link>
+		<link title="BigNum++">https://github.com/AmmoniumX/BigNumPlusPlus</link>
+	</tutorials>
+	<methods>
+		<method name="abs_num" qualifiers="const">
+			<return type="BlaziumBigNum" />
+			<description>
+				Returns the absolute value.
+			</description>
+		</method>
+		<method name="add" qualifiers="const">
+			<return type="BlaziumBigNum" />
+			<param index="0" name="other" type="BlaziumBigNum" />
+			<description>
+				Adds [param other] and returns the new value.
+			</description>
+		</method>
+		<method name="as_string" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="precision" type="int" default="-1" />
+			<description>
+				Returns the value as a string with a specified [param precision].
+				Use [method to_pretty_string] if you need the scientific e notation.
+			</description>
+		</method>
+		<method name="compare_to" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="other" type="BlaziumBigNum" />
+			<description>
+				Does a comparison with [param other].
+				Returns [code]1[/code] if [param other] is bigger, [code]-1[/code] if [param other] is smaller and [code]0[/code] if it is equal.
+			</description>
+		</method>
+		<method name="div" qualifiers="const">
+			<return type="BlaziumBigNum" />
+			<param index="0" name="other" type="BlaziumBigNum" />
+			<description>
+				Divides by [param other] and returns the new value.
+			</description>
+		</method>
+		<method name="exp" qualifiers="static">
+			<return type="BlaziumBigNum" />
+			<param index="0" name="n" type="int" />
+			<description>
+				Returns e^[param n].
+			</description>
+		</method>
+		<method name="from_bignum" qualifiers="static">
+			<return type="BlaziumBigNum" />
+			<param index="0" name="value" type="BlaziumBigNum" />
+			<description>
+				Creates a [BlaziumBigNum] from [param value].
+			</description>
+		</method>
+		<method name="from_float" qualifiers="static">
+			<return type="BlaziumBigNum" />
+			<param index="0" name="value" type="float" />
+			<description>
+				Creates a [BlaziumBigNum] from [param value].
+			</description>
+		</method>
+		<method name="from_mantissa_exponent" qualifiers="static">
+			<return type="BlaziumBigNum" />
+			<param index="0" name="mantissa" type="float" />
+			<param index="1" name="exponent" type="int" />
+			<description>
+				Creates a [BlaziumBigNum] from a [param mantissa] and a [param exponent].
+			</description>
+		</method>
+		<method name="from_string" qualifiers="static">
+			<return type="BlaziumBigNum" />
+			<param index="0" name="value" type="String" />
+			<description>
+				Creates a [BlaziumBigNum] from a string representing a number, supports scientific e notation.
+				[codeblock]
+				var big_num = BlaziumBigNum.from_string("1.2e200")
+				[/codeblock]
+			</description>
+		</method>
+		<method name="get_default_max_digits" qualifiers="static">
+			<return type="int" />
+			<description>
+				Returns the default amount of "real" digits to display before using scientific notation.
+			</description>
+		</method>
+		<method name="get_default_print_precision" qualifiers="static">
+			<return type="int" />
+			<description>
+				Returns the default amount of fractional digits to display on scientific notation.
+			</description>
+		</method>
+		<method name="get_exponent" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the exponent.
+			</description>
+		</method>
+		<method name="get_inf" qualifiers="static">
+			<return type="BlaziumBigNum" />
+			<description>
+				Returns the infinite representation.
+			</description>
+		</method>
+		<method name="get_mantissa" qualifiers="const">
+			<return type="float" />
+			<description>
+				Returns the mantissa.
+			</description>
+		</method>
+		<method name="get_max" qualifiers="static">
+			<return type="BlaziumBigNum" />
+			<description>
+				Returns the maximum value.
+			</description>
+		</method>
+		<method name="get_min" qualifiers="static">
+			<return type="BlaziumBigNum" />
+			<description>
+				Returns the minimum value.
+			</description>
+		</method>
+		<method name="get_nan" qualifiers="static">
+			<return type="BlaziumBigNum" />
+			<description>
+				Returns the not-a-number representation.
+			</description>
+		</method>
+		<method name="is_approximately_equal" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="other" type="BlaziumBigNum" />
+			<param index="1" name="tolerance" type="float" default="1e-09" />
+			<description>
+				Returns true if [param other] is equal within a [param tolerance].
+			</description>
+		</method>
+		<method name="is_equal_to" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="other" type="BlaziumBigNum" />
+			<description>
+				Returns true if [param other] is equal.
+			</description>
+		</method>
+		<method name="is_greater_than" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="other" type="BlaziumBigNum" />
+			<description>
+				Returns true if [param other] is smaller.
+			</description>
+		</method>
+		<method name="is_greater_than_or_equal_to" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="other" type="BlaziumBigNum" />
+			<description>
+				Returns true if [param other] is smaller or equal.
+			</description>
+		</method>
+		<method name="is_inf" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns true if is infinite.
+			</description>
+		</method>
+		<method name="is_less_than" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="other" type="BlaziumBigNum" />
+			<description>
+				Returns true if [param other] is greater.
+			</description>
+		</method>
+		<method name="is_less_than_or_equal_to" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="other" type="BlaziumBigNum" />
+			<description>
+				Returns true if [param other] is greater or equal.
+			</description>
+		</method>
+		<method name="is_nan" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns true if is not a number.
+			</description>
+		</method>
+		<method name="is_negative" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns true if is negative.
+			</description>
+		</method>
+		<method name="is_positive" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns true if is positive.
+			</description>
+		</method>
+		<method name="log10" qualifiers="const">
+			<return type="float" />
+			<description>
+				Returns log10(num), or [code]NAN[/code] if the result would be too large.
+			</description>
+		</method>
+		<method name="max_of" qualifiers="static">
+			<return type="BlaziumBigNum" />
+			<param index="0" name="a" type="BlaziumBigNum" />
+			<param index="1" name="b" type="BlaziumBigNum" />
+			<description>
+				Returns the greater of [param a] and [param b].
+			</description>
+		</method>
+		<method name="min_of" qualifiers="static">
+			<return type="BlaziumBigNum" />
+			<param index="0" name="a" type="BlaziumBigNum" />
+			<param index="1" name="b" type="BlaziumBigNum" />
+			<description>
+				Returns the smaller of [param a] and [param b].
+			</description>
+		</method>
+		<method name="mul" qualifiers="const">
+			<return type="BlaziumBigNum" />
+			<param index="0" name="other" type="BlaziumBigNum" />
+			<description>
+				Multiplies by [param other] and returns the new value.
+			</description>
+		</method>
+		<method name="negate" qualifiers="const">
+			<return type="BlaziumBigNum" />
+			<description>
+				Returns the negative.
+			</description>
+		</method>
+		<method name="parse_float">
+			<return type="void" />
+			<param index="0" name="value" type="float" />
+			<description>
+				Sets the value using [param value].
+			</description>
+		</method>
+		<method name="parse_mantissa_exponent">
+			<return type="void" />
+			<param index="0" name="mantissa" type="float" />
+			<param index="1" name="exponent" type="int" />
+			<description>
+				Sets the value using a [param mantissa] and a [param exponent].
+			</description>
+		</method>
+		<method name="parse_string">
+			<return type="void" />
+			<param index="0" name="value" type="String" />
+			<description>
+				Sets the value using a string representing a number, supports scientific e notation.
+			</description>
+		</method>
+		<method name="pow_float" qualifiers="const">
+			<return type="BlaziumBigNum" />
+			<param index="0" name="power" type="float" />
+			<description>
+				Returns num^[param power].
+			</description>
+		</method>
+		<method name="pow_int" qualifiers="const">
+			<return type="BlaziumBigNum" />
+			<param index="0" name="power" type="int" />
+			<description>
+				Returns num^[param power].
+			</description>
+		</method>
+		<method name="root" qualifiers="const">
+			<return type="BlaziumBigNum" />
+			<param index="0" name="n" type="int" />
+			<description>
+				Returns the [param n]th root.
+			</description>
+		</method>
+		<method name="set_default_max_digits" qualifiers="static">
+			<return type="void" />
+			<param index="0" name="max_digits" type="int" />
+			<description>
+				Sets the default amount of "real" digits to display before using scientific notation.
+			</description>
+		</method>
+		<method name="set_default_print_precision" qualifiers="static">
+			<return type="void" />
+			<param index="0" name="precision" type="int" />
+			<description>
+				Sets the default amount of fractional digits to display on scientific notation.
+			</description>
+		</method>
+		<method name="sqroot" qualifiers="const">
+			<return type="BlaziumBigNum" />
+			<description>
+				Returns the square root.
+			</description>
+		</method>
+		<method name="sub" qualifiers="const">
+			<return type="BlaziumBigNum" />
+			<param index="0" name="other" type="BlaziumBigNum" />
+			<description>
+				Subtracts [param other] and returns the new value.
+			</description>
+		</method>
+		<method name="to_int" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the value as a integer.
+			</description>
+		</method>
+		<method name="to_pretty_string" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="precision" type="int" default="-1" />
+			<description>
+				Returns the value as a string using [b]scientific e notation[/b] with a specified [param precision].
+			</description>
+		</method>
+	</methods>
+</class>

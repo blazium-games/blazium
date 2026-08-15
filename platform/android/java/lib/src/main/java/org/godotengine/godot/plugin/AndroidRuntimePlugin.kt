@@ -28,15 +28,15 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.godot.plugin
+package app.blazium.godot.plugin
 
 import android.content.Intent
 import android.util.Log
 import androidx.annotation.Keep
 import androidx.core.net.toUri
 
-import org.godotengine.godot.Godot
-import org.godotengine.godot.variant.Callable
+import app.blazium.godot.Godot
+import app.blazium.godot.variant.Callable
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Proxy
 

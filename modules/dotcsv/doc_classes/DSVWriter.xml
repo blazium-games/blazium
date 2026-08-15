@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DSVWriter" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Streaming delimiter-separated value writer.
+	</brief_description>
+	<description>
+		DSVWriter writes delimiter-separated files one row at a time without building the complete output string in memory.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="close">
+			<return type="void" />
+			<description>
+				Closes the current output file.
+			</description>
+		</method>
+		<method name="get_error" qualifiers="const">
+			<return type="int" enum="Error" />
+			<description>
+				Returns the last error produced by [method open].
+			</description>
+		</method>
+		<method name="open">
+			<return type="int" enum="Error" />
+			<param index="0" name="file_path" type="String" />
+			<param index="1" name="delimiter" type="String" default="&quot;,&quot;" />
+			<param index="2" name="append" type="bool" default="false" />
+			<description>
+				Opens [param file_path] for streaming writes. If [param append] is [code]true[/code], rows are appended to an existing file when possible.
+			</description>
+		</method>
+		<method name="write_row">
+			<return type="bool" />
+			<param index="0" name="row" type="Variant" />
+			<description>
+				Writes one row. Arrays and [PackedStringArray] values are written as fields.
+			</description>
+		</method>
+		<method name="write_rows">
+			<return type="bool" />
+			<param index="0" name="rows" type="Array" />
+			<description>
+				Writes each row in [param rows].
+			</description>
+		</method>
+	</methods>
+</class>

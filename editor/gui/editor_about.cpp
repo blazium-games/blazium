@@ -57,6 +57,7 @@ void EditorAbout::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_TRANSLATION_CHANGED: {
 			_about_text_label->set_text(
+					String(U"© 2024-present ") + TTR("Blazium Engine contributors") + ".\n" +
 					String(U"© 2014-present ") + TTR("Godot Engine contributors") + ".\n" +
 					String(U"© 2007-2014 Juan Linietsky, Ariel Manzur.\n"));
 
@@ -211,7 +212,7 @@ Label *EditorAbout::_create_section(Control *p_parent, const String &p_name, con
 }
 
 EditorAbout::EditorAbout() {
-	set_title(TTRC("Thanks from the Godot community!"));
+	set_title(TTRC("Thanks from the Blazium community!"));
 	set_hide_on_ok(true);
 
 	VBoxContainer *vbc = memnew(VBoxContainer);
@@ -260,6 +261,7 @@ EditorAbout::EditorAbout() {
 		vb->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 		sc->add_child(vb);
 
+		_create_section(vb, TTRC("Blazium Developers"), BLAZIUM_DEVELOPERS, FLAG_SINGLE_COLUMN);
 		_create_section(vb, TTRC("Project Founders"), AUTHORS_FOUNDERS, FLAG_SINGLE_COLUMN);
 		_create_section(vb, TTRC("Lead Developer"), AUTHORS_LEAD_DEVELOPERS);
 		// The section title will be updated in NOTIFICATION_TRANSLATION_CHANGED.
@@ -278,6 +280,7 @@ EditorAbout::EditorAbout() {
 		vb->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 		sc->add_child(vb);
 
+		_create_section(vb, TTRC("Blazium Sponsors"), BLAZIUM_SPONSORS, FLAG_ALLOW_WEBSITE | FLAG_SINGLE_COLUMN);
 		_create_section(vb, TTRC("Patrons"), DONORS_PATRONS, FLAG_ALLOW_WEBSITE | FLAG_SINGLE_COLUMN);
 		_create_section(vb, TTRC("Platinum Sponsors"), DONORS_SPONSORS_PLATINUM, FLAG_ALLOW_WEBSITE);
 		_create_section(vb, TTRC("Gold Sponsors"), DONORS_SPONSORS_GOLD, FLAG_ALLOW_WEBSITE);

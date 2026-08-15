@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPPromptProjectInfo" inherits="JustAMCPPrompt" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Provides a built-in prompt with project.godot metadata.
+	</brief_description>
+	<description>
+		A [JustAMCPPrompt] implementation that reads project metadata such as the project name, configured main scene, version fields, and related settings from [code]project.godot[/code].
+	</description>
+	<tutorials>
+		<link title="Model Context Protocol (MCP)">https://modelcontextprotocol.io/</link>
+	</tutorials>
+</class>

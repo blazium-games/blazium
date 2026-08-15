@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="BlaziumGoapWorldState" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Contains native dictionaries representing the current state of the game world.
+	</brief_description>
+	<description>
+		[BlaziumGoapWorldState] acts as the global blackboard for a [BlaziumGoapAgent], mapping literal string keys to boolean, float, int, or generic object states. The planner uses these properties statically, while action executions mutate the state actively via [method set_state] upon finishing.
+
+		Variables bind intuitively across varying scalar definitions identically in C++ logic:
+		[codeblock]
+		var valid = BlaziumGoapWorldState.is_satisfied(true, true)
+		print(valid) # True outputs True!
+
+		# Mathematical checks execute automatically:
+		valid = BlaziumGoapWorldState.is_satisfied(5.0, 5)
+		print(valid) # Matches securely irrespective of typing formats!
+		[/codeblock]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="clear_state">
+			<return type="void" />
+			<description>
+				Erases all key-value entries currently tracked in the state dictionary.
+			</description>
+		</method>
+		<method name="erase_state">
+			<return type="void" />
+			<param index="0" name="state_name" type="StringName" />
+			<description>
+				Removes the specific [param state_name] from the state dictionary if it exists.
+			</description>
+		</method>
+		<method name="get_elements" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns an Array formatted strictly for the built-in Editor Debugger natively syncing property panels.
+			</description>
+		</method>
+		<method name="get_state" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="state_name" type="StringName" />
+			<param index="1" name="default" type="Variant" default="null" />
+			<description>
+				Accesses the state matching [param state_name], falling back to [param default] if it is unregistered.
+			</description>
+		</method>
+		<method name="is_satisfied" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="blackboard_value" type="Variant" />
+			<param index="1" name="desired_value" type="Variant" />
+			<description>
+				Evaluates whether a value present in the [param blackboard_value] fully satisfies the requirements of a target [param desired_value], securely handling integer matching against float bounds dynamically.
+			</description>
+		</method>
+		<method name="set_state">
+			<return type="void" />
+			<param index="0" name="state_name" type="StringName" />
+			<param index="1" name="value" type="Variant" />
+			<description>
+				Binds the given [param value] mapping strictly to [param state_name].
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="state" type="Dictionary" setter="set_state_dictionary" getter="get_state_dictionary" default="{}">
+			Manages the raw data mappings internally. Changing it emits [signal state_updated].
+		</member>
+	</members>
+	<signals>
+		<signal name="state_updated">
+			<description>
+				Emitted explicitly whenever the internal state dictionary adds, updates, or erases values securely.
+			</description>
+		</signal>
+	</signals>
+</class>

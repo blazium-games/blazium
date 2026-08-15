@@ -28,16 +28,16 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.editor
+package app.blazium.editor
 
 import android.Manifest
 import android.util.Log
 import androidx.annotation.CallSuper
-import org.godotengine.godot.Godot
-import org.godotengine.godot.GodotLib
-import org.godotengine.godot.editor.utils.GameMenuUtils
-import org.godotengine.godot.utils.PermissionsUtil
-import org.godotengine.godot.utils.ProcessPhoenix
+import app.blazium.godot.Godot
+import app.blazium.godot.GodotLib
+import app.blazium.godot.editor.utils.GameMenuUtils
+import app.blazium.godot.utils.PermissionsUtil
+import app.blazium.godot.utils.ProcessPhoenix
 import org.godotengine.openxr.vendors.utils.*
 
 /**

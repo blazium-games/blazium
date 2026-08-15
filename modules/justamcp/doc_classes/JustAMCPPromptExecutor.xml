@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPPromptExecutor" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Lists, resolves, and completes prompts for MCP clients.
+	</brief_description>
+	<description>
+		[JustAMCPPromptExecutor] owns the registered [JustAMCPPrompt] instances. It returns MCP-compatible prompt schemas, renders a named prompt with caller-provided arguments, and delegates completion requests to the matching prompt.
+		[codeblock]
+		var prompt_exec = JustAMCPPromptExecutor.new()
+		var available = prompt_exec.list_prompts()
+		var rendered = prompt_exec.get_prompt("blazium_context", {})
+		print(available)
+		print(rendered)
+		[/codeblock]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_prompt">
+			<return type="void" />
+			<param index="0" name="prompt" type="JustAMCPPrompt" />
+			<description>
+				Registers a [JustAMCPPrompt] instance so it appears in [method list_prompts] and can be resolved by [method get_prompt]. Invalid prompt references are ignored.
+			</description>
+		</method>
+		<method name="complete_prompt">
+			<return type="Dictionary" />
+			<param index="0" name="ref" type="Dictionary" />
+			<param index="1" name="argument" type="Dictionary" />
+			<description>
+				Looks up the prompt named by [param ref] and returns completion values for [param argument]. Unknown prompts return an empty completion result.
+			</description>
+		</method>
+		<method name="get_prompt">
+			<return type="Dictionary" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="args" type="Dictionary" />
+			<description>
+				Renders the prompt named by [param name] with [param args]. Returns an error dictionary when no registered prompt has that name.
+			</description>
+		</method>
+		<method name="list_prompts">
+			<return type="Dictionary" />
+			<param index="0" name="cursor" type="String" default="&quot;&quot;" />
+			<description>
+				Returns a paginated MCP [code]prompts/list[/code] dictionary with [code]prompts[/code] and optional [code]nextCursor[/code]. Invalid [param cursor] values return an error dictionary with code [code]-32602[/code].
+			</description>
+		</method>
+	</methods>
+</class>

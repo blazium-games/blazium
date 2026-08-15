@@ -30,8 +30,8 @@
 
 package com.godot.game;
 
-import org.godotengine.godot.Godot;
-import org.godotengine.godot.GodotActivity;
+import app.blazium.godot.Godot;
+import app.blazium.godot.GodotActivity;
 
 import android.os.Bundle;
 import android.util.Log;

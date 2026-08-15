@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPExportTools" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Provides MCP tools for reading and managing export configuration.
+	</brief_description>
+	<description>
+		Registers export-oriented tool schemas used by [JustAMCPToolExecutor]. These tools help MCP clients inspect export presets, platform metadata, and project packaging settings from the editor.
+	</description>
+	<tutorials>
+		<link title="Model Context Protocol (MCP)">https://modelcontextprotocol.io/</link>
+	</tutorials>
+</class>

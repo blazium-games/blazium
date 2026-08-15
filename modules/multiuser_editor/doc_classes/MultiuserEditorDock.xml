@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MultiuserEditorDock" inherits="VBoxContainer" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Dock UI for starting, joining, stopping, and monitoring multiuser editor sessions.
+	</brief_description>
+	<description>
+		[MultiuserEditorDock] provides the editor dock controls for the Multiuser Editor module. It displays the current connection state, exposes host and join controls, lists connected peers, and shows status details from [MultiuserEditorPlugin].
+		The dock is created and owned by the editor plugin. It is not intended to be instantiated by projects at runtime; it documents the built-in editor UI used to control collaborative editing sessions.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

@@ -9,6 +9,7 @@ env:
     dev_mode=yes
     module_text_server_fb_enabled=yes
     debug_symbols=no
+    module_xbox_module_enabled=no
   SCONS_CACHE_MSVC_CONFIG: true
   PYTHONIOENCODING: utf8
 
@@ -29,8 +30,16 @@ jobs:
               windows_subsystem=console
               vsproj=yes
               vsproj_gen_only=no
-            bin: ./bin/godot.windows.editor.x86_64.exe
+            bin: ./bin/blazium.windows.editor.x86_64.exe
             compiler: msvc
+
+          - name: Editor w/ Mono (target=editor)
+            cache-name: windows-editor-mono
+            target: editor
+            scons-flags: module_mono_enabled=yes
+            bin: ./bin/blazium.windows.editor.x86_64.mono.exe
+            compiler: msvc
+            build-mono: true
 
           - name: Editor w/ clang-cl (target=editor, use_llvm=yes)
             cache-name: windows-editor-clang
@@ -38,13 +47,22 @@ jobs:
             scons-flags: >-
               windows_subsystem=console
               use_llvm=yes
-            bin: ./bin/godot.windows.editor.x86_64.llvm.exe
+            bin: ./bin/blazium.windows.editor.x86_64.llvm.exe
             compiler: clang
+
+          - name: Editor w/ GCC (target=editor, use_mingw=yes)
+            cache-name: windows-editor-gcc
+            target: editor
+            scons-flags: >-
+              windows_subsystem=console
+              use_mingw=yes
+            bin: ./bin/blazium.windows.editor.x86_64.exe
+            compiler: gcc
 
           - name: Template (target=template_release)
             cache-name: windows-template
             target: template_release
-            bin: ./bin/godot.windows.template_release.x86_64.console.exe
+            bin: ./bin/blazium.windows.template_release.x86_64.console.exe
             compiler: msvc
 
           - name: Template w/ GCC (target=template_release, use_mingw=yes)
@@ -52,8 +70,30 @@ jobs:
             # MinGW takes MUCH longer to compile; save time by only targeting Template.
             target: template_release
             scons-flags: use_mingw=yes
-            bin: ./bin/godot.windows.template_release.x86_64.console.exe
+            bin: ./bin/blazium.windows.template_release.x86_64.console.exe
             compiler: gcc
+
+          - name: Editor w/ Xbox Module (target=editor, module_xbox_module_enabled=yes)
+            cache-name: windows-editor-xbox-module
+            target: editor
+            scons-flags: >-
+              windows_subsystem=console
+              module_xbox_module_enabled=yes
+              use_mingw=no
+            bin: ./bin/blazium.windows.editor.x86_64.exe
+            compiler: msvc
+            xbox_module_test: true
+
+          - name: Template w/ Xbox Module (target=template_release, module_xbox_module_enabled=yes)
+            cache-name: windows-template-xbox-module
+            target: template_release
+            scons-flags: >-
+              windows_subsystem=console
+              module_xbox_module_enabled=yes
+              use_mingw=no
+            bin: ./bin/blazium.windows.template_release.x86_64.exe
+            compiler: msvc
+            xbox_module_test: true
 
     steps:
       - name: Checkout
@@ -69,6 +109,76 @@ jobs:
 
       - name: Setup Python and SCons
         uses: ./.github/actions/godot-deps
+
+      - name: Install Microsoft Gaming GDK and resolve path
+        if: matrix.xbox_module_test
+        shell: pwsh
+        run: |
+          function Get-GdkEditionRoot {
+            foreach ($name in @('GameDKCoreLatest','GameDKLatest','GRDKLatest')) {
+              foreach ($target in @('Process','Machine','User')) {
+                $value = [Environment]::GetEnvironmentVariable($name, $target)
+                if ($value -and (Test-Path $value)) { return $value.TrimEnd('\') }
+              }
+            }
+            $root = Join-Path ${env:ProgramFiles(x86)} 'Microsoft GDK'
+            if (-not (Test-Path $root)) { return $null }
+            $best = $null; $bestNum = -1
+            Get-ChildItem $root -Directory | ForEach-Object {
+              if ($_.Name -match '^\d+$' -and (Test-Path (Join-Path $_.FullName 'windows\include\XGameRuntime.h'))) {
+                $num = [int]$_.Name
+                if ($num -gt $bestNum) { $bestNum = $num; $best = $_.FullName }
+              }
+            }
+            return $best
+          }
+
+          function Set-GdkPath {
+            param([string]$EditionRoot)
+            Write-Host "GDK edition root: $EditionRoot"
+            "gdk_path=`"$EditionRoot`"" >> $env:GITHUB_ENV
+          }
+
+          $editionRoot = Get-GdkEditionRoot
+          if ($editionRoot) {
+            Write-Host 'GDK already present; skipping winget install.'
+            Set-GdkPath $editionRoot
+            exit 0
+          }
+
+          Write-Host 'Repairing winget sources before GDK install...'
+          winget source disable msstore 2>$null
+          Import-Module Appx -UseWindowsPowerShell -ErrorAction SilentlyContinue
+          Add-AppxPackage -Path "https://cdn.winget.microsoft.com/cache/source.msix" -ErrorAction SilentlyContinue
+          winget source update --accept-source-agreements
+
+          $alreadyInstalledCodes = @(0, 2316632107, -1978335189)
+          $maxAttempts = 3
+          for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+            Write-Host "Installing Microsoft Gaming GDK via winget (attempt $attempt/$maxAttempts)..."
+            winget install --id Microsoft.Gaming.GDK `
+              --accept-package-agreements --accept-source-agreements --disable-interactivity
+            $exitCode = $LASTEXITCODE
+            if ($alreadyInstalledCodes -contains $exitCode) {
+              Write-Host "winget install succeeded (exit code $exitCode)."
+              break
+            }
+            if ($attempt -lt $maxAttempts) {
+              Write-Warning "winget install failed with exit code $exitCode; retrying in 15s..."
+              Start-Sleep -Seconds 15
+            } else {
+              Write-Error "winget install failed after $maxAttempts attempts (last exit code $exitCode)."
+              exit 1
+            }
+          }
+
+          $editionRoot = Get-GdkEditionRoot
+          if (-not $editionRoot) {
+            Write-Error 'GDK not found after winget install (no env marker and no Microsoft GDK edition under Program Files (x86)).'
+            exit 1
+          }
+          Set-GdkPath $editionRoot
+          exit 0
 
       - name: Download Direct3D 12 SDK components
         shell: sh
@@ -109,12 +219,38 @@ jobs:
             echo "ACCESSKIT_ENABLED=no" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Setup MSVC for Xbox module
+        if: matrix.xbox_module_test
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Compilation (Xbox / MSVC)
+        if: matrix.xbox_module_test
+        shell: cmd
+        run: |
+          echo Building Xbox module with MSVC: platform=windows target=${{ matrix.target }} ${{ env.SCONS_FLAGS }} ${{ matrix.scons-flags }}
+          if not "${{ matrix.target }}"=="editor" rmdir /s /q editor 2>nul
+          if not "${{ github.event.number }}"=="" (set BUILD_NAME=gh-${{ github.event.number }}) else (set BUILD_NAME=gh)
+          where cl
+          scons platform=windows target=${{ matrix.target }} ${{ env.SCONS_FLAGS }} ${{ matrix.scons-flags }} d3d12=${{ steps.d3d12-sdk.outputs.D3D12_ENABLED }} accesskit=${{ steps.accesskit-sdk.outputs.ACCESSKIT_ENABLED }} angle=${{ steps.angle-sdk.outputs.ANGLE_ENABLED }} "cache_path=${{ github.workspace }}/.scons_cache/" redirect_build_objects=no
+          if errorlevel 1 exit /b 1
+
       - name: Compilation
+        if: ${{ !matrix.xbox_module_test }}
         uses: ./.github/actions/godot-build
         with:
           scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.scons-flags }} d3d12=${{ steps.d3d12-sdk.outputs.D3D12_ENABLED }} accesskit=${{ steps.accesskit-sdk.outputs.ACCESSKIT_ENABLED }} angle=${{ steps.angle-sdk.outputs.ANGLE_ENABLED }}
           platform: windows
           target: ${{ matrix.target }}
+
+      - name: Generate C# glue
+        if: matrix.build-mono
+        run: ${{ matrix.bin }} --headless --generate-mono-glue ./modules/mono/glue
+
+      - name: Build .NET solutions
+        if: matrix.build-mono
+        run: python modules/mono/build_scripts/build_assemblies.py --godot-output-dir=./bin --godot-platform=windows --werror
 
       - name: Save Godot build cache
         uses: ./.github/actions/godot-cache-save
@@ -135,7 +271,16 @@ jobs:
           name: ${{ matrix.cache-name }}
 
       - name: Unit tests
+        if: ${{ !matrix.xbox_module_test && !matrix.build-mono }}
+        timeout-minutes: 45
         run: |
           ${{ matrix.bin }} --version
           ${{ matrix.bin }} --help
           ${{ matrix.bin }} --test --force-colors
+
+      - name: Xbox module unit tests
+        if: matrix.xbox_module_test
+        timeout-minutes: 15
+        run: |
+          ${{ matrix.bin }} --version
+          ${{ matrix.bin }} --headless --test --force-colors --test-case="*[XboxModule]*"

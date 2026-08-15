@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AutoworkLogger" inherits="RefCounted" experimental="Some methods may not be implemented and may be changed in future versions." xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Handles logging and reporting of test results.
+	</brief_description>
+	<description>
+		The AutoworkLogger is responsible for collecting, formatting, and exporting test results produced by the Autowork framework.
+
+		It records passes, failures, and warnings during test execution and keeps track of statistics such as total tests and orphaned objects.
+		The logger can output results to the console as well as export them to structured formats like JSON and JUnit XML for integration with external tools and CI pipelines.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_fail">
+			<return type="void" />
+			<param index="0" name="message" type="String" />
+			<description>
+				Records a failed assertion or test.
+
+				The provided [param message] typically describes the reason for the failure and is stored for reporting and output.
+			</description>
+		</method>
+		<method name="add_pass">
+			<return type="void" />
+			<param index="0" name="message" type="String" />
+			<description>
+				Records a successful assertion or test.
+
+				The provided [param message] may contain additional context or confirmation of the passing condition.
+			</description>
+		</method>
+		<method name="add_warning">
+			<return type="void" />
+			<param index="0" name="message" type="String" />
+			<description>
+				Records a warning generated during test execution.
+
+				Warnings do not cause a test to fail but indicate potential issues or unexpected conditions.
+			</description>
+		</method>
+		<method name="export_json">
+			<return type="bool" />
+			<param index="0" name="file_path" type="String" />
+			<description>
+				Exports the collected test results to a JSON file.
+
+				The file at [param file_path] will contain a structured representation of all logged results and statistics.
+				Returns [code]true[/code] if the export succeeds, otherwise [code]false[/code].
+			</description>
+		</method>
+		<method name="export_xml">
+			<return type="bool" />
+			<param index="0" name="file_path" type="String" />
+			<description>
+				Exports the collected test results in JUnit XML format.
+
+				The generated file can be used by continuous integration systems and reporting tools.
+				Returns [code]true[/code] if the export succeeds, otherwise [code]false[/code].
+			</description>
+		</method>
+		<method name="inc_orphans">
+			<return type="void" />
+			<param index="0" name="count" type="int" />
+			<description>
+				Increments the number of orphaned objects detected during testing.
+
+				Orphans typically refer to objects that were not properly freed or cleaned up, which may indicate memory management issues.
+			</description>
+		</method>
+		<method name="inc_test_count">
+			<return type="void" />
+			<description>
+				Increments the total number of executed tests.
+
+				This is usually called internally as each test case begins or completes.
+			</description>
+		</method>
+		<method name="print_summary">
+			<return type="void" />
+			<description>
+				Prints a summary of the test results.
+
+				The summary typically includes counts of passed, failed, and pending tests, along with warnings and other relevant statistics.
+			</description>
+		</method>
+	</methods>
+</class>

@@ -28,7 +28,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.editor.embed
+package app.blazium.editor.embed
 
 import android.content.pm.ActivityInfo
 import android.graphics.Color
@@ -43,9 +43,9 @@ import android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND
 import android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
 import android.view.WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
 import android.widget.CheckBox
-import org.godotengine.editor.GodotGame
-import org.godotengine.editor.R
-import org.godotengine.godot.editor.utils.GameMenuUtils
+import app.blazium.editor.GodotGame
+import app.blazium.editor.R
+import app.blazium.godot.editor.utils.GameMenuUtils
 
 /**
  * Host the Godot game from the editor when the embedded mode is enabled.

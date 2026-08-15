@@ -1,11 +1,11 @@
 package com.godot.game.test
 
 import android.util.Log
-import org.godotengine.godot.Dictionary
-import org.godotengine.godot.Godot
-import org.godotengine.godot.plugin.GodotPlugin
-import org.godotengine.godot.plugin.SignalInfo
-import org.godotengine.godot.plugin.UsedByGodot
+import app.blazium.godot.Dictionary
+import app.blazium.godot.Godot
+import app.blazium.godot.plugin.GodotPlugin
+import app.blazium.godot.plugin.SignalInfo
+import app.blazium.godot.plugin.UsedByGodot
 
 class SignalTestPlugin(godot: Godot) : GodotPlugin(godot) {
 

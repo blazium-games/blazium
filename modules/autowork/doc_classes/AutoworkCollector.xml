@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AutoworkCollector" inherits="RefCounted" experimental="Some methods may not be implemented and may be changed in future versions." xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Collects and manages test scripts for execution.
+	</brief_description>
+	<description>
+		The AutoworkCollector is responsible for discovering, registering, and storing test scripts used by the Autowork framework.
+
+		It supports both manual registration of scripts and automatic discovery by scanning directories.
+		The collector does not execute tests itself, but instead provides a centralized list of scripts that contain test definitions.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_script">
+			<return type="void" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Adds a script to the collection.
+				The script at [param path] is registered as a potential source of test cases.
+			</description>
+		</method>
+		<method name="get_scripts" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns an [Array] containing all collected script paths.
+			</description>
+		</method>
+		<method name="process_directory">
+			<return type="void" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Searches the directory at [param path] for test scripts and adds them to the collection.
+			</description>
+		</method>
+		<method name="set_include_subdirectories">
+			<return type="void" />
+			<param index="0" name="enable" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_script_prefix">
+			<return type="void" />
+			<param index="0" name="prefix" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="set_script_suffix">
+			<return type="void" />
+			<param index="0" name="suffix" type="String" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

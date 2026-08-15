@@ -28,9 +28,9 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.godot;
+package app.blazium.godot;
 
-import org.godotengine.godot.input.GodotInputHandler;
+import app.blazium.godot.input.GodotInputHandler;
 
 import android.view.SurfaceView;
 

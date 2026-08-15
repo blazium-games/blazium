@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DDDBrowserExporter" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Exports a scene tree to a DDDBrowser page (OBJ/MTL meshes, scene JSON, discovery HTML).
+	</brief_description>
+	<description>
+		Walks a normal Blazium scene (and optional [DDDBrowserLevel] metadata) into DDDBrowser [code]scene.json[/code] plus assets.
+		[b]Dedicated nodes[/b] ([DDDBrowserSpawn], [DDDBrowserModel], portals, volumes, textbox/picturebox/audio/font/script) win over heuristics when both apply.
+		[b]Normal-scene heuristics[/b]: first [Camera3D] or a [Marker3D] named [code]Spawn[/code] → [code]spawn[/code]; [MeshInstance3D] / [StaticBody3D] → OBJ+MTL model (+ albedo textures and [CollisionShape3D] colliders); [Light3D]; [AudioStreamPlayer3D] (wav/ogg); [Label3D] → textbox; [Sprite3D] / [DDDBrowserPicturebox] → picturebox; [WorldEnvironment] sky → [code]skybox.uri[/code] when level skybox is unset.
+		[b]LuauScript[/b]: attached [code].luau[/code] / LuauScript resources on exported instances are copied into [code]scripts/[/code] and wired as [code]instances[].script[/code] (source passthrough). Prefer attaching a Blazium Luau [code]gdclass[/code] extending [Node3D]; DDDBrowser runs [code]_ready[/code] / [code]_process[/code] via its gdclass compatibility layer.
+		Skipped with warning: rigid/character physics semantics, [AnimationPlayer], CSG (unless already a baked mesh), unsupported collision shapes / streams.
+		Call [method get_last_warning] after export for skip/heuristic messages.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="build_scene_dictionary">
+			<return type="Dictionary" />
+			<param index="0" name="root" type="Node" />
+			<param index="1" name="export_dir" type="String" />
+			<description>
+				Walks [param root] and writes mesh/script/audio/texture assets under [param export_dir], returning the scene dictionary used for [code]scene.json[/code].
+			</description>
+		</method>
+		<method name="export_scene">
+			<return type="int" enum="Error" />
+			<param index="0" name="root" type="Node" />
+			<param index="1" name="export_dir" type="String" />
+			<param index="2" name="generate_html" type="bool" default="true" />
+			<description>
+				Builds the scene dictionary, writes [code]scene.json[/code], and optionally generates discovery HTML under [param export_dir]. Returns [constant OK] on success.
+			</description>
+		</method>
+		<method name="get_last_error" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the last hard export error message, or an empty string if none.
+			</description>
+		</method>
+		<method name="get_last_warning" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns joined skip/heuristic warnings from the last export or build, or an empty string if none.
+			</description>
+		</method>
+		<method name="get_validation_errors" qualifiers="const">
+			<return type="PackedStringArray" />
+			<param index="0" name="scene" type="Dictionary" />
+			<description>
+				Returns human-readable validation problems for [param scene], or an empty array when valid.
+			</description>
+		</method>
+		<method name="validate_scene_dictionary" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="scene" type="Dictionary" />
+			<description>
+				Returns [code]true[/code] if [param scene] passes schema-oriented validation checks used before writing.
+			</description>
+		</method>
+	</methods>
+</class>

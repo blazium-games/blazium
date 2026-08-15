@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SQLiteColumnSchema" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Represents the schema definition of a database column.
+	</brief_description>
+	<description>
+		Describes a single column in a database table, including its name, type, constraints, and default value.
+		This class is used when defining or inspecting table schemas.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="create" qualifiers="static">
+			<return type="SQLiteColumnSchema" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="type" type="int" enum="Variant.Type" default="4" />
+			<param index="2" name="default_value" type="Variant" default="null" />
+			<param index="3" name="primary_key" type="bool" default="false" />
+			<param index="4" name="auto_increment" type="bool" default="false" />
+			<param index="5" name="not_null" type="bool" default="false" />
+			<param index="6" name="unique" type="bool" default="false" />
+			<description>
+				Creates and returns a new [SQLiteColumnSchema] instance with the specified properties.
+
+				The column name is defined by [param name], and its data type is given by [param type] using [enum Variant.Type].
+				The [param default_value] is used when no explicit value is provided during insertion.
+
+				If [param primary_key] is [code]true[/code], the column is marked as the table's primary key.
+				Enabling [param auto_increment] makes the column automatically increment for each inserted row (typically used with integer primary keys).
+
+				If [param not_null] is [code]true[/code], the column cannot contain [code]NULL[/code] values.
+				If [param unique] is [code]true[/code], all values in the column must be distinct.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="auto_increment" type="bool" setter="set_auto_increment" getter="is_auto_increment" default="false">
+			If [code]true[/code], the column value is automatically incremented for each new row.
+		</member>
+		<member name="default_value" type="Variant" setter="set_default_value" getter="get_default_value" default="null">
+			The default value assigned to the column when no value is provided.
+		</member>
+		<member name="name" type="String" setter="set_name" getter="get_name" default="&quot;&quot;">
+			The name of the column.
+		</member>
+		<member name="not_null" type="bool" setter="set_not_null" getter="is_not_null" default="false">
+			If [code]true[/code], the column cannot contain [code]NULL[/code] values.
+		</member>
+		<member name="primary_key" type="bool" setter="set_primary_key" getter="is_primary_key" default="false">
+			If [code]true[/code], the column is part of the table's primary key.
+		</member>
+		<member name="type" type="int" setter="set_type" getter="get_type" enum="Variant.Type" default="0">
+			The data type of the column, defined using [code]Variant.Type[/code].
+		</member>
+		<member name="unique" type="bool" setter="set_unique" getter="is_unique" default="false">
+			If [code]true[/code], all values in the column must be unique.
+		</member>
+	</members>
+</class>

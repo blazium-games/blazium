@@ -28,14 +28,14 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.godot.io
+package app.blazium.godot.io
 
 import android.content.Context
 import android.os.Build
 import android.os.Environment
-import org.godotengine.godot.Godot
+import app.blazium.godot.Godot
 import java.io.File
-import org.godotengine.godot.GodotLib
+import app.blazium.godot.GodotLib
 
 /**
  * Represents the different storage scopes.

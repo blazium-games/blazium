@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPResourceExecutor" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Lists and resolves resources exposed through the MCP resource API.
+	</brief_description>
+	<description>
+		[JustAMCPResourceExecutor] owns registered [JustAMCPResource] instances and resolves read requests by URI. It supports both fixed resources, such as system logs, and URI templates, such as project files under [code]res://[/code].
+		[codeblock]
+		var resources = JustAMCPResourceExecutor.new()
+		var templates = resources.list_resource_templates()
+		var project_file = resources.read_resource("res://project.godot")
+		print(templates)
+		print(project_file)
+		[/codeblock]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_resource">
+			<return type="void" />
+			<param index="0" name="resource" type="JustAMCPResource" />
+			<description>
+				Registers a [JustAMCPResource] instance so it appears in resource listings and can service matching read requests.
+			</description>
+		</method>
+		<method name="list_resource_templates">
+			<return type="Dictionary" />
+			<param index="0" name="cursor" type="String" default="&quot;&quot;" />
+			<description>
+				Returns a paginated MCP [code]resources/templates/list[/code] dictionary with [code]resourceTemplates[/code] and optional [code]nextCursor[/code].
+			</description>
+		</method>
+		<method name="list_resources">
+			<return type="Dictionary" />
+			<param index="0" name="cursor" type="String" default="&quot;&quot;" />
+			<description>
+				Returns a paginated MCP [code]resources/list[/code] dictionary with [code]resources[/code] and optional [code]nextCursor[/code].
+			</description>
+		</method>
+		<method name="read_resource">
+			<return type="Dictionary" />
+			<param index="0" name="uri" type="String" />
+			<description>
+				Finds the registered resource that matches [param uri], reads it, and returns its contents. Legacy [code]godot://[/code] URIs are canonicalized to [code]blazium://[/code] where supported.
+			</description>
+		</method>
+	</methods>
+</class>

@@ -28,12 +28,12 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.editor.buildprovider
+package app.blazium.editor.buildprovider
 
 import android.content.Context
-import org.godotengine.godot.BuildProvider
-import org.godotengine.godot.GodotHost
-import org.godotengine.godot.variant.Callable
+import app.blazium.godot.BuildProvider
+import app.blazium.godot.GodotHost
+import app.blazium.godot.variant.Callable
 
 internal class GradleBuildProvider(
 	val context: Context,

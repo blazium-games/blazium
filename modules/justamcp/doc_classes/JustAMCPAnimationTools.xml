@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPAnimationTools" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Provides MCP tools for inspecting and editing animation data.
+	</brief_description>
+	<description>
+		Registers animation-focused tool schemas used by [JustAMCPToolExecutor]. These tools expose animation players, tracks, clips, playback state, and resource editing operations to MCP clients working on animated scenes.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

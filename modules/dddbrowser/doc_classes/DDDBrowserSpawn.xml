@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DDDBrowserSpawn" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Marks the player spawn position for DDDBrowser export.
+	</brief_description>
+	<description>
+		Exports as the scene [code]spawn[/code] vector.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

@@ -48,6 +48,33 @@ _helper_module("gles3_builders", "gles3_builders.py")
 _helper_module("glsl_builders", "glsl_builders.py")
 _helper_module("methods", "methods.py")
 _helper_module("platform_methods", "platform_methods.py")
+
+# Optional: rewrite version.py from git tags before it is imported.
+if str(ARGUMENTS.get("update_version_from_git", "")).lower() in ("yes", "true", "1"):
+    _helper_module("misc.scripts.update_version_from_git", "misc/scripts/update_version_from_git.py")
+    import misc.scripts.update_version_from_git as uvfg
+    from misc.utility.color import print_error, print_info
+
+    try:
+        repo_root = uvfg.find_repo_root(str(methods.base_folder))
+        status_override = ARGUMENTS.get("update_version_status", "")
+        if status_override == "":
+            status_override = None
+        git_version = uvfg.compute_version(repo_root, status_override)
+        uvfg.apply_version_to_environ(git_version)
+        uvfg.update_version_py(os.path.join(repo_root, "version.py"), git_version)
+        print_info(
+            "update_version_from_git: "
+            f"{git_version['external_major']}.{git_version['external_minor']}.{git_version['external_patch']}"
+            f"-{git_version['external_status']} "
+            f"(tag {git_version['tag']} +{git_version['commits_after_tag']} commits)"
+        )
+        print_info("Leave version.py uncommitted; restore with: git checkout -- version.py")
+    except SystemExit as exc:
+        msg = exc.code if isinstance(exc.code, str) else (str(exc) if exc.args else "update_version_from_git failed")
+        print_error(msg)
+        Exit(255)
+
 _helper_module("version", "version.py")
 _helper_module("core.core_builders", "core/core_builders.py")
 _helper_module("main.main_builders", "main/main_builders.py")
@@ -258,7 +285,7 @@ opts.Add(BoolVariable("werror", "Treat compiler warnings as errors", False))
 opts.Add("extra_suffix", "Custom extra suffix added to the base filename of all generated binary files", "")
 opts.Add("object_prefix", "Custom prefix added to the base filename of all generated object files", "")
 opts.Add(BoolVariable("vsproj", "Generate a Visual Studio solution", False))
-opts.Add("vsproj_name", "Name of the Visual Studio solution", "godot")
+opts.Add("vsproj_name", "Name of the Visual Studio solution", "blazium")
 opts.Add("import_env_vars", "A comma-separated list of environment variables to copy from the outer environment.", "")
 opts.Add(BoolVariable("disable_exceptions", "Force disabling exception handling code", True))
 opts.Add(BoolVariable("disable_3d", "Disable 3D nodes for a smaller executable", False))
@@ -280,6 +307,32 @@ opts.Add("build_profile", "Path to a file containing a feature build profile", "
 opts.Add("custom_modules", "A list of comma-separated directory paths containing custom modules to build.", "")
 opts.Add(BoolVariable("custom_modules_recursive", "Detect custom modules recursively for each specified path.", True))
 opts.Add(BoolVariable("modules_enabled_by_default", "If no, disable all modules except ones explicitly enabled", True))
+opts.Add(
+    BoolVariable(
+        "hub_build",
+        "Enable Hub-capable export template features (includes remote_control in templates)",
+        False,
+    )
+)
+opts.Add(
+    BoolVariable(
+        "hub_register",
+        "Post-build: register the linked editor with Blazium Hub via blazium-cli handle-uri (editor only; not runtime)",
+        False,
+    )
+)
+opts.Add(
+    BoolVariable(
+        "update_version_from_git",
+        "Before build, set EXTERNAL_* version from nearest v* git tag (+ commits) via misc/scripts/update_version_from_git.py",
+        False,
+    )
+)
+opts.Add(
+    "update_version_status",
+    "Override external_status when update_version_from_git=yes (empty = script default)",
+    "",
+)
 opts.Add(BoolVariable("no_editor_splash", "Don't use the custom splash screen for the editor", True))
 opts.Add(
     "system_certs_path",
@@ -532,6 +585,8 @@ env.platform_apis = platform_apis
 
 env.editor_build = env["target"] == "editor"
 env.dev_build = env["dev_build"]
+if env.get("hub_register", False) and not env.editor_build:
+    print_warning("Build option `hub_register=yes` is ignored for non-editor builds.")
 env.debug_features = env["target"] in ["editor", "template_debug"]
 
 if env["optimize"] == "auto":

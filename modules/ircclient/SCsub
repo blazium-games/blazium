@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+from misc.utility.scons_hints import *
+
+Import("env")
+Import("env_modules")
+
+env_ircclient = env_modules.Clone()
+
+# Blazium source files
+env_ircclient.add_source_files(env.modules_sources, "*.cpp")
+env_ircclient.add_source_files(env.modules_sources, "twitch/*.cpp")
+
+if env["module_mbedtls_enabled"]:
+    env_ircclient.Append(CPPDEFINES=["MODULE_MBEDTLS_ENABLED"])

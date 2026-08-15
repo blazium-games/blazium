@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SteamItemDefinition" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Metadata for a Steam inventory item definition.
+	</brief_description>
+	<description>
+		Returned by [method Steam.get_item_definition] and [method Steam.get_all_item_definitions].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_def_id" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the item definition ID.
+			</description>
+		</method>
+		<method name="get_description" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the localized description.
+			</description>
+		</method>
+		<method name="get_icon_url" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the HTTP URL for the item icon.
+			</description>
+		</method>
+		<method name="get_item_type" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the item type string from the definition.
+			</description>
+		</method>
+		<method name="get_name" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the localized display name.
+			</description>
+		</method>
+		<method name="get_properties" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns all raw definition properties.
+			</description>
+		</method>
+		<method name="get_property" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Returns a single definition property by name.
+			</description>
+		</method>
+	</methods>
+</class>

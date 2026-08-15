@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CrowdControlEffectParameter" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Defines configurable generic options for a [CrowdControlEffect].
+	</brief_description>
+	<description>
+		[CrowdControlEffectParameter] allows effects to have options or dropdowns that viewers can fill out when triggering the effect. For example, selecting a specific color or target player.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="to_json" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Serializes this [CrowdControlEffectParameter] into a JSON-compatible dictionary for API transmission.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="options" type="Dictionary" setter="set_options" getter="get_options" default="{}">
+			Used when the parameter represents a predefined set of values (e.g., dropdown or choice list).
+			Keys typically represent option identifiers, while values define their display names or metadata.
+		</member>
+		<member name="parameter_name" type="String" setter="set_parameter_name" getter="get_parameter_name" default="&quot;&quot;">
+			Used to identify and reference this parameter when passing values to an effect.
+			Must be consistent with the expected parameter key in the effect's configuration.
+		</member>
+		<member name="parameter_type" type="String" setter="set_parameter_type" getter="get_parameter_type" default="&quot;options&quot;">
+			Defines how the parameter value should be interpreted and presented.
+			Common types include "options", "number", "string", or "boolean".
+			The default "options" type indicates that selectable values are provided via the `options` dictionary.
+		</member>
+	</members>
+</class>

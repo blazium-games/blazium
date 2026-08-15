@@ -28,7 +28,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.godot.service
+package app.blazium.godot.service
 
 import android.content.ComponentName
 import android.content.Context
@@ -49,10 +49,10 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
-import org.godotengine.godot.GodotHost
-import org.godotengine.godot.R
-import org.godotengine.godot.service.GodotService.EngineStatus.*
-import org.godotengine.godot.service.GodotService.EngineError.*
+import app.blazium.godot.GodotHost
+import app.blazium.godot.R
+import app.blazium.godot.service.GodotService.EngineStatus.*
+import app.blazium.godot.service.GodotService.EngineError.*
 import java.lang.ref.WeakReference
 
 /**

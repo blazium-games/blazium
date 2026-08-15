@@ -566,7 +566,8 @@ void ProjectManager::_open_selected_projects() {
 
 	const HashSet<String> &selected_list = project_list->get_selected_project_keys();
 	for (const String &path : selected_list) {
-		String conf = path.path_join("project.godot");
+		String conf_name = ProjectSettings::get_project_settings_file_name(path);
+		String conf = path.path_join(conf_name.is_empty() ? String(ProjectSettings::PROJECT_FILE_GODOT) : conf_name);
 
 		if (!FileAccess::exists(conf)) {
 			loading_label->hide();
@@ -1052,7 +1053,9 @@ void ProjectManager::_apply_project_tags() {
 		}
 	}
 
-	const String project_godot = project_list->get_selected_projects()[0].path.path_join("project.godot");
+	const String selected_path = project_list->get_selected_projects()[0].path;
+	const String conf_name = ProjectSettings::get_project_settings_file_name(selected_path);
+	const String project_godot = selected_path.path_join(conf_name.is_empty() ? String(ProjectSettings::PROJECT_FILE_GODOT) : conf_name);
 	ProjectSettings *cfg = memnew(ProjectSettings(project_godot));
 	if (!cfg->is_project_loaded()) {
 		memdelete(cfg);

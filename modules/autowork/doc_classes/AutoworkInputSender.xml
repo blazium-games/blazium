@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AutoworkInputSender" inherits="RefCounted" experimental="Some methods may not be implemented and may be changed in future versions." xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Simulates input events for automated testing.
+	</brief_description>
+	<description>
+		The AutoworkInputSender provides utilities to simulate user input during tests.
+
+		It allows triggering input actions, keyboard events, and mouse interactions either globally or targeted at a specific [Node].
+		This is useful for testing gameplay systems, UI interactions, and input-driven logic without requiring manual input.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="action_down">
+			<return type="void" />
+			<param index="0" name="action" type="StringName" />
+			<param index="1" name="strength" type="float" default="1.0" />
+			<param index="2" name="target" type="Node" default="null" />
+			<description>
+				Simulates an input action press.
+
+				The specified [param action] is triggered as if it were pressed, with an optional [param strength] value.
+				If [param target] is provided, the event is sent directly to that node.
+			</description>
+		</method>
+		<method name="action_up">
+			<return type="void" />
+			<param index="0" name="action" type="StringName" />
+			<param index="1" name="target" type="Node" default="null" />
+			<description>
+				Simulates an input action release.
+
+				The specified [param action] is released.
+				If [param target] is provided, the event is sent directly to that node.
+			</description>
+		</method>
+		<method name="key_down">
+			<return type="void" />
+			<param index="0" name="keycode" type="int" />
+			<param index="1" name="target" type="Node" default="null" />
+			<description>
+				Simulates a key press event.
+
+				The given [param keycode] is sent as a key down event.
+				If [param target] is provided, the event is directed to that node.
+
+				[codeblock]
+				sender.key_down(KEY_SPACE)
+				[/codeblock]
+			</description>
+		</method>
+		<method name="key_up">
+			<return type="void" />
+			<param index="0" name="keycode" type="int" />
+			<param index="1" name="target" type="Node" default="null" />
+			<description>
+				Simulates a key release event.
+
+				The given [param keycode] is sent as a key up event.
+				If [param target] is provided, the event is directed to that node.
+
+				[codeblock]
+				sender.key_up(KEY_SPACE)
+				[/codeblock]
+			</description>
+		</method>
+		<method name="mouse_down">
+			<return type="void" />
+			<param index="0" name="button_index" type="int" />
+			<param index="1" name="position" type="Vector2" default="Vector2(0, 0)" />
+			<param index="2" name="target" type="Node" default="null" />
+			<description>
+				Simulates a mouse button press.
+
+				The specified mouse [param button_index] is pressed at the given [param position].
+				If [param target] is provided, the event is sent directly to that node.
+
+				[codeblock]
+				sender.mouse_down(MOUSE_BUTTON_LEFT, Vector2(100, 100))
+				[/codeblock]
+			</description>
+		</method>
+		<method name="mouse_motion">
+			<return type="void" />
+			<param index="0" name="position" type="Vector2" />
+			<param index="1" name="relative" type="Vector2" default="Vector2(0, 0)" />
+			<param index="2" name="target" type="Node" default="null" />
+			<description>
+				Simulates mouse movement.
+
+				The cursor is moved to [param position], with an optional [param relative] motion vector.
+				If [param target] is provided, the event is directed to that node.
+			</description>
+		</method>
+		<method name="mouse_up">
+			<return type="void" />
+			<param index="0" name="button_index" type="int" />
+			<param index="1" name="position" type="Vector2" default="Vector2(0, 0)" />
+			<param index="2" name="target" type="Node" default="null" />
+			<description>
+				Simulates a mouse button release.
+
+				The specified mouse [param button_index] is released at the given [param position].
+				If [param target] is provided, the event is sent directly to that node.
+
+				[codeblock]
+				sender.mouse_up(MOUSE_BUTTON_LEFT, Vector2(100, 100))
+				[/codeblock]
+			</description>
+		</method>
+		<method name="reset_inputs">
+			<return type="void" />
+			<description>
+				Resets all simulated input states.
+
+				This clears any active or "pressed" inputs previously triggered by the sender, ensuring a clean state for subsequent tests.
+			</description>
+		</method>
+	</methods>
+</class>

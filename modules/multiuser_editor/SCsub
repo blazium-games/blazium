@@ -1,0 +1,18 @@
+#!/usr/bin/env python
+from misc.utility.scons_hints import *
+
+Import("env")
+Import("env_modules")
+
+env_multiuser_editor = env_modules.Clone()
+
+if env["platform"] == "web":
+    env_multiuser_editor.Append(CPPDEFINES=["MULTIUSER_EDITOR_CLIENT_ONLY"])
+
+env_multiuser_editor.add_source_files(env.modules_sources, "*.cpp")
+
+if env["tests"]:
+    env_multiuser_editor.Append(CPPDEFINES=["TESTS_ENABLED"])
+
+    if env["disable_exceptions"]:
+        env_multiuser_editor.Append(CPPDEFINES=["DOCTEST_CONFIG_NO_EXCEPTIONS_BUT_WITH_ALL_ASSERTS"])

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AutoworkConfig" inherits="RefCounted" experimental="Some methods may not be implemented and may be changed in future versions." xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Handles configuration options for the Autowork test framework.
+	</brief_description>
+	<description>
+		The AutoworkConfig class is responsible for managing configuration options used by the Autowork testing framework.
+
+		It provides functionality to load, modify, apply, and persist configuration settings.
+		These options can control aspects such as test discovery, filtering, logging behavior, and execution settings.
+
+		Configurations can be defined programmatically using dictionaries or loaded from external files, making it easier to share and reuse test setups across projects.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="apply_options">
+			<return type="void" />
+			<param index="0" name="runner" type="Autowork" />
+			<description>
+				Applies the stored configuration options to the given [param runner].
+			</description>
+		</method>
+		<method name="get_options" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns the currently stored configuration options.
+			</description>
+		</method>
+		<method name="load_options">
+			<return type="void" />
+			<param index="0" name="file_path" type="String" />
+			<description>
+				Loads configuration options from a file.
+			</description>
+		</method>
+		<method name="set_options">
+			<return type="void" />
+			<param index="0" name="options" type="Dictionary" />
+			<description>
+				Sets the configuration options manually.
+			</description>
+		</method>
+		<method name="write_options">
+			<return type="void" />
+			<param index="0" name="file_path" type="String" />
+			<description>
+				Writes the current configuration options to a file.
+			</description>
+		</method>
+	</methods>
+</class>

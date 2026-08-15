@@ -171,6 +171,13 @@ Dictionary Engine::get_version_info() const {
 	stringver += "-" + String(dict["status"]) + " (" + String(dict["build"]) + ")";
 	dict["string"] = stringver;
 
+	dict["external_major"] = EXTERNAL_VERSION_MAJOR;
+	dict["external_minor"] = EXTERNAL_VERSION_MINOR;
+	dict["external_patch"] = EXTERNAL_VERSION_PATCH;
+	dict["external_hex"] = EXTERNAL_VERSION_HEX;
+	dict["external_status"] = EXTERNAL_VERSION_STATUS;
+	dict["external_string"] = String(EXTERNAL_VERSION_NUMBER) + "-" + String(EXTERNAL_VERSION_STATUS) + " (" + String(GODOT_VERSION_BUILD) + ")";
+
 	return dict;
 }
 

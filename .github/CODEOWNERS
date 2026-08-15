@@ -209,6 +209,41 @@
 /modules/zip/doc_classes/                     @godotengine/core @godotengine/documentation
 /modules/zip/tests/                           @godotengine/core @godotengine/tests
 
+## Blazium
+/modules/assettags/                           @godotengine/buildsystem
+/modules/autowork/                            @godotengine/buildsystem
+/modules/clickertools/                        @godotengine/buildsystem
+/modules/crowdcontrol/                        @godotengine/buildsystem
+/modules/dddbrowser/                          @godotengine/buildsystem
+/modules/discord_module/                      @godotengine/buildsystem
+/modules/dotcsv/                              @godotengine/buildsystem
+/modules/dotenv/                              @godotengine/buildsystem
+/modules/dotini/                              @godotengine/buildsystem
+/modules/enet_server/                         @godotengine/network
+/modules/goap/                                @godotengine/buildsystem
+/modules/httpserver/                          @godotengine/network
+/modules/ircclient/                           @godotengine/network
+/modules/justamcp/                            @godotengine/buildsystem
+/modules/jwttool/                             @godotengine/network
+/modules/kickapi/                             @godotengine/network
+/modules/luau_module/                         @godotengine/gdscript
+/modules/multiuser_editor/                    @godotengine/editor
+/modules/obsclient/                           @godotengine/network
+/modules/rcon/                                @godotengine/network
+/modules/remote_control/                      @godotengine/editor
+/modules/semanticsearch/                      @godotengine/buildsystem
+/modules/socialexports/                       @godotengine/buildsystem
+/modules/socketio/                            @godotengine/network
+/modules/sqlite3/                             @godotengine/core
+/modules/steam/                               @godotengine/buildsystem
+/modules/tiled_importer/                      @godotengine/asset-pipeline
+/modules/town_sdk/                            @godotengine/buildsystem
+/modules/twitchapi/                           @godotengine/network
+/modules/xbox_module/                         @godotengine/windows
+/thirdparty/luau/                             @godotengine/buildsystem
+/thirdparty/tileson/                          @godotengine/buildsystem
+/thirdparty/bignumpp/                         @godotengine/buildsystem
+
 # Platform
 
 /platform/register_platform_apis.*            @godotengine/buildsystem

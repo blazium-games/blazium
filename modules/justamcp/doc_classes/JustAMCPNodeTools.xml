@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPNodeTools" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Provides MCP tools for querying and changing nodes.
+	</brief_description>
+	<description>
+		Registers node-oriented tool schemas used by [JustAMCPToolExecutor]. These tools let MCP clients find nodes, read or write properties, call methods, and interact with the edited scene through validated requests.
+	</description>
+	<tutorials>
+		<link title="Model Context Protocol (MCP)">https://modelcontextprotocol.io/</link>
+	</tutorials>
+</class>

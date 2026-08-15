@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPScene3DTools" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Provides MCP tools for inspecting and editing 3D scene data.
+	</brief_description>
+	<description>
+		Registers 3D scene tool schemas used by [JustAMCPToolExecutor]. These tools expose transforms, meshes, cameras, lights, spatial relationships, and other 3D editor data to MCP clients.
+	</description>
+	<tutorials>
+		<link title="Model Context Protocol (MCP)">https://modelcontextprotocol.io/</link>
+	</tutorials>
+</class>

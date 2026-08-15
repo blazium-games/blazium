@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="EmbeddingBackend" inherits="SemanticSearchBackend" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Semantic search backend that ranks assets with embedding vectors.
+	</brief_description>
+	<description>
+		Implements [SemanticSearchBackend] using hybrid lexical and embedding similarity over [SemanticAssetIndex] entries. Used when the project embedding provider is configured for vector search.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

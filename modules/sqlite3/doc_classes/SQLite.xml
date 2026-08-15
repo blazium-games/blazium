@@ -1,0 +1,519 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SQLite" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Node containing a [SQLiteDatabase] resource.
+	</brief_description>
+	<description>
+		Node containing a [SQLiteDatabase] resource.
+	</description>
+	<tutorials>
+		<link title="SQLite Module Tests">https://github.com/blazium-games/sqlite3_module_tests</link>
+		<link title="SQLite Official Documentation">https://sqlite.org/docs.html</link>
+	</tutorials>
+	<methods>
+		<method name="attach_database">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="alias" type="String" />
+			<description>
+				Attaches an external SQLite database located at [param path] to the current connection using the alias [param alias].
+				This allows queries to reference multiple databases within the same connection.
+			</description>
+		</method>
+		<method name="backup_async">
+			<return type="SQLiteBackup" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Creates an asynchronous backup of the current database to [param path].
+				Returns a [SQLiteBackup] object that can be used to monitor progress.
+			</description>
+		</method>
+		<method name="backup_to">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Creates a full backup of the database and writes it to [param path].
+				Returns [code]true[/code] if the operation succeeds.
+			</description>
+		</method>
+		<method name="begin_transaction">
+			<return type="SQLiteQuery" />
+			<description>
+				Begins a new database transaction.
+				All subsequent changes will be part of this transaction until committed or rolled back.
+			</description>
+		</method>
+		<method name="close">
+			<return type="void" />
+			<description>
+				Closes the database connection and releases all associated resources.
+			</description>
+		</method>
+		<method name="commit_transaction">
+			<return type="SQLiteQuery" />
+			<description>
+				Commits the current transaction, permanently applying all changes made during the transaction.
+			</description>
+		</method>
+		<method name="create_aggregate">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="argc" type="int" />
+			<param index="2" name="step_callable" type="Callable" />
+			<param index="3" name="final_callable" type="Callable" />
+			<description>
+				Creates a custom aggregate SQL function named [param name] that processes [param argc] arguments using [param step_callable] for iteration and [param final_callable] for final result computation.
+			</description>
+		</method>
+		<method name="create_collation">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="callable" type="Callable" />
+			<description>
+				Creates a custom collation function named [param name] using [param callable] to define string comparison rules.
+			</description>
+		</method>
+		<method name="create_function">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="argc" type="int" />
+			<param index="2" name="callable" type="Callable" />
+			<description>
+				Creates a custom SQL function named [param name] that takes [param argc] arguments and executes [param callable].
+			</description>
+		</method>
+		<method name="create_index">
+			<return type="SQLiteQuery" />
+			<param index="0" name="index_name" type="String" />
+			<param index="1" name="table_name" type="String" />
+			<param index="2" name="columns" type="String[]" />
+			<param index="3" name="unique" type="bool" default="false" />
+			<description>
+				Creates an index named [param index_name] on [param table_name] using the specified [param columns].
+				If [param unique] is true, enforces uniqueness.
+			</description>
+		</method>
+		<method name="create_query">
+			<return type="SQLiteQuery" />
+			<param index="0" name="query" type="String" />
+			<param index="1" name="arguments" type="Array" default="[]" />
+			<description>
+				Creates a prepared SQL query from [param query] with optional [param arguments].
+			</description>
+		</method>
+		<method name="create_savepoint">
+			<return type="SQLiteQuery" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Creates a savepoint named [param name] inside the current transaction.
+			</description>
+		</method>
+		<method name="create_table">
+			<return type="SQLiteQuery" />
+			<param index="0" name="table_name" type="String" />
+			<param index="1" name="columns" type="SQLiteColumnSchema[]" />
+			<description>
+				Creates a table named [param table_name] using the provided [param columns] schema definition.
+			</description>
+		</method>
+		<method name="delete_rows">
+			<return type="SQLiteQuery" />
+			<param index="0" name="table_name" type="String" />
+			<param index="1" name="condition" type="String" default="&quot;&quot;" />
+			<description>
+				Deletes rows from [param table_name] that match the SQL [code]WHERE[/code] clause in [param condition].
+				If empty, all rows may be affected.
+			</description>
+		</method>
+		<method name="deserialize_object">
+			<return type="bool" />
+			<param index="0" name="table_name" type="String" />
+			<param index="1" name="key" type="String" />
+			<param index="2" name="object" type="Object" />
+			<description>
+				Deserializes data stored in [param table_name] under [param key] into [param object].
+			</description>
+		</method>
+		<method name="detach_database">
+			<return type="bool" />
+			<param index="0" name="alias" type="String" />
+			<description>
+				Detaches a previously attached database identified by [param alias].
+			</description>
+		</method>
+		<method name="drop_index">
+			<return type="SQLiteQuery" />
+			<param index="0" name="index_name" type="String" />
+			<description>
+				Drops the index named [param index_name] from the database.
+			</description>
+		</method>
+		<method name="drop_table">
+			<return type="SQLiteQuery" />
+			<param index="0" name="table_name" type="String" />
+			<description>
+				Drops the table named [param table_name] from the database.
+			</description>
+		</method>
+		<method name="enable_load_extension">
+			<return type="bool" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				Enables or disables SQLite extension loading.
+			</description>
+		</method>
+		<method name="execute_query">
+			<return type="SQLiteQueryResult" />
+			<param index="0" name="query" type="String" />
+			<param index="1" name="arguments" type="Array" default="[]" />
+			<description>
+				Executes the SQL [param query] with optional [param arguments] and returns the result set.
+			</description>
+		</method>
+		<method name="execute_script">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Executes an SQL script located at [param path].
+			</description>
+		</method>
+		<method name="export_to_json">
+			<return type="String" />
+			<param index="0" name="table_name" type="String" />
+			<description>
+				Exports the contents of [param table_name] as a JSON string.
+			</description>
+		</method>
+		<method name="get_changes" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the number of rows affected by the most recent operation.
+			</description>
+		</method>
+		<method name="get_columns" qualifiers="const">
+			<return type="SQLiteColumnSchema[]" />
+			<param index="0" name="table_name" type="String" />
+			<description>
+				Returns the column schema information for [param table_name].
+			</description>
+		</method>
+		<method name="get_database_filename" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="db_name" type="String" default="&quot;main&quot;" />
+			<description>
+				Returns the filename of the database identified by [param db_name].
+			</description>
+		</method>
+		<method name="get_db_config" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="op" type="int" />
+			<description>
+				Returns the database configuration value identified by [param op].
+			</description>
+		</method>
+		<method name="get_db_status" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="op" type="int" />
+			<param index="1" name="reset" type="bool" default="false" />
+			<description>
+				Returns the database status value for [param op].
+				If [param reset] is true, the counter is reset.
+			</description>
+		</method>
+		<method name="get_global_status" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="op" type="int" />
+			<param index="1" name="reset" type="bool" />
+			<description>
+				Returns a global SQLite status counter for [param op].
+			</description>
+		</method>
+		<method name="get_last_error_code" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the last error code produced by the database.
+			</description>
+		</method>
+		<method name="get_last_error_message" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the last error message produced by the database.
+			</description>
+		</method>
+		<method name="get_last_insert_rowid" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the row ID of the last inserted record.
+			</description>
+		</method>
+		<method name="get_limit" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="id" type="int" />
+			<description>
+				Returns the SQLite limit value identified by [param id].
+			</description>
+		</method>
+		<method name="get_tables" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns a dictionary containing all tables in the database and their metadata.
+			</description>
+		</method>
+		<method name="get_total_changes" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the total number of changes made since the connection was opened.
+			</description>
+		</method>
+		<method name="import_from_json">
+			<return type="bool" />
+			<param index="0" name="table_name" type="String" />
+			<param index="1" name="json_string" type="String" />
+			<description>
+				Imports data into [param table_name] from a JSON string.
+			</description>
+		</method>
+		<method name="insert_row">
+			<return type="SQLiteQuery" />
+			<param index="0" name="table_name" type="String" />
+			<param index="1" name="value" type="Dictionary" />
+			<description>
+				Inserts a single row into [param table_name] using [param value] as column data.
+			</description>
+		</method>
+		<method name="insert_rows">
+			<return type="SQLiteQuery" />
+			<param index="0" name="table_name" type="String" />
+			<param index="1" name="values" type="Dictionary[]" />
+			<description>
+				Inserts multiple rows into [param table_name].
+			</description>
+		</method>
+		<method name="instantiate_object">
+			<return type="Variant" />
+			<param index="0" name="table_name" type="String" />
+			<param index="1" name="key" type="String" />
+			<description>
+				Creates an object instance from database data.
+			</description>
+		</method>
+		<method name="interrupt">
+			<return type="void" />
+			<description>
+				Interrupts any running query.
+			</description>
+		</method>
+		<method name="is_autocommit" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns true if the database is in autocommit mode.
+			</description>
+		</method>
+		<method name="is_readonly" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="db_name" type="String" default="&quot;main&quot;" />
+			<description>
+				Returns true if the database [param db_name] is read-only.
+			</description>
+		</method>
+		<method name="load_from">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Loads a database from [param path].
+			</description>
+		</method>
+		<method name="open_blob">
+			<return type="SQLiteBlob" />
+			<param index="0" name="db_name" type="String" />
+			<param index="1" name="table_name" type="String" />
+			<param index="2" name="column_name" type="String" />
+			<param index="3" name="rowid" type="int" />
+			<param index="4" name="read_write" type="bool" default="false" />
+			<description>
+				Opens a BLOB for direct access.
+			</description>
+		</method>
+		<method name="release_memory" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="bytes" type="int" />
+			<description>
+				Releases up to [param bytes] of SQLite internal memory.
+			</description>
+		</method>
+		<method name="release_savepoint">
+			<return type="SQLiteQuery" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Releases the savepoint [param name].
+			</description>
+		</method>
+		<method name="restore_async">
+			<return type="SQLiteBackup" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Restores a database asynchronously from [param path].
+			</description>
+		</method>
+		<method name="restore_from">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Restores the database from [param path].
+			</description>
+		</method>
+		<method name="rollback_to_savepoint">
+			<return type="SQLiteQuery" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Rolls back to savepoint [param name].
+			</description>
+		</method>
+		<method name="rollback_transaction">
+			<return type="SQLiteQuery" />
+			<description>
+				Rolls back the current transaction.
+			</description>
+		</method>
+		<method name="select_rows">
+			<return type="SQLiteQuery" />
+			<param index="0" name="table_name" type="String" />
+			<param index="1" name="condition" type="String" default="&quot;&quot;" />
+			<description>
+				Selects rows from [param table_name] matching [param condition].
+			</description>
+		</method>
+		<method name="serialize_object">
+			<return type="bool" />
+			<param index="0" name="table_name" type="String" />
+			<param index="1" name="key" type="String" />
+			<param index="2" name="object" type="Object" />
+			<description>
+				Serializes [param object] into the database.
+			</description>
+		</method>
+		<method name="set_authorizer">
+			<return type="void" />
+			<param index="0" name="callable" type="Callable" />
+			<description>
+				Sets an authorization callback.
+			</description>
+		</method>
+		<method name="set_busy_timeout">
+			<return type="bool" />
+			<param index="0" name="ms" type="int" />
+			<description>
+				Sets the busy timeout to [param ms] milliseconds.
+			</description>
+		</method>
+		<method name="set_db_config">
+			<return type="bool" />
+			<param index="0" name="op" type="int" />
+			<param index="1" name="val" type="int" />
+			<description>
+				Sets database configuration option [param op].
+			</description>
+		</method>
+		<method name="set_foreign_keys_enabled">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				Enables or disables foreign keys.
+			</description>
+		</method>
+		<method name="set_limit">
+			<return type="int" />
+			<param index="0" name="id" type="int" />
+			<param index="1" name="new_val" type="int" />
+			<description>
+				Sets a SQLite limit.
+			</description>
+		</method>
+		<method name="set_progress_handler">
+			<return type="void" />
+			<param index="0" name="instructions" type="int" />
+			<description>
+				Sets a progress callback.
+			</description>
+		</method>
+		<method name="set_soft_heap_limit" qualifiers="static">
+			<return type="void" />
+			<param index="0" name="bytes" type="int" />
+			<description>
+				Sets SQLite soft heap limit.
+			</description>
+		</method>
+		<method name="set_trace">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				Enables or disables SQL tracing.
+			</description>
+		</method>
+		<method name="update_rows">
+			<return type="SQLiteQuery" />
+			<param index="0" name="table_name" type="String" />
+			<param index="1" name="condition" type="String" />
+			<param index="2" name="value" type="Dictionary" default="{}" />
+			<description>
+				Updates rows in [param table_name] matching [param condition].
+			</description>
+		</method>
+		<method name="vacuum">
+			<return type="bool" />
+			<description>
+				Rebuilds the database to reclaim space.
+			</description>
+		</method>
+		<method name="wal_checkpoint">
+			<return type="bool" />
+			<param index="0" name="db_name" type="String" default="&quot;main&quot;" />
+			<description>
+				Performs a WAL checkpoint on [param db_name].
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="database" type="SQLiteDatabase" setter="set_database" getter="get_database">
+			The underlying [SQLiteDatabase] resource managed by this node.
+			It represents the actual SQLite database instance used for executing queries, managing tables, and performing transactions.
+		</member>
+	</members>
+	<signals>
+		<signal name="query_progress">
+			<description>
+				Emitted periodically while a long-running SQL query is executing.
+				This can be used to monitor progress or implement cancellation logic during heavy database operations.
+			</description>
+		</signal>
+		<signal name="row_updated">
+			<param index="0" name="update_operation" type="int" />
+			<param index="1" name="db_name" type="String" />
+			<param index="2" name="table_name" type="String" />
+			<param index="3" name="rowid" type="int" />
+			<description>
+				Emitted whenever a row is inserted, updated, or deleted.
+				The type of operation is given by [param update_operation], while [param db_name] and [param table_name] identify the affected database and table.
+				The modified row is identified by [param rowid].
+			</description>
+		</signal>
+		<signal name="transaction_committed">
+			<description>
+				Emitted when a database transaction is successfully committed and all changes are permanently applied.
+			</description>
+		</signal>
+		<signal name="transaction_rolled_back">
+			<description>
+				Emitted when a database transaction is rolled back and all uncommitted changes are discarded.
+			</description>
+		</signal>
+		<signal name="wal_updated">
+			<param index="0" name="db_name" type="String" />
+			<param index="1" name="pages_in_wal" type="int" />
+			<description>
+				Emitted when the Write-Ahead Logging (WAL) file is updated.
+				The [param db_name] specifies the database that was modified, and [param pages_in_wal] indicates how many pages are currently stored in the WAL.
+			</description>
+		</signal>
+	</signals>
+</class>

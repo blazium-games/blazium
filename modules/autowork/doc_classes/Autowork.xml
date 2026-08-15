@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Autowork" inherits="Node" experimental="Some methods may not be implemented and may be changed in future versions." xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Built-in unit testing framework
+	</brief_description>
+	<description>
+		The Autowork class provides a native unit testing framework for Blazium Engine.
+		It allows developers to define, collect, and execute tests directly within the engine using scripts.
+
+		It supports common testing features such as assertions, filtering tests, and tracking results (pass, fail, pending).
+		Additionally, it includes utilities for mocking and observing behavior through components like spies, stubbers, and doublers.
+
+		Tests can be automatically discovered from directories or explicitly added scripts.
+		Once configured, the framework can execute all collected tests and provide detailed statistics and logging.
+	</description>
+	<tutorials>
+		<link title="Autowork Module Tests">https://github.com/blazium-games/autowork_module_tests</link>
+	</tutorials>
+	<methods>
+		<method name="add_directory">
+			<return type="void" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="prefix" type="String" default="&quot;&quot;" />
+			<param index="2" name="suffix" type="String" default="&quot;&quot;" />
+			<description>
+				Adds a directory to be scanned for test scripts.
+
+				All scripts in the given [param path] are evaluated and included if they match the configured naming rules.
+				The optional [param prefix] and [param suffix] parameters can be used to override the default naming convention for test discovery.
+				If [param prefix] or [param suffix] are empty, the globally configured defaults are used instead.
+			</description>
+		</method>
+		<method name="add_script">
+			<return type="void" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Adds a single script file to the test suite.
+				The script located at [param path] is parsed and any test cases defined within it are registered for execution.
+			</description>
+		</method>
+		<method name="get_assert_count">
+			<return type="int" />
+			<description>
+				Returns the total number of assertions executed across all tests.
+			</description>
+		</method>
+		<method name="get_doubler" qualifiers="const">
+			<return type="AutoworkDoubler" />
+			<description>
+				Returns the [AutoworkDoubler] instance used for creating test doubles.
+			</description>
+		</method>
+		<method name="get_fail_count">
+			<return type="int" />
+			<description>
+				Returns the number of tests that have failed.
+			</description>
+		</method>
+		<method name="get_logger" qualifiers="const">
+			<return type="AutoworkLogger" />
+			<description>
+				Returns the [AutoworkLogger] instance used by the framework.
+			</description>
+		</method>
+		<method name="get_pass_count">
+			<return type="int" />
+			<description>
+				Returns the number of tests that have passed successfully.
+			</description>
+		</method>
+		<method name="get_pending_count">
+			<return type="int" />
+			<description>
+				Returns the number of tests that are marked as pending.
+			</description>
+		</method>
+		<method name="get_spy" qualifiers="const">
+			<return type="AutoworkSpy" />
+			<description>
+				Returns the [AutoworkSpy] instance used for observing function calls.
+			</description>
+		</method>
+		<method name="get_stubber" qualifiers="const">
+			<return type="AutoworkStubber" />
+			<description>
+				Returns the [AutoworkStubber] instance used for defining stubbed behavior.
+			</description>
+		</method>
+		<method name="get_test_collector" qualifiers="const">
+			<return type="AutoworkCollector" />
+			<description>
+				Returns the [AutoworkCollector] responsible for managing discovered tests.
+			</description>
+		</method>
+		<method name="get_test_count">
+			<return type="int" />
+			<description>
+				Returns the total number of tests collected.
+			</description>
+		</method>
+		<method name="get_test_script_count">
+			<return type="int" />
+			<description>
+				Returns the number of scripts that contain tests.
+			</description>
+		</method>
+		<method name="run_tests">
+			<return type="void" />
+			<description>
+				Executes all collected tests.
+			</description>
+		</method>
+		<method name="set_test">
+			<return type="void" />
+			<param index="0" name="test_name" type="String" />
+			<description>
+				Sets a filter pattern to determine which tests should be executed.
+			</description>
+		</method>
+	</methods>
+</class>

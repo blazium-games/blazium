@@ -1,11 +1,11 @@
 {
-  "name": "Godot Engine Web Editor",
-  "short_name": "Godot",
+  "name": "Blazium Engine Web Editor",
+  "short_name": "Blazium",
   "description": "Multi-platform 2D and 3D game engine with a feature-rich editor (Web edition)",
   "lang": "en",
-  "start_url": "./godot.editor.html",
+  "start_url": "./blazium.editor.html",
   "display": "standalone",
-  "theme_color": "#202531",
+  "theme_color": "#260c32",
   "icons": [
     {
       "src": "favicon.png",
@@ -13,5 +13,5 @@
       "type": "image/png"
     }
   ],
-  "background_color": "#333b4f"
+  "background_color": "#260c32"
 }

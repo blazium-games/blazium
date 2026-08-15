@@ -28,7 +28,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.godot
+package app.blazium.godot
 
 import android.app.Activity
 import android.app.PictureInPictureParams
@@ -45,10 +45,10 @@ import androidx.activity.addCallback
 import androidx.annotation.CallSuper
 import androidx.annotation.LayoutRes
 import androidx.fragment.app.FragmentActivity
-import org.godotengine.godot.feature.PictureInPictureProvider
-import org.godotengine.godot.utils.CommandLineFileParser
-import org.godotengine.godot.utils.PermissionsUtil
-import org.godotengine.godot.utils.ProcessPhoenix
+import app.blazium.godot.feature.PictureInPictureProvider
+import app.blazium.godot.utils.CommandLineFileParser
+import app.blazium.godot.utils.PermissionsUtil
+import app.blazium.godot.utils.ProcessPhoenix
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 

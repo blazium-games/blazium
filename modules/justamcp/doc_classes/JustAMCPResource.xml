@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPResource" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Base class for resources exposed through the MCP resource API.
+	</brief_description>
+	<description>
+		[JustAMCPResource] defines the interface used by [JustAMCPResourceExecutor]. Subclasses describe either a fixed URI or URI template and return MCP-compatible content dictionaries when that URI is read.
+		[codeblock]
+		var resource = JustAMCPResourceProjectFile.new()
+		print(resource.get_uri())
+		print(resource.is_template())
+		[/codeblock]
+	</description>
+	<tutorials>
+		<link title="Model Context Protocol (MCP)">https://modelcontextprotocol.io/</link>
+	</tutorials>
+	<methods>
+		<method name="get_name" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the human-readable resource name displayed to MCP clients.
+			</description>
+		</method>
+		<method name="get_schema" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns this resource's MCP schema dictionary. Fixed resources use [code]uri[/code]; templated resources use [code]uriTemplate[/code].
+			</description>
+		</method>
+		<method name="get_uri" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the fixed URI or URI template handled by this resource.
+			</description>
+		</method>
+		<method name="is_template" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when this resource handles a URI template rather than one fixed URI.
+			</description>
+		</method>
+		<method name="read_resource">
+			<return type="Dictionary" />
+			<param index="0" name="uri" type="String" />
+			<description>
+				Reads [param uri] and returns an MCP-compatible contents dictionary or an error dictionary.
+			</description>
+		</method>
+	</methods>
+</class>

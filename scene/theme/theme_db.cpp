@@ -42,6 +42,7 @@
 #include "scene/resources/font.h"
 #include "scene/resources/style_box.h"
 #include "scene/resources/texture.h"
+#include "scene/theme/blazium_default_theme.h"
 #include "scene/theme/default_theme.h"
 #include "servers/rendering/rendering_server.h"
 #include "servers/text/text_server.h"
@@ -88,7 +89,14 @@ void ThemeDB::initialize_theme() {
 	// Always generate the default theme to serve as a fallback for all required theme definitions.
 
 	if (RenderingServer::get_singleton()) {
-		make_default_theme(default_theme_scale, project_font, font_subpixel_positioning, font_hinting, font_antialiasing, font_msdf, font_generate_mipmaps);
+		ThemeTemplate theme_template;
+		theme_template.scale = default_theme_scale;
+		theme_template.font_subpixel = font_subpixel_positioning;
+		theme_template.font_hinting = font_hinting;
+		theme_template.font_antialiasing = font_antialiasing;
+		theme_template.font_msdf = font_msdf;
+		theme_template.font_generate_mipmaps = font_generate_mipmaps;
+		make_blazium_default_theme(project_font, theme_template);
 	}
 
 	_init_default_theme_context();
@@ -96,6 +104,7 @@ void ThemeDB::initialize_theme() {
 
 void ThemeDB::initialize_theme_noproject() {
 	if (RenderingServer::get_singleton()) {
+		// Used by unit tests (no project). Keep Godot stock metrics so widget tests stay stable.
 		make_default_theme(1.0, Ref<Font>());
 	}
 
@@ -108,6 +117,7 @@ void ThemeDB::finalize_theme() {
 	}
 
 	_finalize_theme_contexts();
+	finalize_blazium_default_theme();
 	default_theme.unref();
 
 	fallback_font.unref();

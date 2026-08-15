@@ -28,7 +28,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.godot.utils
+package app.blazium.godot.utils
 
 import android.app.Activity
 import android.app.AlertDialog
@@ -46,7 +46,7 @@ import android.widget.LinearLayout
 import android.widget.PopupWindow
 import android.widget.TextView
 
-import org.godotengine.godot.R
+import app.blazium.godot.R
 import kotlin.math.abs
 
 /**

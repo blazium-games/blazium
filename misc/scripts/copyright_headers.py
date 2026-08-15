@@ -3,7 +3,7 @@
 import os
 import sys
 
-header = """\
+godot_header = """\
 /**************************************************************************/
 /*  $filename                                                             */
 /**************************************************************************/
@@ -35,12 +35,58 @@ header = """\
 /**************************************************************************/
 """
 
+blazium_header = """\
+/**************************************************************************/
+/*  $filename                                                             */
+/**************************************************************************/
+/*                         This file is part of:                          */
+/*                             BLAZIUM ENGINE                             */
+/*                          https://blazium.app                           */
+/**************************************************************************/
+/* Copyright (c) 2024-present Blazium Engine contributors.                */
+/*                                                                        */
+/* Permission is hereby granted, free of charge, to any person obtaining  */
+/* a copy of this software and associated documentation files (the        */
+/* "Software"), to deal in the Software without restriction, including    */
+/* without limitation the rights to use, copy, modify, merge, publish,    */
+/* distribute, sublicense, and/or sell copies of the Software, and to     */
+/* permit persons to whom the Software is furnished to do so, subject to  */
+/* the following conditions:                                              */
+/*                                                                        */
+/* The above copyright notice and this permission notice shall be         */
+/* included in all copies or substantial portions of the Software.        */
+/*                                                                        */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
+/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
+/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
+/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
+/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
+/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
+/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
+/**************************************************************************/
+"""
+
+use_blazium = "--blazium" in sys.argv
+if use_blazium:
+    sys.argv.remove("--blazium")
+if "--godot" in sys.argv:
+    sys.argv.remove("--godot")
+
+header = blazium_header if use_blazium else godot_header
+
 if len(sys.argv) < 2:
     print("Invalid usage of copyright_headers.py, it should be called with a path to one or multiple files.")
+    print("Usage: python copyright_headers.py [--blazium|--godot] <file1> [file2] ...")
     sys.exit(1)
 
 for f in sys.argv[1:]:
     fname = f
+
+    if use_blazium:
+        with open(fname.strip(), "r", encoding="utf-8") as fileread:
+            file_content = fileread.read()
+        if "BLAZIUM ENGINE" in file_content and "https://blazium.app" in file_content:
+            continue
 
     # Handle replacing $filename with actual filename and keep alignment
     fsingle = os.path.basename(fname.strip())
@@ -75,8 +121,8 @@ for f in sys.argv[1:]:
         while line.strip() == "" and line != "":  # Skip empty lines at the top
             line = fileread.readline()
 
-        if line.find("/**********") == -1:  # Godot header starts this way
-            # Maybe starting with a non-Godot comment, abort header magic
+        if line.find("/**********") == -1:  # Godot/Blazium header starts this way
+            # Maybe starting with a non-engine comment, abort header magic
             header_done = True
 
         while not header_done:  # Handle header now

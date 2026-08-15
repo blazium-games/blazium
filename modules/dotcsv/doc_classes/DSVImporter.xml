@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DSVImporter" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Low-level delimiter-separated value importer.
+	</brief_description>
+	<description>
+		DSVImporter parses CSV, TSV, PSV, and other single-character delimiter-separated text into arrays of strings. It handles quoted fields, escaped quotes, CRLF/LF/CR line endings, and supports configurable row-length handling, field trimming, empty-row skipping, and comment rows.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="import" qualifiers="static">
+			<return type="Array" />
+			<param index="0" name="file_path" type="String" />
+			<param index="1" name="delimiter" type="String" default="&quot;,&quot;" />
+			<param index="2" name="options" type="Dictionary" default="{}" />
+			<description>
+				Parses the file at [param file_path] into an array of [PackedStringArray] rows. Supports [param options] keys [code]trim_fields[/code], [code]skip_empty_rows[/code], [code]comment_prefixes[/code], [code]row_length_mode[/code], [code]null_values[/code], [code]true_values[/code], and [code]false_values[/code].
+			</description>
+		</method>
+		<method name="import_string" qualifiers="static">
+			<return type="Array" />
+			<param index="0" name="string" type="String" />
+			<param index="1" name="delimiter" type="String" default="&quot;,&quot;" />
+			<param index="2" name="options" type="Dictionary" default="{}" />
+			<description>
+				Parses [param string] into an array of [PackedStringArray] rows. Supports [param options] keys [code]trim_fields[/code], [code]skip_empty_rows[/code], [code]comment_prefixes[/code], [code]row_length_mode[/code], [code]null_values[/code], [code]true_values[/code], and [code]false_values[/code].
+			</description>
+		</method>
+	</methods>
+</class>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AutoworkSignalWatcher" inherits="RefCounted" experimental="Some methods may not be implemented and may be changed in future versions." xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Tracks and records signal emissions during tests.
+	</brief_description>
+	<description>
+		The AutoworkSignalWatcher is used to observe signals emitted by objects during test execution.
+
+		It allows registering specific signals (or all signals from an object) and keeps a record of their emissions, including how many times they were triggered and with what arguments.
+		This makes it possible to assert that signals were emitted as expected.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="clear">
+			<return type="void" />
+			<description>
+				Clears all recorded signal emissions and watched signals.
+
+				After calling this method, the watcher returns to an empty state.
+			</description>
+		</method>
+		<method name="did_emit">
+			<return type="bool" />
+			<param index="0" name="object" type="Object" />
+			<param index="1" name="signal" type="StringName" />
+			<description>
+				Returns [code]true[/code] if the specified [param signal] was emitted by [param object].
+
+				This checks whether at least one emission has been recorded since the last [method clear] call.
+			</description>
+		</method>
+		<method name="get_emissions">
+			<return type="Array" />
+			<param index="0" name="object" type="Object" />
+			<param index="1" name="signal" type="StringName" />
+			<description>
+				Returns an [Array] of recorded emissions for the given [param object] and [param signal].
+
+				Each entry typically contains the arguments passed when the signal was emitted.
+				The exact structure may depend on the implementation.
+			</description>
+		</method>
+		<method name="watch_signal">
+			<return type="void" />
+			<param index="0" name="object" type="Object" />
+			<param index="1" name="signal" type="StringName" />
+			<description>
+				Starts watching a specific signal on the given [param object].
+
+				All future emissions of the specified signal will be recorded until [method clear] is called or the watcher is reset.
+			</description>
+		</method>
+		<method name="watch_signals">
+			<return type="void" />
+			<param index="0" name="object" type="Object" />
+			<description>
+				Starts watching all signals emitted by the given [param object].
+
+				This is useful when the exact signal names are not known in advance or when multiple signals need to be tracked simultaneously.
+			</description>
+		</method>
+	</methods>
+</class>

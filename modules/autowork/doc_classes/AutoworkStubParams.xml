@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AutoworkStubParams" inherits="RefCounted" experimental="Some methods may not be implemented and may be changed in future versions." xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Fluent configuration object for defining stub behavior.
+	</brief_description>
+	<description>
+		The AutoworkStubParams class provides a fluent API for defining conditional stub behavior in tests.
+
+		It is used by [AutoworkStubber] to describe how a method should behave when called, including return values, argument matching, or whether the original method should be executed.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="to_call_super">
+			<return type="AutoworkStubParams" />
+			<description>
+				Configures the stub to call the original method implementation.
+
+				When applied, the stub will allow execution of the original method instead of fully replacing it.
+				This is useful for partial overrides or behavior extension.
+			</description>
+		</method>
+		<method name="to_do_nothing">
+			<return type="AutoworkStubParams" />
+			<description>
+				Configures the stub to do nothing when the method is called.
+
+				The method call is intercepted and suppressed, and no return value or original implementation is executed.
+			</description>
+		</method>
+		<method name="to_return">
+			<return type="AutoworkStubParams" />
+			<param index="0" name="value" type="Variant" />
+			<description>
+				Configures the stub to return a specific value.
+
+				When the method is called, the provided [param value] is returned instead of executing the original implementation.
+			</description>
+		</method>
+		<method name="when_passed">
+			<return type="AutoworkStubParams" />
+			<param index="0" name="args" type="Variant" />
+			<description>
+				Restricts the stub to only apply when specific arguments are passed.
+
+				The stub will only be triggered if the method call matches the provided [param args].
+				This allows fine-grained control over conditional behavior.
+			</description>
+		</method>
+	</methods>
+</class>

@@ -28,7 +28,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.godot.service
+package app.blazium.godot.service
 
 import android.app.Service
 import android.content.Intent
@@ -48,9 +48,9 @@ import android.widget.FrameLayout
 import androidx.annotation.CallSuper
 import androidx.annotation.RequiresApi
 import androidx.core.os.bundleOf
-import org.godotengine.godot.Godot
-import org.godotengine.godot.GodotHost
-import org.godotengine.godot.R
+import app.blazium.godot.Godot
+import app.blazium.godot.GodotHost
+import app.blazium.godot.R
 import java.lang.ref.WeakReference
 
 /**

@@ -1,0 +1,31 @@
+#!/usr/bin/env python
+from misc.utility.scons_hints import *
+
+Import("env")
+Import("env_modules")
+
+env_xbox_module = env_modules.Clone()
+
+if env.get("xbox_module_gdk", False):
+    env_xbox_module.Append(
+        CPPDEFINES=[
+            "XBOX_MODULE_GDK_ENABLED",
+            "_GAMING_DESKTOP",
+            ("WINAPI_FAMILY", "WINAPI_FAMILY_DESKTOP_APP"),
+        ],
+        CPPPATH=[env["xbox_module_gdk_include"]],
+    )
+
+env_xbox_module.add_source_files(env.modules_sources, "register_types.cpp")
+env_xbox_module.add_source_files(env.modules_sources, "gdk/*.cpp")
+
+if env.editor_build:
+    env_xbox_module.add_source_files(env.modules_sources, "editor/*.cpp")
+    env_xbox_module.add_source_files(env.modules_sources, "editor/export/*.cpp")
+elif env["tests"]:
+    # Unit tests cover export helpers without pulling in full editor/export code.
+    env_xbox_module.add_source_files(env.modules_sources, "editor/gdk_toolchain.cpp")
+    env_xbox_module.add_source_files(env.modules_sources, "editor/microsoft_game_config.cpp")
+
+if env["tests"]:
+    env_xbox_module.Append(CPPDEFINES=["TESTS_ENABLED"])

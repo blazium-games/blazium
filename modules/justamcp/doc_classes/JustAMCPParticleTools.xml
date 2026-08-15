@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPParticleTools" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Provides MCP tools for inspecting particle systems.
+	</brief_description>
+	<description>
+		Registers particle-oriented tool schemas used by [JustAMCPToolExecutor]. These tools expose particle node and resource settings so MCP clients can review or adjust visual effects setup.
+	</description>
+	<tutorials>
+		<link title="Model Context Protocol (MCP)">https://modelcontextprotocol.io/</link>
+	</tutorials>
+</class>

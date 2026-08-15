@@ -28,7 +28,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.godot.io
+package app.blazium.godot.io
 
 import android.app.Activity
 import android.content.Context
@@ -40,7 +40,7 @@ import android.provider.DocumentsContract
 import android.util.Log
 import android.webkit.MimeTypeMap
 import androidx.core.net.toUri
-import org.godotengine.godot.GodotLib
+import app.blazium.godot.GodotLib
 import java.io.File
 
 /**

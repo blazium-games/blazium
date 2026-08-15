@@ -4,7 +4,7 @@
     android:installLocation="auto">
 
     <queries>
-        <package android:name="org.godotengine.godot_gradle_build_environment" />
+        <package android:name="app.blazium.godot_gradle_build_environment" />
     </queries>
 
     <supports-screens

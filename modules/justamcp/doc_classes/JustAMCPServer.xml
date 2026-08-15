@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPServer" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Runs the editor-side Model Context Protocol server.
+	</brief_description>
+	<description>
+		[JustAMCPServer] owns the editor-facing MCP transport and emits signals for JSON-RPC tool requests, server lifecycle changes, elicitation responses, and cancellation notices. Most projects use it through the JustAMCP editor plugin or [JustAMCPRuntime] rather than instantiating it manually.
+		Implements the MCP [url=https://modelcontextprotocol.io/specification/2025-11-25/server/utilities/logging]Logging[/url] utility: declares [code]logging[/code] capability, handles [code]logging/setLevel[/code], and pushes [code]notifications/message[/code] to SSE clients. Engine output and JustAMCP debug traces can be forwarded when [member ProjectSettings.blazium/justamcp/forward_engine_logs] and [member ProjectSettings.blazium/justamcp/enable_debug_logging] are enabled.
+		Implements MCP [url=https://modelcontextprotocol.io/specification/2025-11-25/basic/transports]Streamable HTTP[/url] on [code]/mcp[/code] with [code]MCP-Session-Id[/code], per-stream SSE event IDs, [code]Last-Event-ID[/code] replay, and [code]DELETE[/code] session teardown. Legacy [code]/sse[/code] + [code]/message[/code] and stateless [code]POST /mcp[/code] remain supported for existing clients.
+		When [member ProjectSettings.blazium/justamcp/bind_to_localhost_only] is enabled, [member ProjectSettings.blazium/justamcp/streamable_http_strict_origin] defaults to [code]true[/code] so non-local [code]Origin[/code] headers are rejected if the server is later bound beyond localhost.
+		[member ProjectSettings.blazium/justamcp/parallel_readonly_lane] is deprecated; use [member ProjectSettings.blazium/justamcp/readonly_worker_concurrency] (0 = serial main-only; N = up to N concurrent WorkerSafe readonly tools on WorkerThreadPool). WorkerSafe is a subset of readonly tools ([code]execution.threadAffinity=worker[/code]); readonly alone does not imply off-main safety.
+		Implements MCP [url=https://modelcontextprotocol.io/specification/2025-11-25/server/utilities/pagination]pagination[/url] for [code]tools/list[/code], [code]prompts/list[/code], [code]resources/list[/code], and [code]resources/templates/list[/code] using opaque cursors. Buffers recent [code]notifications/message[/code] payloads for replay when clients missed SSE; see [member ProjectSettings.blazium/justamcp/mcp_log_buffer_size] and canonical [code]blazium://logs/mcp/cursor/{token}[/code] (legacy [code]blazium://logs/mcp/{cursor}[/code] remains readable for one release).
+		Supports task-augmented [code]tools/call[/code] for long-running tools ([url=https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/tasks]Tasks[/url]), [code]notifications/progress[/code] via [code]_meta.progressToken[/code] ([url=https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/progress]Progress[/url]), and cooperative cancellation ([url=https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/cancellation]Cancellation[/url]). Sync requests honor [code]notifications/cancelled[/code]; task-augmented work uses [code]tasks/cancel[/code].
+		[codeblock]
+		var server = JustAMCPServer.new()
+		server.tool_requested.connect(func(request_id, tool_name, args):
+		    print("MCP tool requested: ", tool_name)
+		)
+		[/codeblock]
+	</description>
+	<tutorials>
+		<link title="Model Context Protocol (MCP)">https://modelcontextprotocol.io/</link>
+	</tutorials>
+	<methods>
+		<method name="is_server_started" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] while the MCP HTTP server is listening on the configured port.
+			</description>
+		</method>
+		<method name="report_tool_progress">
+			<return type="void" />
+			<param index="0" name="token" type="String" />
+			<param index="1" name="progress" type="float" />
+			<param index="2" name="total" type="float" />
+			<param index="3" name="message" type="String" />
+			<description>
+				Emits an MCP [code]notifications/progress[/code] notification for the active [code]progressToken[/code].
+			</description>
+		</method>
+		<method name="send_log_message">
+			<return type="void" />
+			<param index="0" name="level" type="String" />
+			<param index="1" name="logger" type="String" />
+			<param index="2" name="data" type="Variant" default="null" />
+			<description>
+				Sends an MCP [code]notifications/message[/code] log to connected clients if [param level] meets the client's [code]logging/setLevel[/code] minimum. [param logger] is optional. [param data] should be a [Dictionary] or string (stored as [code]message[/code]).
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="elicitation_completed">
+			<param index="0" name="request_id" type="Variant" />
+			<param index="1" name="result" type="Dictionary" />
+			<description>
+				Emitted when an elicitation request finishes. [param request_id] identifies the request and [param result] contains the user response or completion payload.
+			</description>
+		</signal>
+		<signal name="request_cancelled">
+			<param index="0" name="request_id" type="Variant" />
+			<param index="1" name="reason" type="String" />
+			<param index="2" name="caller_session_id" type="String" />
+			<description>
+				Emitted when a pending MCP request is cancelled. [param request_id] identifies the request, [param reason] explains the cancellation, and [param caller_session_id] is the session that issued the cancel (empty for legacy/unscoped cancels). Cross-session cancels are ignored.
+			</description>
+		</signal>
+		<signal name="server_status_changed">
+			<param index="0" name="started" type="bool" />
+			<description>
+				Emitted when the MCP server starts or stops. [param started] is [code]true[/code] while the server is running.
+			</description>
+		</signal>
+		<signal name="tool_requested">
+			<param index="0" name="request_id" type="Variant" />
+			<param index="1" name="tool_name" type="String" />
+			<param index="2" name="args" type="Dictionary" />
+			<description>
+				Emitted when an MCP client requests a tool call. Handlers should execute [param tool_name] with [param args] and respond using the associated [param request_id].
+			</description>
+		</signal>
+	</signals>
+</class>

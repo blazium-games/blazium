@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+# ruff: noqa
+
+Import("env")
+
+env_tiled_importer = env.Clone()
+
+# Append compiler flags or paths here if required
+env_tiled_importer.Append(CPPPATH=["#thirdparty/tileson/include", "#thirdparty/tileson"])
+
+if env.msvc:
+    env_tiled_importer.Append(CXXFLAGS=["/EHsc"])
+
+
+tiled_importer_sources = []
+
+# Core importer bindings and implementation
+tiled_importer_sources.append("register_types.cpp")
+tiled_importer_sources.append("resource_importer_tiled.cpp")
+
+# Parsing tools and components
+tiled_importer_sources.append("tiled_common.cpp")
+tiled_importer_sources.append("tiled_xml_parser.cpp")
+tiled_importer_sources.append("tiled_tileset_creator.cpp")
+tiled_importer_sources.append("tiled_tilemap_creator.cpp")
+tiled_importer_sources.append("tiled_dictionary_builder.cpp")
+tiled_importer_sources.append("tiled_custom_types.cpp")
+tiled_importer_sources.append("tiled_tileson_bridge.cpp")
+tiled_importer_sources.append("tileson_gd_bindings.cpp")
+
+if env.editor_build:
+    tiled_importer_sources.append("editor/tiled_editor_plugin.cpp")
+
+env_tiled_importer.add_source_files(env.modules_sources, tiled_importer_sources)

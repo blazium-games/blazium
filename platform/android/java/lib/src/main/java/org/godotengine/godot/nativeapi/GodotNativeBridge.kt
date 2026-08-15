@@ -28,7 +28,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.godot.nativeapi
+package app.blazium.godot.nativeapi
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
@@ -44,18 +44,18 @@ import android.util.Rational
 import android.util.TypedValue
 import androidx.annotation.Keep
 import androidx.core.net.toUri
-import org.godotengine.godot.Godot
-import org.godotengine.godot.GodotActivity
-import org.godotengine.godot.R
-import org.godotengine.godot.error.Error
-import org.godotengine.godot.feature.PictureInPictureProvider
-import org.godotengine.godot.io.FilePicker
-import org.godotengine.godot.utils.DialogUtils
-import org.godotengine.godot.utils.GodotNetUtils
-import org.godotengine.godot.utils.beginBenchmarkMeasure
-import org.godotengine.godot.utils.dumpBenchmark
-import org.godotengine.godot.utils.endBenchmarkMeasure
-import org.godotengine.godot.variant.Callable as GodotCallable
+import app.blazium.godot.Godot
+import app.blazium.godot.GodotActivity
+import app.blazium.godot.R
+import app.blazium.godot.error.Error
+import app.blazium.godot.feature.PictureInPictureProvider
+import app.blazium.godot.io.FilePicker
+import app.blazium.godot.utils.DialogUtils
+import app.blazium.godot.utils.GodotNetUtils
+import app.blazium.godot.utils.beginBenchmarkMeasure
+import app.blazium.godot.utils.dumpBenchmark
+import app.blazium.godot.utils.endBenchmarkMeasure
+import app.blazium.godot.variant.Callable as GodotCallable
 
 /**
  * Holds and expose Godot apis to the native layer.
@@ -291,7 +291,7 @@ internal class GodotNativeBridge(private val godot: Godot) {
 		keystorePassword: String
 	): Int {
 		val signResult = godot.primaryHost?.signApk(inputPath, outputPath, keystorePath, keystoreUser, keystorePassword)
-			?: org.godotengine.godot.error.Error.ERR_UNAVAILABLE
+			?: app.blazium.godot.error.Error.ERR_UNAVAILABLE
 		return signResult.toNativeValue()
 	}
 

@@ -170,7 +170,7 @@ void ProjectDialog::_validate_path() {
 			}
 
 			unzClose(pkg);
-		} else if (d->dir_exists(path) && d->file_exists(path.path_join("project.godot"))) {
+		} else if (d->dir_exists(path) && (d->file_exists(path.path_join("project.godot")) || d->file_exists(path.path_join("project.blazium")))) {
 			zip_path = "";
 
 			create_dir->hide();
@@ -422,7 +422,7 @@ void ProjectDialog::_browse_project_path() {
 	if (mode == MODE_IMPORT) {
 		fdialog_project->set_file_mode(EditorFileDialog::FILE_MODE_OPEN_ANY);
 		fdialog_project->clear_filters();
-		fdialog_project->add_filter("project.godot", vformat("%s %s", GODOT_VERSION_NAME, TTR("Project")));
+		fdialog_project->add_filter("project.blazium,project.godot", vformat("%s %s", GODOT_VERSION_NAME, TTR("Project")));
 		fdialog_project->add_filter("*.zip", TTR("ZIP File"));
 	} else {
 		fdialog_project->set_file_mode(EditorFileDialog::FILE_MODE_OPEN_DIR);
@@ -601,9 +601,9 @@ void ProjectDialog::ok_pressed() {
 			initial_settings[extra_setting.key] = extra_setting.value;
 		}
 
-		Error err = ProjectSettings::get_singleton()->save_custom(path.path_join("project.godot"), initial_settings, Vector<String>(), false);
+		Error err = ProjectSettings::get_singleton()->save_custom(path.path_join("project.blazium"), initial_settings, Vector<String>(), false);
 		if (err != OK) {
-			_set_message(TTRC("Couldn't create project.godot in project path."), MESSAGE_ERROR);
+			_set_message(TTRC("Couldn't create project.blazium in project path."), MESSAGE_ERROR);
 			return;
 		}
 

@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CSVRowModel" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Schema-driven typed row converter for CSV data.
+	</brief_description>
+	<description>
+		CSVRowModel stores a dictionary schema and applies it to CSV rows. It can cast dictionaries or array rows into typed dictionaries, apply defaults, validate required fields and enum values, and serialize rows for CSV export.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="cast_row" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="row" type="Variant" />
+			<description>
+				Returns a typed dictionary for [param row], applying defaults where available.
+			</description>
+		</method>
+		<method name="cast_rows" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="rows" type="Array" />
+			<description>
+				Casts each row in [param rows].
+			</description>
+		</method>
+		<method name="from_file" qualifiers="static">
+			<return type="CSVRowModel" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Creates a row model by loading a schema dictionary from [param path].
+			</description>
+		</method>
+		<method name="from_schema" qualifiers="static">
+			<return type="CSVRowModel" />
+			<param index="0" name="schema" type="Dictionary" />
+			<description>
+				Creates a row model from [param schema].
+			</description>
+		</method>
+		<method name="get_field_names" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				Returns schema field names in declaration order.
+			</description>
+		</method>
+		<method name="get_schema" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns a copy of the current schema.
+			</description>
+		</method>
+		<method name="infer_from_rows" qualifiers="static">
+			<return type="CSVRowModel" />
+			<param index="0" name="rows" type="Array" />
+			<param index="1" name="options" type="Dictionary" default="{}" />
+			<description>
+				Creates a model by inferring schema definitions from dictionaries or array rows. String values are parsed with DotCSV conversion rules before type inference.
+			</description>
+		</method>
+		<method name="infer_from_table" qualifiers="static">
+			<return type="CSVRowModel" />
+			<param index="0" name="table" type="CSVTable" />
+			<param index="1" name="options" type="Dictionary" default="{}" />
+			<description>
+				Creates a model by inferring schema definitions from the rows in [param table].
+			</description>
+		</method>
+		<method name="load_schema">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Loads a schema dictionary from [param path] and replaces the current schema.
+			</description>
+		</method>
+		<method name="save_schema" qualifiers="const">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Saves the current schema dictionary to [param path].
+			</description>
+		</method>
+		<method name="serialize_row" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="row" type="Variant" />
+			<param index="1" name="include_defaults" type="bool" default="true" />
+			<description>
+				Returns a dictionary suitable for CSV export. Values are cast first; missing defaulted fields are included when [param include_defaults] is [code]true[/code].
+			</description>
+		</method>
+		<method name="serialize_rows" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="rows" type="Array" />
+			<param index="1" name="include_defaults" type="bool" default="true" />
+			<description>
+				Serializes each row in [param rows].
+			</description>
+		</method>
+		<method name="set_schema">
+			<return type="void" />
+			<param index="0" name="schema" type="Dictionary" />
+			<description>
+				Replaces the current schema.
+			</description>
+		</method>
+		<method name="validate_row" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="row" type="Variant" />
+			<description>
+				Validates [param row] and returns a report with [code]ok[/code], [code]errors[/code], and casted row data.
+			</description>
+		</method>
+		<method name="validate_rows" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="rows" type="Array" />
+			<description>
+				Validates each row and includes its row index in each report.
+			</description>
+		</method>
+	</methods>
+</class>

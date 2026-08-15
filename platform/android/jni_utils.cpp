@@ -428,7 +428,7 @@ Variant _jobject_to_variant(JNIEnv *env, jobject obj, int p_depth) {
 		return varr;
 	}
 
-	if (name == "org.godotengine.godot.Dictionary") {
+	if (name == "app.blazium.godot.Dictionary") {
 		Dictionary ret;
 		jclass oclass = c;
 
@@ -471,7 +471,7 @@ Variant _jobject_to_variant(JNIEnv *env, jobject obj, int p_depth) {
 		return ret;
 	}
 
-	if (name == "org.godotengine.godot.variant.Callable") {
+	if (name == "app.blazium.godot.variant.Callable") {
 		return jcallable_to_callable(env, obj);
 	}
 
@@ -502,8 +502,8 @@ Variant::Type get_jni_type(const String &p_type) {
 		{ "[D", Variant::PACKED_FLOAT64_ARRAY },
 		{ "[Ljava.lang.String;", Variant::PACKED_STRING_ARRAY },
 		{ "[Ljava.lang.CharSequence;", Variant::PACKED_STRING_ARRAY },
-		{ "org.godotengine.godot.Dictionary", Variant::DICTIONARY },
-		{ "org.godotengine.godot.variant.Callable", Variant::CALLABLE },
+		{ "app.blazium.godot.Dictionary", Variant::DICTIONARY },
+		{ "app.blazium.godot.variant.Callable", Variant::CALLABLE },
 		{ nullptr, Variant::NIL }
 	};
 

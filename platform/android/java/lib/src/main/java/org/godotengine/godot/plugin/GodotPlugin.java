@@ -28,10 +28,10 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.godot.plugin;
+package app.blazium.godot.plugin;
 
-import org.godotengine.godot.BuildConfig;
-import org.godotengine.godot.Godot;
+import app.blazium.godot.BuildConfig;
+import app.blazium.godot.Godot;
 
 import android.app.Activity;
 import android.content.Context;
@@ -173,7 +173,7 @@ public abstract class GodotPlugin {
 
 	/**
 	 * Invoked once during the initialization process after creation of the
-	 * {@link org.godotengine.godot.GodotRenderView} view.
+	 * {@link app.blazium.godot.GodotRenderView} view.
 	 * <p>
 	 * The plugin can return a non-null {@link View} layout which will be added to the Godot view
 	 * hierarchy.
