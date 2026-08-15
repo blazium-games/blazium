@@ -177,6 +177,7 @@ void BlaziumGoapAgent::_notification(int p_what) {
 			} else if (current_plan.size() == 1) { // 1 means it's just the goal node inside it natively
 				if (current_goal) {
 					current_goal->on_goal_achieved();
+					current_goal->exit();
 				}
 				finished_last_plan = true;
 			}
@@ -297,6 +298,7 @@ void BlaziumGoapAgent::_follow_plan(Array p_plan, double p_delta) {
 
 				if (is_goal_satisfied) {
 					current_goal->on_goal_achieved();
+					current_goal->exit();
 					finished_last_plan = true;
 					return;
 				}
@@ -319,6 +321,7 @@ void BlaziumGoapAgent::_follow_plan(Array p_plan, double p_delta) {
 
 			if (is_goal_satisfied) {
 				current_goal->on_goal_achieved();
+				current_goal->exit();
 				finished_last_plan = true;
 			} else {
 				current_goal = nullptr;
