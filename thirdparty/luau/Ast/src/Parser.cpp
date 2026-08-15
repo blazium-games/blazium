@@ -5,6 +5,8 @@
 #include "Luau/TimeTrace.h"
 
 #include <algorithm>
+#include <cstdlib>
+#include <stdlib.h>
 
 #include <errno.h>
 #include <limits.h>
@@ -2879,7 +2881,7 @@ static ConstantNumberParseResult parseInteger(double& result, const char* data, 
     LUAU_ASSERT(base == 2 || base == 16);
 
     char* end = nullptr;
-    unsigned long long value = strtoull(data, &end, base);
+    unsigned long long value = std::strtoull(data, &end, base);
 
     if (*end != 0)
         return ConstantNumberParseResult::Malformed;
@@ -2891,7 +2893,7 @@ static ConstantNumberParseResult parseInteger(double& result, const char* data, 
         // 'errno' might have been set before we called 'strtoull', but we don't want the overhead of resetting a TLS variable on each call
         // so we only reset it when we get a result that might be an out-of-range error and parse again to make sure
         errno = 0;
-        value = strtoull(data, &end, base);
+        value = std::strtoull(data, &end, base);
 
         if (errno == ERANGE)
             return base == 2 ? ConstantNumberParseResult::BinOverflow : ConstantNumberParseResult::HexOverflow;
@@ -2914,7 +2916,7 @@ static ConstantNumberParseResult parseDouble(double& result, const char* data)
         return parseInteger(result, data, 16); // pass in '0x' prefix, it's handled by 'strtoull'
 
     char* end = nullptr;
-    double value = strtod(data, &end);
+    double value = std::strtod(data, &end);
 
     // trailing non-numeric characters
     if (*end != 0)

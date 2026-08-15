@@ -151,7 +151,8 @@ void test_justamcp_http_initialize_all_protocol_versions() {
 	TEST_FAIL_COND(session_manager == nullptr, "Session manager is required");
 
 	for (int i = 0; k_supported_protocols[i]; i++) {
-		_init_session(server, session_manager, k_supported_protocols[i]);
+		const String session_id = _init_session(server, session_manager, k_supported_protocols[i]);
+		CHECK(!session_id.is_empty());
 	}
 }
 

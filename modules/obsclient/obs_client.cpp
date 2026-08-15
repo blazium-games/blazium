@@ -898,17 +898,17 @@ String OBSClient::send_request_batch(const Array &p_requests, bool p_halt_on_fai
 // General Requests
 
 void OBSClient::get_version(const Callable &p_callback) {
-	send_request("GetVersion", Dictionary(), p_callback);
+	(void)send_request("GetVersion", Dictionary(), p_callback);
 }
 
 void OBSClient::get_stats(const Callable &p_callback) {
-	send_request("GetStats", Dictionary(), p_callback);
+	(void)send_request("GetStats", Dictionary(), p_callback);
 }
 
 void OBSClient::broadcast_custom_event(const Dictionary &p_event_data) {
 	Dictionary request_data;
 	request_data["eventData"] = p_event_data;
-	send_request("BroadcastCustomEvent", request_data);
+	(void)send_request("BroadcastCustomEvent", request_data);
 }
 
 void OBSClient::call_vendor_request(const String &p_vendor_name, const String &p_request_type, const Dictionary &p_request_data, const Callable &p_callback) {
@@ -918,11 +918,11 @@ void OBSClient::call_vendor_request(const String &p_vendor_name, const String &p
 	if (!p_request_data.is_empty()) {
 		request_data["requestData"] = p_request_data;
 	}
-	send_request("CallVendorRequest", request_data, p_callback);
+	(void)send_request("CallVendorRequest", request_data, p_callback);
 }
 
 void OBSClient::get_hotkey_list(const Callable &p_callback) {
-	send_request("GetHotkeyList", Dictionary(), p_callback);
+	(void)send_request("GetHotkeyList", Dictionary(), p_callback);
 }
 
 void OBSClient::trigger_hotkey_by_name(const String &p_hotkey_name, const String &p_context_name) {
@@ -931,7 +931,7 @@ void OBSClient::trigger_hotkey_by_name(const String &p_hotkey_name, const String
 	if (!p_context_name.is_empty()) {
 		request_data["contextName"] = p_context_name;
 	}
-	send_request("TriggerHotkeyByName", request_data);
+	(void)send_request("TriggerHotkeyByName", request_data);
 }
 
 void OBSClient::sleep(int p_sleep_millis, int p_sleep_frames) {
@@ -942,7 +942,7 @@ void OBSClient::sleep(int p_sleep_millis, int p_sleep_frames) {
 	if (p_sleep_frames > 0) {
 		request_data["sleepFrames"] = p_sleep_frames;
 	}
-	send_request("Sleep", request_data);
+	(void)send_request("Sleep", request_data);
 }
 
 // Config Requests
@@ -951,7 +951,7 @@ void OBSClient::get_persistent_data(const String &p_realm, const String &p_slot_
 	Dictionary request_data;
 	request_data["realm"] = p_realm;
 	request_data["slotName"] = p_slot_name;
-	send_request("GetPersistentData", request_data, p_callback);
+	(void)send_request("GetPersistentData", request_data, p_callback);
 }
 
 void OBSClient::set_persistent_data(const String &p_realm, const String &p_slot_name, const Variant &p_slot_value) {
@@ -959,52 +959,52 @@ void OBSClient::set_persistent_data(const String &p_realm, const String &p_slot_
 	request_data["realm"] = p_realm;
 	request_data["slotName"] = p_slot_name;
 	request_data["slotValue"] = p_slot_value;
-	send_request("SetPersistentData", request_data);
+	(void)send_request("SetPersistentData", request_data);
 }
 
 void OBSClient::get_scene_collection_list(const Callable &p_callback) {
-	send_request("GetSceneCollectionList", Dictionary(), p_callback);
+	(void)send_request("GetSceneCollectionList", Dictionary(), p_callback);
 }
 
 void OBSClient::set_current_scene_collection(const String &p_scene_collection_name) {
 	Dictionary request_data;
 	request_data["sceneCollectionName"] = p_scene_collection_name;
-	send_request("SetCurrentSceneCollection", request_data);
+	(void)send_request("SetCurrentSceneCollection", request_data);
 }
 
 void OBSClient::create_scene_collection(const String &p_scene_collection_name) {
 	Dictionary request_data;
 	request_data["sceneCollectionName"] = p_scene_collection_name;
-	send_request("CreateSceneCollection", request_data);
+	(void)send_request("CreateSceneCollection", request_data);
 }
 
 void OBSClient::get_profile_list(const Callable &p_callback) {
-	send_request("GetProfileList", Dictionary(), p_callback);
+	(void)send_request("GetProfileList", Dictionary(), p_callback);
 }
 
 void OBSClient::set_current_profile(const String &p_profile_name) {
 	Dictionary request_data;
 	request_data["profileName"] = p_profile_name;
-	send_request("SetCurrentProfile", request_data);
+	(void)send_request("SetCurrentProfile", request_data);
 }
 
 void OBSClient::create_profile(const String &p_profile_name) {
 	Dictionary request_data;
 	request_data["profileName"] = p_profile_name;
-	send_request("CreateProfile", request_data);
+	(void)send_request("CreateProfile", request_data);
 }
 
 void OBSClient::remove_profile(const String &p_profile_name) {
 	Dictionary request_data;
 	request_data["profileName"] = p_profile_name;
-	send_request("RemoveProfile", request_data);
+	(void)send_request("RemoveProfile", request_data);
 }
 
 void OBSClient::get_profile_parameter(const String &p_parameter_category, const String &p_parameter_name, const Callable &p_callback) {
 	Dictionary request_data;
 	request_data["parameterCategory"] = p_parameter_category;
 	request_data["parameterName"] = p_parameter_name;
-	send_request("GetProfileParameter", request_data, p_callback);
+	(void)send_request("GetProfileParameter", request_data, p_callback);
 }
 
 void OBSClient::set_profile_parameter(const String &p_parameter_category, const String &p_parameter_name, const String &p_parameter_value) {
@@ -1012,91 +1012,91 @@ void OBSClient::set_profile_parameter(const String &p_parameter_category, const 
 	request_data["parameterCategory"] = p_parameter_category;
 	request_data["parameterName"] = p_parameter_name;
 	request_data["parameterValue"] = p_parameter_value;
-	send_request("SetProfileParameter", request_data);
+	(void)send_request("SetProfileParameter", request_data);
 }
 
 void OBSClient::get_video_settings(const Callable &p_callback) {
-	send_request("GetVideoSettings", Dictionary(), p_callback);
+	(void)send_request("GetVideoSettings", Dictionary(), p_callback);
 }
 
 void OBSClient::set_video_settings(const Dictionary &p_video_settings) {
-	send_request("SetVideoSettings", p_video_settings);
+	(void)send_request("SetVideoSettings", p_video_settings);
 }
 
 void OBSClient::get_stream_service_settings(const Callable &p_callback) {
-	send_request("GetStreamServiceSettings", Dictionary(), p_callback);
+	(void)send_request("GetStreamServiceSettings", Dictionary(), p_callback);
 }
 
 void OBSClient::set_stream_service_settings(const String &p_stream_service_type, const Dictionary &p_stream_service_settings) {
 	Dictionary request_data;
 	request_data["streamServiceType"] = p_stream_service_type;
 	request_data["streamServiceSettings"] = p_stream_service_settings;
-	send_request("SetStreamServiceSettings", request_data);
+	(void)send_request("SetStreamServiceSettings", request_data);
 }
 
 void OBSClient::get_record_directory(const Callable &p_callback) {
-	send_request("GetRecordDirectory", Dictionary(), p_callback);
+	(void)send_request("GetRecordDirectory", Dictionary(), p_callback);
 }
 
 void OBSClient::set_record_directory(const String &p_record_directory) {
 	Dictionary request_data;
 	request_data["recordDirectory"] = p_record_directory;
-	send_request("SetRecordDirectory", request_data);
+	(void)send_request("SetRecordDirectory", request_data);
 }
 
 // Scenes Requests
 
 void OBSClient::get_scene_list(const Callable &p_callback) {
-	send_request("GetSceneList", Dictionary(), p_callback);
+	(void)send_request("GetSceneList", Dictionary(), p_callback);
 }
 
 void OBSClient::get_group_list(const Callable &p_callback) {
-	send_request("GetGroupList", Dictionary(), p_callback);
+	(void)send_request("GetGroupList", Dictionary(), p_callback);
 }
 
 void OBSClient::get_current_program_scene(const Callable &p_callback) {
-	send_request("GetCurrentProgramScene", Dictionary(), p_callback);
+	(void)send_request("GetCurrentProgramScene", Dictionary(), p_callback);
 }
 
 void OBSClient::set_current_program_scene(const String &p_scene_name) {
 	Dictionary request_data;
 	request_data["sceneName"] = p_scene_name;
-	send_request("SetCurrentProgramScene", request_data);
+	(void)send_request("SetCurrentProgramScene", request_data);
 }
 
 void OBSClient::get_current_preview_scene(const Callable &p_callback) {
-	send_request("GetCurrentPreviewScene", Dictionary(), p_callback);
+	(void)send_request("GetCurrentPreviewScene", Dictionary(), p_callback);
 }
 
 void OBSClient::set_current_preview_scene(const String &p_scene_name) {
 	Dictionary request_data;
 	request_data["sceneName"] = p_scene_name;
-	send_request("SetCurrentPreviewScene", request_data);
+	(void)send_request("SetCurrentPreviewScene", request_data);
 }
 
 void OBSClient::create_scene(const String &p_scene_name, const Callable &p_callback) {
 	Dictionary request_data;
 	request_data["sceneName"] = p_scene_name;
-	send_request("CreateScene", request_data, p_callback);
+	(void)send_request("CreateScene", request_data, p_callback);
 }
 
 void OBSClient::remove_scene(const String &p_scene_name) {
 	Dictionary request_data;
 	request_data["sceneName"] = p_scene_name;
-	send_request("RemoveScene", request_data);
+	(void)send_request("RemoveScene", request_data);
 }
 
 void OBSClient::set_scene_name(const String &p_scene_name, const String &p_new_scene_name) {
 	Dictionary request_data;
 	request_data["sceneName"] = p_scene_name;
 	request_data["newSceneName"] = p_new_scene_name;
-	send_request("SetSceneName", request_data);
+	(void)send_request("SetSceneName", request_data);
 }
 
 void OBSClient::get_scene_scene_transition_override(const String &p_scene_name, const Callable &p_callback) {
 	Dictionary request_data;
 	request_data["sceneName"] = p_scene_name;
-	send_request("GetSceneSceneTransitionOverride", request_data, p_callback);
+	(void)send_request("GetSceneSceneTransitionOverride", request_data, p_callback);
 }
 
 void OBSClient::set_scene_scene_transition_override(const String &p_scene_name, const String &p_transition_name, int p_transition_duration) {
@@ -1108,65 +1108,65 @@ void OBSClient::set_scene_scene_transition_override(const String &p_scene_name, 
 	if (p_transition_duration >= 0) {
 		request_data["transitionDuration"] = p_transition_duration;
 	}
-	send_request("SetSceneSceneTransitionOverride", request_data);
+	(void)send_request("SetSceneSceneTransitionOverride", request_data);
 }
 
 // Stream Requests
 
 void OBSClient::get_stream_status(const Callable &p_callback) {
-	send_request("GetStreamStatus", Dictionary(), p_callback);
+	(void)send_request("GetStreamStatus", Dictionary(), p_callback);
 }
 
 void OBSClient::toggle_stream(const Callable &p_callback) {
-	send_request("ToggleStream", Dictionary(), p_callback);
+	(void)send_request("ToggleStream", Dictionary(), p_callback);
 }
 
 void OBSClient::start_stream() {
-	send_request("StartStream", Dictionary());
+	(void)send_request("StartStream", Dictionary());
 }
 
 void OBSClient::stop_stream() {
-	send_request("StopStream", Dictionary());
+	(void)send_request("StopStream", Dictionary());
 }
 
 void OBSClient::send_stream_caption(const String &p_caption_text) {
 	Dictionary request_data;
 	request_data["captionText"] = p_caption_text;
-	send_request("SendStreamCaption", request_data);
+	(void)send_request("SendStreamCaption", request_data);
 }
 
 // Record Requests
 
 void OBSClient::get_record_status(const Callable &p_callback) {
-	send_request("GetRecordStatus", Dictionary(), p_callback);
+	(void)send_request("GetRecordStatus", Dictionary(), p_callback);
 }
 
 void OBSClient::toggle_record(const Callable &p_callback) {
-	send_request("ToggleRecord", Dictionary(), p_callback);
+	(void)send_request("ToggleRecord", Dictionary(), p_callback);
 }
 
 void OBSClient::start_record() {
-	send_request("StartRecord", Dictionary());
+	(void)send_request("StartRecord", Dictionary());
 }
 
 void OBSClient::stop_record(const Callable &p_callback) {
-	send_request("StopRecord", Dictionary(), p_callback);
+	(void)send_request("StopRecord", Dictionary(), p_callback);
 }
 
 void OBSClient::toggle_record_pause() {
-	send_request("ToggleRecordPause", Dictionary());
+	(void)send_request("ToggleRecordPause", Dictionary());
 }
 
 void OBSClient::pause_record() {
-	send_request("PauseRecord", Dictionary());
+	(void)send_request("PauseRecord", Dictionary());
 }
 
 void OBSClient::resume_record() {
-	send_request("ResumeRecord", Dictionary());
+	(void)send_request("ResumeRecord", Dictionary());
 }
 
 void OBSClient::split_record_file() {
-	send_request("SplitRecordFile", Dictionary());
+	(void)send_request("SplitRecordFile", Dictionary());
 }
 
 void OBSClient::create_record_chapter(const String &p_chapter_name) {
@@ -1174,49 +1174,49 @@ void OBSClient::create_record_chapter(const String &p_chapter_name) {
 	if (!p_chapter_name.is_empty()) {
 		request_data["chapterName"] = p_chapter_name;
 	}
-	send_request("CreateRecordChapter", request_data);
+	(void)send_request("CreateRecordChapter", request_data);
 }
 
 // Output Requests
 
 void OBSClient::get_virtual_cam_status(const Callable &p_callback) {
-	send_request("GetVirtualCamStatus", Dictionary(), p_callback);
+	(void)send_request("GetVirtualCamStatus", Dictionary(), p_callback);
 }
 
 void OBSClient::toggle_virtual_cam(const Callable &p_callback) {
-	send_request("ToggleVirtualCam", Dictionary(), p_callback);
+	(void)send_request("ToggleVirtualCam", Dictionary(), p_callback);
 }
 
 void OBSClient::start_virtual_cam() {
-	send_request("StartVirtualCam", Dictionary());
+	(void)send_request("StartVirtualCam", Dictionary());
 }
 
 void OBSClient::stop_virtual_cam() {
-	send_request("StopVirtualCam", Dictionary());
+	(void)send_request("StopVirtualCam", Dictionary());
 }
 
 void OBSClient::get_replay_buffer_status(const Callable &p_callback) {
-	send_request("GetReplayBufferStatus", Dictionary(), p_callback);
+	(void)send_request("GetReplayBufferStatus", Dictionary(), p_callback);
 }
 
 void OBSClient::toggle_replay_buffer(const Callable &p_callback) {
-	send_request("ToggleReplayBuffer", Dictionary(), p_callback);
+	(void)send_request("ToggleReplayBuffer", Dictionary(), p_callback);
 }
 
 void OBSClient::start_replay_buffer() {
-	send_request("StartReplayBuffer", Dictionary());
+	(void)send_request("StartReplayBuffer", Dictionary());
 }
 
 void OBSClient::stop_replay_buffer() {
-	send_request("StopReplayBuffer", Dictionary());
+	(void)send_request("StopReplayBuffer", Dictionary());
 }
 
 void OBSClient::save_replay_buffer() {
-	send_request("SaveReplayBuffer", Dictionary());
+	(void)send_request("SaveReplayBuffer", Dictionary());
 }
 
 void OBSClient::get_last_replay_buffer_replay(const Callable &p_callback) {
-	send_request("GetLastReplayBufferReplay", Dictionary(), p_callback);
+	(void)send_request("GetLastReplayBufferReplay", Dictionary(), p_callback);
 }
 
 // Inputs Requests
@@ -1226,17 +1226,17 @@ void OBSClient::get_input_list(const String &p_input_kind, const Callable &p_cal
 	if (!p_input_kind.is_empty()) {
 		request_data["inputKind"] = p_input_kind;
 	}
-	send_request("GetInputList", request_data, p_callback);
+	(void)send_request("GetInputList", request_data, p_callback);
 }
 
 void OBSClient::get_input_kind_list(bool p_unversioned, const Callable &p_callback) {
 	Dictionary request_data;
 	request_data["unversioned"] = p_unversioned;
-	send_request("GetInputKindList", request_data, p_callback);
+	(void)send_request("GetInputKindList", request_data, p_callback);
 }
 
 void OBSClient::get_special_inputs(const Callable &p_callback) {
-	send_request("GetSpecialInputs", Dictionary(), p_callback);
+	(void)send_request("GetSpecialInputs", Dictionary(), p_callback);
 }
 
 void OBSClient::create_input(const String &p_scene_name, const String &p_input_name, const String &p_input_kind, const Dictionary &p_input_settings, bool p_scene_item_enabled, const Callable &p_callback) {
@@ -1248,32 +1248,32 @@ void OBSClient::create_input(const String &p_scene_name, const String &p_input_n
 		request_data["inputSettings"] = p_input_settings;
 	}
 	request_data["sceneItemEnabled"] = p_scene_item_enabled;
-	send_request("CreateInput", request_data, p_callback);
+	(void)send_request("CreateInput", request_data, p_callback);
 }
 
 void OBSClient::remove_input(const String &p_input_name) {
 	Dictionary request_data;
 	request_data["inputName"] = p_input_name;
-	send_request("RemoveInput", request_data);
+	(void)send_request("RemoveInput", request_data);
 }
 
 void OBSClient::set_input_name(const String &p_input_name, const String &p_new_input_name) {
 	Dictionary request_data;
 	request_data["inputName"] = p_input_name;
 	request_data["newInputName"] = p_new_input_name;
-	send_request("SetInputName", request_data);
+	(void)send_request("SetInputName", request_data);
 }
 
 void OBSClient::get_input_default_settings(const String &p_input_kind, const Callable &p_callback) {
 	Dictionary request_data;
 	request_data["inputKind"] = p_input_kind;
-	send_request("GetInputDefaultSettings", request_data, p_callback);
+	(void)send_request("GetInputDefaultSettings", request_data, p_callback);
 }
 
 void OBSClient::get_input_settings(const String &p_input_name, const Callable &p_callback) {
 	Dictionary request_data;
 	request_data["inputName"] = p_input_name;
-	send_request("GetInputSettings", request_data, p_callback);
+	(void)send_request("GetInputSettings", request_data, p_callback);
 }
 
 void OBSClient::set_input_settings(const String &p_input_name, const Dictionary &p_input_settings, bool p_overlay) {
@@ -1281,32 +1281,32 @@ void OBSClient::set_input_settings(const String &p_input_name, const Dictionary 
 	request_data["inputName"] = p_input_name;
 	request_data["inputSettings"] = p_input_settings;
 	request_data["overlay"] = p_overlay;
-	send_request("SetInputSettings", request_data);
+	(void)send_request("SetInputSettings", request_data);
 }
 
 void OBSClient::get_input_mute(const String &p_input_name, const Callable &p_callback) {
 	Dictionary request_data;
 	request_data["inputName"] = p_input_name;
-	send_request("GetInputMute", request_data, p_callback);
+	(void)send_request("GetInputMute", request_data, p_callback);
 }
 
 void OBSClient::set_input_mute(const String &p_input_name, bool p_input_muted) {
 	Dictionary request_data;
 	request_data["inputName"] = p_input_name;
 	request_data["inputMuted"] = p_input_muted;
-	send_request("SetInputMute", request_data);
+	(void)send_request("SetInputMute", request_data);
 }
 
 void OBSClient::toggle_input_mute(const String &p_input_name, const Callable &p_callback) {
 	Dictionary request_data;
 	request_data["inputName"] = p_input_name;
-	send_request("ToggleInputMute", request_data, p_callback);
+	(void)send_request("ToggleInputMute", request_data, p_callback);
 }
 
 void OBSClient::get_input_volume(const String &p_input_name, const Callable &p_callback) {
 	Dictionary request_data;
 	request_data["inputName"] = p_input_name;
-	send_request("GetInputVolume", request_data, p_callback);
+	(void)send_request("GetInputVolume", request_data, p_callback);
 }
 
 void OBSClient::set_input_volume(const String &p_input_name, float p_input_volume_mul, float p_input_volume_db) {
@@ -1318,69 +1318,69 @@ void OBSClient::set_input_volume(const String &p_input_name, float p_input_volum
 	if (p_input_volume_db != 0.0 || p_input_volume_mul < 0.0) {
 		request_data["inputVolumeDb"] = p_input_volume_db;
 	}
-	send_request("SetInputVolume", request_data);
+	(void)send_request("SetInputVolume", request_data);
 }
 
 // Transitions Requests
 
 void OBSClient::get_transition_kind_list(const Callable &p_callback) {
-	send_request("GetTransitionKindList", Dictionary(), p_callback);
+	(void)send_request("GetTransitionKindList", Dictionary(), p_callback);
 }
 
 void OBSClient::get_scene_transition_list(const Callable &p_callback) {
-	send_request("GetSceneTransitionList", Dictionary(), p_callback);
+	(void)send_request("GetSceneTransitionList", Dictionary(), p_callback);
 }
 
 void OBSClient::get_current_scene_transition(const Callable &p_callback) {
-	send_request("GetCurrentSceneTransition", Dictionary(), p_callback);
+	(void)send_request("GetCurrentSceneTransition", Dictionary(), p_callback);
 }
 
 void OBSClient::set_current_scene_transition(const String &p_transition_name) {
 	Dictionary request_data;
 	request_data["transitionName"] = p_transition_name;
-	send_request("SetCurrentSceneTransition", request_data);
+	(void)send_request("SetCurrentSceneTransition", request_data);
 }
 
 void OBSClient::set_current_scene_transition_duration(int p_transition_duration) {
 	Dictionary request_data;
 	request_data["transitionDuration"] = p_transition_duration;
-	send_request("SetCurrentSceneTransitionDuration", request_data);
+	(void)send_request("SetCurrentSceneTransitionDuration", request_data);
 }
 
 void OBSClient::set_current_scene_transition_settings(const Dictionary &p_transition_settings, bool p_overlay) {
 	Dictionary request_data;
 	request_data["transitionSettings"] = p_transition_settings;
 	request_data["overlay"] = p_overlay;
-	send_request("SetCurrentSceneTransitionSettings", request_data);
+	(void)send_request("SetCurrentSceneTransitionSettings", request_data);
 }
 
 void OBSClient::trigger_studio_mode_transition() {
-	send_request("TriggerStudioModeTransition", Dictionary());
+	(void)send_request("TriggerStudioModeTransition", Dictionary());
 }
 
 void OBSClient::set_tbar_position(float p_position, bool p_release) {
 	Dictionary request_data;
 	request_data["position"] = p_position;
 	request_data["release"] = p_release;
-	send_request("SetTBarPosition", request_data);
+	(void)send_request("SetTBarPosition", request_data);
 }
 
 // Filters Requests
 
 void OBSClient::get_source_filter_kind_list(const Callable &p_callback) {
-	send_request("GetSourceFilterKindList", Dictionary(), p_callback);
+	(void)send_request("GetSourceFilterKindList", Dictionary(), p_callback);
 }
 
 void OBSClient::get_source_filter_list(const String &p_source_name, const Callable &p_callback) {
 	Dictionary request_data;
 	request_data["sourceName"] = p_source_name;
-	send_request("GetSourceFilterList", request_data, p_callback);
+	(void)send_request("GetSourceFilterList", request_data, p_callback);
 }
 
 void OBSClient::get_source_filter_default_settings(const String &p_filter_kind, const Callable &p_callback) {
 	Dictionary request_data;
 	request_data["filterKind"] = p_filter_kind;
-	send_request("GetSourceFilterDefaultSettings", request_data, p_callback);
+	(void)send_request("GetSourceFilterDefaultSettings", request_data, p_callback);
 }
 
 void OBSClient::create_source_filter(const String &p_source_name, const String &p_filter_name, const String &p_filter_kind, const Dictionary &p_filter_settings) {
@@ -1391,14 +1391,14 @@ void OBSClient::create_source_filter(const String &p_source_name, const String &
 	if (!p_filter_settings.is_empty()) {
 		request_data["filterSettings"] = p_filter_settings;
 	}
-	send_request("CreateSourceFilter", request_data);
+	(void)send_request("CreateSourceFilter", request_data);
 }
 
 void OBSClient::remove_source_filter(const String &p_source_name, const String &p_filter_name) {
 	Dictionary request_data;
 	request_data["sourceName"] = p_source_name;
 	request_data["filterName"] = p_filter_name;
-	send_request("RemoveSourceFilter", request_data);
+	(void)send_request("RemoveSourceFilter", request_data);
 }
 
 void OBSClient::set_source_filter_name(const String &p_source_name, const String &p_filter_name, const String &p_new_filter_name) {
@@ -1406,14 +1406,14 @@ void OBSClient::set_source_filter_name(const String &p_source_name, const String
 	request_data["sourceName"] = p_source_name;
 	request_data["filterName"] = p_filter_name;
 	request_data["newFilterName"] = p_new_filter_name;
-	send_request("SetSourceFilterName", request_data);
+	(void)send_request("SetSourceFilterName", request_data);
 }
 
 void OBSClient::get_source_filter(const String &p_source_name, const String &p_filter_name, const Callable &p_callback) {
 	Dictionary request_data;
 	request_data["sourceName"] = p_source_name;
 	request_data["filterName"] = p_filter_name;
-	send_request("GetSourceFilter", request_data, p_callback);
+	(void)send_request("GetSourceFilter", request_data, p_callback);
 }
 
 void OBSClient::set_source_filter_index(const String &p_source_name, const String &p_filter_name, int p_filter_index) {
@@ -1421,7 +1421,7 @@ void OBSClient::set_source_filter_index(const String &p_source_name, const Strin
 	request_data["sourceName"] = p_source_name;
 	request_data["filterName"] = p_filter_name;
 	request_data["filterIndex"] = p_filter_index;
-	send_request("SetSourceFilterIndex", request_data);
+	(void)send_request("SetSourceFilterIndex", request_data);
 }
 
 void OBSClient::set_source_filter_settings(const String &p_source_name, const String &p_filter_name, const Dictionary &p_filter_settings, bool p_overlay) {
@@ -1430,7 +1430,7 @@ void OBSClient::set_source_filter_settings(const String &p_source_name, const St
 	request_data["filterName"] = p_filter_name;
 	request_data["filterSettings"] = p_filter_settings;
 	request_data["overlay"] = p_overlay;
-	send_request("SetSourceFilterSettings", request_data);
+	(void)send_request("SetSourceFilterSettings", request_data);
 }
 
 void OBSClient::set_source_filter_enabled(const String &p_source_name, const String &p_filter_name, bool p_filter_enabled) {
@@ -1438,7 +1438,7 @@ void OBSClient::set_source_filter_enabled(const String &p_source_name, const Str
 	request_data["sourceName"] = p_source_name;
 	request_data["filterName"] = p_filter_name;
 	request_data["filterEnabled"] = p_filter_enabled;
-	send_request("SetSourceFilterEnabled", request_data);
+	(void)send_request("SetSourceFilterEnabled", request_data);
 }
 
 // Scene Items Requests
@@ -1446,13 +1446,13 @@ void OBSClient::set_source_filter_enabled(const String &p_source_name, const Str
 void OBSClient::get_scene_item_list(const String &p_scene_name, const Callable &p_callback) {
 	Dictionary request_data;
 	request_data["sceneName"] = p_scene_name;
-	send_request("GetSceneItemList", request_data, p_callback);
+	(void)send_request("GetSceneItemList", request_data, p_callback);
 }
 
 void OBSClient::get_group_scene_item_list(const String &p_scene_name, const Callable &p_callback) {
 	Dictionary request_data;
 	request_data["sceneName"] = p_scene_name;
-	send_request("GetGroupSceneItemList", request_data, p_callback);
+	(void)send_request("GetGroupSceneItemList", request_data, p_callback);
 }
 
 void OBSClient::get_scene_item_id(const String &p_scene_name, const String &p_source_name, int p_search_offset, const Callable &p_callback) {
@@ -1462,7 +1462,7 @@ void OBSClient::get_scene_item_id(const String &p_scene_name, const String &p_so
 	if (p_search_offset != 0) {
 		request_data["searchOffset"] = p_search_offset;
 	}
-	send_request("GetSceneItemId", request_data, p_callback);
+	(void)send_request("GetSceneItemId", request_data, p_callback);
 }
 
 void OBSClient::create_scene_item(const String &p_scene_name, const String &p_source_name, bool p_scene_item_enabled, const Callable &p_callback) {
@@ -1470,14 +1470,14 @@ void OBSClient::create_scene_item(const String &p_scene_name, const String &p_so
 	request_data["sceneName"] = p_scene_name;
 	request_data["sourceName"] = p_source_name;
 	request_data["sceneItemEnabled"] = p_scene_item_enabled;
-	send_request("CreateSceneItem", request_data, p_callback);
+	(void)send_request("CreateSceneItem", request_data, p_callback);
 }
 
 void OBSClient::remove_scene_item(const String &p_scene_name, int p_scene_item_id) {
 	Dictionary request_data;
 	request_data["sceneName"] = p_scene_name;
 	request_data["sceneItemId"] = p_scene_item_id;
-	send_request("RemoveSceneItem", request_data);
+	(void)send_request("RemoveSceneItem", request_data);
 }
 
 void OBSClient::duplicate_scene_item(const String &p_scene_name, int p_scene_item_id, const String &p_destination_scene_name, const Callable &p_callback) {
@@ -1487,14 +1487,14 @@ void OBSClient::duplicate_scene_item(const String &p_scene_name, int p_scene_ite
 	if (!p_destination_scene_name.is_empty()) {
 		request_data["destinationSceneName"] = p_destination_scene_name;
 	}
-	send_request("DuplicateSceneItem", request_data, p_callback);
+	(void)send_request("DuplicateSceneItem", request_data, p_callback);
 }
 
 void OBSClient::get_scene_item_transform(const String &p_scene_name, int p_scene_item_id, const Callable &p_callback) {
 	Dictionary request_data;
 	request_data["sceneName"] = p_scene_name;
 	request_data["sceneItemId"] = p_scene_item_id;
-	send_request("GetSceneItemTransform", request_data, p_callback);
+	(void)send_request("GetSceneItemTransform", request_data, p_callback);
 }
 
 void OBSClient::set_scene_item_transform(const String &p_scene_name, int p_scene_item_id, const Dictionary &p_scene_item_transform) {
@@ -1502,14 +1502,14 @@ void OBSClient::set_scene_item_transform(const String &p_scene_name, int p_scene
 	request_data["sceneName"] = p_scene_name;
 	request_data["sceneItemId"] = p_scene_item_id;
 	request_data["sceneItemTransform"] = p_scene_item_transform;
-	send_request("SetSceneItemTransform", request_data);
+	(void)send_request("SetSceneItemTransform", request_data);
 }
 
 void OBSClient::get_scene_item_enabled(const String &p_scene_name, int p_scene_item_id, const Callable &p_callback) {
 	Dictionary request_data;
 	request_data["sceneName"] = p_scene_name;
 	request_data["sceneItemId"] = p_scene_item_id;
-	send_request("GetSceneItemEnabled", request_data, p_callback);
+	(void)send_request("GetSceneItemEnabled", request_data, p_callback);
 }
 
 void OBSClient::set_scene_item_enabled(const String &p_scene_name, int p_scene_item_id, bool p_scene_item_enabled) {
@@ -1517,14 +1517,14 @@ void OBSClient::set_scene_item_enabled(const String &p_scene_name, int p_scene_i
 	request_data["sceneName"] = p_scene_name;
 	request_data["sceneItemId"] = p_scene_item_id;
 	request_data["sceneItemEnabled"] = p_scene_item_enabled;
-	send_request("SetSceneItemEnabled", request_data);
+	(void)send_request("SetSceneItemEnabled", request_data);
 }
 
 void OBSClient::get_scene_item_locked(const String &p_scene_name, int p_scene_item_id, const Callable &p_callback) {
 	Dictionary request_data;
 	request_data["sceneName"] = p_scene_name;
 	request_data["sceneItemId"] = p_scene_item_id;
-	send_request("GetSceneItemLocked", request_data, p_callback);
+	(void)send_request("GetSceneItemLocked", request_data, p_callback);
 }
 
 void OBSClient::set_scene_item_locked(const String &p_scene_name, int p_scene_item_id, bool p_scene_item_locked) {
@@ -1532,14 +1532,14 @@ void OBSClient::set_scene_item_locked(const String &p_scene_name, int p_scene_it
 	request_data["sceneName"] = p_scene_name;
 	request_data["sceneItemId"] = p_scene_item_id;
 	request_data["sceneItemLocked"] = p_scene_item_locked;
-	send_request("SetSceneItemLocked", request_data);
+	(void)send_request("SetSceneItemLocked", request_data);
 }
 
 void OBSClient::get_scene_item_index(const String &p_scene_name, int p_scene_item_id, const Callable &p_callback) {
 	Dictionary request_data;
 	request_data["sceneName"] = p_scene_name;
 	request_data["sceneItemId"] = p_scene_item_id;
-	send_request("GetSceneItemIndex", request_data, p_callback);
+	(void)send_request("GetSceneItemIndex", request_data, p_callback);
 }
 
 void OBSClient::set_scene_item_index(const String &p_scene_name, int p_scene_item_id, int p_scene_item_index) {
@@ -1547,14 +1547,14 @@ void OBSClient::set_scene_item_index(const String &p_scene_name, int p_scene_ite
 	request_data["sceneName"] = p_scene_name;
 	request_data["sceneItemId"] = p_scene_item_id;
 	request_data["sceneItemIndex"] = p_scene_item_index;
-	send_request("SetSceneItemIndex", request_data);
+	(void)send_request("SetSceneItemIndex", request_data);
 }
 
 void OBSClient::get_scene_item_blend_mode(const String &p_scene_name, int p_scene_item_id, const Callable &p_callback) {
 	Dictionary request_data;
 	request_data["sceneName"] = p_scene_name;
 	request_data["sceneItemId"] = p_scene_item_id;
-	send_request("GetSceneItemBlendMode", request_data, p_callback);
+	(void)send_request("GetSceneItemBlendMode", request_data, p_callback);
 }
 
 void OBSClient::set_scene_item_blend_mode(const String &p_scene_name, int p_scene_item_id, const String &p_scene_item_blend_mode) {
@@ -1562,7 +1562,7 @@ void OBSClient::set_scene_item_blend_mode(const String &p_scene_name, int p_scen
 	request_data["sceneName"] = p_scene_name;
 	request_data["sceneItemId"] = p_scene_item_id;
 	request_data["sceneItemBlendMode"] = p_scene_item_blend_mode;
-	send_request("SetSceneItemBlendMode", request_data);
+	(void)send_request("SetSceneItemBlendMode", request_data);
 }
 
 // Media Inputs Requests
@@ -1570,28 +1570,28 @@ void OBSClient::set_scene_item_blend_mode(const String &p_scene_name, int p_scen
 void OBSClient::get_media_input_status(const String &p_input_name, const Callable &p_callback) {
 	Dictionary request_data;
 	request_data["inputName"] = p_input_name;
-	send_request("GetMediaInputStatus", request_data, p_callback);
+	(void)send_request("GetMediaInputStatus", request_data, p_callback);
 }
 
 void OBSClient::set_media_input_cursor(const String &p_input_name, int p_media_cursor) {
 	Dictionary request_data;
 	request_data["inputName"] = p_input_name;
 	request_data["mediaCursor"] = p_media_cursor;
-	send_request("SetMediaInputCursor", request_data);
+	(void)send_request("SetMediaInputCursor", request_data);
 }
 
 void OBSClient::offset_media_input_cursor(const String &p_input_name, int p_media_cursor_offset) {
 	Dictionary request_data;
 	request_data["inputName"] = p_input_name;
 	request_data["mediaCursorOffset"] = p_media_cursor_offset;
-	send_request("OffsetMediaInputCursor", request_data);
+	(void)send_request("OffsetMediaInputCursor", request_data);
 }
 
 void OBSClient::trigger_media_input_action(const String &p_input_name, const String &p_media_action) {
 	Dictionary request_data;
 	request_data["inputName"] = p_input_name;
 	request_data["mediaAction"] = p_media_action;
-	send_request("TriggerMediaInputAction", request_data);
+	(void)send_request("TriggerMediaInputAction", request_data);
 }
 
 // Sources Requests
@@ -1599,7 +1599,7 @@ void OBSClient::trigger_media_input_action(const String &p_input_name, const Str
 void OBSClient::get_source_active(const String &p_source_name, const Callable &p_callback) {
 	Dictionary request_data;
 	request_data["sourceName"] = p_source_name;
-	send_request("GetSourceActive", request_data, p_callback);
+	(void)send_request("GetSourceActive", request_data, p_callback);
 }
 
 void OBSClient::get_source_screenshot(const String &p_source_name, const String &p_image_format, int p_image_width, int p_image_height, int p_image_compression_quality, const Callable &p_callback) {
@@ -1615,7 +1615,7 @@ void OBSClient::get_source_screenshot(const String &p_source_name, const String 
 	if (p_image_compression_quality >= 0) {
 		request_data["imageCompressionQuality"] = p_image_compression_quality;
 	}
-	send_request("GetSourceScreenshot", request_data, p_callback);
+	(void)send_request("GetSourceScreenshot", request_data, p_callback);
 }
 
 void OBSClient::save_source_screenshot(const String &p_source_name, const String &p_image_format, const String &p_image_file_path, int p_image_width, int p_image_height, int p_image_compression_quality) {
@@ -1632,41 +1632,41 @@ void OBSClient::save_source_screenshot(const String &p_source_name, const String
 	if (p_image_compression_quality >= 0) {
 		request_data["imageCompressionQuality"] = p_image_compression_quality;
 	}
-	send_request("SaveSourceScreenshot", request_data);
+	(void)send_request("SaveSourceScreenshot", request_data);
 }
 
 // UI Requests
 
 void OBSClient::get_studio_mode_enabled(const Callable &p_callback) {
-	send_request("GetStudioModeEnabled", Dictionary(), p_callback);
+	(void)send_request("GetStudioModeEnabled", Dictionary(), p_callback);
 }
 
 void OBSClient::set_studio_mode_enabled(bool p_studio_mode_enabled) {
 	Dictionary request_data;
 	request_data["studioModeEnabled"] = p_studio_mode_enabled;
-	send_request("SetStudioModeEnabled", request_data);
+	(void)send_request("SetStudioModeEnabled", request_data);
 }
 
 void OBSClient::open_input_properties_dialog(const String &p_input_name) {
 	Dictionary request_data;
 	request_data["inputName"] = p_input_name;
-	send_request("OpenInputPropertiesDialog", request_data);
+	(void)send_request("OpenInputPropertiesDialog", request_data);
 }
 
 void OBSClient::open_input_filters_dialog(const String &p_input_name) {
 	Dictionary request_data;
 	request_data["inputName"] = p_input_name;
-	send_request("OpenInputFiltersDialog", request_data);
+	(void)send_request("OpenInputFiltersDialog", request_data);
 }
 
 void OBSClient::open_input_interact_dialog(const String &p_input_name) {
 	Dictionary request_data;
 	request_data["inputName"] = p_input_name;
-	send_request("OpenInputInteractDialog", request_data);
+	(void)send_request("OpenInputInteractDialog", request_data);
 }
 
 void OBSClient::get_monitor_list(const Callable &p_callback) {
-	send_request("GetMonitorList", Dictionary(), p_callback);
+	(void)send_request("GetMonitorList", Dictionary(), p_callback);
 }
 
 void OBSClient::open_video_mix_projector(const String &p_video_mix_type, int p_monitor_index, const String &p_projector_geometry) {
@@ -1678,7 +1678,7 @@ void OBSClient::open_video_mix_projector(const String &p_video_mix_type, int p_m
 	if (!p_projector_geometry.is_empty()) {
 		request_data["projectorGeometry"] = p_projector_geometry;
 	}
-	send_request("OpenVideoMixProjector", request_data);
+	(void)send_request("OpenVideoMixProjector", request_data);
 }
 
 void OBSClient::open_source_projector(const String &p_source_name, int p_monitor_index, const String &p_projector_geometry) {
@@ -1690,5 +1690,5 @@ void OBSClient::open_source_projector(const String &p_source_name, int p_monitor
 	if (!p_projector_geometry.is_empty()) {
 		request_data["projectorGeometry"] = p_projector_geometry;
 	}
-	send_request("OpenSourceProjector", request_data);
+	(void)send_request("OpenSourceProjector", request_data);
 }

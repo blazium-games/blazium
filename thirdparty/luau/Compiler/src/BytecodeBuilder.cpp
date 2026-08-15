@@ -5,6 +5,9 @@
 #include "Luau/StringUtils.h"
 
 #include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <stdlib.h>
 #include <string.h>
 
 namespace Luau
@@ -509,7 +512,7 @@ bool BytecodeBuilder::patchJumpD(size_t jumpLabel, size_t targetLabel)
     {
         insns[jumpLabel] |= uint16_t(offset) << 16;
     }
-    else if (abs(offset) < kMaxJumpDistance)
+    else if (std::abs(offset) < kMaxJumpDistance)
     {
         // our jump doesn't fit into 16 bits; we will need to repatch the bytecode sequence with jump trampolines, see expandJumps
         hasLongJumps = true;
@@ -1127,7 +1130,7 @@ void BytecodeBuilder::expandJumps()
         {
             int offset = int(jumps[currentJump].target) - int(jumps[currentJump].source) - 1;
 
-            if (abs(offset) > kMaxJumpDistanceConservative)
+            if (std::abs(offset) > kMaxJumpDistanceConservative)
             {
                 // insert jump trampoline as described above; we keep JUMPX offset uninitialized in this pass
                 newinsns.push_back(LOP_JUMP | (1 << 16));
@@ -1166,7 +1169,7 @@ void BytecodeBuilder::expandJumps()
         int offset = int(jump.target) - int(jump.source) - 1;
         int newoffset = int(remap[jump.target]) - int(remap[jump.source]) - 1;
 
-        if (abs(offset) > kMaxJumpDistanceConservative)
+        if (std::abs(offset) > kMaxJumpDistanceConservative)
         {
             // fix up jump trampoline
             uint32_t& insnt = newinsns[remap[jump.source] - 1];

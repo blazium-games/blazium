@@ -228,14 +228,11 @@ jobs:
 
       - name: Compilation (Xbox / MSVC)
         if: matrix.xbox_module_test
-        shell: cmd
-        run: |
-          echo Building Xbox module with MSVC: platform=windows target=${{ matrix.target }} ${{ env.SCONS_FLAGS }} ${{ matrix.scons-flags }}
-          if not "${{ matrix.target }}"=="editor" rmdir /s /q editor 2>nul
-          if not "${{ github.event.number }}"=="" (set BUILD_NAME=gh-${{ github.event.number }}) else (set BUILD_NAME=gh)
-          where cl
-          scons platform=windows target=${{ matrix.target }} ${{ env.SCONS_FLAGS }} ${{ matrix.scons-flags }} d3d12=${{ steps.d3d12-sdk.outputs.D3D12_ENABLED }} accesskit=${{ steps.accesskit-sdk.outputs.ACCESSKIT_ENABLED }} angle=${{ steps.angle-sdk.outputs.ANGLE_ENABLED }} "cache_path=${{ github.workspace }}/.scons_cache/" redirect_build_objects=no
-          if errorlevel 1 exit /b 1
+        uses: ./.github/actions/godot-build
+        with:
+          scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.scons-flags }} d3d12=${{ steps.d3d12-sdk.outputs.D3D12_ENABLED }} accesskit=${{ steps.accesskit-sdk.outputs.ACCESSKIT_ENABLED }} angle=${{ steps.angle-sdk.outputs.ANGLE_ENABLED }}
+          platform: windows
+          target: ${{ matrix.target }}
 
       - name: Compilation
         if: ${{ !matrix.xbox_module_test }}
