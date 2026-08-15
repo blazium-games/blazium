@@ -36,6 +36,7 @@
 #include "microsoft_game_config.h"
 
 #include "core/config/engine.h"
+#include "core/os/os.h"
 #include "editor/editor_node.h"
 #include "editor/export/editor_export.h"
 #include "modules/xbox_module/gdk/gdk.h"

@@ -46,6 +46,7 @@
 
 #include "core/error/error_macros.h"
 #include "core/object/ref_counted.h"
+#include "core/variant/type_info.h"
 
 #ifdef XBOX_MODULE_GDK_ENABLED
 #include <XError.h>

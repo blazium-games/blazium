@@ -45,6 +45,7 @@
 #include "core/string/ustring.h"
 #include "core/variant/array.h"
 #include "core/variant/dictionary.h"
+#include "core/variant/type_info.h"
 
 #ifdef XBOX_MODULE_GDK_ENABLED
 #include <XUser.h>

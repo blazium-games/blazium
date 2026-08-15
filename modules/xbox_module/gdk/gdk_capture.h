@@ -41,6 +41,7 @@
 #include "core/object/ref_counted.h"
 #include "core/string/ustring.h"
 #include "core/variant/callable.h"
+#include "core/variant/type_info.h"
 #include "core/variant/variant.h"
 
 #ifdef XBOX_MODULE_GDK_ENABLED

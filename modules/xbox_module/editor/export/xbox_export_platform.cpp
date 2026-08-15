@@ -302,7 +302,8 @@ Error EditorExportPlatformXbox::_makepkg_pack(const Ref<EditorExportPreset> &p_p
 	return OK;
 }
 
-Error EditorExportPlatformXbox::export_project(const Ref<EditorExportPreset> &p_preset, bool p_debug, const String &p_path, BitField<DebugFlags> p_flags) {
+Error EditorExportPlatformXbox::export_project(const Ref<EditorExportPreset> &p_preset, bool p_debug, const String &p_path, BitField<EditorExportPlatform::DebugFlags> p_flags, bool p_notify) {
+	(void)p_notify;
 	String abs_path = ProjectSettings::get_singleton()->globalize_path(p_path);
 	if (!abs_path.is_absolute_path()) {
 		abs_path = ProjectSettings::get_singleton()->globalize_path("res://").path_join(abs_path);

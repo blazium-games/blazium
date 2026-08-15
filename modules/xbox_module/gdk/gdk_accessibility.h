@@ -41,6 +41,7 @@
 #include "core/math/color.h"
 #include "core/object/ref_counted.h"
 #include "core/string/ustring.h"
+#include "core/variant/type_info.h"
 
 #ifdef XBOX_MODULE_GDK_ENABLED
 #include <XAccessibility.h>
