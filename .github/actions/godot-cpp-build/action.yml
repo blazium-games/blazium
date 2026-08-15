@@ -45,4 +45,12 @@ runs:
       shell: sh
       env:
         SCONS_CACHE: ${{ inputs.scons-cache }}
-      run: scons --directory=./${{ inputs.checkout-path }}/test "gdextension_dir=${{ github.workspace }}" ${{ inputs.scons-flags }}
+      # Blazium ClassDB types generate thousands of godot-cpp objects; without
+      # TEMPFILE, `ar`/`ld` exceed Linux ARG_MAX ("Argument list too long").
+      run: >
+        scons --directory=./${{ inputs.checkout-path }}/test
+        "gdextension_dir=${{ github.workspace }}"
+        ${{ inputs.scons-flags }}
+        'ARCOM=${TEMPFILE("$ARCOM")}'
+        'SHLINKCOM=${TEMPFILE("$SHLINKCOM")}'
+        'LINKCOM=${TEMPFILE("$LINKCOM")}'

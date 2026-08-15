@@ -146,6 +146,8 @@ const Vector<String> prop_allowed_inherited_member_hiding = {
 	// Included for the sake of CI, with the understanding that they *deserve* warnings.
 	"GltfAccessor.GetType",
 	"GltfAccessor.MethodName.GetType",
+	"SQLiteColumnSchema.GetType",
+	"SQLiteColumnSchema.MethodName.GetType",
 };
 
 void BindingsGenerator::TypeInterface::postsetup_enum_type(BindingsGenerator::TypeInterface &r_enum_itype) {

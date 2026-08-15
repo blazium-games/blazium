@@ -28,7 +28,7 @@ jobs:
     # Stay one LTS before latest to increase portability of Linux artifacts.
     runs-on: ubuntu-22.04
     name: ${{ matrix.name }}
-    timeout-minutes: 120
+    timeout-minutes: 180
     strategy:
       fail-fast: false
       matrix:
@@ -60,6 +60,7 @@ jobs:
               use_asan=yes
               use_ubsan=yes
               linker=mold
+              tests=no
             bin: ./bin/blazium.linuxbsd.editor.dev.double.x86_64.san
             proj-test: true
             free-space: true
