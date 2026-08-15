@@ -732,6 +732,65 @@ void Main::print_help(const char *p_binary) {
 #ifdef TESTS_ENABLED
 	print_help_option("--test [--help]", "Run unit tests. Use --test --help for more information.\n");
 #endif // TESTS_ENABLED
+
+#ifdef MODULE_JUSTAMCP_ENABLED
+	print_help_title("JustAMCP Options");
+	print_help_option("--enable-mcp", "Force start the embedded JustAMCP server alongside the process.\n");
+	print_help_option("--mcp-port <port>", "Bind the JustAMCP server to a specific local port.\n");
+	print_help_option("--mcp-client-id <id>", "Force override the MCP OAuth Client ID dynamically.\n");
+	print_help_option("--mcp-client-secret <secret>", "Force override the MCP OAuth Client Secret dynamically.\n");
+	print_help_option("--enable-mcp-game-control", "Start the JustAMCP game-control TCP bridge.\n");
+#endif
+
+#ifdef MODULE_REMOTE_CONTROL_ENABLED
+	print_help_title("Remote Control Options");
+	print_help_option("--enable-remote-control", "Start the remote_control HTTP API (localhost JSON /v1/* for blazium-cli remote).\n");
+	print_help_option("--remote-control-port=<port>", "Bind port for remote_control (default: 6507, or ProjectSettings blazium/remote_control/server_port).\n");
+	print_help_option("--remote-control-token=<token>", "Require Authorization: Bearer / X-Remote-Control-Token for remote_control requests.\n");
+#endif
+
+#ifdef MODULE_AUTOWORK_ENABLED
+	print_help_title("Autowork options");
+	print_help_option("--aw-dir=<directory>", "Run Autowork tests in the specified directory.\n");
+	print_help_option("--aw-file=<file>", "Run a specific Autowork test script.\n");
+	print_help_option("--aw-test=<name>", "Run a specific Autowork test by name.\n");
+	print_help_option("--aw-select=<pattern>", "Run Autowork test scripts matching the pattern.\n");
+	print_help_option("--aw-prefix=<prefix>", "Set the prefix for Autowork test files (default: \"test_\").\n");
+	print_help_option("--aw-suffix=<suffix>", "Set the suffix for Autowork test files (default: \".gd\").\n");
+	print_help_option("--aw-inner-class=<pattern>", "Run Autowork inner classes matching the pattern.\n");
+	print_help_option("--aw-junit=<file>", "Export Autowork test results to a JUnit XML file.\n");
+	print_help_option("--aw-json=<file>", "Export Autowork test results to a JSON file.\n");
+	print_help_option("--aw-pre-run=<script>", "Run a script before Autowork tests start.\n");
+	print_help_option("--aw-post-run=<script>", "Run a script after Autowork tests finish.\n");
+	print_help_option("--aw-hide-orphans", "Do not print orphaned nodes during Autowork tests.\n");
+	print_help_option("--aw-include-subdirs", "Include subdirectories when scanning for Autowork tests.\n");
+	print_help_option("--aw-e2e", "Force start the embedded E2E server alongside the process.\n");
+	print_help_option("--aw-e2e-host=<address>", "Bind the E2E server to a specific local address (default: 127.0.0.1). Also accepts --aw-e2e-host <address>.\n");
+	print_help_option("--aw-e2e-port=<port>", "Bind the E2E server to a specific local port. Also accepts --aw-e2e-port <port>.\n");
+	print_help_option("--aw-e2e-token=<token>", "Force override the E2E token dynamically. Also accepts --aw-e2e-token <token>.\n");
+	print_help_option("--aw-e2e-port-file=<path>", "Write the E2E server port to a file. Also accepts --aw-e2e-port-file <path>.\n");
+	print_help_option("--aw-e2e-log", "Enable verbose logging for the E2E server.\n");
+#endif
+
+#ifdef MODULE_MULTIUSER_EDITOR_ENABLED
+	print_help_title("Multiuser Editor Options");
+	print_help_option("--multiuser-server", "Force start the multiuser editor session as a dedicated headless server.\n");
+	print_help_option("--multiuser-port <port>", "Bind the multiuser server to a specific local port.\n");
+	print_help_option("--multiuser-password <password>", "Set the multiuser server password for connecting clients.\n");
+	print_help_option("--multiuser-jwt-auth", "Enable JWT authentication for the multiuser server.\n");
+	print_help_option("--multiuser-jwt-secret <secret>", "Set the JWT secret used for generating and verifying tokens.\n");
+	print_help_option("--multiuser-jwt-issuer <issuer>", "Set the expected JWT issuer claim.\n");
+	print_help_option("--multiuser-jwt-audience <audience>", "Set the expected JWT audience claim.\n");
+	print_help_option("--multiuser-jwt-algorithms <algs>", "Set accepted JWT algorithms.\n");
+	print_help_option("--multiuser-jwt-leeway <seconds>", "Set JWT time-claim leeway in seconds.\n");
+	print_help_option("--multiuser-jwt-max-age <seconds>", "Set maximum JWT age in seconds.\n");
+	print_help_option("--multiuser-jwt-require-jti", "Require a JWT ID (jti) claim.\n");
+	print_help_option("--multiuser-jwt <token>", "Connect to a multiuser server using the provided JWT token.\n");
+	print_help_option("--multiuser-host <ip>", "Set the default multiuser host for client auto-join.\n");
+	print_help_option("--multiuser-join", "Auto-join a multiuser session using default host/port and client JWT.\n");
+	print_help_option("--multiuser-debug", "Enable verbose multiuser editor network and debug logging.\n");
+#endif
+
 	OS::get_singleton()->print("\n");
 }
 
@@ -2310,7 +2369,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	// This also prevents logs from being created for the editor instance, as feature tags
 	// are disabled while in the editor (even if they should logically apply).
 	GLOBAL_DEF("debug/file_logging/enable_file_logging.pc", true);
-	GLOBAL_DEF("debug/file_logging/log_path", "user://logs/godot.log");
+	GLOBAL_DEF("debug/file_logging/log_path", "user://logs/blazium.log");
 	GLOBAL_DEF(PropertyInfo(Variant::INT, "debug/file_logging/max_log_files", PROPERTY_HINT_RANGE, "0,20,1,or_greater"), 5);
 
 	// If `--log-file` is used to override the log path, allow creating logs for the project manager or editor

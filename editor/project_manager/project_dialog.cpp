@@ -111,7 +111,7 @@ void ProjectDialog::_validate_path() {
 	InputType target_path_input_type = PROJECT_PATH;
 
 	if (mode == MODE_IMPORT) {
-		if (path.get_file().strip_edges() == "project.godot") {
+		if (ProjectSettings::is_project_settings_file(path.get_file().strip_edges())) {
 			path = path.get_base_dir();
 			project_path->set_text(path);
 		}
@@ -142,6 +142,8 @@ void ProjectDialog::_validate_path() {
 			}
 
 			int ret = unzGoToFirstFile(pkg);
+			bool found_project = false;
+			bool found_godot_only = false;
 			while (ret == UNZ_OK) {
 				unz_file_info info;
 				char fname[16384];
@@ -156,15 +158,23 @@ void ProjectDialog::_validate_path() {
 					continue;
 				}
 
-				if (name.get_file() == "project.godot") {
-					break; // ret == UNZ_OK.
+				const String file_name = name.get_file();
+				if (file_name == ProjectSettings::PROJECT_FILE_BLAZIUM) {
+					found_project = true;
+					break;
+				} else if (file_name == ProjectSettings::PROJECT_FILE_GODOT) {
+					found_godot_only = true;
 				}
 
 				ret = unzGoToNextFile(pkg);
 			}
 
-			if (ret == UNZ_END_OF_LIST_OF_FILE) {
-				_set_message(TTRC("Invalid \".zip\" project file; it doesn't contain a \"project.godot\" file."), MESSAGE_ERROR);
+			if (!found_project && found_godot_only) {
+				found_project = true;
+			}
+
+			if (!found_project) {
+				_set_message(TTRC("Invalid \".zip\" project file; it doesn't contain a \"project.blazium\" or \"project.godot\" file."), MESSAGE_ERROR);
 				unzClose(pkg);
 				return;
 			}
@@ -181,7 +191,7 @@ void ProjectDialog::_validate_path() {
 			create_dir->hide();
 			install_path_container->hide();
 
-			_set_message(TTRC("Please choose a \"project.godot\", a directory with one, or a \".zip\" file."), MESSAGE_ERROR);
+			_set_message(TTRC("Please choose a \"project.blazium\" or \"project.godot\", a directory with one, or a \".zip\" file."), MESSAGE_ERROR);
 			return;
 		}
 	}
@@ -422,7 +432,8 @@ void ProjectDialog::_browse_project_path() {
 	if (mode == MODE_IMPORT) {
 		fdialog_project->set_file_mode(EditorFileDialog::FILE_MODE_OPEN_ANY);
 		fdialog_project->clear_filters();
-		fdialog_project->add_filter("project.blazium,project.godot", vformat("%s %s", GODOT_VERSION_NAME, TTR("Project")));
+		fdialog_project->add_filter("project.blazium", vformat("%s %s", GODOT_VERSION_NAME, TTR("Project")));
+		fdialog_project->add_filter("project.godot", vformat("%s %s (Godot)", GODOT_VERSION_NAME, TTR("Project")));
 		fdialog_project->add_filter("*.zip", TTR("ZIP File"));
 	} else {
 		fdialog_project->set_file_mode(EditorFileDialog::FILE_MODE_OPEN_DIR);
@@ -656,8 +667,9 @@ void ProjectDialog::ok_pressed() {
 				return;
 			}
 
-			// Find the first directory with a "project.godot".
+			// Find the first directory with a project settings file (prefer project.blazium).
 			String zip_root;
+			String zip_root_godot;
 			int ret = unzGoToFirstFile(pkg);
 			while (ret == UNZ_OK) {
 				unz_file_info info;
@@ -673,16 +685,23 @@ void ProjectDialog::ok_pressed() {
 					continue;
 				}
 
-				if (name.get_file() == "project.godot") {
+				const String file_name = name.get_file();
+				if (file_name == ProjectSettings::PROJECT_FILE_BLAZIUM) {
 					zip_root = name.get_base_dir();
 					break;
+				} else if (file_name == ProjectSettings::PROJECT_FILE_GODOT && zip_root_godot.is_empty()) {
+					zip_root_godot = name.get_base_dir();
 				}
 
 				ret = unzGoToNextFile(pkg);
 			}
 
-			if (ret == UNZ_END_OF_LIST_OF_FILE) {
-				_set_message(TTRC("Invalid \".zip\" project file; it doesn't contain a \"project.godot\" file."), MESSAGE_ERROR);
+			if (zip_root.is_empty()) {
+				zip_root = zip_root_godot;
+			}
+
+			if (zip_root.is_empty()) {
+				_set_message(TTRC("Invalid \".zip\" project file; it doesn't contain a \"project.blazium\" or \"project.godot\" file."), MESSAGE_ERROR);
 				unzClose(pkg);
 				return;
 			}
@@ -773,19 +792,20 @@ void ProjectDialog::ok_pressed() {
 	}
 
 	if (mode == MODE_RENAME || mode == MODE_INSTALL || mode == MODE_DUPLICATE) {
-		// Load project.godot as ConfigFile to set the new name.
+		// Load the preferred project settings file as ConfigFile to set the new name.
 		ConfigFile cfg;
-		String project_godot = path.path_join("project.godot");
-		Error err = cfg.load(project_godot);
+		String conf_name = ProjectSettings::get_project_settings_file_name(path);
+		String project_file = path.path_join(conf_name.is_empty() ? String(ProjectSettings::PROJECT_FILE_BLAZIUM) : conf_name);
+		Error err = cfg.load(project_file);
 		if (err != OK) {
-			dialog_error->set_text(vformat(TTR("Couldn't load project at '%s' (error %d). It may be missing or corrupted."), project_godot, err));
+			dialog_error->set_text(vformat(TTR("Couldn't load project at '%s' (error %d). It may be missing or corrupted."), project_file, err));
 			dialog_error->popup_centered();
 			return;
 		}
 		cfg.set_value("application", "config/name", project_name->get_text().strip_edges());
-		err = cfg.save(project_godot);
+		err = cfg.save(project_file);
 		if (err != OK) {
-			dialog_error->set_text(vformat(TTR("Couldn't save project at '%s' (error %d)."), project_godot, err));
+			dialog_error->set_text(vformat(TTR("Couldn't save project at '%s' (error %d)."), project_file, err));
 			dialog_error->popup_centered();
 			return;
 		}

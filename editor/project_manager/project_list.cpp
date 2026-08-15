@@ -790,7 +790,7 @@ void ProjectList::save_config() {
 // p_favorite is passed directly into the Item.
 ProjectList::Item ProjectList::load_project_data(const String &p_path, bool p_favorite) {
 	String conf_name = ProjectSettings::get_project_settings_file_name(p_path);
-	String conf = p_path.path_join(conf_name.is_empty() ? String(ProjectSettings::PROJECT_FILE_GODOT) : conf_name);
+	String conf = p_path.path_join(conf_name.is_empty() ? String(ProjectSettings::PROJECT_FILE_BLAZIUM) : conf_name);
 	bool grayed = false;
 	bool missing = false;
 	bool recovery_mode = false;
@@ -1108,7 +1108,7 @@ void ProjectList::_scan_folder_recursive(const String &p_path, List<String> *r_p
 
 		if (da->current_is_dir() && n[0] != '.') {
 			_scan_folder_recursive(da->get_current_dir().path_join(n), r_projects, p_scan_active);
-		} else if (n == "project.godot" || n == "project.blazium") {
+		} else if (n == ProjectSettings::PROJECT_FILE_BLAZIUM || (n == ProjectSettings::PROJECT_FILE_GODOT && !FileAccess::exists(da->get_current_dir().path_join(ProjectSettings::PROJECT_FILE_BLAZIUM)))) {
 			r_projects->push_back(da->get_current_dir());
 		}
 		n = da->get_next();
@@ -1703,7 +1703,8 @@ void ProjectList::_global_menu_open_project(const Variant &p_tag) {
 	int idx = (int)p_tag;
 
 	if (idx >= 0 && idx < _projects.size()) {
-		String conf = _projects[idx].path.path_join("project.godot");
+		String conf_name = ProjectSettings::get_project_settings_file_name(_projects[idx].path);
+		String conf = _projects[idx].path.path_join(conf_name.is_empty() ? String(ProjectSettings::PROJECT_FILE_BLAZIUM) : conf_name);
 		List<String> args;
 		args.push_back(conf);
 		OS::get_singleton()->create_instance(args);

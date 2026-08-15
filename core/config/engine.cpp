@@ -204,6 +204,7 @@ Dictionary Engine::get_author_info() const {
 	dict["project_managers"] = array_from_info(AUTHORS_PROJECT_MANAGERS);
 	dict["founders"] = array_from_info(AUTHORS_FOUNDERS);
 	dict["developers"] = array_from_info(AUTHORS_DEVELOPERS);
+	dict["blazium_developers"] = array_from_info(BLAZIUM_DEVELOPERS);
 
 	return dict;
 }
@@ -240,6 +241,7 @@ Dictionary Engine::get_donor_info() const {
 	donors["titanium_members"] = array_from_info(DONORS_MEMBERS_TITANIUM);
 	donors["platinum_members"] = array_from_info(DONORS_MEMBERS_PLATINUM);
 	donors["gold_members"] = array_from_info(DONORS_MEMBERS_GOLD);
+	donors["blazium_sponsors"] = array_from_info(BLAZIUM_SPONSORS);
 	return donors;
 }
 
