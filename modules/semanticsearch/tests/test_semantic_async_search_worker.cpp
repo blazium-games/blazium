@@ -33,6 +33,7 @@
 #include "../semantic_async_search_worker.h"
 #include "../semantic_index_store.h"
 #include "../semantic_search_backend_factory.h"
+
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
 #include "core/os/os.h"
