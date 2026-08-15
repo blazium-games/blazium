@@ -33,9 +33,9 @@
 #include "core/config/project_settings.h"
 #include "core/input/input_event.h"
 #include "core/input/input_map.h"
-#include "core/variant/typed_array.h"
 #include "core/io/file_access.h"
 #include "core/io/json.h"
+#include "core/variant/typed_array.h"
 
 static bool _justamcp_looks_like_json(const String &p_s) {
 	const String t = p_s.strip_edges();

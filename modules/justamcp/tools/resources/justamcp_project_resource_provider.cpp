@@ -30,15 +30,16 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_project_resource_provider.h"
-#include "../../justamcp_editor_scene_access.h"
 
+#include "../../justamcp_editor_scene_access.h"
 #include "../../justamcp_server.h"
+
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/input/input_event.h"
 #include "core/input/input_map.h"
-#include "core/variant/typed_array.h"
 #include "core/io/json.h"
+#include "core/variant/typed_array.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
 #include "main/performance.h"
@@ -46,6 +47,7 @@
 
 #ifdef MODULE_ASSETTAGS_ENABLED
 #include "core/templates/hash_set.h"
+
 #include "modules/assettags/asset_tag_manager.h"
 #endif
 

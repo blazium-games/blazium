@@ -49,13 +49,11 @@ if codegen_enabled:
     cpppath.append(thirdparty_dir + "CodeGen/include")
 
 if analysis_enabled:
-    cpppath.extend(
-        [
-            thirdparty_dir + "Config/include",
-            thirdparty_dir + "EqSat/include",
-            thirdparty_dir + "Analysis/include",
-        ]
-    )
+    cpppath.extend([
+        thirdparty_dir + "Config/include",
+        thirdparty_dir + "EqSat/include",
+        thirdparty_dir + "Analysis/include",
+    ])
 
 env_luau_module.Prepend(CPPPATH=cpppath)
 

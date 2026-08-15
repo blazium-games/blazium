@@ -29,10 +29,11 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "core/object/class_db.h"
 #include "tileson_gd_bindings.h"
+
 #include "core/config/project_settings.h"
 #include "core/io/file_access.h"
+#include "core/object/class_db.h"
 
 // -------------------------------------------------------------
 // TiledTileson
