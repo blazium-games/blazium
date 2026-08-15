@@ -8750,7 +8750,10 @@ tson::Tile tson::Tile::CreateFlippedTile(uint32_t gid, tson::Map* map)
 	tile.m_gid = gid;
 
 	// Compute local id from global id
-	tile.m_id = tile.m_gid - tile.m_map->getTilesetByGid(tile.m_gid)->getFirstgid() + 1;
+	tson::Tileset *tileset = tile.m_map ? tile.m_map->getTilesetByGid(tile.m_gid) : nullptr;
+	if (tileset) {
+		tile.m_id = tile.m_gid - tileset->getFirstgid() + 1;
+	}
 
 	return tile;
 }

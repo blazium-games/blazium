@@ -84,8 +84,24 @@ Node *TiledTilemapCreator::create_tilemap(const String &p_source_file) {
 		_custom_types->merge_custom_properties(extracted_dict, "map");
 	}
 	_tileson.instantiate();
-	// Core backward-compatible JSON serialization. TiledDictionaryBuilder supports XML/TMX/TMJ into dictionaries natively.
-	// removed bad json backup
+	// Prefer path-based parse so external tilesets resolve. Tileson is JSON-only,
+	// so TMX/XML/LZMA maps go through the dictionary builder and are reparsed
+	// with the source directory as the tileset search root.
+	const String ext = p_source_file.get_extension().to_lower();
+	if (ext == "json" || ext == "tmj") {
+		_base_map = _tileson->parse_file(p_source_file);
+	} else {
+		String raw_text;
+		if (map_content.size() > 0) {
+			raw_text = String::utf8((const char *)map_content.ptr(), map_content.size());
+		}
+		if (raw_text.strip_edges().begins_with("{")) {
+			_base_map = _tileson->parse_string_with_dir(raw_text, _base_path);
+		}
+	}
+	if (!_base_map.is_valid() && !extracted_dict.is_empty()) {
+		_base_map = _tileson->parse_string_with_dir(JSON::stringify(extracted_dict), _base_path);
+	}
 
 	if (!_base_map.is_valid()) {
 		ERR_PRINT("Tiled failed to parse dynamic map.");
@@ -155,11 +171,14 @@ Node *TiledTilemapCreator::create_tilemap(const String &p_source_file) {
 	_parallax_background->set_name(_base_name + " (PBG)");
 
 	if (!_background_color.is_empty()) {
-		_background = memnew(ColorRect);
-		_background->set_color(Color::html(_background_color));
-		_background->set_size(Vector2(_map_width * _map_tile_width, _map_height * _map_tile_height));
-		_base_node->add_child(_background);
-		_background->set_name("Background Color");
+		const Color bg_color = Color::html(_background_color);
+		if (bg_color.a > 0.0f) {
+			_background = memnew(ColorRect);
+			_background->set_color(bg_color);
+			_background->set_size(Vector2(_map_width * _map_tile_width, _map_height * _map_tile_height));
+			_base_node->add_child(_background);
+			_background->set_name("Background Color");
+		}
 	}
 
 	if (_base_map.is_valid()) {
@@ -188,6 +207,7 @@ Node *TiledTilemapCreator::create_tilemap(const String &p_source_file) {
 		_tileset->remove_custom_data_layer(0);
 	}
 
+	recursively_change_owner(_base_node, _base_node);
 	return _base_node;
 }
 
@@ -209,7 +229,7 @@ void TiledTilemapCreator::handle_layer(Ref<TiledLayer> p_layer, Node2D *p_parent
 	float layer_offset_y = p_layer->get_offset().y;
 	float layer_opacity = p_layer->get_opacity();
 	bool layer_visible = p_layer->is_visible();
-	String layer_type = p_layer->get_tson_type();
+	String layer_type = p_layer->get_tson_type().to_lower();
 	String tint_color = p_layer->get_tint_color().to_html();
 
 	// v1.2: Skip layer check via property "no_import" (simplified)
@@ -429,7 +449,9 @@ void TiledTilemapCreator::handle_layer(Ref<TiledLayer> p_layer, Node2D *p_parent
 	}
 }
 void TiledTilemapCreator::handle_parallaxes(Node *p_parent, Node *p_layer_node, Ref<TiledLayer> p_layer_dict) {
-	if (p_layer_dict->get_parallax().x != 1.0f || p_layer_dict->get_parallax().y != 1.0f) {
+	const Vector2 parallax = p_layer_dict->get_parallax();
+	const bool has_parallax = (parallax - Vector2(1, 1)).length_squared() > 0.0001f && parallax != Vector2();
+	if (has_parallax) {
 		if (!_parallax_layer_existing) {
 			if (_background) {
 				_base_node->remove_child(_background);

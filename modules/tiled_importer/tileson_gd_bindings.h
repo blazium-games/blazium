@@ -75,6 +75,7 @@ public:
 
 	Ref<TiledMap> parse_file(const String &p_path);
 	Ref<TiledMap> parse_string(const String &p_json);
+	Ref<TiledMap> parse_string_with_dir(const String &p_json, const String &p_base_dir);
 };
 
 // -------------------------------------------------------------

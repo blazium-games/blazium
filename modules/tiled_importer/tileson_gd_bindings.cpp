@@ -31,6 +31,7 @@
 
 #include "core/object/class_db.h"
 #include "tileson_gd_bindings.h"
+#include "core/config/project_settings.h"
 #include "core/io/file_access.h"
 
 // -------------------------------------------------------------
@@ -43,30 +44,83 @@ void TiledTileson::_bind_methods() {
 
 TiledTileson::TiledTileson() {}
 
+static String _tileson_status_text(const std::unique_ptr<tson::Map> &p_map) {
+	if (!p_map) {
+		return "null";
+	}
+	switch (p_map->getStatus()) {
+		case tson::ParseStatus::OK:
+			return "OK";
+		case tson::ParseStatus::FileNotFound:
+			return "FileNotFound";
+		case tson::ParseStatus::ParseError:
+			return "ParseError";
+		case tson::ParseStatus::MissingData:
+			return "MissingData";
+		case tson::ParseStatus::DecompressionError:
+			return "DecompressionError";
+		default:
+			return "UNKNOWN";
+	}
+}
+
+static Ref<TiledMap> _tileson_map_or_error(std::unique_ptr<tson::Map> p_parsed_map) {
+	if (p_parsed_map && p_parsed_map->getStatus() == tson::ParseStatus::OK) {
+		Ref<TiledMap> godot_map;
+		godot_map.instantiate();
+		godot_map->set_map(std::move(p_parsed_map));
+		return godot_map;
+	}
+
+	String error;
+	if (p_parsed_map) {
+		error = to_godot_string(p_parsed_map->getStatusMessage());
+	}
+	ERR_PRINT("TiledTileson: Failed to parse map (status=" + _tileson_status_text(p_parsed_map) + ", error=" + error + ").");
+	return Ref<TiledMap>();
+}
+
+static String _tileson_globalize(const String &p_path) {
+	if (p_path.begins_with("res://") || p_path.begins_with("user://")) {
+		return ProjectSettings::get_singleton()->globalize_path(p_path);
+	}
+	return p_path;
+}
+
 Ref<TiledMap> TiledTileson::parse_file(const String &p_path) {
+	const String global_path = _tileson_globalize(p_path);
+	if (FileAccess::exists(global_path)) {
+		tson::Tileson t;
+		return _tileson_map_or_error(t.parse(fs::u8path(to_std_string(global_path))));
+	}
+
 	Ref<FileAccess> fa = FileAccess::open(p_path, FileAccess::READ);
 	if (fa.is_null()) {
 		ERR_PRINT("TiledTileson: Cannot open file " + p_path);
 		return Ref<TiledMap>();
 	}
-
-	String content = fa->get_as_text();
-	return parse_string(content);
+	return parse_string_with_dir(fa->get_as_text(), p_path.get_base_dir());
 }
 
 Ref<TiledMap> TiledTileson::parse_string(const String &p_json) {
-	tson::Tileson t;
-	std::unique_ptr<tson::Map> parsed_map = t.parse(to_std_string(p_json).c_str(), p_json.utf8().length());
+	return parse_string_with_dir(p_json, String());
+}
 
-	if (parsed_map && parsed_map->getStatus() == tson::ParseStatus::OK) {
-		Ref<TiledMap> godot_map;
-		godot_map.instantiate();
-		godot_map->set_map(std::move(parsed_map));
-		return godot_map;
+Ref<TiledMap> TiledTileson::parse_string_with_dir(const String &p_json, const String &p_base_dir) {
+	tson::Json11 json_parser;
+	const CharString utf8 = p_json.utf8();
+	if (!json_parser.parse(utf8.get_data(), utf8.length())) {
+		ERR_PRINT("TiledTileson: Failed to parse map (status=ParseError, error=JSON parse failed).");
+		return Ref<TiledMap>();
+	}
+	if (!p_base_dir.is_empty()) {
+		json_parser.directory(fs::u8path(to_std_string(_tileson_globalize(p_base_dir))));
 	}
 
-	ERR_PRINT("TiledTileson: Failed to parse map.");
-	return Ref<TiledMap>();
+	tson::Tileson t;
+	std::unique_ptr<tson::Map> parsed_map = std::make_unique<tson::Map>();
+	parsed_map->parse(json_parser, t.decompressors(), nullptr);
+	return _tileson_map_or_error(std::move(parsed_map));
 }
 
 // -------------------------------------------------------------
