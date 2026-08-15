@@ -817,13 +817,23 @@ bool AutoworkTest::assert_not_freed(Object *p_object, const String &p_text) {
 }
 
 bool AutoworkTest::assert_called(Object *p_object, const StringName &p_method, const Array &p_args, const String &p_text) {
-	ERR_PRINT("Not implemented.");
-	return false;
+	bool passed = spy.is_valid() && spy->was_called(p_object, p_method, p_args);
+	if (passed) {
+		pass_test(p_text.is_empty() ? "assert_called" : p_text);
+	} else {
+		fail_test(vformat("%s (Expected %s to be called)", p_text.is_empty() ? "assert_called failed" : p_text, p_method));
+	}
+	return passed;
 }
 
 bool AutoworkTest::assert_not_called(Object *p_object, const StringName &p_method, const Array &p_args, const String &p_text) {
-	ERR_PRINT("Not implemented.");
-	return false;
+	bool passed = !spy.is_valid() || !spy->was_called(p_object, p_method, p_args);
+	if (passed) {
+		pass_test(p_text.is_empty() ? "assert_not_called" : p_text);
+	} else {
+		fail_test(vformat("%s (Expected %s not to be called)", p_text.is_empty() ? "assert_not_called failed" : p_text, p_method));
+	}
+	return passed;
 }
 
 bool AutoworkTest::assert_called_count(Object *p_object, const StringName &p_method, int p_expected_count, const Array &p_args, const String &p_text) {
