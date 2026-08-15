@@ -252,6 +252,7 @@ xcuserdata/
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/
+!platform/android/icons/release
 [Rr]eleases/
 x64/
 x86/
