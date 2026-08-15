@@ -64,7 +64,8 @@ void test_semantic_async_search_worker_enqueue_filters() {
 
 void test_semantic_async_drain_jobs() {
 	SemanticAsyncSearchWorker worker;
-	worker.enqueue_search("hero", 5);
+	const String job_id = worker.enqueue_search("hero", 5);
+	CHECK(!job_id.is_empty());
 	worker.drain_jobs();
 	CHECK(true);
 }

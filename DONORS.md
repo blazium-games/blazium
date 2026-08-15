@@ -10,6 +10,14 @@ used, are described on [Godot's website](https://fund.godotengine.org).
 The following is a list of the current monthly donors, who will have their
 generous deed immortalized in the next stable release of Godot Engine.
 
+## Blazium Sponsors
+
+    POGR <https://pogr.gg>
+    DigitalOcean <https://www.digitalocean.com/?refcode=c9796b8f52e2>
+    Docker <https://www.docker.com>
+    Google <https://opensource.google>
+    GitHub <https://github.com>
+
 ## Patrons
 
     Scorewarrior <https://scwr.gg/godot>
