@@ -180,7 +180,7 @@ repos:
             platform/android/java/lib/src/main/java/org/godotengine/godot/gl/GLSurfaceView\.java|
             platform/android/java/lib/src/main/java/org/godotengine/godot/gl/EGLLogWrapper\.java|
             platform/android/java/lib/src/main/java/org/godotengine/godot/utils/ProcessPhoenix\.java|
-            modules/(assettags|autowork|crowdcontrol|clickertools|dddbrowser|discord_module|dotcsv|dotenv|dotini|enet_server|goap|httpserver|ircclient|justamcp|jwttool|kickapi|luau_module|multiuser_editor|obsclient|rcon|remote_control|semanticsearch|socialexports|socketio|sqlite3|steam|town_sdk|twitchapi|tiled_importer|xbox_module)/
+            modules/(assettags|autowork|crowdcontrol|clickertools|dddbrowser|discord_module|dotcsv|dotenv|dotini|enet_server|goap|httpserver|ircclient|justamcp|jwttool|kickapi|luau_module|multiuser_editor|obsclient|rcon|remote_control|semanticsearch|socialexports|socketio|sqlite3|steam|town_sdk|twitchapi|tiled_importer|xbox_module)/.*
           )$
 
       - id: header-guards
