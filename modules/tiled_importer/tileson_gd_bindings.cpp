@@ -87,11 +87,22 @@ static String _tileson_globalize(const String &p_path) {
 	return p_path;
 }
 
+static fs::path _tileson_fs_path(const String &p_path) {
+	const std::string utf8 = to_std_string(p_path);
+#if defined(IOS_ENABLED) || (defined(MACOS_ENABLED) && !defined(NO_MACOS_FS_STUB))
+	return fs::path(utf8);
+#elif defined(__cpp_lib_char8_t)
+	return fs::path(reinterpret_cast<const char8_t *>(utf8.c_str()));
+#else
+	return fs::u8path(utf8);
+#endif
+}
+
 Ref<TiledMap> TiledTileson::parse_file(const String &p_path) {
 	const String global_path = _tileson_globalize(p_path);
 	if (FileAccess::exists(global_path)) {
 		tson::Tileson t;
-		return _tileson_map_or_error(t.parse(fs::u8path(to_std_string(global_path))));
+		return _tileson_map_or_error(t.parse(_tileson_fs_path(global_path)));
 	}
 
 	Ref<FileAccess> fa = FileAccess::open(p_path, FileAccess::READ);
@@ -114,7 +125,7 @@ Ref<TiledMap> TiledTileson::parse_string_with_dir(const String &p_json, const St
 		return Ref<TiledMap>();
 	}
 	if (!p_base_dir.is_empty()) {
-		json_parser.directory(fs::u8path(to_std_string(_tileson_globalize(p_base_dir))));
+		json_parser.directory(_tileson_fs_path(_tileson_globalize(p_base_dir)));
 	}
 
 	tson::Tileson t;

@@ -145,7 +145,8 @@ Dictionary JustAMCPProjectResourceProvider::read(const String &p_uri, const Stri
 		Dictionary actions;
 		if (InputMap::get_singleton()) {
 			TypedArray<StringName> action_names = InputMap::get_singleton()->get_actions();
-			for (const StringName &action_name : action_names) {
+			for (int i = 0; i < action_names.size(); i++) {
+				const StringName action_name = action_names[i];
 				String action = action_name;
 				if (action.begins_with("ui_")) {
 					continue;

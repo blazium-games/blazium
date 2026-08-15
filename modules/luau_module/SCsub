@@ -86,6 +86,9 @@ def enable_luau_exceptions(target_env):
 env_thirdparty = env_luau_module.Clone()
 env_thirdparty.disable_warnings()
 enable_luau_exceptions(env_thirdparty)
+if not env.msvc:
+    # Android/Emscripten/Apple libc++ do not pull cstdlib transitively.
+    env_thirdparty.Append(CXXFLAGS=["-include", "cstdlib"])
 
 env_thirdparty.add_source_files(thirdparty_obj, thirdparty_sources)
 env.modules_sources += thirdparty_obj

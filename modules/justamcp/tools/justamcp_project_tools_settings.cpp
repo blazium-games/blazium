@@ -318,7 +318,8 @@ Dictionary JustAMCPProjectTools::get_input_actions(const Dictionary &p_args) {
 
 	bool include_builtin = p_args.get("include_builtin", false);
 	TypedArray<StringName> action_names = InputMap::get_singleton()->get_actions();
-	for (const StringName &action_name : action_names) {
+	for (int i = 0; i < action_names.size(); i++) {
+		const StringName action_name = action_names[i];
 		String action = action_name;
 		if (!include_builtin && action.begins_with("ui_")) {
 			continue;
