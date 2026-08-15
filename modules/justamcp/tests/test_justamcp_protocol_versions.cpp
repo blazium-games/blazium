@@ -30,6 +30,7 @@
 #ifdef TESTS_ENABLED
 
 #include "test_justamcp_protocol_versions.h"
+
 #include "test_justamcp_fixture.h"
 
 #include "modules/modules_enabled.gen.h"
@@ -41,9 +42,10 @@
 #include "../justamcp_session_manager.h"
 
 #include "core/io/json.h"
+#include "tests/test_macros.h"
+
 #include "modules/httpserver/http_request_context.h"
 #include "modules/httpserver/http_response.h"
-#include "tests/test_macros.h"
 
 static const char *const k_supported_protocols[] = {
 	"2025-11-25",

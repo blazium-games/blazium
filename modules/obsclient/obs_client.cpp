@@ -27,11 +27,11 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "core/object/class_db.h"
 #include "obs_client.h"
 
 #include "core/crypto/crypto_core.h"
 #include "core/io/json.h"
+#include "core/object/class_db.h"
 #include "core/string/ustring.h"
 #include "core/variant/variant.h"
 
