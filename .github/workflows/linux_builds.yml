@@ -28,8 +28,7 @@ jobs:
     # Stay one LTS before latest to increase portability of Linux artifacts.
     runs-on: ubuntu-22.04
     name: ${{ matrix.name }}
-    timeout-minutes: 360
-    continue-on-error: ${{ matrix.allow-failure || false }}
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
@@ -49,10 +48,12 @@ jobs:
             godot-cpp: true
             clangd-tidy: true
 
-          - name: Editor with doubles and GCC sanitizers (target=editor, dev_build=yes, scu_build=yes, precision=double, use_asan=yes, use_ubsan=yes, linker=mold)
+          - name: Editor with doubles and GCC sanitizers (target=editor, dev_build=yes, scu_build=yes, precision=double, use_asan=yes, use_ubsan=yes, linker=lld)
             cache-name: linux-editor-double-sanitizers
             target: editor
             # Debug symbols disabled as they're huge on this build and we hit the 14 GB limit for runners.
+            # Use lld instead of mold: ASAN+double+SCU editor binaries exceed mold's R_X86_64_PC32 range.
+            # medium code model keeps large ASAN/static-libstdc++ data from blowing 32-bit PC relocations.
             scons-flags: >-
               dev_build=yes
               scu_build=yes
@@ -60,13 +61,11 @@ jobs:
               precision=double
               use_asan=yes
               use_ubsan=yes
-              linker=mold
-              tests=no
+              linker=lld
+              ccflags=-mcmodel=medium
             bin: ./bin/blazium.linuxbsd.editor.dev.double.x86_64.san
             proj-test: true
             free-space: true
-            # SCU + ASAN + double with Blazium modules exceeds practical GHA time.
-            allow-failure: true
 
           - name: Editor with clang sanitizers (target=editor, dev_build=yes, use_asan=yes, use_ubsan=yes, use_llvm=yes, linker=lld)
             cache-name: linux-editor-llvm-sanitizers
@@ -185,9 +184,13 @@ jobs:
             echo "ACCESSKIT_ENABLED=no" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Install mold linker
+      - name: Install lld linker
         if: matrix.proj-test
-        uses: rui314/setup-mold@v1
+        run: |
+          # Doubles+GCC+ASAN editor links with -fuse-ld=lld; mold exceeds R_X86_64_PC32 range on this binary.
+          sudo apt-get update
+          sudo apt-get install -y lld
+          ld.lld --version
 
       - name: Compilation
         uses: ./.github/actions/godot-build
