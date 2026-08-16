@@ -32,6 +32,7 @@
 #include "justamcp_json_rpc_router.h"
 
 #include "../justamcp_log_levels.h"
+#include "../justamcp_mcp_spec.h"
 #include "../justamcp_server.h"
 #include "../justamcp_session_manager.h"
 #include "justamcp_prompt_executor.h"
@@ -67,6 +68,7 @@ Dictionary JustAMCPJsonRpcRouter::finalize_list_result(const Dictionary &p_resul
 
 	Dictionary out = p_result.duplicate();
 	out.erase("ok");
+	justamcp_apply_protocol_to_list_result(out, justamcp_active_protocol_version());
 	Dictionary rpc_result;
 	rpc_result["handled"] = true;
 	rpc_result["jsonrpc"] = "2.0";
@@ -340,27 +342,36 @@ Dictionary JustAMCPJsonRpcRouter::route_initialize(JustAMCPServer *p_server, con
 	resources_cap["subscribe"] = true;
 	capabilities["resources"] = resources_cap;
 	capabilities["logging"] = Dictionary();
-	capabilities["completions"] = Dictionary();
-	Dictionary tasks_cap;
-	tasks_cap["list"] = Dictionary();
-	tasks_cap["cancel"] = Dictionary();
-	Dictionary requests;
-	Dictionary tools;
-	tools["call"] = Dictionary();
-	requests["tools"] = tools;
-	tasks_cap["requests"] = requests;
-	capabilities["tasks"] = tasks_cap;
-	if (p_server->transport_negotiated_protocol == "2025-11-25" || MCPSessionManager::is_modern_protocol_version(p_server->transport_negotiated_protocol)) {
+	const String negotiated = p_server->transport_negotiated_protocol;
+	if (justamcp_protocol_supports(negotiated, JUSTAMCP_FEATURE_COMPLETIONS)) {
+		capabilities["completions"] = Dictionary();
+	}
+	if (justamcp_protocol_supports(negotiated, JUSTAMCP_FEATURE_TASKS_INITIALIZE)) {
+		Dictionary tasks_cap;
+		tasks_cap["list"] = Dictionary();
+		tasks_cap["cancel"] = Dictionary();
+		Dictionary requests;
+		Dictionary tools;
+		tools["call"] = Dictionary();
+		requests["tools"] = tools;
+		tasks_cap["requests"] = requests;
+		capabilities["tasks"] = tasks_cap;
+	}
+	if (justamcp_protocol_supports(negotiated, JUSTAMCP_FEATURE_ELICITATION_FORM)) {
 		Dictionary elicitation_cap;
 		elicitation_cap["form"] = Dictionary();
-		elicitation_cap["url"] = Dictionary();
+		if (justamcp_protocol_supports(negotiated, JUSTAMCP_FEATURE_ELICITATION_URL)) {
+			elicitation_cap["url"] = Dictionary();
+		}
 		capabilities["elicitation"] = elicitation_cap;
 	}
 	result["capabilities"] = capabilities;
 	result["instructions"] = "Use blazium_* tools and blazium:// resources. Prefer editor tools for scene/resource edits, runtime_* tools only when a game bridge is active, and guide resources such as blazium://guide/tool-index for workflow orientation.";
 	Dictionary serverInfo;
 	serverInfo["name"] = "blazium-mcp-server";
-	serverInfo["title"] = "Blazium MCP";
+	if (justamcp_protocol_supports(negotiated, JUSTAMCP_FEATURE_SERVER_TITLE)) {
+		serverInfo["title"] = "Blazium MCP";
+	}
 	serverInfo["version"] = "1.0.0";
 	serverInfo["websiteUrl"] = "https://blazium.app";
 	result["serverInfo"] = serverInfo;
@@ -497,9 +508,10 @@ Dictionary JustAMCPJsonRpcRouter::route_completion_complete(JustAMCPServer *p_se
 	const Dictionary params = p_payload.has("params") ? Dictionary(p_payload["params"]) : Dictionary();
 	const Dictionary ref = params.has("ref") ? Dictionary(params["ref"]) : Dictionary();
 	const Dictionary argument = params.has("argument") ? Dictionary(params["argument"]) : Dictionary();
+	const Dictionary context = params.has("context") && params["context"].get_type() == Variant::DICTIONARY ? Dictionary(params["context"]) : Dictionary();
 	Dictionary result;
 	if (p_server->prompt_executor) {
-		result = p_server->prompt_executor->complete_prompt(ref, argument);
+		result = p_server->prompt_executor->complete_prompt(ref, argument, context);
 	}
 	Dictionary rpc_result;
 	rpc_result["handled"] = true;

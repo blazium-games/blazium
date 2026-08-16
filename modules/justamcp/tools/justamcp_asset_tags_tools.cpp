@@ -119,7 +119,7 @@ Dictionary JustAMCPAssetTagsTools::_require_elicitation(const String &p_action, 
 		if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/url_elicitation_demo_url")) {
 			demo_url = String(GLOBAL_GET("blazium/justamcp/url_elicitation_demo_url"));
 		}
-		if (!demo_url.is_empty() && bool(p_args.get("url_elicit", false))) {
+		if (!demo_url.is_empty() && bool(p_args.get("url_elicit", false)) && justamcp_protocol_supports(server->get_negotiated_protocol_version(), JUSTAMCP_FEATURE_ELICITATION_URL)) {
 			server->send_url_elicitation_error(request_id, "elicitation_" + request_id, demo_url, "URL elicitation required for " + p_action);
 		} else {
 			server->send_elicitation_request(request_id, "form", "Confirm asset tag mutation: " + p_action, schema);

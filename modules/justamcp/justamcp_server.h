@@ -201,6 +201,7 @@ public:
 	void complete_elicitation(const String &p_request_id, const Dictionary &p_result);
 	void handle_client_rpc_result(const String &p_session_id, const Dictionary &p_payload);
 	Array get_session_roots(const String &p_session_id) const;
+	String get_negotiated_protocol_version() const { return transport_negotiated_protocol; }
 	bool has_pending_elicitation(const Variant &p_request_id) const;
 	void broadcast_prompts_list_changed();
 	void broadcast_tools_list_changed();

@@ -29,13 +29,35 @@
 
 #pragma once
 
+#include "core/string/ustring.h"
 #include "core/variant/array.h"
 #include "core/variant/dictionary.h"
 #include "core/variant/variant.h"
 
+enum JustAMCPProtocolFeature {
+	JUSTAMCP_FEATURE_COMPLETIONS,
+	JUSTAMCP_FEATURE_JSONRPC_BATCH,
+	JUSTAMCP_FEATURE_ELICITATION_FORM,
+	JUSTAMCP_FEATURE_ELICITATION_URL,
+	JUSTAMCP_FEATURE_STRUCTURED_CONTENT,
+	JUSTAMCP_FEATURE_RESOURCE_LINKS,
+	JUSTAMCP_FEATURE_SERVER_TITLE,
+	JUSTAMCP_FEATURE_ICONS,
+	JUSTAMCP_FEATURE_TASKS_INITIALIZE,
+};
+
+int justamcp_protocol_rank(const String &p_version);
+bool justamcp_protocol_at_least(const String &p_version, const String &p_minimum);
+bool justamcp_protocol_supports(const String &p_version, JustAMCPProtocolFeature p_feature);
+String justamcp_active_protocol_version();
+
 // SEP-973: optional icons on tools, prompts, resources, and templates.
 Array justamcp_default_icons();
 void justamcp_attach_icons(Dictionary &p_schema);
+void justamcp_apply_protocol_to_schema(Dictionary &p_schema, const String &p_protocol);
+void justamcp_apply_protocol_to_list_result(Dictionary &p_result, const String &p_protocol);
+
+Dictionary justamcp_resource_link_content(const String &p_uri, const String &p_name = String(), const String &p_mime_type = String());
 
 // SEP-986: tool names are lowercase snake_case, max 64 characters.
 bool justamcp_is_valid_mcp_tool_name(const String &p_name);

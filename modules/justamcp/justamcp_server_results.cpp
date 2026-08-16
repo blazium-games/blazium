@@ -296,13 +296,21 @@ void JustAMCPServer::send_elicitation_request(const String &p_request_id, const 
 
 	Dictionary params;
 	params["requestId"] = p_request_id;
-	params["mode"] = p_mode;
 	params["message"] = p_message;
 
-	if (p_mode == "url") {
+	String mode = p_mode;
+	if (mode == "url" && !justamcp_protocol_supports(transport_negotiated_protocol, JUSTAMCP_FEATURE_ELICITATION_URL)) {
+		mode = "form";
+	}
+	params["mode"] = mode;
+	if (mode == "url") {
 		params["url"] = p_url_or_schema;
-	} else if (p_mode == "form") {
-		params["schema"] = p_url_or_schema;
+	} else if (mode == "form") {
+		if (p_url_or_schema.get_type() == Variant::DICTIONARY) {
+			params["schema"] = p_url_or_schema;
+		} else {
+			params["schema"] = justamcp_confirm_enum_schema();
+		}
 	}
 
 	rpc_request["params"] = params;

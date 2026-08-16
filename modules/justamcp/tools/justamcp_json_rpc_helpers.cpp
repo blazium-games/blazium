@@ -30,6 +30,7 @@
 #include "justamcp_json_rpc_helpers.h"
 
 #ifdef TOOLS_ENABLED
+#include "../justamcp_mcp_spec.h"
 #include "justamcp_tool_schema_cache.h"
 #endif
 
@@ -149,6 +150,25 @@ Dictionary JustAMCPJsonRpcHelpers::format_tool_result(bool p_success, const Vari
 			content.push_back(content_item);
 			result["content"] = content;
 			result["isError"] = false;
+		}
+		const String protocol = justamcp_active_protocol_version();
+		if (p_result.get_type() == Variant::DICTIONARY) {
+			Dictionary payload_dict = p_result;
+			if (justamcp_protocol_supports(protocol, JUSTAMCP_FEATURE_RESOURCE_LINKS) && payload_dict.has("resourceLinks") && payload_dict["resourceLinks"].get_type() == Variant::ARRAY) {
+				Array content = result.has("content") && result["content"].get_type() == Variant::ARRAY ? Array(result["content"]) : Array();
+				const Array links = payload_dict["resourceLinks"];
+				for (int i = 0; i < links.size(); i++) {
+					if (links[i].get_type() != Variant::DICTIONARY) {
+						continue;
+					}
+					const Dictionary link = links[i];
+					content.push_back(justamcp_resource_link_content(link.get("uri", ""), link.get("name", ""), link.get("mimeType", "")));
+				}
+				result["content"] = content;
+			}
+		}
+		if (!justamcp_protocol_supports(protocol, JUSTAMCP_FEATURE_STRUCTURED_CONTENT)) {
+			result.erase("structuredContent");
 		}
 		rpc_result["result"] = result;
 	} else {

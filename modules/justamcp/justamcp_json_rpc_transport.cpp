@@ -34,6 +34,7 @@
 #include "justamcp_json_rpc_transport.h"
 
 #include "justamcp_log_levels.h"
+#include "justamcp_mcp_spec.h"
 #include "justamcp_server.h"
 #include "justamcp_session_manager.h"
 #include "tools/justamcp_json_rpc_helpers.h"
@@ -61,6 +62,7 @@ Dictionary JustAMCPJsonRpcTransport::sanitize_wire_rpc(const Dictionary &p_rpc) 
 	out.erase("handled");
 	out.erase("subscription_uri");
 	out.erase("subscription_action");
+	out.erase("_justamcp_batch_results");
 	return out;
 }
 
@@ -84,12 +86,13 @@ Dictionary JustAMCPJsonRpcTransport::handle_json_rpc(JustAMCPServer *p_server, c
 
 	Variant parsed = json->get_data();
 	if (parsed.get_type() == Variant::ARRAY) {
-		if (p_server->transport_negotiated_protocol == "2025-06-18" || p_server->transport_negotiated_protocol == "2025-11-25" || MCPSessionManager::is_modern_protocol_version(p_server->transport_negotiated_protocol)) {
+		const String protocol = p_server->transport_negotiated_protocol;
+		if (!justamcp_protocol_supports(protocol, JUSTAMCP_FEATURE_JSONRPC_BATCH)) {
 			Dictionary err;
 			err["jsonrpc"] = "2.0";
 			Dictionary error_dict;
 			error_dict["code"] = -32600;
-			error_dict["message"] = "JSON-RPC batch requests are not supported for protocol " + p_server->transport_negotiated_protocol;
+			error_dict["message"] = "JSON-RPC batch requests are not supported for protocol " + protocol;
 			err["error"] = error_dict;
 			if (p_response.is_valid() && !p_response->is_sent()) {
 				p_response->set_status(400);
@@ -97,6 +100,46 @@ Dictionary JustAMCPJsonRpcTransport::handle_json_rpc(JustAMCPServer *p_server, c
 			}
 			return err;
 		}
+		const Array batch = parsed;
+		if (batch.size() > 16) {
+			Dictionary err;
+			err["jsonrpc"] = "2.0";
+			Dictionary error_dict;
+			error_dict["code"] = -32600;
+			error_dict["message"] = "JSON-RPC batch exceeds the maximum of 16 requests.";
+			err["error"] = error_dict;
+			if (p_response.is_valid() && !p_response->is_sent()) {
+				p_response->set_status(400);
+				p_response->set_json(err);
+			}
+			return err;
+		}
+		Array responses;
+		for (int i = 0; i < batch.size(); i++) {
+			if (batch[i].get_type() != Variant::DICTIONARY) {
+				Dictionary invalid;
+				invalid["jsonrpc"] = "2.0";
+				Dictionary error_dict;
+				error_dict["code"] = -32600;
+				error_dict["message"] = "Invalid Request: JSON-RPC batch entry must be an object";
+				invalid["error"] = error_dict;
+				responses.push_back(invalid);
+				continue;
+			}
+			Dictionary entry_result = handle_json_rpc_parsed(p_server, batch[i], Ref<HTTPResponse>(), p_caller_session_id);
+			if (entry_result.is_empty()) {
+				continue;
+			}
+			responses.push_back(sanitize_wire_rpc(entry_result));
+		}
+		Dictionary wrapped;
+		wrapped["_justamcp_batch_results"] = responses;
+		if (p_response.is_valid() && !p_response->is_sent()) {
+			p_response->set_status(200);
+			p_response->set_content_type("application/json");
+			p_response->set_body(JSON::stringify(responses));
+		}
+		return wrapped;
 	}
 
 	if (parsed.get_type() != Variant::DICTIONARY) {

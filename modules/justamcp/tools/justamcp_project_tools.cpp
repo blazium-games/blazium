@@ -267,6 +267,12 @@ Dictionary JustAMCPProjectTools::map_scenes(const Dictionary &p_args) {
 	result["scenes"] = scenes;
 	result["total_scenes"] = scenes.size();
 	result["truncated"] = truncated;
+	Array resource_links;
+	Dictionary root_link;
+	root_link["uri"] = root_path;
+	root_link["name"] = "project-scenes";
+	resource_links.push_back(root_link);
+	result["resourceLinks"] = resource_links;
 	return result;
 }
 

@@ -29,7 +29,67 @@
 
 #include "justamcp_mcp_spec.h"
 
+#include "justamcp_server.h"
+
 static const int JUSTAMCP_TOOL_NAME_MAX_LEN = 64;
+
+int justamcp_protocol_rank(const String &p_version) {
+	if (p_version == "2024-11-05") {
+		return 0;
+	}
+	if (p_version == "2025-03-26") {
+		return 1;
+	}
+	if (p_version == "2025-06-18") {
+		return 2;
+	}
+	if (p_version == "2025-11-25") {
+		return 3;
+	}
+	if (p_version == "2026-07-28") {
+		return 4;
+	}
+	return -1;
+}
+
+bool justamcp_protocol_at_least(const String &p_version, const String &p_minimum) {
+	const int rank = justamcp_protocol_rank(p_version);
+	const int min_rank = justamcp_protocol_rank(p_minimum);
+	return rank >= 0 && min_rank >= 0 && rank >= min_rank;
+}
+
+bool justamcp_protocol_supports(const String &p_version, JustAMCPProtocolFeature p_feature) {
+	switch (p_feature) {
+		case JUSTAMCP_FEATURE_COMPLETIONS:
+			return justamcp_protocol_at_least(p_version, "2025-03-26");
+		case JUSTAMCP_FEATURE_JSONRPC_BATCH:
+			return p_version == "2025-03-26";
+		case JUSTAMCP_FEATURE_ELICITATION_FORM:
+			return justamcp_protocol_at_least(p_version, "2025-06-18");
+		case JUSTAMCP_FEATURE_ELICITATION_URL:
+			return justamcp_protocol_at_least(p_version, "2025-11-25");
+		case JUSTAMCP_FEATURE_STRUCTURED_CONTENT:
+		case JUSTAMCP_FEATURE_RESOURCE_LINKS:
+		case JUSTAMCP_FEATURE_SERVER_TITLE:
+			return justamcp_protocol_at_least(p_version, "2025-06-18");
+		case JUSTAMCP_FEATURE_ICONS:
+			return justamcp_protocol_at_least(p_version, "2025-11-25");
+		case JUSTAMCP_FEATURE_TASKS_INITIALIZE:
+			return p_version == "2025-11-25";
+		default:
+			return false;
+	}
+}
+
+String justamcp_active_protocol_version() {
+	if (JustAMCPServer *server = JustAMCPServer::get_singleton()) {
+		const String negotiated = server->get_negotiated_protocol_version();
+		if (!negotiated.is_empty()) {
+			return negotiated;
+		}
+	}
+	return "2025-11-25";
+}
 
 Array justamcp_default_icons() {
 	Array icons;
@@ -47,6 +107,48 @@ void justamcp_attach_icons(Dictionary &p_schema) {
 	if (!p_schema.has("icons")) {
 		p_schema["icons"] = justamcp_default_icons();
 	}
+}
+
+void justamcp_apply_protocol_to_schema(Dictionary &p_schema, const String &p_protocol) {
+	if (justamcp_protocol_supports(p_protocol, JUSTAMCP_FEATURE_ICONS)) {
+		if (!p_schema.has("icons")) {
+			p_schema["icons"] = justamcp_default_icons();
+		}
+	} else {
+		p_schema.erase("icons");
+	}
+}
+
+void justamcp_apply_protocol_to_list_result(Dictionary &p_result, const String &p_protocol) {
+	static const char *const list_keys[] = { "tools", "prompts", "resources", "resourceTemplates", nullptr };
+	for (int k = 0; list_keys[k]; k++) {
+		if (!p_result.has(list_keys[k]) || p_result[list_keys[k]].get_type() != Variant::ARRAY) {
+			continue;
+		}
+		Array items = p_result[list_keys[k]];
+		for (int i = 0; i < items.size(); i++) {
+			if (items[i].get_type() != Variant::DICTIONARY) {
+				continue;
+			}
+			Dictionary item = items[i];
+			justamcp_apply_protocol_to_schema(item, p_protocol);
+			items[i] = item;
+		}
+		p_result[list_keys[k]] = items;
+	}
+}
+
+Dictionary justamcp_resource_link_content(const String &p_uri, const String &p_name, const String &p_mime_type) {
+	Dictionary content;
+	content["type"] = "resource_link";
+	content["uri"] = p_uri;
+	if (!p_name.is_empty()) {
+		content["name"] = p_name;
+	}
+	if (!p_mime_type.is_empty()) {
+		content["mimeType"] = p_mime_type;
+	}
+	return content;
 }
 
 bool justamcp_is_valid_mcp_tool_name(const String &p_name) {

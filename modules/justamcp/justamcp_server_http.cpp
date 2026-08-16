@@ -362,11 +362,17 @@ void JustAMCPServer::_deferred_held_json_rpc(int p_client_id, const String &p_bo
 			response->set_status(202);
 			response->set_body("");
 		} else {
-			const int status = MCPSessionManager::is_modern_protocol_version(transport_negotiated_protocol)
-					? MCPSessionManager::modern_http_status_for_rpc(result)
-					: 200;
-			response->set_status(status);
-			response->set_json(JustAMCPJsonRpcTransport::sanitize_wire_rpc(result));
+			if (result.has("_justamcp_batch_results") && result["_justamcp_batch_results"].get_type() == Variant::ARRAY) {
+				response->set_status(200);
+				response->set_content_type("application/json");
+				response->set_body(JSON::stringify(result["_justamcp_batch_results"]));
+			} else {
+				const int status = MCPSessionManager::is_modern_protocol_version(transport_negotiated_protocol)
+						? MCPSessionManager::modern_http_status_for_rpc(result)
+						: 200;
+				response->set_status(status);
+				response->set_json(JustAMCPJsonRpcTransport::sanitize_wire_rpc(result));
+			}
 		}
 	}
 	if (HTTPServer::get_singleton()) {

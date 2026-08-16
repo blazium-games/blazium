@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  justamcp_prompt_executor.h                                            */
+/*  test_justamcp_protocol_matrix.h                                       */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             BLAZIUM ENGINE                             */
@@ -29,35 +29,20 @@
 
 #pragma once
 
-#ifdef TOOLS_ENABLED
+#include "tests/test_macros.h"
 
-#include "core/object/object.h"
-#include "prompts/justamcp_prompt.h"
+void test_justamcp_protocol_matrix_initialize_capabilities();
+void test_justamcp_protocol_matrix_batch_execute_2025_03_26();
+void test_justamcp_protocol_matrix_icons_and_structured_content();
 
-class JustAMCPEditorPlugin;
+TEST_CASE("[Modules][JustAMCP] protocol matrix initialize capabilities") {
+	test_justamcp_protocol_matrix_initialize_capabilities();
+}
 
-class JustAMCPPromptExecutor : public Object {
-	GDCLASS(JustAMCPPromptExecutor, Object);
+TEST_CASE("[Modules][JustAMCP] protocol matrix batch execute 2025-03-26") {
+	test_justamcp_protocol_matrix_batch_execute_2025_03_26();
+}
 
-	Vector<Ref<JustAMCPPrompt>> registered_prompts;
-
-	JustAMCPEditorPlugin *editor_plugin = nullptr;
-
-protected:
-	static void _bind_methods();
-
-public:
-	static void register_settings();
-	void set_editor_plugin(JustAMCPEditorPlugin *p_plugin) { editor_plugin = p_plugin; }
-
-	void add_prompt(const Ref<JustAMCPPrompt> &p_prompt);
-
-	Dictionary list_prompts(const String &cursor = "");
-	Dictionary get_prompt(const String &p_name, const Dictionary &p_args);
-	Dictionary complete_prompt(const Dictionary &p_ref, const Dictionary &p_argument, const Dictionary &p_context = Dictionary());
-
-	JustAMCPPromptExecutor();
-	~JustAMCPPromptExecutor();
-};
-
-#endif
+TEST_CASE("[Modules][JustAMCP] protocol matrix icons and structuredContent") {
+	test_justamcp_protocol_matrix_icons_and_structured_content();
+}

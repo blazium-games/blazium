@@ -52,7 +52,7 @@
 void JustAMCPPromptExecutor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_prompt", "name", "args"), &JustAMCPPromptExecutor::get_prompt);
 	ClassDB::bind_method(D_METHOD("list_prompts", "cursor"), &JustAMCPPromptExecutor::list_prompts, DEFVAL(""));
-	ClassDB::bind_method(D_METHOD("complete_prompt", "ref", "argument"), &JustAMCPPromptExecutor::complete_prompt);
+	ClassDB::bind_method(D_METHOD("complete_prompt", "ref", "argument", "context"), &JustAMCPPromptExecutor::complete_prompt, DEFVAL(Dictionary()));
 	ClassDB::bind_method(D_METHOD("add_prompt", "prompt"), &JustAMCPPromptExecutor::add_prompt);
 }
 
@@ -150,13 +150,17 @@ Dictionary JustAMCPPromptExecutor::get_prompt(const String &p_name, const Dictio
 	return result;
 }
 
-Dictionary JustAMCPPromptExecutor::complete_prompt(const Dictionary &p_ref, const Dictionary &p_argument) {
+Dictionary JustAMCPPromptExecutor::complete_prompt(const Dictionary &p_ref, const Dictionary &p_argument, const Dictionary &p_context) {
 	String ref_name = p_ref.has("name") ? String(Variant(p_ref["name"])) : "";
+	Dictionary argument = p_argument.duplicate();
+	if (!p_context.is_empty()) {
+		argument["context"] = p_context;
+	}
 
 	for (int i = 0; i < registered_prompts.size(); i++) {
 		if (registered_prompts[i].is_valid() && registered_prompts[i]->get_name() == ref_name) {
 			Dictionary result;
-			result["completion"] = registered_prompts[i]->complete(p_argument);
+			result["completion"] = registered_prompts[i]->complete(argument);
 			return result;
 		}
 	}

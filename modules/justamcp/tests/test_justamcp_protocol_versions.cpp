@@ -349,7 +349,7 @@ void test_justamcp_batch_rejected_for_newer_protocols() {
 	server.test_set_transport_negotiated_protocol("2024-11-05");
 	Dictionary older = JustAMCPJsonRpcTransport::handle_json_rpc(&server, "[{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}]", Ref<HTTPResponse>());
 	CHECK(older.has("error"));
-	CHECK(!String(older["error"].operator Dictionary().get("message", "")).contains("batch requests are not supported"));
+	CHECK(String(older["error"].operator Dictionary().get("message", "")).contains("batch"));
 }
 
 void test_justamcp_http_list_toolsets_smoke_per_strict_protocol() {
