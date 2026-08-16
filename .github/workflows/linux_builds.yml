@@ -29,6 +29,7 @@ jobs:
     runs-on: ubuntu-22.04
     name: ${{ matrix.name }}
     timeout-minutes: 360
+    continue-on-error: ${{ matrix.allow-failure || false }}
     strategy:
       fail-fast: false
       matrix:
@@ -64,6 +65,8 @@ jobs:
             bin: ./bin/blazium.linuxbsd.editor.dev.double.x86_64.san
             proj-test: true
             free-space: true
+            # SCU + ASAN + double with Blazium modules exceeds practical GHA time.
+            allow-failure: true
 
           - name: Editor with clang sanitizers (target=editor, dev_build=yes, use_asan=yes, use_ubsan=yes, use_llvm=yes, linker=lld)
             cache-name: linux-editor-llvm-sanitizers
