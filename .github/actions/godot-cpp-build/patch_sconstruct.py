@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Patch a checked-out godot-cpp SConstruct to use SCons TEMPFILE.
 
 godot-cpp ignores unknown command-line variables such as ARCOM, so the
