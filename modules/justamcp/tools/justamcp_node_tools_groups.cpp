@@ -38,9 +38,9 @@
 
 #include "../justamcp_mcp_tool_macros.h"
 
-#include "core/config/project_settings.h"
-#include "core/io/resource_loader.h"
-#include "core/object/script_language.h"
+#include "core/config/project_settings.h" // IWYU pragma: keep
+#include "core/io/resource_loader.h" // IWYU pragma: keep
+#include "core/object/script_language.h" // IWYU pragma: keep
 #include "scene/gui/control.h"
 
 static String _justamcp_safe_path_to(Node *p_root, Node *p_node) {

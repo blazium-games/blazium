@@ -29,7 +29,7 @@
 
 #include "mcp_tool_queue.h"
 
-#include "justamcp_server.h"
+#include "justamcp_server.h" // IWYU pragma: keep
 #include "justamcp_server_request_lookup.h"
 #include "justamcp_tool_queue_state.h"
 

@@ -41,7 +41,7 @@
 #include "scene/main/window.h"
 
 #include "modules/autowork/autowork_main.h"
-#include "modules/justamcp/justamcp_editor_plugin.h"
+#include "modules/justamcp/justamcp_editor_plugin.h" // IWYU pragma: keep
 
 void JustAMCPAutoworkTools::_bind_methods() {
 }

@@ -41,7 +41,7 @@
 #include "core/config/project_settings.h"
 #include "core/io/resource_loader.h"
 #include "core/object/script_language.h"
-#include "scene/gui/control.h"
+#include "scene/gui/control.h" // IWYU pragma: keep
 
 void JustAMCPNodeTools::_bind_methods() {}
 

@@ -39,7 +39,7 @@
 #include "scene/3d/camera_3d.h"
 #include "scene/3d/gpu_particles_3d.h"
 #include "scene/resources/3d/primitive_meshes.h"
-#include "scene/resources/curve_texture.h"
+#include "scene/resources/curve_texture.h" // IWYU pragma: keep
 #include "scene/resources/gradient_texture.h"
 #include "scene/resources/material.h"
 #include "scene/resources/particle_process_material.h"

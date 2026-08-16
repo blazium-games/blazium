@@ -45,8 +45,8 @@
 #include "editor/editor_node.h"
 #include "editor/editor_undo_redo_manager.h"
 #include "editor/settings/editor_settings.h"
-#include "scene/main/viewport.h"
-#include "scene/main/window.h"
+#include "scene/main/viewport.h" // IWYU pragma: keep
+#include "scene/main/window.h" // IWYU pragma: keep
 #include "servers/display/display_server.h"
 
 void JustAMCPEditorTools::_bind_methods() {}

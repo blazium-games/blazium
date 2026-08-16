@@ -43,23 +43,23 @@
 #endif
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
-#include "core/io/image_loader.h"
+#include "core/io/image_loader.h" // IWYU pragma: keep
 #include "core/io/json.h"
 #include "core/io/resource_saver.h"
 #include "core/os/thread.h"
 #include "editor/editor_interface.h"
-#include "editor/editor_node.h"
-#include "editor/editor_undo_redo_manager.h"
+#include "editor/editor_node.h" // IWYU pragma: keep
+#include "editor/editor_undo_redo_manager.h" // IWYU pragma: keep
 #include "editor/file_system/editor_file_system.h"
-#include "scene/2d/sprite_2d.h"
-#include "scene/2d/tile_map.h"
-#include "scene/3d/mesh_instance_3d.h"
-#include "scene/3d/sprite_3d.h"
-#include "scene/resources/2d/tile_set.h"
-#include "scene/resources/material.h"
+#include "scene/2d/sprite_2d.h" // IWYU pragma: keep
+#include "scene/2d/tile_map.h" // IWYU pragma: keep
+#include "scene/3d/mesh_instance_3d.h" // IWYU pragma: keep
+#include "scene/3d/sprite_3d.h" // IWYU pragma: keep
+#include "scene/resources/2d/tile_set.h" // IWYU pragma: keep
+#include "scene/resources/material.h" // IWYU pragma: keep
 #include "scene/resources/packed_scene.h"
-#include "scene/resources/shader.h"
-#include "scene/resources/texture.h"
+#include "scene/resources/shader.h" // IWYU pragma: keep
+#include "scene/resources/texture.h" // IWYU pragma: keep
 #include "scene/resources/theme.h"
 
 String JustAMCPResourceTools::_ensure_res_path(const String &p_path) {

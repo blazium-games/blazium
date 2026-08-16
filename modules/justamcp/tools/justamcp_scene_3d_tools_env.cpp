@@ -36,14 +36,14 @@
 #include "core/io/resource_loader.h"
 #include "editor/editor_undo_redo_manager.h"
 #include "scene/3d/camera_3d.h"
-#include "scene/3d/light_3d.h"
+#include "scene/3d/light_3d.h" // IWYU pragma: keep
 #include "scene/3d/mesh_instance_3d.h"
 #include "scene/3d/world_environment.h"
-#include "scene/resources/3d/primitive_meshes.h"
+#include "scene/resources/3d/primitive_meshes.h" // IWYU pragma: keep
 #include "scene/resources/3d/sky_material.h"
 #include "scene/resources/environment.h"
 #include "scene/resources/material.h"
-#include "scene/resources/packed_scene.h"
+#include "scene/resources/packed_scene.h" // IWYU pragma: keep
 #include "scene/resources/sky.h"
 
 #include "modules/gridmap/grid_map.h"

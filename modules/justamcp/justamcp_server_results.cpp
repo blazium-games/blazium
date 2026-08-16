@@ -38,17 +38,17 @@
 #include "tools/justamcp_task_manager.h"
 #include "tools/justamcp_tool_executor.h"
 
-#include "core/config/project_settings.h"
+#include "core/config/project_settings.h" // IWYU pragma: keep
 #include "core/io/json.h"
 #include "core/os/mutex.h"
 #include "core/os/time.h"
 
 #include "modules/modules_enabled.gen.h"
 #if defined(MODULE_HTTPSERVER_ENABLED)
-#include "modules/httpserver/http_server.h"
+#include "modules/httpserver/http_server.h" // IWYU pragma: keep
 #endif
 #ifdef TOOLS_ENABLED
-#include "editor/settings/editor_settings.h"
+#include "editor/settings/editor_settings.h" // IWYU pragma: keep
 #endif
 
 void JustAMCPServer::send_tool_result(const Variant &p_request_id, bool p_success, const Variant &p_result, const String &p_error) {

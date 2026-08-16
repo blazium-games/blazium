@@ -33,9 +33,9 @@
 #include "../justamcp_mcp_tool_macros.h"
 
 #include "core/math/expression.h"
-#include "scene/2d/cpu_particles_2d.h"
+#include "scene/2d/cpu_particles_2d.h" // IWYU pragma: keep
 #include "scene/2d/gpu_particles_2d.h"
-#include "scene/3d/cpu_particles_3d.h"
+#include "scene/3d/cpu_particles_3d.h" // IWYU pragma: keep
 #include "scene/3d/gpu_particles_3d.h"
 #include "scene/resources/gradient_texture.h"
 #include "scene/resources/particle_process_material.h"

@@ -31,35 +31,35 @@
 
 #include "justamcp_resource_tools.h"
 
-#include "../justamcp_editor_plugin.h"
-#include "../justamcp_read_limits.h"
+#include "../justamcp_editor_plugin.h" // IWYU pragma: keep
+#include "../justamcp_read_limits.h" // IWYU pragma: keep
 
-#include "core/config/project_settings.h"
-#include "core/io/resource_loader.h"
+#include "core/config/project_settings.h" // IWYU pragma: keep
+#include "core/io/resource_loader.h" // IWYU pragma: keep
 
 #ifdef MODULE_ASSETTAGS_ENABLED
-#include "modules/assettags/asset_tag_registry.h"
+#include "modules/assettags/asset_tag_registry.h" // IWYU pragma: keep
 #endif
-#include "core/io/dir_access.h"
-#include "core/io/file_access.h"
-#include "core/io/image_loader.h"
-#include "core/io/json.h"
-#include "core/io/resource_loader.h"
-#include "core/io/resource_saver.h"
-#include "editor/editor_interface.h"
-#include "editor/editor_node.h"
-#include "editor/editor_undo_redo_manager.h"
-#include "editor/file_system/editor_file_system.h"
-#include "scene/2d/sprite_2d.h"
-#include "scene/2d/tile_map.h"
-#include "scene/3d/mesh_instance_3d.h"
-#include "scene/3d/sprite_3d.h"
-#include "scene/resources/2d/tile_set.h"
-#include "scene/resources/material.h"
-#include "scene/resources/packed_scene.h"
-#include "scene/resources/shader.h"
-#include "scene/resources/texture.h"
-#include "scene/resources/theme.h"
+#include "core/io/dir_access.h" // IWYU pragma: keep
+#include "core/io/file_access.h" // IWYU pragma: keep
+#include "core/io/image_loader.h" // IWYU pragma: keep
+#include "core/io/json.h" // IWYU pragma: keep
+#include "core/io/resource_loader.h" // IWYU pragma: keep
+#include "core/io/resource_saver.h" // IWYU pragma: keep
+#include "editor/editor_interface.h" // IWYU pragma: keep
+#include "editor/editor_node.h" // IWYU pragma: keep
+#include "editor/editor_undo_redo_manager.h" // IWYU pragma: keep
+#include "editor/file_system/editor_file_system.h" // IWYU pragma: keep
+#include "scene/2d/sprite_2d.h" // IWYU pragma: keep
+#include "scene/2d/tile_map.h" // IWYU pragma: keep
+#include "scene/3d/mesh_instance_3d.h" // IWYU pragma: keep
+#include "scene/3d/sprite_3d.h" // IWYU pragma: keep
+#include "scene/resources/2d/tile_set.h" // IWYU pragma: keep
+#include "scene/resources/material.h" // IWYU pragma: keep
+#include "scene/resources/packed_scene.h" // IWYU pragma: keep
+#include "scene/resources/shader.h" // IWYU pragma: keep
+#include "scene/resources/texture.h" // IWYU pragma: keep
+#include "scene/resources/theme.h" // IWYU pragma: keep
 
 void JustAMCPResourceTools::_bind_methods() {
 }

@@ -51,7 +51,7 @@
 
 #include "core/config/project_settings.h"
 #include "core/os/os.h"
-#include "editor/settings/editor_settings.h"
+#include "editor/settings/editor_settings.h" // IWYU pragma: keep
 
 #ifdef MODULE_ASSETTAGS_ENABLED
 static void _invalidate_tags_dictionary_cache() {

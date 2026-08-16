@@ -34,10 +34,10 @@
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/io/resource_loader.h"
-#include "core/io/resource_saver.h"
+#include "core/io/resource_saver.h" // IWYU pragma: keep
 #include "core/object/class_db.h"
 #include "core/object/script_language.h"
-#include "scene/resources/packed_scene.h"
+#include "scene/resources/packed_scene.h" // IWYU pragma: keep
 
 #include "modules/regex/regex.h"
 

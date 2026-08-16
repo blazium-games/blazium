@@ -39,7 +39,7 @@
 #include "scene/2d/physics/area_2d.h"
 #include "scene/2d/physics/character_body_2d.h"
 #include "scene/2d/physics/collision_shape_2d.h"
-#include "scene/2d/physics/physics_body_2d.h"
+#include "scene/2d/physics/physics_body_2d.h" // IWYU pragma: keep
 #include "scene/2d/physics/ray_cast_2d.h"
 #include "scene/2d/physics/rigid_body_2d.h"
 #include "scene/2d/physics/static_body_2d.h"
@@ -47,18 +47,18 @@
 #include "scene/3d/physics/area_3d.h"
 #include "scene/3d/physics/character_body_3d.h"
 #include "scene/3d/physics/collision_shape_3d.h"
-#include "scene/3d/physics/physics_body_3d.h"
+#include "scene/3d/physics/physics_body_3d.h" // IWYU pragma: keep
 #include "scene/3d/physics/ray_cast_3d.h"
 #include "scene/3d/physics/rigid_body_3d.h"
 #include "scene/3d/physics/static_body_3d.h"
 #include "scene/3d/visual_instance_3d.h"
 #include "scene/gui/control.h"
-#include "scene/gui/texture_rect.h"
+#include "scene/gui/texture_rect.h" // IWYU pragma: keep
 #include "scene/resources/2d/capsule_shape_2d.h"
 #include "scene/resources/2d/circle_shape_2d.h"
-#include "scene/resources/2d/convex_polygon_shape_2d.h"
+#include "scene/resources/2d/convex_polygon_shape_2d.h" // IWYU pragma: keep
 #include "scene/resources/2d/rectangle_shape_2d.h"
-#include "scene/resources/2d/segment_shape_2d.h"
+#include "scene/resources/2d/segment_shape_2d.h" // IWYU pragma: keep
 #include "scene/resources/3d/box_shape_3d.h"
 #include "scene/resources/3d/capsule_shape_3d.h"
 #include "scene/resources/3d/sphere_shape_3d.h"

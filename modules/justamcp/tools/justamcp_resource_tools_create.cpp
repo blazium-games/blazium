@@ -31,23 +31,23 @@
 
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
-#include "../justamcp_read_limits.h"
+#include "../justamcp_read_limits.h" // IWYU pragma: keep
 #include "justamcp_resource_tools.h"
 
-#include "core/config/project_settings.h"
+#include "core/config/project_settings.h" // IWYU pragma: keep
 #include "core/io/resource_loader.h"
 #include "core/object/class_db.h"
 
 #ifdef MODULE_ASSETTAGS_ENABLED
-#include "modules/assettags/asset_tag_registry.h"
+#include "modules/assettags/asset_tag_registry.h" // IWYU pragma: keep
 #endif
-#include "core/io/dir_access.h"
+#include "core/io/dir_access.h" // IWYU pragma: keep
 #include "core/io/file_access.h"
-#include "core/io/image_loader.h"
-#include "core/io/json.h"
+#include "core/io/image_loader.h" // IWYU pragma: keep
+#include "core/io/json.h" // IWYU pragma: keep
 #include "core/io/resource_saver.h"
 #include "editor/editor_interface.h"
-#include "editor/editor_node.h"
+#include "editor/editor_node.h" // IWYU pragma: keep
 #include "editor/editor_undo_redo_manager.h"
 #include "editor/file_system/editor_file_system.h"
 #include "scene/2d/sprite_2d.h"

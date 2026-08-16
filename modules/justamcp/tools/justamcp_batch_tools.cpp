@@ -49,7 +49,7 @@
 #include "core/math/expression.h"
 #include "scene/resources/packed_scene.h"
 
-#include "modules/regex/regex.h"
+#include "modules/regex/regex.h" // IWYU pragma: keep
 
 void JustAMCPBatchTools::_bind_methods() {}
 

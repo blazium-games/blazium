@@ -31,7 +31,7 @@
 #include "justamcp_server.h"
 #include "justamcp_session_manager.h"
 
-#include "core/config/project_settings.h"
+#include "core/config/project_settings.h" // IWYU pragma: keep
 #include "core/io/json.h"
 #include "core/os/time.h"
 

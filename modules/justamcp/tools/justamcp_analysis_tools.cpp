@@ -42,7 +42,7 @@
 #include "core/io/resource_loader.h"
 #include "core/object/script_language.h"
 #include "editor/editor_interface.h"
-#include "editor/editor_node.h"
+#include "editor/editor_node.h" // IWYU pragma: keep
 #include "scene/resources/packed_scene.h"
 
 JustAMCPAnalysisTools::JustAMCPAnalysisTools() {

@@ -35,7 +35,7 @@
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 
-#include "../justamcp_server.h"
+#include "../justamcp_server.h" // IWYU pragma: keep
 #include "../tools/justamcp_mcp_client_bridge.h"
 
 #include "core/os/os.h"

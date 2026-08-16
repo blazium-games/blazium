@@ -39,7 +39,7 @@
 #include "core/object/class_db.h"
 #include "editor/editor_interface.h"
 #include "scene/main/scene_tree.h"
-#include "scene/main/window.h"
+#include "scene/main/window.h" // IWYU pragma: keep
 #include "servers/display/display_server.h"
 
 #include "modules/gdscript/gdscript.h"

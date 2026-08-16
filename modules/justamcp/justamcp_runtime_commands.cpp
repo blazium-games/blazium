@@ -32,30 +32,30 @@
 #include "tools/justamcp_tool_executor.h"
 
 #include "core/config/engine.h"
-#include "core/config/project_settings.h"
+#include "core/config/project_settings.h" // IWYU pragma: keep
 #include "core/crypto/crypto_core.h"
-#include "core/input/input.h"
+#include "core/input/input.h" // IWYU pragma: keep
 #include "core/input/input_event.h"
 #include "core/io/file_access.h"
-#include "core/io/image.h"
+#include "core/io/image.h" // IWYU pragma: keep
 #include "core/io/json.h"
-#include "core/math/expression.h"
+#include "core/math/expression.h" // IWYU pragma: keep
 #include "core/object/callable_mp.h"
 #include "core/object/message_queue.h"
-#include "core/object/script_language.h"
+#include "core/object/script_language.h" // IWYU pragma: keep
 #include "core/os/os.h"
 #include "core/os/time.h"
-#include "main/performance.h"
-#include "scene/gui/base_button.h"
-#include "scene/gui/control.h"
+#include "main/performance.h" // IWYU pragma: keep
+#include "scene/gui/base_button.h" // IWYU pragma: keep
+#include "scene/gui/control.h" // IWYU pragma: keep
 #include "scene/main/multiplayer_api.h"
-#include "scene/main/viewport.h"
-#include "scene/main/window.h"
+#include "scene/main/viewport.h" // IWYU pragma: keep
+#include "scene/main/window.h" // IWYU pragma: keep
 #include "servers/audio/audio_server.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_interface.h"
-#include "editor/settings/editor_settings.h"
+#include "editor/settings/editor_settings.h" // IWYU pragma: keep
 #endif
 
 Dictionary JustAMCPRuntime::execute_command(const String &p_command, const Dictionary &p_params) {

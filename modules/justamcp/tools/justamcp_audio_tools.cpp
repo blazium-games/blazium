@@ -34,9 +34,9 @@
 
 #include "core/io/resource_loader.h"
 #include "core/object/class_db.h"
-#include "scene/2d/audio_stream_player_2d.h"
-#include "scene/3d/audio_stream_player_3d.h"
-#include "scene/audio/audio_stream_player.h"
+#include "scene/2d/audio_stream_player_2d.h" // IWYU pragma: keep
+#include "scene/3d/audio_stream_player_3d.h" // IWYU pragma: keep
+#include "scene/audio/audio_stream_player.h" // IWYU pragma: keep
 #include "servers/audio/audio_effect.h"
 #include "servers/audio/audio_server.h"
 

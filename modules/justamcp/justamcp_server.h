@@ -38,11 +38,11 @@
 #include "modules/modules_enabled.gen.h"
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
-#include "core/os/semaphore.h"
+#include "core/os/semaphore.h" // IWYU pragma: keep
 
 #include "modules/httpserver/http_request_context.h"
 #include "modules/httpserver/http_response.h"
-#include "modules/httpserver/http_server.h"
+#include "modules/httpserver/http_server.h" // IWYU pragma: keep
 #endif
 
 #include "justamcp_notification_bus.h"

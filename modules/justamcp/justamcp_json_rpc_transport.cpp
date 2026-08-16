@@ -38,16 +38,16 @@
 #include "justamcp_session_manager.h"
 #include "tools/justamcp_json_rpc_helpers.h"
 #include "tools/justamcp_json_rpc_router.h"
-#include "tools/justamcp_prompt_executor.h"
-#include "tools/justamcp_resource_executor.h"
+#include "tools/justamcp_prompt_executor.h" // IWYU pragma: keep
+#include "tools/justamcp_resource_executor.h" // IWYU pragma: keep
 #include "tools/justamcp_task_manager.h"
-#include "tools/justamcp_tool_schema_cache.h"
+#include "tools/justamcp_tool_schema_cache.h" // IWYU pragma: keep
 
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
 #include "core/math/math_funcs.h"
 #include "core/os/mutex.h"
-#include "core/os/os.h"
+#include "core/os/os.h" // IWYU pragma: keep
 
 bool JustAMCPJsonRpcTransport::_is_http_transport(Ref<HTTPResponse> p_response) {
 	return p_response.is_valid();

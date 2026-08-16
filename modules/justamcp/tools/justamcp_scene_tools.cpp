@@ -32,10 +32,10 @@
 #include "justamcp_scene_tools.h"
 
 #include "../justamcp_editor_filesystem.h"
-#include "../justamcp_editor_plugin.h"
+#include "../justamcp_editor_plugin.h" // IWYU pragma: keep
 #include "../justamcp_editor_scene_access.h"
 
-#include "core/config/project_settings.h"
+#include "core/config/project_settings.h" // IWYU pragma: keep
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/io/json.h"
@@ -45,16 +45,16 @@
 #include "core/object/class_db.h"
 #include "core/object/message_queue.h"
 #include "core/object/script_language.h"
-#include "core/os/mutex.h"
-#include "core/os/os.h"
-#include "core/templates/hash_map.h"
+#include "core/os/mutex.h" // IWYU pragma: keep
+#include "core/os/os.h" // IWYU pragma: keep
+#include "core/templates/hash_map.h" // IWYU pragma: keep
 #include "core/templates/hash_set.h"
 #include "editor/editor_interface.h"
-#include "editor/editor_node.h"
-#include "editor/editor_undo_redo_manager.h"
+#include "editor/editor_node.h" // IWYU pragma: keep
+#include "editor/editor_undo_redo_manager.h" // IWYU pragma: keep
 #include "editor/file_system/editor_file_system.h"
-#include "scene/2d/sprite_2d.h"
-#include "scene/3d/sprite_3d.h"
+#include "scene/2d/sprite_2d.h" // IWYU pragma: keep
+#include "scene/3d/sprite_3d.h" // IWYU pragma: keep
 #include "scene/resources/packed_scene.h"
 
 void JustAMCPSceneTools::_bind_methods() {

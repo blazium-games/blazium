@@ -31,17 +31,17 @@
 
 #include "../justamcp_mcp_spec.h"
 #include "../justamcp_pagination.h"
-#include "../justamcp_runtime.h"
-#include "../justamcp_server.h"
+#include "../justamcp_runtime.h" // IWYU pragma: keep
+#include "../justamcp_server.h" // IWYU pragma: keep
 #include "../justamcp_tool_context.h"
 #include "justamcp_analysis_tools.h"
 #include "justamcp_animation_tools.h"
-#include "justamcp_asset_tags_tools.h"
+#include "justamcp_asset_tags_tools.h" // IWYU pragma: keep
 #include "justamcp_audio_tools.h"
 #include "justamcp_batch_tools.h"
 #include "justamcp_category_dispatch.h"
 #include "justamcp_category_executor_dispatch.h"
-#include "justamcp_category_registry.h"
+#include "justamcp_category_registry.h" // IWYU pragma: keep
 #include "justamcp_category_schemas.h"
 #include "justamcp_documentation_tools.h"
 #include "justamcp_editor_tools.h"
@@ -56,13 +56,13 @@
 #include "justamcp_profiling_tools.h"
 #include "justamcp_project_tools.h"
 #include "justamcp_readonly_tools.h"
-#include "justamcp_resource_executor.h"
+#include "justamcp_resource_executor.h" // IWYU pragma: keep
 #include "justamcp_resource_tools.h"
 #include "justamcp_runtime_tools.h"
 #include "justamcp_scene_3d_tools.h"
 #include "justamcp_scene_tools.h"
 #include "justamcp_script_tools.h"
-#include "justamcp_semantic_search_tools.h"
+#include "justamcp_semantic_search_tools.h" // IWYU pragma: keep
 #include "justamcp_shader_tools.h"
 #include "justamcp_spatial_tools.h"
 #include "justamcp_theme_tools.h"
@@ -73,23 +73,23 @@
 #include "justamcp_toolset_registry.h"
 
 #include "core/config/project_settings.h"
-#include "core/io/resource_loader.h"
-#include "core/io/resource_saver.h"
+#include "core/io/resource_loader.h" // IWYU pragma: keep
+#include "core/io/resource_saver.h" // IWYU pragma: keep
 #include "core/object/class_db.h"
-#include "core/os/os.h"
+#include "core/os/os.h" // IWYU pragma: keep
 #include "core/templates/hash_set.h"
 
 #ifdef TOOLS_ENABLED
 #include "../justamcp_editor_plugin.h"
 
 #include "editor/editor_interface.h"
-#include "editor/editor_node.h"
-#include "editor/file_system/editor_file_system.h"
-#include "editor/settings/editor_settings.h"
+#include "editor/editor_node.h" // IWYU pragma: keep
+#include "editor/file_system/editor_file_system.h" // IWYU pragma: keep
+#include "editor/settings/editor_settings.h" // IWYU pragma: keep
 #include "scene/main/node.h"
-#include "scene/resources/material.h"
-#include "scene/resources/mesh.h"
-#include "scene/resources/texture.h"
+#include "scene/resources/material.h" // IWYU pragma: keep
+#include "scene/resources/mesh.h" // IWYU pragma: keep
+#include "scene/resources/texture.h" // IWYU pragma: keep
 #endif
 
 #ifdef MODULE_AUTOWORK_ENABLED

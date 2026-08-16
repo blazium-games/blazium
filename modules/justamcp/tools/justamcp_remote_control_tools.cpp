@@ -38,8 +38,8 @@
 #include "justamcp_remote_control_tools.h"
 #include "justamcp_tool_schema_builder.h"
 
-#include "core/config/project_settings.h"
-#include "editor/settings/editor_settings.h"
+#include "core/config/project_settings.h" // IWYU pragma: keep
+#include "editor/settings/editor_settings.h" // IWYU pragma: keep
 
 #include "modules/remote_control/remote_control_registry.h"
 #include "modules/remote_control/remote_control_server.h"

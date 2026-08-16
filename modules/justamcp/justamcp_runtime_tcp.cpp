@@ -28,7 +28,7 @@
 /**************************************************************************/
 
 #include "justamcp_runtime.h"
-#include "tools/justamcp_tool_executor.h"
+#include "tools/justamcp_tool_executor.h" // IWYU pragma: keep
 
 #include "core/config/project_settings.h"
 #include "core/io/json.h"

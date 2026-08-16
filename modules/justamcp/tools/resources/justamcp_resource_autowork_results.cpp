@@ -34,7 +34,7 @@
 #include "../../justamcp_read_limits.h"
 
 #include "core/io/file_access.h"
-#include "core/os/os.h"
+#include "core/os/os.h" // IWYU pragma: keep
 
 void JustAMCPResourceAutoworkResults::_bind_methods() {}
 

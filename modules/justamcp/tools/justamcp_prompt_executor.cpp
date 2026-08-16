@@ -33,7 +33,7 @@
 
 #include "../justamcp_mcp_spec.h"
 #include "../justamcp_pagination.h"
-#include "prompts/justamcp_prompt_asset_tagging_workflow.h"
+#include "prompts/justamcp_prompt_asset_tagging_workflow.h" // IWYU pragma: keep
 #include "prompts/justamcp_prompt_autowork_failure_analyzer.h"
 #include "prompts/justamcp_prompt_autowork_test_generator.h"
 #include "prompts/justamcp_prompt_blazium_context.h"

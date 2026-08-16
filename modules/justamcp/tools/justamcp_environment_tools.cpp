@@ -36,7 +36,7 @@
 #include "editor/editor_undo_redo_manager.h"
 #include "scene/3d/world_environment.h"
 #include "scene/main/node.h"
-#include "scene/main/viewport.h"
+#include "scene/main/viewport.h" // IWYU pragma: keep
 #include "scene/resources/3d/sky_material.h"
 #include "scene/resources/environment.h"
 #include "scene/resources/sky.h"

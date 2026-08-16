@@ -30,7 +30,7 @@
 #include "justamcp_pagination.h"
 #include "justamcp_server.h"
 #include "justamcp_session_manager.h"
-#include "tools/justamcp_json_rpc_helpers.h"
+#include "tools/justamcp_json_rpc_helpers.h" // IWYU pragma: keep
 
 #include "core/config/project_settings.h"
 #include "core/crypto/crypto_core.h"

@@ -36,7 +36,7 @@
 #include "justamcp_tool_executor.h"
 #include "justamcp_toolset_registry.h"
 
-#include "modules/modules_enabled.gen.h"
+#include "modules/modules_enabled.gen.h" // IWYU pragma: keep
 
 bool JustAMCPToolDispatcher::is_tool_enabled(const String &p_full_name, const String &p_category) {
 	if (p_category.is_empty()) {

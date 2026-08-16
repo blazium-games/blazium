@@ -35,11 +35,11 @@
 #include "justamcp_readonly_tools.h"
 #include "justamcp_tool_schema_builder.h"
 
-#include "core/config/project_settings.h"
+#include "core/config/project_settings.h" // IWYU pragma: keep
 #include "core/object/class_db.h"
-#include "editor/settings/editor_settings.h"
+#include "editor/settings/editor_settings.h" // IWYU pragma: keep
 #ifdef TOOLS_ENABLED
-#include "editor/file_system/editor_file_system.h"
+#include "editor/file_system/editor_file_system.h" // IWYU pragma: keep
 #endif
 
 #include "modules/modules_enabled.gen.h"

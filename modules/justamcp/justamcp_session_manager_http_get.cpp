@@ -30,9 +30,9 @@
 #include "justamcp_server.h"
 #include "justamcp_session_manager.h"
 
-#include "core/config/project_settings.h"
-#include "core/io/json.h"
-#include "core/os/time.h"
+#include "core/config/project_settings.h" // IWYU pragma: keep
+#include "core/io/json.h" // IWYU pragma: keep
+#include "core/os/time.h" // IWYU pragma: keep
 
 #include "modules/modules_enabled.gen.h"
 #if defined(MODULE_HTTPSERVER_ENABLED)

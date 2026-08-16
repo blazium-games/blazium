@@ -29,28 +29,28 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "../justamcp_editor_plugin.h"
+#include "../justamcp_editor_plugin.h" // IWYU pragma: keep
 #include "justamcp_scene_tools.h"
 
-#include "core/config/project_settings.h"
-#include "core/io/dir_access.h"
-#include "core/io/file_access.h"
-#include "core/io/json.h"
-#include "core/io/resource_loader.h"
-#include "core/io/resource_saver.h"
-#include "core/object/message_queue.h"
-#include "core/object/script_language.h"
-#include "core/os/mutex.h"
-#include "core/os/os.h"
+#include "core/config/project_settings.h" // IWYU pragma: keep
+#include "core/io/dir_access.h" // IWYU pragma: keep
+#include "core/io/file_access.h" // IWYU pragma: keep
+#include "core/io/json.h" // IWYU pragma: keep
+#include "core/io/resource_loader.h" // IWYU pragma: keep
+#include "core/io/resource_saver.h" // IWYU pragma: keep
+#include "core/object/message_queue.h" // IWYU pragma: keep
+#include "core/object/script_language.h" // IWYU pragma: keep
+#include "core/os/mutex.h" // IWYU pragma: keep
+#include "core/os/os.h" // IWYU pragma: keep
 #include "core/os/thread.h"
-#include "core/templates/hash_map.h"
-#include "editor/editor_interface.h"
-#include "editor/editor_node.h"
-#include "editor/editor_undo_redo_manager.h"
-#include "editor/file_system/editor_file_system.h"
-#include "scene/2d/sprite_2d.h"
-#include "scene/3d/sprite_3d.h"
-#include "scene/resources/packed_scene.h"
+#include "core/templates/hash_map.h" // IWYU pragma: keep
+#include "editor/editor_interface.h" // IWYU pragma: keep
+#include "editor/editor_node.h" // IWYU pragma: keep
+#include "editor/editor_undo_redo_manager.h" // IWYU pragma: keep
+#include "editor/file_system/editor_file_system.h" // IWYU pragma: keep
+#include "scene/2d/sprite_2d.h" // IWYU pragma: keep
+#include "scene/3d/sprite_3d.h" // IWYU pragma: keep
+#include "scene/resources/packed_scene.h" // IWYU pragma: keep
 
 Dictionary JustAMCPSceneTools::create_area_2d(const Dictionary &p_args) {
 	Dictionary mutable_args = p_args;

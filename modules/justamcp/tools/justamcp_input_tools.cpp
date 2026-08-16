@@ -30,7 +30,7 @@
 #include "justamcp_input_tools.h"
 
 #include "../justamcp_mcp_tool_macros.h"
-#include "../justamcp_runtime.h"
+#include "../justamcp_runtime.h" // IWYU pragma: keep
 
 #include "core/io/file_access.h"
 #include "core/io/json.h"

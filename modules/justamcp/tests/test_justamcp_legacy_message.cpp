@@ -38,7 +38,7 @@
 #include "../justamcp_json_rpc_transport.h"
 #include "../justamcp_server.h"
 
-#include "core/io/json.h"
+#include "core/io/json.h" // IWYU pragma: keep
 #include "tests/test_macros.h"
 
 #include "modules/httpserver/http_request_context.h"

@@ -29,15 +29,15 @@
 
 #include "justamcp_project_tools.h"
 
-#include "../justamcp_editor_plugin.h"
+#include "../justamcp_editor_plugin.h" // IWYU pragma: keep
 #include "../justamcp_read_limits.h"
 
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
-#include "core/io/json.h"
-#include "core/io/resource_loader.h"
-#include "core/io/resource_saver.h"
+#include "core/io/json.h" // IWYU pragma: keep
+#include "core/io/resource_loader.h" // IWYU pragma: keep
+#include "core/io/resource_saver.h" // IWYU pragma: keep
 #include "core/io/resource_uid.h"
 
 #include "modules/regex/regex.h"
