@@ -85,6 +85,7 @@ void JustAMCPServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_deferred_sse_replay", "connection_id", "last_event_id"), &JustAMCPServer::_deferred_sse_replay);
 	ClassDB::bind_method(D_METHOD("_emit_log_notification_deferred", "level", "logger", "data"), &JustAMCPServer::_emit_log_notification_deferred);
 	ClassDB::bind_method(D_METHOD("send_log_message", "level", "logger", "data"), &JustAMCPServer::send_log_message, DEFVAL(Variant()));
+	ClassDB::bind_method(D_METHOD("get_session_roots", "session_id"), &JustAMCPServer::get_session_roots);
 	ClassDB::bind_method(D_METHOD("_on_request_cancelled", "request_id", "reason", "caller_session_id"), &JustAMCPServer::_on_request_cancelled, DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("_enforce_in_flight_cancel_deadline", "request_id"), &JustAMCPServer::_enforce_in_flight_cancel_deadline);
 	ClassDB::bind_method(D_METHOD("_deferred_complete_tool_dict", "request_id", "result"), &JustAMCPServer::_deferred_complete_tool_dict);
@@ -202,6 +203,14 @@ void JustAMCPServer::test_handle_mcp_stateless_post(Ref<HTTPRequestContext> p_co
 
 void JustAMCPServer::test_handle_message_post(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
 	_handle_message_post(p_context, p_response);
+}
+
+void JustAMCPServer::test_handle_oauth_protected_resource(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
+	_handle_oauth_protected_resource(p_context, p_response);
+}
+
+void JustAMCPServer::test_handle_oauth_authorization_server(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
+	_handle_oauth_authorization_server(p_context, p_response);
 }
 #endif
 
@@ -560,6 +569,14 @@ void JustAMCPServer::_start_server() {
 		HTTPServer::get_singleton()->register_route("POST", "/mcp", callable_mp(this, &JustAMCPServer::_handle_mcp_post));
 		HTTPServer::get_singleton()->register_route("DELETE", "/mcp", callable_mp(this, &JustAMCPServer::_handle_mcp_delete));
 		HTTPServer::get_singleton()->register_route("OPTIONS", "/mcp", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
+		HTTPServer::get_singleton()->register_route("GET", "/.well-known/oauth-protected-resource", callable_mp(this, &JustAMCPServer::_handle_oauth_protected_resource));
+		HTTPServer::get_singleton()->register_route("GET", "/.well-known/oauth-protected-resource/mcp", callable_mp(this, &JustAMCPServer::_handle_oauth_protected_resource));
+		HTTPServer::get_singleton()->register_route("GET", "/.well-known/oauth-authorization-server", callable_mp(this, &JustAMCPServer::_handle_oauth_authorization_server));
+		HTTPServer::get_singleton()->register_route("GET", "/.well-known/openid-configuration", callable_mp(this, &JustAMCPServer::_handle_oauth_authorization_server));
+		HTTPServer::get_singleton()->register_route("OPTIONS", "/.well-known/oauth-protected-resource", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
+		HTTPServer::get_singleton()->register_route("OPTIONS", "/.well-known/oauth-protected-resource/mcp", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
+		HTTPServer::get_singleton()->register_route("OPTIONS", "/.well-known/oauth-authorization-server", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
+		HTTPServer::get_singleton()->register_route("OPTIONS", "/.well-known/openid-configuration", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
 
 		if (!HTTPServer::get_singleton()->is_connected("sse_connection_opened", callable_mp(this, &JustAMCPServer::_on_sse_connection_opened))) {
 			HTTPServer::get_singleton()->connect("sse_connection_opened", callable_mp(this, &JustAMCPServer::_on_sse_connection_opened));

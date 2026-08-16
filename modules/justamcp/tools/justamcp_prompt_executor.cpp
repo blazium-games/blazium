@@ -31,6 +31,7 @@
 
 #include "core/object/class_db.h"
 #include "justamcp_prompt_executor.h"
+#include "../justamcp_mcp_spec.h"
 #include "../justamcp_pagination.h"
 #include "core/config/project_settings.h"
 #include "editor/settings/editor_settings.h"
@@ -110,7 +111,9 @@ Dictionary JustAMCPPromptExecutor::list_prompts(const String &cursor) {
 	Array prompts;
 	for (int i = 0; i < registered_prompts.size(); i++) {
 		if (registered_prompts[i].is_valid()) {
-			prompts.push_back(registered_prompts[i]->get_prompt());
+			Dictionary prompt = registered_prompts[i]->get_prompt();
+			justamcp_attach_icons(prompt);
+			prompts.push_back(prompt);
 		}
 	}
 	return justamcp_pagination_slice_array(prompts, cursor, "prompts");

@@ -29,6 +29,7 @@
 
 #include "core/object/class_db.h"
 #include "justamcp_tool_executor.h"
+#include "../justamcp_mcp_spec.h"
 #include "../justamcp_pagination.h"
 #include "../justamcp_runtime.h"
 #include "../justamcp_server.h"
@@ -405,6 +406,10 @@ static Array _collect_tool_schemas(bool p_register_only, bool p_ignore_settings,
 
 	auto add_schema = [&](const String &p_name, const String &p_desc, const Vector<String> &p_props, const Vector<String> &p_req, const String &p_task_support = "forbidden", const String &p_thread_affinity = "") {
 		String full_name = "blazium_" + p_name;
+		if (!justamcp_is_valid_mcp_tool_name(full_name)) {
+			WARN_PRINT("JustAMCP: skipping invalid tool name at registration: " + full_name);
+			return;
+		}
 
 		if (p_register_only) {
 			if (current_category.is_empty() || !category_matches()) {
@@ -472,6 +477,7 @@ static Array _collect_tool_schemas(bool p_register_only, bool p_ignore_settings,
 			schema["required"] = req;
 		}
 		t["inputSchema"] = schema;
+		justamcp_attach_icons(t);
 		if (p_task_support != "forbidden" || p_thread_affinity == "worker") {
 			Dictionary execution;
 			if (p_task_support != "forbidden") {
@@ -623,17 +629,22 @@ Dictionary JustAMCPToolExecutor::list_tools(const String &p_cursor) {
 Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const Dictionary &p_args) {
 	Dictionary result;
 
-	if (!scene_tools || !resource_tools || !animation_tools || !project_tools || !profiling_tools || !export_tools || !batch_tools || !script_tools || !node_tools || !audio_tools || !blueprint_tools || !input_tools || !particle_tools || !physics_tools || !scene_3d_tools || !shader_tools || !theme_tools || !tilemap_tools || !analysis_tools || !asset_tools || !draw_tools || !environment_tools) {
-		result["ok"] = false;
-		result["error"] = "Tools not initialized";
-		return result;
-	}
-
 	String internal_name = p_tool_name;
 	if (internal_name.begins_with("blazium_")) {
 		internal_name = internal_name.substr(8);
 	}
 	String full_name = "blazium_" + internal_name;
+	if (!justamcp_is_valid_mcp_tool_name(p_tool_name) && !justamcp_is_valid_mcp_tool_name(full_name)) {
+		result["ok"] = false;
+		result["error"] = justamcp_invalid_mcp_tool_name_message(p_tool_name);
+		return result;
+	}
+
+	if (!scene_tools || !resource_tools || !animation_tools || !project_tools || !profiling_tools || !export_tools || !batch_tools || !script_tools || !node_tools || !audio_tools || !blueprint_tools || !input_tools || !particle_tools || !physics_tools || !scene_3d_tools || !shader_tools || !theme_tools || !tilemap_tools || !analysis_tools || !asset_tools || !draw_tools || !environment_tools) {
+		result["ok"] = false;
+		result["error"] = "Tools not initialized";
+		return result;
+	}
 
 	Dictionary target_schema = JustAMCPToolSchemaCache::find_tool_schema(full_name, true);
 	bool tool_found = !target_schema.is_empty();

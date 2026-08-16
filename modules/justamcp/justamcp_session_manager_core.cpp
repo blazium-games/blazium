@@ -303,11 +303,89 @@ void MCPSessionManager::mark_session_initialized(const String &p_session_id) {
 	if (p_session_id.is_empty()) {
 		return;
 	}
+	bool first_init = false;
+	{
+		MutexLock lock(mutex);
+		MCPSession *session = _get_session(p_session_id);
+		if (session) {
+			first_init = !session->initialized;
+			session->initialized = true;
+		}
+	}
+	if (first_init) {
+		request_session_roots(p_session_id);
+	}
+}
+
+void MCPSessionManager::request_session_roots(const String &p_session_id) {
+	if (p_session_id.is_empty()) {
+		return;
+	}
+	const String req_id = "roots_list_" + p_session_id;
+	{
+		MutexLock lock(mutex);
+		MCPSession *session = _get_session(p_session_id);
+		if (!session) {
+			return;
+		}
+		session->pending_roots_list_id = req_id;
+	}
+	Dictionary rpc;
+	rpc["jsonrpc"] = "2.0";
+	rpc["id"] = req_id;
+	rpc["method"] = "roots/list";
+	rpc["params"] = Dictionary();
+	send_json_to_session(p_session_id, JSON::stringify(rpc));
+}
+
+void MCPSessionManager::set_session_roots(const String &p_session_id, const Array &p_roots) {
 	MutexLock lock(mutex);
 	MCPSession *session = _get_session(p_session_id);
 	if (session) {
-		session->initialized = true;
+		session->roots = p_roots;
 	}
+}
+
+Array MCPSessionManager::get_session_roots(const String &p_session_id) const {
+	MutexLock lock(mutex);
+	const MCPSession *session = _get_session(p_session_id);
+	if (!session) {
+		return Array();
+	}
+	return session->roots;
+}
+
+void MCPSessionManager::apply_roots_list_result(const String &p_session_id, const Variant &p_id, const Dictionary &p_result) {
+	const String id_text = String(p_id);
+	MutexLock lock(mutex);
+	MCPSession *session = nullptr;
+	if (!p_session_id.is_empty()) {
+		session = _get_session(p_session_id);
+	}
+	if (!session) {
+		for (KeyValue<String, MCPSession> &E : sessions) {
+			if (E.value.pending_roots_list_id == id_text) {
+				session = &E.value;
+				break;
+			}
+		}
+	}
+	if (!session) {
+		return;
+	}
+	if (p_result.has("roots") && p_result["roots"].get_type() == Variant::ARRAY) {
+		session->roots = p_result["roots"];
+	}
+	if (session->pending_roots_list_id == id_text) {
+		session->pending_roots_list_id = String();
+	}
+}
+
+void MCPSessionManager::handle_roots_list_changed(const String &p_session_id, const Dictionary &p_params) {
+	if (p_params.has("roots") && p_params["roots"].get_type() == Variant::ARRAY) {
+		set_session_roots(p_session_id, p_params["roots"]);
+	}
+	request_session_roots(p_session_id);
 }
 
 void MCPSessionManager::deferred_replay_stream_events(int p_connection_id, const String &p_last_event_id) {

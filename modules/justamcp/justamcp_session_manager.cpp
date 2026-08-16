@@ -33,6 +33,7 @@
 
 #include "core/config/project_settings.h"
 #include "core/crypto/crypto_core.h"
+#include "core/io/json.h"
 #include "core/os/os.h"
 #include "core/templates/list.h"
 

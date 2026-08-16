@@ -540,7 +540,15 @@
 		</member>
 		<member name="blazium/justamcp/mcp_log_buffer_size" type="int" setter="" getter="" default="500">
 		</member>
+		<member name="blazium/justamcp/oauth_authorization_servers" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+		<member name="blazium/justamcp/oauth_cimd_json" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
 		<member name="blazium/justamcp/oauth_enabled" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/oauth_resource" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+		<member name="blazium/justamcp/oauth_scopes_supported" type="String" setter="" getter="" default="&quot;mcp&quot;">
 		</member>
 		<member name="blazium/justamcp/override_editor_settings" type="bool" setter="" getter="" default="false">
 		</member>
@@ -705,6 +713,8 @@
 		<member name="blazium/justamcp/task_poll_interval_ms" type="int" setter="" getter="" default="1000">
 		</member>
 		<member name="blazium/justamcp/task_result_max_wait_ms" type="int" setter="" getter="" default="120000">
+		</member>
+		<member name="blazium/justamcp/url_elicitation_demo_url" type="String" setter="" getter="" default="&quot;&quot;">
 		</member>
 		<member name="blazium/justamcp/tools/analysis_tools" type="bool" setter="" getter="" default="false">
 		</member>

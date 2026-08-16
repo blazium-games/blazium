@@ -91,6 +91,13 @@ void JustAMCPToolDispatch::execute_and_send(JustAMCPServer *p_server, JustAMCPTo
 		return;
 	}
 
+	if (result.get("elicitation_required", false)) {
+		Dictionary schema = result.get("elicitation_schema", Dictionary());
+		const String mode = result.get("elicitation_mode", "form");
+		p_server->hold_tool_for_elicitation(p_request_id, p_tool_name, p_args, schema, mode);
+		return;
+	}
+
 	if (p_server->is_tool_cancel_requested(p_request_id) && !_justamcp_tool_error_is_cancelled(result)) {
 		result["ok"] = false;
 		result["error"] = "cancelled";

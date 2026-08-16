@@ -22,6 +22,13 @@
 		<link title="Model Context Protocol (MCP)">https://modelcontextprotocol.io/</link>
 	</tutorials>
 	<methods>
+		<method name="get_session_roots" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="session_id" type="String" />
+			<description>
+				Returns the workspace roots last reported by the client for [param session_id] after [code]roots/list[/code] or [code]notifications/roots/list_changed[/code].
+			</description>
+		</method>
 		<method name="is_server_started" qualifiers="const">
 			<return type="bool" />
 			<description>

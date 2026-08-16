@@ -36,6 +36,7 @@
 #include "core/templates/hash_map.h"
 #include "core/templates/hash_set.h"
 #include "core/templates/vector.h"
+#include "core/variant/array.h"
 #include "core/variant/dictionary.h"
 
 #include "modules/modules_enabled.gen.h"
@@ -66,6 +67,8 @@ struct MCPSession {
 	HashMap<int, String> connection_to_stream;
 	int active_tool_connection_id = -1;
 	int last_registered_connection_id = -1;
+	Array roots;
+	String pending_roots_list_id;
 };
 
 class MCPSessionManager {
@@ -153,6 +156,11 @@ public:
 
 	bool session_exists(const String &p_session_id) const;
 	void mark_session_initialized(const String &p_session_id);
+	void request_session_roots(const String &p_session_id);
+	void set_session_roots(const String &p_session_id, const Array &p_roots);
+	Array get_session_roots(const String &p_session_id) const;
+	void apply_roots_list_result(const String &p_session_id, const Variant &p_id, const Dictionary &p_result);
+	void handle_roots_list_changed(const String &p_session_id, const Dictionary &p_params);
 	void deferred_replay_stream_events(int p_connection_id, const String &p_last_event_id);
 	Vector<int> collect_session_connections(const String &p_session_id) const;
 	Vector<int> collect_all_broadcast_connection_ids() const;

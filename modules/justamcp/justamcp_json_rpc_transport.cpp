@@ -141,6 +141,9 @@ Dictionary JustAMCPJsonRpcTransport::_handle_json_rpc_payload(JustAMCPServer *p_
 
 	Dictionary payload = p_payload;
 	if (!payload.has("method")) {
+		if (payload.has("id") && payload.has("result") && payload["result"].get_type() == Variant::DICTIONARY) {
+			p_server->handle_client_rpc_result(p_caller_session_id, payload);
+		}
 		return Dictionary();
 	}
 
@@ -222,6 +225,17 @@ Dictionary JustAMCPJsonRpcTransport::_handle_json_rpc_payload(JustAMCPServer *p_
 	};
 
 	if (method == "notifications/initialized") {
+		if (p_server->session_manager && !p_caller_session_id.is_empty()) {
+			p_server->session_manager->mark_session_initialized(p_caller_session_id);
+		}
+		return Dictionary();
+	}
+
+	if (method == "notifications/roots/list_changed") {
+		const Dictionary params = payload.has("params") && payload["params"].get_type() == Variant::DICTIONARY ? Dictionary(payload["params"]) : Dictionary();
+		if (p_server->session_manager) {
+			p_server->session_manager->handle_roots_list_changed(p_caller_session_id, params);
+		}
 		return Dictionary();
 	}
 
@@ -392,7 +406,10 @@ Dictionary JustAMCPJsonRpcTransport::_handle_json_rpc_payload(JustAMCPServer *p_
 		Dictionary params = payload.has("params") ? Dictionary(payload["params"]) : Dictionary();
 		String req_id = params.has("requestId") ? String(Variant(params["requestId"])) : "";
 		Dictionary elicitation_result = params.has("result") ? Dictionary(params["result"]) : Dictionary();
-		p_server->call_deferred(SNAME("emit_signal"), "elicitation_completed", req_id, elicitation_result);
+		if (elicitation_result.is_empty() && params.has("action")) {
+			elicitation_result = params;
+		}
+		p_server->complete_elicitation(req_id, elicitation_result);
 		return Dictionary();
 	}
 

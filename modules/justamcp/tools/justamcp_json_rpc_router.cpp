@@ -350,6 +350,12 @@ Dictionary JustAMCPJsonRpcRouter::route_initialize(JustAMCPServer *p_server, con
 	requests["tools"] = tools;
 	tasks_cap["requests"] = requests;
 	capabilities["tasks"] = tasks_cap;
+	if (p_server->transport_negotiated_protocol == "2025-11-25" || MCPSessionManager::is_modern_protocol_version(p_server->transport_negotiated_protocol)) {
+		Dictionary elicitation_cap;
+		elicitation_cap["form"] = Dictionary();
+		elicitation_cap["url"] = Dictionary();
+		capabilities["elicitation"] = elicitation_cap;
+	}
 	result["capabilities"] = capabilities;
 	result["instructions"] = "Use blazium_* tools and blazium:// resources. Prefer editor tools for scene/resource edits, runtime_* tools only when a game bridge is active, and guide resources such as blazium://guide/tool-index for workflow orientation.";
 	Dictionary serverInfo;
@@ -387,6 +393,10 @@ Dictionary JustAMCPJsonRpcRouter::route_discover(JustAMCPServer *p_server, const
 	resources_cap["listChanged"] = true;
 	capabilities["resources"] = resources_cap;
 	capabilities["completions"] = Dictionary();
+	Dictionary elicitation_cap;
+	elicitation_cap["form"] = Dictionary();
+	elicitation_cap["url"] = Dictionary();
+	capabilities["elicitation"] = elicitation_cap;
 	Dictionary extensions;
 	if (p_server && p_server->task_manager) {
 		extensions["io.modelcontextprotocol/tasks"] = Dictionary();

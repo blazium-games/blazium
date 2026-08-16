@@ -224,6 +224,10 @@ void test_justamcp_initialize_result_shape() {
 	Dictionary capabilities = result["capabilities"];
 	CHECK(capabilities.has("completions"));
 	CHECK(capabilities.has("tools"));
+	CHECK(capabilities.has("elicitation"));
+	Dictionary elicitation = capabilities["elicitation"];
+	CHECK(elicitation.has("form"));
+	CHECK(elicitation.has("url"));
 	Dictionary server_info = result["serverInfo"];
 	CHECK(!server_info.has("instructions"));
 	CHECK(String(server_info.get("name", "")) == "blazium-mcp-server");

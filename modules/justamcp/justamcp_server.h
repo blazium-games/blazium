@@ -35,6 +35,7 @@
 #include "core/os/mutex.h"
 #include "core/templates/hash_map.h"
 #include "core/templates/hash_set.h"
+#include "core/variant/array.h"
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 #include "core/os/semaphore.h"
@@ -110,6 +111,17 @@ private:
 	HashSet<String> subscribed_resources;
 	mutable Mutex subscribed_resources_mutex;
 
+	struct PendingElicitation {
+		Variant tools_call_id;
+		String tool_name;
+		Dictionary args;
+		Dictionary schema;
+		String mode;
+		uint64_t created_usec = 0;
+	};
+	HashMap<String, PendingElicitation> pending_elicitations;
+	mutable Mutex pending_elicitation_mutex;
+
 	void _setup_settings();
 	void _start_server();
 	void _stop_server();
@@ -132,6 +144,9 @@ private:
 	void _handle_mcp_post(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
 	void _handle_mcp_delete(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
 	void _handle_mcp_stateless_post(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
+	void _handle_oauth_protected_resource(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
+	void _handle_oauth_authorization_server(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
+	void _apply_oauth_www_authenticate(Ref<HTTPResponse> p_response);
 	Dictionary _handle_json_rpc(const String &p_body, Ref<HTTPResponse> p_response);
 	Dictionary _transport_handle_json_rpc(const String &p_body, Ref<HTTPResponse> p_response);
 	void _send_sse_message(const String &p_json_string);
@@ -182,6 +197,11 @@ public:
 	void send_tool_result(const Variant &p_request_id, bool p_success, const Variant &p_result = Variant(), const String &p_error = "");
 	void send_elicitation_request(const String &p_request_id, const String &p_mode, const String &p_message, const Variant &p_url_or_schema);
 	void send_url_elicitation_error(const String &p_request_id, const String &p_elicitation_id, const String &p_url, const String &p_message);
+	void hold_tool_for_elicitation(const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args, const Dictionary &p_schema, const String &p_mode = "form");
+	void complete_elicitation(const String &p_request_id, const Dictionary &p_result);
+	void handle_client_rpc_result(const String &p_session_id, const Dictionary &p_payload);
+	Array get_session_roots(const String &p_session_id) const;
+	bool has_pending_elicitation(const Variant &p_request_id) const;
 	void broadcast_prompts_list_changed();
 	void broadcast_tools_list_changed();
 	void broadcast_resources_list_changed();
@@ -234,6 +254,8 @@ public:
 	bool test_validate_mcp_oauth(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
 	void test_handle_mcp_stateless_post(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
 	void test_handle_message_post(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
+	void test_handle_oauth_protected_resource(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
+	void test_handle_oauth_authorization_server(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
 #endif
 
 	bool is_server_started() const { return server_started; }

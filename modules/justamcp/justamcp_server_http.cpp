@@ -30,6 +30,7 @@
 #include "justamcp_server.h"
 
 #include "justamcp_json_rpc_transport.h"
+#include "justamcp_oauth_discovery.h"
 #include "justamcp_session_manager.h"
 
 #include "core/config/project_settings.h"
@@ -127,7 +128,17 @@ bool JustAMCPServer::_validate_mcp_oauth(Ref<HTTPRequestContext> p_context, Ref<
 		if (required_client_id.is_empty() || required_client_secret.is_empty()) {
 			ERR_PRINT("JustAMCP: oauth_enabled requires both client_id and client_secret; rejecting request.");
 			p_response->set_status(401);
+			_apply_oauth_www_authenticate(p_response);
 			p_response->set_body("Unauthorized - OAuth credentials not configured");
+			return false;
+		}
+
+		String cimd_error;
+		if (!JustAMCPOauthDiscovery::validate_cimd_client_id(required_client_id, cimd_error)) {
+			ERR_PRINT("JustAMCP: " + cimd_error);
+			p_response->set_status(401);
+			_apply_oauth_www_authenticate(p_response);
+			p_response->set_body("Unauthorized - " + cimd_error);
 			return false;
 		}
 
@@ -173,6 +184,7 @@ bool JustAMCPServer::_validate_mcp_oauth(Ref<HTTPRequestContext> p_context, Ref<
 		if (!authorized) {
 			ERR_PRINT("JustAMCP: Unauthorized connection attempt.");
 			p_response->set_status(401);
+			_apply_oauth_www_authenticate(p_response);
 			p_response->set_body("Unauthorized - Invalid OAuth credentials");
 			return false;
 		}
@@ -484,6 +496,34 @@ void JustAMCPServer::_send_sse_routed(const String &p_json_string, const String 
 
 void JustAMCPServer::_send_sse_message(const String &p_json_string) {
 	notification_bus.send_routed_json(p_json_string, String(), -1);
+}
+
+void JustAMCPServer::_apply_oauth_www_authenticate(Ref<HTTPResponse> p_response) {
+	if (p_response.is_valid()) {
+		p_response->add_header("WWW-Authenticate", JustAMCPOauthDiscovery::www_authenticate_header());
+	}
+}
+
+void JustAMCPServer::_handle_oauth_protected_resource(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
+	(void)p_context;
+	if (!JustAMCPOauthDiscovery::oauth_enabled()) {
+		p_response->set_status(404);
+		p_response->set_body("Not Found");
+		return;
+	}
+	p_response->set_status(200);
+	p_response->set_json(JustAMCPOauthDiscovery::protected_resource_metadata());
+}
+
+void JustAMCPServer::_handle_oauth_authorization_server(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
+	(void)p_context;
+	if (!JustAMCPOauthDiscovery::oauth_enabled()) {
+		p_response->set_status(404);
+		p_response->set_body("Not Found");
+		return;
+	}
+	p_response->set_status(200);
+	p_response->set_json(JustAMCPOauthDiscovery::authorization_server_metadata());
 }
 
 #endif

@@ -31,6 +31,7 @@
 
 #include "justamcp_resource_manifest.h"
 
+#include "../justamcp_mcp_spec.h"
 #include "modules/modules_enabled.gen.h"
 
 #include "core/variant/array.h"
@@ -43,6 +44,7 @@ static Dictionary _manifest_resource_schema(const String &p_uri, const String &p
 	resource["name"] = p_name;
 	resource["description"] = p_description;
 	resource["mimeType"] = p_mime_type;
+	justamcp_attach_icons(resource);
 	return resource;
 }
 
@@ -52,6 +54,7 @@ static Dictionary _manifest_resource_template_schema(const String &p_uri_templat
 	resource["name"] = p_name;
 	resource["description"] = p_description;
 	resource["mimeType"] = p_mime_type;
+	justamcp_attach_icons(resource);
 	return resource;
 }
 
