@@ -508,6 +508,9 @@
 		</member>
 		<member name="blazium/autowork/e2e_enabled" type="bool" setter="" getter="" default="false">
 		</member>
+		<member name="blazium/justamcp/accepted_protocol_versions" type="String" setter="" getter="" default="&quot;&quot;">
+			Optional comma-separated allowlist of MCP protocol versions this process will serve. Empty accepts every implemented version ([code]2026-07-28[/code] through [code]2024-11-05[/code]).
+		</member>
 		<member name="blazium/justamcp/allow_execute_tool_bypass" type="bool" setter="" getter="" default="false">
 		</member>
 		<member name="blazium/justamcp/bind_to_localhost_only" type="bool" setter="" getter="" default="true">
@@ -587,6 +590,9 @@
 		<member name="blazium/justamcp/prompts/generate_autowork_test" type="String" setter="" getter="">
 		</member>
 		<member name="blazium/justamcp/prompts/project_info" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/protocol_version" type="String" setter="" getter="" default="&quot;2026-07-28&quot;">
+			Advertised latest MCP protocol version. [code]2026-07-28[/code] is the modern/stateless revision; [code]initialize[/code] still negotiates a legacy date ([code]2025-11-25[/code] and earlier) for Cursor and other handshake clients. Override with [code]--mcp-protocol-version[/code].
 		</member>
 		<member name="blazium/justamcp/readonly_worker_concurrency" type="int" setter="" getter="" default="2">
 		</member>
@@ -688,12 +694,6 @@
 		</member>
 		<member name="blazium/justamcp/server_port" type="int" setter="" getter="" default="6506">
 		</member>
-		<member name="blazium/justamcp/protocol_version" type="String" setter="" getter="" default="&quot;2026-07-28&quot;">
-			Advertised latest MCP protocol version. [code]2026-07-28[/code] is the modern/stateless revision; [code]initialize[/code] still negotiates a legacy date ([code]2025-11-25[/code] and earlier) for Cursor and other handshake clients. Override with [code]--mcp-protocol-version[/code].
-		</member>
-		<member name="blazium/justamcp/accepted_protocol_versions" type="String" setter="" getter="" default="&quot;&quot;">
-			Optional comma-separated allowlist of MCP protocol versions this process will serve. Empty accepts every implemented version ([code]2026-07-28[/code] through [code]2024-11-05[/code]).
-		</member>
 		<member name="blazium/justamcp/session_allow_client_delete" type="bool" setter="" getter="" default="true">
 		</member>
 		<member name="blazium/justamcp/session_ttl_seconds" type="int" setter="" getter="" default="3600">
@@ -713,8 +713,6 @@
 		<member name="blazium/justamcp/task_poll_interval_ms" type="int" setter="" getter="" default="1000">
 		</member>
 		<member name="blazium/justamcp/task_result_max_wait_ms" type="int" setter="" getter="" default="120000">
-		</member>
-		<member name="blazium/justamcp/url_elicitation_demo_url" type="String" setter="" getter="" default="&quot;&quot;">
 		</member>
 		<member name="blazium/justamcp/tools/analysis_tools" type="bool" setter="" getter="" default="false">
 		</member>
@@ -1451,6 +1449,8 @@
 		<member name="blazium/justamcp/toolsets/Theme" type="bool" setter="" getter="" default="true">
 		</member>
 		<member name="blazium/justamcp/toolsets/TileMap" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/url_elicitation_demo_url" type="String" setter="" getter="" default="&quot;&quot;">
 		</member>
 		<member name="blazium/justamcp/z_mcp_config" type="String" setter="" getter="" default="&quot;&quot;">
 		</member>
