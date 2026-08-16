@@ -13,9 +13,10 @@ runs:
     - name: Dump GDExtension interface and API for blazium-cpp build
       shell: sh
       run: |
-        ${{ inputs.bin }} --headless --dump-gdextension-interface --dump-extension-api
+        ${{ inputs.bin }} --headless --dump-gdextension-interface --dump-gdextension-interface-json --dump-extension-api
         mkdir blazium-api
         cp -f gdextension_interface.h blazium-api/
+        cp -f gdextension_interface.json blazium-api/
         cp -f extension_api.json blazium-api/
 
     - name: Upload API dump

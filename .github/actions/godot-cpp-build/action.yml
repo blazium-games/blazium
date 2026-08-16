@@ -39,7 +39,7 @@ runs:
 
     - name: Extract API
       shell: sh
-      run: ${{ inputs.bin }} --headless --dump-gdextension-interface --dump-extension-api
+      run: ${{ inputs.bin }} --headless --dump-gdextension-interface --dump-gdextension-interface-json --dump-extension-api
 
     - name: Avoid ARG_MAX when archiving godot-cpp
       shell: sh
@@ -49,4 +49,5 @@ runs:
       shell: sh
       env:
         SCONS_CACHE: ${{ inputs.scons-cache }}
-      run: scons --directory=./${{ inputs.checkout-path }}/test "gdextension_dir=${{ github.workspace }}" ${{ inputs.scons-flags }}
+      # godot-cpp master looks up extension_api-4-7.json unless custom_api_file is set.
+      run: scons --directory=./${{ inputs.checkout-path }}/test "gdextension_dir=${{ github.workspace }}" "custom_api_file=${{ github.workspace }}/extension_api.json" ${{ inputs.scons-flags }}
