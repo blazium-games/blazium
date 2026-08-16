@@ -29,6 +29,7 @@
 
 #ifdef TOOLS_ENABLED
 
+#include "core/object/class_db.h"
 #include "justamcp_asset_tags_tools.h"
 
 #include "modules/modules_enabled.gen.h"
@@ -41,6 +42,7 @@
 #include "resources/justamcp_tags_resource_provider.h"
 #endif
 
+#include "../justamcp_mcp_spec.h"
 #include "../justamcp_pagination.h"
 #include "../justamcp_server.h"
 
@@ -110,13 +112,24 @@ Dictionary JustAMCPAssetTagsTools::_require_elicitation(const String &p_action, 
 	if (p_args.get("confirmed", false)) {
 		return Dictionary();
 	}
+	const Dictionary schema = justamcp_confirm_enum_schema();
 	const String request_id = p_args.get("request_id", String::num_uint64(OS::get_singleton()->get_ticks_usec()));
 	if (JustAMCPServer *server = JustAMCPServer::get_singleton()) {
-		server->send_elicitation_request(request_id, "form", "Confirm asset tag mutation: " + p_action, Dictionary());
+		String demo_url;
+		if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/url_elicitation_demo_url")) {
+			demo_url = String(GLOBAL_GET("blazium/justamcp/url_elicitation_demo_url"));
+		}
+		if (!demo_url.is_empty() && bool(p_args.get("url_elicit", false)) && justamcp_protocol_supports(server->get_negotiated_protocol_version(), JUSTAMCP_FEATURE_ELICITATION_URL)) {
+			server->send_url_elicitation_error(request_id, "elicitation_" + request_id, demo_url, "URL elicitation required for " + p_action);
+		} else {
+			server->send_elicitation_request(request_id, "form", "Confirm asset tag mutation: " + p_action, schema);
+		}
 	}
 	Dictionary err;
 	err["ok"] = false;
 	err["elicitation_required"] = true;
+	err["elicitation_schema"] = schema;
+	err["elicitation_mode"] = "form";
 	err["error"] = "Explicit user confirmation required for " + p_action + ". Retry with confirmed=true after approval.";
 	return err;
 }

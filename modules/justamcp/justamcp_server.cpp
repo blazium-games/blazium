@@ -28,24 +28,16 @@
 /**************************************************************************/
 
 #include "justamcp_server.h"
-#include "core/config/project_settings.h"
-#include "core/io/json.h"
-#include "core/os/os.h"
-#include "core/os/time.h"
-#include "editor/editor_settings.h"
+
 #include "justamcp_cors_policy.h"
 #include "justamcp_json_rpc_transport.h"
-#include "justamcp_log_levels.h"
 #include "justamcp_notification_bus.h"
 #include "justamcp_pagination.h"
 #include "justamcp_project_settings.h"
 #include "justamcp_server_request_lookup.h"
 #include "justamcp_session_manager.h"
-#include "justamcp_tool_context.h"
 #include "justamcp_tool_dispatch.h"
 #include "justamcp_tool_queue_state.h"
-#include "modules/modules_enabled.gen.h"
-#include "servers/display_server.h"
 #include "tools/justamcp_json_rpc_helpers.h"
 #include "tools/justamcp_json_rpc_router.h"
 #include "tools/justamcp_prompt_executor.h"
@@ -53,6 +45,15 @@
 #include "tools/justamcp_task_manager.h"
 #include "tools/justamcp_tool_executor.h"
 #include "tools/justamcp_tool_schema_cache.h"
+
+#include "core/config/project_settings.h"
+#include "core/object/callable_method_pointer.h"
+#include "core/object/class_db.h"
+#include "core/os/os.h"
+#include "editor/editor_settings.h"
+#include "servers/display_server.h"
+
+#include "modules/modules_enabled.gen.h"
 
 static bool _is_headless() {
 	if (DisplayServer::get_singleton() != nullptr) {
@@ -84,6 +85,7 @@ void JustAMCPServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_deferred_sse_replay", "connection_id", "last_event_id"), &JustAMCPServer::_deferred_sse_replay);
 	ClassDB::bind_method(D_METHOD("_emit_log_notification_deferred", "level", "logger", "data"), &JustAMCPServer::_emit_log_notification_deferred);
 	ClassDB::bind_method(D_METHOD("send_log_message", "level", "logger", "data"), &JustAMCPServer::send_log_message, DEFVAL(Variant()));
+	ClassDB::bind_method(D_METHOD("get_session_roots", "session_id"), &JustAMCPServer::get_session_roots);
 	ClassDB::bind_method(D_METHOD("_on_request_cancelled", "request_id", "reason", "caller_session_id"), &JustAMCPServer::_on_request_cancelled, DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("_enforce_in_flight_cancel_deadline", "request_id"), &JustAMCPServer::_enforce_in_flight_cancel_deadline);
 	ClassDB::bind_method(D_METHOD("_deferred_complete_tool_dict", "request_id", "result"), &JustAMCPServer::_deferred_complete_tool_dict);
@@ -201,6 +203,14 @@ void JustAMCPServer::test_handle_mcp_stateless_post(Ref<HTTPRequestContext> p_co
 
 void JustAMCPServer::test_handle_message_post(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
 	_handle_message_post(p_context, p_response);
+}
+
+void JustAMCPServer::test_handle_oauth_protected_resource(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
+	_handle_oauth_protected_resource(p_context, p_response);
+}
+
+void JustAMCPServer::test_handle_oauth_authorization_server(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
+	_handle_oauth_authorization_server(p_context, p_response);
 }
 #endif
 
@@ -477,6 +487,12 @@ void JustAMCPServer::_start_server() {
 		if (E->get() == "--mcp-client-secret" && E->next()) {
 			cmd_client_secret = E->next()->get();
 		}
+		if (E->get() == "--mcp-protocol-version" && E->next()) {
+			const String cmd_protocol = E->next()->get();
+			if (!MCPSessionManager::set_cli_protocol_version_override(cmd_protocol)) {
+				ERR_PRINT("JustAMCP: --mcp-protocol-version '" + cmd_protocol + "' is not supported. Keeping setting/default.");
+			}
+		}
 	}
 
 	if (!cmd_client_id.is_empty() && cmd_client_secret.is_empty()) {
@@ -553,6 +569,14 @@ void JustAMCPServer::_start_server() {
 		HTTPServer::get_singleton()->register_route("POST", "/mcp", callable_mp(this, &JustAMCPServer::_handle_mcp_post));
 		HTTPServer::get_singleton()->register_route("DELETE", "/mcp", callable_mp(this, &JustAMCPServer::_handle_mcp_delete));
 		HTTPServer::get_singleton()->register_route("OPTIONS", "/mcp", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
+		HTTPServer::get_singleton()->register_route("GET", "/.well-known/oauth-protected-resource", callable_mp(this, &JustAMCPServer::_handle_oauth_protected_resource));
+		HTTPServer::get_singleton()->register_route("GET", "/.well-known/oauth-protected-resource/mcp", callable_mp(this, &JustAMCPServer::_handle_oauth_protected_resource));
+		HTTPServer::get_singleton()->register_route("GET", "/.well-known/oauth-authorization-server", callable_mp(this, &JustAMCPServer::_handle_oauth_authorization_server));
+		HTTPServer::get_singleton()->register_route("GET", "/.well-known/openid-configuration", callable_mp(this, &JustAMCPServer::_handle_oauth_authorization_server));
+		HTTPServer::get_singleton()->register_route("OPTIONS", "/.well-known/oauth-protected-resource", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
+		HTTPServer::get_singleton()->register_route("OPTIONS", "/.well-known/oauth-protected-resource/mcp", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
+		HTTPServer::get_singleton()->register_route("OPTIONS", "/.well-known/oauth-authorization-server", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
+		HTTPServer::get_singleton()->register_route("OPTIONS", "/.well-known/openid-configuration", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
 
 		if (!HTTPServer::get_singleton()->is_connected("sse_connection_opened", callable_mp(this, &JustAMCPServer::_on_sse_connection_opened))) {
 			HTTPServer::get_singleton()->connect("sse_connection_opened", callable_mp(this, &JustAMCPServer::_on_sse_connection_opened));

@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  justamcp_json_rpc_router.h                                            */
+/*  test_justamcp_oauth_discovery.h                                       */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             BLAZIUM ENGINE                             */
@@ -29,32 +29,20 @@
 
 #pragma once
 
-#ifdef TOOLS_ENABLED
+#include "tests/test_macros.h"
 
-#include "core/variant/dictionary.h"
-#include "core/variant/variant.h"
+void test_justamcp_oauth_401_www_authenticate();
+void test_justamcp_oauth_well_known_documents();
+void test_justamcp_oauth_cimd_client_id();
 
-class JustAMCPResourceExecutor;
-class JustAMCPTaskManager;
-class JustAMCPPromptExecutor;
-class JustAMCPServer;
+TEST_CASE("[Modules][JustAMCP] OAuth 401 includes WWW-Authenticate") {
+	test_justamcp_oauth_401_www_authenticate();
+}
 
-class JustAMCPJsonRpcRouter {
-public:
-	static String extract_list_cursor(const Dictionary &p_payload);
-	static Dictionary finalize_list_result(const Dictionary &p_result, const Variant &p_req_id);
-	static Dictionary finalize_action_result(const Dictionary &p_result, const Variant &p_req_id);
-	static Dictionary make_invalid_params(const Variant &p_req_id, const String &p_message);
-	static Dictionary route(const String &p_method, const Dictionary &p_payload, const Variant &p_req_id_var, JustAMCPResourceExecutor *p_resources, JustAMCPTaskManager *p_tasks);
-	static Dictionary route_tools_list(const String &p_cursor, const Variant &p_req_id_var);
-	static Dictionary route_prompts_list(const String &p_cursor, const Variant &p_req_id_var, JustAMCPPromptExecutor *p_prompts);
-	static Dictionary route_prompts_get(const Dictionary &p_payload, const Variant &p_req_id_var, JustAMCPPromptExecutor *p_prompts);
-	static Dictionary route_initialize(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);
-	static Dictionary route_discover(JustAMCPServer *p_server, const Variant &p_req_id_var);
-	static Dictionary route_ping(const Variant &p_req_id_var);
-	static Dictionary route_logging_set_level(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);
-	static Dictionary route_tasks_cancel(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);
-	static Dictionary route_completion_complete(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);
-};
+TEST_CASE("[Modules][JustAMCP] OAuth well-known discovery documents") {
+	test_justamcp_oauth_well_known_documents();
+}
 
-#endif
+TEST_CASE("[Modules][JustAMCP] OAuth CIMD client_id URL") {
+	test_justamcp_oauth_cimd_client_id();
+}

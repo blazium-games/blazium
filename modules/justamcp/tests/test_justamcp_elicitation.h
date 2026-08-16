@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  justamcp_json_rpc_router.h                                            */
+/*  test_justamcp_elicitation.h                                           */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             BLAZIUM ENGINE                             */
@@ -29,32 +29,35 @@
 
 #pragma once
 
-#ifdef TOOLS_ENABLED
+#include "tests/test_macros.h"
 
-#include "core/variant/dictionary.h"
-#include "core/variant/variant.h"
+void test_justamcp_initialize_2025_advertises_elicitation();
+void test_justamcp_older_initialize_does_not_break();
+void test_justamcp_roots_list_changed_updates_session();
+void test_justamcp_elicitation_hold_and_decline();
+void test_justamcp_url_elicitation_error_shape();
+void test_justamcp_icons_and_invalid_tool_name();
 
-class JustAMCPResourceExecutor;
-class JustAMCPTaskManager;
-class JustAMCPPromptExecutor;
-class JustAMCPServer;
+TEST_CASE("[Modules][JustAMCP] 2025-11-25 initialize advertises elicitation") {
+	test_justamcp_initialize_2025_advertises_elicitation();
+}
 
-class JustAMCPJsonRpcRouter {
-public:
-	static String extract_list_cursor(const Dictionary &p_payload);
-	static Dictionary finalize_list_result(const Dictionary &p_result, const Variant &p_req_id);
-	static Dictionary finalize_action_result(const Dictionary &p_result, const Variant &p_req_id);
-	static Dictionary make_invalid_params(const Variant &p_req_id, const String &p_message);
-	static Dictionary route(const String &p_method, const Dictionary &p_payload, const Variant &p_req_id_var, JustAMCPResourceExecutor *p_resources, JustAMCPTaskManager *p_tasks);
-	static Dictionary route_tools_list(const String &p_cursor, const Variant &p_req_id_var);
-	static Dictionary route_prompts_list(const String &p_cursor, const Variant &p_req_id_var, JustAMCPPromptExecutor *p_prompts);
-	static Dictionary route_prompts_get(const Dictionary &p_payload, const Variant &p_req_id_var, JustAMCPPromptExecutor *p_prompts);
-	static Dictionary route_initialize(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);
-	static Dictionary route_discover(JustAMCPServer *p_server, const Variant &p_req_id_var);
-	static Dictionary route_ping(const Variant &p_req_id_var);
-	static Dictionary route_logging_set_level(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);
-	static Dictionary route_tasks_cancel(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);
-	static Dictionary route_completion_complete(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);
-};
+TEST_CASE("[Modules][JustAMCP] older initialize does not break without elicitation") {
+	test_justamcp_older_initialize_does_not_break();
+}
 
-#endif
+TEST_CASE("[Modules][JustAMCP] roots list_changed updates session storage") {
+	test_justamcp_roots_list_changed_updates_session();
+}
+
+TEST_CASE("[Modules][JustAMCP] elicitation holds tools/call until decline") {
+	test_justamcp_elicitation_hold_and_decline();
+}
+
+TEST_CASE("[Modules][JustAMCP] URL elicitation error is -32042") {
+	test_justamcp_url_elicitation_error_shape();
+}
+
+TEST_CASE("[Modules][JustAMCP] icons attach and invalid tool name is a tool error") {
+	test_justamcp_icons_and_invalid_tool_name();
+}

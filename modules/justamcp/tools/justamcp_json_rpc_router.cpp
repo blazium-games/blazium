@@ -32,6 +32,7 @@
 #include "justamcp_json_rpc_router.h"
 
 #include "../justamcp_log_levels.h"
+#include "../justamcp_mcp_spec.h"
 #include "../justamcp_server.h"
 #include "../justamcp_session_manager.h"
 #include "justamcp_prompt_executor.h"
@@ -67,6 +68,7 @@ Dictionary JustAMCPJsonRpcRouter::finalize_list_result(const Dictionary &p_resul
 
 	Dictionary out = p_result.duplicate();
 	out.erase("ok");
+	justamcp_apply_protocol_to_list_result(out, justamcp_active_protocol_version());
 	Dictionary rpc_result;
 	rpc_result["handled"] = true;
 	rpc_result["jsonrpc"] = "2.0";
@@ -324,7 +326,7 @@ Dictionary JustAMCPJsonRpcRouter::route_initialize(JustAMCPServer *p_server, con
 	if (params.has("protocolVersion") && params["protocolVersion"].get_type() == Variant::STRING) {
 		client_protocol = String(params["protocolVersion"]);
 	}
-	p_server->transport_negotiated_protocol = MCPSessionManager::negotiate_protocol_version(client_protocol);
+	p_server->transport_negotiated_protocol = MCPSessionManager::negotiate_legacy_initialize(client_protocol);
 
 	Dictionary result;
 	result["protocolVersion"] = p_server->transport_negotiated_protocol;
@@ -340,21 +342,85 @@ Dictionary JustAMCPJsonRpcRouter::route_initialize(JustAMCPServer *p_server, con
 	resources_cap["subscribe"] = true;
 	capabilities["resources"] = resources_cap;
 	capabilities["logging"] = Dictionary();
-	Dictionary tasks_cap;
-	tasks_cap["list"] = Dictionary();
-	tasks_cap["cancel"] = Dictionary();
-	Dictionary requests;
-	Dictionary tools;
-	tools["call"] = Dictionary();
-	requests["tools"] = tools;
-	tasks_cap["requests"] = requests;
-	capabilities["tasks"] = tasks_cap;
+	const String negotiated = p_server->transport_negotiated_protocol;
+	if (justamcp_protocol_supports(negotiated, JUSTAMCP_FEATURE_COMPLETIONS)) {
+		capabilities["completions"] = Dictionary();
+	}
+	if (justamcp_protocol_supports(negotiated, JUSTAMCP_FEATURE_TASKS_INITIALIZE)) {
+		Dictionary tasks_cap;
+		tasks_cap["list"] = Dictionary();
+		tasks_cap["cancel"] = Dictionary();
+		Dictionary requests;
+		Dictionary tools;
+		tools["call"] = Dictionary();
+		requests["tools"] = tools;
+		tasks_cap["requests"] = requests;
+		capabilities["tasks"] = tasks_cap;
+	}
+	if (justamcp_protocol_supports(negotiated, JUSTAMCP_FEATURE_ELICITATION_FORM)) {
+		Dictionary elicitation_cap;
+		elicitation_cap["form"] = Dictionary();
+		if (justamcp_protocol_supports(negotiated, JUSTAMCP_FEATURE_ELICITATION_URL)) {
+			elicitation_cap["url"] = Dictionary();
+		}
+		capabilities["elicitation"] = elicitation_cap;
+	}
 	result["capabilities"] = capabilities;
+	result["instructions"] = "Use blazium_* tools and blazium:// resources. Prefer editor tools for scene/resource edits, runtime_* tools only when a game bridge is active, and guide resources such as blazium://guide/tool-index for workflow orientation.";
 	Dictionary serverInfo;
 	serverInfo["name"] = "blazium-mcp-server";
+	if (justamcp_protocol_supports(negotiated, JUSTAMCP_FEATURE_SERVER_TITLE)) {
+		serverInfo["title"] = "Blazium MCP";
+	}
 	serverInfo["version"] = "1.0.0";
-	serverInfo["instructions"] = "Use blazium_* tools and blazium:// resources. Prefer editor tools for scene/resource edits, runtime_* tools only when a game bridge is active, and guide resources such as blazium://guide/tool-index for workflow orientation.";
+	serverInfo["websiteUrl"] = "https://blazium.app";
 	result["serverInfo"] = serverInfo;
+
+	Dictionary rpc_result;
+	rpc_result["handled"] = true;
+	rpc_result["jsonrpc"] = "2.0";
+	rpc_result["id"] = p_req_id_var;
+	rpc_result["result"] = result;
+	return rpc_result;
+}
+
+Dictionary JustAMCPJsonRpcRouter::route_discover(JustAMCPServer *p_server, const Variant &p_req_id_var) {
+	Dictionary result;
+	Array supported;
+	const Vector<String> versions = MCPSessionManager::accepted_protocol_versions();
+	for (int i = 0; i < versions.size(); i++) {
+		supported.push_back(versions[i]);
+	}
+	result["supportedVersions"] = supported;
+
+	Dictionary capabilities;
+	Dictionary tools_cap;
+	tools_cap["listChanged"] = true;
+	capabilities["tools"] = tools_cap;
+	Dictionary prompts_cap;
+	prompts_cap["listChanged"] = true;
+	capabilities["prompts"] = prompts_cap;
+	Dictionary resources_cap;
+	resources_cap["listChanged"] = true;
+	capabilities["resources"] = resources_cap;
+	capabilities["completions"] = Dictionary();
+	Dictionary elicitation_cap;
+	elicitation_cap["form"] = Dictionary();
+	elicitation_cap["url"] = Dictionary();
+	capabilities["elicitation"] = elicitation_cap;
+	Dictionary extensions;
+	if (p_server && p_server->task_manager) {
+		extensions["io.modelcontextprotocol/tasks"] = Dictionary();
+	}
+	capabilities["extensions"] = extensions;
+	result["capabilities"] = capabilities;
+	result["instructions"] = "Use blazium_* tools and blazium:// resources. Prefer editor tools for scene/resource edits, runtime_* tools only when a game bridge is active, and guide resources such as blazium://guide/tool-index for workflow orientation.";
+	result["ttlMs"] = 3600000;
+	result["cacheScope"] = "public";
+	result["resultType"] = "complete";
+	Dictionary meta;
+	meta["io.modelcontextprotocol/serverInfo"] = MCPSessionManager::mcp_server_info();
+	result["_meta"] = meta;
 
 	Dictionary rpc_result;
 	rpc_result["handled"] = true;
@@ -442,9 +508,10 @@ Dictionary JustAMCPJsonRpcRouter::route_completion_complete(JustAMCPServer *p_se
 	const Dictionary params = p_payload.has("params") ? Dictionary(p_payload["params"]) : Dictionary();
 	const Dictionary ref = params.has("ref") ? Dictionary(params["ref"]) : Dictionary();
 	const Dictionary argument = params.has("argument") ? Dictionary(params["argument"]) : Dictionary();
+	const Dictionary context = params.has("context") && params["context"].get_type() == Variant::DICTIONARY ? Dictionary(params["context"]) : Dictionary();
 	Dictionary result;
 	if (p_server->prompt_executor) {
-		result = p_server->prompt_executor->complete_prompt(ref, argument);
+		result = p_server->prompt_executor->complete_prompt(ref, argument, context);
 	}
 	Dictionary rpc_result;
 	rpc_result["handled"] = true;

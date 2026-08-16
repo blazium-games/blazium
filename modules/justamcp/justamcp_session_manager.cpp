@@ -28,19 +28,19 @@
 /**************************************************************************/
 
 #include "justamcp_session_manager.h"
-#include "modules/modules_enabled.gen.h"
 
-#include "justamcp_pagination.h"
 #include "justamcp_server.h"
-#include "tools/justamcp_json_rpc_helpers.h"
 
 #include "core/config/project_settings.h"
 #include "core/crypto/crypto_core.h"
 #include "core/io/json.h"
-#include "core/os/time.h"
+#include "core/os/os.h"
+#include "core/templates/list.h"
 
-#if defined(MODULE_HTTPSERVER_ENABLED)
-#include "modules/httpserver/http_server.h"
+#include "modules/modules_enabled.gen.h"
+
+#ifdef TOOLS_ENABLED
+#include "editor/editor_settings.h"
 #endif
 
 MCPSessionManager::MCPSessionManager(JustAMCPServer *p_owner) {
@@ -55,22 +55,302 @@ void MCPSessionManager::clear_all() {
 	post_sse_upgrade_sessions.clear();
 	all_sse_connection_ids.clear();
 	request_router.clear_all();
+#if defined(MODULE_HTTPSERVER_ENABLED)
+	pending_modern_listen = 0;
+#endif
+}
+
+static String _cli_protocol_version_override;
+static bool _cli_protocol_version_parsed = false;
+
+static const char *const _supported_protocol_versions[] = {
+	"2026-07-28",
+	"2025-11-25",
+	"2025-06-18",
+	"2025-03-26",
+	"2024-11-05",
+	nullptr
+};
+
+bool MCPSessionManager::is_supported_protocol_version(const String &p_version) {
+	for (int i = 0; _supported_protocol_versions[i]; i++) {
+		if (p_version == _supported_protocol_versions[i]) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool MCPSessionManager::is_modern_protocol_version(const String &p_version) {
+	return p_version == "2026-07-28";
+}
+
+bool MCPSessionManager::is_legacy_protocol_version(const String &p_version) {
+	return is_supported_protocol_version(p_version) && !is_modern_protocol_version(p_version);
+}
+
+static String _configured_accepted_protocol_versions() {
+#ifdef TOOLS_ENABLED
+	bool use_project = true;
+	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/override_editor_settings")) {
+		use_project = GLOBAL_GET("blazium/justamcp/override_editor_settings");
+	}
+	if (!use_project && EditorSettings::get_singleton() && EditorSettings::get_singleton()->has_setting("blazium/justamcp/accepted_protocol_versions")) {
+		return String(EditorSettings::get_singleton()->get_setting("blazium/justamcp/accepted_protocol_versions"));
+	}
+#endif
+	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/accepted_protocol_versions")) {
+		return String(GLOBAL_GET("blazium/justamcp/accepted_protocol_versions"));
+	}
+	return String();
+}
+
+Vector<String> MCPSessionManager::supported_protocol_versions() {
+	Vector<String> versions;
+	for (int i = 0; _supported_protocol_versions[i]; i++) {
+		versions.push_back(_supported_protocol_versions[i]);
+	}
+	return versions;
+}
+
+Vector<String> MCPSessionManager::accepted_protocol_versions() {
+	const String configured = _configured_accepted_protocol_versions().strip_edges();
+	if (configured.is_empty()) {
+		return supported_protocol_versions();
+	}
+	Vector<String> accepted;
+	const Vector<String> parts = configured.split(",", false);
+	for (int i = 0; i < parts.size(); i++) {
+		const String version = parts[i].strip_edges();
+		if (is_supported_protocol_version(version) && accepted.find(version) < 0) {
+			accepted.push_back(version);
+		}
+	}
+	if (accepted.is_empty()) {
+		return supported_protocol_versions();
+	}
+	return accepted;
+}
+
+bool MCPSessionManager::is_accepted_protocol_version(const String &p_version) {
+	if (!is_supported_protocol_version(p_version)) {
+		return false;
+	}
+	const Vector<String> accepted = accepted_protocol_versions();
+	return accepted.find(p_version) >= 0;
+}
+
+String MCPSessionManager::first_protocol_version_token(const String &p_header) {
+	const Vector<String> parts = p_header.split(",", false);
+	for (int i = 0; i < parts.size(); i++) {
+		const String version = parts[i].strip_edges();
+		if (!version.is_empty()) {
+			return version;
+		}
+	}
+	return String();
+}
+
+Dictionary MCPSessionManager::header_mismatch_error(const Variant &p_id, const String &p_message) {
+	Dictionary err;
+	err["jsonrpc"] = "2.0";
+	if (p_id.get_type() != Variant::NIL) {
+		err["id"] = p_id;
+	}
+	Dictionary error_dict;
+	error_dict["code"] = -32020;
+	error_dict["message"] = p_message;
+	err["error"] = error_dict;
+	return err;
+}
+
+Dictionary MCPSessionManager::mcp_server_info() {
+	Dictionary info;
+	info["name"] = "blazium-mcp-server";
+	info["title"] = "Blazium MCP";
+	info["version"] = "1.0.0";
+	info["websiteUrl"] = "https://blazium.app";
+	return info;
+}
+
+String MCPSessionManager::decode_mcp_header_value(const String &p_value) {
+	const String value = p_value.strip_edges();
+	if (value.begins_with("=?base64?") && value.ends_with("?=") && value.length() >= 11) {
+		const String b64 = value.substr(9, value.length() - 11);
+		const CharString cstr = b64.ascii();
+		Vector<uint8_t> buf;
+		buf.resize(b64.length() / 4 * 3 + 1);
+		size_t decoded_len = 0;
+		uint8_t *w = buf.ptrw();
+		if (CryptoCore::b64_decode(&w[0], buf.size(), &decoded_len, (unsigned char *)cstr.get_data(), b64.length()) != OK) {
+			return value;
+		}
+		buf.resize(decoded_len);
+		return String::utf8((const char *)buf.ptr(), buf.size());
+	}
+	return value;
+}
+
+int MCPSessionManager::modern_http_status_for_rpc(const Dictionary &p_rpc) {
+	if (!p_rpc.has("error") || p_rpc["error"].get_type() != Variant::DICTIONARY) {
+		return 200;
+	}
+	const int code = int(Dictionary(p_rpc["error"]).get("code", 0));
+	if (code == -32601) {
+		return 404;
+	}
+	if (code == -32020 || code == -32022 || code == -32700 || code == -32600 || code == -32602) {
+		return 400;
+	}
+	return 200;
+}
+
+String MCPSessionManager::protocol_version_from_payload(const Dictionary &p_payload) {
+	if (!p_payload.has("params") || p_payload["params"].get_type() != Variant::DICTIONARY) {
+		return String();
+	}
+	const Dictionary params = p_payload["params"];
+	if (!params.has("_meta") || params["_meta"].get_type() != Variant::DICTIONARY) {
+		return String();
+	}
+	const Dictionary meta = params["_meta"];
+	if (meta.has("io.modelcontextprotocol/protocolVersion")) {
+		return String(meta["io.modelcontextprotocol/protocolVersion"]);
+	}
+	return String();
+}
+
+void MCPSessionManager::decorate_modern_rpc(Dictionary &p_rpc, const String &p_method) {
+	if (p_rpc.is_empty() || p_rpc.has("error") || !p_rpc.has("result") || p_rpc["result"].get_type() != Variant::DICTIONARY) {
+		return;
+	}
+	Dictionary result = p_rpc["result"];
+	if (!result.has("resultType")) {
+		result["resultType"] = "complete";
+	}
+	Dictionary meta = result.has("_meta") && result["_meta"].get_type() == Variant::DICTIONARY ? Dictionary(result["_meta"]) : Dictionary();
+	meta["io.modelcontextprotocol/serverInfo"] = mcp_server_info();
+	result["_meta"] = meta;
+	if (p_method == "server/discover" || p_method == "tools/list" || p_method == "prompts/list" || p_method == "resources/list" || p_method == "resources/read" || p_method == "resources/templates/list") {
+		if (!result.has("ttlMs")) {
+			result["ttlMs"] = 3600000;
+		}
+		if (!result.has("cacheScope")) {
+			result["cacheScope"] = "public";
+		}
+	}
+	p_rpc["result"] = result;
+}
+
+Dictionary MCPSessionManager::unsupported_protocol_version_error(const String &p_requested) {
+	Dictionary err;
+	err["jsonrpc"] = "2.0";
+	Dictionary error_dict;
+	error_dict["code"] = -32022;
+	error_dict["message"] = "Unsupported protocol version";
+	Dictionary data;
+	Array supported;
+	const Vector<String> accepted = accepted_protocol_versions();
+	for (int i = 0; i < accepted.size(); i++) {
+		supported.push_back(accepted[i]);
+	}
+	data["supported"] = supported;
+	data["requested"] = p_requested;
+	error_dict["data"] = data;
+	err["error"] = error_dict;
+	return err;
+}
+
+static void _ensure_cli_protocol_version_parsed() {
+	if (_cli_protocol_version_parsed) {
+		return;
+	}
+	_cli_protocol_version_parsed = true;
+	if (!OS::get_singleton()) {
+		return;
+	}
+	const List<String> &args = OS::get_singleton()->get_cmdline_args();
+	for (const List<String>::Element *E = args.front(); E; E = E->next()) {
+		if (E->get() == "--mcp-protocol-version" && E->next()) {
+			const String version = E->next()->get();
+			if (MCPSessionManager::is_supported_protocol_version(version)) {
+				_cli_protocol_version_override = version;
+			} else {
+				ERR_PRINT("JustAMCP: --mcp-protocol-version '" + version + "' is not supported. Keeping setting/default.");
+			}
+			break;
+		}
+	}
+}
+
+bool MCPSessionManager::set_cli_protocol_version_override(const String &p_version) {
+	_cli_protocol_version_parsed = true;
+	if (!is_supported_protocol_version(p_version)) {
+		return false;
+	}
+	_cli_protocol_version_override = p_version;
+	return true;
+}
+
+void MCPSessionManager::clear_cli_protocol_version_override() {
+	_cli_protocol_version_override = String();
+	_cli_protocol_version_parsed = true;
+}
+
+static String _configured_protocol_version() {
+#ifdef TOOLS_ENABLED
+	bool use_project = true;
+	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/override_editor_settings")) {
+		use_project = GLOBAL_GET("blazium/justamcp/override_editor_settings");
+	}
+	if (!use_project && EditorSettings::get_singleton() && EditorSettings::get_singleton()->has_setting("blazium/justamcp/protocol_version")) {
+		return String(EditorSettings::get_singleton()->get_setting("blazium/justamcp/protocol_version"));
+	}
+#endif
+	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/protocol_version")) {
+		return String(GLOBAL_GET("blazium/justamcp/protocol_version"));
+	}
+	return String();
+}
+
+String MCPSessionManager::latest_protocol_version() {
+	_ensure_cli_protocol_version_parsed();
+	if (!_cli_protocol_version_override.is_empty()) {
+		return _cli_protocol_version_override;
+	}
+	const String configured = _configured_protocol_version();
+	if (configured.is_empty()) {
+		return String(hardcoded_latest_protocol_version());
+	}
+	if (is_supported_protocol_version(configured)) {
+		return configured;
+	}
+	ERR_PRINT("JustAMCP: invalid protocol_version '" + configured + "', falling back to " + String(hardcoded_latest_protocol_version()) + ".");
+	return String(hardcoded_latest_protocol_version());
+}
+
+String MCPSessionManager::latest_legacy_protocol_version() {
+	const Vector<String> accepted = accepted_protocol_versions();
+	for (int i = 0; i < accepted.size(); i++) {
+		if (is_legacy_protocol_version(accepted[i])) {
+			return accepted[i];
+		}
+	}
+	return String(hardcoded_latest_legacy_protocol_version());
 }
 
 String MCPSessionManager::negotiate_protocol_version(const String &p_client_version) {
-	static const char *preferred[] = {
-		"2025-11-25",
-		"2025-06-18",
-		"2025-03-26",
-		"2024-11-05",
-		nullptr
-	};
-	for (int i = 0; preferred[i]; i++) {
-		if (p_client_version == preferred[i]) {
-			return String(preferred[i]);
-		}
+	if (is_accepted_protocol_version(p_client_version)) {
+		return p_client_version;
 	}
 	return latest_protocol_version();
+}
+
+String MCPSessionManager::negotiate_legacy_initialize(const String &p_client_version) {
+	if (is_legacy_protocol_version(p_client_version) && is_accepted_protocol_version(p_client_version)) {
+		return p_client_version;
+	}
+	return latest_legacy_protocol_version();
 }
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
@@ -115,6 +395,9 @@ bool MCPSessionManager::is_allowed_origin_string(const String &p_origin) {
 	}
 
 	String origin = p_origin.strip_edges();
+	if (origin == "vscode-file://vscode-app" || origin == "https://cursor.sh" || origin == "https://www.cursor.com") {
+		return true;
+	}
 	String scheme;
 	if (origin.begins_with("https://")) {
 		scheme = "https";
@@ -181,24 +464,31 @@ bool MCPSessionManager::validate_origin(const Ref<HTTPRequestContext> &p_context
 }
 
 bool MCPSessionManager::validate_protocol_header(const Ref<HTTPRequestContext> &p_context, String &r_error) {
-	const String header = get_header(p_context, "MCP-Protocol-Version");
+	const String header = get_header(p_context, "MCP-Protocol-Version").strip_edges();
 	if (header.is_empty()) {
 		return true;
 	}
-	static const char *supported[] = {
-		"2025-11-25",
-		"2025-06-18",
-		"2025-03-26",
-		"2024-11-05",
-		nullptr
-	};
-	for (int i = 0; supported[i]; i++) {
-		if (header == supported[i]) {
-			return true;
+	// RFC 9110 combines duplicate request headers with commas. Cursor also
+	// concatenates mcp.json headers with the protocol version it already sends,
+	// producing values such as "2025-11-25, 2025-11-25".
+	const Vector<String> parts = header.split(",", false);
+	bool saw_version = false;
+	for (int i = 0; i < parts.size(); i++) {
+		const String version = parts[i].strip_edges();
+		if (version.is_empty()) {
+			continue;
 		}
+		if (!is_accepted_protocol_version(version)) {
+			r_error = "Unsupported MCP-Protocol-Version: " + header;
+			return false;
+		}
+		saw_version = true;
 	}
-	r_error = "Unsupported MCP-Protocol-Version: " + header;
-	return false;
+	if (!saw_version) {
+		r_error = "Unsupported MCP-Protocol-Version: " + header;
+		return false;
+	}
+	return true;
 }
 
 bool MCPSessionManager::accepts_json_and_sse_header(const String &p_accept) {
@@ -227,7 +517,7 @@ void MCPSessionManager::apply_cors_headers(Ref<HTTPResponse> p_response, const R
 		p_response->add_header("Access-Control-Allow-Origin", origin);
 	}
 	p_response->add_header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
-	p_response->add_header("Access-Control-Allow-Headers", "Content-Type, Authorization, MCP-Session-Id, MCP-Protocol-Version, Last-Event-ID, Accept, X-Client-Id, X-Client-Secret");
+	p_response->add_header("Access-Control-Allow-Headers", "Content-Type, Authorization, MCP-Session-Id, MCP-Protocol-Version, Last-Event-ID, Accept, X-Client-Id, X-Client-Secret, Mcp-Method, Mcp-Name, Mcp-Param-*");
 }
 
 void MCPSessionManager::handle_cors_preflight(const Ref<HTTPRequestContext> &p_context, Ref<HTTPResponse> p_response) const {
@@ -243,6 +533,27 @@ void MCPSessionManager::handle_cors_preflight(const Ref<HTTPRequestContext> &p_c
 
 void MCPSessionManager::on_sse_connection_opened(int p_connection_id, const String &p_path, const Dictionary &p_headers) {
 	if (p_path != "/mcp") {
+		return;
+	}
+
+	bool claimed_modern_listen = false;
+	{
+		MutexLock lock(mutex);
+		if (pending_modern_listen > 0) {
+			pending_modern_listen--;
+			all_sse_connection_ids.insert(p_connection_id);
+			claimed_modern_listen = true;
+		}
+	}
+	if (claimed_modern_listen) {
+		if (HTTPServer::get_singleton()) {
+			Dictionary ack;
+			ack["jsonrpc"] = "2.0";
+			ack["method"] = "notifications/subscriptions/acknowledged";
+			ack["params"] = Dictionary();
+			HTTPServer::get_singleton()->send_sse_event(p_connection_id, "message", JSON::stringify(ack));
+			HTTPServer::get_singleton()->send_sse_comment(p_connection_id, "keepalive");
+		}
 		return;
 	}
 

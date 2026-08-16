@@ -84,6 +84,13 @@ bool MCPSessionManager::handle_mcp_get(const Ref<HTTPRequestContext> &p_context,
 		p_response->set_status(403);
 		return true;
 	}
+	const String requested = first_protocol_version_token(get_header(p_context, "MCP-Protocol-Version"));
+	if (is_modern_protocol_version(requested)) {
+		apply_cors_headers(p_response, p_context);
+		p_response->set_status(405);
+		p_response->set_body("GET is not supported for protocol " + requested);
+		return true;
+	}
 	if (!accepts_event_stream(p_context)) {
 		p_response->set_status(406);
 		p_response->set_body("Accept must include text/event-stream");

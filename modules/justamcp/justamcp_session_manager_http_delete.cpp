@@ -56,6 +56,14 @@ bool MCPSessionManager::handle_mcp_delete(const Ref<HTTPRequestContext> &p_conte
 		return true;
 	}
 
+	const String requested = first_protocol_version_token(get_header(p_context, "MCP-Protocol-Version"));
+	if (is_modern_protocol_version(requested)) {
+		apply_cors_headers(p_response, p_context);
+		p_response->set_status(405);
+		p_response->set_body("DELETE is not supported for protocol " + requested);
+		return true;
+	}
+
 	const String session_id = get_header(p_context, "MCP-Session-Id");
 	if (session_id.is_empty()) {
 		p_response->set_status(400);
