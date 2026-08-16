@@ -55,6 +55,8 @@ jobs:
             # Debug symbols disabled as they're huge on this build and we hit the 14 GB limit for runners.
             # Use lld instead of mold: ASAN+double+SCU editor binaries exceed mold's R_X86_64_PC32 range.
             # medium code model keeps large ASAN/static-libstdc++ data from blowing 32-bit PC relocations.
+            # GCC -mcmodel=medium still emits R_X86_64_PC32 to shared libasan/libubsan; ASAN shadow
+            # places those >2GB away. PIC + static sanitizer libs keep those refs in range.
             scons-flags: >-
               dev_build=yes
               scu_build=yes
@@ -63,7 +65,8 @@ jobs:
               use_asan=yes
               use_ubsan=yes
               linker=lld
-              ccflags=-mcmodel=medium
+              ccflags="-mcmodel=medium -fPIC"
+              linkflags="-static-libasan -static-libubsan"
             bin: ./bin/blazium.linuxbsd.editor.dev.double.x86_64.san
             proj-test: true
             free-space: true
