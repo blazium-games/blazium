@@ -680,6 +680,9 @@
 		</member>
 		<member name="blazium/justamcp/server_port" type="int" setter="" getter="" default="6506">
 		</member>
+		<member name="blazium/justamcp/protocol_version" type="String" setter="" getter="" default="&quot;2025-11-25&quot;">
+			Default and fallback MCP protocol version advertised during [code]initialize[/code] when the client version is missing or unsupported. Override with [code]--mcp-protocol-version[/code].
+		</member>
 		<member name="blazium/justamcp/session_allow_client_delete" type="bool" setter="" getter="" default="true">
 		</member>
 		<member name="blazium/justamcp/session_ttl_seconds" type="int" setter="" getter="" default="3600">

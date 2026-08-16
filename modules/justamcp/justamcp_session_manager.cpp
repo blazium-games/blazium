@@ -37,7 +37,13 @@
 #include "core/config/project_settings.h"
 #include "core/crypto/crypto_core.h"
 #include "core/io/json.h"
+#include "core/os/os.h"
 #include "core/os/time.h"
+#include "core/templates/list.h"
+
+#ifdef TOOLS_ENABLED
+#include "editor/settings/editor_settings.h"
+#endif
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 #include "modules/httpserver/http_server.h"
@@ -57,18 +63,97 @@ void MCPSessionManager::clear_all() {
 	request_router.clear_all();
 }
 
-String MCPSessionManager::negotiate_protocol_version(const String &p_client_version) {
-	static const char *preferred[] = {
-		"2025-11-25",
-		"2025-06-18",
-		"2025-03-26",
-		"2024-11-05",
-		nullptr
-	};
-	for (int i = 0; preferred[i]; i++) {
-		if (p_client_version == preferred[i]) {
-			return String(preferred[i]);
+static String _cli_protocol_version_override;
+static bool _cli_protocol_version_parsed = false;
+
+static const char *const _supported_protocol_versions[] = {
+	"2025-11-25",
+	"2025-06-18",
+	"2025-03-26",
+	"2024-11-05",
+	nullptr
+};
+
+bool MCPSessionManager::is_supported_protocol_version(const String &p_version) {
+	for (int i = 0; _supported_protocol_versions[i]; i++) {
+		if (p_version == _supported_protocol_versions[i]) {
+			return true;
 		}
+	}
+	return false;
+}
+
+static void _ensure_cli_protocol_version_parsed() {
+	if (_cli_protocol_version_parsed) {
+		return;
+	}
+	_cli_protocol_version_parsed = true;
+	if (!OS::get_singleton()) {
+		return;
+	}
+	const List<String> &args = OS::get_singleton()->get_cmdline_args();
+	for (const List<String>::Element *E = args.front(); E; E = E->next()) {
+		if (E->get() == "--mcp-protocol-version" && E->next()) {
+			const String version = E->next()->get();
+			if (MCPSessionManager::is_supported_protocol_version(version)) {
+				_cli_protocol_version_override = version;
+			} else {
+				ERR_PRINT("JustAMCP: --mcp-protocol-version '" + version + "' is not supported. Keeping setting/default.");
+			}
+			break;
+		}
+	}
+}
+
+bool MCPSessionManager::set_cli_protocol_version_override(const String &p_version) {
+	_cli_protocol_version_parsed = true;
+	if (!is_supported_protocol_version(p_version)) {
+		return false;
+	}
+	_cli_protocol_version_override = p_version;
+	return true;
+}
+
+void MCPSessionManager::clear_cli_protocol_version_override() {
+	_cli_protocol_version_override = String();
+	_cli_protocol_version_parsed = true;
+}
+
+static String _configured_protocol_version() {
+#ifdef TOOLS_ENABLED
+	bool use_project = true;
+	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/override_editor_settings")) {
+		use_project = GLOBAL_GET("blazium/justamcp/override_editor_settings");
+	}
+	if (!use_project && EditorSettings::get_singleton() && EditorSettings::get_singleton()->has_setting("blazium/justamcp/protocol_version")) {
+		return String(EditorSettings::get_singleton()->get_setting("blazium/justamcp/protocol_version"));
+	}
+#endif
+	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/protocol_version")) {
+		return String(GLOBAL_GET("blazium/justamcp/protocol_version"));
+	}
+	return String();
+}
+
+String MCPSessionManager::latest_protocol_version() {
+	_ensure_cli_protocol_version_parsed();
+	if (!_cli_protocol_version_override.is_empty()) {
+		return _cli_protocol_version_override;
+	}
+	const String configured = _configured_protocol_version();
+	if (configured.is_empty()) {
+		return String(hardcoded_latest_protocol_version());
+	}
+	if (is_supported_protocol_version(configured)) {
+		return configured;
+	}
+	ERR_PRINT("JustAMCP: invalid protocol_version '" + configured + "', falling back to " + String(hardcoded_latest_protocol_version()) + ".");
+	return String(hardcoded_latest_protocol_version());
+}
+
+String MCPSessionManager::negotiate_protocol_version(const String &p_client_version) {
+	if (is_supported_protocol_version(p_client_version)) {
+		return p_client_version;
 	}
 	return latest_protocol_version();
 }
@@ -115,6 +200,9 @@ bool MCPSessionManager::is_allowed_origin_string(const String &p_origin) {
 	}
 
 	String origin = p_origin.strip_edges();
+	if (origin == "vscode-file://vscode-app" || origin == "https://cursor.sh" || origin == "https://www.cursor.com") {
+		return true;
+	}
 	String scheme;
 	if (origin.begins_with("https://")) {
 		scheme = "https";

@@ -737,6 +737,7 @@ void Main::print_help(const char *p_binary) {
 	print_help_title("JustAMCP Options");
 	print_help_option("--enable-mcp", "Force start the embedded JustAMCP server alongside the process.\n");
 	print_help_option("--mcp-port <port>", "Bind the JustAMCP server to a specific local port.\n");
+	print_help_option("--mcp-protocol-version <date>", "Override the JustAMCP default/fallback MCP protocol version (2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05).\n");
 	print_help_option("--mcp-client-id <id>", "Force override the MCP OAuth Client ID dynamically.\n");
 	print_help_option("--mcp-client-secret <secret>", "Force override the MCP OAuth Client Secret dynamically.\n");
 	print_help_option("--enable-mcp-game-control", "Start the JustAMCP game-control TCP bridge.\n");

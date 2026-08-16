@@ -340,6 +340,7 @@ Dictionary JustAMCPJsonRpcRouter::route_initialize(JustAMCPServer *p_server, con
 	resources_cap["subscribe"] = true;
 	capabilities["resources"] = resources_cap;
 	capabilities["logging"] = Dictionary();
+	capabilities["completions"] = Dictionary();
 	Dictionary tasks_cap;
 	tasks_cap["list"] = Dictionary();
 	tasks_cap["cancel"] = Dictionary();
@@ -350,10 +351,12 @@ Dictionary JustAMCPJsonRpcRouter::route_initialize(JustAMCPServer *p_server, con
 	tasks_cap["requests"] = requests;
 	capabilities["tasks"] = tasks_cap;
 	result["capabilities"] = capabilities;
+	result["instructions"] = "Use blazium_* tools and blazium:// resources. Prefer editor tools for scene/resource edits, runtime_* tools only when a game bridge is active, and guide resources such as blazium://guide/tool-index for workflow orientation.";
 	Dictionary serverInfo;
 	serverInfo["name"] = "blazium-mcp-server";
+	serverInfo["title"] = "Blazium MCP";
 	serverInfo["version"] = "1.0.0";
-	serverInfo["instructions"] = "Use blazium_* tools and blazium:// resources. Prefer editor tools for scene/resource edits, runtime_* tools only when a game bridge is active, and guide resources such as blazium://guide/tool-index for workflow orientation.";
+	serverInfo["websiteUrl"] = "https://blazium.app";
 	result["serverInfo"] = serverInfo;
 
 	Dictionary rpc_result;

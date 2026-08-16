@@ -40,7 +40,9 @@
 #include "../justamcp_json_rpc_transport.h"
 #include "../justamcp_server.h"
 #include "../justamcp_session_manager.h"
+#include "../tools/justamcp_json_rpc_router.h"
 
+#include "core/config/project_settings.h"
 #include "core/io/json.h"
 #include "tests/test_macros.h"
 
@@ -120,6 +122,7 @@ static String _init_session(JustAMCPServer &p_server, MCPSessionManager *p_sm, c
 }
 
 void test_justamcp_negotiate_protocol_versions() {
+	MCPSessionManager::clear_cli_protocol_version_override();
 	for (int i = 0; k_supported_protocols[i]; i++) {
 		const String version = k_supported_protocols[i];
 		CHECK(MCPSessionManager::negotiate_protocol_version(version) == version);
@@ -127,6 +130,57 @@ void test_justamcp_negotiate_protocol_versions() {
 	CHECK(MCPSessionManager::latest_protocol_version() == "2025-11-25");
 	CHECK(MCPSessionManager::negotiate_protocol_version("2099-01-01") == "2025-11-25");
 	CHECK(MCPSessionManager::negotiate_protocol_version("") == "2025-11-25");
+	CHECK(MCPSessionManager::negotiate_protocol_version("2026-07-28") == "2025-11-25");
+}
+
+void test_justamcp_protocol_version_setting_and_cli() {
+	ProjectSettings *ps = ProjectSettings::get_singleton();
+	TEST_FAIL_COND(ps == nullptr, "ProjectSettings is required");
+
+	const bool prev_override = bool(ps->get_setting("blazium/justamcp/override_editor_settings", false));
+	const String prev_version = String(ps->get_setting("blazium/justamcp/protocol_version", "2025-11-25"));
+	MCPSessionManager::clear_cli_protocol_version_override();
+	ps->set_setting("blazium/justamcp/override_editor_settings", true);
+	ps->set_setting("blazium/justamcp/protocol_version", "2024-11-05");
+	CHECK(MCPSessionManager::latest_protocol_version() == "2024-11-05");
+	CHECK(MCPSessionManager::negotiate_protocol_version("2099-01-01") == "2024-11-05");
+
+	CHECK(MCPSessionManager::set_cli_protocol_version_override("2025-03-26"));
+	CHECK(MCPSessionManager::latest_protocol_version() == "2025-03-26");
+	CHECK(!MCPSessionManager::set_cli_protocol_version_override("not-a-version"));
+	CHECK(MCPSessionManager::latest_protocol_version() == "2025-03-26");
+
+	MCPSessionManager::clear_cli_protocol_version_override();
+	ps->set_setting("blazium/justamcp/protocol_version", "bogus");
+	CHECK(MCPSessionManager::latest_protocol_version() == "2025-11-25");
+
+	ps->set_setting("blazium/justamcp/protocol_version", prev_version);
+	ps->set_setting("blazium/justamcp/override_editor_settings", prev_override);
+}
+
+void test_justamcp_initialize_result_shape() {
+	JustAMCPTestServerFixture fixture;
+	Dictionary payload;
+	Dictionary params;
+	params["protocolVersion"] = "2025-11-25";
+	params["capabilities"] = Dictionary();
+	payload["params"] = params;
+
+	Dictionary routed = JustAMCPJsonRpcRouter::route_initialize(&fixture.get_server(), payload, 1);
+	CHECK(bool(routed.get("handled", false)));
+	CHECK(routed.has("result"));
+	Dictionary result = routed["result"];
+	CHECK(result.has("instructions"));
+	CHECK(result.has("capabilities"));
+	CHECK(result.has("serverInfo"));
+	Dictionary capabilities = result["capabilities"];
+	CHECK(capabilities.has("completions"));
+	CHECK(capabilities.has("tools"));
+	Dictionary server_info = result["serverInfo"];
+	CHECK(!server_info.has("instructions"));
+	CHECK(String(server_info.get("name", "")) == "blazium-mcp-server");
+	CHECK(String(server_info.get("title", "")) == "Blazium MCP");
+	CHECK(String(server_info.get("websiteUrl", "")) == "https://blazium.app");
 }
 
 void test_justamcp_validate_protocol_header_rejects_unknown() {
@@ -265,6 +319,12 @@ void test_justamcp_json_rpc_rejects_null_id() {
 #else
 
 void test_justamcp_negotiate_protocol_versions() {
+	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required");
+}
+void test_justamcp_protocol_version_setting_and_cli() {
+	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required");
+}
+void test_justamcp_initialize_result_shape() {
 	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required");
 }
 void test_justamcp_validate_protocol_header_rejects_unknown() {

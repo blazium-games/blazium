@@ -41,6 +41,9 @@ void test_justamcp_origin_host_strict() {
 	CHECK(MCPSessionManager::is_allowed_origin_string("http://localhost:8080"));
 	CHECK(MCPSessionManager::is_allowed_origin_string("http://[::1]"));
 	CHECK(MCPSessionManager::is_allowed_origin_string("https://127.0.0.1"));
+	CHECK(MCPSessionManager::is_allowed_origin_string("vscode-file://vscode-app"));
+	CHECK(MCPSessionManager::is_allowed_origin_string("https://cursor.sh"));
+	CHECK(MCPSessionManager::is_allowed_origin_string("https://www.cursor.com"));
 
 	CHECK(!MCPSessionManager::is_allowed_origin_string("http://127.0.0.1.evil"));
 	CHECK(!MCPSessionManager::is_allowed_origin_string("http://localhost.attacker"));

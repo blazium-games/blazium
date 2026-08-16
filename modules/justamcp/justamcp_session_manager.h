@@ -95,8 +95,12 @@ public:
 
 	void clear_all();
 
-	static String latest_protocol_version() { return String("2025-11-25"); }
+	static const char *hardcoded_latest_protocol_version() { return "2025-11-25"; }
+	static bool is_supported_protocol_version(const String &p_version);
+	static String latest_protocol_version();
 	static String negotiate_protocol_version(const String &p_client_version);
+	static bool set_cli_protocol_version_override(const String &p_version);
+	static void clear_cli_protocol_version_override();
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 	static String get_header(const Ref<HTTPRequestContext> &p_context, const String &p_name);

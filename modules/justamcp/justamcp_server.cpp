@@ -479,6 +479,12 @@ void JustAMCPServer::_start_server() {
 		if (E->get() == "--mcp-client-secret" && E->next()) {
 			cmd_client_secret = E->next()->get();
 		}
+		if (E->get() == "--mcp-protocol-version" && E->next()) {
+			const String cmd_protocol = E->next()->get();
+			if (!MCPSessionManager::set_cli_protocol_version_override(cmd_protocol)) {
+				ERR_PRINT("JustAMCP: --mcp-protocol-version '" + cmd_protocol + "' is not supported. Keeping setting/default.");
+			}
+		}
 	}
 
 	if (!cmd_client_id.is_empty() && cmd_client_secret.is_empty()) {

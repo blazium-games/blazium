@@ -260,6 +260,7 @@ void test_justamcp_mcp_config_json_uses_streamable_mcp_path() {
 	const String opencode_cfg = JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_OPENCODE);
 	CHECK(cursor_cfg.contains("/mcp"));
 	CHECK(!cursor_cfg.contains("/sse"));
+	CHECK(cursor_cfg.contains("\"MCP-Protocol-Version\""));
 	CHECK(ag_cfg.contains("/mcp"));
 	CHECK(!ag_cfg.contains("\"/sse\""));
 	CHECK(opencode_cfg.contains("\"$schema\": \"https://opencode.ai/config.json\""));
@@ -379,10 +380,36 @@ void test_justamcp_mcp_config_client_field_shapes() {
 	const String opencode_cfg = JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_OPENCODE);
 	CHECK(cursor_cfg.contains("\"url\":"));
 	CHECK(!cursor_cfg.contains("\"serverUrl\":"));
+	CHECK(cursor_cfg.contains("\"headers\""));
+	CHECK(cursor_cfg.contains("\"MCP-Protocol-Version\""));
+	CHECK(!cursor_cfg.contains("\"oauth\""));
 	CHECK(ag_cfg.contains("\"serverUrl\":"));
 	CHECK(!ag_cfg.contains("\"url\": \"http://"));
 	CHECK(opencode_cfg.contains("\"mcp\":"));
 	CHECK(opencode_cfg.contains("\"blazium-mcp\":"));
+
+	ProjectSettings *ps = ProjectSettings::get_singleton();
+	if (ps) {
+		const bool prev_override = bool(ps->get_setting("blazium/justamcp/override_editor_settings", false));
+		const bool prev_oauth = bool(ps->get_setting("blazium/justamcp/oauth_enabled", false));
+		const String prev_id = String(ps->get_setting("blazium/justamcp/client_id", ""));
+		const String prev_secret = String(ps->get_setting("blazium/justamcp/client_secret", ""));
+		ps->set_setting("blazium/justamcp/override_editor_settings", true);
+		ps->set_setting("blazium/justamcp/oauth_enabled", true);
+		ps->set_setting("blazium/justamcp/client_id", "cursor-client");
+		ps->set_setting("blazium/justamcp/client_secret", "cursor-secret");
+		const String cursor_oauth = JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_CURSOR);
+		const String ag_oauth = JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_ANTIGRAVITY);
+		CHECK(cursor_oauth.contains("\"auth\""));
+		CHECK(cursor_oauth.contains("\"CLIENT_ID\""));
+		CHECK(!cursor_oauth.contains("\"oauth\""));
+		CHECK(ag_oauth.contains("\"oauth\""));
+		CHECK(ag_oauth.contains("\"clientId\""));
+		ps->set_setting("blazium/justamcp/override_editor_settings", prev_override);
+		ps->set_setting("blazium/justamcp/oauth_enabled", prev_oauth);
+		ps->set_setting("blazium/justamcp/client_id", prev_id);
+		ps->set_setting("blazium/justamcp/client_secret", prev_secret);
+	}
 #else
 	SUCCEED();
 #endif

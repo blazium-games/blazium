@@ -32,6 +32,8 @@
 #include "tests/test_macros.h"
 
 void test_justamcp_negotiate_protocol_versions();
+void test_justamcp_protocol_version_setting_and_cli();
+void test_justamcp_initialize_result_shape();
 void test_justamcp_validate_protocol_header_rejects_unknown();
 void test_justamcp_http_initialize_all_protocol_versions();
 void test_justamcp_http_protocol_header_falls_back_to_session();
@@ -42,6 +44,14 @@ void test_justamcp_json_rpc_rejects_null_id();
 
 TEST_CASE("[Modules][JustAMCP] negotiate protocol versions") {
 	test_justamcp_negotiate_protocol_versions();
+}
+
+TEST_CASE("[Modules][JustAMCP] protocol version setting and CLI override") {
+	test_justamcp_protocol_version_setting_and_cli();
+}
+
+TEST_CASE("[Modules][JustAMCP] initialize result shape") {
+	test_justamcp_initialize_result_shape();
 }
 
 TEST_CASE("[Modules][JustAMCP] validate protocol header rejects unknown") {

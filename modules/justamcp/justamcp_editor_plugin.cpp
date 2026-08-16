@@ -34,6 +34,7 @@
 #include "justamcp_editor_plugin.h"
 #include "justamcp_project_settings.h"
 #include "justamcp_server.h"
+#include "justamcp_session_manager.h"
 #include "justamcp_tool_context.h"
 #include "justamcp_tool_dispatch.h"
 #include "tools/justamcp_json_rpc_helpers.h"
@@ -482,6 +483,7 @@ String JustAMCPEditorPlugin::get_mcp_config_json(MCPConfigClient p_client) {
 	}
 
 	const String mcp_url = "http://127.0.0.1:" + itos(port) + "/mcp";
+	const String protocol_version = MCPSessionManager::latest_protocol_version();
 
 	if (p_client == MCP_CONFIG_OPENCODE) {
 		String json_config = "{\n";
@@ -501,16 +503,26 @@ String JustAMCPEditorPlugin::get_mcp_config_json(MCPConfigClient p_client) {
 	json_config += "  \"mcpServers\": {\n";
 	json_config += "    \"blazium-mcp\": {\n";
 	if (p_client == MCP_CONFIG_CURSOR) {
-		json_config += "      \"url\": \"" + mcp_url + "\"";
+		json_config += "      \"url\": \"" + mcp_url + "\",\n";
+		json_config += "      \"headers\": {\n";
+		json_config += "        \"MCP-Protocol-Version\": \"" + protocol_version + "\"\n";
+		json_config += "      }";
 	} else {
 		json_config += "      \"serverUrl\": \"" + mcp_url + "\"";
 	}
 
 	if (oauth_enabled && (!client_id.is_empty() || !client_secret.is_empty())) {
-		json_config += ",\n      \"oauth\": {\n";
-		json_config += "        \"clientId\": \"" + client_id + "\",\n";
-		json_config += "        \"clientSecret\": \"" + client_secret + "\"\n";
-		json_config += "      }\n";
+		if (p_client == MCP_CONFIG_CURSOR) {
+			json_config += ",\n      \"auth\": {\n";
+			json_config += "        \"CLIENT_ID\": \"" + client_id + "\",\n";
+			json_config += "        \"CLIENT_SECRET\": \"" + client_secret + "\"\n";
+			json_config += "      }\n";
+		} else {
+			json_config += ",\n      \"oauth\": {\n";
+			json_config += "        \"clientId\": \"" + client_id + "\",\n";
+			json_config += "        \"clientSecret\": \"" + client_secret + "\"\n";
+			json_config += "      }\n";
+		}
 	} else {
 		json_config += "\n";
 	}
