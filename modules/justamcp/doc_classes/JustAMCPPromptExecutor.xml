@@ -27,8 +27,9 @@
 			<return type="Dictionary" />
 			<param index="0" name="ref" type="Dictionary" />
 			<param index="1" name="argument" type="Dictionary" />
+			<param index="2" name="context" type="Dictionary" default="{}" />
 			<description>
-				Looks up the prompt named by [param ref] and returns completion values for [param argument]. Unknown prompts return an empty completion result.
+				Looks up the prompt named by [param ref] and returns completion values for [param argument]. Non-empty [param context] is forwarded to the prompt as [code]argument.context[/code]. Unknown prompts return an empty completion result.
 			</description>
 		</method>
 		<method name="get_prompt">
