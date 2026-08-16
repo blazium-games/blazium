@@ -30,12 +30,14 @@
 #ifdef TESTS_ENABLED
 
 #include "test_justamcp_enqueue_rate_limit.h"
+
 #include "test_justamcp_fixture.h"
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 
 #include "../justamcp_server.h"
 #include "../justamcp_session_manager.h"
+
 #include "core/config/project_settings.h"
 #include "tests/test_macros.h"
 

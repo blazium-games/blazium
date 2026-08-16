@@ -29,11 +29,11 @@
 
 #include "justamcp_input_tools.h"
 
-#include "core/io/file_access.h"
-#include "core/io/json.h"
-
 #include "../justamcp_mcp_tool_macros.h"
 #include "../justamcp_runtime.h"
+
+#include "core/io/file_access.h"
+#include "core/io/json.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_interface.h"

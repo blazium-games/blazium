@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "test_justamcp_legacy_message.h"
+
 #include "test_justamcp_fixture.h"
 
 #ifdef TESTS_ENABLED
@@ -36,10 +37,12 @@
 
 #include "../justamcp_json_rpc_transport.h"
 #include "../justamcp_server.h"
+
 #include "core/io/json.h"
+#include "tests/test_macros.h"
+
 #include "modules/httpserver/http_request_context.h"
 #include "modules/httpserver/http_response.h"
-#include "tests/test_macros.h"
 
 void test_justamcp_legacy_message_routes_result() {
 	JustAMCPTestServerFixture fixture;

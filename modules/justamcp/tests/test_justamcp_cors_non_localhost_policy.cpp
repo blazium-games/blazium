@@ -34,6 +34,7 @@
 #if defined(MODULE_HTTPSERVER_ENABLED)
 
 #include "../justamcp_cors_policy.h"
+
 #include "tests/test_macros.h"
 
 void test_justamcp_cors_non_localhost_policy() {

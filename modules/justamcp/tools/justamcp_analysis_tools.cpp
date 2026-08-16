@@ -30,9 +30,11 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_analysis_tools.h"
+
 #include "../justamcp_editor_scene_access.h"
 #include "../justamcp_mcp_tool_macros.h"
 #include "../justamcp_read_limits.h"
+
 #include "core/config/project_settings.h"
 #include "core/error/error_macros.h"
 #include "core/io/dir_access.h"

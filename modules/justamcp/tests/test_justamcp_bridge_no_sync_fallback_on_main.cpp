@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "test_justamcp_bridge_no_sync_fallback_on_main.h"
+
 #include "test_justamcp_fixture.h"
 
 #ifdef TESTS_ENABLED

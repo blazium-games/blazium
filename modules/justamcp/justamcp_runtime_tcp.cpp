@@ -27,15 +27,15 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "core/object/callable_mp.h"
 #include "justamcp_runtime.h"
+#include "tools/justamcp_tool_executor.h"
 
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
+#include "core/object/callable_mp.h"
 #include "core/object/message_queue.h"
 #include "core/os/os.h"
 #include "core/os/time.h"
-#include "tools/justamcp_tool_executor.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/settings/editor_settings.h"

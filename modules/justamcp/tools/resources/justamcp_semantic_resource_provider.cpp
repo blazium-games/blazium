@@ -32,6 +32,7 @@
 #include "justamcp_semantic_resource_provider.h"
 
 #include "core/io/json.h"
+
 #include "modules/modules_enabled.gen.h"
 
 #ifdef MODULE_SEMANTICSEARCH_ENABLED

@@ -28,11 +28,12 @@
 /**************************************************************************/
 
 #include "justamcp_blueprint_tools.h"
+
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
 
-#include "modules/noise/fastnoise_lite.h"
-#include "modules/noise/noise_texture_2d.h"
+#include "editor/editor_interface.h"
+#include "editor/editor_undo_redo_manager.h"
 #include "scene/2d/camera_2d.h"
 #include "scene/2d/gpu_particles_2d.h"
 #include "scene/3d/camera_3d.h"
@@ -43,8 +44,8 @@
 #include "scene/resources/material.h"
 #include "scene/resources/particle_process_material.h"
 
-#include "editor/editor_interface.h"
-#include "editor/editor_undo_redo_manager.h"
+#include "modules/noise/fastnoise_lite.h"
+#include "modules/noise/noise_texture_2d.h"
 
 void JustAMCPBlueprintTools::_bind_methods() {}
 

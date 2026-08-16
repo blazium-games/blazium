@@ -30,6 +30,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_prompt_project_info.h"
+
 #include "core/config/project_settings.h"
 
 void JustAMCPPromptProjectInfo::_bind_methods() {}

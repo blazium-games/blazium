@@ -29,10 +29,12 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "core/object/class_db.h"
 #include "justamcp_networking_tools.h"
+
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
+
+#include "core/object/class_db.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_undo_redo_manager.h"
 #include "scene/main/http_request.h"

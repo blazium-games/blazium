@@ -30,6 +30,7 @@
 #ifdef TESTS_ENABLED
 
 #include "test_justamcp_server_queue_lifecycle.h"
+
 #include "../justamcp_server.h"
 #include "../justamcp_tool_context.h"
 #include "../justamcp_tool_queue_state.h"
@@ -39,10 +40,12 @@
 #include "../tools/justamcp_json_rpc_helpers.h"
 #include "../tools/justamcp_readonly_tools.h"
 #include "../tools/justamcp_tool_executor.h"
-#include "modules/modules_enabled.gen.h"
 #include "test_justamcp_fixture.h"
+
+#include "modules/modules_enabled.gen.h"
 #if defined(MODULE_SEMANTICSEARCH_ENABLED)
 #include "../tools/justamcp_semantic_search_tools.h"
+
 #include "modules/semanticsearch/semantic_search_backend_factory.h"
 #endif
 #include "core/os/os.h"

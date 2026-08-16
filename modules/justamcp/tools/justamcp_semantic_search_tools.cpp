@@ -29,7 +29,6 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "core/object/class_db.h"
 #include "justamcp_semantic_search_tools.h"
 
 #include "../justamcp_tool_context.h"
@@ -37,6 +36,7 @@
 #include "justamcp_tool_schema_builder.h"
 
 #include "core/config/project_settings.h"
+#include "core/object/class_db.h"
 #include "editor/settings/editor_settings.h"
 #ifdef TOOLS_ENABLED
 #include "editor/file_system/editor_file_system.h"

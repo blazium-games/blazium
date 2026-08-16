@@ -28,18 +28,18 @@
 /**************************************************************************/
 
 #include "justamcp_environment_tools.h"
+
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
 
+#include "editor/editor_interface.h"
+#include "editor/editor_undo_redo_manager.h"
 #include "scene/3d/world_environment.h"
 #include "scene/main/node.h"
 #include "scene/main/viewport.h"
 #include "scene/resources/3d/sky_material.h"
 #include "scene/resources/environment.h"
 #include "scene/resources/sky.h"
-
-#include "editor/editor_interface.h"
-#include "editor/editor_undo_redo_manager.h"
 
 void JustAMCPEnvironmentTools::_bind_methods() {}
 

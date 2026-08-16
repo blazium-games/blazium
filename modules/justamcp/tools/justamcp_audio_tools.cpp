@@ -27,18 +27,18 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "core/object/class_db.h"
 #include "justamcp_audio_tools.h"
 
+#include "../justamcp_editor_scene_access.h"
+#include "../justamcp_mcp_tool_macros.h"
+
 #include "core/io/resource_loader.h"
+#include "core/object/class_db.h"
 #include "scene/2d/audio_stream_player_2d.h"
 #include "scene/3d/audio_stream_player_3d.h"
 #include "scene/audio/audio_stream_player.h"
 #include "servers/audio/audio_effect.h"
 #include "servers/audio/audio_server.h"
-
-#include "../justamcp_editor_scene_access.h"
-#include "../justamcp_mcp_tool_macros.h"
 
 void JustAMCPAudioTools::_bind_methods() {}
 

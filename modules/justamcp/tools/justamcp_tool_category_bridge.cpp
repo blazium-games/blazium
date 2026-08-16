@@ -29,10 +29,11 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "core/object/class_db.h"
 #include "justamcp_tool_category_bridge.h"
 
 #include "justamcp_tool_executor.h"
+
+#include "core/object/class_db.h"
 
 void JustAMCPToolCategoryBridge::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("provide_tool_schemas", "register_only", "ignore_settings", "include_disabled_tools"), &JustAMCPToolCategoryBridge::provide_tool_schemas, DEFVAL(false), DEFVAL(false), DEFVAL(false));

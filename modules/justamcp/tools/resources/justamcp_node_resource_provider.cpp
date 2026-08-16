@@ -30,8 +30,8 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_node_resource_provider.h"
-#include "../../justamcp_editor_scene_access.h"
 
+#include "../../justamcp_editor_scene_access.h"
 #include "justamcp_resource_json.h"
 
 #include "core/io/resource.h"

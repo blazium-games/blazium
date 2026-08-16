@@ -30,15 +30,18 @@
 #ifdef TESTS_ENABLED
 
 #include "test_justamcp_task_augmented_no_block.h"
+
 #include "test_justamcp_fixture.h"
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 
 #include "../justamcp_json_rpc_transport.h"
 #include "../justamcp_server.h"
+
 #include "core/os/os.h"
-#include "modules/httpserver/http_response.h"
 #include "tests/test_macros.h"
+
+#include "modules/httpserver/http_response.h"
 
 void test_justamcp_task_augmented_http_returns_immediately() {
 	JustAMCPTestServerFixture fixture;

@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "test_justamcp_bridge_execute_no_main_block.h"
+
 #include "test_justamcp_fixture.h"
 
 #ifdef TESTS_ENABLED

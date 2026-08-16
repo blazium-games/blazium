@@ -32,6 +32,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "test_justamcp_resource_providers.h"
+
 #include "../tools/resources/justamcp_blazium_resource_registry.h"
 #include "../tools/resources/justamcp_guides_resource_provider.h"
 #include "../tools/resources/justamcp_logs_resource_provider.h"

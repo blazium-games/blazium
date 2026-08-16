@@ -30,12 +30,15 @@
 #ifdef TESTS_ENABLED
 
 #include "test_justamcp_settings_resolver.h"
+
 #include "../tools/justamcp_resource_manifest.h"
 #include "../tools/justamcp_settings_resolver.h"
 #include "../tools/justamcp_tool_executor.h"
 #include "../tools/justamcp_tool_schema_cache.h"
-#include "modules/modules_enabled.gen.h"
+
 #include "tests/test_macros.h"
+
+#include "modules/modules_enabled.gen.h"
 
 void test_justamcp_settings_resolver() {
 	bool cat_enabled = false;

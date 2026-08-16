@@ -27,7 +27,6 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "core/object/callable_mp.h"
 #include "justamcp_runtime.h"
 
 #include "core/config/project_settings.h"
@@ -38,6 +37,7 @@
 #include "core/io/image.h"
 #include "core/io/json.h"
 #include "core/math/expression.h"
+#include "core/object/callable_mp.h"
 #include "core/object/message_queue.h"
 #include "core/object/script_language.h"
 #include "core/os/os.h"

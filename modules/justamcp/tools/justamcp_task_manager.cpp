@@ -29,12 +29,14 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "core/object/class_db.h"
 #include "justamcp_task_manager.h"
+
 #include "../justamcp_pagination.h"
 #include "../justamcp_server.h"
+
 #include "core/config/project_settings.h"
 #include "core/crypto/crypto_core.h"
+#include "core/object/class_db.h"
 #include "core/os/os.h"
 #include "core/os/thread.h"
 #include "core/os/time.h"

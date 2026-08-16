@@ -29,7 +29,6 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "core/object/class_db.h"
 #include "../justamcp_editor_filesystem.h"
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_read_limits.h"
@@ -37,6 +36,7 @@
 
 #include "core/config/project_settings.h"
 #include "core/io/resource_loader.h"
+#include "core/object/class_db.h"
 
 #ifdef MODULE_ASSETTAGS_ENABLED
 #include "modules/assettags/asset_tag_registry.h"
@@ -47,10 +47,10 @@
 #include "core/io/json.h"
 #include "core/io/resource_saver.h"
 #include "core/os/thread.h"
-#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
 #include "editor/editor_undo_redo_manager.h"
+#include "editor/file_system/editor_file_system.h"
 #include "scene/2d/sprite_2d.h"
 #include "scene/2d/tile_map.h"
 #include "scene/3d/mesh_instance_3d.h"

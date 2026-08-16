@@ -34,25 +34,23 @@
 #include "core/io/json.h"
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
-#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
-#include "scene/resources/packed_scene.h"
-
+#include "editor/file_system/editor_file_system.h"
+#include "scene/2d/navigation/navigation_agent_2d.h"
+#include "scene/2d/navigation/navigation_region_2d.h"
+#include "scene/3d/navigation/navigation_agent_3d.h"
+#include "scene/3d/navigation/navigation_region_3d.h"
 #include "scene/animation/animation_blend_space_1d.h"
 #include "scene/animation/animation_blend_space_2d.h"
 #include "scene/animation/animation_blend_tree.h"
 #include "scene/animation/animation_node_state_machine.h"
 #include "scene/animation/animation_player.h"
 #include "scene/animation/animation_tree.h"
-#include "scene/resources/animation_library.h"
-
-#include "scene/2d/navigation/navigation_agent_2d.h"
-#include "scene/2d/navigation/navigation_region_2d.h"
-#include "scene/3d/navigation/navigation_agent_3d.h"
-#include "scene/3d/navigation/navigation_region_3d.h"
 #include "scene/resources/2d/navigation_polygon.h"
+#include "scene/resources/animation_library.h"
 #include "scene/resources/navigation_mesh.h"
+#include "scene/resources/packed_scene.h"
 
 Dictionary JustAMCPAnimationTools::create_animation_tree(const Dictionary &p_args) {
 	String scene_path = _ensure_res_path(p_args.get("scenePath", ""));

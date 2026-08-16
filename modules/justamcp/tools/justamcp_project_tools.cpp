@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "justamcp_project_tools.h"
+
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_read_limits.h"
 
@@ -38,6 +39,7 @@
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
 #include "core/io/resource_uid.h"
+
 #include "modules/regex/regex.h"
 
 void JustAMCPProjectTools::_bind_methods() {}

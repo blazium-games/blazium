@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "test_justamcp_bridge_no_main_wait.h"
+
 #include "test_justamcp_fixture.h"
 
 #ifdef TESTS_ENABLED
@@ -39,8 +40,9 @@
 #include "../tools/justamcp_mcp_client_bridge.h"
 
 #include "core/os/os.h"
-#include "modules/httpserver/http_response.h"
 #include "tests/test_macros.h"
+
+#include "modules/httpserver/http_response.h"
 
 void test_justamcp_bridge_no_main_wait() {
 	JustAMCPMCPClientBridge bridge;

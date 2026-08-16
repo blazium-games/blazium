@@ -32,6 +32,7 @@
 #ifdef TESTS_ENABLED
 
 #include "../justamcp_runtime.h"
+
 #include "tests/test_macros.h"
 
 void test_justamcp_runtime_ping_command() {

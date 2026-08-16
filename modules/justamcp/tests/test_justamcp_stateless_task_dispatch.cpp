@@ -30,6 +30,7 @@
 #ifdef TESTS_ENABLED
 
 #include "test_justamcp_stateless_task_dispatch.h"
+
 #include "tests/test_macros.h"
 
 void test_justamcp_stateless_task_dispatch() {

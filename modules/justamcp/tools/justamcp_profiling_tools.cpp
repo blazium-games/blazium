@@ -28,9 +28,10 @@
 /**************************************************************************/
 
 #include "justamcp_profiling_tools.h"
-#include "main/performance.h"
 
 #include "../justamcp_mcp_tool_macros.h"
+
+#include "main/performance.h"
 
 void JustAMCPProfilingTools::_bind_methods() {}
 

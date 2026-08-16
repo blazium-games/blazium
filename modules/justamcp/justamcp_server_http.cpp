@@ -27,10 +27,9 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "justamcp_server.h"
-
 #include "justamcp_json_rpc_transport.h"
 #include "justamcp_oauth_discovery.h"
+#include "justamcp_server.h"
 #include "justamcp_session_manager.h"
 
 #include "core/config/project_settings.h"
@@ -39,8 +38,9 @@
 #include "core/io/json.h"
 #include "core/os/os.h"
 #include "editor/settings/editor_settings.h"
-#include "modules/httpserver/http_server.h"
 #include "servers/display/display_server.h"
+
+#include "modules/httpserver/http_server.h"
 
 static bool _is_headless() {
 	if (DisplayServer::get_singleton() != nullptr) {

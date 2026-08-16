@@ -30,6 +30,7 @@
 #ifdef TESTS_ENABLED
 
 #include "test_justamcp_json_rpc_transport.h"
+
 #include "test_justamcp_fixture.h"
 
 #include "modules/modules_enabled.gen.h"
@@ -39,6 +40,7 @@
 #include "../justamcp_json_rpc_transport.h"
 #include "../justamcp_server.h"
 #include "../tools/justamcp_json_rpc_helpers.h"
+
 #include "core/config/project_settings.h"
 #include "tests/test_macros.h"
 

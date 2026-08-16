@@ -29,24 +29,26 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "core/object/class_db.h"
-#include "core/object/callable_mp.h"
 #include "justamcp_resource_executor.h"
+
 #include "../justamcp_pagination.h"
 #include "../justamcp_read_limits.h"
-#include "core/config/project_settings.h"
-#include "core/io/file_access.h"
-#include "core/io/json.h"
-#include "core/os/os.h"
-#include "core/os/thread.h"
-#include "editor/file_system/editor_file_system.h"
-#include "editor/settings/editor_settings.h"
 #include "justamcp_resource_manifest.h"
 #include "resources/justamcp_blazium_resource_registry.h"
 #include "resources/justamcp_materials_resource_provider.h"
 #include "resources/justamcp_resource_autowork_results.h"
 #include "resources/justamcp_resource_project_file.h"
 #include "resources/justamcp_resource_video_recordings.h"
+
+#include "core/config/project_settings.h"
+#include "core/io/file_access.h"
+#include "core/io/json.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
+#include "core/os/os.h"
+#include "core/os/thread.h"
+#include "editor/file_system/editor_file_system.h"
+#include "editor/settings/editor_settings.h"
 
 void JustAMCPResourceExecutor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("list_resources", "cursor"), &JustAMCPResourceExecutor::list_resources, DEFVAL(""));

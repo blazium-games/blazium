@@ -30,10 +30,12 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_scene_3d_tools.h"
+
 #include "../justamcp_editor_scene_access.h"
+#include "../justamcp_mcp_tool_macros.h"
+
 #include "core/io/resource_loader.h"
 #include "editor/editor_undo_redo_manager.h"
-#include "modules/gridmap/grid_map.h"
 #include "scene/3d/camera_3d.h"
 #include "scene/3d/light_3d.h"
 #include "scene/3d/mesh_instance_3d.h"
@@ -45,7 +47,7 @@
 #include "scene/resources/packed_scene.h"
 #include "scene/resources/sky.h"
 
-#include "../justamcp_mcp_tool_macros.h"
+#include "modules/gridmap/grid_map.h"
 
 JustAMCPScene3DTools::JustAMCPScene3DTools() {
 }

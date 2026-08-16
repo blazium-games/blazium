@@ -38,6 +38,7 @@
 #include "../tools/justamcp_category_registry.h"
 #include "../tools/justamcp_tool_schema_cache.h"
 #include "../tools/justamcp_toolset_registry.h"
+
 #include "core/templates/hash_set.h"
 #include "core/templates/vector.h"
 #include "tests/test_macros.h"

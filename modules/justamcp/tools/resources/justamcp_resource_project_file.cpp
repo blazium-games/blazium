@@ -30,7 +30,9 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_resource_project_file.h"
+
 #include "../../justamcp_read_limits.h"
+
 #include "core/io/file_access.h"
 
 void JustAMCPResourceProjectFile::_bind_methods() {}

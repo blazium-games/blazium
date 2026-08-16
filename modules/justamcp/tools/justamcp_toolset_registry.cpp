@@ -29,14 +29,13 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "core/object/class_db.h"
 #include "justamcp_toolset_registry.h"
 
+#include "justamcp_settings_resolver.h"
 #include "justamcp_tool_dispatcher.h"
 
-#include "justamcp_settings_resolver.h"
-
 #include "core/config/project_settings.h"
+#include "core/object/class_db.h"
 #include "editor/settings/editor_settings.h"
 
 JustAMCPToolsetRegistry *JustAMCPToolsetRegistry::singleton = nullptr;

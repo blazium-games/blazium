@@ -30,9 +30,12 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_shader_tools.h"
+
 #include "../justamcp_editor_filesystem.h"
 #include "../justamcp_editor_scene_access.h"
+#include "../justamcp_mcp_tool_macros.h"
 #include "../justamcp_read_limits.h"
+
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/io/resource_loader.h"
@@ -41,8 +44,6 @@
 #include "scene/main/canvas_item.h"
 #include "scene/resources/material.h"
 #include "scene/resources/shader.h"
-
-#include "../justamcp_mcp_tool_macros.h"
 
 static bool _justamcp_is_shader_path(const String &p_path) {
 	return p_path.get_extension().to_lower() == "gdshader" || p_path.get_extension().to_lower() == "gdshaderinc";

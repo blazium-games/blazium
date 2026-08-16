@@ -33,6 +33,7 @@
 
 #include "../../justamcp_pagination.h"
 #include "../../justamcp_server.h"
+
 #include "core/io/json.h"
 
 static bool _try_extract_log_cursor(const String &p_uri, const String &p_prefix, String &r_cursor) {

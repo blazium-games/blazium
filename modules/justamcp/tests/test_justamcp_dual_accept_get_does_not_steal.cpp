@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "test_justamcp_dual_accept_get_does_not_steal.h"
+
 #include "test_justamcp_fixture.h"
 
 #ifdef TESTS_ENABLED
@@ -36,6 +37,7 @@
 
 #include "../justamcp_server.h"
 #include "../justamcp_session_manager.h"
+
 #include "tests/test_macros.h"
 
 void test_justamcp_dual_accept_get_does_not_steal() {

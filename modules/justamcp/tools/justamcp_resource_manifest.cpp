@@ -32,11 +32,12 @@
 #include "justamcp_resource_manifest.h"
 
 #include "../justamcp_mcp_spec.h"
-#include "modules/modules_enabled.gen.h"
 
 #include "core/variant/array.h"
 #include "core/variant/dictionary.h"
 #include "core/variant/variant.h"
+
+#include "modules/modules_enabled.gen.h"
 
 static Dictionary _manifest_resource_schema(const String &p_uri, const String &p_name, const String &p_description, const String &p_mime_type = "application/json") {
 	Dictionary resource;

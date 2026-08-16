@@ -29,8 +29,9 @@
 
 #ifdef TESTS_ENABLED
 
-#include "modules/modules_enabled.gen.h"
 #include "tests/test_macros.h"
+
+#include "modules/modules_enabled.gen.h"
 
 void test_justamcp_registry_dispatch() {
 	TEST_FAIL_COND(!JustAMCPToolsetRegistry::get_singleton(), "JustAMCPToolsetRegistry singleton is required");

@@ -32,6 +32,7 @@
 #include "justamcp_docs_resource_provider.h"
 
 #include "../justamcp_documentation_tools.h"
+
 #include "core/io/json.h"
 
 static Dictionary _docs_json_contents(const String &p_uri, const Dictionary &p_payload) {

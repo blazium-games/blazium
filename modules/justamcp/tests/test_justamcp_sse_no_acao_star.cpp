@@ -34,9 +34,11 @@
 #if defined(MODULE_HTTPSERVER_ENABLED)
 
 #include "../justamcp_session_manager.h"
+
+#include "tests/test_macros.h"
+
 #include "modules/httpserver/http_request_context.h"
 #include "modules/httpserver/http_response.h"
-#include "tests/test_macros.h"
 
 void test_justamcp_sse_no_acao_star() {
 	Ref<HTTPResponse> response;

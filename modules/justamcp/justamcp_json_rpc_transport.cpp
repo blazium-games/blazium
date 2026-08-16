@@ -32,7 +32,6 @@
 #if defined(MODULE_HTTPSERVER_ENABLED)
 
 #include "justamcp_json_rpc_transport.h"
-
 #include "justamcp_log_levels.h"
 #include "justamcp_mcp_spec.h"
 #include "justamcp_server.h"

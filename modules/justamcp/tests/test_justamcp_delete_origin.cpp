@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "test_justamcp_delete_origin.h"
+
 #include "test_justamcp_fixture.h"
 
 #ifdef TESTS_ENABLED
@@ -38,9 +39,10 @@
 #include "../justamcp_session_manager.h"
 
 #include "core/config/project_settings.h"
+#include "tests/test_macros.h"
+
 #include "modules/httpserver/http_request_context.h"
 #include "modules/httpserver/http_response.h"
-#include "tests/test_macros.h"
 
 void test_justamcp_delete_origin() {
 	JustAMCPTestServerFixture fixture;

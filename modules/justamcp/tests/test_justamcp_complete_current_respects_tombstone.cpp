@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "test_justamcp_complete_current_respects_tombstone.h"
+
 #include "test_justamcp_fixture.h"
 
 #ifdef TESTS_ENABLED

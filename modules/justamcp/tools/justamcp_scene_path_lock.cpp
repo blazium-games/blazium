@@ -33,6 +33,7 @@
 
 #include "../justamcp_editor_scene_access.h"
 #include "../justamcp_tool_result.h"
+
 #include "core/os/os.h"
 #include "core/templates/hash_map.h"
 #include "editor/editor_interface.h"

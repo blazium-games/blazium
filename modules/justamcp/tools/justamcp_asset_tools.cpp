@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "justamcp_asset_tools.h"
+
 #include "../justamcp_editor_filesystem.h"
 
 #include "core/config/project_settings.h"

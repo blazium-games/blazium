@@ -33,6 +33,7 @@
 
 #include "../tools/justamcp_mcp_client_bridge.h"
 #include "../tools/justamcp_tool_executor.h"
+
 #include "tests/test_macros.h"
 
 static void _assert_tool_shape(const Dictionary &p_result) {

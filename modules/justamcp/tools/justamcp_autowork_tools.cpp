@@ -34,13 +34,14 @@
 
 #include "../justamcp_tool_context.h"
 #include "justamcp_autowork_tools.h"
-#include "modules/autowork/autowork_main.h"
-#include "modules/justamcp/justamcp_editor_plugin.h"
 
 #include "core/io/dir_access.h"
 #include "core/os/os.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
+
+#include "modules/autowork/autowork_main.h"
+#include "modules/justamcp/justamcp_editor_plugin.h"
 
 void JustAMCPAutoworkTools::_bind_methods() {
 }

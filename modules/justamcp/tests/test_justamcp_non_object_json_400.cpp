@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "test_justamcp_non_object_json_400.h"
+
 #include "test_justamcp_fixture.h"
 
 #ifdef TESTS_ENABLED
@@ -37,8 +38,9 @@
 #include "../justamcp_json_rpc_transport.h"
 #include "../justamcp_server.h"
 
-#include "modules/httpserver/http_response.h"
 #include "tests/test_macros.h"
+
+#include "modules/httpserver/http_response.h"
 
 void test_justamcp_non_object_json_400() {
 	JustAMCPTestServerFixture fixture;

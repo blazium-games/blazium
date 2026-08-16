@@ -33,6 +33,9 @@
 #include "editor/editor_undo_redo_manager.h"
 #endif
 
+#include "../justamcp_editor_scene_access.h"
+#include "../justamcp_mcp_tool_macros.h"
+
 #include "scene/2d/physics/area_2d.h"
 #include "scene/2d/physics/character_body_2d.h"
 #include "scene/2d/physics/collision_shape_2d.h"
@@ -51,19 +54,14 @@
 #include "scene/3d/visual_instance_3d.h"
 #include "scene/gui/control.h"
 #include "scene/gui/texture_rect.h"
-
 #include "scene/resources/2d/capsule_shape_2d.h"
 #include "scene/resources/2d/circle_shape_2d.h"
 #include "scene/resources/2d/convex_polygon_shape_2d.h"
 #include "scene/resources/2d/rectangle_shape_2d.h"
 #include "scene/resources/2d/segment_shape_2d.h"
-
 #include "scene/resources/3d/box_shape_3d.h"
 #include "scene/resources/3d/capsule_shape_3d.h"
 #include "scene/resources/3d/sphere_shape_3d.h"
-
-#include "../justamcp_editor_scene_access.h"
-#include "../justamcp_mcp_tool_macros.h"
 
 void JustAMCPPhysicsTools::_bind_methods() {}
 

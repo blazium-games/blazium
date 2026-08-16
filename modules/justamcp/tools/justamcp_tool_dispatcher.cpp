@@ -31,12 +31,12 @@
 
 #include "justamcp_tool_dispatcher.h"
 
-#include "modules/modules_enabled.gen.h"
-
 #include "justamcp_executor_dispatch_table.h"
 #include "justamcp_settings_resolver.h"
 #include "justamcp_tool_executor.h"
 #include "justamcp_toolset_registry.h"
+
+#include "modules/modules_enabled.gen.h"
 
 bool JustAMCPToolDispatcher::is_tool_enabled(const String &p_full_name, const String &p_category) {
 	if (p_category.is_empty()) {

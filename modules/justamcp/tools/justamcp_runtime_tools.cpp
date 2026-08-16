@@ -27,19 +27,22 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "core/object/class_db.h"
-#include "core/object/callable_mp.h"
 #include "justamcp_runtime_tools.h"
+
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
+
 #include "core/io/dir_access.h"
 #include "core/io/image.h"
 #include "core/math/expression.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 #include "editor/editor_interface.h"
-#include "modules/gdscript/gdscript.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
 #include "servers/display/display_server.h"
+
+#include "modules/gdscript/gdscript.h"
 
 void JustAMCPRuntimeTools::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_process_frame"), &JustAMCPRuntimeTools::_on_process_frame);

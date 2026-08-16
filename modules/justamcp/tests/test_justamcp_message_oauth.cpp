@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "test_justamcp_message_oauth.h"
+
 #include "test_justamcp_fixture.h"
 
 #ifdef TESTS_ENABLED
@@ -38,9 +39,10 @@
 
 #include "core/config/project_settings.h"
 #include "core/crypto/crypto_core.h"
+#include "tests/test_macros.h"
+
 #include "modules/httpserver/http_request_context.h"
 #include "modules/httpserver/http_response.h"
-#include "tests/test_macros.h"
 
 static String _message_oauth_basic_auth_header(const String &p_id, const String &p_secret) {
 	CharString raw = (p_id + ":" + p_secret).utf8();

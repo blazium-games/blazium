@@ -32,6 +32,7 @@
 #include "justamcp_sessions_resource_provider.h"
 
 #include "../../justamcp_server.h"
+
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/io/json.h"

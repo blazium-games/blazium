@@ -31,10 +31,12 @@
 
 #include "justamcp_server.h"
 #include "justamcp_session_manager.h"
+
 #include "modules/modules_enabled.gen.h"
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 #include "core/templates/hash_set.h"
+
 #include "modules/httpserver/http_server.h"
 #endif
 

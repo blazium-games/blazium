@@ -31,10 +31,10 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "modules/justamcp/tools/justamcp_task_manager.h"
-
 #include "core/config/project_settings.h"
 #include "core/os/os.h"
+
+#include "modules/justamcp/tools/justamcp_task_manager.h"
 
 void test_justamcp_task_manager_create_complete_cancel() {
 	JustAMCPTaskManager manager;

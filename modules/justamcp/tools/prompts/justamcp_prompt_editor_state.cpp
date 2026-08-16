@@ -30,7 +30,9 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_prompt_editor_state.h"
+
 #include "../../justamcp_editor_scene_access.h"
+
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
 

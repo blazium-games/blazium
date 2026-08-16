@@ -27,9 +27,8 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "justamcp_server.h"
-
 #include "justamcp_mcp_spec.h"
+#include "justamcp_server.h"
 #include "justamcp_server_request_lookup.h"
 #include "justamcp_session_manager.h"
 #include "justamcp_tool_context.h"
@@ -43,6 +42,7 @@
 #include "core/io/json.h"
 #include "core/os/mutex.h"
 #include "core/os/time.h"
+
 #include "modules/modules_enabled.gen.h"
 #if defined(MODULE_HTTPSERVER_ENABLED)
 #include "modules/httpserver/http_server.h"

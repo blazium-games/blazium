@@ -27,20 +27,21 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "core/object/class_db.h"
 #include "justamcp_node_tools.h"
+
+#include "core/object/class_db.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_undo_redo_manager.h"
 #endif
 
+#include "../justamcp_editor_scene_access.h"
+#include "../justamcp_mcp_tool_macros.h"
+
 #include "core/config/project_settings.h"
 #include "core/io/resource_loader.h"
 #include "core/object/script_language.h"
 #include "scene/gui/control.h"
-
-#include "../justamcp_editor_scene_access.h"
-#include "../justamcp_mcp_tool_macros.h"
 
 void JustAMCPNodeTools::_bind_methods() {}
 

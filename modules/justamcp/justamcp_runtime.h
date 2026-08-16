@@ -29,14 +29,15 @@
 
 #pragma once
 
+#include "core/input/input_event.h"
 #include "core/io/stream_peer_tcp.h"
 #include "core/io/tcp_server.h"
 #include "core/object/object.h"
 #include "core/os/mutex.h"
 #include "core/os/thread.h"
-#include "core/input/input_event.h"
 #include "scene/main/node.h"
 #include "scene/main/scene_tree.h"
+
 #include <atomic>
 
 class JustAMCPRuntime : public Object {

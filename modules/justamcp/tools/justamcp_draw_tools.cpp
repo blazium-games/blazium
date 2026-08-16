@@ -28,16 +28,17 @@
 /**************************************************************************/
 
 #include "justamcp_draw_tools.h"
+
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
 
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
-#include "modules/gdscript/gdscript.h"
-#include "scene/gui/control.h"
-
 #include "editor/editor_interface.h"
 #include "editor/editor_undo_redo_manager.h"
+#include "scene/gui/control.h"
+
+#include "modules/gdscript/gdscript.h"
 
 void JustAMCPDrawTools::_bind_methods() {}
 

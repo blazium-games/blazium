@@ -27,8 +27,9 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "core/object/callable_mp.h"
 #include "test_justamcp_category_handled.h"
+
+#include "core/object/callable_mp.h"
 
 #ifdef TESTS_ENABLED
 
@@ -42,8 +43,9 @@
 #include "test_justamcp_fixture.h"
 
 #include "core/config/project_settings.h"
-#include "modules/modules_enabled.gen.h"
 #include "tests/test_macros.h"
+
+#include "modules/modules_enabled.gen.h"
 
 void test_justamcp_ok_false_stays_handled() {
 	JustAMCPToolExecutor executor;

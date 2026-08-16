@@ -32,6 +32,7 @@
 #include "test_justamcp_http_get_sse_replay.h"
 
 #include "../justamcp_event_store.h"
+
 #include "tests/test_macros.h"
 
 void test_justamcp_event_store_replays_after_last_event_id() {

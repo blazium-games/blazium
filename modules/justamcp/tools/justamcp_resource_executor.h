@@ -31,8 +31,9 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "core/object/object.h"
 #include "resources/justamcp_resource.h"
+
+#include "core/object/object.h"
 
 class JustAMCPResourceExecutor : public Object {
 	GDCLASS(JustAMCPResourceExecutor, Object);

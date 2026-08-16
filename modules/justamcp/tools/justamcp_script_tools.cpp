@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "justamcp_script_tools.h"
+
 #include "../justamcp_editor_filesystem.h"
 #include "../justamcp_editor_scene_access.h"
 #include "../justamcp_read_limits.h"
@@ -38,16 +39,17 @@
 #include "scene/gui/control.h"
 #endif
 
+#include "../justamcp_mcp_tool_macros.h"
+
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
 #include "core/object/script_language.h"
-#include "modules/regex/regex.h"
 #include "scene/resources/packed_scene.h"
 
-#include "../justamcp_mcp_tool_macros.h"
+#include "modules/regex/regex.h"
 
 void JustAMCPScriptTools::_bind_methods() {}
 

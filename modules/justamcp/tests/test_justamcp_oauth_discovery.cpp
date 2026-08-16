@@ -40,9 +40,10 @@
 
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
+#include "tests/test_macros.h"
+
 #include "modules/httpserver/http_request_context.h"
 #include "modules/httpserver/http_response.h"
-#include "tests/test_macros.h"
 
 static String _header_value(const Ref<HTTPResponse> &p_response, const String &p_name) {
 	const Dictionary headers = p_response->get_headers();

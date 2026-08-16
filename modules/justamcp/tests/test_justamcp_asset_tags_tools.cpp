@@ -30,7 +30,9 @@
 #ifdef TESTS_ENABLED
 
 #include "test_justamcp_asset_tags_tools.h"
+
 #include "../tools/justamcp_asset_tags_tools.h"
+
 #include "tests/test_macros.h"
 
 void test_justamcp_asset_tags_elicitation() {

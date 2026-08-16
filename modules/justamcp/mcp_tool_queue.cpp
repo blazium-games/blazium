@@ -28,11 +28,12 @@
 /**************************************************************************/
 
 #include "mcp_tool_queue.h"
-#include "justamcp_server.h"
 
-#include "core/templates/hash_map.h"
+#include "justamcp_server.h"
 #include "justamcp_server_request_lookup.h"
 #include "justamcp_tool_queue_state.h"
+
+#include "core/templates/hash_map.h"
 
 bool MCPToolQueue::_contains_readonly_locked(MCPToolQueueEntry *p_entry) const {
 	if (!p_entry) {

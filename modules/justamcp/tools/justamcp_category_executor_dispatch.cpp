@@ -29,9 +29,7 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "modules/modules_enabled.gen.h"
-
-#include "justamcp_mcp_client_bridge.h"
+#include "justamcp_category_executor_dispatch.h"
 
 #include "justamcp_analysis_tools.h"
 #include "justamcp_animation_tools.h"
@@ -39,7 +37,6 @@
 #include "justamcp_audio_tools.h"
 #include "justamcp_batch_tools.h"
 #include "justamcp_blueprint_tools.h"
-#include "justamcp_category_executor_dispatch.h"
 #include "justamcp_category_registry.h"
 #include "justamcp_documentation_tools.h"
 #include "justamcp_draw_tools.h"
@@ -47,6 +44,7 @@
 #include "justamcp_environment_tools.h"
 #include "justamcp_export_tools.h"
 #include "justamcp_input_tools.h"
+#include "justamcp_mcp_client_bridge.h"
 #include "justamcp_networking_tools.h"
 #include "justamcp_node_tools.h"
 #include "justamcp_particle_tools.h"
@@ -63,6 +61,8 @@
 #include "justamcp_theme_tools.h"
 #include "justamcp_tilemap_tools.h"
 #include "justamcp_tool_executor.h"
+
+#include "modules/modules_enabled.gen.h"
 #ifdef MODULE_AUTOWORK_ENABLED
 #include "justamcp_autowork_tools.h"
 #endif

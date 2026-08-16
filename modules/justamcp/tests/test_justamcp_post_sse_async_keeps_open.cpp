@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "test_justamcp_post_sse_async_keeps_open.h"
+
 #include "test_justamcp_fixture.h"
 
 #ifdef TESTS_ENABLED
@@ -41,9 +42,10 @@
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
 #include "core/object/message_queue.h"
+#include "tests/test_macros.h"
+
 #include "modules/httpserver/http_request_context.h"
 #include "modules/httpserver/http_response.h"
-#include "tests/test_macros.h"
 
 static Ref<HTTPRequestContext> _post_sse_async_make_ctx(const String &p_method, const Dictionary &p_headers, const String &p_body = String()) {
 	Ref<HTTPRequestContext> context;

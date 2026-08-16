@@ -30,7 +30,9 @@
 #ifdef TESTS_ENABLED
 
 #include "test_justamcp_tool_schema_builder.h"
+
 #include "../tools/justamcp_tool_schema_builder.h"
+
 #include "tests/test_macros.h"
 
 void test_justamcp_tool_schema_builder() {

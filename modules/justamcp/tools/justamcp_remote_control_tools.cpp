@@ -30,19 +30,19 @@
 #ifdef TOOLS_ENABLED
 
 #include "core/object/class_db.h"
+
 #include "modules/modules_enabled.gen.h"
 
 #ifdef MODULE_REMOTE_CONTROL_ENABLED
 
 #include "justamcp_remote_control_tools.h"
-
 #include "justamcp_tool_schema_builder.h"
-
-#include "modules/remote_control/remote_control_registry.h"
-#include "modules/remote_control/remote_control_server.h"
 
 #include "core/config/project_settings.h"
 #include "editor/settings/editor_settings.h"
+
+#include "modules/remote_control/remote_control_registry.h"
+#include "modules/remote_control/remote_control_server.h"
 
 void JustAMCPRemoteControlTools::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("provide_tool_schemas", "register_only", "ignore_settings", "include_disabled_tools"), &JustAMCPRemoteControlTools::provide_tool_schemas, DEFVAL(false), DEFVAL(false), DEFVAL(false));

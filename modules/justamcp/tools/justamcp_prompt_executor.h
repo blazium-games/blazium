@@ -31,8 +31,9 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "core/object/object.h"
 #include "prompts/justamcp_prompt.h"
+
+#include "core/object/object.h"
 
 class JustAMCPEditorPlugin;
 

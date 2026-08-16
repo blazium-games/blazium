@@ -29,11 +29,11 @@
 
 #pragma once
 
+#include "mcp_tool_queue_entry.h"
+
 #include "core/os/mutex.h"
 #include "core/templates/vector.h"
 #include "core/variant/variant.h"
-
-#include "mcp_tool_queue_entry.h"
 
 class MCPToolQueue {
 	friend class JustAMCPServer;

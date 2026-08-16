@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "test_justamcp_routing_dispatch.h"
+
 #include "test_justamcp_fixture.h"
 
 #if defined(MODULE_HTTPSERVER_ENABLED)

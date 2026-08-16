@@ -27,19 +27,17 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "core/object/class_db.h"
-#include "core/object/callable_mp.h"
 #include "register_types.h"
+
 #include "justamcp_project_settings.h"
+#include "justamcp_runtime.h"
+
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 
 #include "modules/modules_enabled.gen.h"
 
-#include "justamcp_runtime.h"
-
 #ifdef TOOLS_ENABLED
-#include "core/config/project_settings.h"
-#include "core/os/os.h"
-#include "editor/settings/editor_settings.h"
 #include "justamcp_editor_plugin.h"
 #include "justamcp_server.h"
 #include "tools/justamcp_analysis_tools.h"
@@ -49,6 +47,10 @@
 #include "tools/justamcp_documentation_tools.h"
 #include "tools/justamcp_export_tools.h"
 #include "tools/justamcp_input_tools.h"
+
+#include "core/config/project_settings.h"
+#include "core/os/os.h"
+#include "editor/settings/editor_settings.h"
 #ifdef MODULE_MULTIUSER_EDITOR_ENABLED
 #include "tools/justamcp_multiuser_tools.h"
 #endif

@@ -31,9 +31,9 @@
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 
-#include "modules/justamcp/justamcp_session_manager.h"
-
 #include "core/os/time.h"
+
+#include "modules/justamcp/justamcp_session_manager.h"
 
 void test_mcp_session_manager_active_tool_connection() {
 	MCPSessionManager session_manager(nullptr);

@@ -28,8 +28,9 @@
 /**************************************************************************/
 
 #ifdef TOOLS_ENABLED
-#include "core/object/class_db.h"
 #include "justamcp_resource.h"
+
+#include "core/object/class_db.h"
 
 void JustAMCPResource::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_uri"), &JustAMCPResource::get_uri);

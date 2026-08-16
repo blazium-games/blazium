@@ -30,7 +30,9 @@
 #ifdef TESTS_ENABLED
 
 #include "test_justamcp_json_rpc_router.h"
+
 #include "../tools/justamcp_json_rpc_router.h"
+
 #include "tests/test_macros.h"
 
 void test_justamcp_json_rpc_router() {

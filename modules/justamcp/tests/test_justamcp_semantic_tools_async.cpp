@@ -32,6 +32,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "test_justamcp_semantic_tools_async.h"
+
 #include "../tools/justamcp_semantic_search_tools.h"
 
 #include "modules/modules_enabled.gen.h"

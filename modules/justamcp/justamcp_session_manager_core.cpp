@@ -30,13 +30,14 @@
 #include "justamcp_pagination.h"
 #include "justamcp_server.h"
 #include "justamcp_session_manager.h"
-#include "modules/modules_enabled.gen.h"
 #include "tools/justamcp_json_rpc_helpers.h"
 
 #include "core/config/project_settings.h"
 #include "core/crypto/crypto_core.h"
 #include "core/io/json.h"
 #include "core/os/time.h"
+
+#include "modules/modules_enabled.gen.h"
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 #include "modules/httpserver/http_server.h"

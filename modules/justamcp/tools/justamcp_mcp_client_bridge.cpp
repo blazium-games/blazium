@@ -29,7 +29,6 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "core/object/class_db.h"
 #include "justamcp_mcp_client_bridge.h"
 
 #include "../justamcp_server.h"
@@ -40,6 +39,7 @@
 #include "core/config/project_settings.h"
 #include "core/io/http_client.h"
 #include "core/io/json.h"
+#include "core/object/class_db.h"
 #include "core/object/worker_thread_pool.h"
 #include "core/os/os.h"
 #include "core/os/thread.h"

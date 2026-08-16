@@ -36,12 +36,12 @@
 #include "editor/editor_undo_redo_manager.h"
 #endif
 
+#include "../justamcp_mcp_tool_macros.h"
+
 #include "core/config/project_settings.h"
 #include "core/io/resource_loader.h"
 #include "core/object/script_language.h"
 #include "scene/gui/control.h"
-
-#include "../justamcp_mcp_tool_macros.h"
 
 static String _justamcp_safe_path_to(Node *p_root, Node *p_node) {
 	return JustAMCPEditorSceneAccess::safe_path_to(p_root, p_node);

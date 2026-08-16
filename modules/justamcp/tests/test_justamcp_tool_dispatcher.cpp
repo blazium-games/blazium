@@ -30,8 +30,10 @@
 #ifdef TESTS_ENABLED
 
 #include "test_justamcp_tool_dispatcher.h"
+
 #include "../tools/justamcp_executor_dispatch_table.h"
 #include "../tools/justamcp_tool_dispatcher.h"
+
 #include "tests/test_macros.h"
 
 void test_justamcp_tool_dispatcher() {

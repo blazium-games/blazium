@@ -27,17 +27,17 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "justamcp_server.h"
-
 #include "justamcp_log_levels.h"
 #include "justamcp_notification_bus.h"
 #include "justamcp_pagination.h"
+#include "justamcp_server.h"
+#include "tools/justamcp_task_manager.h"
 
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
 #include "core/os/time.h"
+
 #include "modules/httpserver/http_server.h"
-#include "tools/justamcp_task_manager.h"
 
 void JustAMCPServer::broadcast_prompts_list_changed() {
 #if defined(MODULE_HTTPSERVER_ENABLED)

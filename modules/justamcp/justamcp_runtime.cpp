@@ -27,8 +27,9 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "core/object/class_db.h"
 #include "justamcp_runtime.h"
+
+#include "tools/justamcp_tool_executor.h"
 
 #include "core/config/project_settings.h"
 #include "core/crypto/crypto_core.h"
@@ -38,6 +39,7 @@
 #include "core/io/image.h"
 #include "core/io/json.h"
 #include "core/math/expression.h"
+#include "core/object/class_db.h"
 #include "core/object/message_queue.h"
 #include "core/object/script_language.h"
 #include "core/os/os.h"
@@ -49,7 +51,6 @@
 #include "scene/main/viewport.h"
 #include "scene/main/window.h"
 #include "servers/audio/audio_server.h"
-#include "tools/justamcp_tool_executor.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/settings/editor_settings.h"

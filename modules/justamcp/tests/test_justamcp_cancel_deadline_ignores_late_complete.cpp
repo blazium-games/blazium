@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "test_justamcp_cancel_deadline_ignores_late_complete.h"
+
 #include "test_justamcp_fixture.h"
 
 #ifdef TESTS_ENABLED

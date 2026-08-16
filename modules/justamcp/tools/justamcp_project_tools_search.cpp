@@ -40,6 +40,7 @@
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
 #include "core/io/resource_uid.h"
+
 #include "modules/regex/regex.h"
 
 Dictionary JustAMCPProjectTools::_build_filesystem_tree(const String &p_path, const String &p_filter, int p_max_depth, int p_depth) {

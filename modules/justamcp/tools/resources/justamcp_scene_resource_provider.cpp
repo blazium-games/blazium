@@ -32,6 +32,7 @@
 #include "justamcp_scene_resource_provider.h"
 
 #include "../../justamcp_editor_scene_access.h"
+
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
 #include "editor/editor_interface.h"

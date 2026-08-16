@@ -30,13 +30,15 @@
 #ifdef TESTS_ENABLED
 
 #include "test_justamcp_phase_k.h"
+
 #include "../justamcp_server.h"
 #include "../justamcp_tool_dispatch.h"
 #include "../mcp_tool_queue.h"
 #include "../tools/justamcp_readonly_tools.h"
 #include "../tools/justamcp_tool_schema_builder.h"
-#include "modules/modules_enabled.gen.h"
 #include "test_justamcp_fixture.h"
+
+#include "modules/modules_enabled.gen.h"
 #if defined(MODULE_HTTPSERVER_ENABLED)
 #include "modules/httpserver/http_response.h"
 #endif
