@@ -50,6 +50,7 @@ public:
 	static Dictionary route_prompts_list(const String &p_cursor, const Variant &p_req_id_var, JustAMCPPromptExecutor *p_prompts);
 	static Dictionary route_prompts_get(const Dictionary &p_payload, const Variant &p_req_id_var, JustAMCPPromptExecutor *p_prompts);
 	static Dictionary route_initialize(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);
+	static Dictionary route_discover(JustAMCPServer *p_server, const Variant &p_req_id_var);
 	static Dictionary route_ping(const Variant &p_req_id_var);
 	static Dictionary route_logging_set_level(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);
 	static Dictionary route_tasks_cancel(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);

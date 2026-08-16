@@ -680,8 +680,11 @@
 		</member>
 		<member name="blazium/justamcp/server_port" type="int" setter="" getter="" default="6506">
 		</member>
-		<member name="blazium/justamcp/protocol_version" type="String" setter="" getter="" default="&quot;2025-11-25&quot;">
-			Default and fallback MCP protocol version advertised during [code]initialize[/code] when the client version is missing or unsupported. Override with [code]--mcp-protocol-version[/code].
+		<member name="blazium/justamcp/protocol_version" type="String" setter="" getter="" default="&quot;2026-07-28&quot;">
+			Advertised latest MCP protocol version. [code]2026-07-28[/code] is the modern/stateless revision; [code]initialize[/code] still negotiates a legacy date ([code]2025-11-25[/code] and earlier) for Cursor and other handshake clients. Override with [code]--mcp-protocol-version[/code].
+		</member>
+		<member name="blazium/justamcp/accepted_protocol_versions" type="String" setter="" getter="" default="&quot;&quot;">
+			Optional comma-separated allowlist of MCP protocol versions this process will serve. Empty accepts every implemented version ([code]2026-07-28[/code] through [code]2024-11-05[/code]).
 		</member>
 		<member name="blazium/justamcp/session_allow_client_delete" type="bool" setter="" getter="" default="true">
 		</member>

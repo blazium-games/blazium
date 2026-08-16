@@ -324,7 +324,7 @@ Dictionary JustAMCPJsonRpcRouter::route_initialize(JustAMCPServer *p_server, con
 	if (params.has("protocolVersion") && params["protocolVersion"].get_type() == Variant::STRING) {
 		client_protocol = String(params["protocolVersion"]);
 	}
-	p_server->transport_negotiated_protocol = MCPSessionManager::negotiate_protocol_version(client_protocol);
+	p_server->transport_negotiated_protocol = MCPSessionManager::negotiate_legacy_initialize(client_protocol);
 
 	Dictionary result;
 	result["protocolVersion"] = p_server->transport_negotiated_protocol;
@@ -358,6 +358,48 @@ Dictionary JustAMCPJsonRpcRouter::route_initialize(JustAMCPServer *p_server, con
 	serverInfo["version"] = "1.0.0";
 	serverInfo["websiteUrl"] = "https://blazium.app";
 	result["serverInfo"] = serverInfo;
+
+	Dictionary rpc_result;
+	rpc_result["handled"] = true;
+	rpc_result["jsonrpc"] = "2.0";
+	rpc_result["id"] = p_req_id_var;
+	rpc_result["result"] = result;
+	return rpc_result;
+}
+
+Dictionary JustAMCPJsonRpcRouter::route_discover(JustAMCPServer *p_server, const Variant &p_req_id_var) {
+	Dictionary result;
+	Array supported;
+	const Vector<String> versions = MCPSessionManager::accepted_protocol_versions();
+	for (int i = 0; i < versions.size(); i++) {
+		supported.push_back(versions[i]);
+	}
+	result["supportedVersions"] = supported;
+
+	Dictionary capabilities;
+	Dictionary tools_cap;
+	tools_cap["listChanged"] = true;
+	capabilities["tools"] = tools_cap;
+	Dictionary prompts_cap;
+	prompts_cap["listChanged"] = true;
+	capabilities["prompts"] = prompts_cap;
+	Dictionary resources_cap;
+	resources_cap["listChanged"] = true;
+	capabilities["resources"] = resources_cap;
+	capabilities["completions"] = Dictionary();
+	Dictionary extensions;
+	if (p_server && p_server->task_manager) {
+		extensions["io.modelcontextprotocol/tasks"] = Dictionary();
+	}
+	capabilities["extensions"] = extensions;
+	result["capabilities"] = capabilities;
+	result["instructions"] = "Use blazium_* tools and blazium:// resources. Prefer editor tools for scene/resource edits, runtime_* tools only when a game bridge is active, and guide resources such as blazium://guide/tool-index for workflow orientation.";
+	result["ttlMs"] = 3600000;
+	result["cacheScope"] = "public";
+	result["resultType"] = "complete";
+	Dictionary meta;
+	meta["io.modelcontextprotocol/serverInfo"] = MCPSessionManager::mcp_server_info();
+	result["_meta"] = meta;
 
 	Dictionary rpc_result;
 	rpc_result["handled"] = true;

@@ -35,6 +35,7 @@
 #include "core/os/mutex.h"
 #include "core/templates/hash_map.h"
 #include "core/templates/hash_set.h"
+#include "core/templates/vector.h"
 #include "core/variant/dictionary.h"
 
 #include "modules/modules_enabled.gen.h"
@@ -95,12 +96,28 @@ public:
 
 	void clear_all();
 
-	static const char *hardcoded_latest_protocol_version() { return "2025-11-25"; }
+	static const char *hardcoded_latest_protocol_version() { return "2026-07-28"; }
+	static const char *hardcoded_latest_legacy_protocol_version() { return "2025-11-25"; }
 	static bool is_supported_protocol_version(const String &p_version);
+	static bool is_legacy_protocol_version(const String &p_version);
+	static bool is_modern_protocol_version(const String &p_version);
+	static bool is_accepted_protocol_version(const String &p_version);
+	static Vector<String> supported_protocol_versions();
+	static Vector<String> accepted_protocol_versions();
 	static String latest_protocol_version();
+	static String latest_legacy_protocol_version();
 	static String negotiate_protocol_version(const String &p_client_version);
+	static String negotiate_legacy_initialize(const String &p_client_version);
 	static bool set_cli_protocol_version_override(const String &p_version);
 	static void clear_cli_protocol_version_override();
+	static Dictionary unsupported_protocol_version_error(const String &p_requested);
+	static Dictionary header_mismatch_error(const Variant &p_id, const String &p_message);
+	static Dictionary mcp_server_info();
+	static String first_protocol_version_token(const String &p_header);
+	static String decode_mcp_header_value(const String &p_value);
+	static String protocol_version_from_payload(const Dictionary &p_payload);
+	static void decorate_modern_rpc(Dictionary &p_rpc, const String &p_method);
+	static int modern_http_status_for_rpc(const Dictionary &p_rpc);
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 	static String get_header(const Ref<HTTPRequestContext> &p_context, const String &p_name);
@@ -182,6 +199,9 @@ private:
 	void _process_post_sse_opened(int p_connection_id, const String &p_session_id);
 	int _resolve_active_tool_connection_for_session(const MCPSession &p_session) const;
 	void _process_get_sse_opened(int p_connection_id, const String &p_session_id, const String &p_last_event_id);
+	bool _handle_modern_post(const Ref<HTTPRequestContext> &p_context, Ref<HTTPResponse> p_response, const Dictionary &p_payload, const String &p_body, const String &p_requested_version);
+	bool _validate_modern_headers(const Ref<HTTPRequestContext> &p_context, const Dictionary &p_payload, String &r_error);
+	int pending_modern_listen = 0;
 
 #ifdef TESTS_ENABLED
 	mutable int test_send_json_on_connection_calls = 0;

@@ -46,6 +46,7 @@
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
 #include "core/math/math_funcs.h"
+#include "core/os/mutex.h"
 #include "core/os/os.h"
 
 bool JustAMCPJsonRpcTransport::_is_http_transport(Ref<HTTPResponse> p_response) {
@@ -83,7 +84,7 @@ Dictionary JustAMCPJsonRpcTransport::handle_json_rpc(JustAMCPServer *p_server, c
 
 	Variant parsed = json->get_data();
 	if (parsed.get_type() == Variant::ARRAY) {
-		if (p_server->transport_negotiated_protocol == "2025-06-18" || p_server->transport_negotiated_protocol == "2025-11-25") {
+		if (p_server->transport_negotiated_protocol == "2025-06-18" || p_server->transport_negotiated_protocol == "2025-11-25" || MCPSessionManager::is_modern_protocol_version(p_server->transport_negotiated_protocol)) {
 			Dictionary err;
 			err["jsonrpc"] = "2.0";
 			Dictionary error_dict;
@@ -119,7 +120,18 @@ Dictionary JustAMCPJsonRpcTransport::handle_json_rpc_parsed(JustAMCPServer *p_se
 	if (!p_server) {
 		return Dictionary();
 	}
-	return _handle_json_rpc_payload(p_server, p_payload, p_response, p_caller_session_id);
+	Dictionary result = _handle_json_rpc_payload(p_server, p_payload, p_response, p_caller_session_id);
+	if (MCPSessionManager::is_modern_protocol_version(p_server->transport_negotiated_protocol)) {
+		const String method = p_payload.has("method") ? String(p_payload["method"]) : String();
+		if (result.has("error") && result["error"].get_type() == Variant::DICTIONARY && int(Dictionary(result["error"]).get("code", 0)) == -32601) {
+			if (p_response.is_valid() && !p_response->is_sent()) {
+				p_response->set_status(404);
+			}
+		} else {
+			MCPSessionManager::decorate_modern_rpc(result, method);
+		}
+	}
+	return result;
 }
 
 Dictionary JustAMCPJsonRpcTransport::_handle_json_rpc_payload(JustAMCPServer *p_server, const Dictionary &p_payload, Ref<HTTPResponse> p_response, const String &p_caller_session_id) {
@@ -175,6 +187,21 @@ Dictionary JustAMCPJsonRpcTransport::_handle_json_rpc_payload(JustAMCPServer *p_
 		}
 	}
 
+	const bool modern = MCPSessionManager::is_modern_protocol_version(p_server->transport_negotiated_protocol);
+	if (modern && payload.has("params") && payload["params"].get_type() == Variant::DICTIONARY) {
+		const Dictionary params = payload["params"];
+		if (params.has("_meta") && params["_meta"].get_type() == Variant::DICTIONARY) {
+			const Dictionary meta = params["_meta"];
+			if (meta.has("io.modelcontextprotocol/logLevel")) {
+				const String level = justamcp_log_level_canonical(String(meta["io.modelcontextprotocol/logLevel"]));
+				if (justamcp_log_level_is_valid(level)) {
+					MutexLock lock(p_server->minimum_log_level_mutex);
+					p_server->minimum_log_level = level;
+				}
+			}
+		}
+	}
+
 	const bool debug_logging = GLOBAL_GET("blazium/justamcp/enable_debug_logging");
 	if (debug_logging) {
 		p_server->_mcp_debug_log("Executing JSON-RPC Method: " + method + " (ID: " + request_id + ")");
@@ -196,6 +223,30 @@ Dictionary JustAMCPJsonRpcTransport::_handle_json_rpc_payload(JustAMCPServer *p_
 
 	if (method == "notifications/initialized") {
 		return Dictionary();
+	}
+
+	if (method == "server/discover") {
+#ifdef TOOLS_ENABLED
+		Dictionary routed = JustAMCPJsonRpcRouter::route_discover(p_server, req_id_var);
+		routed.erase("handled");
+		return routed;
+#else
+		return invalid_params("server/discover is unavailable.");
+#endif
+	}
+
+	if (modern && (method == "ping" || method == "logging/setLevel" || method == "resources/subscribe" || method == "resources/unsubscribe")) {
+		Dictionary err;
+		err["jsonrpc"] = "2.0";
+		err["id"] = req_id_var;
+		Dictionary error_dict;
+		error_dict["code"] = -32601;
+		error_dict["message"] = "Method not found: " + method;
+		err["error"] = error_dict;
+		if (p_response.is_valid() && !p_response->is_sent()) {
+			p_response->set_status(404);
+		}
+		return err;
 	}
 
 #ifdef TOOLS_ENABLED

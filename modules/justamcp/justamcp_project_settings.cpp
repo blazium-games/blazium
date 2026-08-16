@@ -42,10 +42,11 @@ void JustAMCPProjectSettings::register_project_settings() {
 	GLOBAL_DEF_BASIC("blazium/justamcp/override_editor_settings", false);
 	GLOBAL_DEF_BASIC("blazium/justamcp/server_enabled", false);
 	GLOBAL_DEF_BASIC("blazium/justamcp/server_port", 6506);
-	GLOBAL_DEF_BASIC("blazium/justamcp/protocol_version", "2025-11-25");
+	GLOBAL_DEF_BASIC("blazium/justamcp/protocol_version", "2026-07-28");
 	if (ProjectSettings::get_singleton()) {
-		ProjectSettings::get_singleton()->set_custom_property_info(PropertyInfo(Variant::STRING, "blazium/justamcp/protocol_version", PROPERTY_HINT_ENUM, "2025-11-25,2025-06-18,2025-03-26,2024-11-05"));
+		ProjectSettings::get_singleton()->set_custom_property_info(PropertyInfo(Variant::STRING, "blazium/justamcp/protocol_version", PROPERTY_HINT_ENUM, "2026-07-28,2025-11-25,2025-06-18,2025-03-26,2024-11-05"));
 	}
+	GLOBAL_DEF_BASIC("blazium/justamcp/accepted_protocol_versions", String());
 	GLOBAL_DEF_BASIC("blazium/justamcp/oauth_enabled", false);
 	GLOBAL_DEF_BASIC("blazium/justamcp/client_id", String());
 	GLOBAL_DEF_BASIC("blazium/justamcp/client_secret", String());
@@ -92,8 +93,11 @@ void JustAMCPProjectSettings::register_editor_settings() {
 	EDITOR_DEF_BASIC("blazium/justamcp/server_port", 6506);
 	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::INT, "blazium/justamcp/server_port"));
 
-	EDITOR_DEF_BASIC("blazium/justamcp/protocol_version", "2025-11-25");
-	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::STRING, "blazium/justamcp/protocol_version", PROPERTY_HINT_ENUM, "2025-11-25,2025-06-18,2025-03-26,2024-11-05"));
+	EDITOR_DEF_BASIC("blazium/justamcp/protocol_version", "2026-07-28");
+	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::STRING, "blazium/justamcp/protocol_version", PROPERTY_HINT_ENUM, "2026-07-28,2025-11-25,2025-06-18,2025-03-26,2024-11-05"));
+
+	EDITOR_DEF_BASIC("blazium/justamcp/accepted_protocol_versions", "");
+	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::STRING, "blazium/justamcp/accepted_protocol_versions"));
 
 	EDITOR_DEF_BASIC("blazium/justamcp/oauth_enabled", false);
 	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::BOOL, "blazium/justamcp/oauth_enabled"));
