@@ -756,13 +756,13 @@
 		</signal>
 	</signals>
 	<theme_items>
-		<theme_item name="font_accelerator_color" data_type="color" type="Color" default="Color(0.7, 0.7, 0.7, 0.8)">
+		<theme_item name="font_accelerator_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 0.6)">
 			The text [Color] used for shortcuts and accelerators that show next to the menu item name when defined. See [method get_item_accelerator] for more info on accelerators.
 		</theme_item>
 		<theme_item name="font_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
 			The default text [Color] for menu items' names.
 		</theme_item>
-		<theme_item name="font_disabled_color" data_type="color" type="Color" default="Color(0.4, 0.4, 0.4, 0.8)">
+		<theme_item name="font_disabled_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 0.6)">
 			[Color] used for disabled menu items' text.
 		</theme_item>
 		<theme_item name="font_hover_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
@@ -771,7 +771,7 @@
 		<theme_item name="font_outline_color" data_type="color" type="Color" default="Color(0, 0, 0, 1)">
 			The tint of text outline of the menu item.
 		</theme_item>
-		<theme_item name="font_separator_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
+		<theme_item name="font_separator_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 0.6)">
 			[Color] used for labeled separators' text. See [method add_separator].
 		</theme_item>
 		<theme_item name="font_separator_outline_color" data_type="color" type="Color" default="Color(0, 0, 0, 1)">
@@ -789,10 +789,10 @@
 		<theme_item name="indent" data_type="constant" type="int" default="10">
 			Width of the single indentation level.
 		</theme_item>
-		<theme_item name="item_end_padding" data_type="constant" type="int" default="2">
+		<theme_item name="item_end_padding" data_type="constant" type="int" default="4">
 			Horizontal padding to the right of the items (or left, in RTL layout).
 		</theme_item>
-		<theme_item name="item_start_padding" data_type="constant" type="int" default="2">
+		<theme_item name="item_start_padding" data_type="constant" type="int" default="4">
 			Horizontal padding to the left of the items (or right, in RTL layout).
 		</theme_item>
 		<theme_item name="outline_size" data_type="constant" type="int" default="0">

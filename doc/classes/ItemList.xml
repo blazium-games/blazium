@@ -532,22 +532,22 @@
 		</constant>
 	</constants>
 	<theme_items>
-		<theme_item name="font_color" data_type="color" type="Color" default="Color(0.65, 0.65, 0.65, 1)">
+		<theme_item name="font_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
 			Default text [Color] of the item.
 		</theme_item>
-		<theme_item name="font_hovered_color" data_type="color" type="Color" default="Color(0.95, 0.95, 0.95, 1)">
+		<theme_item name="font_hovered_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
 			Text [Color] used when the item is hovered and not selected yet.
 		</theme_item>
-		<theme_item name="font_hovered_selected_color" data_type="color" type="Color" default="Color(1, 1, 1, 1)">
+		<theme_item name="font_hovered_selected_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
 			Text [Color] used when the item is hovered and selected.
 		</theme_item>
 		<theme_item name="font_outline_color" data_type="color" type="Color" default="Color(0, 0, 0, 1)">
 			The tint of text outline of the item.
 		</theme_item>
-		<theme_item name="font_selected_color" data_type="color" type="Color" default="Color(1, 1, 1, 1)">
+		<theme_item name="font_selected_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
 			Text [Color] used when the item is selected, but not hovered.
 		</theme_item>
-		<theme_item name="guide_color" data_type="color" type="Color" default="Color(0.7, 0.7, 0.7, 0.25)">
+		<theme_item name="guide_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 0.4)">
 			[Color] of the guideline. The guideline is a line drawn between each row of items.
 		</theme_item>
 		<theme_item name="scroll_hint_color" data_type="color" type="Color" default="Color(0, 0, 0, 1)">

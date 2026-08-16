@@ -1638,13 +1638,13 @@
 		<theme_item name="background_color" data_type="color" type="Color" default="Color(0, 0, 0, 0)" deprecated="Assign a [StyleBoxFlat] to [theme_item normal] instead, and set [member StyleBoxFlat.bg_color] to the desired background color.">
 			Sets the background [Color] of this [TextEdit].
 		</theme_item>
-		<theme_item name="caret_background_color" data_type="color" type="Color" default="Color(0, 0, 0, 1)">
+		<theme_item name="caret_background_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
 			[Color] of the text behind the caret when using a block caret.
 		</theme_item>
 		<theme_item name="caret_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
 			[Color] of the caret. This can be set to a fully transparent color to hide the caret entirely.
 		</theme_item>
-		<theme_item name="current_line_color" data_type="color" type="Color" default="Color(0.25, 0.25, 0.26, 0.8)">
+		<theme_item name="current_line_color" data_type="color" type="Color" default="Color(0.16544, 0.16544, 0.16544, 1)">
 			Background [Color] of the line containing the caret.
 		</theme_item>
 		<theme_item name="font_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
@@ -1656,22 +1656,22 @@
 		<theme_item name="font_placeholder_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 0.6)">
 			Font color for [member placeholder_text].
 		</theme_item>
-		<theme_item name="font_readonly_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 0.5)">
+		<theme_item name="font_readonly_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 0.6)">
 			Sets the font [Color] when [member editable] is disabled.
 		</theme_item>
-		<theme_item name="font_selected_color" data_type="color" type="Color" default="Color(0, 0, 0, 0)">
+		<theme_item name="font_selected_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
 			Sets the [Color] of the selected text. If equal to [code]Color(0, 0, 0, 0)[/code], it will be ignored.
 		</theme_item>
-		<theme_item name="search_result_border_color" data_type="color" type="Color" default="Color(0.3, 0.3, 0.3, 0.4)">
+		<theme_item name="search_result_border_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 0.4)">
 			[Color] of the border around text that matches the search query.
 		</theme_item>
-		<theme_item name="search_result_color" data_type="color" type="Color" default="Color(0.3, 0.3, 0.3, 1)">
+		<theme_item name="search_result_color" data_type="color" type="Color" default="Color(0.226, 0.478, 0.921, 0.6)">
 			[Color] behind the text that matches the search query.
 		</theme_item>
-		<theme_item name="selection_color" data_type="color" type="Color" default="Color(0.5, 0.5, 0.5, 1)">
+		<theme_item name="selection_color" data_type="color" type="Color" default="Color(0.12031999, 0.12031999, 0.12031999, 1)">
 			Sets the highlight [Color] of text selections.
 		</theme_item>
-		<theme_item name="word_highlighted_color" data_type="color" type="Color" default="Color(0.5, 0.5, 0.5, 0.25)">
+		<theme_item name="word_highlighted_color" data_type="color" type="Color" default="Color(0.21056, 0.21056, 0.21056, 1)">
 			Sets the highlight [Color] of multiple occurrences. [member highlight_all_occurrences] has to be enabled.
 		</theme_item>
 		<theme_item name="caret_width" data_type="constant" type="int" default="1">

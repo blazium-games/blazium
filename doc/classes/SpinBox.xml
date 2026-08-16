@@ -76,28 +76,28 @@
 		</member>
 	</members>
 	<theme_items>
-		<theme_item name="down_disabled_icon_modulate" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 0.5)">
+		<theme_item name="down_disabled_icon_modulate" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 0.4)">
 			Down button icon modulation color, when the button is disabled.
 		</theme_item>
-		<theme_item name="down_hover_icon_modulate" data_type="color" type="Color" default="Color(0.95, 0.95, 0.95, 1)">
+		<theme_item name="down_hover_icon_modulate" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
 			Down button icon modulation color, when the button is hovered.
 		</theme_item>
 		<theme_item name="down_icon_modulate" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
 			Down button icon modulation color.
 		</theme_item>
-		<theme_item name="down_pressed_icon_modulate" data_type="color" type="Color" default="Color(0.95, 0.95, 0.95, 1)">
+		<theme_item name="down_pressed_icon_modulate" data_type="color" type="Color" default="Color(0.226, 0.478, 0.921, 1)">
 			Down button icon modulation color, when the button is being pressed.
 		</theme_item>
-		<theme_item name="up_disabled_icon_modulate" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 0.5)">
+		<theme_item name="up_disabled_icon_modulate" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 0.4)">
 			Up button icon modulation color, when the button is disabled.
 		</theme_item>
-		<theme_item name="up_hover_icon_modulate" data_type="color" type="Color" default="Color(0.95, 0.95, 0.95, 1)">
+		<theme_item name="up_hover_icon_modulate" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
 			Up button icon modulation color, when the button is hovered.
 		</theme_item>
 		<theme_item name="up_icon_modulate" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
 			Up button icon modulation color.
 		</theme_item>
-		<theme_item name="up_pressed_icon_modulate" data_type="color" type="Color" default="Color(0.95, 0.95, 0.95, 1)">
+		<theme_item name="up_pressed_icon_modulate" data_type="color" type="Color" default="Color(0.226, 0.478, 0.921, 1)">
 			Up button icon modulation color, when the button is being pressed.
 		</theme_item>
 		<theme_item name="buttons_vertical_separation" data_type="constant" type="int" default="0">
@@ -109,7 +109,7 @@
 		<theme_item name="field_and_buttons_separation" data_type="constant" type="int" default="2">
 			Width of the horizontal separation between the text input field ([LineEdit]) and the buttons.
 		</theme_item>
-		<theme_item name="set_min_buttons_width_from_icons" data_type="constant" type="int" default="1" deprecated="This property exists only for compatibility with older themes. Setting [theme_item buttons_width] to a negative value has the same effect.">
+		<theme_item name="set_min_buttons_width_from_icons" data_type="constant" type="int" default="0" deprecated="This property exists only for compatibility with older themes. Setting [theme_item buttons_width] to a negative value has the same effect.">
 			If not [code]0[/code], the minimum button width corresponds to the widest of all icons set on those buttons, even if [theme_item buttons_width] is smaller.
 		</theme_item>
 		<theme_item name="down" data_type="icon" type="Texture2D">

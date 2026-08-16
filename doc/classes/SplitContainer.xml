@@ -114,13 +114,13 @@
 		</constant>
 	</constants>
 	<theme_items>
-		<theme_item name="touch_dragger_color" data_type="color" type="Color" default="Color(1, 1, 1, 0.3)">
+		<theme_item name="touch_dragger_color" data_type="color" type="Color" default="Color(0, 0, 0, 1)">
 			The color of the touch dragger.
 		</theme_item>
-		<theme_item name="touch_dragger_hover_color" data_type="color" type="Color" default="Color(1, 1, 1, 0.6)">
+		<theme_item name="touch_dragger_hover_color" data_type="color" type="Color" default="Color(0, 0, 0, 1)">
 			The color of the touch dragger when hovered.
 		</theme_item>
-		<theme_item name="touch_dragger_pressed_color" data_type="color" type="Color" default="Color(1, 1, 1, 1)">
+		<theme_item name="touch_dragger_pressed_color" data_type="color" type="Color" default="Color(0, 0, 0, 1)">
 			The color of the touch dragger when pressed.
 		</theme_item>
 		<theme_item name="autohide" data_type="constant" type="int" default="1">
@@ -129,7 +129,7 @@
 		<theme_item name="minimum_grab_thickness" data_type="constant" type="int" default="6">
 			The minimum thickness of the area users can click on to grab a split bar. This ensures that the split bar can still be dragged if [theme_item separation] or [theme_item h_grabber] / [theme_item v_grabber]'s size is too narrow to easily select.
 		</theme_item>
-		<theme_item name="separation" data_type="constant" type="int" default="12">
+		<theme_item name="separation" data_type="constant" type="int" default="6">
 			The split bar thickness, i.e., the gap between each child of the container. This is overridden by the size of the grabber icon if [member dragger_visibility] is set to [constant DRAGGER_VISIBLE], or [constant DRAGGER_HIDDEN], and [theme_item separation] is smaller than the size of the grabber icon in the same axis.
 			[b]Note:[/b] To obtain [theme_item separation] values less than the size of the grabber icon, for example a [code]1 px[/code] hairline, set [theme_item h_grabber] or [theme_item v_grabber] to a new [ImageTexture], which effectively sets the grabber icon size to [code]0 px[/code].
 		</theme_item>

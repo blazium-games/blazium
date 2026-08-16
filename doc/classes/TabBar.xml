@@ -389,40 +389,40 @@
 		</constant>
 	</constants>
 	<theme_items>
-		<theme_item name="drop_mark_color" data_type="color" type="Color" default="Color(1, 1, 1, 1)">
+		<theme_item name="drop_mark_color" data_type="color" type="Color" default="Color(0.226, 0.478, 0.921, 1)">
 			Modulation color for the [theme_item drop_mark] icon.
 		</theme_item>
-		<theme_item name="font_disabled_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 0.5)">
+		<theme_item name="font_disabled_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 0.4)">
 			Font color of disabled tabs.
 		</theme_item>
-		<theme_item name="font_hovered_color" data_type="color" type="Color" default="Color(0.95, 0.95, 0.95, 1)">
+		<theme_item name="font_hovered_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
 			Font color of the currently hovered tab. Does not apply to the selected tab.
 		</theme_item>
 		<theme_item name="font_outline_color" data_type="color" type="Color" default="Color(0, 0, 0, 1)">
 			The tint of text outline of the tab name.
 		</theme_item>
-		<theme_item name="font_selected_color" data_type="color" type="Color" default="Color(0.95, 0.95, 0.95, 1)">
+		<theme_item name="font_selected_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
 			Font color of the currently selected tab.
 		</theme_item>
-		<theme_item name="font_unselected_color" data_type="color" type="Color" default="Color(0.7, 0.7, 0.7, 1)">
+		<theme_item name="font_unselected_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
 			Font color of the other, unselected tabs.
 		</theme_item>
-		<theme_item name="icon_disabled_color" data_type="color" type="Color" default="Color(1, 1, 1, 1)">
+		<theme_item name="icon_disabled_color" data_type="color" type="Color" default="Color(0, 0, 0, 1)">
 			Icon color of disabled tabs.
 		</theme_item>
-		<theme_item name="icon_hovered_color" data_type="color" type="Color" default="Color(1, 1, 1, 1)">
+		<theme_item name="icon_hovered_color" data_type="color" type="Color" default="Color(0, 0, 0, 1)">
 			Icon color of the currently hovered tab. Does not apply to the selected tab.
 		</theme_item>
-		<theme_item name="icon_selected_color" data_type="color" type="Color" default="Color(1, 1, 1, 1)">
+		<theme_item name="icon_selected_color" data_type="color" type="Color" default="Color(0, 0, 0, 1)">
 			Icon color of the currently selected tab.
 		</theme_item>
-		<theme_item name="icon_unselected_color" data_type="color" type="Color" default="Color(1, 1, 1, 1)">
+		<theme_item name="icon_unselected_color" data_type="color" type="Color" default="Color(0, 0, 0, 1)">
 			Icon color of the other, unselected tabs.
 		</theme_item>
 		<theme_item name="h_separation" data_type="constant" type="int" default="4">
 			The horizontal separation between the elements inside tabs.
 		</theme_item>
-		<theme_item name="hover_switch_wait_msec" data_type="constant" type="int" default="500">
+		<theme_item name="hover_switch_wait_msec" data_type="constant" type="int" default="0">
 			During a drag-and-drop, this is how many milliseconds to wait before switching the tab.
 		</theme_item>
 		<theme_item name="icon_max_width" data_type="constant" type="int" default="0">

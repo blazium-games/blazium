@@ -1559,8 +1559,20 @@
 		<member name="ClassDB" type="ClassDB" setter="" getter="">
 			The [ClassDB] singleton.
 		</member>
+		<member name="CrowdControl" type="CrowdControl" setter="" getter="">
+		</member>
+		<member name="Discord" type="Discord" setter="" getter="">
+		</member>
 		<member name="DisplayServer" type="DisplayServer" setter="" getter="">
 			The [DisplayServer] singleton.
+		</member>
+		<member name="ENV" type="ENV" setter="" getter="">
+		</member>
+		<member name="ENetClient" type="ENetClient" setter="" getter="">
+		</member>
+		<member name="ENetPacketUtils" type="ENetPacketUtils" setter="" getter="">
+		</member>
+		<member name="ENetServer" type="ENetServer" setter="" getter="">
 		</member>
 		<member name="EditorInterface" type="EditorInterface" setter="" getter="">
 			The [EditorInterface] singleton.
@@ -1585,6 +1597,8 @@
 		<member name="Geometry3D" type="Geometry3D" setter="" getter="">
 			The [Geometry3D] singleton.
 		</member>
+		<member name="HTTPServer" type="HTTPServer" setter="" getter="">
+		</member>
 		<member name="IP" type="IP" setter="" getter="">
 			The [IP] singleton.
 		</member>
@@ -1594,6 +1608,8 @@
 		<member name="InputMap" type="InputMap" setter="" getter="">
 			The [InputMap] singleton.
 		</member>
+		<member name="JWT" type="JWT" setter="" getter="">
+		</member>
 		<member name="JavaClassWrapper" type="JavaClassWrapper" setter="" getter="">
 			The [JavaClassWrapper] singleton.
 			[b]Note:[/b] Only implemented on Android.
@@ -1601,6 +1617,8 @@
 		<member name="JavaScriptBridge" type="JavaScriptBridge" setter="" getter="">
 			The [JavaScriptBridge] singleton.
 			[b]Note:[/b] Only implemented on the Web platform.
+		</member>
+		<member name="KickAPI" type="KickAPI" setter="" getter="">
 		</member>
 		<member name="Marshalls" type="Marshalls" setter="" getter="">
 			The [Marshalls] singleton.
@@ -1624,6 +1642,8 @@
 		<member name="NavigationServer3DManager" type="NavigationServer3DManager" setter="" getter="">
 			The [NavigationServer3DManager] singleton.
 		</member>
+		<member name="OBSClient" type="OBSClient" setter="" getter="">
+		</member>
 		<member name="OS" type="OS" setter="" getter="">
 			The [OS] singleton.
 		</member>
@@ -1645,6 +1665,10 @@
 		<member name="ProjectSettings" type="ProjectSettings" setter="" getter="">
 			The [ProjectSettings] singleton.
 		</member>
+		<member name="RemoteControlRegistry" type="RemoteControlRegistry" setter="" getter="">
+		</member>
+		<member name="RemoteControlServer" type="RemoteControlServer" setter="" getter="">
+		</member>
 		<member name="RenderingServer" type="RenderingServer" setter="" getter="">
 			The [RenderingServer] singleton.
 		</member>
@@ -1657,6 +1681,10 @@
 		<member name="ResourceUID" type="ResourceUID" setter="" getter="">
 			The [ResourceUID] singleton.
 		</member>
+		<member name="SocketIOClient" type="SocketIOClient" setter="" getter="">
+		</member>
+		<member name="Steam" type="Steam" setter="" getter="">
+		</member>
 		<member name="TextServerManager" type="TextServerManager" setter="" getter="">
 			The [TextServerManager] singleton.
 		</member>
@@ -1666,8 +1694,12 @@
 		<member name="Time" type="Time" setter="" getter="">
 			The [Time] singleton.
 		</member>
+		<member name="TownSDK" type="TownSdkClient" setter="" getter="">
+		</member>
 		<member name="TranslationServer" type="TranslationServer" setter="" getter="">
 			The [TranslationServer] singleton.
+		</member>
+		<member name="TwitchAPI" type="TwitchAPI" setter="" getter="">
 		</member>
 		<member name="WorkerThreadPool" type="WorkerThreadPool" setter="" getter="">
 			The [WorkerThreadPool] singleton.

@@ -500,6 +500,970 @@
 		<member name="audio/video/video_delay_compensation_ms" type="int" setter="" getter="" default="0">
 			Setting to hardcode audio delay when playing video. Best to leave this unchanged unless you know what you are doing.
 		</member>
+		<member name="blazium/assettags/strict_paths" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/assettags/strict_tags" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/assettags/taggable_extensions" type="String" setter="" getter="" default="&quot;glb,gltf,obj,fbx,blend,png,jpg,jpeg,webp,svg,exr,bmp,tga,tscn,scn,gd,luau,cs,tres,material,gdshader,gdshaderinc,res,remap&quot;">
+		</member>
+		<member name="blazium/autowork/e2e_enabled" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/allow_execute_tool_bypass" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/bind_to_localhost_only" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/bridge_url_allow_hosts" type="Array" setter="" getter="" default="[]">
+		</member>
+		<member name="blazium/justamcp/client_id" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+		<member name="blazium/justamcp/client_secret" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+		<member name="blazium/justamcp/disable_game_mcp" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/enable_debug_logging" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/enable_toolset_discovery" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/forward_engine_logs" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/game_control_enabled" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/in_flight_cancel_deadline_ms" type="int" setter="" getter="" default="5000">
+		</member>
+		<member name="blazium/justamcp/list_page_size" type="int" setter="" getter="" default="50">
+		</member>
+		<member name="blazium/justamcp/max_enqueue_per_sec_per_session" type="int" setter="" getter="" default="10">
+		</member>
+		<member name="blazium/justamcp/max_pending_per_session" type="int" setter="" getter="" default="8">
+		</member>
+		<member name="blazium/justamcp/mcp_clients" type="Array" setter="" getter="" default="[]">
+		</member>
+		<member name="blazium/justamcp/mcp_log_buffer_size" type="int" setter="" getter="" default="500">
+		</member>
+		<member name="blazium/justamcp/oauth_enabled" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/override_editor_settings" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/parallel_readonly_lane" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/pending_post_sse_timeout_sec" type="int" setter="" getter="" default="120">
+		</member>
+		<member name="blazium/justamcp/prompts/analyze_autowork_test_failures" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_autowork_fix_loop" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_context" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_diagnostics_triage" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_gdscript_linter" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_multiplayer_architect" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_project_intake" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_project_optimization" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_runtime_test_loop" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_scene_architect" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_scene_build_workflow" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_shader_expert" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/prompts/blazium_ui_scaffolder" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/prompts/editor_state" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/prompts/generate_autowork_test" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/prompts/project_info" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/readonly_worker_concurrency" type="int" setter="" getter="" default="2">
+		</member>
+		<member name="blazium/justamcp/request_route_ttl_sec" type="int" setter="" getter="" default="3600">
+		</member>
+		<member name="blazium/justamcp/resources/Asset Generation Guide" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Asset Tag Dictionary" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Asset Tag Dictionary (Paginated)" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Asset Tagging Guide" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Asset Tags" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Assets By Tag" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Assets By Tag (Paginated)" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Autowork Latest Results" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Blazium Documentation Classes" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Blazium Project File" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Class Documentation" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Current Scene" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Current Selection" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Documentation Search" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Editor State" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Input Map" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/MCP Log Notifications" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/MCP Sessions" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Materials" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Member Documentation" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Node Children" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Node Groups" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Node Properties" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Performance" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Project Info" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Project Settings" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Recent Engine Logs" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Recent Logs" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Scene Editing Guide" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Scene Hierarchy" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Script Source" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Semantic Asset Entry" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Semantic Index Rebuild" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Semantic Index Stats" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Semantic Search" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Semantic Search (Limited)" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Semantic Search (Paginated)" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Semantic Search (Tag Filtered)" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Semantic Similar Assets" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Semantic Similar Assets (Limited)" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/System Logs (Paginated)" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Test Results" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Testing Loop Guide" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Tool Index Guide" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Troubleshooting Guide" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/resources/Video Recordings Cache" type="String" setter="" getter="">
+		</member>
+		<member name="blazium/justamcp/server_enabled" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/server_port" type="int" setter="" getter="" default="6506">
+		</member>
+		<member name="blazium/justamcp/session_allow_client_delete" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/session_ttl_seconds" type="int" setter="" getter="" default="3600">
+		</member>
+		<member name="blazium/justamcp/stateless_tool_blocking" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/stateless_tool_timeout_ms" type="int" setter="" getter="" default="120000">
+		</member>
+		<member name="blazium/justamcp/streamable_http_allowed_origin" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+		<member name="blazium/justamcp/streamable_http_strict_origin" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/task_default_ttl_ms" type="int" setter="" getter="" default="600000">
+		</member>
+		<member name="blazium/justamcp/task_max_concurrent" type="int" setter="" getter="" default="16">
+		</member>
+		<member name="blazium/justamcp/task_poll_interval_ms" type="int" setter="" getter="" default="1000">
+		</member>
+		<member name="blazium/justamcp/task_result_max_wait_ms" type="int" setter="" getter="" default="120000">
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_analyze_scene_complexity" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_analyze_signal_flow" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_detect_circular_dependencies" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_find_script_references" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_find_unused_resources" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_get_project_statistics" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_project_advise" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_project_index" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_project_state" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_project_symbol_search" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_runtime_diagnose" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_scene_analyze" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_scene_dependency_graph" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_scene_validate" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_script_analyze" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_add_animation_state" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_add_animation_track" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_connect_animation_states" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_create_animation" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_create_animation_tree" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_create_navigation_agent" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_create_navigation_region" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_get_animation_info" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_get_animation_tree_structure" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_list_animations" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_remove_animation" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_remove_animation_state" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_remove_animation_transition" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_set_animation_keyframe" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_set_animation_tree_parameter" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_set_blend_tree_node" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/asset_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/asset_tools/blazium_asset_generate_2d_asset" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/audio_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/audio_tools/blazium_add_audio_bus" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/audio_tools/blazium_add_audio_bus_effect" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/audio_tools/blazium_add_audio_player" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/audio_tools/blazium_audio_get_players_info" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/audio_tools/blazium_get_audio_bus_layout" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/audio_tools/blazium_set_audio_bus" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/autowork_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/autowork_tools/blazium_autowork_run_all_tests" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/autowork_tools/blazium_autowork_run_test_by_name" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/autowork_tools/blazium_autowork_run_test_script" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/autowork_tools/blazium_autowork_run_tests_in_directory" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/batch_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/batch_tools/blazium_batch_add_nodes" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/batch_tools/blazium_batch_execute" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/batch_tools/blazium_batch_set_property" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/batch_tools/blazium_cross_scene_set_property" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/batch_tools/blazium_find_node_references" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/batch_tools/blazium_find_nodes_by_type" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/batch_tools/blazium_find_signal_connections" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/batch_tools/blazium_get_scene_dependencies" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/blueprint_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/blueprint_tools/blazium_blueprint_create_material_preset" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/blueprint_tools/blazium_blueprint_create_particle_preset" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/blueprint_tools/blazium_blueprint_setup_camera_preset" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/documentation_tools" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/documentation_tools/blazium_classdb_query" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/documentation_tools/blazium_docs_get_class" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/documentation_tools/blazium_docs_get_member" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/documentation_tools/blazium_docs_list_classes" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/documentation_tools/blazium_docs_search" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/draw_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/draw_tools/blazium_control_draw_recipe" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_clear_output" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_get_errors" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_get_output_log" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_get_selected" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_get_settings" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_get_signals" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_is_playing" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_open_scene" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_play_main" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_play_scene" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_redo" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_reload_project" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_save_all_scenes" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_screenshot_game" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_select_node" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_set_main_screen" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_set_settings" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_stop_play" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_take_screenshot" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_undo" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_logs_read" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_open_in_godot" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_rescan_filesystem" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_scene_tree_dump" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/environment_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/environment_tools/blazium_environment_create" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/export_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/export_tools/blazium_deploy_to_android" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/export_tools/blazium_export_custom" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/export_tools/blazium_export_debug" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/export_tools/blazium_export_project" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/export_tools/blazium_export_release" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/export_tools/blazium_get_android_preset_info" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/export_tools/blazium_get_export_info" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/export_tools/blazium_list_android_devices" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/export_tools/blazium_list_export_presets" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/input_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/input_tools/blazium_input_record" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/input_tools/blazium_input_replay" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/input_tools/blazium_simulate_action" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/input_tools/blazium_simulate_gamepad" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/input_tools/blazium_simulate_key" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/input_tools/blazium_simulate_mouse_click" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/input_tools/blazium_simulate_mouse_move" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/input_tools/blazium_simulate_sequence" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/input_tools/blazium_simulate_touch" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/mcp_client_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/mcp_client_tools/blazium_mcp_client_add_bridge" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/mcp_client_tools/blazium_mcp_client_call_remote_tool" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/mcp_client_tools/blazium_mcp_client_list_bridges" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/mcp_client_tools/blazium_mcp_client_list_remote_tools" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/mcp_client_tools/blazium_mcp_client_read_remote_resource" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/networking_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/networking_tools/blazium_networking_create_http_request" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/networking_tools/blazium_networking_get_info" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/networking_tools/blazium_networking_setup_multiplayer" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/networking_tools/blazium_networking_setup_rpc" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/networking_tools/blazium_networking_setup_sync" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/networking_tools/blazium_networking_setup_websocket" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/node_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_add" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_add_resource" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_connect_signal" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_delete" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_disconnect_signal" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_duplicate" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_find_in_group" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_get_groups" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_get_properties" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_move" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_rename" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_set_anchor_preset" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_set_groups" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/node_tools/blazium_node_update_property" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/particle_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/particle_tools/blazium_apply_particle_preset" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/particle_tools/blazium_create_particles" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/particle_tools/blazium_get_particle_info" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/particle_tools/blazium_set_particle_color_gradient" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/particle_tools/blazium_set_particle_material" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/physics_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/physics_tools/blazium_add_raycast" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/physics_tools/blazium_get_collision_info" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/physics_tools/blazium_get_physics_layers" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/physics_tools/blazium_set_physics_layers" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/physics_tools/blazium_setup_collision" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/physics_tools/blazium_setup_physics_body" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/profiling_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/profiling_tools/blazium_get_editor_performance" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/profiling_tools/blazium_get_performance_monitors" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/profiling_tools/blazium_profiling_detect_bottlenecks" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/profiling_tools/blazium_profiling_monitor" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_add_autoload" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_get_filesystem_tree" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_get_project_info" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_inject_drag" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_inject_gamepad" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_inject_gesture" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_inject_scroll" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_project_get_collision_layers" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_project_get_input_actions" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_project_list_settings" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_project_manage_autoloads" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_project_map_project" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_project_map_scenes" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_project_path_to_uid" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_project_remove_input_action" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_project_run" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_project_set_input_action" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_project_update_settings" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_remove_autoload" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_search_files" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_search_in_files" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_set_project_setting" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_uid_to_project_path" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_apply_theme_shader" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_create_material" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_create_resource" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_create_shader_template" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_create_tileset" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_edit_resource_file" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_get_resource_dependencies" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_get_resource_info" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_get_resource_preview" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_import_asset_copy" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_list_resource_files" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_manage_resource_autoloads" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_modify_resource" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_read_resource_file" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_resource_import_asset" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_save_resource_as" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_set_theme_resource_color" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_set_theme_resource_font_size" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_set_tilemap_cells" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_eval_expression" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_execute_gdscript_snippet" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_get_audio_info" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_get_network_info" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_get_runtime_log" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_get_runtime_status" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_query_runtime_node" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_run_custom_command" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_batch_get_properties" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_capabilities" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_capture_output" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_click_button_by_text" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_compare_screenshots" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_find_nodes_by_script" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_find_ui_elements" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_get_autoload" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_get_errors" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_get_test_results" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_get_tree" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_info" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_inspect_node" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_monitor_properties" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_move_node" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_quit" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_record_video" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_runtime_run_gut_tests" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_signal_emit" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_take_game_screenshot" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/runtime_tools/blazium_wait" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_add_gridmap" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_add_mesh_instance" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_set_material_3d" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_setup_camera_3d" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_setup_environment" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_setup_lighting" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_add_node" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_call_node_method" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_connect_signal" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_create_area_2d" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_create_csg_shape" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_create_line_2d" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_create_multimesh" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_create_polygon_2d" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_create_scene" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_delete_node" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_delete_scene" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_disconnect_signal" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_duplicate_node" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_find_nodes" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_get_node_properties" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_get_node_property" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_get_scene_exports" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_get_scene_file_content" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_has_signal_connection" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_instance_scene" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_list_connections" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_list_node_signals" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_list_scene_nodes" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_load_sprite" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_modify_node_property" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_press_button" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_reparent_node" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_save_resource_to_file" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_save_scene" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_scene_close" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_scene_create_inherited" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_scene_duplicate_file" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_scene_get_current" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_scene_list_open" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_scene_reload" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_scene_set_current" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_set_collision_shape" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_set_material" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_set_mesh" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_set_node_properties" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_set_resource_property" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_set_sprite_texture" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_setup_camera_2d" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_setup_occlusion" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_setup_parallax_2d" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_setup_skeleton" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_wait_for_property" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/script_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_attach_script" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_create_script" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_delete_script" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_detach_script" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_edit_script" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_find_script_symbols" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_get_open_scripts" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_get_script_errors" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_list_scripts" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_open_script_in_editor" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_patch_script" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_read_script" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_search_in_scripts" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/script_tools/blazium_validate_script" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/shader_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/shader_tools/blazium_assign_shader_material" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/shader_tools/blazium_create_shader" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/shader_tools/blazium_edit_shader" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/shader_tools/blazium_get_shader_params" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/shader_tools/blazium_read_shader" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/shader_tools/blazium_set_shader_param" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/spatial_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/spatial_tools/blazium_navigation_get_info" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/spatial_tools/blazium_navigation_set_layers" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/spatial_tools/blazium_spatial_analyze_layout" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/spatial_tools/blazium_spatial_bake_navigation" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/spatial_tools/blazium_spatial_detect_overlaps" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/spatial_tools/blazium_spatial_measure_distance" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/spatial_tools/blazium_spatial_suggest_placement" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/theme_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/theme_tools/blazium_create_theme" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/theme_tools/blazium_get_theme_info" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/theme_tools/blazium_set_control_theme_color" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/theme_tools/blazium_set_control_theme_font_size" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/theme_tools/blazium_set_theme_constant" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/theme_tools/blazium_set_theme_stylebox" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/theme_tools/blazium_setup_control" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/tilemap_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/tilemap_tools/blazium_tilemap_clear" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/tilemap_tools/blazium_tilemap_fill_rect" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/tilemap_tools/blazium_tilemap_get_cell" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/tilemap_tools/blazium_tilemap_get_info" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/tilemap_tools/blazium_tilemap_get_used_cells" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/tilemap_tools/blazium_tilemap_set_cell" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Analysis" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Animation" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Asset" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/AssetTags" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Audio" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Autowork" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Batch" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Blueprint" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Documentation" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Draw" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Editor" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Environment" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Export" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Input" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/MCPClient" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Multiuser" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Networking" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Node" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Particle" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Physics" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Profiling" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Project" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/RemoteControl" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Resource" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Runtime" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Scene" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Scene3D" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Script" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/SemanticSearch" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Shader" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Spatial" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/Theme" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/toolsets/TileMap" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/z_mcp_config" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+		<member name="blazium/remote_control/allow_eval" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/remote_control/allow_runtime" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/remote_control/bind_address" type="String" setter="" getter="" default="&quot;127.0.0.1&quot;">
+		</member>
+		<member name="blazium/remote_control/server_enabled" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/remote_control/server_port" type="int" setter="" getter="" default="6507">
+		</member>
+		<member name="blazium/remote_control/token" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+		<member name="blazium/semanticsearch/async_job_ttl_ms" type="int" setter="" getter="" default="1800000">
+		</member>
+		<member name="blazium/semanticsearch/backend" type="String" setter="" getter="" default="&quot;lexical&quot;">
+		</member>
+		<member name="blazium/semanticsearch/embedding_http_timeout_ms" type="int" setter="" getter="" default="30000">
+		</member>
+		<member name="blazium/semanticsearch/embedding_http_url" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+		<member name="blazium/semanticsearch/embedding_provider" type="String" setter="" getter="" default="&quot;hash_vector&quot;">
+		</member>
+		<member name="blazium/semanticsearch/max_concurrent_async_jobs" type="int" setter="" getter="" default="8">
+		</member>
+		<member name="blazium/semanticsearch/scan_filesystem" type="bool" setter="" getter="" default="false">
+		</member>
 		<member name="collada/use_ambient" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], ambient lights will be imported from COLLADA models as [DirectionalLight3D]. If [code]false[/code], ambient lights will be ignored.
 		</member>
@@ -530,7 +1494,7 @@
 		<member name="debug/file_logging/enable_file_logging.pc" type="bool" setter="" getter="" default="true">
 			Desktop override for [member debug/file_logging/enable_file_logging], as log files are not readily accessible on mobile/Web platforms.
 		</member>
-		<member name="debug/file_logging/log_path" type="String" setter="" getter="" default="&quot;user://logs/godot.log&quot;">
+		<member name="debug/file_logging/log_path" type="String" setter="" getter="" default="&quot;user://logs/blazium.log&quot;">
 			Path at which to store log files for the project. Using a path under [code]user://[/code] is recommended.
 			This can be specified manually on the command line using the [code]--log-file &lt;file&gt;[/code] [url=$DOCS_URL/tutorials/editor/command_line_tutorial.html]command line argument[/url]. If this command line argument is specified, log rotation is automatically disabled (see [member debug/file_logging/max_log_files]).
 		</member>
@@ -694,7 +1658,7 @@
 		<member name="debug/settings/crash_handler/message" type="String" setter="" getter="" default="&quot;Please include this when reporting the bug to the project developer.&quot;">
 			Message to be displayed before the backtrace when the engine crashes. By default, this message is only used in exported projects due to the editor-only override applied to this setting.
 		</member>
-		<member name="debug/settings/crash_handler/message.editor" type="String" setter="" getter="" default="&quot;Please include this when reporting the bug on: https://github.com/godotengine/godot/issues&quot;">
+		<member name="debug/settings/crash_handler/message.editor" type="String" setter="" getter="" default="&quot;Please include this when reporting the bug on: https://github.com/blazium-games/blazium/issues&quot;">
 			Editor-only override for [member debug/settings/crash_handler/message]. Does not affect exported projects in debug or release mode.
 		</member>
 		<member name="debug/settings/gdscript/always_track_call_stacks" type="bool" setter="" getter="" default="false">
@@ -2380,6 +3344,8 @@
 		</member>
 		<member name="layer_names/avoidance/layer_32" type="String" setter="" getter="" default="&quot;&quot;">
 			Optional name for the navigation avoidance layer 32. If left empty, the layer will display as "Layer 32".
+		</member>
+		<member name="luau_module/package/path" type="String" setter="" getter="" default="&quot;res://?.luau;res://?.lua;res://?.mod.luau;res://?/init.luau&quot;">
 		</member>
 		<member name="memory/limits/message_queue/max_size_mb" type="int" setter="" getter="" default="32">
 			Godot uses a message queue to defer some function calls. If you run out of space on it (you will see an error), you can increase the size here.

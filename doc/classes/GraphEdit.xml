@@ -572,7 +572,7 @@
 		<theme_item name="connection_hover_tint_color" data_type="color" type="Color" default="Color(0, 0, 0, 0.3)">
 			Color which is blended with the connection line when the mouse is hovering over it.
 		</theme_item>
-		<theme_item name="connection_rim_color" data_type="color" type="Color" default="Color(0.1, 0.1, 0.1, 0.6)">
+		<theme_item name="connection_rim_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
 			Color of the rim around each connection line used for making intersecting lines more distinguishable.
 		</theme_item>
 		<theme_item name="connection_valid_target_tint_color" data_type="color" type="Color" default="Color(1, 1, 1, 0.4)">
@@ -584,10 +584,10 @@
 		<theme_item name="grid_minor" data_type="color" type="Color" default="Color(1, 1, 1, 0.05)">
 			Color of minor grid lines/dots.
 		</theme_item>
-		<theme_item name="selection_fill" data_type="color" type="Color" default="Color(1, 1, 1, 0.3)">
+		<theme_item name="selection_fill" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 0.4)">
 			The fill color of the selection rectangle.
 		</theme_item>
-		<theme_item name="selection_stroke" data_type="color" type="Color" default="Color(1, 1, 1, 0.8)">
+		<theme_item name="selection_stroke" data_type="color" type="Color" default="Color(0.226, 0.478, 0.921, 1)">
 			The outline color of the selection rectangle.
 		</theme_item>
 		<theme_item name="connection_hover_thickness" data_type="constant" type="int" default="0">

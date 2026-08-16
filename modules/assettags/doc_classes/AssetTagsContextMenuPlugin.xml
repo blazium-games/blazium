@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="AssetTagsContextMenuPlugin" inherits="EditorContextMenuPlugin" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="AssetTagsContextMenuPlugin" inherits="EditorContextMenuPlugin" api_type="editor" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		FileSystem dock context menu entry for editing asset tags.
 	</brief_description>

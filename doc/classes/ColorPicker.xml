@@ -152,7 +152,7 @@
 		</constant>
 	</constants>
 	<theme_items>
-		<theme_item name="focused_not_editing_cursor_color" data_type="color" type="Color" default="Color(1, 1, 1, 0.275)">
+		<theme_item name="focused_not_editing_cursor_color" data_type="color" type="Color" default="Color(1, 1, 1, 0.2)">
 			Color of rectangle or circle drawn when a picker shape part is focused but not editable via keyboard or joypad. Displayed [i]over[/i] the picker shape, so a partially transparent color should be used to ensure the picker shape remains visible.
 		</theme_item>
 		<theme_item name="center_slider_grabbers" data_type="constant" type="int" default="1">
@@ -161,10 +161,10 @@
 		<theme_item name="h_width" data_type="constant" type="int" default="30">
 			The width of the hue selection slider.
 		</theme_item>
-		<theme_item name="label_width" data_type="constant" type="int" default="10">
+		<theme_item name="label_width" data_type="constant" type="int" default="14">
 			The minimum width of the color labels next to sliders.
 		</theme_item>
-		<theme_item name="margin" data_type="constant" type="int" default="4">
+		<theme_item name="margin" data_type="constant" type="int" default="6">
 			The margin around the [ColorPicker].
 		</theme_item>
 		<theme_item name="sv_height" data_type="constant" type="int" default="256">

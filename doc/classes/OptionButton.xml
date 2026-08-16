@@ -294,7 +294,7 @@
 		</signal>
 	</signals>
 	<theme_items>
-		<theme_item name="arrow_margin" data_type="constant" type="int" default="4">
+		<theme_item name="arrow_margin" data_type="constant" type="int" default="6">
 			The horizontal space between the arrow icon and the right edge of the button.
 		</theme_item>
 		<theme_item name="modulate_arrow" data_type="constant" type="int" default="0">
