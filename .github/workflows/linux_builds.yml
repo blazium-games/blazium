@@ -13,9 +13,10 @@ env:
   SCONS_FLAGS: >-
     dev_mode=yes
     module_text_server_fb_enabled=yes
-  GODOT_CPP_BRANCH: 4.5
+  # godot-cpp has no 4.7 branch; master is the current 4.7-compatible line.
+  GODOT_CPP_BRANCH: master
   BLAZIUM_BASE_BRANCH: blazium_4.7
-  BLAZIUM_CPP_BRANCH: blazium-dev
+  BLAZIUM_CPP_BRANCH: blazium-4.7
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   ASAN_OPTIONS: color=always:print_suppressions=1:suppressions=${{ github.workspace }}/misc/error_suppressions/asan.txt
@@ -44,7 +45,7 @@ jobs:
             proj-export: true
             api-compat: true
             artifact: true
-            # Validate godot-cpp compatibility on one arbitrary editor build.
+            # Validate godot-cpp (master) and blazium-cpp (blazium-4.7) on one editor build.
             godot-cpp: true
             clangd-tidy: true
 
@@ -215,12 +216,9 @@ jobs:
           checkout-path: godot-cpp
           godot-cpp-branch: ${{ env.GODOT_CPP_BRANCH }}
 
-      # blazium-cpp has no 4.7 branch yet (latest is blazium-dev / 4.3). Keep godot-cpp
-      # as the required compatibility job and probe blazium-cpp without failing the build.
       - name: Compilation (blazium-cpp)
         uses: ./.github/actions/godot-cpp-build
         if: matrix.godot-cpp
-        continue-on-error: true
         with:
           bin: ${{ matrix.bin }}
           scons-flags: target=template_debug dev_build=yes verbose=yes
