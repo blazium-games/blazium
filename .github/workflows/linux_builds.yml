@@ -49,24 +49,21 @@ jobs:
             godot-cpp: true
             clangd-tidy: true
 
-          - name: Editor with doubles and GCC sanitizers (target=editor, dev_build=yes, scu_build=yes, precision=double, use_asan=yes, use_ubsan=yes, linker=lld)
-            cache-name: linux-editor-double-sanitizers
+          - name: Editor with doubles and LLVM sanitizers (target=editor, dev_build=yes, precision=double, use_asan=yes, use_ubsan=yes, use_llvm=yes, linker=lld)
+            cache-name: linux-editor-double-llvm-sanitizers
             target: editor
             # Debug symbols disabled as they're huge on this build and we hit the 14 GB limit for runners.
-            # Use lld instead of mold: ASAN+double+SCU editor binaries exceed mold's R_X86_64_PC32 range.
-            # Shared libstdc++: static libstdc++.a is small-model and overflows R_X86_64_PC32 in this binary.
-            # medium code model keeps our ASAN data refs in range without growing the image like large.
+            # GCC+ASAN+double+tests cannot link: libtests R_X86_64_PC32 to shared libasan.so is out of range.
+            # Clang sanitizers already link this tree; keep double precision on that toolchain.
             scons-flags: >-
               dev_build=yes
-              scu_build=yes
               debug_symbols=no
               precision=double
               use_asan=yes
               use_ubsan=yes
+              use_llvm=yes
               linker=lld
-              use_static_cpp=no
-              ccflags=-mcmodel=medium
-            bin: ./bin/blazium.linuxbsd.editor.dev.double.x86_64.san
+            bin: ./bin/blazium.linuxbsd.editor.dev.double.x86_64.llvm.san
             proj-test: true
             free-space: true
 
@@ -190,7 +187,7 @@ jobs:
       - name: Install lld linker
         if: matrix.proj-test
         run: |
-          # Doubles+GCC+ASAN editor links with -fuse-ld=lld; mold exceeds R_X86_64_PC32 range on this binary.
+          # Doubles+ASAN editor links with -fuse-ld=lld.
           sudo apt-get update
           sudo apt-get install -y lld
           ld.lld --version
