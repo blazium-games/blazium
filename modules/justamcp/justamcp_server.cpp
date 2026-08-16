@@ -27,14 +27,8 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "core/object/class_db.h"
-#include "core/object/callable_mp.h"
 #include "justamcp_server.h"
-#include "core/config/project_settings.h"
-#include "core/io/json.h"
-#include "core/os/os.h"
-#include "core/os/time.h"
-#include "editor/settings/editor_settings.h"
+
 #include "justamcp_cors_policy.h"
 #include "justamcp_json_rpc_transport.h"
 #include "justamcp_log_levels.h"
@@ -46,8 +40,6 @@
 #include "justamcp_tool_context.h"
 #include "justamcp_tool_dispatch.h"
 #include "justamcp_tool_queue_state.h"
-#include "modules/modules_enabled.gen.h"
-#include "servers/display/display_server.h"
 #include "tools/justamcp_json_rpc_helpers.h"
 #include "tools/justamcp_json_rpc_router.h"
 #include "tools/justamcp_prompt_executor.h"
@@ -55,6 +47,17 @@
 #include "tools/justamcp_task_manager.h"
 #include "tools/justamcp_tool_executor.h"
 #include "tools/justamcp_tool_schema_cache.h"
+
+#include "core/config/project_settings.h"
+#include "core/io/json.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
+#include "core/os/os.h"
+#include "core/os/time.h"
+#include "editor/settings/editor_settings.h"
+#include "servers/display/display_server.h"
+
+#include "modules/modules_enabled.gen.h"
 
 static bool _is_headless() {
 	if (DisplayServer::get_singleton() != nullptr) {

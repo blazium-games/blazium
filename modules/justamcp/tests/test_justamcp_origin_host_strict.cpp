@@ -32,6 +32,7 @@
 #ifdef TESTS_ENABLED
 
 #include "../justamcp_session_manager.h"
+
 #include "tests/test_macros.h"
 
 void test_justamcp_origin_host_strict() {

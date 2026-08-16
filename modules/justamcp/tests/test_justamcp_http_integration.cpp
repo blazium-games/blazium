@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "test_justamcp_http_integration.h"
+
 #include "test_justamcp_fixture.h"
 
 #ifdef TESTS_ENABLED
@@ -43,9 +44,10 @@
 
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
+#include "tests/test_macros.h"
+
 #include "modules/httpserver/http_request_context.h"
 #include "modules/httpserver/http_response.h"
-#include "tests/test_macros.h"
 
 static Ref<HTTPRequestContext> _make_test_context(const String &p_method, const Dictionary &p_headers, const String &p_body = String()) {
 	Ref<HTTPRequestContext> context;

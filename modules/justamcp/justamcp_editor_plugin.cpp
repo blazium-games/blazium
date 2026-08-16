@@ -29,9 +29,8 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "core/object/class_db.h"
-#include "core/object/callable_mp.h"
 #include "justamcp_editor_plugin.h"
+
 #include "justamcp_project_settings.h"
 #include "justamcp_server.h"
 #include "justamcp_tool_context.h"
@@ -39,21 +38,23 @@
 #include "tools/justamcp_json_rpc_helpers.h"
 #include "tools/justamcp_prompt_executor.h"
 #include "tools/justamcp_resource_executor.h"
+#include "tools/justamcp_resource_subscriptions.h"
 #include "tools/justamcp_tool_executor.h"
 #include "tools/justamcp_tool_schema_cache.h"
+#include "tools/resources/justamcp_materials_resource_provider.h"
 
 #include "core/config/project_settings.h"
-#include "editor/file_system/editor_file_system.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
+#include "editor/file_system/editor_file_system.h"
 #include "editor/settings/editor_settings.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/dialogs.h"
 #include "scene/gui/grid_container.h"
 #include "scene/gui/text_edit.h"
 #include "servers/display/display_server.h"
-#include "tools/justamcp_resource_subscriptions.h"
-#include "tools/resources/justamcp_materials_resource_provider.h"
 
 void JustAMCPConfigUI::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_copy_pressed"), &JustAMCPConfigUI::_copy_pressed);

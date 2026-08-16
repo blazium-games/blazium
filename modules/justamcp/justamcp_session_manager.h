@@ -29,8 +29,6 @@
 
 #pragma once
 
-#include "modules/modules_enabled.gen.h"
-
 #include "justamcp_event_store.h"
 #include "justamcp_request_router.h"
 
@@ -38,6 +36,8 @@
 #include "core/templates/hash_map.h"
 #include "core/templates/hash_set.h"
 #include "core/variant/dictionary.h"
+
+#include "modules/modules_enabled.gen.h"
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 #include "modules/httpserver/http_request_context.h"

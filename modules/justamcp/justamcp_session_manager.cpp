@@ -28,7 +28,6 @@
 /**************************************************************************/
 
 #include "justamcp_session_manager.h"
-#include "modules/modules_enabled.gen.h"
 
 #include "justamcp_pagination.h"
 #include "justamcp_server.h"
@@ -40,6 +39,8 @@
 #include "core/os/os.h"
 #include "core/os/time.h"
 #include "core/templates/list.h"
+
+#include "modules/modules_enabled.gen.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/settings/editor_settings.h"
