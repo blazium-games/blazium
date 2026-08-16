@@ -198,6 +198,17 @@ void test_justamcp_validate_protocol_header_rejects_unknown() {
 	err = String();
 	CHECK(!MCPSessionManager::validate_protocol_header(_make_ctx("POST", bad_headers), err));
 	CHECK(err.contains("Unsupported MCP-Protocol-Version"));
+
+	Dictionary combined_headers = _json_headers();
+	combined_headers["MCP-Protocol-Version"] = "2025-11-25, 2025-11-25";
+	err = String();
+	CHECK(MCPSessionManager::validate_protocol_header(_make_ctx("POST", combined_headers), err));
+
+	Dictionary mixed_headers = _json_headers();
+	mixed_headers["MCP-Protocol-Version"] = "2025-11-25, 1999-01-01";
+	err = String();
+	CHECK(!MCPSessionManager::validate_protocol_header(_make_ctx("POST", mixed_headers), err));
+	CHECK(err.contains("Unsupported MCP-Protocol-Version"));
 }
 
 void test_justamcp_http_initialize_all_protocol_versions() {
@@ -210,6 +221,14 @@ void test_justamcp_http_initialize_all_protocol_versions() {
 		const String session_id = _init_session(server, session_manager, k_supported_protocols[i]);
 		CHECK(!session_id.is_empty());
 	}
+
+	Dictionary combined = _json_headers();
+	combined["MCP-Protocol-Version"] = "2025-11-25, 2025-11-25";
+	Ref<HTTPResponse> combined_response;
+	combined_response.instantiate();
+	CHECK(session_manager->handle_mcp_post(_make_ctx("POST", combined, _initialize_body("2025-11-25", 99)), combined_response));
+	CHECK(combined_response->get_status() == 200);
+	CHECK(!_response_header(combined_response, "MCP-Session-Id").is_empty());
 }
 
 void test_justamcp_http_protocol_header_falls_back_to_session() {

@@ -260,7 +260,8 @@ void test_justamcp_mcp_config_json_uses_streamable_mcp_path() {
 	const String opencode_cfg = JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_OPENCODE);
 	CHECK(cursor_cfg.contains("/mcp"));
 	CHECK(!cursor_cfg.contains("/sse"));
-	CHECK(cursor_cfg.contains("\"MCP-Protocol-Version\""));
+	CHECK(!cursor_cfg.contains("\"MCP-Protocol-Version\""));
+	CHECK(!cursor_cfg.contains("\"headers\""));
 	CHECK(ag_cfg.contains("/mcp"));
 	CHECK(!ag_cfg.contains("\"/sse\""));
 	CHECK(opencode_cfg.contains("\"$schema\": \"https://opencode.ai/config.json\""));
@@ -380,8 +381,8 @@ void test_justamcp_mcp_config_client_field_shapes() {
 	const String opencode_cfg = JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_OPENCODE);
 	CHECK(cursor_cfg.contains("\"url\":"));
 	CHECK(!cursor_cfg.contains("\"serverUrl\":"));
-	CHECK(cursor_cfg.contains("\"headers\""));
-	CHECK(cursor_cfg.contains("\"MCP-Protocol-Version\""));
+	CHECK(!cursor_cfg.contains("\"headers\""));
+	CHECK(!cursor_cfg.contains("\"MCP-Protocol-Version\""));
 	CHECK(!cursor_cfg.contains("\"oauth\""));
 	CHECK(ag_cfg.contains("\"serverUrl\":"));
 	CHECK(!ag_cfg.contains("\"url\": \"http://"));

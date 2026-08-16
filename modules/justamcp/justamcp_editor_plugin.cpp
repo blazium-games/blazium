@@ -34,7 +34,6 @@
 #include "justamcp_editor_plugin.h"
 #include "justamcp_project_settings.h"
 #include "justamcp_server.h"
-#include "justamcp_session_manager.h"
 #include "justamcp_tool_context.h"
 #include "justamcp_tool_dispatch.h"
 #include "tools/justamcp_json_rpc_helpers.h"
@@ -483,7 +482,6 @@ String JustAMCPEditorPlugin::get_mcp_config_json(MCPConfigClient p_client) {
 	}
 
 	const String mcp_url = "http://127.0.0.1:" + itos(port) + "/mcp";
-	const String protocol_version = MCPSessionManager::latest_protocol_version();
 
 	if (p_client == MCP_CONFIG_OPENCODE) {
 		String json_config = "{\n";
@@ -503,10 +501,9 @@ String JustAMCPEditorPlugin::get_mcp_config_json(MCPConfigClient p_client) {
 	json_config += "  \"mcpServers\": {\n";
 	json_config += "    \"blazium-mcp\": {\n";
 	if (p_client == MCP_CONFIG_CURSOR) {
-		json_config += "      \"url\": \"" + mcp_url + "\",\n";
-		json_config += "      \"headers\": {\n";
-		json_config += "        \"MCP-Protocol-Version\": \"" + protocol_version + "\"\n";
-		json_config += "      }";
+		// Cursor already sends MCP-Protocol-Version. Repeating it in mcp.json
+		// makes the client POST "2025-11-25, 2025-11-25" and fail initialize.
+		json_config += "      \"url\": \"" + mcp_url + "\"";
 	} else {
 		json_config += "      \"serverUrl\": \"" + mcp_url + "\"";
 	}

@@ -269,24 +269,31 @@ bool MCPSessionManager::validate_origin(const Ref<HTTPRequestContext> &p_context
 }
 
 bool MCPSessionManager::validate_protocol_header(const Ref<HTTPRequestContext> &p_context, String &r_error) {
-	const String header = get_header(p_context, "MCP-Protocol-Version");
+	const String header = get_header(p_context, "MCP-Protocol-Version").strip_edges();
 	if (header.is_empty()) {
 		return true;
 	}
-	static const char *supported[] = {
-		"2025-11-25",
-		"2025-06-18",
-		"2025-03-26",
-		"2024-11-05",
-		nullptr
-	};
-	for (int i = 0; supported[i]; i++) {
-		if (header == supported[i]) {
-			return true;
+	// RFC 9110 combines duplicate request headers with commas. Cursor also
+	// concatenates mcp.json headers with the protocol version it already sends,
+	// producing values such as "2025-11-25, 2025-11-25".
+	const Vector<String> parts = header.split(",", false);
+	bool saw_version = false;
+	for (int i = 0; i < parts.size(); i++) {
+		const String version = parts[i].strip_edges();
+		if (version.is_empty()) {
+			continue;
 		}
+		if (!is_supported_protocol_version(version)) {
+			r_error = "Unsupported MCP-Protocol-Version: " + header;
+			return false;
+		}
+		saw_version = true;
 	}
-	r_error = "Unsupported MCP-Protocol-Version: " + header;
-	return false;
+	if (!saw_version) {
+		r_error = "Unsupported MCP-Protocol-Version: " + header;
+		return false;
+	}
+	return true;
 }
 
 bool MCPSessionManager::accepts_json_and_sse_header(const String &p_accept) {
