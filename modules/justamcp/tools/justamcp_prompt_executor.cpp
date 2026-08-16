@@ -29,11 +29,11 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "core/object/class_db.h"
 #include "justamcp_prompt_executor.h"
 #include "../justamcp_mcp_spec.h"
 #include "../justamcp_pagination.h"
 #include "core/config/project_settings.h"
+#include "core/object/class_db.h"
 #include "editor/editor_settings.h"
 #include "prompts/justamcp_prompt_asset_tagging_workflow.h"
 #include "prompts/justamcp_prompt_autowork_failure_analyzer.h"

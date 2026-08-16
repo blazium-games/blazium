@@ -28,10 +28,10 @@
 /**************************************************************************/
 
 #ifdef TOOLS_ENABLED
-#include "core/object/class_db.h"
 #include "justamcp_prompt.h"
 #include "../../justamcp_mcp_spec.h"
 #include "../justamcp_resource_executor.h"
+#include "core/object/class_db.h"
 
 void JustAMCPPrompt::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_name"), &JustAMCPPrompt::get_name);

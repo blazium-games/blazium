@@ -29,8 +29,8 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "core/object/class_db.h"
 #include "justamcp_asset_tags_tools.h"
+#include "core/object/class_db.h"
 
 #include "modules/modules_enabled.gen.h"
 
