@@ -5,7 +5,7 @@ import sys
 from typing import TYPE_CHECKING
 
 import methods
-from methods import print_error, print_warning
+from methods import print_error, print_info, print_warning
 from platform_methods import detect_arch, validate_arch
 
 if TYPE_CHECKING:
@@ -221,6 +221,14 @@ def get_opts():
 
     return [
         ("mingw_prefix", "MinGW prefix", mingw),
+        # Targeted Windows version: 7 (and later), minimum supported version
+        # XP support dropped after EOL due to missing API for IPv6 and other issues
+        # Vista support dropped after EOL due to GH-10243
+        (
+            "target_win_version",
+            "Targeted Windows version, >= 0x0601 (Windows 7)",
+            "0x0601",
+        ),
         EnumVariable("windows_subsystem", "Windows subsystem", "gui", ["gui", "console"], ignorecase=2),
         ("msvc_version", "MSVC version to use. Handled automatically by SCons if omitted.", ""),
         ("mssdk_version", "Windows SDK version to use. Handled automatically by SCons if omitted.", ""),
@@ -411,6 +419,13 @@ def configure_msvc(env: "SConsEnvironment"):
     env.AppendUnique(CCFLAGS=["/utf-8"])  # Force to use Unicode encoding.
     env.AppendUnique(CCFLAGS=["/bigobj"])  # Support big objects.
 
+    validate_win_version(env)
+
+    if env["accesskit"]:
+        if int(env["target_win_version"], 16) < 0x0602:
+            print_info("AccessKit enabled, targeted Windows version changed to Windows 8 (0x602).")
+            env["target_win_version"] = "0x0602"  # Accessibility API require Windows 8+
+
     env.AppendUnique(
         CPPDEFINES=[
             "WINDOWS_ENABLED",
@@ -418,8 +433,8 @@ def configure_msvc(env: "SConsEnvironment"):
             "WINMIDI_ENABLED",
             "TYPED_METHOD_BIND",
             "WIN32",
-            ("WINVER", "0x0A00"),
-            ("_WIN32_WINNT", "0x0A00"),
+            ("WINVER", env["target_win_version"]),
+            ("_WIN32_WINNT", env["target_win_version"]),
         ]
     )
     env.AppendUnique(CPPDEFINES=["NOMINMAX"])  # disable bogus min/max WinDef.h macros
@@ -448,7 +463,6 @@ def configure_msvc(env: "SConsEnvironment"):
         "gdi32",
         "IPHLPAPI",
         "Shlwapi",
-        "Shcore",
         "wsock32",
         "Ws2_32",
         "shell32",
@@ -796,6 +810,13 @@ def configure_mingw(env: "SConsEnvironment"):
 
     ## Compile flags
 
+    validate_win_version(env)
+
+    if env["accesskit"]:
+        if int(env["target_win_version"], 16) < 0x0602:
+            print_info("AccessKit enabled, targeted Windows version changed to Windows 8 (0x602).")
+            env["target_win_version"] = "0x0602"  # Accessibility API require Windows 8+
+
     if not env["use_llvm"]:
         env.Append(CCFLAGS=["-mwindows"])
 
@@ -827,8 +848,8 @@ def configure_mingw(env: "SConsEnvironment"):
     env.Append(CPPDEFINES=["WINDOWS_ENABLED", "WASAPI_ENABLED", "WINMIDI_ENABLED"])
     env.Append(
         CPPDEFINES=[
-            ("WINVER", "0x0A00"),
-            ("_WIN32_WINNT", "0x0A00"),
+            ("WINVER", env["target_win_version"]),
+            ("_WIN32_WINNT", env["target_win_version"]),
         ]
     )
     env.Append(
@@ -842,7 +863,6 @@ def configure_mingw(env: "SConsEnvironment"):
             "iphlpapi",
             "shell32",
             "shlwapi",
-            "shcore",
             "wsock32",
             "ws2_32",
             "kernel32",
@@ -1054,4 +1074,10 @@ def check_d3d12_installed(env, suffix):
             "\thttps://docs.godotengine.org/en/latest/engine_details/development/compiling/compiling_for_windows.html\n"
             "Alternatively, disable this driver by compiling with `d3d12=no` explicitly."
         )
+        sys.exit(255)
+
+
+def validate_win_version(env):
+    if int(env["target_win_version"], 16) < 0x0601:
+        print_error("`target_win_version` should be 0x0601 or higher (Windows 7).")
         sys.exit(255)

@@ -2139,6 +2139,11 @@ GDScriptParser::Node *GDScriptParser::parse_statement() {
 			}
 			break;
 		}
+		case GDScriptTokenizer::Token::UNDERSCORE: {
+			advance();
+			push_error(R"(Incorrect indentation for "_:")");
+			break;
+		}
 		default: {
 			// Expression statement.
 			ExpressionNode *expression = parse_expression(true); // Allow assignment here.
@@ -2368,7 +2373,9 @@ GDScriptParser::IfNode *GDScriptParser::parse_if(const String &p_token) {
 		push_error(vformat(R"(Expected conditional expression after "%s".)", p_token));
 	}
 
-	consume(GDScriptTokenizer::Token::COLON, vformat(R"(Expected ":" after "%s" condition.)", p_token));
+	if (!check(GDScriptTokenizer::Token::PERIOD_PERIOD)) {
+		consume(GDScriptTokenizer::Token::COLON, vformat(R"(Expected ":" after "%s" condition.)", p_token));
+	}
 
 	n_if->true_block = parse_suite(vformat(R"("%s" block)", p_token));
 	n_if->true_block->parent_if = n_if;
@@ -3356,6 +3363,19 @@ GDScriptParser::ExpressionNode *GDScriptParser::parse_dictionary(ExpressionNode 
 
 			if (key != nullptr && value != nullptr) {
 				dictionary->elements.push_back({ key, value });
+			}
+
+			if (!check(GDScriptTokenizer::Token::BRACE_CLOSE)) {
+				switch (current.type) {
+					case GDScriptTokenizer::Token::IDENTIFIER:
+					case GDScriptTokenizer::Token::LITERAL:
+					case GDScriptTokenizer::Token::BRACKET_OPEN:
+					case GDScriptTokenizer::Token::PARENTHESIS_OPEN:
+						push_error(R"(Expected ',' between dictionary entries.)");
+						break;
+					default:
+						break;
+				}
 			}
 
 			// Do phrase level recovery by inserting an imaginary expression for missing keys or values.

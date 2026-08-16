@@ -50,6 +50,12 @@
 				{[code]platinum_sponsors[/code], [code]gold_sponsors[/code], [code]silver_sponsors[/code], [code]bronze_sponsors[/code], [code]mini_sponsors[/code], [code]gold_donors[/code], [code]silver_donors[/code], [code]bronze_donors[/code], [code]blazium_sponsors[/code]}
 			</description>
 		</method>
+		<method name="get_frame_ticks" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the tick count at the start of the frame.
+			</description>
+		</method>
 		<method name="get_frames_drawn">
 			<return type="int" />
 			<description>

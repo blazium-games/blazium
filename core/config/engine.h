@@ -138,7 +138,7 @@ public:
 	uint64_t get_physics_frames() const { return _physics_frames; }
 	uint64_t get_process_frames() const { return _process_frames; }
 	bool is_in_physics_frame() const { return _in_physics; }
-	uint64_t get_frame_ticks() const { return _frame_ticks; }
+	uint64_t get_frame_ticks() const;
 	double get_process_step() const { return _process_step; }
 	double get_physics_interpolation_fraction() const { return _physics_interpolation_fraction; }
 

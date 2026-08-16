@@ -86,11 +86,13 @@ class SceneImportSettingsDialog : public ConfirmationDialog {
 	Button *light_1_switch = nullptr;
 	Button *light_2_switch = nullptr;
 	Button *light_rotate_switch = nullptr;
+	Button *external_material_switch = nullptr;
 
 	struct ThemeCache {
 		Ref<Texture2D> light_1_icon;
 		Ref<Texture2D> light_2_icon;
 		Ref<Texture2D> rotate_icon;
+		Ref<Texture2D> material_icon;
 	} theme_cache;
 
 	DirectionalLight3D *light1 = nullptr;
@@ -125,6 +127,7 @@ class SceneImportSettingsDialog : public ConfirmationDialog {
 	struct MaterialData {
 		bool has_import_id;
 		Ref<Material> material;
+		Ref<Material> external_material;
 		TreeItem *scene_node = nullptr;
 		TreeItem *mesh_node = nullptr;
 		TreeItem *material_node = nullptr;
@@ -133,9 +136,11 @@ class SceneImportSettingsDialog : public ConfirmationDialog {
 		float cam_rot_y = -Math::PI / 4;
 		float cam_zoom = 1;
 
+		String last_external_path;
 		HashMap<StringName, Variant> settings;
 	};
 	HashMap<String, MaterialData> material_map;
+	HashMap<Ref<Material>, String> material_name_map;
 	HashMap<Ref<Material>, String> unnamed_material_name_map;
 
 	struct MeshData {
@@ -198,6 +203,13 @@ class SceneImportSettingsDialog : public ConfirmationDialog {
 	void _on_light_1_switch_pressed();
 	void _on_light_2_switch_pressed();
 	void _on_light_rotate_switch_pressed();
+	void _on_external_material_switch_pressed();
+
+	void _show_scene();
+	void _update_scene_materials(Node *sceneNode);
+	void _update_mesh_instance_material_overrides(MeshInstance3D *meshInstance);
+
+	Ref<Material> _get_preview_material(MaterialData &md);
 
 	void _viewport_input(const Ref<InputEvent> &p_input);
 

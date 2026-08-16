@@ -1367,6 +1367,9 @@ Error EditorExportPlatform::export_project_files(const Ref<EditorExportPreset> &
 	_edit_filter_list(paths, String("*.icns"), false);
 	_edit_filter_list(paths, String("*.ico"), false);
 
+	_edit_filter_list(paths, ProjectSettings::get_singleton()->get_setting("application/export/global_include_filter", ""), false);
+	_edit_filter_list(paths, ProjectSettings::get_singleton()->get_setting("application/export/global_exclude_filter", ""), true);
+
 	_edit_filter_list(paths, p_preset->get_include_filter(), false);
 	_edit_filter_list(paths, p_preset->get_exclude_filter(), true);
 

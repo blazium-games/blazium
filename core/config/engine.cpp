@@ -128,6 +128,10 @@ uint32_t Engine::get_frame_delay() const {
 	return _frame_delay;
 }
 
+uint64_t Engine::get_frame_ticks() const {
+	return _frame_ticks;
+}
+
 void Engine::set_time_scale(double p_scale) {
 	_game_time_scale = p_scale;
 	_update_time_scale();

@@ -310,11 +310,11 @@ void ProceduralSkyMaterial::_update_shader(bool p_use_debanding, bool p_use_sky_
 shader_type sky;
 %s
 
-uniform vec4 sky_top_color : source_color = vec4(0.385, 0.454, 0.55, 1.0);
-uniform vec4 sky_horizon_color : source_color = vec4(0.646, 0.656, 0.67, 1.0);
+uniform vec4 sky_top_color : source_color = vec4(0.141, 0.289, 0.447, 1.0);
+uniform vec4 sky_horizon_color : source_color = vec4(0.447, 0.443, 0.612, 1.0);
 uniform float inv_sky_curve : hint_range(1, 100) = 4.0;
-uniform vec4 ground_bottom_color : source_color = vec4(0.2, 0.169, 0.133, 1.0);
-uniform vec4 ground_horizon_color : source_color = vec4(0.646, 0.656, 0.67, 1.0);
+uniform vec4 ground_bottom_color : source_color = vec4(0.333, 0.333, 0.333, 1.0);
+uniform vec4 ground_horizon_color : source_color = vec4(0.447, 0.443, 0.612, 1.0);
 uniform float inv_ground_curve : hint_range(1, 100) = 30.0;
 uniform float sun_angle_max = 0.877;
 uniform float inv_sun_curve : hint_range(1, 100) = 22.78;
@@ -384,14 +384,14 @@ void sky() {
 
 ProceduralSkyMaterial::ProceduralSkyMaterial() {
 	_set_material(RS::get_singleton()->material_create());
-	set_sky_top_color(Color(0.385, 0.454, 0.55));
-	set_sky_horizon_color(Color(0.6463, 0.6558, 0.6708));
+	set_sky_top_color(Color(0.141, 0.289, 0.447));
+	set_sky_horizon_color(Color(0.447, 0.443, 0.612));
 	set_sky_curve(0.15);
 	set_sky_energy_multiplier(1.0);
 	set_sky_cover_modulate(Color(1, 1, 1));
 
-	set_ground_bottom_color(Color(0.2, 0.169, 0.133));
-	set_ground_horizon_color(Color(0.6463, 0.6558, 0.6708));
+	set_ground_bottom_color(Color(0.333, 0.333, 0.333));
+	set_ground_horizon_color(Color(0.447, 0.443, 0.612));
 	set_ground_curve(0.02);
 	set_ground_energy_multiplier(1.0);
 
