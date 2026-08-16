@@ -31,13 +31,11 @@
 
 #include "justamcp_cors_policy.h"
 #include "justamcp_json_rpc_transport.h"
-#include "justamcp_log_levels.h"
 #include "justamcp_notification_bus.h"
 #include "justamcp_pagination.h"
 #include "justamcp_project_settings.h"
 #include "justamcp_server_request_lookup.h"
 #include "justamcp_session_manager.h"
-#include "justamcp_tool_context.h"
 #include "justamcp_tool_dispatch.h"
 #include "justamcp_tool_queue_state.h"
 #include "tools/justamcp_json_rpc_helpers.h"
@@ -49,11 +47,9 @@
 #include "tools/justamcp_tool_schema_cache.h"
 
 #include "core/config/project_settings.h"
-#include "core/io/json.h"
 #include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
 #include "core/os/os.h"
-#include "core/os/time.h"
 #include "editor/settings/editor_settings.h"
 #include "servers/display/display_server.h"
 

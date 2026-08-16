@@ -29,25 +29,17 @@
 
 #include "justamcp_session_manager.h"
 
-#include "justamcp_pagination.h"
 #include "justamcp_server.h"
-#include "tools/justamcp_json_rpc_helpers.h"
 
 #include "core/config/project_settings.h"
 #include "core/crypto/crypto_core.h"
-#include "core/io/json.h"
 #include "core/os/os.h"
-#include "core/os/time.h"
 #include "core/templates/list.h"
 
 #include "modules/modules_enabled.gen.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/settings/editor_settings.h"
-#endif
-
-#if defined(MODULE_HTTPSERVER_ENABLED)
-#include "modules/httpserver/http_server.h"
 #endif
 
 MCPSessionManager::MCPSessionManager(JustAMCPServer *p_owner) {

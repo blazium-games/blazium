@@ -33,7 +33,6 @@
 
 #include "justamcp_project_settings.h"
 #include "justamcp_server.h"
-#include "justamcp_tool_context.h"
 #include "justamcp_tool_dispatch.h"
 #include "tools/justamcp_json_rpc_helpers.h"
 #include "tools/justamcp_prompt_executor.h"
@@ -41,7 +40,6 @@
 #include "tools/justamcp_resource_subscriptions.h"
 #include "tools/justamcp_tool_executor.h"
 #include "tools/justamcp_tool_schema_cache.h"
-#include "tools/resources/justamcp_materials_resource_provider.h"
 
 #include "core/config/project_settings.h"
 #include "core/object/callable_mp.h"
