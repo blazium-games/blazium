@@ -41,35 +41,9 @@ runs:
       shell: sh
       run: ${{ inputs.bin }} --headless --dump-gdextension-interface --dump-extension-api
 
-    # godot-cpp ignores unknown command-line vars (ARCOM/LINKCOM). Patch the
-    # checked-out SConstruct so SCons TEMPFILE is used; otherwise `ar`/`ld`
-    # hit Linux ARG_MAX with Blazium's extra ClassDB types.
     - name: Avoid ARG_MAX when archiving godot-cpp
       shell: sh
-      run: |
-        python3 - <<'PY'
-        from pathlib import Path
-        p = Path("${{ inputs.checkout-path }}") / "SConstruct"
-        text = p.read_text(encoding="utf-8")
-        marker = 'Return("env")'
-        insert = '''
-def _blazium_tempfile(env, key, fallback):
-    cmd = str(env.get(key, fallback))
-    if "TEMPFILE" not in cmd:
-        env[key] = "${TEMPFILE(%r)}" % cmd
-_blazium_tempfile(env, "ARCOM", "$AR $ARFLAGS $TARGET $SOURCES")
-_blazium_tempfile(env, "SHLINKCOM", "$SHLINK -o $TARGET $SHLINKFLAGS $SOURCES $_LIBDIRFLAGS $_LIBFLAGS")
-_blazium_tempfile(env, "LINKCOM", "$LINK -o $TARGET $LINKFLAGS $SOURCES $_LIBDIRFLAGS $_LIBFLAGS")
-Return("env")
-'''
-        if "def _blazium_tempfile" in text:
-            print("already patched", p)
-        elif marker not in text:
-            raise SystemExit("Return(env) not found in %s" % p)
-        else:
-            p.write_text(text.replace(marker, insert, 1), encoding="utf-8")
-            print("patched", p)
-        PY
+      run: python3 "${{ github.action_path }}/patch_sconstruct.py" "${{ inputs.checkout-path }}"
 
     - name: SCons Build
       shell: sh
