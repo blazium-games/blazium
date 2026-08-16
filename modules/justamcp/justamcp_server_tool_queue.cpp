@@ -28,22 +28,22 @@
 /**************************************************************************/
 
 #include "justamcp_server.h"
+#include "justamcp_server_request_lookup.h"
+#include "justamcp_session_manager.h"
+#include "justamcp_tool_context.h"
+#include "justamcp_tool_dispatch.h"
+#include "justamcp_tool_queue_state.h"
+#include "tools/justamcp_json_rpc_helpers.h"
+#include "tools/justamcp_readonly_tools.h"
+#include "tools/justamcp_task_manager.h"
+#include "tools/justamcp_tool_executor.h"
 
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
 #include "core/object/worker_thread_pool.h"
 #include "core/os/os.h"
 #include "core/os/time.h"
-#include "justamcp_server_request_lookup.h"
-#include "justamcp_session_manager.h"
-#include "justamcp_tool_context.h"
-#include "justamcp_tool_dispatch.h"
-#include "justamcp_tool_queue_state.h"
 #include "scene/main/scene_tree.h"
-#include "tools/justamcp_json_rpc_helpers.h"
-#include "tools/justamcp_readonly_tools.h"
-#include "tools/justamcp_task_manager.h"
-#include "tools/justamcp_tool_executor.h"
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 

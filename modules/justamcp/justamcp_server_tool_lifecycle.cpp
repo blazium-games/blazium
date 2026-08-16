@@ -27,18 +27,18 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "core/object/callable_mp.h"
 #include "justamcp_server.h"
-
-#include "core/config/project_settings.h"
-#include "core/io/json.h"
-#include "core/os/time.h"
 #include "justamcp_server_request_lookup.h"
 #include "justamcp_session_manager.h"
 #include "justamcp_tool_queue_state.h"
-#include "scene/main/scene_tree.h"
 #include "tools/justamcp_json_rpc_helpers.h"
 #include "tools/justamcp_task_manager.h"
+
+#include "core/config/project_settings.h"
+#include "core/io/json.h"
+#include "core/object/callable_mp.h"
+#include "core/os/time.h"
+#include "scene/main/scene_tree.h"
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 

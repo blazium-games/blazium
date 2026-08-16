@@ -29,24 +29,25 @@
 
 #pragma once
 
-#include "modules/modules_enabled.gen.h"
-
 #include "core/string/ustring.h"
 #include "core/variant/dictionary.h"
 #include "core/variant/variant.h"
+
+#include "modules/modules_enabled.gen.h"
 
 #include <atomic>
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 #include "core/os/semaphore.h"
+
 #include "modules/httpserver/http_response.h"
 #endif
 
 #ifdef THREADS_ENABLED
 #ifdef MINGW_ENABLED
 #define MINGW_STDTHREAD_REDUNDANCY_WARNING
-#include "thirdparty/mingw-std-threads/mingw.condition_variable.h"
-#include "thirdparty/mingw-std-threads/mingw.mutex.h"
+#include <thirdparty/mingw-std-threads/mingw.condition_variable.h>
+#include <thirdparty/mingw-std-threads/mingw.mutex.h>
 #ifndef THREADING_NAMESPACE
 #define THREADING_NAMESPACE mingw_stdthread
 #endif
