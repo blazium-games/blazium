@@ -110,11 +110,21 @@ struct MCPToolQueueEntry {
 #endif
 	}
 
+	bool has_completion_waiters() const {
+#ifdef THREADS_ENABLED
+		return waiter_count.load(std::memory_order_acquire) != 0;
+#else
+		return false;
+#endif
+	}
+
 	void signal_and_join_waiters() {
 		signal_completion();
 #ifdef THREADS_ENABLED
-		for (int i = 0; i < 5000; i++) {
-			if (waiter_count.load(std::memory_order_acquire) == 0) {
+		// Give in-flight waiters time to observe completion_ready and drop
+		// completion_mutex. Callers must not memdelete while waiters remain.
+		for (int i = 0; i < 10000; i++) {
+			if (!has_completion_waiters()) {
 				return;
 			}
 			std::this_thread::sleep_for(std::chrono::microseconds(200));
@@ -125,14 +135,18 @@ struct MCPToolQueueEntry {
 	bool wait_for_completion(int p_timeout_ms) const {
 #ifdef THREADS_ENABLED
 		waiter_count.fetch_add(1, std::memory_order_acq_rel);
+		bool ready = false;
+		{
+			THREADING_NAMESPACE::unique_lock<THREADING_NAMESPACE::mutex> lock(completion_mutex);
 #ifdef TESTS_ENABLED
-		test_wait_entered.store(true, std::memory_order_release);
+			// Publish "entered wait" only after the mutex is held so cancel/dispatch
+			// cannot destroy this entry during the increment-to-lock window.
+			test_wait_entered.store(true, std::memory_order_release);
 #endif
-		THREADING_NAMESPACE::unique_lock<THREADING_NAMESPACE::mutex> lock(completion_mutex);
-		const bool ready = completion_cv.wait_for(lock, std::chrono::milliseconds(p_timeout_ms), [this]() {
-			return completion_ready;
-		});
-		lock.unlock();
+			ready = completion_cv.wait_for(lock, std::chrono::milliseconds(p_timeout_ms), [this]() {
+				return completion_ready;
+			});
+		}
 		waiter_count.fetch_sub(1, std::memory_order_acq_rel);
 		return ready;
 #else

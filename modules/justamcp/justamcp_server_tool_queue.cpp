@@ -89,7 +89,9 @@ void JustAMCPServer::_fail_and_remove_task_dispatch_entry(MCPToolQueueEntry *p_e
 		session_manager->clear_request_tool_route(p_entry->request_id);
 	}
 	_unregister_task_route(p_entry->task_id);
-	memdelete(p_entry);
+	if (!p_entry->has_completion_waiters()) {
+		memdelete(p_entry);
+	}
 	_schedule_process_pending_tools();
 }
 
@@ -255,7 +257,9 @@ void JustAMCPServer::_dispatch_task_augmented_tools_call(const Variant &p_reques
 		} else {
 			_send_sse_routed(JSON::stringify(entry->rpc_result), session_id, sse_connection_id);
 		}
-		memdelete(entry);
+		if (!entry->has_completion_waiters()) {
+			memdelete(entry);
+		}
 		_schedule_process_pending_tools();
 		return;
 	}
@@ -456,7 +460,9 @@ void JustAMCPServer::_complete_tool_entry(MCPToolQueueEntry *p_entry, const Dict
 		_send_sse_routed(JSON::stringify(p_rpc_result), p_entry->session_id, p_entry->sse_connection_id);
 	}
 
-	memdelete(p_entry);
+	if (!p_entry->has_completion_waiters()) {
+		memdelete(p_entry);
+	}
 	_schedule_process_pending_tools();
 }
 
@@ -546,7 +552,9 @@ void JustAMCPServer::_clear_tool_queue() {
 		if (p_entry->has_stateless_response || p_entry->pending_task_dispatch) {
 			p_entry->signal_and_join_waiters();
 		}
-		memdelete(p_entry);
+		if (!p_entry->has_completion_waiters()) {
+			memdelete(p_entry);
+		}
 	};
 
 	for (int i = 0; i < pending_entries.size(); i++) {

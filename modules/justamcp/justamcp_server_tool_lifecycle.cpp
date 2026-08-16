@@ -108,7 +108,9 @@ void JustAMCPServer::_complete_task_tool_entry(MCPToolQueueEntry *p_entry, bool 
 		completed_entry->signal_and_join_waiters();
 	}
 
-	memdelete(completed_entry);
+	if (!completed_entry->has_completion_waiters()) {
+		memdelete(completed_entry);
+	}
 	_schedule_process_pending_tools();
 }
 
