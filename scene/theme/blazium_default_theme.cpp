@@ -33,6 +33,7 @@
 
 #include "default_font.gen.h"
 #include "default_theme_icons.gen.h"
+
 #include "scene/resources/font.h"
 #include "scene/resources/gradient_texture.h"
 #include "scene/resources/image_texture.h"
@@ -46,7 +47,7 @@
 
 #include "modules/modules_enabled.gen.h" // For svg.
 
-static Dictionary icons;
+static Dictionary blazium_theme_icons;
 static Dictionary user_icons_sources;
 static Dictionary user_icons;
 
@@ -118,9 +119,9 @@ static Ref<StyleBoxLine> v_separator_style;
 
 static Ref<FontVariation> font_variation;
 static Ref<FontVariation> custom_font_variation;
-static Ref<FontVariation> bold_font;
-static Ref<FontVariation> bold_italics_font;
-static Ref<FontVariation> italics_font;
+static Ref<FontVariation> blazium_bold_font;
+static Ref<FontVariation> blazium_bold_italics_font;
+static Ref<FontVariation> blazium_italics_font;
 
 static bool is_dark_theme = false;
 
@@ -202,28 +203,28 @@ PackedStringArray get_user_icons_list() {
 bool has_icon(const String &p_icon_name) {
 	ERR_FAIL_COND_V_MSG(p_icon_name.is_empty(), false, "Icon name cannot be empty.");
 
-	return icons.has(p_icon_name);
+	return blazium_theme_icons.has(p_icon_name);
 }
 
 Ref<ImageTexture> get_icon(const String &p_icon_name) {
 	ERR_FAIL_COND_V_MSG(p_icon_name.is_empty(), Ref<ImageTexture>(), "Icon name cannot be empty.");
 
-	if (icons.has(p_icon_name)) {
-		return icons[p_icon_name];
+	if (blazium_theme_icons.has(p_icon_name)) {
+		return blazium_theme_icons[p_icon_name];
 	}
 	return Ref<ImageTexture>();
 }
 
 PackedStringArray get_icons_list() {
 	PackedStringArray icons_list;
-	for (const String p_icon_name : icons.keys()) {
+	for (const String p_icon_name : blazium_theme_icons.keys()) {
 		icons_list.push_back(p_icon_name);
 	}
 	return icons_list;
 }
 
 void update_theme_icons(const Ref<Theme> &p_theme, const Color &p_font_color, const Color &p_accent_color) {
-	if (icons.is_empty()) {
+	if (blazium_theme_icons.is_empty()) {
 		Ref<Texture2D> empty_icon = memnew(ImageTexture);
 		p_theme->set_icon("increment", "HScrollBar", empty_icon);
 		p_theme->set_icon("increment_highlight", "HScrollBar", empty_icon);
@@ -292,196 +293,196 @@ void update_theme_icons(const Ref<Theme> &p_theme, const Color &p_font_color, co
 		}
 	}
 
-	const float scale = p_theme->get_default_base_scale();
+	const float theme_scale = p_theme->get_default_base_scale();
 #ifdef MODULE_SVG_ENABLED
 	const Color font_color = p_font_color.clamp();
 	const Color accent_color = p_accent_color.clamp();
 #else
-	Ref<Image> img = Image::create_empty(Math::round(16 * scale), Math::round(16 * scale), false, Image::FORMAT_RGBA8);
+	Ref<Image> img = Image::create_empty(Math::round(16 * theme_scale), Math::round(16 * theme_scale), false, Image::FORMAT_RGBA8);
 #endif // MODULE_SVG_ENABLED
 
 	for (int i = 0; i < default_theme_icons_count; i++) {
 #ifdef MODULE_SVG_ENABLED
-		Ref<Image> img = generate_icon(default_theme_icons_sources[i], scale, font_color, accent_color);
+		Ref<Image> img = generate_icon(default_theme_icons_sources[i], theme_scale, font_color, accent_color);
 #endif // MODULE_SVG_ENABLED
-		if (icons.has(default_theme_icons_names[i]) && ((Ref<ImageTexture>)icons[default_theme_icons_names[i]])->get_size() == (Vector2)img->get_size()) {
-			((Ref<ImageTexture>)icons[default_theme_icons_names[i]])->update(img);
+		if (blazium_theme_icons.has(default_theme_icons_names[i]) && ((Ref<ImageTexture>)blazium_theme_icons[default_theme_icons_names[i]])->get_size() == (Vector2)img->get_size()) {
+			((Ref<ImageTexture>)blazium_theme_icons[default_theme_icons_names[i]])->update(img);
 		} else {
-			icons[default_theme_icons_names[i]] = ImageTexture::create_from_image(img);
+			blazium_theme_icons[default_theme_icons_names[i]] = ImageTexture::create_from_image(img);
 		}
 	}
 
 	for (const String icon_name : user_icons_sources.keys()) {
 #ifdef MODULE_SVG_ENABLED
-		Ref<Image> img = generate_icon(user_icons_sources[icon_name], scale, font_color, accent_color);
+		Ref<Image> img = generate_icon(user_icons_sources[icon_name], theme_scale, font_color, accent_color);
 #endif // MODULE_SVG_ENABLED
 		update_user_icon(icon_name, img);
 	}
 
-	p_theme->set_icon("checked", "CheckBox", icons["checked"]);
-	p_theme->set_icon("checked_disabled", "CheckBox", icons["checked_disabled"]);
-	p_theme->set_icon("unchecked", "CheckBox", icons["unchecked"]);
-	p_theme->set_icon("unchecked_disabled", "CheckBox", icons["unchecked_disabled"]);
-	p_theme->set_icon("radio_checked", "CheckBox", icons["radio_checked"]);
-	p_theme->set_icon("radio_checked_disabled", "CheckBox", icons["radio_checked_disabled"]);
-	p_theme->set_icon("radio_unchecked", "CheckBox", icons["radio_unchecked"]);
-	p_theme->set_icon("radio_unchecked_disabled", "CheckBox", icons["radio_unchecked_disabled"]);
+	p_theme->set_icon("checked", "CheckBox", blazium_theme_icons["checked"]);
+	p_theme->set_icon("checked_disabled", "CheckBox", blazium_theme_icons["checked_disabled"]);
+	p_theme->set_icon("unchecked", "CheckBox", blazium_theme_icons["unchecked"]);
+	p_theme->set_icon("unchecked_disabled", "CheckBox", blazium_theme_icons["unchecked_disabled"]);
+	p_theme->set_icon("radio_checked", "CheckBox", blazium_theme_icons["radio_checked"]);
+	p_theme->set_icon("radio_checked_disabled", "CheckBox", blazium_theme_icons["radio_checked_disabled"]);
+	p_theme->set_icon("radio_unchecked", "CheckBox", blazium_theme_icons["radio_unchecked"]);
+	p_theme->set_icon("radio_unchecked_disabled", "CheckBox", blazium_theme_icons["radio_unchecked_disabled"]);
 
-	p_theme->set_icon("checked", "CheckButton", icons["toggle_on"]);
-	p_theme->set_icon("checked_disabled", "CheckButton", icons["toggle_on_disabled"]);
-	p_theme->set_icon("unchecked", "CheckButton", icons["toggle_off"]);
-	p_theme->set_icon("unchecked_disabled", "CheckButton", icons["toggle_off_disabled"]);
-	p_theme->set_icon("checked_mirrored", "CheckButton", icons["toggle_on_mirrored"]);
-	p_theme->set_icon("checked_disabled_mirrored", "CheckButton", icons["toggle_on_disabled_mirrored"]);
-	p_theme->set_icon("unchecked_mirrored", "CheckButton", icons["toggle_off_mirrored"]);
-	p_theme->set_icon("unchecked_disabled_mirrored", "CheckButton", icons["toggle_off_disabled_mirrored"]);
+	p_theme->set_icon("checked", "CheckButton", blazium_theme_icons["toggle_on"]);
+	p_theme->set_icon("checked_disabled", "CheckButton", blazium_theme_icons["toggle_on_disabled"]);
+	p_theme->set_icon("unchecked", "CheckButton", blazium_theme_icons["toggle_off"]);
+	p_theme->set_icon("unchecked_disabled", "CheckButton", blazium_theme_icons["toggle_off_disabled"]);
+	p_theme->set_icon("checked_mirrored", "CheckButton", blazium_theme_icons["toggle_on_mirrored"]);
+	p_theme->set_icon("checked_disabled_mirrored", "CheckButton", blazium_theme_icons["toggle_on_disabled_mirrored"]);
+	p_theme->set_icon("unchecked_mirrored", "CheckButton", blazium_theme_icons["toggle_off_mirrored"]);
+	p_theme->set_icon("unchecked_disabled_mirrored", "CheckButton", blazium_theme_icons["toggle_off_disabled_mirrored"]);
 
-	p_theme->set_icon("up", "SpinBox", icons["value_up"]);
-	p_theme->set_icon("up_hover", "SpinBox", icons["value_up"]);
-	p_theme->set_icon("up_pressed", "SpinBox", icons["value_up"]);
-	p_theme->set_icon("up_disabled", "SpinBox", icons["value_up"]);
-	p_theme->set_icon("down", "SpinBox", icons["value_down"]);
-	p_theme->set_icon("down_hover", "SpinBox", icons["value_down"]);
-	p_theme->set_icon("down_pressed", "SpinBox", icons["value_down"]);
-	p_theme->set_icon("down_disabled", "SpinBox", icons["value_down"]);
+	p_theme->set_icon("up", "SpinBox", blazium_theme_icons["value_up"]);
+	p_theme->set_icon("up_hover", "SpinBox", blazium_theme_icons["value_up"]);
+	p_theme->set_icon("up_pressed", "SpinBox", blazium_theme_icons["value_up"]);
+	p_theme->set_icon("up_disabled", "SpinBox", blazium_theme_icons["value_up"]);
+	p_theme->set_icon("down", "SpinBox", blazium_theme_icons["value_down"]);
+	p_theme->set_icon("down_hover", "SpinBox", blazium_theme_icons["value_down"]);
+	p_theme->set_icon("down_pressed", "SpinBox", blazium_theme_icons["value_down"]);
+	p_theme->set_icon("down_disabled", "SpinBox", blazium_theme_icons["value_down"]);
 
-	p_theme->set_icon("arrow", "OptionButton", icons["option_button_arrow"]);
+	p_theme->set_icon("arrow", "OptionButton", blazium_theme_icons["option_button_arrow"]);
 
-	p_theme->set_icon("clear", "LineEdit", icons["line_edit_clear"]);
+	p_theme->set_icon("clear", "LineEdit", blazium_theme_icons["line_edit_clear"]);
 
-	p_theme->set_icon("tab", "TextEdit", icons["text_edit_tab"]);
-	p_theme->set_icon("space", "TextEdit", icons["text_edit_space"]);
+	p_theme->set_icon("tab", "TextEdit", blazium_theme_icons["text_edit_tab"]);
+	p_theme->set_icon("space", "TextEdit", blazium_theme_icons["text_edit_space"]);
 
-	p_theme->set_icon("tab", "CodeEdit", icons["text_edit_tab"]);
-	p_theme->set_icon("space", "CodeEdit", icons["text_edit_space"]);
-	p_theme->set_icon("breakpoint", "CodeEdit", icons["breakpoint"]);
-	p_theme->set_icon("bookmark", "CodeEdit", icons["bookmark"]);
-	p_theme->set_icon("executing_line", "CodeEdit", icons["arrow_right"]);
-	p_theme->set_icon("can_fold", "CodeEdit", icons["arrow_down"]);
-	p_theme->set_icon("folded", "CodeEdit", icons["arrow_right"]);
-	p_theme->set_icon("can_fold_code_region", "CodeEdit", icons["region_unfolded"]);
-	p_theme->set_icon("folded_code_region", "CodeEdit", icons["region_folded"]);
-	p_theme->set_icon("folded_eol_icon", "CodeEdit", icons["text_edit_ellipsis"]);
-	p_theme->set_icon("completion_color_bg", "CodeEdit", icons["mini_checkerboard"]);
+	p_theme->set_icon("tab", "CodeEdit", blazium_theme_icons["text_edit_tab"]);
+	p_theme->set_icon("space", "CodeEdit", blazium_theme_icons["text_edit_space"]);
+	p_theme->set_icon("breakpoint", "CodeEdit", blazium_theme_icons["breakpoint"]);
+	p_theme->set_icon("bookmark", "CodeEdit", blazium_theme_icons["bookmark"]);
+	p_theme->set_icon("executing_line", "CodeEdit", blazium_theme_icons["arrow_right"]);
+	p_theme->set_icon("can_fold", "CodeEdit", blazium_theme_icons["arrow_down"]);
+	p_theme->set_icon("folded", "CodeEdit", blazium_theme_icons["arrow_right"]);
+	p_theme->set_icon("can_fold_code_region", "CodeEdit", blazium_theme_icons["region_unfolded"]);
+	p_theme->set_icon("folded_code_region", "CodeEdit", blazium_theme_icons["region_folded"]);
+	p_theme->set_icon("folded_eol_icon", "CodeEdit", blazium_theme_icons["text_edit_ellipsis"]);
+	p_theme->set_icon("completion_color_bg", "CodeEdit", blazium_theme_icons["mini_checkerboard"]);
 
-	p_theme->set_icon("grabber", "HSlider", icons["slider_grabber"]);
-	p_theme->set_icon("grabber_highlight", "HSlider", icons["slider_grabber_hl"]);
-	p_theme->set_icon("grabber_disabled", "HSlider", icons["slider_grabber_disabled"]);
-	p_theme->set_icon("tick", "HSlider", icons["hslider_tick"]);
+	p_theme->set_icon("grabber", "HSlider", blazium_theme_icons["slider_grabber"]);
+	p_theme->set_icon("grabber_highlight", "HSlider", blazium_theme_icons["slider_grabber_hl"]);
+	p_theme->set_icon("grabber_disabled", "HSlider", blazium_theme_icons["slider_grabber_disabled"]);
+	p_theme->set_icon("tick", "HSlider", blazium_theme_icons["hslider_tick"]);
 
-	p_theme->set_icon("grabber", "VSlider", icons["slider_grabber"]);
-	p_theme->set_icon("grabber_highlight", "VSlider", icons["slider_grabber_hl"]);
-	p_theme->set_icon("grabber_disabled", "VSlider", icons["slider_grabber_disabled"]);
-	p_theme->set_icon("tick", "VSlider", icons["vslider_tick"]);
+	p_theme->set_icon("grabber", "VSlider", blazium_theme_icons["slider_grabber"]);
+	p_theme->set_icon("grabber_highlight", "VSlider", blazium_theme_icons["slider_grabber_hl"]);
+	p_theme->set_icon("grabber_disabled", "VSlider", blazium_theme_icons["slider_grabber_disabled"]);
+	p_theme->set_icon("tick", "VSlider", blazium_theme_icons["vslider_tick"]);
 
-	p_theme->set_icon("checked", "Tree", icons["checked"]);
-	p_theme->set_icon("checked_disabled", "Tree", icons["checked_disabled"]);
-	p_theme->set_icon("unchecked", "Tree", icons["unchecked"]);
-	p_theme->set_icon("unchecked_disabled", "Tree", icons["unchecked_disabled"]);
-	p_theme->set_icon("indeterminate", "Tree", icons["indeterminate"]);
-	p_theme->set_icon("indeterminate_disabled", "Tree", icons["indeterminate_disabled"]);
-	p_theme->set_icon("updown", "Tree", icons["updown"]);
-	p_theme->set_icon("select_arrow", "Tree", icons["option_button_arrow"]);
-	p_theme->set_icon("arrow", "Tree", icons["arrow_down"]);
-	p_theme->set_icon("arrow_collapsed", "Tree", icons["arrow_right"]);
-	p_theme->set_icon("arrow_collapsed_mirrored", "Tree", icons["arrow_left"]);
+	p_theme->set_icon("checked", "Tree", blazium_theme_icons["checked"]);
+	p_theme->set_icon("checked_disabled", "Tree", blazium_theme_icons["checked_disabled"]);
+	p_theme->set_icon("unchecked", "Tree", blazium_theme_icons["unchecked"]);
+	p_theme->set_icon("unchecked_disabled", "Tree", blazium_theme_icons["unchecked_disabled"]);
+	p_theme->set_icon("indeterminate", "Tree", blazium_theme_icons["indeterminate"]);
+	p_theme->set_icon("indeterminate_disabled", "Tree", blazium_theme_icons["indeterminate_disabled"]);
+	p_theme->set_icon("updown", "Tree", blazium_theme_icons["updown"]);
+	p_theme->set_icon("select_arrow", "Tree", blazium_theme_icons["option_button_arrow"]);
+	p_theme->set_icon("arrow", "Tree", blazium_theme_icons["arrow_down"]);
+	p_theme->set_icon("arrow_collapsed", "Tree", blazium_theme_icons["arrow_right"]);
+	p_theme->set_icon("arrow_collapsed_mirrored", "Tree", blazium_theme_icons["arrow_left"]);
 
-	p_theme->set_icon("h_grabber", "SplitContainer", icons["hsplitter"]);
-	p_theme->set_icon("v_grabber", "SplitContainer", icons["vsplitter"]);
-	p_theme->set_icon("grabber", "VSplitContainer", icons["vsplitter"]);
-	p_theme->set_icon("grabber", "HSplitContainer", icons["hsplitter"]);
+	p_theme->set_icon("h_grabber", "SplitContainer", blazium_theme_icons["hsplitter"]);
+	p_theme->set_icon("v_grabber", "SplitContainer", blazium_theme_icons["vsplitter"]);
+	p_theme->set_icon("grabber", "VSplitContainer", blazium_theme_icons["vsplitter"]);
+	p_theme->set_icon("grabber", "HSplitContainer", blazium_theme_icons["hsplitter"]);
 
-	p_theme->set_icon("increment", "TabContainer", icons["scroll_button_right"]);
-	p_theme->set_icon("increment_highlight", "TabContainer", icons["scroll_button_right_hl"]);
-	p_theme->set_icon("decrement", "TabContainer", icons["scroll_button_left"]);
-	p_theme->set_icon("decrement_highlight", "TabContainer", icons["scroll_button_left_hl"]);
-	p_theme->set_icon("menu", "TabContainer", icons["tabs_menu"]);
-	p_theme->set_icon("menu_highlight", "TabContainer", icons["tabs_menu_hl"]);
-	p_theme->set_icon("drop_mark", "TabContainer", icons["tabs_drop_mark"]);
+	p_theme->set_icon("increment", "TabContainer", blazium_theme_icons["scroll_button_right"]);
+	p_theme->set_icon("increment_highlight", "TabContainer", blazium_theme_icons["scroll_button_right_hl"]);
+	p_theme->set_icon("decrement", "TabContainer", blazium_theme_icons["scroll_button_left"]);
+	p_theme->set_icon("decrement_highlight", "TabContainer", blazium_theme_icons["scroll_button_left_hl"]);
+	p_theme->set_icon("menu", "TabContainer", blazium_theme_icons["tabs_menu"]);
+	p_theme->set_icon("menu_highlight", "TabContainer", blazium_theme_icons["tabs_menu_hl"]);
+	p_theme->set_icon("drop_mark", "TabContainer", blazium_theme_icons["tabs_drop_mark"]);
 
-	p_theme->set_icon("increment", "TabBar", icons["scroll_button_right"]);
-	p_theme->set_icon("increment_highlight", "TabBar", icons["scroll_button_right_hl"]);
-	p_theme->set_icon("decrement", "TabBar", icons["scroll_button_left"]);
-	p_theme->set_icon("decrement_highlight", "TabBar", icons["scroll_button_left_hl"]);
-	p_theme->set_icon("close", "TabBar", icons["close"]);
-	p_theme->set_icon("drop_mark", "TabBar", icons["tabs_drop_mark"]);
+	p_theme->set_icon("increment", "TabBar", blazium_theme_icons["scroll_button_right"]);
+	p_theme->set_icon("increment_highlight", "TabBar", blazium_theme_icons["scroll_button_right_hl"]);
+	p_theme->set_icon("decrement", "TabBar", blazium_theme_icons["scroll_button_left"]);
+	p_theme->set_icon("decrement_highlight", "TabBar", blazium_theme_icons["scroll_button_left_hl"]);
+	p_theme->set_icon("close", "TabBar", blazium_theme_icons["close"]);
+	p_theme->set_icon("drop_mark", "TabBar", blazium_theme_icons["tabs_drop_mark"]);
 
-	p_theme->set_icon("folded_arrow", "ColorPicker", icons["arrow_right"]);
-	p_theme->set_icon("folded_arrow_mirrored", "ColorPicker", icons["arrow_left"]);
-	p_theme->set_icon("expanded_arrow", "ColorPicker", icons["arrow_down"]);
-	p_theme->set_icon("menu_option", "ColorPicker", icons["tabs_menu_hl"]);
-	p_theme->set_icon("screen_picker", "ColorPicker", icons["color_picker_pipette"]);
-	p_theme->set_icon("shape_circle", "ColorPicker", icons["picker_shape_circle"]);
-	p_theme->set_icon("shape_rect", "ColorPicker", icons["picker_shape_rectangle"]);
-	p_theme->set_icon("shape_rect_wheel", "ColorPicker", icons["picker_shape_rectangle_wheel"]);
-	p_theme->set_icon("add_preset", "ColorPicker", icons["add"]);
-	p_theme->set_icon("sample_bg", "ColorPicker", icons["mini_checkerboard"]);
-	p_theme->set_icon("sample_revert", "ColorPicker", icons["reload"]);
-	p_theme->set_icon("overbright_indicator", "ColorPicker", icons["color_picker_overbright"]);
-	p_theme->set_icon("bar_arrow", "ColorPicker", icons["color_picker_bar_arrow"]);
-	p_theme->set_icon("picker_cursor", "ColorPicker", icons["color_picker_cursor"]);
-	p_theme->set_icon("picker_cursor_bg", "ColorPicker", icons["color_picker_cursor_bg"]);
-	p_theme->set_icon("hex_icon", "ColorPicker", icons["color_picker_hex"]);
-	p_theme->set_icon("code_icon", "ColorPicker", icons["script"]);
-	p_theme->set_icon("color_copy", "ColorPicker", icons["action_copy"]);
+	p_theme->set_icon("folded_arrow", "ColorPicker", blazium_theme_icons["arrow_right"]);
+	p_theme->set_icon("folded_arrow_mirrored", "ColorPicker", blazium_theme_icons["arrow_left"]);
+	p_theme->set_icon("expanded_arrow", "ColorPicker", blazium_theme_icons["arrow_down"]);
+	p_theme->set_icon("menu_option", "ColorPicker", blazium_theme_icons["tabs_menu_hl"]);
+	p_theme->set_icon("screen_picker", "ColorPicker", blazium_theme_icons["color_picker_pipette"]);
+	p_theme->set_icon("shape_circle", "ColorPicker", blazium_theme_icons["picker_shape_circle"]);
+	p_theme->set_icon("shape_rect", "ColorPicker", blazium_theme_icons["picker_shape_rectangle"]);
+	p_theme->set_icon("shape_rect_wheel", "ColorPicker", blazium_theme_icons["picker_shape_rectangle_wheel"]);
+	p_theme->set_icon("add_preset", "ColorPicker", blazium_theme_icons["add"]);
+	p_theme->set_icon("sample_bg", "ColorPicker", blazium_theme_icons["mini_checkerboard"]);
+	p_theme->set_icon("sample_revert", "ColorPicker", blazium_theme_icons["reload"]);
+	p_theme->set_icon("overbright_indicator", "ColorPicker", blazium_theme_icons["color_picker_overbright"]);
+	p_theme->set_icon("bar_arrow", "ColorPicker", blazium_theme_icons["color_picker_bar_arrow"]);
+	p_theme->set_icon("picker_cursor", "ColorPicker", blazium_theme_icons["color_picker_cursor"]);
+	p_theme->set_icon("picker_cursor_bg", "ColorPicker", blazium_theme_icons["color_picker_cursor_bg"]);
+	p_theme->set_icon("hex_icon", "ColorPicker", blazium_theme_icons["color_picker_hex"]);
+	p_theme->set_icon("code_icon", "ColorPicker", blazium_theme_icons["script"]);
+	p_theme->set_icon("color_copy", "ColorPicker", blazium_theme_icons["action_copy"]);
 
-	p_theme->set_icon("bg", "ColorPickerButton", icons["mini_checkerboard"]);
-	p_theme->set_icon("overbright_indicator", "ColorPickerButton", icons["color_picker_overbright"]);
+	p_theme->set_icon("bg", "ColorPickerButton", blazium_theme_icons["mini_checkerboard"]);
+	p_theme->set_icon("overbright_indicator", "ColorPickerButton", blazium_theme_icons["color_picker_overbright"]);
 
-	p_theme->set_icon("bg", "ColorButton", icons["mini_checkerboard"]);
-	p_theme->set_icon("overbright_indicator", "ColorButton", icons["color_picker_overbright"]);
+	p_theme->set_icon("bg", "ColorButton", blazium_theme_icons["mini_checkerboard"]);
+	p_theme->set_icon("overbright_indicator", "ColorButton", blazium_theme_icons["color_picker_overbright"]);
 
-	p_theme->set_icon("expanded_arrow", "FoldableContainer", icons["expanded_arrow"]);
-	p_theme->set_icon("expanded_arrow_mirrored", "FoldableContainer", icons["expanded_arrow_mirrored"]);
-	p_theme->set_icon("folded_arrow", "FoldableContainer", icons["folded_arrow"]);
-	p_theme->set_icon("folded_arrow_mirrored", "FoldableContainer", icons["folded_arrow_mirrored"]);
+	p_theme->set_icon("expanded_arrow", "FoldableContainer", blazium_theme_icons["expanded_arrow"]);
+	p_theme->set_icon("expanded_arrow_mirrored", "FoldableContainer", blazium_theme_icons["expanded_arrow_mirrored"]);
+	p_theme->set_icon("folded_arrow", "FoldableContainer", blazium_theme_icons["folded_arrow"]);
+	p_theme->set_icon("folded_arrow_mirrored", "FoldableContainer", blazium_theme_icons["folded_arrow_mirrored"]);
 
-	p_theme->set_icon("port", "GraphNode", icons["graph_port"]);
-	p_theme->set_icon("resizer", "GraphNode", icons["resizer_se"]);
-	p_theme->set_icon("resizer", "GraphFrame", icons["resizer_se"]);
-	p_theme->set_icon("zoom_out", "GraphEdit", icons["zoom_less"]);
-	p_theme->set_icon("zoom_in", "GraphEdit", icons["zoom_more"]);
-	p_theme->set_icon("zoom_reset", "GraphEdit", icons["zoom_reset"]);
-	p_theme->set_icon("grid_toggle", "GraphEdit", icons["grid_toggle"]);
-	p_theme->set_icon("minimap_toggle", "GraphEdit", icons["grid_minimap"]);
-	p_theme->set_icon("snapping_toggle", "GraphEdit", icons["grid_snap"]);
-	p_theme->set_icon("layout", "GraphEdit", icons["grid_layout"]);
-	p_theme->set_icon("resizer", "GraphEditMinimap", icons["resizer_nw"]);
+	p_theme->set_icon("port", "GraphNode", blazium_theme_icons["graph_port"]);
+	p_theme->set_icon("resizer", "GraphNode", blazium_theme_icons["resizer_se"]);
+	p_theme->set_icon("resizer", "GraphFrame", blazium_theme_icons["resizer_se"]);
+	p_theme->set_icon("zoom_out", "GraphEdit", blazium_theme_icons["zoom_less"]);
+	p_theme->set_icon("zoom_in", "GraphEdit", blazium_theme_icons["zoom_more"]);
+	p_theme->set_icon("zoom_reset", "GraphEdit", blazium_theme_icons["zoom_reset"]);
+	p_theme->set_icon("grid_toggle", "GraphEdit", blazium_theme_icons["grid_toggle"]);
+	p_theme->set_icon("minimap_toggle", "GraphEdit", blazium_theme_icons["grid_minimap"]);
+	p_theme->set_icon("snapping_toggle", "GraphEdit", blazium_theme_icons["grid_snap"]);
+	p_theme->set_icon("layout", "GraphEdit", blazium_theme_icons["grid_layout"]);
+	p_theme->set_icon("resizer", "GraphEditMinimap", blazium_theme_icons["resizer_nw"]);
 
-	p_theme->set_icon("parent_folder", "FileDialog", icons["folder_up"]);
-	p_theme->set_icon("back_folder", "FileDialog", icons["arrow_left"]);
-	p_theme->set_icon("forward_folder", "FileDialog", icons["arrow_right"]);
-	p_theme->set_icon("reload", "FileDialog", icons["reload"]);
-	p_theme->set_icon("toggle_hidden", "FileDialog", icons["visibility_visible"]);
-	p_theme->set_icon("folder", "FileDialog", icons["folder"]);
-	p_theme->set_icon("file", "FileDialog", icons["file"]);
-	p_theme->set_icon("create_folder", "FileDialog", icons["folder_create"]);
-	p_theme->set_icon("load", "FileDialog", icons["load"]);
-	p_theme->set_icon("save", "FileDialog", icons["save"]);
-	p_theme->set_icon("clear", "FileDialog", icons["clear"]);
+	p_theme->set_icon("parent_folder", "FileDialog", blazium_theme_icons["folder_up"]);
+	p_theme->set_icon("back_folder", "FileDialog", blazium_theme_icons["arrow_left"]);
+	p_theme->set_icon("forward_folder", "FileDialog", blazium_theme_icons["arrow_right"]);
+	p_theme->set_icon("reload", "FileDialog", blazium_theme_icons["reload"]);
+	p_theme->set_icon("toggle_hidden", "FileDialog", blazium_theme_icons["visibility_visible"]);
+	p_theme->set_icon("folder", "FileDialog", blazium_theme_icons["folder"]);
+	p_theme->set_icon("file", "FileDialog", blazium_theme_icons["file"]);
+	p_theme->set_icon("create_folder", "FileDialog", blazium_theme_icons["folder_create"]);
+	p_theme->set_icon("load", "FileDialog", blazium_theme_icons["load"]);
+	p_theme->set_icon("save", "FileDialog", blazium_theme_icons["save"]);
+	p_theme->set_icon("clear", "FileDialog", blazium_theme_icons["clear"]);
 
-	p_theme->set_icon("checked", "PopupMenu", icons["checked"]);
-	p_theme->set_icon("checked_disabled", "PopupMenu", icons["checked_disabled"]);
-	p_theme->set_icon("unchecked", "PopupMenu", icons["unchecked"]);
-	p_theme->set_icon("unchecked_disabled", "PopupMenu", icons["unchecked_disabled"]);
-	p_theme->set_icon("radio_checked", "PopupMenu", icons["radio_checked"]);
-	p_theme->set_icon("radio_checked_disabled", "PopupMenu", icons["radio_checked_disabled"]);
-	p_theme->set_icon("radio_unchecked", "PopupMenu", icons["radio_unchecked"]);
-	p_theme->set_icon("radio_unchecked_disabled", "PopupMenu", icons["radio_unchecked_disabled"]);
-	p_theme->set_icon("submenu", "PopupMenu", icons["popup_menu_arrow_right"]);
-	p_theme->set_icon("submenu_mirrored", "PopupMenu", icons["popup_menu_arrow_left"]);
-	p_theme->set_icon("search", "PopupMenu", icons["search"]);
+	p_theme->set_icon("checked", "PopupMenu", blazium_theme_icons["checked"]);
+	p_theme->set_icon("checked_disabled", "PopupMenu", blazium_theme_icons["checked_disabled"]);
+	p_theme->set_icon("unchecked", "PopupMenu", blazium_theme_icons["unchecked"]);
+	p_theme->set_icon("unchecked_disabled", "PopupMenu", blazium_theme_icons["unchecked_disabled"]);
+	p_theme->set_icon("radio_checked", "PopupMenu", blazium_theme_icons["radio_checked"]);
+	p_theme->set_icon("radio_checked_disabled", "PopupMenu", blazium_theme_icons["radio_checked_disabled"]);
+	p_theme->set_icon("radio_unchecked", "PopupMenu", blazium_theme_icons["radio_unchecked"]);
+	p_theme->set_icon("radio_unchecked_disabled", "PopupMenu", blazium_theme_icons["radio_unchecked_disabled"]);
+	p_theme->set_icon("submenu", "PopupMenu", blazium_theme_icons["popup_menu_arrow_right"]);
+	p_theme->set_icon("submenu_mirrored", "PopupMenu", blazium_theme_icons["popup_menu_arrow_left"]);
+	p_theme->set_icon("search", "PopupMenu", blazium_theme_icons["search"]);
 
-	p_theme->set_icon("close", "Window", icons["close"]);
-	p_theme->set_icon("close_pressed", "Window", icons["close_hl"]);
+	p_theme->set_icon("close", "Window", blazium_theme_icons["close"]);
+	p_theme->set_icon("close_pressed", "Window", blazium_theme_icons["close_hl"]);
 
-	p_theme->set_icon("zoom_less", "ZoomWidget", icons["zoom_less"]);
-	p_theme->set_icon("zoom_more", "ZoomWidget", icons["zoom_more"]);
+	p_theme->set_icon("zoom_less", "ZoomWidget", blazium_theme_icons["zoom_less"]);
+	p_theme->set_icon("zoom_more", "ZoomWidget", blazium_theme_icons["zoom_more"]);
 
-	p_theme->set_icon("close", "Icons", icons["close"]);
-	p_theme->set_icon("error_icon", "Icons", icons["error_icon"]);
+	p_theme->set_icon("close", "Icons", blazium_theme_icons["close"]);
+	p_theme->set_icon("error_icon", "Icons", blazium_theme_icons["error_icon"]);
 
-	ThemeDB::get_singleton()->set_fallback_icon(icons["error_icon"]);
+	ThemeDB::get_singleton()->set_fallback_icon(blazium_theme_icons["error_icon"]);
 }
 
 Color contrast_color(const Color &p_color, float p_contrast) {
@@ -846,9 +847,9 @@ void update_font_embolden(float p_embolden) {
 		return;
 	}
 
-	bold_font->set_variation_embolden(p_embolden + 0.2);
-	bold_italics_font->set_variation_embolden(p_embolden + 0.2);
-	italics_font->set_variation_embolden(p_embolden);
+	blazium_bold_font->set_variation_embolden(p_embolden + 0.2);
+	blazium_bold_italics_font->set_variation_embolden(p_embolden + 0.2);
+	blazium_italics_font->set_variation_embolden(p_embolden);
 }
 
 void update_font_spacing_glyph(int p_spacing) {
@@ -857,9 +858,9 @@ void update_font_spacing_glyph(int p_spacing) {
 		return;
 	}
 
-	bold_font->set_spacing(TextServer::SPACING_GLYPH, p_spacing);
-	bold_italics_font->set_spacing(TextServer::SPACING_GLYPH, p_spacing);
-	italics_font->set_spacing(TextServer::SPACING_GLYPH, p_spacing);
+	blazium_bold_font->set_spacing(TextServer::SPACING_GLYPH, p_spacing);
+	blazium_bold_italics_font->set_spacing(TextServer::SPACING_GLYPH, p_spacing);
+	blazium_italics_font->set_spacing(TextServer::SPACING_GLYPH, p_spacing);
 }
 
 void update_font_spacing_space(int p_spacing) {
@@ -868,9 +869,9 @@ void update_font_spacing_space(int p_spacing) {
 		return;
 	}
 
-	bold_font->set_spacing(TextServer::SPACING_SPACE, p_spacing);
-	bold_italics_font->set_spacing(TextServer::SPACING_SPACE, p_spacing);
-	italics_font->set_spacing(TextServer::SPACING_SPACE, p_spacing);
+	blazium_bold_font->set_spacing(TextServer::SPACING_SPACE, p_spacing);
+	blazium_bold_italics_font->set_spacing(TextServer::SPACING_SPACE, p_spacing);
+	blazium_italics_font->set_spacing(TextServer::SPACING_SPACE, p_spacing);
 }
 
 void update_font_spacing_top(int p_spacing) {
@@ -879,9 +880,9 @@ void update_font_spacing_top(int p_spacing) {
 		return;
 	}
 
-	bold_italics_font->set_spacing(TextServer::SPACING_TOP, p_spacing);
-	bold_font->set_spacing(TextServer::SPACING_TOP, p_spacing);
-	italics_font->set_spacing(TextServer::SPACING_TOP, p_spacing);
+	blazium_bold_italics_font->set_spacing(TextServer::SPACING_TOP, p_spacing);
+	blazium_bold_font->set_spacing(TextServer::SPACING_TOP, p_spacing);
+	blazium_italics_font->set_spacing(TextServer::SPACING_TOP, p_spacing);
 }
 
 void update_font_spacing_bottom(int p_spacing) {
@@ -890,25 +891,25 @@ void update_font_spacing_bottom(int p_spacing) {
 		return;
 	}
 
-	bold_font->set_spacing(TextServer::SPACING_BOTTOM, p_spacing);
-	bold_italics_font->set_spacing(TextServer::SPACING_BOTTOM, p_spacing);
-	italics_font->set_spacing(TextServer::SPACING_BOTTOM, p_spacing);
+	blazium_bold_font->set_spacing(TextServer::SPACING_BOTTOM, p_spacing);
+	blazium_bold_italics_font->set_spacing(TextServer::SPACING_BOTTOM, p_spacing);
+	blazium_italics_font->set_spacing(TextServer::SPACING_BOTTOM, p_spacing);
 }
 
 void update_theme_font(const Ref<Theme> &p_theme, Ref<Font> p_font) {
 	if (p_font.is_valid() && p_font->is_class("FontVariation")) {
 		custom_font_variation = p_font;
 
-		bold_font = custom_font_variation->duplicate();
-		bold_font->set_variation_embolden(custom_font_variation->get_variation_embolden() + 0.2);
-		bold_italics_font = custom_font_variation->duplicate();
-		bold_italics_font->set_variation_embolden(custom_font_variation->get_variation_embolden() + 0.2);
-		bold_italics_font->set_variation_transform(Transform2D(1.0, 0.2, 0.0, 1.0, 0.0, 0.0));
-		italics_font = custom_font_variation->duplicate();
-		italics_font->set_variation_transform(Transform2D(1.0, 0.2, 0.0, 1.0, 0.0, 0.0));
-		p_theme->set_font("bold_font", "RichTextLabel", bold_font);
-		p_theme->set_font("italics_font", "RichTextLabel", italics_font);
-		p_theme->set_font("bold_italics_font", "RichTextLabel", bold_italics_font);
+		blazium_bold_font = custom_font_variation->duplicate();
+		blazium_bold_font->set_variation_embolden(custom_font_variation->get_variation_embolden() + 0.2);
+		blazium_bold_italics_font = custom_font_variation->duplicate();
+		blazium_bold_italics_font->set_variation_embolden(custom_font_variation->get_variation_embolden() + 0.2);
+		blazium_bold_italics_font->set_variation_transform(Transform2D(1.0, 0.2, 0.0, 1.0, 0.0, 0.0));
+		blazium_italics_font = custom_font_variation->duplicate();
+		blazium_italics_font->set_variation_transform(Transform2D(1.0, 0.2, 0.0, 1.0, 0.0, 0.0));
+		p_theme->set_font("bold_font", "RichTextLabel", blazium_bold_font);
+		p_theme->set_font("italics_font", "RichTextLabel", blazium_italics_font);
+		p_theme->set_font("bold_italics_font", "RichTextLabel", blazium_bold_italics_font);
 		p_theme->set_default_font(custom_font_variation);
 
 	} else {
@@ -929,16 +930,16 @@ void update_theme_font(const Ref<Theme> &p_theme, Ref<Font> p_font) {
 		if (custom_font_variation.is_valid()) {
 			custom_font_variation = Ref<FontVariation>();
 
-			bold_font = font_variation->duplicate();
-			bold_font->set_variation_embolden(font_variation->get_variation_embolden() + 0.2);
-			bold_italics_font = font_variation->duplicate();
-			bold_italics_font->set_variation_embolden(font_variation->get_variation_embolden() + 0.2);
-			bold_italics_font->set_variation_transform(Transform2D(1.0, 0.2, 0.0, 1.0, 0.0, 0.0));
-			italics_font = font_variation->duplicate();
-			italics_font->set_variation_transform(Transform2D(1.0, 0.2, 0.0, 1.0, 0.0, 0.0));
-			p_theme->set_font("bold_font", "RichTextLabel", bold_font);
-			p_theme->set_font("italics_font", "RichTextLabel", italics_font);
-			p_theme->set_font("bold_italics_font", "RichTextLabel", bold_italics_font);
+			blazium_bold_font = font_variation->duplicate();
+			blazium_bold_font->set_variation_embolden(font_variation->get_variation_embolden() + 0.2);
+			blazium_bold_italics_font = font_variation->duplicate();
+			blazium_bold_italics_font->set_variation_embolden(font_variation->get_variation_embolden() + 0.2);
+			blazium_bold_italics_font->set_variation_transform(Transform2D(1.0, 0.2, 0.0, 1.0, 0.0, 0.0));
+			blazium_italics_font = font_variation->duplicate();
+			blazium_italics_font->set_variation_transform(Transform2D(1.0, 0.2, 0.0, 1.0, 0.0, 0.0));
+			p_theme->set_font("bold_font", "RichTextLabel", blazium_bold_font);
+			p_theme->set_font("italics_font", "RichTextLabel", blazium_italics_font);
+			p_theme->set_font("bold_italics_font", "RichTextLabel", blazium_bold_italics_font);
 			p_theme->set_default_font(font_variation);
 		}
 	}
@@ -1242,7 +1243,7 @@ void update_theme_scale(const Ref<Theme> &p_theme) {
 }
 
 void make_blazium_default_theme(Ref<Font> p_font, ThemeTemplate &p_template) {
-	float scale = CLAMP(p_template.scale, 0.5, 8.0);
+	float theme_scale = CLAMP(p_template.scale, 0.5, 8.0);
 
 	Ref<Theme> t;
 	t.instantiate();
@@ -1257,11 +1258,11 @@ void make_blazium_default_theme(Ref<Font> p_font, ThemeTemplate &p_template) {
 	ThemeDB::get_singleton()->set_fallback_font(base_font);
 	t->set_default_font(font_variation);
 
-	bold_font.instantiate();
-	bold_italics_font.instantiate();
-	italics_font.instantiate();
+	blazium_bold_font.instantiate();
+	blazium_bold_italics_font.instantiate();
+	blazium_italics_font.instantiate();
 
-	t->set_default_base_scale(scale);
+	t->set_default_base_scale(theme_scale);
 
 	t->set_type_variation("FlatButton", "Button");
 	t->set_type_variation("FlatMenuButton", "MenuButton");
@@ -1343,7 +1344,7 @@ void make_blazium_default_theme(Ref<Font> p_font, ThemeTemplate &p_template) {
 	update_theme_border_width(t, p_template.border_width);
 	update_theme_border_padding(t, p_template.border_width + p_template.padding);
 	update_theme_scale(t);
-	update_font_color(t, p_template.font_color); // Update font color before icons and theme colors.
+	update_font_color(t, p_template.font_color); // Update font color before blazium_theme_icons and theme colors.
 	update_font_outline_color(t, p_template.font_outline_color);
 	update_theme_icons(t, p_template.font_color, p_template.accent_color);
 	update_theme_colors(t, p_template.base_color, p_template.accent_color, p_template.contrast, p_template.normal_contrast, p_template.hover_contrast, p_template.pressed_contrast, p_template.bg_contrast);
@@ -1735,13 +1736,13 @@ void make_blazium_default_theme(Ref<Font> p_font, ThemeTemplate &p_template) {
 	t->set_font("mono_font", "RichTextLabel", Ref<Font>());
 
 	ThemeDB::get_singleton()->set_default_theme(t);
-	ThemeDB::get_singleton()->set_fallback_base_scale(scale);
+	ThemeDB::get_singleton()->set_fallback_base_scale(theme_scale);
 	ThemeDB::get_singleton()->set_fallback_stylebox(empty_style);
-	ThemeDB::get_singleton()->set_fallback_font_size(p_template.font_size * scale);
+	ThemeDB::get_singleton()->set_fallback_font_size(p_template.font_size * theme_scale);
 }
 
 void finalize_blazium_default_theme() {
-	icons.clear();
+	blazium_theme_icons.clear();
 	user_icons.clear();
 	user_icons_sources.clear();
 
@@ -1802,7 +1803,7 @@ void finalize_blazium_default_theme() {
 	}
 
 	font_variation.unref();
-	bold_font.unref();
-	bold_italics_font.unref();
-	italics_font.unref();
+	blazium_bold_font.unref();
+	blazium_bold_italics_font.unref();
+	blazium_italics_font.unref();
 }
