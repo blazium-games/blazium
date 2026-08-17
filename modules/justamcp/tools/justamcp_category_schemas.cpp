@@ -129,7 +129,7 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "message", "string" }, Vector<String>{ "message" });
 	add_schema("multiuser_kick_peer", "Removes a target user peer explicitly from the host environment by ID (Action is silently ignored if the AI host agent lacks active networking privileges).",
 			Vector<String>{ "peer_id", "string" }, Vector<String>{ "peer_id" });
-	add_schema("multiuser_trigger_autowork", "Issues a distributed RPC signaling all securely connected peers to automatically boot Godot's Autowork pipeline evaluating unit tests concurrently traversing the network.",
+	add_schema("multiuser_trigger_autowork", "Issues a distributed RPC signaling all securely connected peers to automatically boot Blazium's Autowork pipeline evaluating unit tests concurrently traversing the network.",
 			Vector<String>{}, Vector<String>{});
 #endif
 
@@ -154,7 +154,7 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 	is_core = false;
 	add_schema("execute_gdscript_snippet", "Dynamically evaluates raw GDScript source strings overriding static execution bypassing compiled states natively mapping memory contexts locally.",
 			Vector<String>{ "code", "string", "target_node", "string" }, Vector<String>{ "code" });
-	add_schema("signal_emit", "Fires Godot Event bindings internally passing variable parameter objects mapping signal arguments natively across local instances.",
+	add_schema("signal_emit", "Fires Blazium Event bindings internally passing variable parameter objects mapping signal arguments natively across local instances.",
 			Vector<String>{ "node_path", "string", "signal_name", "string", "args", "array" }, Vector<String>{ "node_path", "signal_name" });
 	add_schema("runtime_capture_output", "Grabs standard native string output streams logged during active execution natively exposing debug logs rapidly.",
 			Vector<String>{}, Vector<String>{});
@@ -260,7 +260,7 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "scene_path", "string", "node_path", "string", "properties", "object" }, Vector<String>{ "scene_path", "node_path", "properties" });
 	add_schema("modify_node_property", "Compatibility wrapper for setting one property on a scene node.",
 			Vector<String>{ "scene_path", "string", "node_path", "string", "property", "string", "value", "any" }, Vector<String>{ "node_path", "property", "value" });
-	add_schema("get_node_properties", "Reads local serialized properties excluding Godot defaults directly resolving node attributes.",
+	add_schema("get_node_properties", "Reads local serialized properties excluding Blazium defaults directly resolving node attributes.",
 			Vector<String>{ "node_path", "string", "include_defaults", "boolean" }, Vector<String>{ "node_path" });
 	add_schema("create_area_2d", "Creates an Area2D wrapper explicitly configured with standard scene routing.",
 			Vector<String>{ "node_name", "string", "parent_node_path", "string", "properties", "object" }, Vector<String>{ "node_name" });
@@ -286,7 +286,7 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "scene_path", "string", "node_path", "string", "texture_path", "string" }, Vector<String>{ "scene_path", "node_path", "texture_path" });
 	add_schema("save_scene", "Saves the current state of a scene to disk.",
 			Vector<String>{ "scene_path", "string" }, Vector<String>{ "scene_path" });
-	add_schema("connect_signal", "Connects a Godot signal dynamically.",
+	add_schema("connect_signal", "Connects a Blazium signal dynamically.",
 			Vector<String>{ "scene_path", "string", "node_path", "string", "signal_name", "string", "target_path", "string", "method_name", "string" },
 			Vector<String>{ "scene_path", "node_path", "signal_name", "target_path", "method_name" });
 	add_schema("disconnect_signal", "Disconnects an existing signal binding.",
@@ -313,7 +313,7 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 
 	current_category = "resource_tools";
 	is_core = false;
-	add_schema("create_resource", "Creates a generic Godot resource.",
+	add_schema("create_resource", "Creates a generic Blazium resource.",
 			Vector<String>{ "resource_path", "string", "resource_type", "string" }, Vector<String>{ "resource_path", "resource_type" });
 	add_schema("modify_resource", "Modifies an existing resource.",
 			Vector<String>{ "resource_path", "string", "properties", "object" }, Vector<String>{ "resource_path", "properties" });
@@ -398,7 +398,7 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "query", "string", "path", "string", "max_results", "number", "regex", "boolean", "file_type", "string" }, Vector<String>{ "query" }, "forbidden", "worker");
 	add_schema("set_project_setting", "Sets a specific global setting in the project settings file (project.blazium or project.godot).",
 			Vector<String>{ "key", "string", "value", "string" }, Vector<String>{ "key", "value" });
-	add_schema("uid_to_project_path", "Resolves a Godot UID representation to an absolute res:// path.",
+	add_schema("uid_to_project_path", "Resolves a Blazium UID representation to an absolute res:// path.",
 			Vector<String>{ "uid", "string" }, Vector<String>{ "uid" }, "forbidden", "worker");
 	add_schema("project_path_to_uid", "Converts a godot absolute res:// path to its UUID equivalent.",
 			Vector<String>{ "path", "string" }, Vector<String>{ "path" }, "forbidden", "worker");
@@ -438,7 +438,7 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 	is_core = false;
 	add_schema("list_export_presets", "Reads and returns all export presets from export_presets.cfg.",
 			Vector<String>{}, Vector<String>{});
-	add_schema("export_project", "Triggers a headless Godot export operation.",
+	add_schema("export_project", "Triggers a headless Blazium export operation.",
 			Vector<String>{ "preset_index", "number", "preset_name", "string", "debug", "boolean" }, Vector<String>{}, "required");
 	add_schema("export_release", "Exports the project using the release preset.",
 			Vector<String>{ "preset_name", "string", "preset_index", "number" }, Vector<String>{}, "required");
@@ -471,7 +471,7 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "pattern", "string" }, Vector<String>{ "pattern" });
 	add_schema("cross_scene_set_property", "Modifies properties identically across scene files matching parameters saving changes into file system.",
 			Vector<String>{ "type", "string", "property", "string", "value", "any", "path_filter", "string", "exclude_addons", "boolean", "max_results", "number" }, Vector<String>{ "type", "property", "value" });
-	add_schema("get_scene_dependencies", "Interrogates internal Godot dependencies structure string paths via ResourceLoader.",
+	add_schema("get_scene_dependencies", "Interrogates internal Blazium dependencies structure string paths via ResourceLoader.",
 			Vector<String>{ "path", "string" }, Vector<String>{ "path" });
 
 	current_category = "script_tools";
@@ -484,13 +484,13 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "path", "string", "content", "string", "extends", "string", "class_name", "string" }, Vector<String>{ "path" });
 	add_schema("edit_script", "Modifies an existing script intelligently mapping regex replacements or direct injection.",
 			Vector<String>{ "path", "string", "content", "string", "insert_at_line", "number", "text", "string", "replacements", "array" }, Vector<String>{ "path" });
-	add_schema("attach_script", "Binds a target Godot Resource Script onto a Scene Node dynamically.",
+	add_schema("attach_script", "Binds a target Blazium Resource Script onto a Scene Node dynamically.",
 			Vector<String>{ "node_path", "string", "script_path", "string" }, Vector<String>{ "node_path", "script_path" });
 	add_schema("delete_script", "Deletes a script file from the project.",
 			Vector<String>{ "path", "string" }, Vector<String>{ "path" });
 	add_schema("detach_script", "Removes a script from a node in the currently edited scene.",
 			Vector<String>{ "node_path", "string" }, Vector<String>{ "node_path" });
-	add_schema("get_open_scripts", "Maps what files are actively opened within Godot's script editor GUI.",
+	add_schema("get_open_scripts", "Maps what files are actively opened within Blazium's script editor GUI.",
 			Vector<String>{}, Vector<String>{});
 	add_schema("open_script_in_editor", "Opens a script in the editor script workspace.",
 			Vector<String>{ "path", "string", "line", "number" }, Vector<String>{ "path" });
@@ -529,11 +529,11 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "source_path", "string", "signal_name", "string", "target_path", "string", "method_name", "string" }, Vector<String>{ "source_path", "signal_name", "target_path", "method_name" });
 	add_schema("node_disconnect_signal", "Snaps off existing bounding callable events recursively mapped over nodes.",
 			Vector<String>{ "source_path", "string", "signal_name", "string", "target_path", "string", "method_name", "string" }, Vector<String>{ "source_path", "signal_name", "target_path", "method_name" });
-	add_schema("node_get_groups", "Aggregates internal Godot Groups strings assigned over standard instances.",
+	add_schema("node_get_groups", "Aggregates internal Blazium Groups strings assigned over standard instances.",
 			Vector<String>{ "node_path", "string" }, Vector<String>{ "node_path" });
 	add_schema("node_set_groups", "Mutates overlapping assignment instances mapped per godot string node groups.",
 			Vector<String>{ "node_path", "string", "groups", "array" }, Vector<String>{ "node_path", "groups" });
-	add_schema("node_find_in_group", "Provides lookup access globally towards Godot instance sets natively spanning specific groups.",
+	add_schema("node_find_in_group", "Provides lookup access globally towards Blazium instance sets natively spanning specific groups.",
 			Vector<String>{ "group", "string" }, Vector<String>{ "group" });
 
 	current_category = "audio_tools";
@@ -542,11 +542,11 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{}, Vector<String>{});
 	add_schema("add_audio_bus", "Binds a new structural audio bus dynamically into the godot runtime.",
 			Vector<String>{ "name", "string", "at_position", "number", "volume_db", "number", "send", "string", "solo", "boolean", "mute", "boolean" }, Vector<String>{ "name" });
-	add_schema("set_audio_bus", "Modifies specific index Godot audio buses layout.",
+	add_schema("set_audio_bus", "Modifies specific index Blazium audio buses layout.",
 			Vector<String>{ "name", "string", "volume_db", "number", "solo", "boolean", "mute", "boolean", "bypass_effects", "boolean", "send", "string", "rename", "string" }, Vector<String>{ "name" });
-	add_schema("add_audio_bus_effect", "Maps Godot AudioEffects via reflection bridging directly onto buses.",
+	add_schema("add_audio_bus_effect", "Maps Blazium AudioEffects via reflection bridging directly onto buses.",
 			Vector<String>{ "bus", "string", "effect_type", "string", "params", "object", "at_position", "number" }, Vector<String>{ "bus", "effect_type" });
-	add_schema("add_audio_player", "Injects structural AudioStreamPlayer instances directly mapped inside Godot trees.",
+	add_schema("add_audio_player", "Injects structural AudioStreamPlayer instances directly mapped inside Blazium trees.",
 			Vector<String>{ "node_path", "string", "name", "string", "type", "string", "stream", "string", "volume_db", "number", "bus", "string", "autoplay", "boolean", "max_distance", "number", "attenuation", "number", "attenuation_model", "number", "unit_size", "number" }, Vector<String>{ "node_path", "name" });
 	add_schema("audio_get_players_info", "Returns hierarchical node maps wrapping natively instantiated stream wrappers.",
 			Vector<String>{ "node_path", "string" }, Vector<String>{ "node_path" });
@@ -569,14 +569,14 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "events", "array", "frame_delay", "number" }, Vector<String>{ "events" });
 	add_schema("input_record", "Start listening over input sequence frame loops saving complex vectors natively capturing user simulations optimally.",
 			Vector<String>{ "state", "boolean" }, Vector<String>{ "state" });
-	add_schema("input_replay", "Streams input buffer traces driving Godot inputs mapped deterministically accurately replaying test routines safely.",
+	add_schema("input_replay", "Streams input buffer traces driving Blazium inputs mapped deterministically accurately replaying test routines safely.",
 			Vector<String>{ "sequence_buffer_id", "string" }, Vector<String>{ "sequence_buffer_id" });
 
 	current_category = "particle_tools";
 	is_core = false;
 	add_schema("create_particles", "Instantiates a new particle emitter structure onto a godot node.",
 			Vector<String>{ "parent_path", "string", "name", "string", "is_3d", "boolean", "amount", "number", "lifetime", "number", "one_shot", "boolean", "explosiveness", "number", "randomness", "number", "emitting", "boolean" }, Vector<String>{ "parent_path" });
-	add_schema("set_particle_material", "Modifies inner Godot struct material values bounding Godot Variant types for particles.",
+	add_schema("set_particle_material", "Modifies inner Blazium struct material values bounding Blazium Variant types for particles.",
 			Vector<String>{ "node_path", "string", "direction", "any", "spread", "number", "initial_velocity_min", "number", "initial_velocity_max", "number", "gravity", "any", "scale_min", "number", "scale_max", "number", "color", "string", "emission_shape", "string", "emission_sphere_radius", "number", "emission_box_extents", "any", "emission_ring_radius", "number", "emission_ring_inner_radius", "number", "emission_ring_height", "number" }, Vector<String>{ "node_path" });
 	add_schema("set_particle_color_gradient", "Maps linear stop structs against color configurations into a proper GradientTexture1D resource natively.",
 			Vector<String>{ "node_path", "string", "stops", "array" }, Vector<String>{ "node_path", "stops" });
@@ -593,31 +593,31 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "node_path", "string", "layer", "number", "mask", "number" }, Vector<String>{ "node_path" });
 	add_schema("get_physics_layers", "Reads intrinsic properties parsing bitmask configurations exposing layers visually.",
 			Vector<String>{ "node_path", "string" }, Vector<String>{ "node_path" });
-	add_schema("add_raycast", "Instantiates native Godot RayCast queries pointing into logical coordinate targets asynchronously bounds.",
+	add_schema("add_raycast", "Instantiates native Blazium RayCast queries pointing into logical coordinate targets asynchronously bounds.",
 			Vector<String>{ "parent_path", "string", "name", "string", "dimension", "string", "target_position", "object", "enabled", "boolean", "collision_mask", "number" }, Vector<String>{ "parent_path" });
 	add_schema("setup_physics_body", "Allocates pure native Object implementations defining Physics bodies bounds (Area, Character, Rigid).",
 			Vector<String>{ "parent_path", "string", "body_type", "string", "name", "string", "dimension", "string", "collision_layer", "number", "collision_mask", "number" }, Vector<String>{ "parent_path", "body_type" });
-	add_schema("get_collision_info", "Walks a sub-hierarchy scraping Godot shape configurations for runtime representations.",
+	add_schema("get_collision_info", "Walks a sub-hierarchy scraping Blazium shape configurations for runtime representations.",
 			Vector<String>{ "node_path", "string" }, Vector<String>{ "node_path" });
 
 	current_category = "scene3d_tools";
 	is_core = false;
-	add_schema("add_mesh_instance", "Mints and injects a MeshInstance3D primitive directly into Godot Scene tree natively.",
+	add_schema("add_mesh_instance", "Mints and injects a MeshInstance3D primitive directly into Blazium Scene tree natively.",
 			Vector<String>{ "parent_path", "string", "name", "string", "mesh_type", "string", "mesh_file", "string", "mesh_properties", "object", "position", "any", "rotation", "any", "scale", "any" }, Vector<String>{ "parent_path" });
-	add_schema("setup_lighting", "Configures high performance Godot lights (SpotLight3D, OmniLight3D, DirectionalLight3D) dynamically into the tree.",
+	add_schema("setup_lighting", "Configures high performance Blazium lights (SpotLight3D, OmniLight3D, DirectionalLight3D) dynamically into the tree.",
 			Vector<String>{ "parent_path", "string", "name", "string", "light_type", "string", "preset", "string", "color", "any", "energy", "number", "shadows", "boolean", "range", "number", "attenuation", "number", "spot_angle", "number", "spot_angle_attenuation", "number", "position", "any", "rotation", "any" }, Vector<String>{ "parent_path" });
-	add_schema("set_material_3d", "Assigns and computes real-time StandardMaterial3D configurations over Godot primitive and loaded meshes.",
+	add_schema("set_material_3d", "Assigns and computes real-time StandardMaterial3D configurations over Blazium primitive and loaded meshes.",
 			Vector<String>{ "node_path", "string", "surface_index", "number", "albedo_color", "any", "albedo_texture", "string", "metallic", "number", "roughness", "number", "metallic_texture", "string", "roughness_texture", "string", "normal_texture", "string", "emission", "any", "emission_color", "any", "emission_energy", "number", "emission_texture", "string", "transparency", "any", "cull_mode", "any" }, Vector<String>{ "node_path" });
-	add_schema("setup_environment", "Allocates rendering environments over Godot bindings (SSAO, SSR, SDFGI, Glow, Fog).",
+	add_schema("setup_environment", "Allocates rendering environments over Blazium bindings (SSAO, SSR, SDFGI, Glow, Fog).",
 			Vector<String>{ "parent_path", "string", "name", "string", "node_path", "string", "background_mode", "string", "background_color", "any", "sky", "object", "ambient_light_color", "any", "ambient_light_energy", "number", "ambient_light_source", "any", "tonemap_mode", "any", "tonemap_exposure", "number", "tonemap_white", "number", "fog_enabled", "boolean", "fog_light_color", "any", "fog_density", "number", "fog_light_energy", "number", "glow_enabled", "boolean", "glow_intensity", "number", "glow_strength", "number", "glow_bloom", "number", "ssao_enabled", "boolean", "ssao_radius", "number", "ssao_intensity", "number", "ssr_enabled", "boolean", "ssr_max_steps", "number", "ssr_fade_in", "number", "ssr_fade_out", "number", "sdfgi_enabled", "boolean" }, Vector<String>{ "parent_path" });
 	add_schema("setup_camera_3d", "Allocates viewport Camera3D projection mapping native structural properties inside godot runtime.",
 			Vector<String>{ "parent_path", "string", "name", "string", "node_path", "string", "projection", "string", "fov", "number", "size", "number", "near", "number", "far", "number", "cull_mask", "number", "current", "boolean", "position", "any", "rotation", "any", "look_at", "any", "environment_path", "string" }, Vector<String>{ "parent_path" });
-	add_schema("add_gridmap", "Mints and instantiates Godot high performance GridMap bounding memory grids locally.",
+	add_schema("add_gridmap", "Mints and instantiates Blazium high performance GridMap bounding memory grids locally.",
 			Vector<String>{ "parent_path", "string", "name", "string", "node_path", "string", "mesh_library_path", "string", "cell_size", "any", "position", "any", "cells", "array" }, Vector<String>{ "parent_path" });
 
 	current_category = "shader_tools";
 	is_core = false;
-	add_schema("create_shader", "Mints blank Godot Shader files injecting standard structure for canvas_item, script, and spatial types.",
+	add_schema("create_shader", "Mints blank Blazium Shader files injecting standard structure for canvas_item, script, and spatial types.",
 			Vector<String>{ "path", "string", "content", "string", "shader_type", "string" }, Vector<String>{ "path" });
 	add_schema("read_shader", "Loads string source buffers straight out from .gdshader files dynamically mapped in file system.",
 			Vector<String>{ "path", "string" }, Vector<String>{ "path" });
@@ -627,7 +627,7 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "node_path", "string", "shader_path", "string" }, Vector<String>{ "node_path", "shader_path" });
 	add_schema("set_shader_param", "Reflective native evaluation bounding GDScript variable evaluation parsing shader uniforms natively.",
 			Vector<String>{ "node_path", "string", "param", "string", "value", "any" }, Vector<String>{ "node_path", "param" });
-	add_schema("get_shader_params", "Extracts Godot shader variables directly from Inspector metadata representations natively.",
+	add_schema("get_shader_params", "Extracts Blazium shader variables directly from Inspector metadata representations natively.",
 			Vector<String>{ "node_path", "string" }, Vector<String>{ "node_path" });
 
 	current_category = "theme_tools";
@@ -642,7 +642,7 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "node_path", "string", "name", "string", "size", "number" }, Vector<String>{ "node_path", "name" });
 	add_schema("set_theme_stylebox", "Constructs standard StyleBoxFlat representations drawing boundaries over Control structures natively.",
 			Vector<String>{ "node_path", "string", "name", "string", "bg_color", "string", "border_color", "string", "border_width", "number", "corner_radius", "number", "padding", "number" }, Vector<String>{ "node_path", "name" });
-	add_schema("setup_control", "Automates standard Godot UI control flag assignments applying layout layouts.",
+	add_schema("setup_control", "Automates standard Blazium UI control flag assignments applying layout layouts.",
 			Vector<String>{ "node_path", "string", "anchor_preset", "string", "min_size", "string", "size_flags_h", "string", "size_flags_v", "string", "margins", "object", "separation", "number", "grow_h", "string", "grow_v", "string" }, Vector<String>{ "node_path" });
 	add_schema("get_theme_info", "Interrogates godot Inspector bindings wrapping metadata and dynamic lists natively.",
 			Vector<String>{ "node_path", "string" }, Vector<String>{ "node_path" });
@@ -668,18 +668,18 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "root", "string", "include_addons", "boolean", "lod", "number", "max_results", "number" }, Vector<String>{});
 	add_schema("project_map_scenes", "Parses .tscn scene tree representations identifying node types and resource dependencies across scene graphs natively.",
 			Vector<String>{ "root", "string", "include_addons", "boolean", "max_results", "number" }, Vector<String>{});
-	add_schema("project_list_settings", "Queries active Godot ProjectSettings dumping categorized key-value pairs with serialization logic.",
+	add_schema("project_list_settings", "Queries active Blazium ProjectSettings dumping categorized key-value pairs with serialization logic.",
 			Vector<String>{ "category", "string", "max_results", "number", "cursor", "string" }, Vector<String>{});
-	add_schema("project_update_settings", "Persists localized Godot ProjectSettings mapping dynamic dictionaries onto global configuration buffers recursively.",
+	add_schema("project_update_settings", "Persists localized Blazium ProjectSettings mapping dynamic dictionaries onto global configuration buffers recursively.",
 			Vector<String>{ "settings", "object" }, Vector<String>{ "settings" });
-	add_schema("project_manage_autoloads", "Automates Godot Autoload registrations minting or deleting global project singletons dynamically.",
+	add_schema("project_manage_autoloads", "Automates Blazium Autoload registrations minting or deleting global project singletons dynamically.",
 			Vector<String>{ "operation", "string", "name", "string", "path", "string" }, Vector<String>{ "operation" });
-	add_schema("project_get_collision_layers", "Dumps named Godot physics layers extracting user-defined metadata from ProjectSettings configuration natively.",
+	add_schema("project_get_collision_layers", "Dumps named Blazium physics layers extracting user-defined metadata from ProjectSettings configuration natively.",
 			Vector<String>{}, Vector<String>{});
 
 	current_category = "asset_tools";
 	is_core = false;
-	add_schema("asset_generate_2d_asset", "Renders raw SVG code directly into Godot Image instances saving PNG assets to disk and scanning filesystem repositories natively.",
+	add_schema("asset_generate_2d_asset", "Renders raw SVG code directly into Blazium Image instances saving PNG assets to disk and scanning filesystem repositories natively.",
 			Vector<String>{ "svg_code", "string", "filename", "string", "save_path", "string", "scale", "number" }, Vector<String>{ "svg_code", "filename" });
 
 	current_category = "blueprint_tools";

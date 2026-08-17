@@ -569,7 +569,7 @@ static Array _collect_tool_schemas(bool p_register_only, bool p_ignore_settings,
 		is_core = false;
 		add_schema("autowork_run_all_tests", "Recursively traverses and executes all autowork test suites natively returning structured passing/failure statistics.",
 				Vector<String>{}, Vector<String>{}, "optional");
-		add_schema("autowork_run_tests_in_directory", "Recursively finds and executes all Godot autowork unit tests inside a given directory, returning formatted results.",
+		add_schema("autowork_run_tests_in_directory", "Recursively finds and executes all Blazium autowork unit tests inside a given directory, returning formatted results.",
 				Vector<String>{ "directory_path", "string" }, Vector<String>{ "directory_path" }, "optional");
 		add_schema("autowork_run_test_script", "Executes an exact test script natively against the runtime test suite framework evaluating state.",
 				Vector<String>{ "script_path", "string" }, Vector<String>{ "script_path" }, "optional");

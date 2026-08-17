@@ -67,16 +67,26 @@ blazium_header = """\
 """
 
 use_blazium = "--blazium" in sys.argv
+use_godot = "--godot" in sys.argv
 if use_blazium:
     sys.argv.remove("--blazium")
-if "--godot" in sys.argv:
+if use_godot:
     sys.argv.remove("--godot")
+
+if not use_blazium and not use_godot:
+    print("Error: At least one of --blazium or --godot flag must be specified.")
+    print("Usage: python copyright_headers.py [--blazium] [--godot] <file1> [file2] ...")
+    print("  --blazium: Use the Blazium Engine copyright header")
+    print("  --godot: Use the Godot Engine copyright header")
+    sys.exit(1)
 
 header = blazium_header if use_blazium else godot_header
 
 if len(sys.argv) < 2:
     print("Invalid usage of copyright_headers.py, it should be called with a path to one or multiple files.")
-    print("Usage: python copyright_headers.py [--blazium|--godot] <file1> [file2] ...")
+    print("Usage: python copyright_headers.py [--blazium] [--godot] <file1> [file2] ...")
+    print("  --blazium: Use the Blazium Engine copyright header")
+    print("  --godot: Use the Godot Engine copyright header")
     sys.exit(1)
 
 for f in sys.argv[1:]:

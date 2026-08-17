@@ -60,7 +60,8 @@ License: CC0-1.0
 
 Files: misc/logo/*
 Comment: Blazium Engine logo
-Copyright: 2017, Andrea Calabró
+Copyright: 2024, Blazium Contributors
+ 2017, Andrea Calabró
 License: CC-BY-4.0
 
 Files: modules/betsy/alpha_stitch.glsl
@@ -122,6 +123,19 @@ Copyright: 2020, Manuel Prandini
  2014-present, Godot Engine contributors
  2007-2014, Juan Linietsky, Ariel Manzur
 License: Expat
+
+Files: modules/sqlite3/*
+Comment: SQLite Module
+Copyright: 2020-present K. S. Ernest (iFire) Lee
+ 2017 Khairul Hidayat
+ 2020 Godot Engine SQLite module contributors (cf. modules/sqlite3/AUTHORS.md).
+ 2024-present Blazium Contributors.
+License: Expat
+
+Files: modules/sqlite3/thirdparty/spmemvfs/*
+Comment: spmemvfs
+Copyright: 2009 Stephen Liu
+License: BSD-2-clause
 
 Files: platform/android/java/editor/src/main/java/com/android/*
  platform/android/java/lib/src/main/aidl/com/android/*

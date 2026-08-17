@@ -333,7 +333,7 @@ Dictionary JustAMCPExportTools::_export_project(const Dictionary &p_params) {
 	res["export_path"] = export_path;
 	res["debug"] = debug;
 	res["command"] = command;
-	res["message"] = "Run the command above to export. Direct export from editor plugin is not supported in Godot 4 via simple MCP calls yet.";
+	res["message"] = "Run the command above to export. Direct export from editor plugin is not supported in Blazium via simple MCP calls yet.";
 	justamcp_report_progress(2, 2, "Export command prepared");
 	return MCP_SUCCESS(res);
 }

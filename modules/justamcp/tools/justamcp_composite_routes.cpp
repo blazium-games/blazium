@@ -579,7 +579,7 @@ Dictionary JustAMCPToolExecutor::execute_composite_tool(const String &p_internal
 	if (p_internal_name == "runtime_run_gut_tests") {
 		Dictionary ret;
 		ret["ok"] = true;
-		ret["message"] = "Run GUT tests from the editor panel or with Godot command line using addons/gut/gut_cmdln.gd.";
+		ret["message"] = "Run GUT tests from the editor panel or with Blazium command line using addons/gut/gut_cmdln.gd.";
 		ret["test_script"] = p_args.get("test_script", "");
 		return ret;
 	}

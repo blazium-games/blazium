@@ -1,4 +1,4 @@
-# Donors to the Godot Engine project
+# Donors to the Blazium Engine project
 
 Godot Engine is a non-profit project developed by a community of voluntary
 contributors, as well as occasional paid contributors thanks to the financial

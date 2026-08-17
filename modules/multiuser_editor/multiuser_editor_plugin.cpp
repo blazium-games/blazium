@@ -295,7 +295,7 @@ void MultiuserEditorPlugin::_notification(int p_what) {
 				} else {
 					String reason;
 					if (!_is_inside_loaded_project(&reason)) {
-						ERR_PRINT("MultiuserEditor: --multiuser-server requires a loaded Godot project: " + reason);
+						ERR_PRINT("MultiuserEditor: --multiuser-server requires a loaded Blazium project: " + reason);
 						OS::get_singleton()->set_exit_code(1);
 						break;
 					}
@@ -4242,7 +4242,7 @@ void MultiuserEditorPlugin::host_session(int p_port, const String &p_password) {
 	{
 		String reason;
 		if (!_is_inside_loaded_project(&reason)) {
-			ERR_PRINT("Multiuser Editor: refusing to host outside a loaded Godot project: " + reason);
+			ERR_PRINT("Multiuser Editor: refusing to host outside a loaded Blazium project: " + reason);
 			_log_cat(LOG_ERROR, LOG_PERMISSIONS, "host refused: " + reason);
 			_update_ui();
 			return;
@@ -4331,7 +4331,7 @@ void MultiuserEditorPlugin::join_session(const String &p_host, int p_port, const
 	{
 		String reason;
 		if (!_is_inside_loaded_project(&reason)) {
-			ERR_PRINT("Multiuser Editor: refusing to join outside a loaded Godot project: " + reason);
+			ERR_PRINT("Multiuser Editor: refusing to join outside a loaded Blazium project: " + reason);
 			_log_cat(LOG_ERROR, LOG_PERMISSIONS, "join refused: " + reason);
 			_update_ui();
 			return;

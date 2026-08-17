@@ -210,7 +210,7 @@ opts.Add(
         "lto", "Link-time optimization (production builds)", "none", ["none", "auto", "thin", "full"], ignorecase=2
     )
 )
-opts.Add(BoolVariable("production", "Set defaults to build Godot for use in production", False))
+opts.Add(BoolVariable("production", "Set defaults to build Blazium for use in production", False))
 opts.Add(BoolVariable("threads", "Enable threading support", True))
 
 # Components
@@ -779,7 +779,7 @@ elif methods.using_gcc(env):
         if cc_version_major < 11:
             print_error(
                 "Detected GCC version older than 11, which does not fully support "
-                "C++20, or has bugs when compiling Godot. Supported versions are 12 "
+                "C++20, or has bugs when compiling Blazium. Supported versions are 12 "
                 "and later. Use a newer GCC version, or Clang 14 or later by passing "
                 '"use_llvm=yes" to the SCons command line, or disable WinRT support by '
                 'passing "winrt=no" to the SCons command line.'
@@ -789,7 +789,7 @@ elif methods.using_gcc(env):
         if cc_version_major < 9:
             print_error(
                 "Detected GCC version older than 9, which does not fully support "
-                "C++17, or has bugs when compiling Godot. Supported versions are 9 "
+                "C++17, or has bugs when compiling Blazium. Supported versions are 9 "
                 "and later. Use a newer GCC version, or Clang 6 or later by passing "
                 '"use_llvm=yes" to the SCons command line.'
             )
@@ -837,7 +837,7 @@ elif env.msvc:
         # https://github.com/godotengine/godot/pull/94995#issuecomment-2336464574
         print_error(
             "Detected Visual Studio 2019 version older than 16.11, which has bugs "
-            "when compiling Godot. Use a newer VS2019 version, or VS2022+."
+            "when compiling Blazium. Use a newer VS2019 version, or VS2022+."
         )
         Exit(255)
     elif cc_version_major < 16:

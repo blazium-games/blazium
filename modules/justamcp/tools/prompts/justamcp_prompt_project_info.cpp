@@ -45,8 +45,8 @@ String JustAMCPPromptProjectInfo::get_name() const {
 Dictionary JustAMCPPromptProjectInfo::get_prompt() const {
 	Dictionary result;
 	result["name"] = "project_info";
-	result["title"] = "Godot Project Info";
-	result["description"] = "Retrieves the core Godot Project metadata natively.";
+	result["title"] = "Blazium Project Info";
+	result["description"] = "Retrieves the core Blazium Project metadata natively.";
 	result["arguments"] = Array();
 	return result;
 }

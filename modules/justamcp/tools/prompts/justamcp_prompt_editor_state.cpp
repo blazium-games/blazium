@@ -49,7 +49,7 @@ Dictionary JustAMCPPromptEditorState::get_prompt() const {
 	Dictionary result;
 	result["name"] = "editor_state";
 	result["title"] = "Editor UI State";
-	result["description"] = "Provides real-time insight into the actively opened Godot Editor environment.";
+	result["description"] = "Provides real-time insight into the actively opened Blazium Editor environment.";
 
 	Array arguments;
 	Dictionary target_arg;
@@ -64,7 +64,7 @@ Dictionary JustAMCPPromptEditorState::get_prompt() const {
 
 Dictionary JustAMCPPromptEditorState::get_messages(const Dictionary &p_args) {
 	Dictionary result;
-	result["description"] = "Godot Editor Environment State";
+	result["description"] = "Blazium Editor Environment State";
 
 	Array messages;
 	Dictionary msg;

@@ -305,7 +305,7 @@ void TiledTilesetCreator::handle_animation(Array p_frames, int p_tile_id) {
 
 			// Godot 4 requires progression to be either purely horizontal or purely vertical
 			if ((expected_step.x != 0 && expected_step.y != 0) || (expected_step.x == 0 && expected_step.y == 0)) {
-				ERR_PRINT("-- Animated tile " + itos(p_tile_id) + ": Diagonal or non-linear sequences not supported in Godot 4. -> Skipped");
+				ERR_PRINT("-- Animated tile " + itos(p_tile_id) + ": Diagonal or non-linear sequences not supported in Blazium. -> Skipped");
 				return;
 			}
 
@@ -325,7 +325,7 @@ void TiledTilesetCreator::handle_animation(Array p_frames, int p_tile_id) {
 		} else {
 			// Validate subsequent frames follow the same exact Vector2i spacing
 			if (coords != prev_coords + expected_step) {
-				ERR_PRINT("-- Animated tile " + itos(p_tile_id) + ": Succession of tiles not equidistant/supported in Godot 4. -> Skipped");
+				ERR_PRINT("-- Animated tile " + itos(p_tile_id) + ": Succession of tiles not equidistant/supported in Blazium. -> Skipped");
 				return;
 			}
 		}

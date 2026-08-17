@@ -75,15 +75,15 @@ int main(int argc, char *argv[]) {
 	if (!(cpuinfo[2] & (1 << 20))) {
 		printf("A CPU with SSE4.2 instruction set support is required.\n");
 
-		int ret = system("zenity --warning --title \"Godot Engine\" --text \"A CPU with SSE4.2 instruction set support is required.\" 2> /dev/null");
+		int ret = system("zenity --warning --title \"Blazium Engine\" --text \"A CPU with SSE4.2 instruction set support is required.\" 2> /dev/null");
 		if (ret != 0) {
-			ret = system("kdialog --title \"Godot Engine\" --sorry \"A CPU with SSE4.2 instruction set support is required.\" 2> /dev/null");
+			ret = system("kdialog --title \"Blazium Engine\" --sorry \"A CPU with SSE4.2 instruction set support is required.\" 2> /dev/null");
 		}
 		if (ret != 0) {
-			ret = system("Xdialog --title \"Godot Engine\" --msgbox \"A CPU with SSE4.2 instruction set support is required.\" 0 0 2> /dev/null");
+			ret = system("Xdialog --title \"Blazium Engine\" --msgbox \"A CPU with SSE4.2 instruction set support is required.\" 0 0 2> /dev/null");
 		}
 		if (ret != 0) {
-			ret = system("xmessage -center -title \"Godot Engine\" \"A CPU with SSE4.2 instruction set support is required.\" 2> /dev/null");
+			ret = system("xmessage -center -title \"Blazium Engine\" \"A CPU with SSE4.2 instruction set support is required.\" 2> /dev/null");
 		}
 		abort();
 	}
