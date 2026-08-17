@@ -54,8 +54,6 @@
 #include "scene/gui/label.h"
 #include "scene/main/timer.h"
 #include "scene/resources/material.h"
-#include "scene/resources/shader.h"
-#include "scene/resources/surface_tool.h"
 #include "servers/display/display_server.h"
 
 #include "modules/autowork/autowork_main.h"
