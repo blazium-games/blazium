@@ -64,6 +64,13 @@ void JustAMCPServer::_fail_and_remove_task_dispatch_entry(MCPToolQueueEntry *p_e
 	}
 	{
 		MutexLock lock(mcp_tool_queue.mutex);
+		// send_tool_result and this path can race on post-create cancel. The first
+		// claimant sets result_completed and owns memdelete; the loser must not touch
+		// the entry again (its Dictionary/mutex members would already be destroyed).
+		if (p_entry->result_completed) {
+			return;
+		}
+		p_entry->result_completed = true;
 		for (int i = 0; i < mcp_tool_queue.pending.size(); i++) {
 			if (mcp_tool_queue.pending[i] == p_entry) {
 				mcp_tool_queue.pending.remove_at(i);
@@ -219,22 +226,12 @@ void JustAMCPServer::_dispatch_task_augmented_tools_call(const Variant &p_reques
 		}
 
 		if (entry->cancel_requested) {
-			entry->pending_task_dispatch = false;
-			entry->rpc_result = _justamcp_task_dispatch_cancelled_rpc(p_request_id);
-			has_stateless = entry->has_stateless_response;
-			session_id = entry->session_id;
-			sse_connection_id = entry->sse_connection_id;
-			for (int i = 0; i < mcp_tool_queue.pending.size(); i++) {
-				if (mcp_tool_queue.pending[i] == entry) {
-					mcp_tool_queue.pending.remove_at(i);
-					break;
-				}
+			if (entry->result_completed) {
+				entry = nullptr;
+			} else {
+				entry->pending_task_dispatch = false;
+				entry->rpc_result = _justamcp_task_dispatch_cancelled_rpc(p_request_id);
 			}
-			if (mcp_tool_queue.current_write == entry) {
-				mcp_tool_queue.current_write = nullptr;
-			}
-			JustAMCPToolQueueState::remove_readonly_inflight(mcp_tool_queue.current_readonly_inflight, entry);
-			JustAMCPToolQueueState::sync_processing_flag(mcp_tool_queue.current_write, mcp_tool_queue.current_readonly_inflight, mcp_tool_queue.processing);
 		} else {
 			progress_token = entry->progress_token;
 			ttl_ms = entry->pending_task_ttl_ms;
@@ -248,15 +245,7 @@ void JustAMCPServer::_dispatch_task_augmented_tools_call(const Variant &p_reques
 	}
 
 	if (entry->cancel_requested) {
-		if (has_stateless) {
-			entry->signal_and_join_waiters();
-		} else {
-			_send_sse_routed(JSON::stringify(entry->rpc_result), session_id, sse_connection_id);
-		}
-		if (!entry->has_completion_waiters()) {
-			memdelete(entry);
-		}
-		_schedule_process_pending_tools();
+		_fail_and_remove_task_dispatch_entry(entry);
 		return;
 	}
 
@@ -294,6 +283,7 @@ void JustAMCPServer::_dispatch_task_augmented_tools_call(const Variant &p_reques
 	rpc_result["result"] = _build_create_task_result(task_id);
 
 	bool send_sse = false;
+	bool fail_remove_after_create = false;
 	{
 		MutexLock lock(mcp_tool_queue.mutex);
 		MCPToolQueueEntry *still_entry = nullptr;
@@ -303,26 +293,30 @@ void JustAMCPServer::_dispatch_task_augmented_tools_call(const Variant &p_reques
 				break;
 			}
 		}
-		if (!still_entry || still_entry->cancel_requested) {
+		if (!still_entry || still_entry->result_completed || still_entry->cancel_requested) {
 #ifdef TOOLS_ENABLED
 			if (task_manager && !task_id.is_empty()) {
 				task_manager->cancel_task_execution(task_id);
 			}
 #endif
-			if (!still_entry) {
+			if (!still_entry || still_entry->result_completed) {
 				return;
 			}
 			entry->rpc_result = _justamcp_task_dispatch_cancelled_rpc(p_request_id);
-			_fail_and_remove_task_dispatch_entry(entry);
-			return;
+			fail_remove_after_create = true;
+		} else {
+			still_entry->task_id = task_id;
+			still_entry->rpc_result = rpc_result;
+			has_stateless = still_entry->has_stateless_response;
+			session_id = still_entry->session_id;
+			sse_connection_id = still_entry->sse_connection_id;
+			send_sse = !has_stateless;
 		}
+	}
 
-		still_entry->task_id = task_id;
-		still_entry->rpc_result = rpc_result;
-		has_stateless = still_entry->has_stateless_response;
-		session_id = still_entry->session_id;
-		sse_connection_id = still_entry->sse_connection_id;
-		send_sse = !has_stateless;
+	if (fail_remove_after_create) {
+		_fail_and_remove_task_dispatch_entry(entry);
+		return;
 	}
 
 	if (!progress_token.is_empty()) {
