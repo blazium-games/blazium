@@ -30,9 +30,6 @@
 
 package app.blazium.godot.plugin;
 
-import app.blazium.godot.BuildConfig;
-import app.blazium.godot.Godot;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -54,6 +51,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
+
+import app.blazium.godot.BuildConfig;
+import app.blazium.godot.Godot;
 
 /**
  * Base class for Godot Android plugins.

@@ -30,14 +30,14 @@
 
 package app.blazium.godot.gl;
 
-import app.blazium.godot.GodotLib;
-import app.blazium.godot.plugin.GodotPlugin;
-import app.blazium.godot.plugin.GodotPluginRegistry;
-
 import android.util.Log;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
+
+import app.blazium.godot.GodotLib;
+import app.blazium.godot.plugin.GodotPlugin;
+import app.blazium.godot.plugin.GodotPluginRegistry;
 
 /**
  * Godot's GL renderer implementation.
