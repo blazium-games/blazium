@@ -30,9 +30,11 @@ if env_main.editor_build and not env_main["no_editor_splash"]:
         env.Run(main_builders.make_splash_editor),
     )
 
+icon_png_path = "#main/icons/app_icon_" + env.version_info["external_status"] + ".png"
+env_main.Depends("#main/app_icon.gen.h", icon_png_path)
 env_main.CommandNoCache(
     "#main/app_icon.gen.h",
-    "#main/app_icon.png",
+    icon_png_path,
     env.Run(main_builders.make_app_icon),
 )
 

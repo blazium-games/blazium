@@ -53,13 +53,13 @@ Copyright: 2011, Ole Kniemeyer, MAXON, www.maxon.net
  2007-2014, Juan Linietsky, Ariel Manzur
 License: Expat and Zlib
 
-Files: misc/dist/linux/org.godotengine.Godot.appdata.xml
+Files: misc/dist/linux/app.blazium.Blazium.appdata.xml
 Comment: Linux AppStream Metadata File
 Copyright: 2017-2022, Rémi Verschelde
 License: CC0-1.0
 
 Files: misc/logo/*
-Comment: Godot Engine logo
+Comment: Blazium Engine logo
 Copyright: 2017, Andrea Calabró
 License: CC-BY-4.0
 

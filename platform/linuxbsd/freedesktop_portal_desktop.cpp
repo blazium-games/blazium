@@ -811,7 +811,7 @@ bool FreeDesktopPortalDesktop::inhibit(const String &p_xid) {
 
 			append_dbus_dict_string(&arr_iter, "handle_token", token);
 
-			const char *reason = "Running Godot Engine Project";
+			const char *reason = "Running Blazium Engine project";
 			append_dbus_dict_string(&arr_iter, "reason", reason);
 
 			dbus_message_iter_close_container(&iter, &arr_iter);

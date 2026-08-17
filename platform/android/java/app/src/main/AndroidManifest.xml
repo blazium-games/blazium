@@ -29,6 +29,15 @@
             android:enabled="true"
             tools:targetApi="29" />
 
+        <!-- Records the version of the Blazium editor used for building -->
+        <meta-data
+            android:name="app.blazium.editor.version"
+            android:value="${godotEditorVersion}" />
+        <!-- Records the rendering method used by the Blazium engine -->
+        <meta-data
+            android:name="app.blazium.rendering.method"
+            android:value="${godotRenderingMethod}"/>
+
         <activity
             android:name=".GodotApp"
             android:theme="@style/GodotAppSplashTheme"

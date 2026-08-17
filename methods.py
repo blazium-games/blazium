@@ -17,7 +17,7 @@ from typing import Generator, TextIO, cast
 from misc.utility.color import print_error, print_info, print_warning
 from platform_methods import detect_arch
 
-# Get the "Godot" folder name ahead of time
+# Get the "Blazium" folder name ahead of time
 base_folder = Path(__file__).resolve().parent
 
 compiler_version_cache = None
@@ -1024,7 +1024,7 @@ def dump(env):
 #
 # To generate AND build from the command line:
 #   scons vsproj=yes vsproj_gen_only=no
-def generate_vs_project(env, original_args, project_name="godot"):
+def generate_vs_project(env, original_args, project_name="blazium"):
     # Augmented glob_recursive that also fills the dirs argument with traversed directories that have content.
     def glob_recursive_2(pattern, dirs, node="."):
         from SCons import Node

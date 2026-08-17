@@ -320,7 +320,7 @@ def configure(env: "SConsEnvironment"):
     env.Append(LINKFLAGS=["-sENVIRONMENT=web,worker"])
 
     # Wrap the JavaScript support code around a closure named Godot.
-    env.Append(LINKFLAGS=["-sMODULARIZE=1", "-sEXPORT_NAME='Godot'"])
+    env.Append(LINKFLAGS=["-sMODULARIZE=1", "-sEXPORT_NAME='Blazium'"])
 
     # Force long jump mode to 'wasm'
     env.Append(CCFLAGS=["-sSUPPORT_LONGJMP='wasm'"])

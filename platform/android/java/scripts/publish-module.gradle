@@ -19,7 +19,7 @@ afterEvaluate {
                 // Mostly self-explanatory metadata
                 pom {
                     name = DEBUG_PUBLISH_ARTIFACT_ID
-                    description = 'Godot Engine Android Library - (Debug) Template Build'
+                    description = 'Blazium Engine Android Library - (Debug) Template Build'
                     url = 'https://godotengine.org/'
                     licenses {
                         license {
@@ -71,7 +71,7 @@ afterEvaluate {
                 // Mostly self-explanatory metadata
                 pom {
                     name = PUBLISH_ARTIFACT_ID
-                    description = 'Godot Engine Android Library - Template Build'
+                    description = 'Blazium Engine Android Library - Template Build'
                     url = 'https://godotengine.org/'
                     licenses {
                         license {
@@ -123,7 +123,7 @@ afterEvaluate {
                 // Mostly self-explanatory metadata
                 pom {
                     name = TOOLS_PUBLISH_ARTIFACT_ID
-                    description = 'Godot Engine Tools Android Library - Editor Build'
+                    description = 'Blazium Engine Tools Android Library - Editor Build'
                     url = 'https://godotengine.org/'
                     licenses {
                         license {

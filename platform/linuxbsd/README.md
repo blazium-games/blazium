@@ -5,6 +5,11 @@ This folder contains the C++ code for the Linux/*BSD platform port.
 See also [`misc/dist/linux`](/misc/dist/linux) folder for additional files
 used by this platform.
 
+Packagers should install all three desktop files (`app.blazium.Blazium.desktop`,
+`app.blazium.Editor.desktop`, and `app.blazium.ProjectManager.desktop`) so Wayland
+compositors can match each runtime `app_id` to the Blazium icon. The Editor and
+ProjectManager entries use `NoDisplay=true` so only one menu item appears.
+
 ## Documentation
 
 - [Compiling for Linux/*BSD](https://docs.godotengine.org/en/latest/engine_details/development/compiling/compiling_for_linuxbsd.html)

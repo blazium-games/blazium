@@ -129,6 +129,11 @@ android {
             abiFilters export_abi_list
         }
 
+        manifestPlaceholders = [
+            godotEditorVersion: getGodotEditorVersion(),
+            godotRenderingMethod: getGodotRenderingMethod()
+        ]
+
         // Feel free to modify the application id to your own.
         applicationId getExportPackageName()
         versionCode getExportVersionCode()
@@ -298,7 +303,7 @@ task copyAndRenameBinary(type: Copy) {
  */
 task validateJavaVersion {
     if (!JavaVersion.current().isCompatibleWith(versions.javaVersion)) {
-        throw new GradleException("Invalid Java version ${JavaVersion.current()}. Version ${versions.javaVersion} is the minimum supported Java version for Godot gradle builds.")
+        throw new GradleException("Invalid Java version ${JavaVersion.current()}. Version ${versions.javaVersion} is the minimum supported Java version for Blazium gradle builds.")
     }
 }
 

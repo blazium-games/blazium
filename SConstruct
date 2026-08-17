@@ -1209,6 +1209,8 @@ if env.editor_build:
         print_error("Not all modules required by editor builds are enabled.")
         Exit(255)
 
+env.version_info = methods.get_version_info(env.module_version_string)
+
 env["PROGSUFFIX_WRAP"] = suffix + env.module_version_string + ".console" + env["PROGSUFFIX"]
 env["PROGSUFFIX"] = suffix + env.module_version_string + env["PROGSUFFIX"]
 env["OBJSUFFIX"] = suffix + env["OBJSUFFIX"]
