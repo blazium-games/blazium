@@ -31,6 +31,7 @@
 
 #include "justamcp_meta_tools.h"
 
+#include "../justamcp_mcp_spec.h"
 #include "../justamcp_server.h"
 #include "justamcp_resource_executor.h"
 #include "justamcp_tool_executor.h"
@@ -70,6 +71,11 @@ Dictionary JustAMCPMetaTools::execute(JustAMCPToolExecutor *p_executor, const St
 	}
 	if (p_internal_name == "execute_tool") {
 		const String target_tool = p_args.get("tool_name", "");
+		if (!justamcp_is_valid_mcp_tool_name(target_tool) && !justamcp_is_valid_mcp_tool_name(target_tool.begins_with("blazium_") ? target_tool : String("blazium_") + target_tool)) {
+			result["ok"] = false;
+			result["error"] = justamcp_invalid_mcp_tool_name_message(target_tool);
+			return result;
+		}
 		const Dictionary target_args = p_args.get("arguments", Dictionary());
 		bool allow_bypass = false;
 		if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/allow_execute_tool_bypass")) {

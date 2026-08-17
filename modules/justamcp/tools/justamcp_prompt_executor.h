@@ -31,7 +31,6 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "prompts/justamcp_prompt.h"
 
@@ -55,7 +54,7 @@ public:
 
 	Dictionary list_prompts(const String &cursor = "");
 	Dictionary get_prompt(const String &p_name, const Dictionary &p_args);
-	Dictionary complete_prompt(const Dictionary &p_ref, const Dictionary &p_argument);
+	Dictionary complete_prompt(const Dictionary &p_ref, const Dictionary &p_argument, const Dictionary &p_context = Dictionary());
 
 	JustAMCPPromptExecutor();
 	~JustAMCPPromptExecutor();

@@ -450,6 +450,9 @@
 		<member name="blazium/autowork/e2e_enabled" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], the Autowork framework will boot its WebSocket E2E server on startup, enabling orchestration from standard web runners (e.g. Playwright, Jest, Cypress).
 		</member>
+		<member name="blazium/justamcp/accepted_protocol_versions" type="String" setter="" getter="" default="&quot;&quot;">
+			Optional comma-separated allowlist of MCP protocol versions this process will serve. Empty accepts every implemented version ([code]2026-07-28[/code] through [code]2024-11-05[/code]).
+		</member>
 		<member name="blazium/justamcp/allow_execute_tool_bypass" type="bool" setter="" getter="" default="false">
 		</member>
 		<member name="blazium/justamcp/bind_to_localhost_only" type="bool" setter="" getter="" default="true">
@@ -491,8 +494,20 @@
 		<member name="blazium/justamcp/mcp_log_buffer_size" type="int" setter="" getter="" default="500">
 			Maximum buffered MCP [code]notifications/message[/code] entries retained for replay when clients missed SSE.
 		</member>
+		<member name="blazium/justamcp/oauth_authorization_servers" type="String" setter="" getter="" default="&quot;&quot;">
+			Comma-separated authorization server issuer URLs advertised in OAuth Protected Resource Metadata.
+		</member>
+		<member name="blazium/justamcp/oauth_cimd_json" type="String" setter="" getter="" default="&quot;&quot;">
+			Optional pinned Client ID Metadata Document JSON used to validate CIMD [code]client_id[/code] values.
+		</member>
 		<member name="blazium/justamcp/oauth_enabled" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], MCP clients must authenticate with OAuth credentials before calling JustAMCP tools.
+		</member>
+		<member name="blazium/justamcp/oauth_resource" type="String" setter="" getter="" default="&quot;&quot;">
+			Canonical OAuth resource identifier for this MCP server. Empty defaults to the listening [code]/mcp[/code] URL.
+		</member>
+		<member name="blazium/justamcp/oauth_scopes_supported" type="String" setter="" getter="" default="&quot;mcp&quot;">
+			Comma-separated OAuth scopes advertised in Protected Resource Metadata.
 		</member>
 		<member name="blazium/justamcp/override_editor_settings" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], JustAMCP reads server, tool, prompt, and resource toggles from [ProjectSettings] instead of [EditorSettings]. Automatically enabled in headless mode and when using [code]--enable-mcp[/code].
@@ -548,6 +563,9 @@
 		</member>
 		<member name="blazium/justamcp/prompts/project_info" type="String" setter="" getter="">
 			Read-only MCP prompt template registered as [code]project_info[/code]. Description: Retrieves the core Godot Project metadata natively.
+		</member>
+		<member name="blazium/justamcp/protocol_version" type="String" setter="" getter="" default="&quot;2026-07-28&quot;">
+			Advertised latest MCP protocol version. [code]2026-07-28[/code] is the modern/stateless revision; [code]initialize[/code] still negotiates a legacy date ([code]2025-11-25[/code] and earlier) for Cursor and other handshake clients. Override with [code]--mcp-protocol-version[/code].
 		</member>
 		<member name="blazium/justamcp/readonly_worker_concurrency" type="int" setter="" getter="" default="2">
 		</member>
@@ -1772,6 +1790,9 @@
 		<member name="blazium/justamcp/toolsets/Theme" type="bool" setter="" getter="" default="true">
 		</member>
 		<member name="blazium/justamcp/toolsets/TileMap" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/url_elicitation_demo_url" type="String" setter="" getter="" default="&quot;&quot;">
+			Optional URL used by the URL-mode elicitation demo. Empty disables URL elicitation demo requests.
 		</member>
 		<member name="blazium/justamcp/z_mcp_config" type="String" setter="" getter="" default="&quot;&quot;">
 			Advanced JustAMCP JSON configuration managed by the editor plugin UI. Stores supplemental MCP server options not exposed as individual project settings.

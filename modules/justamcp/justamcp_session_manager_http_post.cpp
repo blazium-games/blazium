@@ -162,12 +162,6 @@ bool MCPSessionManager::handle_mcp_post(const Ref<HTTPRequestContext> &p_context
 		return true;
 	}
 
-	String protocol_error;
-	if (!validate_protocol_header(p_context, protocol_error)) {
-		p_response->set_status(400);
-		p_response->set_body(protocol_error);
-		return true;
-	}
 	if (!validate_origin(p_context)) {
 		p_response->set_status(403);
 		return true;
@@ -203,6 +197,26 @@ bool MCPSessionManager::handle_mcp_post(const Ref<HTTPRequestContext> &p_context
 	const bool is_notification = !payload.has("id");
 	const bool is_initialize = method == "initialize";
 
+	String protocol_error;
+	if (!validate_protocol_header(p_context, protocol_error)) {
+		Dictionary err = unsupported_protocol_version_error(first_protocol_version_token(get_header(p_context, "MCP-Protocol-Version")));
+		if (payload.has("id")) {
+			err["id"] = payload["id"];
+		}
+		apply_cors_headers(p_response, p_context);
+		p_response->set_status(400);
+		p_response->set_json(err);
+		return true;
+	}
+
+	String requested_version = first_protocol_version_token(get_header(p_context, "MCP-Protocol-Version"));
+	if (requested_version.is_empty()) {
+		requested_version = protocol_version_from_payload(payload);
+	}
+	if (!is_initialize && !requested_version.is_empty() && !is_legacy_protocol_version(requested_version)) {
+		return _handle_modern_post(p_context, p_response, payload, body, requested_version);
+	}
+
 	String session_id = get_header(p_context, "MCP-Session-Id");
 
 	const bool streamable_client = !session_id.is_empty() || is_initialize || accepts_json_and_sse(p_context);
@@ -234,10 +248,10 @@ bool MCPSessionManager::handle_mcp_post(const Ref<HTTPRequestContext> &p_context
 		session.session_id = _generate_session_id();
 		session.created_usec = Time::get_singleton()->get_ticks_usec();
 		session.last_activity_usec = session.created_usec;
-		session.negotiated_protocol = negotiate_protocol_version(
+		session.negotiated_protocol = negotiate_legacy_initialize(
 				payload.has("params") && Dictionary(payload["params"]).has("protocolVersion")
 						? String(Dictionary(payload["params"])["protocolVersion"])
-						: latest_protocol_version());
+						: latest_legacy_protocol_version());
 		{
 			MutexLock lock(mutex);
 			sessions.insert(session.session_id, session);
@@ -313,6 +327,125 @@ bool MCPSessionManager::handle_mcp_post(const Ref<HTTPRequestContext> &p_context
 			p_response->set_body("");
 		} else {
 			p_response->set_status(200);
+			p_response->set_json(JustAMCPJsonRpcTransport::sanitize_wire_rpc(result));
+		}
+	}
+	return true;
+}
+
+bool MCPSessionManager::_validate_modern_headers(const Ref<HTTPRequestContext> &p_context, const Dictionary &p_payload, String &r_error) {
+	const String method = p_payload.has("method") ? String(p_payload["method"]) : String();
+	const String protocol = first_protocol_version_token(get_header(p_context, "MCP-Protocol-Version"));
+	if (protocol.is_empty()) {
+		r_error = "Missing MCP-Protocol-Version";
+		return false;
+	}
+	if (!is_modern_protocol_version(protocol) || !is_accepted_protocol_version(protocol)) {
+		r_error = "Unsupported MCP-Protocol-Version: " + protocol;
+		return false;
+	}
+	const String mcp_method = decode_mcp_header_value(get_header(p_context, "Mcp-Method"));
+	if (mcp_method.is_empty() || mcp_method != method) {
+		r_error = "Mcp-Method does not match JSON-RPC method";
+		return false;
+	}
+
+	Dictionary params;
+	if (p_payload.has("params") && p_payload["params"].get_type() == Variant::DICTIONARY) {
+		params = p_payload["params"];
+	}
+	if (method == "tools/call" || method == "prompts/get") {
+		const String expected = String(params.get("name", ""));
+		if (decode_mcp_header_value(get_header(p_context, "Mcp-Name")) != expected) {
+			r_error = "Mcp-Name does not match params.name";
+			return false;
+		}
+	} else if (method == "resources/read") {
+		const String expected = String(params.get("uri", ""));
+		if (decode_mcp_header_value(get_header(p_context, "Mcp-Name")) != expected) {
+			r_error = "Mcp-Name does not match params.uri";
+			return false;
+		}
+	}
+
+	const Dictionary headers = p_context->get_headers();
+	for (const Variant &key_var : headers.keys()) {
+		const String key = String(key_var);
+		const String lower = key.to_lower();
+		if (!lower.begins_with("mcp-param-")) {
+			continue;
+		}
+		const int prefix_idx = lower.find("mcp-param-");
+		const String raw_name = key.substr(prefix_idx + 10);
+		Variant expected;
+		if (params.has(raw_name)) {
+			expected = params[raw_name];
+		} else if (params.has(raw_name.to_lower())) {
+			expected = params[raw_name.to_lower()];
+		} else {
+			continue;
+		}
+		if (decode_mcp_header_value(String(headers[key_var])) != String(expected)) {
+			r_error = "Mcp-Param mismatch for " + raw_name;
+			return false;
+		}
+	}
+	return true;
+}
+
+bool MCPSessionManager::_handle_modern_post(const Ref<HTTPRequestContext> &p_context, Ref<HTTPResponse> p_response, const Dictionary &p_payload, const String &p_body, const String &p_requested_version) {
+	const Variant req_id = p_payload.has("id") ? p_payload["id"] : Variant();
+	if (!is_accepted_protocol_version(p_requested_version) || !is_modern_protocol_version(p_requested_version)) {
+		Dictionary err = unsupported_protocol_version_error(p_requested_version);
+		if (req_id.get_type() != Variant::NIL) {
+			err["id"] = req_id;
+		}
+		apply_cors_headers(p_response, p_context);
+		p_response->set_status(400);
+		p_response->set_json(err);
+		return true;
+	}
+
+	String header_error;
+	if (!_validate_modern_headers(p_context, p_payload, header_error)) {
+		apply_cors_headers(p_response, p_context);
+		p_response->set_status(400);
+		p_response->set_json(header_mismatch_error(req_id, header_error));
+		return true;
+	}
+
+	if (owner) {
+		owner->transport_negotiated_protocol = p_requested_version;
+	}
+
+	const String method = p_payload.has("method") ? String(p_payload["method"]) : String();
+	if (method == "subscriptions/listen") {
+		{
+			MutexLock lock(mutex);
+			pending_modern_listen++;
+		}
+		apply_cors_headers(p_response, p_context);
+		p_response->add_header("X-Accel-Buffering", "no");
+		p_response->start_sse();
+		return true;
+	}
+
+	apply_cors_headers(p_response, p_context);
+
+	const int client_id = p_context->get_client_id();
+	if (client_id >= 0 && HTTPServer::get_singleton()) {
+		p_response->hold();
+		owner->call_deferred("_deferred_held_json_rpc", client_id, p_body, String(), p_response);
+		return true;
+	}
+
+	Dictionary result = JustAMCPJsonRpcTransport::handle_json_rpc_parsed(owner, p_payload, p_response, String());
+	if (!p_response->is_sent()) {
+		if (result.is_empty()) {
+			p_response->set_status(202);
+			p_response->set_body("");
+		} else {
+			p_response->set_status(modern_http_status_for_rpc(result));
 			p_response->set_json(JustAMCPJsonRpcTransport::sanitize_wire_rpc(result));
 		}
 	}

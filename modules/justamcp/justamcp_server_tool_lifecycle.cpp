@@ -254,6 +254,24 @@ void JustAMCPServer::_deferred_complete_tool_dict(const Variant &p_request_id, c
 		send_tool_result(p_request_id, false, cancelled, "cancelled");
 		return;
 	}
+	if (result.get("elicitation_required", false)) {
+		Dictionary schema = result.get("elicitation_schema", Dictionary());
+		const String mode = result.get("elicitation_mode", "form");
+		String tool_name;
+		Dictionary args;
+		{
+			MutexLock lock(mcp_tool_queue.mutex);
+			MCPToolQueueEntry *entry = JustAMCPServerRequestLookup::find_entry_by_request_id(
+					mcp_tool_queue.pending, mcp_tool_queue.current_write, mcp_tool_queue.current_readonly_inflight, p_request_id);
+			if (entry) {
+				tool_name = entry->tool_name;
+				args = entry->args;
+			}
+		}
+		hold_tool_for_elicitation(p_request_id, tool_name, args, schema, mode);
+		return;
+	}
+
 	const bool success = result.get("ok", false);
 	if (success) {
 		Dictionary payload = result.duplicate();

@@ -29,7 +29,9 @@
 
 #ifdef TOOLS_ENABLED
 #include "justamcp_prompt.h"
+#include "../../justamcp_mcp_spec.h"
 #include "../justamcp_resource_executor.h"
+#include "core/object/class_db.h"
 
 void JustAMCPPrompt::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_name"), &JustAMCPPrompt::get_name);
@@ -77,8 +79,12 @@ Dictionary JustAMCPPrompt::_make_resource_message(const String &p_uri) {
 	}
 
 	Dictionary content;
-	content["type"] = "resource";
-	content["resource"] = resource;
+	if (justamcp_protocol_supports(justamcp_active_protocol_version(), JUSTAMCP_FEATURE_RESOURCE_LINKS)) {
+		content = justamcp_resource_link_content(String(resource.get("uri", p_uri)), p_uri, String(resource.get("mimeType", "")));
+	} else {
+		content["type"] = "resource";
+		content["resource"] = resource;
+	}
 
 	Dictionary msg;
 	msg["role"] = "user";

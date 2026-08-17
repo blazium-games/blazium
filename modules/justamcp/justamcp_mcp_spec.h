@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  justamcp_json_rpc_router.h                                            */
+/*  justamcp_mcp_spec.h                                                   */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             BLAZIUM ENGINE                             */
@@ -29,32 +29,45 @@
 
 #pragma once
 
-#ifdef TOOLS_ENABLED
-
+#include "core/string/ustring.h"
+#include "core/variant/array.h"
 #include "core/variant/dictionary.h"
 #include "core/variant/variant.h"
 
-class JustAMCPResourceExecutor;
-class JustAMCPTaskManager;
-class JustAMCPPromptExecutor;
-class JustAMCPServer;
-
-class JustAMCPJsonRpcRouter {
-public:
-	static String extract_list_cursor(const Dictionary &p_payload);
-	static Dictionary finalize_list_result(const Dictionary &p_result, const Variant &p_req_id);
-	static Dictionary finalize_action_result(const Dictionary &p_result, const Variant &p_req_id);
-	static Dictionary make_invalid_params(const Variant &p_req_id, const String &p_message);
-	static Dictionary route(const String &p_method, const Dictionary &p_payload, const Variant &p_req_id_var, JustAMCPResourceExecutor *p_resources, JustAMCPTaskManager *p_tasks);
-	static Dictionary route_tools_list(const String &p_cursor, const Variant &p_req_id_var);
-	static Dictionary route_prompts_list(const String &p_cursor, const Variant &p_req_id_var, JustAMCPPromptExecutor *p_prompts);
-	static Dictionary route_prompts_get(const Dictionary &p_payload, const Variant &p_req_id_var, JustAMCPPromptExecutor *p_prompts);
-	static Dictionary route_initialize(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);
-	static Dictionary route_discover(JustAMCPServer *p_server, const Variant &p_req_id_var);
-	static Dictionary route_ping(const Variant &p_req_id_var);
-	static Dictionary route_logging_set_level(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);
-	static Dictionary route_tasks_cancel(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);
-	static Dictionary route_completion_complete(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);
+enum JustAMCPProtocolFeature {
+	JUSTAMCP_FEATURE_COMPLETIONS,
+	JUSTAMCP_FEATURE_JSONRPC_BATCH,
+	JUSTAMCP_FEATURE_ELICITATION_FORM,
+	JUSTAMCP_FEATURE_ELICITATION_URL,
+	JUSTAMCP_FEATURE_STRUCTURED_CONTENT,
+	JUSTAMCP_FEATURE_RESOURCE_LINKS,
+	JUSTAMCP_FEATURE_SERVER_TITLE,
+	JUSTAMCP_FEATURE_ICONS,
+	JUSTAMCP_FEATURE_TASKS_INITIALIZE,
 };
 
-#endif
+int justamcp_protocol_rank(const String &p_version);
+bool justamcp_protocol_at_least(const String &p_version, const String &p_minimum);
+bool justamcp_protocol_supports(const String &p_version, JustAMCPProtocolFeature p_feature);
+String justamcp_active_protocol_version();
+
+// SEP-973: optional icons on tools, prompts, resources, and templates.
+Array justamcp_default_icons();
+void justamcp_attach_icons(Dictionary &p_schema);
+void justamcp_apply_protocol_to_schema(Dictionary &p_schema, const String &p_protocol);
+void justamcp_apply_protocol_to_list_result(Dictionary &p_result, const String &p_protocol);
+
+Dictionary justamcp_resource_link_content(const String &p_uri, const String &p_name = String(), const String &p_mime_type = String());
+
+// SEP-986: tool names are lowercase snake_case, max 64 characters.
+bool justamcp_is_valid_mcp_tool_name(const String &p_name);
+String justamcp_invalid_mcp_tool_name_message(const String &p_name);
+
+// SEP-1034 / SEP-1330: form elicitation schemas and ElicitResult validation.
+Dictionary justamcp_confirm_enum_schema();
+Dictionary justamcp_apply_schema_defaults(const Dictionary &p_schema, const Dictionary &p_content);
+bool justamcp_validate_elicit_content(const Dictionary &p_schema, const Dictionary &p_content, String &r_error);
+bool justamcp_parse_elicit_result(const Dictionary &p_result, String &r_action, Dictionary &r_content, String &r_error);
+bool justamcp_elicit_content_is_confirmed(const Dictionary &p_content);
+
+Dictionary justamcp_url_elicitation_error_rpc(const Variant &p_request_id, const String &p_elicitation_id, const String &p_url, const String &p_message);
