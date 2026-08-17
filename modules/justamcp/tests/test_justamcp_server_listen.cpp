@@ -32,9 +32,11 @@
 #ifdef TESTS_ENABLED
 
 #include "../justamcp_server.h"
+
 #include "core/config/project_settings.h"
-#include "modules/modules_enabled.gen.h"
 #include "tests/test_macros.h"
+
+#include "modules/modules_enabled.gen.h"
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 #include "modules/httpserver/http_server.h"
