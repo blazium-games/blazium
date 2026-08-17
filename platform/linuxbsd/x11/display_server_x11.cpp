@@ -7186,7 +7186,7 @@ DisplayServerX11::DisplayServerX11(const String &p_rendering_driver, DisplayServ
 
 			if (use_prime) {
 				print_line("Found discrete GPU, setting DRI_PRIME=1 to use it.");
-				print_line("Note: Set DRI_PRIME=0 in the environment to disable Godot from using the discrete GPU.");
+				print_line("Note: Set DRI_PRIME=0 in the environment to disable Blazium from using the discrete GPU.");
 				setenv("DRI_PRIME", "1", 1);
 			}
 		}

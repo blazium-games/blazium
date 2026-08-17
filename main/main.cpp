@@ -2174,8 +2174,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 
 		if (FileAccess::exists(old_cwd.path_join(exec_basename + ".pck"))) {
 			error_msg += "\"" + exec_basename + ".pck\" was found in the current working directory. To be able to load a project from the CWD, use the `disable_path_overrides=no` SCons option when compiling Godot.\n";
-		} else if (FileAccess::exists(old_cwd.path_join("project.godot"))) {
-			error_msg += "\"project.godot\" was found in the current working directory. To be able to load a project from the CWD, use the `disable_path_overrides=no` SCons option when compiling Godot.\n";
+		} else if (FileAccess::exists(old_cwd.path_join("project.godot")) || FileAccess::exists(old_cwd.path_join("project.blazium"))) {
+			error_msg += "A project settings file was found in the current working directory. To be able to load a project from the CWD, use the `disable_path_overrides=no` SCons option when compiling Godot.\n";
 		} else {
 			error_msg += "If you've renamed the executable, the associated .pck file should also be renamed to match the executable's name (without the extension).\n";
 		}

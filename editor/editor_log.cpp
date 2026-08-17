@@ -238,7 +238,7 @@ void EditorLog::_meta_clicked(const String &p_meta) {
 				// In official builds it's safe to use specific commit hash, so the line number is more accurate.
 				branch = GODOT_VERSION_HASH;
 			}
-			OS::get_singleton()->shell_open(vformat("https://github.com/godotengine/godot/blob/%s/%s#L%d", branch, path, line + 1));
+			OS::get_singleton()->shell_open(vformat("https://github.com/blazium-games/blazium/blob/%s/%s#L%d", branch, path, line + 1));
 			return;
 		}
 

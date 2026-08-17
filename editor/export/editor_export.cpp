@@ -30,6 +30,7 @@
 
 #include "editor_export.h"
 
+#include "core/config/project_settings.h"
 #include "core/io/config_file.h"
 #include "core/object/callable_mp.h"
 #include "editor/settings/editor_settings.h"
@@ -117,7 +118,7 @@ void EditorExport::_save() {
 	}
 
 	config->save("res://export_presets.cfg");
-	credentials->save("res://.godot/export_credentials.cfg");
+	credentials->save(ProjectSettings::get_singleton()->get_project_data_path().path_join("export_credentials.cfg"));
 }
 
 void EditorExport::save_presets() {
@@ -279,7 +280,7 @@ void EditorExport::load_config() {
 
 	Ref<ConfigFile> credentials;
 	credentials.instantiate();
-	err = credentials->load("res://.godot/export_credentials.cfg");
+	err = credentials->load(ProjectSettings::get_singleton()->get_project_data_path().path_join("export_credentials.cfg"));
 	if (!(err == OK || err == ERR_FILE_NOT_FOUND)) {
 		return;
 	}

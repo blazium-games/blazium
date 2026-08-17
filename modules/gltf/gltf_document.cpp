@@ -2199,7 +2199,7 @@ void GLTFDocument::_parse_image_save_image(Ref<GLTFState> p_state, const Vector<
 	if (Engine::get_singleton()->is_editor_hint() && handling == GLTFState::HandleBinaryImageMode::HANDLE_BINARY_IMAGE_MODE_EXTRACT_TEXTURES) {
 		if (p_state->extract_path.is_empty()) {
 			WARN_PRINT("glTF: Couldn't extract image because the base and extract paths are empty. It will be loaded directly instead, uncompressed.");
-		} else if (p_state->extract_path.begins_with("res://.godot/imported")) {
+		} else if (p_state->extract_path.begins_with(ProjectSettings::get_singleton()->get_imported_files_path()) || p_state->extract_path.begins_with("res://.godot/imported") || p_state->extract_path.begins_with("res://.blazium/imported")) {
 			WARN_PRINT(vformat("glTF: Extract path is in the imported directory. Image index '%d' will be loaded directly, uncompressed.", p_index));
 		} else {
 			if (p_image->get_name().is_empty()) {
@@ -2211,8 +2211,8 @@ void GLTFDocument::_parse_image_save_image(Ref<GLTFState> p_state, const Vector<
 			Vector<uint8_t> img_data = p_image->get_data();
 			Dictionary generator_parameters;
 			String file_path;
-			// If resource_uri is within res:// folder but outside of .godot/imported folder, use it.
-			if (!p_resource_uri.is_empty() && !p_resource_uri.begins_with("res://.godot/imported") && !p_resource_uri.begins_with("res://..")) {
+			// If resource_uri is within res:// folder but outside of the imported cache folder, use it.
+			if (!p_resource_uri.is_empty() && !p_resource_uri.begins_with(ProjectSettings::get_singleton()->get_imported_files_path()) && !p_resource_uri.begins_with("res://.godot/imported") && !p_resource_uri.begins_with("res://.blazium/imported") && !p_resource_uri.begins_with("res://..")) {
 				file_path = p_resource_uri;
 				must_import = true;
 				must_write = !FileAccess::exists(file_path);

@@ -274,4 +274,31 @@ TEST_CASE("[ProjectSettings] get_project_settings_file_name prefers blazium") {
 	DirAccess::remove_absolute(temp_dir);
 }
 
+TEST_CASE("[ProjectSettings] get_project_data_dir_name prefers existing blazium cache") {
+	const String temp_dir = TestUtils::get_temp_path("project_data_dir_dual_name");
+	DirAccess::make_dir_recursive_absolute(temp_dir);
+
+	const String hidden_blazium = temp_dir.path_join(".blazium");
+	const String hidden_godot = temp_dir.path_join(".godot");
+
+	DirAccess::remove_absolute(hidden_blazium);
+	DirAccess::remove_absolute(hidden_godot);
+
+	CHECK_EQ(ProjectSettings::get_project_data_dir_name(temp_dir, ProjectSettings::PROJECT_FILE_BLAZIUM, true), String(".blazium"));
+	CHECK_EQ(ProjectSettings::get_project_data_dir_name(temp_dir, "", true), String(".blazium"));
+	CHECK_EQ(ProjectSettings::get_project_data_dir_name(temp_dir, ProjectSettings::PROJECT_FILE_GODOT, true), String(".godot"));
+
+	DirAccess::make_dir_recursive_absolute(hidden_godot);
+	CHECK_EQ(ProjectSettings::get_project_data_dir_name(temp_dir, ProjectSettings::PROJECT_FILE_BLAZIUM, true), String(".godot"));
+
+	DirAccess::make_dir_recursive_absolute(hidden_blazium);
+	CHECK_EQ(ProjectSettings::get_project_data_dir_name(temp_dir, ProjectSettings::PROJECT_FILE_GODOT, true), String(".blazium"));
+
+	DirAccess::remove_absolute(hidden_blazium);
+	CHECK_EQ(ProjectSettings::get_project_data_dir_name(temp_dir, ProjectSettings::PROJECT_FILE_BLAZIUM, true), String(".godot"));
+
+	DirAccess::remove_absolute(hidden_godot);
+	DirAccess::remove_absolute(temp_dir);
+}
+
 } // namespace TestProjectSettings

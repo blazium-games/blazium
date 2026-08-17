@@ -696,7 +696,7 @@ void ProjectSettingsEditor::_bind_methods() {
 
 ProjectSettingsEditor::ProjectSettingsEditor(EditorData *p_data) {
 	singleton = this;
-	set_title(TTRC("Project Settings (project.godot)"));
+	set_title(vformat(TTR("Project Settings (%s)"), ProjectSettings::get_singleton()->get_project_settings_text_file()));
 	set_flag(FLAG_MAXIMIZE_DISABLED, false);
 	set_clamp_to_embedder(true);
 

@@ -1158,7 +1158,8 @@ void ProjectManager::_minor_project_migrate() {
 			Ref<ConfigFile> layout_file;
 			layout_file.instantiate();
 
-			const String layout_path = migrated_project.path.path_join(".godot/editor/editor_layout.cfg");
+			const String data_dir = ProjectSettings::get_project_data_dir_name(migrated_project.path, ProjectSettings::get_project_settings_file_name(migrated_project.path, false), true);
+			const String layout_path = migrated_project.path.path_join(data_dir).path_join("editor/editor_layout.cfg");
 			Error err = layout_file->load(layout_path);
 			if (err == OK) {
 				for (int i = 0; i < 4; i++) {

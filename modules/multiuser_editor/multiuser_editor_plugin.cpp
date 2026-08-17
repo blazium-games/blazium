@@ -501,7 +501,7 @@ void MultiuserEditorPlugin::_emit_file_sync_actions(const Vector<Dictionary> &p_
 
 void MultiuserEditorPlugin::_update_filesystem_sync_policy() {
 	const PackedStringArray inc = _read_packed_string_array_setting("blazium/multiuser_editor/file_sync/include_patterns", Vector<String>{ "res://*" });
-	const PackedStringArray exc = _read_packed_string_array_setting("blazium/multiuser_editor/file_sync/exclude_patterns", Vector<String>{ ".godot/*", ".git/*", "*.tmp", "*.~lock", ".vscode/*", ".idea/*" });
+	const PackedStringArray exc = _read_packed_string_array_setting("blazium/multiuser_editor/file_sync/exclude_patterns", Vector<String>{ ".blazium/*", ".godot/*", ".git/*", "*.tmp", "*.~lock", ".vscode/*", ".idea/*" });
 	const bool imp = bool(MULTIUSER_GET("blazium/multiuser_editor/file_sync/include_imports", true));
 	const int64_t max_b = int64_t(MULTIUSER_GET("blazium/multiuser_editor/file_sync/max_file_bytes", 67108864));
 	const int64_t chunk_b = int64_t(MULTIUSER_GET("blazium/multiuser_editor/file_sync/chunk_bytes", 262144));
@@ -553,7 +553,7 @@ void MultiuserEditorPlugin::_process_filesystem_diff() {
 	_update_filesystem_sync_policy();
 	const bool inc_imp = bool(MULTIUSER_GET("blazium/multiuser_editor/file_sync/include_imports", true));
 	const PackedStringArray inc = _read_packed_string_array_setting("blazium/multiuser_editor/file_sync/include_patterns", Vector<String>{ "res://*" });
-	const PackedStringArray exc = _read_packed_string_array_setting("blazium/multiuser_editor/file_sync/exclude_patterns", Vector<String>{ ".godot/*", ".git/*", "*.tmp", "*.~lock", ".vscode/*", ".idea/*" });
+	const PackedStringArray exc = _read_packed_string_array_setting("blazium/multiuser_editor/file_sync/exclude_patterns", Vector<String>{ ".blazium/*", ".godot/*", ".git/*", "*.tmp", "*.~lock", ".vscode/*", ".idea/*" });
 	const int64_t max_b = int64_t(MULTIUSER_GET("blazium/multiuser_editor/file_sync/max_file_bytes", 67108864));
 	const int64_t chunk_b = int64_t(MULTIUSER_GET("blazium/multiuser_editor/file_sync/chunk_bytes", 262144));
 
@@ -585,7 +585,7 @@ void MultiuserEditorPlugin::_send_project_snapshot_to_peer(int p_target_net_id) 
 	_update_filesystem_sync_policy();
 	const bool inc_imp = bool(MULTIUSER_GET("blazium/multiuser_editor/file_sync/include_imports", true));
 	const PackedStringArray inc = _read_packed_string_array_setting("blazium/multiuser_editor/file_sync/include_patterns", Vector<String>{ "res://*" });
-	const PackedStringArray exc = _read_packed_string_array_setting("blazium/multiuser_editor/file_sync/exclude_patterns", Vector<String>{ ".godot/*", ".git/*", "*.tmp", "*.~lock", ".vscode/*", ".idea/*" });
+	const PackedStringArray exc = _read_packed_string_array_setting("blazium/multiuser_editor/file_sync/exclude_patterns", Vector<String>{ ".blazium/*", ".godot/*", ".git/*", "*.tmp", "*.~lock", ".vscode/*", ".idea/*" });
 	const int64_t max_b = int64_t(MULTIUSER_GET("blazium/multiuser_editor/file_sync/max_file_bytes", 67108864));
 	const int64_t chunk_b = int64_t(MULTIUSER_GET("blazium/multiuser_editor/file_sync/chunk_bytes", 262144));
 
@@ -1148,7 +1148,7 @@ void MultiuserEditorPlugin::_route_action(int p_sender_net_id, const Dictionary 
 			_update_filesystem_sync_policy();
 			const bool inc_imp = bool(MULTIUSER_GET("blazium/multiuser_editor/file_sync/include_imports", true));
 			const PackedStringArray inc = _read_packed_string_array_setting("blazium/multiuser_editor/file_sync/include_patterns", Vector<String>{ "res://*" });
-			const PackedStringArray exc = _read_packed_string_array_setting("blazium/multiuser_editor/file_sync/exclude_patterns", Vector<String>{ ".godot/*", ".git/*", "*.tmp", "*.~lock", ".vscode/*", ".idea/*" });
+			const PackedStringArray exc = _read_packed_string_array_setting("blazium/multiuser_editor/file_sync/exclude_patterns", Vector<String>{ ".blazium/*", ".godot/*", ".git/*", "*.tmp", "*.~lock", ".vscode/*", ".idea/*" });
 			filesystem_sync.clear_snapshot();
 			filesystem_sync.capture_snapshot_from_res(inc_imp, inc, exc);
 		}
@@ -1632,7 +1632,7 @@ void MultiuserEditorPlugin::_route_action(int p_sender_net_id, const Dictionary 
 			_update_filesystem_sync_policy();
 			const bool inc_imp = bool(MULTIUSER_GET("blazium/multiuser_editor/file_sync/include_imports", true));
 			const PackedStringArray inc = _read_packed_string_array_setting("blazium/multiuser_editor/file_sync/include_patterns", Vector<String>{ "res://*" });
-			const PackedStringArray exc = _read_packed_string_array_setting("blazium/multiuser_editor/file_sync/exclude_patterns", Vector<String>{ ".godot/*", ".git/*", "*.tmp", "*.~lock", ".vscode/*", ".idea/*" });
+			const PackedStringArray exc = _read_packed_string_array_setting("blazium/multiuser_editor/file_sync/exclude_patterns", Vector<String>{ ".blazium/*", ".godot/*", ".git/*", "*.tmp", "*.~lock", ".vscode/*", ".idea/*" });
 			filesystem_sync.clear_snapshot();
 			filesystem_sync.capture_snapshot_from_res(inc_imp, inc, exc);
 		}
@@ -1754,7 +1754,7 @@ void MultiuserEditorPlugin::_route_action(int p_sender_net_id, const Dictionary 
 		} else {
 			const bool inc_imp = bool(MULTIUSER_GET("blazium/multiuser_editor/file_sync/include_imports", true));
 			const PackedStringArray inc = _read_packed_string_array_setting("blazium/multiuser_editor/file_sync/include_patterns", Vector<String>{ "res://*" });
-			const PackedStringArray exc = _read_packed_string_array_setting("blazium/multiuser_editor/file_sync/exclude_patterns", Vector<String>{ ".godot/*", ".git/*", "*.tmp", "*.~lock", ".vscode/*", ".idea/*" });
+			const PackedStringArray exc = _read_packed_string_array_setting("blazium/multiuser_editor/file_sync/exclude_patterns", Vector<String>{ ".blazium/*", ".godot/*", ".git/*", "*.tmp", "*.~lock", ".vscode/*", ".idea/*" });
 			if (!MultiuserEditorFilesystemSync::test_path_matches_policy(filepath, inc, exc, inc_imp)) {
 				_log_cat(LOG_WARN, LOG_FILESYSTEM, "scene_sync: path outside file_sync policy " + filepath);
 			} else {
@@ -4316,7 +4316,7 @@ void MultiuserEditorPlugin::host_session(int p_port, const String &p_password) {
 			_update_filesystem_sync_policy();
 			const bool inc_imp = bool(MULTIUSER_GET("blazium/multiuser_editor/file_sync/include_imports", true));
 			const PackedStringArray inc = _read_packed_string_array_setting("blazium/multiuser_editor/file_sync/include_patterns", Vector<String>{ "res://*" });
-			const PackedStringArray exc = _read_packed_string_array_setting("blazium/multiuser_editor/file_sync/exclude_patterns", Vector<String>{ ".godot/*", ".git/*", "*.tmp", "*.~lock", ".vscode/*", ".idea/*" });
+			const PackedStringArray exc = _read_packed_string_array_setting("blazium/multiuser_editor/file_sync/exclude_patterns", Vector<String>{ ".blazium/*", ".godot/*", ".git/*", "*.tmp", "*.~lock", ".vscode/*", ".idea/*" });
 			filesystem_sync.clear_snapshot();
 			filesystem_sync.capture_snapshot_from_res(inc_imp, inc, exc);
 		}

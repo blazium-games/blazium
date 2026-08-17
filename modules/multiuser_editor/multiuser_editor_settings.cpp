@@ -174,6 +174,7 @@ void multiuser_editor_register_editor_settings() {
 	}
 	{
 		PackedStringArray fs_exc;
+		fs_exc.push_back(".blazium/*");
 		fs_exc.push_back(".godot/*");
 		fs_exc.push_back(".git/*");
 		fs_exc.push_back("*.tmp");

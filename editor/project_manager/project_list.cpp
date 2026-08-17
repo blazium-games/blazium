@@ -821,7 +821,8 @@ ProjectList::Item ProjectList::load_project_data(const String &p_path, bool p_fa
 	String icon = cf->get_value("application", "config/icon", "");
 	if (icon.begins_with("uid://")) {
 		Error err;
-		Ref<FileAccess> file = FileAccess::open(p_path.path_join(".godot/uid_cache.bin"), FileAccess::READ, &err);
+		const String data_dir = ProjectSettings::get_project_data_dir_name(p_path, ProjectSettings::get_project_settings_file_name(p_path, false), true);
+		Ref<FileAccess> file = FileAccess::open(p_path.path_join(data_dir).path_join("uid_cache.bin"), FileAccess::READ, &err);
 		if (err == OK) {
 			icon = ResourceUID::get_path_from_cache(file, icon);
 			if (icon.is_empty()) {

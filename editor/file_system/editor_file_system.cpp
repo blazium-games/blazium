@@ -3491,10 +3491,10 @@ bool EditorFileSystem::_should_skip_directory(const String &p_path) {
 		return true;
 	}
 
-	if (FileAccess::exists(p_path.path_join("project.godot"))) {
+	if (FileAccess::exists(p_path.path_join(ProjectSettings::PROJECT_FILE_BLAZIUM)) || FileAccess::exists(p_path.path_join(ProjectSettings::PROJECT_FILE_GODOT))) {
 		// Skip if another project inside this.
 		if (EditorFileSystem::get_singleton() == nullptr || EditorFileSystem::get_singleton()->first_scan) {
-			WARN_PRINT_ONCE(vformat("Detected another project.godot at %s. The folder will be ignored.", p_path));
+			WARN_PRINT_ONCE(vformat("Detected another project settings file at %s. The folder will be ignored.", p_path));
 		}
 		return true;
 	}

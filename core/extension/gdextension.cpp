@@ -473,10 +473,10 @@ void GDExtension::_register_extension_class_internal(GDExtensionClassLibraryPtr 
 	if (self->is_reloading && self->extension_classes.has(class_name)) {
 		extension = &self->extension_classes[class_name];
 		if (!parent_extension && parent_class_name != extension->gdextension.parent_class_name) {
-			ERR_FAIL_MSG(vformat("GDExtension class '%s' cannot change parent type from '%s' to '%s' on hot reload. Restart Godot for this change to take effect.", class_name, extension->gdextension.parent_class_name, parent_class_name));
+			ERR_FAIL_MSG(vformat("GDExtension class '%s' cannot change parent type from '%s' to '%s' on hot reload. Restart Blazium for this change to take effect.", class_name, extension->gdextension.parent_class_name, parent_class_name));
 		}
 		if (extension->gdextension.is_runtime != is_runtime) {
-			ERR_PRINT(vformat("GDExtension class '%s' cannot change to/from runtime class on hot reload. Restart Godot for this change to take effect.", class_name));
+			ERR_PRINT(vformat("GDExtension class '%s' cannot change to/from runtime class on hot reload. Restart Blazium for this change to take effect.", class_name));
 			is_runtime = extension->gdextension.is_runtime;
 		}
 		extension->is_reloading = false;

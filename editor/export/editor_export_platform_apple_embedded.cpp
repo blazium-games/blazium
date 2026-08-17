@@ -1221,7 +1221,7 @@ Error EditorExportPlatformAppleEmbedded::_copy_asset(const Ref<EditorExportPrese
 		return ERR_FILE_NOT_FOUND;
 	}
 
-	String base_dir = p_asset.get_base_dir().replace("res://", "").replace(".godot/mono/temp/bin/", "");
+	String base_dir = p_asset.get_base_dir().replace("res://", "").replace(".blazium/mono/temp/bin/", "").replace(".godot/mono/temp/bin/", "");
 	String asset = p_asset.ends_with("/") ? p_asset.left(-1) : p_asset;
 	String destination_dir;
 	String destination;

@@ -70,7 +70,7 @@ String ProjectSettings::get_resource_path() const {
 	return resource_path;
 }
 
-// This returns paths like "res://.godot/imported".
+// This returns paths like "res://.blazium/imported" or "res://.godot/imported".
 String ProjectSettings::get_imported_files_path() const {
 	return get_project_data_path().path_join("imported");
 }
@@ -96,6 +96,26 @@ String ProjectSettings::get_project_settings_file_name(const String &p_dir, bool
 bool ProjectSettings::is_project_settings_file(const String &p_path) {
 	const String file = p_path.get_file();
 	return file == PROJECT_FILE_BLAZIUM || file == PROJECT_FILE_GODOT;
+}
+
+String ProjectSettings::get_project_data_dir_name(const String &p_dir, const String &p_settings_file, bool p_hidden) {
+	const String prefix = p_hidden ? "." : "";
+	const String blazium_name = prefix + PROJECT_DATA_DIR_BLAZIUM_SUFFIX;
+	const String godot_name = prefix + PROJECT_DATA_DIR_NAME_SUFFIX;
+
+	if (!p_dir.is_empty()) {
+		if (DirAccess::dir_exists_absolute(p_dir.path_join(blazium_name))) {
+			return blazium_name;
+		}
+		if (DirAccess::dir_exists_absolute(p_dir.path_join(godot_name))) {
+			return godot_name;
+		}
+	}
+
+	if (p_settings_file == PROJECT_FILE_GODOT) {
+		return godot_name;
+	}
+	return blazium_name;
 }
 
 #ifdef TOOLS_ENABLED
@@ -906,7 +926,7 @@ Error ProjectSettings::setup(const String &p_path, const String &p_main_pack, bo
 
 	// Updating the default value after the project settings have loaded.
 	bool use_hidden_directory = GLOBAL_GET("application/config/use_hidden_project_data_directory");
-	project_data_dir_name = (use_hidden_directory ? "." : "") + PROJECT_DATA_DIR_NAME_SUFFIX;
+	project_data_dir_name = get_project_data_dir_name(resource_path, project_settings_text_file, use_hidden_directory);
 
 	// Using GLOBAL_GET on every block for compressing can be slow, so assigning here.
 	Compression::zstd_long_distance_matching = GLOBAL_GET("compression/formats/zstd/long_distance_matching");

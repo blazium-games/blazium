@@ -949,7 +949,7 @@
 			Standard I/O device is invalid. No data can be received from or sent to these standard I/O devices.
 		</constant>
 		<constant name="STD_HANDLE_CONSOLE" value="1" enum="StdHandleType">
-			Standard I/O device is a console. This typically occurs when Godot is run from a terminal with no redirection. This is also used for all standard I/O devices when running Godot from the editor, at least on desktop platforms.
+			Standard I/O device is a console. This typically occurs when Blazium is run from a terminal with no redirection. This is also used for all standard I/O devices when running Blazium from the editor, at least on desktop platforms.
 		</constant>
 		<constant name="STD_HANDLE_FILE" value="2" enum="StdHandleType">
 			Standard I/O device is a regular file. This typically occurs with redirection from a terminal, e.g. [code]godot &gt; stdout.txt[/code], [code]godot &lt; stdin.txt[/code] or [code]godot &gt; stdout_stderr.txt 2&gt;&amp;1[/code].

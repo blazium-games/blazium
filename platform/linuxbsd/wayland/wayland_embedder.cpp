@@ -642,7 +642,7 @@ void WaylandEmbedder::socket_error(int p_socket, uint32_t p_object_id, uint32_t 
 	LocalVector<union wl_argument> args;
 	args.push_back(wl_arg_object(p_object_id));
 	args.push_back(wl_arg_uint(p_code));
-	args.push_back(wl_arg_string(vformat("[Godot Embedder] %s", p_message).utf8().get_data()));
+	args.push_back(wl_arg_string(vformat("[Blazium Embedder] %s", p_message).utf8().get_data()));
 
 	send_wayland_event(p_socket, DISPLAY_ID, wl_display_interface, WL_DISPLAY_ERROR, args);
 
