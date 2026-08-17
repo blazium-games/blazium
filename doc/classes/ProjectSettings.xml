@@ -324,7 +324,7 @@
 		<member name="application/crash_reporter/build_channel" type="String" setter="" getter="" default="&quot;release&quot;">
 			Build channel used for server filtering ([code]dev[/code], [code]beta[/code], [code]release[/code], or custom).
 		</member>
-		<member name="application/crash_reporter/console_message" type="String" setter="" getter="" default="&quot;Crash dump created at: {path}\nPlease attach this file when reporting issues.&quot;">
+		<member name="application/crash_reporter/console_message" type="String" setter="" getter="" default="&quot;Crash dump created at: {path} Please attach this file when reporting issues.&quot;">
 			Printed after a dump is written. [code]{path}[/code] is replaced with the dump path.
 		</member>
 		<member name="application/crash_reporter/contact_url" type="String" setter="" getter="" default="&quot;&quot;">

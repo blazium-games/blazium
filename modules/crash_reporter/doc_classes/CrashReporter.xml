@@ -78,7 +78,7 @@
 			</description>
 		</method>
 		<method name="get_pending_reports" qualifiers="const">
-			<return type="Array" />
+			<return type="Dictionary[]" />
 			<description>
 				Returns pending crash reports as dictionaries with [code]id[/code], [code]dump_path[/code], [code]metadata[/code], and [code]state[/code].
 			</description>
@@ -102,7 +102,7 @@
 			</description>
 		</method>
 		<method name="get_upload_mode" qualifiers="const">
-			<return type="int" enum="CrashReporter.UploadMode" />
+			<return type="int" />
 			<description>
 				Returns the resolved upload mode.
 			</description>
