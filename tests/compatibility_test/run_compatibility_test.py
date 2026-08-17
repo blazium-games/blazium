@@ -19,23 +19,20 @@ UTILITY_FUNCTIONS_FILE = PROJECT_PATH.joinpath("utility_functions.txt")
 
 def download_gdextension_api(reftag: str) -> dict[str, Any]:
     url = f"https://raw.githubusercontent.com/godotengine/godot-cpp/godot-{reftag}/gdextension/extension_api.json"
-    last_error: Exception | None = None
     for attempt in range(8):
         try:
             with urllib.request.urlopen(url, timeout=60) as f:
                 gdextension_api_json: dict[str, Any] = json.load(f)
             return gdextension_api_json
         except urllib.error.HTTPError as e:
-            last_error = e
             if e.code not in (429, 503) or attempt == 7:
                 raise
             time.sleep(5)
-        except urllib.error.URLError as e:
-            last_error = e
+        except urllib.error.URLError:
             if attempt == 7:
                 raise
             time.sleep(5)
-    raise last_error
+    raise RuntimeError(f"Failed to download GDExtension API for {reftag} after 8 attempts.")
 
 
 def remove_test_data_files():
