@@ -84,6 +84,7 @@ void JustAMCPServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_deferred_held_json_rpc", "client_id", "body", "session_id", "response"), &JustAMCPServer::_deferred_held_json_rpc);
 	ClassDB::bind_method(D_METHOD("_deferred_sse_replay", "connection_id", "last_event_id"), &JustAMCPServer::_deferred_sse_replay);
 	ClassDB::bind_method(D_METHOD("_emit_log_notification_deferred", "level", "logger", "data"), &JustAMCPServer::_emit_log_notification_deferred);
+	ClassDB::bind_method(D_METHOD("_append_engine_log", "is_error", "text"), &JustAMCPServer::_append_engine_log);
 	ClassDB::bind_method(D_METHOD("send_log_message", "level", "logger", "data"), &JustAMCPServer::send_log_message, DEFVAL(Variant()));
 	ClassDB::bind_method(D_METHOD("get_session_roots", "session_id"), &JustAMCPServer::get_session_roots);
 	ClassDB::bind_method(D_METHOD("_on_request_cancelled", "request_id", "reason", "caller_session_id"), &JustAMCPServer::_on_request_cancelled, DEFVAL(String()));
@@ -218,19 +219,23 @@ void JustAMCPServer::test_handle_oauth_authorization_server(Ref<HTTPRequestConte
 }
 #endif
 
+void JustAMCPServer::_append_engine_log(bool p_error, const String &p_string) {
+	MutexLock lock(engine_logs_mutex);
+	const String prefix = p_error ? "[ERROR] " : "";
+	engine_logs.push_back((prefix + p_string).strip_escapes());
+	if (engine_logs.size() > 500) {
+		engine_logs.remove_at(0);
+	}
+}
+
 void JustAMCPServer::_print_handler_callback(void *p_user_data, const String &p_string, bool p_error, bool p_rich) {
 	JustAMCPServer *server = static_cast<JustAMCPServer *>(p_user_data);
 	if (!server) {
 		return;
 	}
-	{
-		MutexLock lock(server->engine_logs_mutex);
-		String prefix = p_error ? "[ERROR] " : "";
-		server->engine_logs.push_back((prefix + p_string).strip_escapes());
-		if (server->engine_logs.size() > 500) {
-			server->engine_logs.remove_at(0);
-		}
-	}
+	// __print_line holds _global_lock() while invoking handlers. Do not take
+	// engine_logs_mutex here or TSAN reports a lock-order inversion with DirAccess.
+	server->call_deferred(SNAME("_append_engine_log"), p_error, p_string);
 
 	if (!server->server_started) {
 		return;

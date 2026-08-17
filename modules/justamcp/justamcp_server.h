@@ -139,6 +139,7 @@ private:
 	Mutex mcp_notification_log_mutex;
 	PrintHandlerList print_handler;
 	static void _print_handler_callback(void *p_user_data, const String &p_string, bool p_error, bool p_rich);
+	void _append_engine_log(bool p_error, const String &p_string);
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 	void _handle_legacy_sse_connect(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
