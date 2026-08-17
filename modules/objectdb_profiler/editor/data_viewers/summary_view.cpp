@@ -65,7 +65,7 @@ SnapshotSummaryView::SnapshotSummaryView() {
 	VBoxContainer *explainer_lines = memnew(VBoxContainer);
 	explainer_text->add_child(explainer_lines);
 	Label *l1 = memnew(Label(TTRC("Press 'Take ObjectDB Snapshot' to snapshot the ObjectDB.")));
-	Label *l2 = memnew(Label(TTRC("Memory in Godot is either owned natively by the engine or owned by the ObjectDB.")));
+	Label *l2 = memnew(Label(TTRC("Memory in Blazium is either owned natively by the engine or owned by the ObjectDB.")));
 	Label *l3 = memnew(Label(TTRC("ObjectDB Snapshots capture only memory owned by the ObjectDB.")));
 	l1->set_horizontal_alignment(HorizontalAlignment::HORIZONTAL_ALIGNMENT_CENTER);
 	l2->set_horizontal_alignment(HorizontalAlignment::HORIZONTAL_ALIGNMENT_CENTER);

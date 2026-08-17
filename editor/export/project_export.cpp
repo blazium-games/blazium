@@ -1820,7 +1820,7 @@ ProjectExportDialog::ProjectExportDialog() {
 	patch_vb->add_margin_child(TTRC("Base Packs:"), patches, true);
 
 	patch_dialog = memnew(EditorFileDialog);
-	patch_dialog->add_filter("*.pck", TTRC("Godot Project Pack"));
+	patch_dialog->add_filter("*.pck", TTRC("Blazium Project Pack"));
 	patch_dialog->add_filter("*.aab", TTRC("Android App Bundle"));
 	patch_dialog->add_filter("*.apk", TTRC("Android Package"));
 	patch_dialog->set_access(EditorFileDialog::ACCESS_FILESYSTEM);
@@ -1968,11 +1968,11 @@ ProjectExportDialog::ProjectExportDialog() {
 
 	set_cancel_button_text(TTRC("Close"));
 	set_ok_button_text(TTRC("Export PCK/ZIP..."));
-	get_ok_button()->set_tooltip_text(TTRC("Export the project resources as a PCK or ZIP package. This is not a playable build, only the project data without a Godot executable."));
+	get_ok_button()->set_tooltip_text(TTRC("Export the project resources as a PCK or ZIP package. This is not a playable build, only the project data without a Blazium executable."));
 	get_ok_button()->set_disabled(true);
 
 	export_button = add_button(TTRC("Export Project..."), !DisplayServer::get_singleton()->get_swap_cancel_ok(), "export");
-	export_button->set_tooltip_text(TTRC("Export the project as a playable build (Godot executable and project data) for the selected preset."));
+	export_button->set_tooltip_text(TTRC("Export the project as a playable build (Blazium executable and project data) for the selected preset."));
 	export_button->connect(SceneStringName(pressed), callable_mp(this, &ProjectExportDialog::_export_project));
 	// Disable initially before we select a valid preset.
 	export_button->set_disabled(true);
@@ -1992,7 +1992,7 @@ ProjectExportDialog::ProjectExportDialog() {
 
 	export_pck_zip = memnew(EditorFileDialog);
 	export_pck_zip->add_filter("*.zip", TTRC("ZIP File"));
-	export_pck_zip->add_filter("*.pck", TTRC("Godot Project Pack"));
+	export_pck_zip->add_filter("*.pck", TTRC("Blazium Project Pack"));
 	export_pck_zip->set_access(EditorFileDialog::ACCESS_FILESYSTEM);
 	export_pck_zip->set_file_mode(EditorFileDialog::FILE_MODE_SAVE_FILE);
 	add_child(export_pck_zip);

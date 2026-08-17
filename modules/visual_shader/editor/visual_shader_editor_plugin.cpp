@@ -6770,7 +6770,7 @@ VisualShaderEditor::VisualShaderEditor() {
 	site_search->set_theme_type_variation(SceneStringName(FlatButton));
 	site_search->connect(SceneStringName(pressed), callable_mp(this, &VisualShaderEditor::_help_open));
 	site_search->set_text(TTR("Online Docs"));
-	site_search->set_tooltip_text(TTR("Open Godot online documentation."));
+	site_search->set_tooltip_text(TTR("Open Blazium online documentation."));
 	toolbar_hflow->add_child(site_search);
 
 	VSeparator *separator = memnew(VSeparator);

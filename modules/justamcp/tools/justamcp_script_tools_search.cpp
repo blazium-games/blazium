@@ -231,14 +231,14 @@ Dictionary JustAMCPScriptTools::_validate_script(const Dictionary &p_params) {
 
 	Object *obj = ClassDB::instantiate("GDScript");
 	if (!obj) {
-		return MCP_INTERNAL("Godot Engine is not compiled with GDScript support");
+		return MCP_INTERNAL("Blazium Engine is not compiled with GDScript support");
 	}
 	Ref<Script> ref_script = Object::cast_to<Script>(obj);
 	if (ref_script.is_null()) {
 		if (obj) {
 			memdelete(obj);
 		}
-		return MCP_INTERNAL("Godot Engine is not compiled with GDScript support or cast failed.");
+		return MCP_INTERNAL("Blazium Engine is not compiled with GDScript support or cast failed.");
 	}
 
 	ref_script->set_source_code(source_code);

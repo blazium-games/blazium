@@ -192,7 +192,7 @@ TEST_CASE("[RegEx] Empty pattern") {
 }
 
 TEST_CASE("[RegEx] Complex Grouping") {
-	const String test = "https://docs.godotengine.org/en/latest/contributing/";
+	const String test = "https://docs.blazium.app/contributing/";
 
 	// Ignored protocol in grouping.
 	RegEx re("^(?:https?://)([a-zA-Z]{2,4})\\.([a-zA-Z][a-zA-Z0-9_\\-]{2,64})\\.([a-zA-Z]{2,4})");
@@ -201,11 +201,11 @@ TEST_CASE("[RegEx] Complex Grouping") {
 
 	CHECK(expr->get_group_count() == 3);
 
-	CHECK(expr->get_string(0) == "https://docs.godotengine.org");
+	CHECK(expr->get_string(0) == "https://docs.blazium.app");
 
 	CHECK(expr->get_string(1) == "docs");
-	CHECK(expr->get_string(2) == "godotengine");
-	CHECK(expr->get_string(3) == "org");
+	CHECK(expr->get_string(2) == "blazium");
+	CHECK(expr->get_string(3) == "app");
 }
 
 TEST_CASE("[RegEx] Number Expression") {

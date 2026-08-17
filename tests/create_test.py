@@ -96,7 +96,7 @@ TEST_CASE("[{name_pascal_case}] Example test case") {{
     print("Test file created:")
     print(os.path.abspath(file_path))
     print(
-        "Don't forget to add special tags to the test case if needed, see https://docs.godotengine.org/en/latest/contributing/development/core_and_modules/unit_testing.html#special-tags-in-test-case-names for more information."
+        "Don't forget to add special tags to the test case if needed, see https://docs.blazium.app/en/latest/contributing/development/core_and_modules/unit_testing.html#special-tags-in-test-case-names for more information."
     )
 
 

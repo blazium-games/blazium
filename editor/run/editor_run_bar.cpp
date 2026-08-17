@@ -582,7 +582,7 @@ EditorRunBar::EditorRunBar() {
 		recovery_mode_popup->set_min_size(Size2(550, 70) * EDSCALE);
 		recovery_mode_popup->set_title(TTR("Recovery Mode"));
 		recovery_mode_popup->set_text(
-				TTR("Godot opened the project in Recovery Mode, which is a special mode that can help recover projects that crash the engine upon initialization. The following features have been temporarily disabled:") +
+				TTR("Blazium opened the project in Recovery Mode, which is a special mode that can help recover projects that crash the engine upon initialization. The following features have been temporarily disabled:") +
 				String::utf8("\n\n•  ") + TTR("Tool scripts") +
 				String::utf8("\n•  ") + TTR("Editor plugins") +
 				String::utf8("\n•  ") + TTR("GDExtension addons") +

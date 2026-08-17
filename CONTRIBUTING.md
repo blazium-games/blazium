@@ -129,9 +129,9 @@ scripting APIs, you **must** update the class reference to document those.
 This is to ensure the documentation coverage doesn't decrease as contributions
 are merged.
 
-[Update documentation XML files](https://docs.godotengine.org/en/stable/contributing/documentation/updating_the_class_reference.html)
+[Update documentation XML files](https://docs.blazium.app/en/stable/contributing/documentation/updating_the_class_reference.html)
 Follow the style guide described in the
-[Documentation writing guidelines](https://docs.godotengine.org/en/stable/contributing/documentation/docs_writing_guidelines.html).
+[Documentation writing guidelines](https://docs.blazium.app/en/stable/contributing/documentation/docs_writing_guidelines.html).
 
 If your pull request modifies parts of the code in a non-obvious way, make sure
 to add comments in the code as well. This helps other people understand the
@@ -157,14 +157,14 @@ applicable.
 Feel free to contribute standalone pull requests to add new tests or improve
 existing tests as well.
 
-See [Unit testing](https://docs.godotengine.org/en/stable/contributing/development/core_and_modules/unit_testing.html)
+See [Unit testing](https://docs.blazium.app/en/stable/contributing/development/core_and_modules/unit_testing.html)
 for information on writing tests in Blazium's C++ codebase.
 
 ## Contributing to Blazium translations
 
 In the future you can contribute to Blazium translations, a link will be provide in the future for this.
 
-Please refer to Blazium's [editor and documentation localization guidelines](https://docs.godotengine.org/en/stable/contributing/documentation/editor_and_docs_localization.html)
+Please refer to Blazium's [editor and documentation localization guidelines](https://docs.blazium.app/en/stable/contributing/documentation/editor_and_docs_localization.html)
 
 ## Communicating with developers
 
