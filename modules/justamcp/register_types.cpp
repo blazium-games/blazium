@@ -131,6 +131,7 @@
 #include "tests/test_justamcp_schema_cache_concurrent.cpp"
 #include "tests/test_justamcp_schema_dirty_per_cache_key.cpp"
 #include "tests/test_justamcp_semantic_tools_async.cpp"
+#include "tests/test_justamcp_server_listen.cpp"
 #include "tests/test_justamcp_server_queue_lifecycle.cpp"
 #include "tests/test_justamcp_session_manager.cpp"
 #include "tests/test_justamcp_session_survives_stream_close.cpp"

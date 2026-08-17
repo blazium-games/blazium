@@ -135,6 +135,10 @@ bool JustAMCPServer::test_get_tool_queue_processing() const {
 	return mcp_tool_queue.processing;
 }
 
+void JustAMCPServer::test_start_server() {
+	_start_server_internal(true);
+}
+
 void JustAMCPServer::test_stop_server() {
 	_stop_server();
 }
@@ -344,14 +348,18 @@ JustAMCPServer::~JustAMCPServer() {
 
 void JustAMCPServer::_notification(int p_what) {
 	switch (p_what) {
+		case NOTIFICATION_ENTER_TREE: {
+			_setup_settings();
+			_start_server();
+		} break;
 		case NOTIFICATION_READY: {
 			_setup_settings();
 #ifdef TOOLS_ENABLED
-			if (EditorSettings::get_singleton()) {
+			if (EditorSettings::get_singleton() && !EditorSettings::get_singleton()->is_connected("settings_changed", callable_mp(this, &JustAMCPServer::_on_settings_changed))) {
 				EditorSettings::get_singleton()->connect("settings_changed", callable_mp(this, &JustAMCPServer::_on_settings_changed));
 			}
 #endif
-			if (ProjectSettings::get_singleton()) {
+			if (ProjectSettings::get_singleton() && !ProjectSettings::get_singleton()->is_connected("settings_changed", callable_mp(this, &JustAMCPServer::_on_settings_changed))) {
 				ProjectSettings::get_singleton()->connect("settings_changed", callable_mp(this, &JustAMCPServer::_on_settings_changed));
 			}
 			_start_server();
@@ -423,17 +431,26 @@ void JustAMCPServer::_setup_settings() {
 #endif
 }
 
+void JustAMCPServer::start_listening() {
+	_start_server();
+}
+
 void JustAMCPServer::_start_server() {
+	_start_server_internal(false);
+}
+
+void JustAMCPServer::_start_server_internal(bool p_ignore_cmdline_block) {
 	if (server_started) {
 		return;
 	}
 
 	const List<String> &args = OS::get_singleton()->get_cmdline_args();
-	if (!_justamcp_headless_project_server_requested()) {
+	if (!p_ignore_cmdline_block && !_justamcp_headless_project_server_requested()) {
 		for (const String &arg : args) {
 			if (arg == "--test" || arg == "--tests" || arg.begins_with("--aw-") ||
 					arg == "--help" || arg == "-h" || arg == "/?" || arg == "--version" ||
 					arg == "--check-only" || arg.begins_with("--export")) {
+				print_line("JustAMCP: Server not started (cmdline " + arg + " skips MCP).");
 				return;
 			}
 		}
@@ -526,6 +543,7 @@ void JustAMCPServer::_start_server() {
 	}
 
 	if (!enabled) {
+		print_line("JustAMCP: Server not started (disabled; pass --enable-mcp or set blazium/justamcp/server_enabled).");
 		return;
 	}
 
@@ -544,56 +562,73 @@ void JustAMCPServer::_start_server() {
 	}
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
-	if (HTTPServer::get_singleton()) {
-		if (!HTTPServer::get_singleton()->is_listening()) {
-			String bind_address = bind_to_localhost ? "127.0.0.1" : "*";
-			HTTPServer::get_singleton()->listen(port, bind_address, false);
-		}
-
-		HTTPServer::get_singleton()->set_cors_enabled(true);
-		{
-			const String allowed_origin = String(GLOBAL_GET("blazium/justamcp/streamable_http_allowed_origin"));
-			const String cors_origin = justamcp_compute_startup_cors_origin(bind_to_localhost, oauth_enabled, allowed_origin);
-			if (!bind_to_localhost && cors_origin.is_empty()) {
-				WARN_PRINT("JustAMCP: bind_to_localhost_only is false without OAuth or streamable_http_allowed_origin; CORS Access-Control-Allow-Origin will not be set to *.");
-			}
-			HTTPServer::get_singleton()->set_cors_origin(cors_origin);
-		}
-
-		HTTPServer::get_singleton()->register_route("GET", "/sse", callable_mp(this, &JustAMCPServer::_handle_legacy_sse_connect));
-		HTTPServer::get_singleton()->register_route("POST", "/sse", callable_mp(this, &JustAMCPServer::_handle_legacy_sse_connect));
-		HTTPServer::get_singleton()->register_route("OPTIONS", "/sse", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
-		HTTPServer::get_singleton()->register_route("POST", "/message", callable_mp(this, &JustAMCPServer::_handle_message_post));
-		HTTPServer::get_singleton()->register_route("OPTIONS", "/message", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
-		HTTPServer::get_singleton()->register_route("GET", "/mcp", callable_mp(this, &JustAMCPServer::_handle_mcp_get));
-		HTTPServer::get_singleton()->register_route("POST", "/mcp", callable_mp(this, &JustAMCPServer::_handle_mcp_post));
-		HTTPServer::get_singleton()->register_route("DELETE", "/mcp", callable_mp(this, &JustAMCPServer::_handle_mcp_delete));
-		HTTPServer::get_singleton()->register_route("OPTIONS", "/mcp", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
-		HTTPServer::get_singleton()->register_route("GET", "/.well-known/oauth-protected-resource", callable_mp(this, &JustAMCPServer::_handle_oauth_protected_resource));
-		HTTPServer::get_singleton()->register_route("GET", "/.well-known/oauth-protected-resource/mcp", callable_mp(this, &JustAMCPServer::_handle_oauth_protected_resource));
-		HTTPServer::get_singleton()->register_route("GET", "/.well-known/oauth-authorization-server", callable_mp(this, &JustAMCPServer::_handle_oauth_authorization_server));
-		HTTPServer::get_singleton()->register_route("GET", "/.well-known/openid-configuration", callable_mp(this, &JustAMCPServer::_handle_oauth_authorization_server));
-		HTTPServer::get_singleton()->register_route("OPTIONS", "/.well-known/oauth-protected-resource", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
-		HTTPServer::get_singleton()->register_route("OPTIONS", "/.well-known/oauth-protected-resource/mcp", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
-		HTTPServer::get_singleton()->register_route("OPTIONS", "/.well-known/oauth-authorization-server", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
-		HTTPServer::get_singleton()->register_route("OPTIONS", "/.well-known/openid-configuration", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
-
-		if (!HTTPServer::get_singleton()->is_connected("sse_connection_opened", callable_mp(this, &JustAMCPServer::_on_sse_connection_opened))) {
-			HTTPServer::get_singleton()->connect("sse_connection_opened", callable_mp(this, &JustAMCPServer::_on_sse_connection_opened));
-		}
-		if (!HTTPServer::get_singleton()->is_connected("sse_connection_closed", callable_mp(this, &JustAMCPServer::_on_sse_connection_closed))) {
-			HTTPServer::get_singleton()->connect("sse_connection_closed", callable_mp(this, &JustAMCPServer::_on_sse_connection_closed));
-		}
-
-		server_started = true;
-		active_listening_port = port;
-#ifdef TOOLS_ENABLED
-		_ensure_headless_tool_executor();
-		JustAMCPToolSchemaCache::get_schemas(false, false, false, false);
-#endif
-		print_line("JustAMCP: Server Activated on port " + itos(port));
-		emit_signal("server_status_changed", true);
+	if (!HTTPServer::get_singleton()) {
+		ERR_PRINT("JustAMCP: HTTPServer singleton is missing; cannot start MCP server.");
+		return;
 	}
+
+	if (!HTTPServer::get_singleton()->is_listening()) {
+		String bind_address = bind_to_localhost ? "127.0.0.1" : "*";
+		Error listen_err = OK;
+#ifdef TESTS_ENABLED
+		if (test_forced_listen_error != OK) {
+			listen_err = test_forced_listen_error;
+		} else
+#endif
+		{
+			listen_err = HTTPServer::get_singleton()->listen(port, bind_address, false);
+		}
+		if (listen_err != OK) {
+			ERR_PRINT("JustAMCP: Failed to listen on port " + itos(port) + " (error " + itos(listen_err) + ").");
+			return;
+		}
+	} else {
+		print_line("JustAMCP: HTTPServer already listening; registering MCP routes on the existing socket.");
+	}
+
+	HTTPServer::get_singleton()->set_cors_enabled(true);
+	{
+		const String allowed_origin = String(GLOBAL_GET("blazium/justamcp/streamable_http_allowed_origin"));
+		const String cors_origin = justamcp_compute_startup_cors_origin(bind_to_localhost, oauth_enabled, allowed_origin);
+		if (!bind_to_localhost && cors_origin.is_empty()) {
+			WARN_PRINT("JustAMCP: bind_to_localhost_only is false without OAuth or streamable_http_allowed_origin; CORS Access-Control-Allow-Origin will not be set to *.");
+		}
+		HTTPServer::get_singleton()->set_cors_origin(cors_origin);
+	}
+
+	HTTPServer::get_singleton()->register_route("GET", "/sse", callable_mp(this, &JustAMCPServer::_handle_legacy_sse_connect));
+	HTTPServer::get_singleton()->register_route("POST", "/sse", callable_mp(this, &JustAMCPServer::_handle_legacy_sse_connect));
+	HTTPServer::get_singleton()->register_route("OPTIONS", "/sse", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
+	HTTPServer::get_singleton()->register_route("POST", "/message", callable_mp(this, &JustAMCPServer::_handle_message_post));
+	HTTPServer::get_singleton()->register_route("OPTIONS", "/message", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
+	HTTPServer::get_singleton()->register_route("GET", "/mcp", callable_mp(this, &JustAMCPServer::_handle_mcp_get));
+	HTTPServer::get_singleton()->register_route("POST", "/mcp", callable_mp(this, &JustAMCPServer::_handle_mcp_post));
+	HTTPServer::get_singleton()->register_route("DELETE", "/mcp", callable_mp(this, &JustAMCPServer::_handle_mcp_delete));
+	HTTPServer::get_singleton()->register_route("OPTIONS", "/mcp", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
+	HTTPServer::get_singleton()->register_route("GET", "/.well-known/oauth-protected-resource", callable_mp(this, &JustAMCPServer::_handle_oauth_protected_resource));
+	HTTPServer::get_singleton()->register_route("GET", "/.well-known/oauth-protected-resource/mcp", callable_mp(this, &JustAMCPServer::_handle_oauth_protected_resource));
+	HTTPServer::get_singleton()->register_route("GET", "/.well-known/oauth-authorization-server", callable_mp(this, &JustAMCPServer::_handle_oauth_authorization_server));
+	HTTPServer::get_singleton()->register_route("GET", "/.well-known/openid-configuration", callable_mp(this, &JustAMCPServer::_handle_oauth_authorization_server));
+	HTTPServer::get_singleton()->register_route("OPTIONS", "/.well-known/oauth-protected-resource", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
+	HTTPServer::get_singleton()->register_route("OPTIONS", "/.well-known/oauth-protected-resource/mcp", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
+	HTTPServer::get_singleton()->register_route("OPTIONS", "/.well-known/oauth-authorization-server", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
+	HTTPServer::get_singleton()->register_route("OPTIONS", "/.well-known/openid-configuration", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
+
+	if (!HTTPServer::get_singleton()->is_connected("sse_connection_opened", callable_mp(this, &JustAMCPServer::_on_sse_connection_opened))) {
+		HTTPServer::get_singleton()->connect("sse_connection_opened", callable_mp(this, &JustAMCPServer::_on_sse_connection_opened));
+	}
+	if (!HTTPServer::get_singleton()->is_connected("sse_connection_closed", callable_mp(this, &JustAMCPServer::_on_sse_connection_closed))) {
+		HTTPServer::get_singleton()->connect("sse_connection_closed", callable_mp(this, &JustAMCPServer::_on_sse_connection_closed));
+	}
+
+	server_started = true;
+	active_listening_port = port;
+	print_line("JustAMCP: Server Activated on port " + itos(port));
+	emit_signal("server_status_changed", true);
+#ifdef TOOLS_ENABLED
+	_ensure_headless_tool_executor();
+	JustAMCPToolSchemaCache::get_schemas(false, false, false, false);
+#endif
 #else
 	ERR_PRINT("HTTPServer module is not enabled! JustAMCP requires it to act as an MCP server.");
 #endif

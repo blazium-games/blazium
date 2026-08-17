@@ -93,6 +93,7 @@ private:
 	mutable Mutex completed_tool_request_mutex;
 #ifdef TESTS_ENABLED
 	mutable Dictionary test_last_send_tool_result;
+	Error test_forced_listen_error = OK;
 #endif
 	String minimum_log_level = "info";
 	Mutex minimum_log_level_mutex;
@@ -126,6 +127,7 @@ private:
 
 	void _setup_settings();
 	void _start_server();
+	void _start_server_internal(bool p_ignore_cmdline_block);
 	void _stop_server();
 	void _on_settings_changed();
 	int _resolve_listening_port_from_settings() const;
@@ -235,6 +237,8 @@ public:
 	MCPToolQueueEntry *test_enqueue_tool_request(const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args, Dictionary &r_queue_full_error);
 	void test_set_in_flight_entries(MCPToolQueueEntry *p_write, MCPToolQueueEntry *p_readonly);
 	bool test_get_tool_queue_processing() const;
+	void test_start_server();
+	void test_set_forced_listen_error(Error p_error) { test_forced_listen_error = p_error; }
 	void test_stop_server();
 	void test_clear_tool_queue();
 	MCPToolQueueEntry *test_get_in_flight_write() const;
@@ -261,6 +265,7 @@ public:
 	void test_handle_oauth_authorization_server(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
 #endif
 
+	void start_listening();
 	bool is_server_started() const { return server_started; }
 	int get_listening_port() const { return active_listening_port; }
 	int get_pending_tool_queue_size();
