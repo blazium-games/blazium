@@ -928,6 +928,22 @@ Error ProjectSettings::setup(const String &p_path, const String &p_main_pack, bo
 	bool use_hidden_directory = GLOBAL_GET("application/config/use_hidden_project_data_directory");
 	project_data_dir_name = get_project_data_dir_name(resource_path, project_settings_text_file, use_hidden_directory);
 
+	// --main-pack has no on-disk project folder, so the settings-file heuristic
+	// defaults to .blazium even when the exporter packed .godot/uid_cache.bin
+	// (Godot-compat projects). Prefer whichever UID cache actually exists in res://.
+	if (using_datapack) {
+		const String prefix = use_hidden_directory ? "." : "";
+		const String blazium_name = prefix + PROJECT_DATA_DIR_BLAZIUM_SUFFIX;
+		const String godot_name = prefix + PROJECT_DATA_DIR_NAME_SUFFIX;
+		if (!FileAccess::exists(get_project_data_path().path_join("uid_cache.bin"))) {
+			if (FileAccess::exists(String("res://") + blazium_name + "/uid_cache.bin")) {
+				project_data_dir_name = blazium_name;
+			} else if (FileAccess::exists(String("res://") + godot_name + "/uid_cache.bin")) {
+				project_data_dir_name = godot_name;
+			}
+		}
+	}
+
 	// Using GLOBAL_GET on every block for compressing can be slow, so assigning here.
 	Compression::zstd_long_distance_matching = GLOBAL_GET("compression/formats/zstd/long_distance_matching");
 	Compression::zstd_level = GLOBAL_GET("compression/formats/zstd/compression_level");
