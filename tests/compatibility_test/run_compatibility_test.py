@@ -6,6 +6,8 @@ import json
 import os
 import pathlib
 import subprocess
+import time
+import urllib.error
 import urllib.request
 from typing import Any
 
@@ -16,11 +18,24 @@ UTILITY_FUNCTIONS_FILE = PROJECT_PATH.joinpath("utility_functions.txt")
 
 
 def download_gdextension_api(reftag: str) -> dict[str, Any]:
-    with urllib.request.urlopen(
-        f"https://raw.githubusercontent.com/godotengine/godot-cpp/godot-{reftag}/gdextension/extension_api.json"
-    ) as f:
-        gdextension_api_json: dict[str, Any] = json.load(f)
-    return gdextension_api_json
+    url = f"https://raw.githubusercontent.com/godotengine/godot-cpp/godot-{reftag}/gdextension/extension_api.json"
+    last_error: Exception | None = None
+    for attempt in range(8):
+        try:
+            with urllib.request.urlopen(url, timeout=60) as f:
+                gdextension_api_json: dict[str, Any] = json.load(f)
+            return gdextension_api_json
+        except urllib.error.HTTPError as e:
+            last_error = e
+            if e.code not in (429, 503) or attempt == 7:
+                raise
+            time.sleep(5)
+        except urllib.error.URLError as e:
+            last_error = e
+            if attempt == 7:
+                raise
+            time.sleep(5)
+    raise last_error
 
 
 def remove_test_data_files():
