@@ -210,7 +210,7 @@
 			<description>
 				Returns a [PackedStringArray] containing filenames of the directory contents, excluding directories. The array is sorted alphabetically.
 				Affected by [member include_hidden].
-				[b]Note:[/b] When used on a [code]res://[/code] path in an exported project, only the files actually included in the PCK at the given folder level are returned. In practice, this means that since imported resources are stored in a top-level [code].godot/[/code] folder, only paths to [code]*.gd[/code] and [code]*.import[/code] files are returned (plus a few files such as [code]project.godot[/code] or [code]project.binary[/code] and the project icon). In an exported project, the list of returned files will also vary depending on whether [member ProjectSettings.editor/export/convert_text_resources_to_binary] is [code]true[/code].
+				[b]Note:[/b] When used on a [code]res://[/code] path in an exported project, only the files actually included in the PCK at the given folder level are returned. In practice, this means that since imported resources are stored in a top-level [code].blazium/[/code] folder (or [code].godot/[/code] for legacy projects), only paths to [code]*.gd[/code] and [code]*.import[/code] files are returned (plus a few files such as [code]project.blazium[/code], [code]project.godot[/code] or [code]project.binary[/code] and the project icon). In an exported project, the list of returned files will also vary depending on whether [member ProjectSettings.editor/export/convert_text_resources_to_binary] is [code]true[/code].
 			</description>
 		</method>
 		<method name="get_files_at" qualifiers="static">
@@ -219,7 +219,7 @@
 			<description>
 				Returns a [PackedStringArray] containing filenames of the directory contents, excluding directories, at the given [param path]. The array is sorted alphabetically.
 				Use [method get_files] if you want more control of what gets included.
-				[b]Note:[/b] When used on a [code]res://[/code] path in an exported project, only the files included in the PCK at the given folder level are returned. In practice, this means that since imported resources are stored in a top-level [code].godot/[/code] folder, only paths to [code].gd[/code] and [code].import[/code] files are returned (plus a few other files, such as [code]project.godot[/code] or [code]project.binary[/code] and the project icon). In an exported project, the list of returned files will also vary depending on [member ProjectSettings.editor/export/convert_text_resources_to_binary].
+				[b]Note:[/b] When used on a [code]res://[/code] path in an exported project, only the files included in the PCK at the given folder level are returned. In practice, this means that since imported resources are stored in a top-level [code].blazium/[/code] folder (or [code].godot/[/code] for legacy projects), only paths to [code].gd[/code] and [code].import[/code] files are returned (plus a few other files, such as [code]project.blazium[/code], [code]project.godot[/code] or [code]project.binary[/code] and the project icon). In an exported project, the list of returned files will also vary depending on [member ProjectSettings.editor/export/convert_text_resources_to_binary].
 			</description>
 		</method>
 		<method name="get_filesystem_type" qualifiers="const">

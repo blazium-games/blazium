@@ -632,7 +632,7 @@
 			[b]Note:[/b] Can be used to set an image to be shown at the bottom of the splash screen.
 		</member>
 		<member name="splash_screen/disable_godot_boot_splash" type="bool" setter="" getter="">
-			If [code]true[/code], Godot's boot splash will not be shown, and the system boot splash will remain visible for a longer time, until the mainloop starts.
+			If [code]true[/code], Blazium's boot splash will not be shown, and the system boot splash will remain visible for a longer time, until the mainloop starts.
 		</member>
 		<member name="splash_screen/icon" type="String" setter="" getter="">
 			System splash screen icon file. If left empty, it will fall back to [member EditorExportPlatformAndroid.launcher_icons/adaptive_foreground_432x432]. See [url=https://developer.android.com/develop/ui/views/launch/splash-screen#dimensions]splash-screen dimensions[/url].

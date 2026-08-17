@@ -134,7 +134,7 @@
 			Lightmap baking failed as the lightmap data resource is embedded in a foreign resource.
 		</constant>
 		<constant name="BAKE_ERROR_NO_LIGHTMAPPER" value="3" enum="BakeError">
-			Lightmap baking failed as there is no lightmapper available in this Godot build.
+			Lightmap baking failed as there is no lightmapper available in this Blazium build.
 		</constant>
 		<constant name="BAKE_ERROR_NO_SAVE_PATH" value="4" enum="BakeError">
 			Lightmap baking failed as the [LightmapGIData] save path isn't configured in the resource.

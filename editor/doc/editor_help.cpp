@@ -76,7 +76,7 @@
 
 #include "modules/regex/regex.h"
 
-#define CONTRIBUTE_URL "https://contributing.godotengine.org/en/latest/documentation/class_reference.html"
+#define CONTRIBUTE_URL "https://docs.blazium.app/contributing/documentation/class_reference.html"
 
 #ifdef MODULE_MONO_ENABLED
 // Sync with the types mentioned in https://docs.godotengine.org/en/stable/tutorials/scripting/c_sharp/c_sharp_differences.html

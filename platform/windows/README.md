@@ -7,9 +7,9 @@ used by this platform.
 
 ## Documentation
 
-- [Compiling for Windows](https://docs.godotengine.org/en/latest/engine_details/development/compiling/compiling_for_windows.html)
+- [Compiling for Windows](https://docs.blazium.app/engine_details/development/compiling/compiling_for_windows.html)
   - Instructions on building this platform port from source.
-- [Exporting for Windows](https://docs.godotengine.org/en/latest/tutorials/export/exporting_for_windows.html)
+- [Exporting for Windows](https://docs.blazium.app/tutorials/export/exporting_for_windows.html)
   - Instructions on using the compiled export templates to export a project.
-- [Changing application icon for Windows](https://docs.godotengine.org/en/latest/tutorials/export/changing_application_icon_for_windows.html)
+- [Changing application icon for Windows](https://docs.blazium.app/tutorials/export/changing_application_icon_for_windows.html)
   - Instructions on using a custom icon for the exported project executable.

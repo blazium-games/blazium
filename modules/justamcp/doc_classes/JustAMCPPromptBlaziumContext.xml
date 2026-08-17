@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="JustAMCPPromptBlaziumContext" inherits="JustAMCPPrompt" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
-		Provides a built-in prompt with Blazium and Godot engine context.
+		Provides a built-in prompt with Blazium engine context.
 	</brief_description>
 	<description>
 		A [JustAMCPPrompt] implementation that returns version, module, and engine-environment context for MCP clients. Use it for a lightweight server status check. For substantial work, prefer [code]blazium_project_intake[/code], which embeds richer project, scene, selection, and guide resources.

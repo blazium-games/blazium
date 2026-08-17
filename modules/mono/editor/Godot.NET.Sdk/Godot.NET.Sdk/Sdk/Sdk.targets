@@ -37,7 +37,7 @@
     <PackageReference Include="BlaziumSharpEditor" IsImplicitlyDefined="true" Version="$(PackageVersion_GodotSharp)" Condition=" '$(Configuration)' == 'Debug' " />
   </ItemGroup>
   <Target Name="CheckGodotDotNetReferences" BeforeTargets="Build" Condition=" '$(EnableGodotDotNetPreview)' != 'true' ">
-    <Error Text="The project or one of its dependencies references Godot .NET packages which are incompatible with the active Godot C# bindings. The active C# bindings is GodotSharp." Condition="$([System.String]::Copy('%(Reference.Identity)').Contains('Godot.Bindings.dll'))" />
+    <Error Text="The project or one of its dependencies references Godot .NET packages which are incompatible with the active Blazium C# bindings. The active C# bindings is GodotSharp." Condition="$([System.String]::Copy('%(Reference.Identity)').Contains('Godot.Bindings.dll'))" />
   </Target>
 
   <!-- Godot .NET references -->
@@ -45,7 +45,7 @@
     <PackageReference Include="Godot" IsImplicitlyDefined="true" Version="$(PackageVersion_GodotDotNet)" />
   </ItemGroup>
   <Target Name="CheckGodotSharpReferences" BeforeTargets="Build" Condition=" '$(EnableGodotDotNetPreview)' == 'true' ">
-    <Error Text="The project or one of its dependencies references GodotSharp packages which is incompatible with the active Godot C# bindings. The active C# bindings is Godot .NET." Condition="$([System.String]::Copy('%(Reference.Identity)').Contains('GodotSharp.dll'))" />
+    <Error Text="The project or one of its dependencies references GodotSharp packages which is incompatible with the active Blazium C# bindings. The active C# bindings is Godot .NET." Condition="$([System.String]::Copy('%(Reference.Identity)').Contains('GodotSharp.dll'))" />
   </Target>
 
   <!-- iOS-specific build targets -->

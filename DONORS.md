@@ -1,14 +1,15 @@
 # Donors to the Blazium Engine project
 
-Godot Engine is a non-profit project developed by a community of voluntary
-contributors, as well as occasional paid contributors thanks to the financial
-support of generous donors.
+Blazium Engine is a community project developed by voluntary contributors,
+as well as occasional paid contributors thanks to the financial support of
+generous donors.
 
-The ways to donate to the project, as well as details on how the funds are
-used, are described on [Godot's website](https://fund.godotengine.org).
+Ways to support Blazium are described on [blazium.app](https://blazium.app).
+The Godot donor list below is the upstream donor source, documented on
+[Godot's website](https://fund.godotengine.org).
 
 The following is a list of the current monthly donors, who will have their
-generous deed immortalized in the next stable release of Godot Engine.
+generous deed immortalized in the next stable release.
 
 ## Blazium Sponsors
 

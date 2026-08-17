@@ -567,7 +567,7 @@ void ProjectManager::_open_selected_projects() {
 	const HashSet<String> &selected_list = project_list->get_selected_project_keys();
 	for (const String &path : selected_list) {
 		String conf_name = ProjectSettings::get_project_settings_file_name(path);
-		String conf = path.path_join(conf_name.is_empty() ? String(ProjectSettings::PROJECT_FILE_GODOT) : conf_name);
+		String conf = path.path_join(conf_name.is_empty() ? String(ProjectSettings::PROJECT_FILE_BLAZIUM) : conf_name);
 
 		if (!FileAccess::exists(conf)) {
 			loading_label->hide();
@@ -692,7 +692,7 @@ void ProjectManager::_open_selected_projects_check_warnings() {
 				ask_update_backup->show();
 				migration_guide_button->show();
 				version_convert_feature = feature;
-				warning_message += vformat(TTR("Warning: This project was last edited in Godot %s. Opening will change it to Blazium using Godot's version #%s.\n\n"), Variant(feature), Variant(GODOT_VERSION_BRANCH));
+				warning_message += vformat(TTR("Warning: This project was last edited with engine version %s. Opening will change it to Blazium %s.\n\n"), Variant(feature), Variant(GODOT_VERSION_BRANCH));
 				unsupported_features.remove_at(i);
 				i--;
 			}
@@ -1060,7 +1060,7 @@ void ProjectManager::_apply_project_tags() {
 
 	const String selected_path = project_list->get_selected_projects()[0].path;
 	const String conf_name = ProjectSettings::get_project_settings_file_name(selected_path);
-	const String project_godot = selected_path.path_join(conf_name.is_empty() ? String(ProjectSettings::PROJECT_FILE_GODOT) : conf_name);
+	const String project_godot = selected_path.path_join(conf_name.is_empty() ? String(ProjectSettings::PROJECT_FILE_BLAZIUM) : conf_name);
 	ProjectSettings *cfg = memnew(ProjectSettings(project_godot));
 	if (!cfg->is_project_loaded()) {
 		memdelete(cfg);

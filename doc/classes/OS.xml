@@ -580,10 +580,10 @@
 		<method name="get_user_data_dir" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the absolute directory path where user data is written (the [code]user://[/code] directory in Godot). The path depends on the project name and [member ProjectSettings.application/config/use_custom_user_dir].
-				- On Windows, this is [code]%AppData%\Godot\app_userdata\[project_name][/code], or [code]%AppData%\[custom_name][/code] if [code]use_custom_user_dir[/code] is set. [code]%AppData%[/code] expands to [code]%UserProfile%\AppData\Roaming[/code].
-				- On macOS, this is [code]~/Library/Application Support/Godot/app_userdata/[project_name][/code], or [code]~/Library/Application Support/[custom_name][/code] if [code]use_custom_user_dir[/code] is set.
-				- On Linux and BSD, this is [code]~/.local/share/godot/app_userdata/[project_name][/code], or [code]~/.local/share/[custom_name][/code] if [code]use_custom_user_dir[/code] is set.
+				Returns the absolute directory path where user data is written (the [code]user://[/code] directory in Blazium). The path depends on the project name and [member ProjectSettings.application/config/use_custom_user_dir].
+				- On Windows, this is [code]%AppData%\Blazium\app_userdata\[project_name][/code], or [code]%AppData%\[custom_name][/code] if [code]use_custom_user_dir[/code] is set. [code]%AppData%[/code] expands to [code]%UserProfile%\AppData\Roaming[/code].
+				- On macOS, this is [code]~/Library/Application Support/Blazium/app_userdata/[project_name][/code], or [code]~/Library/Application Support/[custom_name][/code] if [code]use_custom_user_dir[/code] is set.
+				- On Linux and BSD, this is [code]~/.local/share/blazium/app_userdata/[project_name][/code], or [code]~/.local/share/[custom_name][/code] if [code]use_custom_user_dir[/code] is set.
 				- On Android and iOS, this is a sandboxed directory in either internal or external storage, depending on the user's configuration.
 				- On Web, this is a virtual directory managed by the browser.
 				If the project name is empty, [code][project_name][/code] falls back to [code][unnamed project][/code].
@@ -857,7 +857,7 @@
 			<param index="0" name="enabled" type="bool" />
 			<description>
 				If [param enabled] is [code]true[/code], when opening a file for writing, a temporary file is used in its place. When closed, it is automatically applied to the target file.
-				This can useful when files may be opened by other applications, such as antiviruses, text editors, or even the Godot editor itself.
+				This can useful when files may be opened by other applications, such as antiviruses, text editors, or even the Blazium editor itself.
 			</description>
 		</method>
 		<method name="shell_open">

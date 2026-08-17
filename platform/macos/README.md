@@ -13,9 +13,9 @@ packaging macOS export templates.
 
 ## Documentation
 
-- [Compiling for macOS](https://docs.godotengine.org/en/latest/engine_details/development/compiling/compiling_for_macos.html)
+- [Compiling for macOS](https://docs.blazium.app/engine_details/development/compiling/compiling_for_macos.html)
   - Instructions on building this platform port from source.
-- [Exporting for macOS](https://docs.godotengine.org/en/latest/tutorials/export/exporting_for_macos.html)
+- [Exporting for macOS](https://docs.blazium.app/tutorials/export/exporting_for_macos.html)
   - Instructions on using the compiled export templates to export a project.
-- [Running Blazium apps on macOS](https://docs.godotengine.org/en/latest/tutorials/export/running_on_macos.html)
+- [Running Blazium apps on macOS](https://docs.blazium.app/tutorials/export/running_on_macos.html)
   - Instructions on running Blazium projects on macOS.

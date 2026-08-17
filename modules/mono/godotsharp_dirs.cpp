@@ -179,6 +179,9 @@ private:
 		String appname_safe = Path::get_csharp_project_name();
 		String packed_path = ProjectSettings::get_singleton()->get_project_data_path().path_join("mono/publish/" + arch);
 		if (!DirAccess::exists(packed_path)) {
+			packed_path = "res://.blazium/mono/publish/" + arch;
+		}
+		if (!DirAccess::exists(packed_path)) {
 			packed_path = "res://.godot/mono/publish/" + arch;
 		}
 #ifdef ANDROID_ENABLED

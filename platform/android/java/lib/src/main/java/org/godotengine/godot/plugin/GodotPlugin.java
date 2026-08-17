@@ -60,10 +60,10 @@ import javax.microedition.khronos.opengles.GL10;
  * <p>
  * A Godot Android plugin is an Android library with the following requirements:
  * <p>
- * - The plugin must have a dependency on the Godot Android library: `implementation "org.godotengine:godot:<godotLibVersion>"`
+ * - The plugin must have a dependency on the Godot Android library: `implementation "app.blazium:godot:<godotLibVersion>"`
  * <p>
  * - The plugin must include a <meta-data> tag in its Android manifest with the following format:
- * <meta-data android:name="org.godotengine.plugin.v2.[PluginName]" android:value="[plugin.init.ClassFullName]" />
+ * <meta-data android:name="app.blazium.plugin.v2.[PluginName]" android:value="[plugin.init.ClassFullName]" />
  * <p>
  * Where:
  * <p>

@@ -104,7 +104,7 @@ Dictionary JustAMCPPromptBlaziumShaderExpert::get_messages(const Dictionary &p_a
 	text += String("NORMAL_MAP (vec3), SPECULAR (float)\n\n");
 
 	text += String("## Required Output\n");
-	text += String("1. The complete .gdshader file ready to paste into Godot's shader editor.\n");
+	text += String("1. The complete .gdshader file ready to paste into Blazium's shader editor.\n");
 	text += String("2. All uniform variables listed with their types, hints, and default values.\n");
 	text += String("3. Usage instructions: which node to attach the material to and any required texture inputs.");
 

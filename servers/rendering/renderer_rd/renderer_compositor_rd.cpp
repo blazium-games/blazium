@@ -353,6 +353,10 @@ RendererCompositorRD::RendererCompositorRD() {
 		String shader_cache_res_dir = ProjectSettings::get_singleton()->get_project_data_path().path_join("shader_cache");
 		Ref<DirAccess> res_da = DirAccess::open(shader_cache_res_dir);
 		if (res_da.is_null()) {
+			shader_cache_res_dir = "res://.blazium/shader_cache";
+			res_da = DirAccess::open(shader_cache_res_dir);
+		}
+		if (res_da.is_null()) {
 			shader_cache_res_dir = "res://.godot/shader_cache";
 			res_da = DirAccess::open(shader_cache_res_dir);
 		}

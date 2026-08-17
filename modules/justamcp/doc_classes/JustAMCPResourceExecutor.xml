@@ -8,7 +8,7 @@
 		[codeblock]
 		var resources = JustAMCPResourceExecutor.new()
 		var templates = resources.list_resource_templates()
-		var project_file = resources.read_resource("res://project.godot")
+		var project_file = resources.read_resource("res://project.blazium")
 		print(templates)
 		print(project_file)
 		[/codeblock]
