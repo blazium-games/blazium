@@ -341,6 +341,11 @@ Comment: jpeg-compressor
 Copyright: 2012, Rich Geldreich
 License: public-domain or Apache-2.0
 
+Files: thirdparty/breakpad/*
+Comment: Breakpad (DaemonEngine fork, client sources)
+Copyright: 2006, Google Inc.
+License: BSD-3-clause
+
 Files: thirdparty/libbacktrace/*
 Comment: libbacktrace
 Copyright: 2012-2021, Free Software Foundation, Inc.

@@ -36,6 +36,10 @@
 #include "core/version.h"
 #include "main/main.h"
 
+#ifdef USE_BREAKPAD
+#include "modules/crash_reporter/breakpad_linuxbsd_windows.h"
+#endif
+
 #ifdef CRASH_HANDLER_EXCEPTION
 
 #include <cxxabi.h>
@@ -138,6 +142,10 @@ extern void CrashHandlerException(int signal) {
 		std::_Exit(0);
 	}
 
+#ifdef USE_BREAKPAD
+	breakpad_write_minidump();
+#endif
+
 	String msg;
 	const ProjectSettings *proj_settings = ProjectSettings::get_singleton();
 	if (proj_settings) {
@@ -191,6 +199,7 @@ CrashHandler::CrashHandler() {
 }
 
 CrashHandler::~CrashHandler() {
+	disable();
 }
 
 void CrashHandler::disable() {
@@ -203,6 +212,9 @@ void CrashHandler::disable() {
 	signal(SIGFPE, nullptr);
 	signal(SIGILL, nullptr);
 #endif
+#ifdef USE_BREAKPAD
+	disable_breakpad();
+#endif
 
 	disabled = true;
 }
@@ -212,5 +224,8 @@ void CrashHandler::initialize() {
 	signal(SIGSEGV, CrashHandlerException);
 	signal(SIGFPE, CrashHandlerException);
 	signal(SIGILL, CrashHandlerException);
+#endif
+#ifdef USE_BREAKPAD
+	initialize_breakpad(false);
 #endif
 }

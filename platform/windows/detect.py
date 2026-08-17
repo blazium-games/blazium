@@ -612,7 +612,7 @@ def configure_msvc(env: "SConsEnvironment", vcvars_msvc_config):
         "ntdll",
     ]
 
-    if env.debug_features:
+    if env.debug_features or env.get("crash_reporter") or env.get("editor_crash_reporter"):
         LIBS += ["psapi", "dbghelp"]
 
     if env["vulkan"]:
@@ -960,7 +960,7 @@ def configure_mingw(env: "SConsEnvironment"):
         ]
     )
 
-    if env.debug_features:
+    if env.debug_features or env.get("crash_reporter") or env.get("editor_crash_reporter"):
         env.Append(LIBS=["psapi", "dbghelp"])
 
     if env["vulkan"]:

@@ -226,6 +226,30 @@ opts.Add(
 )
 opts.Add(
     BoolVariable(
+        "crash_reporter",
+        "Enable crash reporter in export templates (Breakpad dumps + reporter spawn)",
+        False,
+    )
+)
+opts.Add(
+    BoolVariable(
+        "editor_crash_reporter",
+        "Include Breakpad crash reporter in the editor (console sink; dumps to editor data dir)",
+        False,
+    )
+)
+opts.Add("editor_crash_reporter_app_id", "Baked editor crash reporter app_id", "blazium-editor")
+opts.Add("editor_crash_reporter_app_name", "Baked editor crash reporter app_name", "Blazium Editor")
+opts.Add("editor_crash_reporter_build_channel", "Baked editor crash reporter build_channel", "dev")
+opts.Add("editor_crash_reporter_endpoint", "Baked editor crash reporter ingest URL (empty = console only)", "")
+opts.Add(
+    "editor_crash_reporter_contact_url",
+    "Baked editor crash reporter contact/bug URL",
+    "https://github.com/blazium-games/blazium/issues",
+)
+opts.Add("editor_crash_reporter_api_key", "Baked editor crash reporter X-API-Key (public client key)", "")
+opts.Add(
+    BoolVariable(
         "hub_register",
         "Post-build: register the linked editor with Blazium Hub via blazium-cli handle-uri (editor only; not runtime)",
         False,
@@ -508,6 +532,42 @@ if env.dev_build:
 else:
     # Disable assert() for production targets (only used in thirdparty code).
     env.Append(CPPDEFINES=["NDEBUG"])
+
+
+def _crash_reporter_cpp_string(name, value):
+    escaped = str(value).replace("\\", "\\\\").replace('"', '\\"')
+    return f'{name}=\\"{escaped}\\"'
+
+
+if env.editor_build:
+    if env.get("crash_reporter"):
+        print_warning("crash_reporter=yes is ignored for editor builds; use editor_crash_reporter=yes.")
+    if env.get("editor_crash_reporter"):
+        env.Append(CPPDEFINES=["CRASH_REPORTER_ENABLED", "USE_BREAKPAD"])
+        env.Append(
+            CPPDEFINES=[
+                _crash_reporter_cpp_string("CRASH_REPORTER_EDITOR_APP_ID", env.get("editor_crash_reporter_app_id", "")),
+                _crash_reporter_cpp_string(
+                    "CRASH_REPORTER_EDITOR_APP_NAME", env.get("editor_crash_reporter_app_name", "")
+                ),
+                _crash_reporter_cpp_string(
+                    "CRASH_REPORTER_EDITOR_BUILD_CHANNEL", env.get("editor_crash_reporter_build_channel", "")
+                ),
+                _crash_reporter_cpp_string(
+                    "CRASH_REPORTER_EDITOR_ENDPOINT", env.get("editor_crash_reporter_endpoint", "")
+                ),
+                _crash_reporter_cpp_string(
+                    "CRASH_REPORTER_EDITOR_CONTACT_URL", env.get("editor_crash_reporter_contact_url", "")
+                ),
+                _crash_reporter_cpp_string(
+                    "CRASH_REPORTER_EDITOR_API_KEY", env.get("editor_crash_reporter_api_key", "")
+                ),
+            ]
+        )
+elif env.get("editor_crash_reporter"):
+    print_warning("editor_crash_reporter=yes is ignored for export templates; use crash_reporter=yes.")
+elif env.get("crash_reporter"):
+    env.Append(CPPDEFINES=["CRASH_REPORTER_ENABLED", "USE_BREAKPAD"])
 
 # This is not part of fast_unsafe because the only downside it has compared to
 # the default is that SCons won't mark files that were changed in the last second

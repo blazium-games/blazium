@@ -125,6 +125,9 @@
 #endif
 
 #include "modules/modules_enabled.gen.h" // For mono.
+#ifdef MODULE_CRASH_REPORTER_ENABLED
+#include "modules/crash_reporter/crash_reporter.h"
+#endif
 
 #if defined(MODULE_MONO_ENABLED) && defined(TOOLS_ENABLED)
 #include "modules/mono/editor/bindings_generator.h"
@@ -2148,6 +2151,11 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 
 	register_early_core_singletons();
 	initialize_modules(MODULE_INITIALIZATION_LEVEL_CORE);
+#ifdef MODULE_CRASH_REPORTER_ENABLED
+	if (CrashReporter::get_singleton()) {
+		CrashReporter::get_singleton()->report_user_data_dir_ready();
+	}
+#endif
 	register_core_extensions(); // core extensions must be registered after globals setup and before display
 
 	ResourceUID::get_singleton()->load_from_cache(true); // load UUIDs from cache.
