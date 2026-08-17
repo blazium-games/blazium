@@ -293,13 +293,13 @@ void JustAMCPEditorPlugin::_notification(int p_what) {
 			if (!mcp_server) {
 				mcp_server = memnew(JustAMCPServer);
 				mcp_server->set_name("JustAMCPServer");
-				if (editor_node) {
-					editor_node->call_deferred(SNAME("add_child"), mcp_server);
-				} else {
+				add_child(mcp_server);
+				mcp_server->start_listening();
+			} else {
+				if (!mcp_server->is_inside_tree()) {
 					add_child(mcp_server);
 				}
-			} else if (editor_node && mcp_server->get_parent() != editor_node) {
-				editor_node->call_deferred(SNAME("add_child"), mcp_server);
+				mcp_server->start_listening();
 			}
 
 			tool_executor = memnew(JustAMCPToolExecutor);
