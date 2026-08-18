@@ -36,6 +36,10 @@
 #include "core/version.h"
 #include "main/main.h"
 
+#ifdef USE_BREAKPAD
+#include "modules/crash_reporter/breakpad_linuxbsd_windows.h"
+#endif
+
 #ifdef CRASH_HANDLER_EXCEPTION
 
 // Backtrace code based on: https://stackoverflow.com/questions/6205981/windows-c-stack-trace-from-a-running-app
@@ -131,6 +135,10 @@ DWORD CrashHandlerException(EXCEPTION_POINTERS *ep) {
 	if (OS::get_singleton()->is_crash_handler_silent()) {
 		std::_Exit(0);
 	}
+
+#ifdef USE_BREAKPAD
+	breakpad_handle_exception_pointers(ep);
+#endif
 
 	String msg;
 	const ProjectSettings *proj_settings = ProjectSettings::get_singleton();
@@ -240,6 +248,7 @@ CrashHandler::CrashHandler() {
 }
 
 CrashHandler::~CrashHandler() {
+	disable();
 }
 
 void CrashHandler::disable() {
@@ -247,8 +256,14 @@ void CrashHandler::disable() {
 		return;
 	}
 
+#ifdef USE_BREAKPAD
+	disable_breakpad();
+#endif
 	disabled = true;
 }
 
 void CrashHandler::initialize() {
+#ifdef USE_BREAKPAD
+	initialize_breakpad(false);
+#endif
 }

@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CrashReporter" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Engine singleton for crash dump detection, sidecar launch, and optional in-engine upload.
+	</brief_description>
+	<description>
+		[CrashReporter] records native crashes as Breakpad minidumps when the engine is built with [code]crash_reporter=yes[/code] (export templates) or [code]editor_crash_reporter=yes[/code] (editor). The editor prints dump paths to the console and never uploads. Flagged templates can spawn a custom reporter binary and/or POST pending dumps with [HTTPClient].
+		Configure identity, endpoint, and spawn behavior under [code]application/crash_reporter/*[/code] in Project Settings. See [method get_resolved_config].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="cancel_upload">
+			<return type="void" />
+			<description>
+				Requests cancellation of an in-progress in-engine upload.
+			</description>
+		</method>
+		<method name="discard_report">
+			<return type="int" enum="Error" />
+			<param index="0" name="id" type="String" />
+			<description>
+				Deletes the dump, metadata, and state files for [param id].
+			</description>
+		</method>
+		<method name="get_api_key" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the resolved ingest API key.
+			</description>
+		</method>
+		<method name="get_app_id" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the resolved product id sent with crash metadata.
+			</description>
+		</method>
+		<method name="get_app_name" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the resolved product display name.
+			</description>
+		</method>
+		<method name="get_app_version" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the resolved product version.
+			</description>
+		</method>
+		<method name="get_build_channel" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the resolved build channel ([code]dev[/code], [code]beta[/code], [code]release[/code], or custom).
+			</description>
+		</method>
+		<method name="get_contact_url" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the resolved contact or bug-tracker URL.
+			</description>
+		</method>
+		<method name="get_crash_directory" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the directory where [code].dmp[/code] files and sidecar JSON are stored.
+			</description>
+		</method>
+		<method name="get_endpoint" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the resolved ingest URL.
+			</description>
+		</method>
+		<method name="get_last_dump_path" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the filesystem path of the most recently written minidump, or an empty string if none exists yet.
+			</description>
+		</method>
+		<method name="get_pending_reports" qualifiers="const">
+			<return type="Dictionary[]" />
+			<description>
+				Returns pending crash reports as dictionaries with [code]id[/code], [code]dump_path[/code], [code]metadata[/code], and [code]state[/code].
+			</description>
+		</method>
+		<method name="get_privacy_policy_url" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the privacy policy URL shown by a custom reporter UI.
+			</description>
+		</method>
+		<method name="get_reporter_path" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the resolved sidecar reporter executable path, or an empty string if none is configured.
+			</description>
+		</method>
+		<method name="get_resolved_config" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns all resolved crash-reporter settings after environment, bake-in, and Project Settings overrides.
+			</description>
+		</method>
+		<method name="get_upload_mode" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the resolved upload mode.
+			</description>
+		</method>
+		<method name="has_pending_reports" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if unsubmitted dumps exist in the crash directory.
+			</description>
+		</method>
+		<method name="induce_crash">
+			<return type="void" />
+			<description>
+				Triggers a native access violation so the platform crash handler writes a Breakpad dump. The process does not return. No-op (prints an error) when Breakpad was not compiled in.
+			</description>
+		</method>
+		<method name="is_available" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when the [CrashReporter] module is compiled in.
+			</description>
+		</method>
+		<method name="is_breakpad_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when Breakpad dump generation was compiled in ([code]USE_BREAKPAD[/code]).
+			</description>
+		</method>
+		<method name="is_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns the resolved master switch. When [code]false[/code], dumps may still be written but spawn and upload are skipped.
+			</description>
+		</method>
+		<method name="is_http_upload_available" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] in export templates built with [code]crash_reporter=yes[/code]. Always [code]false[/code] in the editor.
+			</description>
+		</method>
+		<method name="is_uploading" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] while an in-engine upload is running.
+			</description>
+		</method>
+		<method name="launch_reporter">
+			<return type="int" enum="Error" />
+			<param index="0" name="report_id" type="String" default="&quot;&quot;" />
+			<description>
+				Spawns the configured sidecar reporter. No-op in the editor.
+			</description>
+		</method>
+		<method name="mark_report_submitted">
+			<return type="int" enum="Error" />
+			<param index="0" name="id" type="String" />
+			<description>
+				Marks [param id] as submitted so it is no longer pending.
+			</description>
+		</method>
+		<method name="upload_pending">
+			<return type="int" enum="Error" />
+			<description>
+				Uploads all pending reports using the in-engine HTTP client. Call this after the player consents when [member ProjectSettings.application/crash_reporter/require_user_consent] is [code]true[/code].
+			</description>
+		</method>
+		<method name="upload_report">
+			<return type="int" enum="Error" />
+			<param index="0" name="id" type="String" />
+			<description>
+				Uploads a single pending report by [param id].
+			</description>
+		</method>
+		<method name="write_minidump">
+			<return type="String" />
+			<description>
+				Writes a minidump without terminating the process. Returns the dump path, or an empty string if Breakpad is not enabled. Also writes/updates the metadata sidecar.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="upload_failed">
+			<param index="0" name="id" type="String" />
+			<param index="1" name="error" type="String" />
+			<param index="2" name="response_code" type="int" />
+			<description>
+				Emitted when an in-engine upload fails.
+			</description>
+		</signal>
+		<signal name="upload_progress">
+			<param index="0" name="id" type="String" />
+			<param index="1" name="sent" type="int" />
+			<param index="2" name="total" type="int" />
+			<description>
+				Emitted as an in-engine upload starts sending bytes.
+			</description>
+		</signal>
+		<signal name="upload_started">
+			<param index="0" name="id" type="String" />
+			<description>
+				Emitted when an in-engine upload begins.
+			</description>
+		</signal>
+		<signal name="upload_succeeded">
+			<param index="0" name="id" type="String" />
+			<param index="1" name="response_code" type="int" />
+			<description>
+				Emitted when an in-engine upload receives an HTTP 2xx response.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="UPLOAD_DISABLED" value="0" enum="UploadMode">
+			Do not upload or spawn a sidecar.
+		</constant>
+		<constant name="UPLOAD_IN_ENGINE" value="1" enum="UploadMode">
+			Upload pending dumps from the game process on the next launch.
+		</constant>
+		<constant name="UPLOAD_SIDECAR" value="2" enum="UploadMode">
+			Launch the configured reporter binary.
+		</constant>
+		<constant name="UPLOAD_BOTH" value="3" enum="UploadMode">
+			Use both in-engine upload and the sidecar reporter.
+		</constant>
+	</constants>
+</class>

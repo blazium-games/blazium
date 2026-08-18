@@ -33,8 +33,8 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-// Crash handler exception only enabled with MSVC
-#if defined(DEBUG_ENABLED)
+// Crash handler exception enabled for debug builds and crash-reporter templates.
+#if defined(DEBUG_ENABLED) || defined(CRASH_REPORTER_ENABLED)
 #define CRASH_HANDLER_EXCEPTION 1
 
 #ifdef _MSC_VER

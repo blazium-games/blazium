@@ -37,7 +37,13 @@
 #include "main/main.h"
 
 #ifndef DEBUG_ENABLED
+#ifndef CRASH_REPORTER_ENABLED
 #undef CRASH_HANDLER_ENABLED
+#endif
+#endif
+
+#ifdef USE_BREAKPAD
+#include "modules/crash_reporter/breakpad_linuxbsd_windows.h"
 #endif
 
 #ifdef CRASH_HANDLER_ENABLED
@@ -60,6 +66,10 @@ static void handle_crash(int sig) {
 	if (OS::get_singleton()->is_crash_handler_silent()) {
 		std::_Exit(0);
 	}
+
+#ifdef USE_BREAKPAD
+	breakpad_handle_signal(sig);
+#endif
 
 	void *bt_buffer[256];
 	size_t size = backtrace(bt_buffer, 256);
@@ -168,6 +178,9 @@ void CrashHandler::disable() {
 	signal(SIGFPE, SIG_DFL);
 	signal(SIGILL, SIG_DFL);
 #endif
+#ifdef USE_BREAKPAD
+	disable_breakpad();
+#endif
 
 	disabled = true;
 }
@@ -177,5 +190,10 @@ void CrashHandler::initialize() {
 	signal(SIGSEGV, handle_crash);
 	signal(SIGFPE, handle_crash);
 	signal(SIGILL, handle_crash);
+#ifdef USE_BREAKPAD
+	initialize_breakpad(false);
+#endif
+#elif defined(USE_BREAKPAD)
+	initialize_breakpad(true);
 #endif
 }

@@ -309,6 +309,105 @@
 		<member name="application/config/windows_native_icon" type="String" setter="" getter="" default="&quot;&quot;">
 			Icon set in [code].ico[/code] format used on Windows to set the game's icon. This is done automatically on start by calling [method DisplayServer.set_native_icon].
 		</member>
+		<member name="application/crash_reporter/api_key" type="String" setter="" getter="" default="&quot;&quot;">
+			Optional [code]X-API-Key[/code] sent with in-engine and sidecar crash uploads. Treat as a public client key, not a secret.
+		</member>
+		<member name="application/crash_reporter/app_id" type="String" setter="" getter="" default="&quot;&quot;">
+			Stable product id for the ingest server. Falls back to [member application/config/name] if empty.
+		</member>
+		<member name="application/crash_reporter/app_name" type="String" setter="" getter="" default="&quot;&quot;">
+			Display name copied into crash metadata. Falls back to [member application/config/name] if empty.
+		</member>
+		<member name="application/crash_reporter/app_version" type="String" setter="" getter="" default="&quot;&quot;">
+			Product version sent with the dump. Falls back to [member application/config/version] if empty.
+		</member>
+		<member name="application/crash_reporter/build_channel" type="String" setter="" getter="" default="&quot;release&quot;">
+			Build channel used for server filtering ([code]dev[/code], [code]beta[/code], [code]release[/code], or custom).
+		</member>
+		<member name="application/crash_reporter/console_message" type="String" setter="" getter="" default="&quot;Crash dump created at: {path} Please attach this file when reporting issues.&quot;">
+			Printed after a dump is written. [code]{path}[/code] is replaced with the dump path.
+		</member>
+		<member name="application/crash_reporter/contact_url" type="String" setter="" getter="" default="&quot;&quot;">
+			Bug tracker or support URL shown in the reporter UI and console.
+		</member>
+		<member name="application/crash_reporter/crash_dir_name" type="String" setter="" getter="" default="&quot;crashes&quot;">
+			Subdirectory under [code]user://[/code] (exported games) used to store dumps.
+		</member>
+		<member name="application/crash_reporter/custom_metadata" type="Dictionary" setter="" getter="" default="{}">
+			Developer key/values copied into the sidecar JSON (build flavor, shard, etc.).
+		</member>
+		<member name="application/crash_reporter/delete_after_upload" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], dump and sidecar files are removed after an HTTP 2xx upload.
+		</member>
+		<member name="application/crash_reporter/enabled" type="bool" setter="" getter="" default="false">
+			Master switch after a template is compiled with [code]crash_reporter=yes[/code]. When [code]false[/code], dumps may still be written but spawn and upload are skipped.
+		</member>
+		<member name="application/crash_reporter/endpoint" type="String" setter="" getter="" default="&quot;&quot;">
+			POST URL for crash ingest, e.g. [code]https://crashes.example.com/v1/reports[/code]. Empty disables HTTP upload.
+		</member>
+		<member name="application/crash_reporter/include_logs" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], a tail of the engine log is attached to uploads.
+		</member>
+		<member name="application/crash_reporter/include_project_settings_dump" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], a sanitized subset of project settings (name, version) is added to metadata. Tokens and secrets are never included.
+		</member>
+		<member name="application/crash_reporter/include_system_info" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], OS, architecture, locale, CPU, and video adapter are added on the next launch.
+		</member>
+		<member name="application/crash_reporter/log_tail_kb" type="int" setter="" getter="" default="64">
+			Maximum log tail size in kibibytes attached to a report.
+		</member>
+		<member name="application/crash_reporter/max_pending" type="int" setter="" getter="" default="10">
+			Maximum number of pending dumps retained. Oldest dumps are discarded when exceeded.
+		</member>
+		<member name="application/crash_reporter/max_upload_mb" type="int" setter="" getter="" default="32">
+			Dumps larger than this many mebibytes are not uploaded.
+		</member>
+		<member name="application/crash_reporter/privacy_policy_url" type="String" setter="" getter="" default="&quot;&quot;">
+			Privacy policy URL linked from a custom reporter consent dialog.
+		</member>
+		<member name="application/crash_reporter/reporter_args" type="PackedStringArray" setter="" getter="" default="PackedStringArray()">
+			Extra arguments appended after the engine-supplied sidecar CLI contract.
+		</member>
+		<member name="application/crash_reporter/reporter_path" type="String" setter="" getter="" default="&quot;&quot;">
+			Path to the exported crash reporter, relative to the game executable. Empty disables sidecar spawn.
+		</member>
+		<member name="application/crash_reporter/require_user_consent" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], in-engine upload waits until the game calls [method CrashReporter.upload_pending].
+		</member>
+		<member name="application/crash_reporter/retain_days" type="int" setter="" getter="" default="30">
+			Days to keep dumps. [code]0[/code] keeps them until submitted or discarded.
+		</member>
+		<member name="application/crash_reporter/retry_backoff_sec" type="int" setter="" getter="" default="5">
+			Seconds to wait between in-engine upload retries.
+		</member>
+		<member name="application/crash_reporter/retry_count" type="int" setter="" getter="" default="3">
+			Number of in-engine upload retries after the first attempt.
+		</member>
+		<member name="application/crash_reporter/spawn_on_crash" type="bool" setter="" getter="" default="true">
+			On Windows, spawn the sidecar immediately after a dump. Ignored on Linux (unsafe in a signal handler).
+		</member>
+		<member name="application/crash_reporter/spawn_on_next_launch" type="bool" setter="" getter="" default="true">
+			Scan pending dumps at startup and spawn the sidecar once.
+		</member>
+		<member name="application/crash_reporter/spawn_open_console" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], the sidecar process is started with a console window (debug).
+		</member>
+		<member name="application/crash_reporter/timeout_sec" type="int" setter="" getter="" default="30">
+			HTTP timeout in seconds for in-engine and sidecar uploads.
+		</member>
+		<member name="application/crash_reporter/upload_mode" type="int" setter="" getter="" default="0">
+			[code]0[/code] Disabled, [code]1[/code] InEngine, [code]2[/code] Sidecar, [code]3[/code] Both. In-engine upload is compiled out of the editor.
+		</member>
+		<member name="application/crash_reporter/upload_on_startup" type="bool" setter="" getter="" default="true">
+			If [code]true[/code] and consent is not required, start in-engine upload after the pending-dump scan.
+		</member>
+		<member name="application/crash_reporter/user_message" type="String" setter="" getter="" default="&quot;&quot;">
+			Extra text shown in a custom reporter UI.
+		</member>
+		<member name="application/crash_reporter/verify_tls" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], TLS certificates are verified for HTTPS ingest.
+		</member>
 		<member name="application/export/global_exclude_filter" type="String" setter="" getter="" default="&quot;&quot;">
 			Global filters to exclude files/folders from project, (comma-separated, e.g: *.json, *.txt, docs/*).
 			[b]Note:[/b] This filter is applied to all export presets before the preset's own exclude filters, ensuring global exclusions take precedence.

@@ -1556,6 +1556,9 @@
 		<member name="ClassDB" type="ClassDB" setter="" getter="">
 			The [ClassDB] singleton.
 		</member>
+		<member name="CrashReporter" type="CrashReporter" setter="" getter="">
+			The [CrashReporter] singleton.
+		</member>
 		<member name="CrowdControl" type="CrowdControl" setter="" getter="">
 			The [CrowdControl] singleton.
 		</member>
