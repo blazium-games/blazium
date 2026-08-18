@@ -73,12 +73,13 @@ static String _make_session_id() {
 	const uint64_t now = OS::get_singleton() ? OS::get_singleton()->get_unix_time() : 0;
 	const uint64_t ticks = OS::get_singleton() ? OS::get_singleton()->get_ticks_usec() : 0;
 	const uint64_t pid = OS::get_singleton() ? (uint64_t)OS::get_singleton()->get_process_id() : 0;
+	const uint64_t tail = ticks & ((uint64_t)0x0000ffffffffffff);
 	return vformat("%08x-%04x-%04x-%04x-%012x",
 			(uint32_t)now,
 			(uint16_t)((ticks >> 32) & 0xffff),
 			(uint16_t)(((ticks >> 16) & 0x0fff) | 0x4000),
 			(uint16_t)((pid ^ (ticks >> 8)) & 0xffff),
-			ticks & 0x0000ffffffffffffull);
+			tail);
 }
 
 Analytics::Analytics() {
