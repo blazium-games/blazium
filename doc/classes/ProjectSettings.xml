@@ -241,6 +241,39 @@
 		<member name="animation/warnings/check_invalid_track_paths" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], [AnimationMixer] prints the warning of no matching object of the track path in the scene.
 		</member>
+		<member name="application/analytics/anonymous" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], game analytics events omit [code]device_uid[/code]. Identity fields such as [code]app_id[/code] are still sent.
+		</member>
+		<member name="application/analytics/api_key" type="String" setter="" getter="" default="&quot;&quot;">
+			Optional [code]X-API-Key[/code] sent with analytics POSTs. Treat as a public client key, not a secret.
+		</member>
+		<member name="application/analytics/app_id" type="String" setter="" getter="" default="&quot;&quot;">
+			Stable product id sent on every event. Falls back to [member application/config/name] if empty.
+		</member>
+		<member name="application/analytics/app_version" type="String" setter="" getter="" default="&quot;&quot;">
+			Product version sent on every event. Falls back to [member application/config/version] if empty.
+		</member>
+		<member name="application/analytics/build_channel" type="String" setter="" getter="" default="&quot;release&quot;">
+			Build channel used for server filtering ([code]dev[/code], [code]beta[/code], [code]release[/code], or custom).
+		</member>
+		<member name="application/analytics/build_id" type="String" setter="" getter="" default="&quot;&quot;">
+			Build identifier (git SHA or CI build number). Falls back to [member application/config/version] if empty.
+		</member>
+		<member name="application/analytics/enabled" type="bool" setter="" getter="" default="false">
+			Master switch after a template is compiled with [code]analytics=yes[/code]. When [code]false[/code], events are not queued or sent.
+		</member>
+		<member name="application/analytics/endpoint" type="String" setter="" getter="" default="&quot;&quot;">
+			POST URL for analytics ingest, e.g. [code]https://analytics.example.com/v1/events[/code]. Empty keeps events queued only.
+		</member>
+		<member name="application/analytics/require_user_consent" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], [method Analytics.set_consent] must accept before events are queued.
+		</member>
+		<member name="application/analytics/timeout_sec" type="int" setter="" getter="" default="15">
+			HTTP timeout in seconds for [method Analytics.flush].
+		</member>
+		<member name="application/analytics/verify_tls" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], TLS certificates are verified on analytics HTTPS uploads.
+		</member>
 		<member name="application/boot_splash/bg_color" type="Color" setter="" getter="" default="Color(0.14, 0.14, 0.14, 1)">
 			Background color for the boot splash.
 		</member>

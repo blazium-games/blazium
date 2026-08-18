@@ -128,6 +128,9 @@
 #ifdef MODULE_CRASH_REPORTER_ENABLED
 #include "modules/crash_reporter/crash_reporter.h"
 #endif
+#ifdef MODULE_ANALYTICS_ENABLED
+#include "modules/analytics/analytics.h"
+#endif
 
 #if defined(MODULE_MONO_ENABLED) && defined(TOOLS_ENABLED)
 #include "modules/mono/editor/bindings_generator.h"
@@ -689,6 +692,14 @@ void Main::print_help(const char *p_binary) {
 	print_help_option("--mcp-port <port>", "Bind the JustAMCP server to a specific local port.\n");
 	print_help_option("--mcp-client-id <id>", "Force override the MCP OAuth Client ID dynamically.\n");
 	print_help_option("--mcp-client-secret <secret>", "Force override the MCP OAuth Client Secret dynamically.\n");
+#endif
+
+#ifdef MODULE_ANALYTICS_ENABLED
+	print_help_title("Analytics Options");
+	print_help_option("--analytics=<accepted|declined>", "Set analytics consent for this process (overrides settings).\n");
+	print_help_option("--analytics-mode=<anonymous|identified>", "Anonymous omits device_uid; identified sends OS.get_unique_id().\n");
+	print_help_option("--analytics-app-id=<id>", "Override analytics app_id for this process.\n");
+	print_help_option("--analytics-build-id=<id>", "Override analytics build_id for this process.\n");
 #endif
 
 #ifdef MODULE_REMOTE_CONTROL_ENABLED
@@ -2154,6 +2165,11 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 #ifdef MODULE_CRASH_REPORTER_ENABLED
 	if (CrashReporter::get_singleton()) {
 		CrashReporter::get_singleton()->report_user_data_dir_ready();
+	}
+#endif
+#ifdef MODULE_ANALYTICS_ENABLED
+	if (Analytics::get_singleton()) {
+		Analytics::get_singleton()->report_user_data_dir_ready();
 	}
 #endif
 	register_core_extensions(); // core extensions must be registered after globals setup and before display
