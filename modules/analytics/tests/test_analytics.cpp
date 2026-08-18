@@ -48,6 +48,7 @@ static void _reset_queue_dir(const String &p_dir) {
 	AnalyticsQueue::clear(p_dir);
 }
 
+#ifdef ANALYTICS_ENABLED
 static void _enable_game_analytics(bool p_require_consent) {
 	if (!ProjectSettings::get_singleton()) {
 		return;
@@ -58,6 +59,7 @@ static void _enable_game_analytics(bool p_require_consent) {
 	ProjectSettings::get_singleton()->set("application/analytics/app_id", "analytics-unit-test");
 	ProjectSettings::get_singleton()->set("application/analytics/build_id", "test");
 }
+#endif
 
 void test_analytics_queue_roundtrip() {
 	const String dir = _analytics_test_dir("queue");
