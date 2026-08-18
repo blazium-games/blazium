@@ -376,5 +376,23 @@ void EditorVCSInterface::create_vcs_metadata_files(VCSMetadata p_vcs_metadata_ty
 			f->store_line("# Normalize EOL for all files that Git considers text files.");
 			f->store_line("* text=auto eol=lf");
 		}
+	} else if (p_vcs_metadata_type == VCSMetadata::COLDSTORAGE) {
+		Ref<FileAccess> f = FileAccess::open(p_dir.path_join(".csignore"), FileAccess::WRITE);
+		if (f.is_null()) {
+			ERR_FAIL_MSG("Couldn't create .csignore in project path.");
+		} else {
+			f->store_line("# Blazium / Godot 4+ specific ignores");
+			f->store_line(".godot/");
+			f->store_line("/android/");
+			f->store_line("*.translation");
+		}
+		f = FileAccess::open(p_dir.path_join(".cstorage"), FileAccess::WRITE);
+		if (f.is_null()) {
+			ERR_FAIL_MSG("Couldn't create .cstorage in project path.");
+		} else {
+			f->store_line("# ColdStorage workspace metadata (edit via Project > ColdStorage Configuration)");
+			f->store_line("workspace=default");
+			f->store_line("repo=default");
+		}
 	}
 }

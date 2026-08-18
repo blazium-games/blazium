@@ -549,6 +549,51 @@
 		<member name="blazium/autowork/e2e_enabled" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], the Autowork framework will boot its WebSocket E2E server on startup, enabling orchestration from standard web runners (e.g. Playwright, Jest, Cypress).
 		</member>
+		<member name="blazium/coldstorage/auto_pull" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], runs [code]syncAll("#head")[/code] after a successful ColdStorage connect (or when [code]--coldstorage-auto-pull[/code] is passed).
+		</member>
+		<member name="blazium/coldstorage/autoload_on_startup" type="bool" setter="" getter="" default="false">
+			If [code]true[/code] and [member blazium/coldstorage/enabled] is also [code]true[/code], connects ColdStorage when the editor becomes ready.
+		</member>
+		<member name="blazium/coldstorage/ca_file" type="String" setter="" getter="" default="&quot;&quot;">
+			Optional path to a CA certificate file used when [member blazium/coldstorage/use_tls] is [code]true[/code].
+		</member>
+		<member name="blazium/coldstorage/enabled" type="bool" setter="" getter="" default="false">
+			Master enable for the ColdStorage editor integration.
+		</member>
+		<member name="blazium/coldstorage/host" type="String" setter="" getter="" default="&quot;127.0.0.1&quot;">
+			ColdStorage server hostname or IP address.
+		</member>
+		<member name="blazium/coldstorage/override_editor_settings" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], Project Settings values override Editor Settings for ColdStorage connection options. Secrets (password, ticket, JWT) always stay in Editor Settings and are never written to [code]project.godot[/code].
+		</member>
+		<member name="blazium/coldstorage/port" type="int" setter="" getter="" default="1666">
+			ColdStorage server TCP port.
+		</member>
+		<member name="blazium/coldstorage/repo" type="String" setter="" getter="" default="&quot;default&quot;">
+			Repository name scoped on the ColdStorage server.
+		</member>
+		<member name="blazium/coldstorage/tls_insecure" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], skips TLS peer certificate verification (development only).
+		</member>
+		<member name="blazium/coldstorage/use_tls" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], connects to ColdStorage over TLS.
+		</member>
+		<member name="blazium/coldstorage/user" type="String" setter="" getter="" default="&quot;&quot;">
+			Username for ColdStorage login.
+		</member>
+		<member name="blazium/coldstorage/validate_on_startup" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], calls server [code]info()[/code] after connect and reports failure if validation fails.
+		</member>
+		<member name="blazium/coldstorage/workspace" type="String" setter="" getter="" default="&quot;default&quot;">
+			Workspace name used for the ColdStorage client session.
+		</member>
+		<member name="blazium/coldstorage/workspace_root" type="String" setter="" getter="" default="&quot;&quot;">
+			Local workspace root path. When empty, the project resource directory is used.
+		</member>
+		<member name="blazium/coldstorage/z_connection_controls" type="String" setter="" getter="" default="&quot;&quot;">
+			Sentinel property that injects ColdStorage connection controls into the settings inspector. Not meant to be edited directly.
+		</member>
 		<member name="blazium/justamcp/accepted_protocol_versions" type="String" setter="" getter="" default="&quot;&quot;">
 			Optional comma-separated allowlist of MCP protocol versions this process will serve. Empty accepts every implemented version ([code]2026-07-28[/code] through [code]2024-11-05[/code]).
 		</member>

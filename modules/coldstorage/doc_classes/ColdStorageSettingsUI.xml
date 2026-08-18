@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ColdStorageSettingsUI" inherits="MarginContainer" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Connection controls for ColdStorage editor settings.
+	</brief_description>
+	<description>
+		Host/port/auth controls with Connect, Disconnect, Test, and Save actions. Embedded in Project/Editor settings via the [code]z_connection_controls[/code] sentinel.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="custom_minimum_size" type="Vector2" setter="set_custom_minimum_size" getter="get_custom_minimum_size" overrides="Control" default="Vector2(0, 220)" />
+	</members>
+</class>
