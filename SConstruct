@@ -250,6 +250,25 @@ opts.Add(
 opts.Add("editor_crash_reporter_api_key", "Baked editor crash reporter X-API-Key (public client key)", "")
 opts.Add(
     BoolVariable(
+        "analytics",
+        "Enable analytics SDK in export templates (session + custom track)",
+        False,
+    )
+)
+opts.Add(
+    BoolVariable(
+        "editor_analytics",
+        "Enable editor analytics (demographic/usage events; send only after consent)",
+        False,
+    )
+)
+opts.Add("editor_analytics_app_id", "Baked editor analytics app_id", "blazium-editor")
+opts.Add("editor_analytics_build_id", "Baked editor analytics build_id (empty = version hash)", "")
+opts.Add("editor_analytics_build_channel", "Baked editor analytics build_channel", "dev")
+opts.Add("editor_analytics_endpoint", "Baked editor analytics ingest URL (empty = queue only)", "")
+opts.Add("editor_analytics_api_key", "Baked editor analytics X-API-Key (public client key)", "")
+opts.Add(
+    BoolVariable(
         "hub_register",
         "Post-build: register the linked editor with Blazium Hub via blazium-cli handle-uri (editor only; not runtime)",
         False,
@@ -568,6 +587,31 @@ elif env.get("editor_crash_reporter"):
     print_warning("editor_crash_reporter=yes is ignored for export templates; use crash_reporter=yes.")
 elif env.get("crash_reporter"):
     env.Append(CPPDEFINES=["CRASH_REPORTER_ENABLED", "USE_BREAKPAD"])
+
+
+def _analytics_cpp_string(name, value):
+    escaped = str(value).replace("\\", "\\\\").replace('"', '\\"')
+    return f'{name}=\\"{escaped}\\"'
+
+
+if env.editor_build:
+    if env.get("analytics"):
+        print_warning("analytics=yes is ignored for editor builds; use editor_analytics=yes.")
+    if env.get("editor_analytics"):
+        env.Append(CPPDEFINES=["ANALYTICS_ENABLED"])
+        env.Append(
+            CPPDEFINES=[
+                _analytics_cpp_string("ANALYTICS_EDITOR_APP_ID", env.get("editor_analytics_app_id", "")),
+                _analytics_cpp_string("ANALYTICS_EDITOR_BUILD_ID", env.get("editor_analytics_build_id", "")),
+                _analytics_cpp_string("ANALYTICS_EDITOR_BUILD_CHANNEL", env.get("editor_analytics_build_channel", "")),
+                _analytics_cpp_string("ANALYTICS_EDITOR_ENDPOINT", env.get("editor_analytics_endpoint", "")),
+                _analytics_cpp_string("ANALYTICS_EDITOR_API_KEY", env.get("editor_analytics_api_key", "")),
+            ]
+        )
+elif env.get("editor_analytics"):
+    print_warning("editor_analytics=yes is ignored for export templates; use analytics=yes.")
+elif env.get("analytics"):
+    env.Append(CPPDEFINES=["ANALYTICS_ENABLED"])
 
 # This is not part of fast_unsafe because the only downside it has compared to
 # the default is that SCons won't mark files that were changed in the last second

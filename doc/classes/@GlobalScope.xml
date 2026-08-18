@@ -1547,6 +1547,9 @@
 		</method>
 	</methods>
 	<members>
+		<member name="Analytics" type="Analytics" setter="" getter="">
+			The [Analytics] singleton.
+		</member>
 		<member name="AudioServer" type="AudioServer" setter="" getter="">
 			The [AudioServer] singleton.
 		</member>

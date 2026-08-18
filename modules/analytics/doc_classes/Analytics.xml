@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Analytics" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Opt-in analytics singleton for editor demographics and game session events.
+	</brief_description>
+	<description>
+		[Analytics] queues JSON events and optionally POSTs them to an ingest endpoint. Editor builds compiled with [code]editor_analytics=yes[/code] record demographic/usage events after consent. Export templates compiled with [code]analytics=yes[/code] expose a small game SDK ([method track], session start/end).
+		Consent priority is CLI [code]--analytics=[/code], then [code]BLAZIUM_ANALYTICS_CONSENT[/code], then Editor Settings or [method set_consent]. Anonymous mode (default) omits [code]device_uid[/code]; identified mode sends [method OS.get_unique_id]. See [method get_resolved_config].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="flush">
+			<return type="void" />
+			<description>
+				POSTs queued events to the resolved endpoint. Emits [signal flush_succeeded] or [signal flush_failed]. An empty endpoint leaves the queue on disk and logs that the flush was dropped.
+			</description>
+		</method>
+		<method name="get_app_id" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the resolved product id sent on every event.
+			</description>
+		</method>
+		<method name="get_app_version" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the resolved product version sent on every event.
+			</description>
+		</method>
+		<method name="get_build_channel" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the resolved build channel ([code]dev[/code], [code]beta[/code], [code]release[/code], or custom).
+			</description>
+		</method>
+		<method name="get_build_id" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the resolved build id. Empty is allowed; [code]app_id[/code] and [code]engine_version[/code] are still sent.
+			</description>
+		</method>
+		<method name="get_consent" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns [code]unset[/code], [code]accepted[/code], or [code]declined[/code] after CLI, environment, and persisted settings.
+			</description>
+		</method>
+		<method name="get_device_uid" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns [method OS.get_unique_id] when identified, or an empty string when anonymous.
+			</description>
+		</method>
+		<method name="get_queue_size" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the number of events waiting in the on-disk JSONL queue.
+			</description>
+		</method>
+		<method name="get_resolved_config" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns identity, consent, endpoint, and queue path after CLI, environment, settings, and bake-in overrides.
+			</description>
+		</method>
+		<method name="identify">
+			<return type="void" />
+			<param index="0" name="user_id" type="String" />
+			<description>
+				Stores a game user id attached to later events. No-op in anonymous mode.
+			</description>
+		</method>
+		<method name="is_anonymous" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when events omit [code]device_uid[/code].
+			</description>
+		</method>
+		<method name="is_available" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when the [Analytics] module is compiled in.
+			</description>
+		</method>
+		<method name="is_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when events may be queued (feature flag plus consent).
+			</description>
+		</method>
+		<method name="set_anonymous">
+			<return type="void" />
+			<param index="0" name="anonymous" type="bool" />
+			<description>
+				Sets anonymous mode for this process. New events omit or include [code]device_uid[/code] accordingly; already queued events keep the mode they were created with.
+			</description>
+		</method>
+		<method name="set_consent">
+			<return type="void" />
+			<param index="0" name="accepted" type="bool" />
+			<description>
+				Accepts or declines analytics. Editor builds persist this in Editor Settings.
+			</description>
+		</method>
+		<method name="set_user_properties">
+			<return type="void" />
+			<param index="0" name="properties" type="Dictionary" />
+			<description>
+				Merges game user properties into later events. No-op in anonymous mode.
+			</description>
+		</method>
+		<method name="track">
+			<return type="void" />
+			<param index="0" name="event" type="String" />
+			<param index="1" name="properties" type="Dictionary" default="{}" />
+			<description>
+				Queues [param event] with [param properties] plus automatic runtime context. Editor and game contexts use separate property sets.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="flush_failed">
+			<param index="0" name="message" type="String" />
+			<description>
+				Emitted when [method flush] cannot POST queued events.
+			</description>
+		</signal>
+		<signal name="flush_succeeded">
+			<param index="0" name="count" type="int" />
+			<description>
+				Emitted after a successful flush. [param count] is the number of events sent.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="CONSENT_UNSET" value="0" enum="Consent">
+			Consent has not been set.
+		</constant>
+		<constant name="CONSENT_ACCEPTED" value="1" enum="Consent">
+			Analytics sending is allowed.
+		</constant>
+		<constant name="CONSENT_DECLINED" value="2" enum="Consent">
+			Analytics sending is declined.
+		</constant>
+	</constants>
+</class>
