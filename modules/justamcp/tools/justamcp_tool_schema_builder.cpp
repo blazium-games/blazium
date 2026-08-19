@@ -40,6 +40,7 @@
 void JustAMCPToolSchemaBuilder::register_tool_settings(const String &p_category, const String &p_full_name, bool p_is_core) {
 	const String cat_path = "blazium/justamcp/tools/" + p_category;
 	const String tool_path = cat_path + "/" + p_full_name;
+	JustAMCPSettingsResolver::set_category_default(p_category, p_is_core);
 	GLOBAL_DEF_BASIC(PropertyInfo(Variant::BOOL, cat_path), p_is_core);
 	GLOBAL_DEF_BASIC(PropertyInfo(Variant::BOOL, tool_path), true);
 	if (EditorSettings::get_singleton()) {

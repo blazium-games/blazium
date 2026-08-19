@@ -207,6 +207,10 @@ void JustAMCPProjectSettings::register_editor_settings() {
 
 	EDITOR_DEF_BASIC("blazium/justamcp/in_flight_cancel_deadline_ms", 5000);
 	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::INT, "blazium/justamcp/in_flight_cancel_deadline_ms", PROPERTY_HINT_RANGE, "0,120000,100"));
+
+	JustAMCPToolExecutor::register_tool_settings();
+	JustAMCPPromptExecutor::register_settings();
+	JustAMCPResourceExecutor::register_settings();
 }
 
 #endif

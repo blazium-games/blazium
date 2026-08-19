@@ -34,6 +34,7 @@
 #include "../justamcp_mcp_spec.h"
 #include "../justamcp_server.h"
 #include "justamcp_resource_executor.h"
+#include "justamcp_settings_resolver.h"
 #include "justamcp_tool_executor.h"
 #include "justamcp_tool_schema_cache.h"
 #include "justamcp_toolset_registry.h"
@@ -55,11 +56,19 @@ Dictionary JustAMCPMetaTools::execute(JustAMCPToolExecutor *p_executor, const St
 
 	if (p_internal_name == "search_tools") {
 		const String query = p_args.get("query", "");
-		const Array all_schemas = JustAMCPToolSchemaCache::get_schemas(false, true, false, false);
+		const Array all_schemas = JustAMCPToolSchemaCache::get_schemas(false, true, false, true);
 		Array matched;
 		for (int i = 0; i < all_schemas.size(); i++) {
 			const Dictionary schema = all_schemas[i];
 			const String name = schema["name"];
+			String category;
+			if (schema.has("_meta")) {
+				const Dictionary meta = schema["_meta"];
+				category = meta.get("category", "");
+			}
+			if (!JustAMCPSettingsResolver::is_tool_executable(category, name)) {
+				continue;
+			}
 			const String desc = schema["description"];
 			if (query.is_empty() || name.containsn(query) || desc.containsn(query)) {
 				matched.push_back(schema);
@@ -77,10 +86,7 @@ Dictionary JustAMCPMetaTools::execute(JustAMCPToolExecutor *p_executor, const St
 			return result;
 		}
 		const Dictionary target_args = p_args.get("arguments", Dictionary());
-		bool allow_bypass = false;
-		if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/allow_execute_tool_bypass")) {
-			allow_bypass = GLOBAL_GET("blazium/justamcp/allow_execute_tool_bypass");
-		}
+		const bool allow_bypass = JustAMCPSettingsResolver::resolve_allow_execute_tool_bypass();
 		if (allow_bypass) {
 			return p_executor->execute_tool_direct(target_tool, target_args);
 		}

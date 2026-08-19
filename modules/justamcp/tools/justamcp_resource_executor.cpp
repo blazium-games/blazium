@@ -40,6 +40,7 @@
 #include "editor/editor_file_system.h"
 #include "editor/editor_settings.h"
 #include "justamcp_resource_manifest.h"
+#include "justamcp_settings_resolver.h"
 #include "resources/justamcp_blazium_resource_registry.h"
 #include "resources/justamcp_materials_resource_provider.h"
 #include "resources/justamcp_resource_autowork_results.h"
@@ -47,16 +48,21 @@
 #include "resources/justamcp_resource_video_recordings.h"
 
 void JustAMCPResourceExecutor::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("list_resources", "cursor"), &JustAMCPResourceExecutor::list_resources, DEFVAL(""));
-	ClassDB::bind_method(D_METHOD("list_resource_templates", "cursor"), &JustAMCPResourceExecutor::list_resource_templates, DEFVAL(""));
+	ClassDB::bind_method(D_METHOD("list_resources", "cursor", "include_unlisted"), &JustAMCPResourceExecutor::list_resources, DEFVAL(""), DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("list_resource_templates", "cursor", "include_unlisted"), &JustAMCPResourceExecutor::list_resource_templates, DEFVAL(""), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("read_resource", "uri"), &JustAMCPResourceExecutor::read_resource);
 	ClassDB::bind_method(D_METHOD("add_resource", "resource"), &JustAMCPResourceExecutor::add_resource);
 }
 
 void JustAMCPResourceExecutor::register_settings() {
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::BOOL, "blazium/justamcp/resources"), true);
+	if (EditorSettings::get_singleton()) {
+		EDITOR_DEF_BASIC("blazium/justamcp/resources", true);
+	}
+
 	JustAMCPResourceExecutor exec;
 
-	Dictionary resources_dict = exec.list_resources();
+	Dictionary resources_dict = exec.list_resources("", true);
 	if (resources_dict.has("resources")) {
 		Array resources = resources_dict["resources"];
 		for (int i = 0; i < resources.size(); i++) {
@@ -65,15 +71,15 @@ void JustAMCPResourceExecutor::register_settings() {
 			String desc = res["description"];
 			String path = "blazium/justamcp/resources/" + name;
 
-			GLOBAL_DEF_NOVAL_BASIC(PropertyInfo(Variant::STRING, path, PROPERTY_HINT_MULTILINE_TEXT, desc, PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY), String());
+			GLOBAL_DEF_BASIC(PropertyInfo(Variant::BOOL, path, PROPERTY_HINT_NONE, desc), true);
 			if (EditorSettings::get_singleton()) {
-				EDITOR_DEF_BASIC(path, String());
-				EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::STRING, path, PROPERTY_HINT_MULTILINE_TEXT, desc, PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY));
+				EDITOR_DEF_BASIC(path, true);
+				EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::BOOL, path, PROPERTY_HINT_NONE, desc));
 			}
 		}
 	}
 
-	Dictionary templates_dict = exec.list_resource_templates();
+	Dictionary templates_dict = exec.list_resource_templates("", true);
 	if (templates_dict.has("resourceTemplates")) {
 		Array templates = templates_dict["resourceTemplates"];
 		for (int i = 0; i < templates.size(); i++) {
@@ -82,10 +88,10 @@ void JustAMCPResourceExecutor::register_settings() {
 			String desc = templ["description"];
 			String path = "blazium/justamcp/resources/" + name;
 
-			GLOBAL_DEF_NOVAL_BASIC(PropertyInfo(Variant::STRING, path, PROPERTY_HINT_MULTILINE_TEXT, desc, PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY), String());
+			GLOBAL_DEF_BASIC(PropertyInfo(Variant::BOOL, path, PROPERTY_HINT_NONE, desc), true);
 			if (EditorSettings::get_singleton()) {
-				EDITOR_DEF_BASIC(path, String());
-				EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::STRING, path, PROPERTY_HINT_MULTILINE_TEXT, desc, PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY));
+				EDITOR_DEF_BASIC(path, true);
+				EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::BOOL, path, PROPERTY_HINT_NONE, desc));
 			}
 		}
 	}
@@ -192,36 +198,51 @@ String JustAMCPResourceExecutor::_canonicalize_resource_uri(const String &p_uri)
 	return p_uri;
 }
 
-Dictionary JustAMCPResourceExecutor::list_resources(const String &cursor) {
+Dictionary JustAMCPResourceExecutor::list_resources(const String &cursor, bool p_include_unlisted) {
 	Array resources;
 
 	for (int i = 0; i < registered_resources.size(); i++) {
 		if (registered_resources[i].is_valid() && !registered_resources[i]->is_template()) {
-			resources.push_back(registered_resources[i]->get_schema());
+			Dictionary schema = registered_resources[i]->get_schema();
+			if (!p_include_unlisted && !JustAMCPSettingsResolver::is_resource_listed(schema.get("name", ""))) {
+				continue;
+			}
+			resources.push_back(schema);
 		}
 	}
 
 	Array manifest_resources = JustAMCPResourceManifest::get_static_resource_schemas();
 	for (int i = 0; i < manifest_resources.size(); i++) {
-		resources.push_back(manifest_resources[i]);
+		Dictionary schema = manifest_resources[i];
+		if (!p_include_unlisted && !JustAMCPSettingsResolver::is_resource_listed(schema.get("name", ""))) {
+			continue;
+		}
+		resources.push_back(schema);
 	}
 
 	return justamcp_pagination_slice_array(resources, cursor, "resources");
 }
 
-Dictionary JustAMCPResourceExecutor::list_resource_templates(const String &cursor) {
-	Dictionary result;
+Dictionary JustAMCPResourceExecutor::list_resource_templates(const String &cursor, bool p_include_unlisted) {
 	Array templates;
 
 	for (int i = 0; i < registered_resources.size(); i++) {
 		if (registered_resources[i].is_valid() && registered_resources[i]->is_template()) {
-			templates.push_back(registered_resources[i]->get_schema());
+			Dictionary schema = registered_resources[i]->get_schema();
+			if (!p_include_unlisted && !JustAMCPSettingsResolver::is_resource_listed(schema.get("name", ""))) {
+				continue;
+			}
+			templates.push_back(schema);
 		}
 	}
 
 	Array manifest_templates = JustAMCPResourceManifest::get_static_resource_template_schemas();
 	for (int i = 0; i < manifest_templates.size(); i++) {
-		templates.push_back(manifest_templates[i]);
+		Dictionary schema = manifest_templates[i];
+		if (!p_include_unlisted && !JustAMCPSettingsResolver::is_resource_listed(schema.get("name", ""))) {
+			continue;
+		}
+		templates.push_back(schema);
 	}
 
 	return justamcp_pagination_slice_array(templates, cursor, "resourceTemplates");

@@ -693,52 +693,55 @@
 		</member>
 		<member name="blazium/justamcp/pending_post_sse_timeout_sec" type="int" setter="" getter="" default="120">
 		</member>
-		<member name="blazium/justamcp/prompts/analyze_autowork_test_failures" type="String" setter="" getter="">
+		<member name="blazium/justamcp/prompts" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], JustAMCP includes prompts in [code]prompts/list[/code]. Individual prompt toggles under [code]blazium/justamcp/prompts/[/code] still apply. Search and get still reach unlisted prompts.
+		</member>
+		<member name="blazium/justamcp/prompts/analyze_autowork_test_failures" type="bool" setter="" getter="" default="true">
 			Read-only MCP prompt template registered as [code]analyze_autowork_test_failures[/code]. Description: Diagnoses failing Autowork test output or Godot stack traces and returns structured root-cause analysis with corrected GDScript.
 		</member>
-		<member name="blazium/justamcp/prompts/blazium_autowork_fix_loop" type="String" setter="" getter="">
+		<member name="blazium/justamcp/prompts/blazium_autowork_fix_loop" type="bool" setter="" getter="" default="true">
 			Read-only MCP prompt template registered as [code]blazium_autowork_fix_loop[/code]. Description: Runs Autowork tests, reads results, diagnoses failures, patches scripts when requested, validates, and reruns. Template v1.
 		</member>
-		<member name="blazium/justamcp/prompts/blazium_context" type="String" setter="" getter="">
+		<member name="blazium/justamcp/prompts/blazium_context" type="bool" setter="" getter="" default="true">
 			Read-only MCP prompt template registered as [code]blazium_context[/code]. Description: Retrieves Blazium Engine JustAMCP context and points users to the richer blazium_project_intake workflow.
 		</member>
-		<member name="blazium/justamcp/prompts/blazium_diagnostics_triage" type="String" setter="" getter="">
+		<member name="blazium/justamcp/prompts/blazium_diagnostics_triage" type="bool" setter="" getter="" default="true">
 			Read-only MCP prompt template registered as [code]blazium_diagnostics_triage[/code]. Description: Aggregates Blazium logs, runtime status, scene validation, project state, and performance context into a structured diagnosis. Template v1.
 		</member>
-		<member name="blazium/justamcp/prompts/blazium_gdscript_linter" type="String" setter="" getter="">
+		<member name="blazium/justamcp/prompts/blazium_gdscript_linter" type="bool" setter="" getter="" default="true">
 			Read-only MCP prompt template registered as [code]blazium_gdscript_linter[/code]. Description: Audits and rewrites a GDScript file enforcing Godot 4.x / Blazium full static typing, typed arrays, @export, @onready, and typed signal conventions.
 		</member>
-		<member name="blazium/justamcp/prompts/blazium_multiplayer_architect" type="String" setter="" getter="">
+		<member name="blazium/justamcp/prompts/blazium_multiplayer_architect" type="bool" setter="" getter="" default="true">
 			Read-only MCP prompt template registered as [code]blazium_multiplayer_architect[/code]. Description: Produces authoritative Blazium multiplayer networking code using Godot 4 RPCs, MultiplayerSpawner, and MultiplayerSynchronizer nodes.
 		</member>
-		<member name="blazium/justamcp/prompts/blazium_project_intake" type="String" setter="" getter="">
+		<member name="blazium/justamcp/prompts/blazium_project_intake" type="bool" setter="" getter="" default="true">
 			Read-only MCP prompt template registered as [code]blazium_project_intake[/code]. Description: Loads Blazium project, scene, selection, and JustAMCP guide context before starting substantial engine work. Template v1.
 		</member>
-		<member name="blazium/justamcp/prompts/blazium_project_optimization" type="String" setter="" getter="">
+		<member name="blazium/justamcp/prompts/blazium_project_optimization" type="bool" setter="" getter="" default="true">
 			Read-only MCP prompt template registered as [code]blazium_project_optimization[/code]. Description: Scans a GDScript file or scene for Godot performance anti-patterns and returns targeted drop-in fixes with explanations.
 		</member>
-		<member name="blazium/justamcp/prompts/blazium_runtime_test_loop" type="String" setter="" getter="">
+		<member name="blazium/justamcp/prompts/blazium_runtime_test_loop" type="bool" setter="" getter="" default="true">
 			Read-only MCP prompt template registered as [code]blazium_runtime_test_loop[/code]. Description: Runs and inspects a Blazium scene through the editor/runtime bridge, including screenshots, logs, input, and clean shutdown. Template v1.
 		</member>
-		<member name="blazium/justamcp/prompts/blazium_scene_architect" type="String" setter="" getter="">
+		<member name="blazium/justamcp/prompts/blazium_scene_architect" type="bool" setter="" getter="" default="true">
 			Read-only MCP prompt template registered as [code]blazium_scene_architect[/code]. Description: Designs a well-structured Godot 4 scene hierarchy using composition, PackedScene encapsulation, and signal-driven communication.
 		</member>
-		<member name="blazium/justamcp/prompts/blazium_scene_build_workflow" type="String" setter="" getter="">
+		<member name="blazium/justamcp/prompts/blazium_scene_build_workflow" type="bool" setter="" getter="" default="true">
 			Read-only MCP prompt template registered as [code]blazium_scene_build_workflow[/code]. Description: Turns a gameplay feature request into a deterministic scene/script/signal/resource build workflow using JustAMCP tools. Template v1.
 		</member>
-		<member name="blazium/justamcp/prompts/blazium_shader_expert" type="String" setter="" getter="">
+		<member name="blazium/justamcp/prompts/blazium_shader_expert" type="bool" setter="" getter="" default="true">
 			Read-only MCP prompt template registered as [code]blazium_shader_expert[/code]. Description: Translates a visual effect description into a complete, valid Godot .gdshader file. Strictly uses Godot Shading Language - never raw GLSL.
 		</member>
-		<member name="blazium/justamcp/prompts/blazium_ui_scaffolder" type="String" setter="" getter="">
+		<member name="blazium/justamcp/prompts/blazium_ui_scaffolder" type="bool" setter="" getter="" default="true">
 			Read-only MCP prompt template registered as [code]blazium_ui_scaffolder[/code]. Description: Generates responsive Godot 4 UI layouts using Container nodes, anchors, and theme overrides. Never outputs hardcoded position or size values.
 		</member>
-		<member name="blazium/justamcp/prompts/editor_state" type="String" setter="" getter="">
+		<member name="blazium/justamcp/prompts/editor_state" type="bool" setter="" getter="" default="true">
 			Read-only MCP prompt template registered as [code]editor_state[/code]. Description: Provides real-time insight into the actively opened Godot Editor environment.
 		</member>
-		<member name="blazium/justamcp/prompts/generate_autowork_test" type="String" setter="" getter="">
+		<member name="blazium/justamcp/prompts/generate_autowork_test" type="bool" setter="" getter="" default="true">
 			Read-only MCP prompt template registered as [code]generate_autowork_test[/code]. Description: Generates a complete Autowork test_*.gd suite for a given GDScript target, mapping public methods to TestContext assertion cases.
 		</member>
-		<member name="blazium/justamcp/prompts/project_info" type="String" setter="" getter="">
+		<member name="blazium/justamcp/prompts/project_info" type="bool" setter="" getter="" default="true">
 			Read-only MCP prompt template registered as [code]project_info[/code]. Description: Retrieves the core Godot Project metadata natively.
 		</member>
 		<member name="blazium/justamcp/protocol_version" type="String" setter="" getter="" default="&quot;2026-07-28&quot;">
@@ -748,126 +751,129 @@
 		</member>
 		<member name="blazium/justamcp/request_route_ttl_sec" type="int" setter="" getter="" default="3600">
 		</member>
-		<member name="blazium/justamcp/resources/Asset Generation Guide" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], JustAMCP includes resources in [code]resources/list[/code]. Individual resource toggles under [code]blazium/justamcp/resources/[/code] still apply. Search and read still reach unlisted resources.
+		</member>
+		<member name="blazium/justamcp/resources/Asset Generation Guide" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Asset Generation Guide[/code]. Description: How SVG-to-PNG asset generation works and how sizing options are applied.
 		</member>
-		<member name="blazium/justamcp/resources/Asset Tag Dictionary" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Asset Tag Dictionary" type="bool" setter="" getter="" default="true">
 		</member>
-		<member name="blazium/justamcp/resources/Asset Tag Dictionary (Paginated)" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Asset Tag Dictionary (Paginated)" type="bool" setter="" getter="" default="true">
 		</member>
-		<member name="blazium/justamcp/resources/Asset Tagging Guide" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Asset Tagging Guide" type="bool" setter="" getter="" default="true">
 		</member>
-		<member name="blazium/justamcp/resources/Asset Tags" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Asset Tags" type="bool" setter="" getter="" default="true">
 		</member>
-		<member name="blazium/justamcp/resources/Assets By Tag" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Assets By Tag" type="bool" setter="" getter="" default="true">
 		</member>
-		<member name="blazium/justamcp/resources/Assets By Tag (Paginated)" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Assets By Tag (Paginated)" type="bool" setter="" getter="" default="true">
 		</member>
-		<member name="blazium/justamcp/resources/Autowork Latest Results" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Autowork Latest Results" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Autowork Latest Results[/code]. Description: Streams the latest JUnit/JSON test results generated by the Autowork Godot testing framework directly into memory.
 		</member>
-		<member name="blazium/justamcp/resources/Blazium Documentation Classes" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Blazium Documentation Classes" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Blazium Documentation Classes[/code]. Description: Internal class documentation summaries from the editor documentation database.
 		</member>
-		<member name="blazium/justamcp/resources/Blazium Project File" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Blazium Project File" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Blazium Project File[/code]. Description: Read any file inside the active res:// Blazium project path.
 		</member>
-		<member name="blazium/justamcp/resources/Class Documentation" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Class Documentation" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Class Documentation[/code]. Description: Read internal documentation for one Blazium class.
 		</member>
-		<member name="blazium/justamcp/resources/Current Scene" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Current Scene" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Current Scene[/code]. Description: Current scene path and play state.
 		</member>
-		<member name="blazium/justamcp/resources/Current Selection" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Current Selection" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Current Selection[/code]. Description: Currently selected editor nodes.
 		</member>
-		<member name="blazium/justamcp/resources/Documentation Search" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Documentation Search" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Documentation Search[/code]. Description: Search internal Blazium class and member documentation.
 		</member>
-		<member name="blazium/justamcp/resources/Editor State" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Editor State" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Editor State[/code]. Description: Current editor play mode, active scene, and selection summary.
 		</member>
-		<member name="blazium/justamcp/resources/Input Map" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Input Map" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Input Map[/code]. Description: Project input actions and their configured events.
 		</member>
-		<member name="blazium/justamcp/resources/MCP Log Notifications" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/MCP Log Notifications" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]MCP Log Notifications[/code]. Description: Paginated buffered MCP notifications/message history. Use blazium://logs/mcp/start for the first page.
 		</member>
-		<member name="blazium/justamcp/resources/MCP Sessions" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/MCP Sessions" type="bool" setter="" getter="" default="true">
 		</member>
-		<member name="blazium/justamcp/resources/Materials" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Materials" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Materials[/code]. Description: Material resources found under res://.
 		</member>
-		<member name="blazium/justamcp/resources/Member Documentation" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Member Documentation" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Member Documentation[/code]. Description: Read internal documentation for one method, property, signal, constant, enum, annotation, or theme property.
 		</member>
-		<member name="blazium/justamcp/resources/Node Children" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Node Children" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Node Children[/code]. Description: Direct children for a node path such as blazium://node/Main/children.
 		</member>
-		<member name="blazium/justamcp/resources/Node Groups" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Node Groups" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Node Groups[/code]. Description: Groups assigned to a node path such as blazium://node/Main/Enemy/groups.
 		</member>
-		<member name="blazium/justamcp/resources/Node Properties" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Node Properties" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Node Properties[/code]. Description: Editor-visible properties for a node path such as blazium://node/Main/Camera3D/properties.
 		</member>
-		<member name="blazium/justamcp/resources/Performance" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Performance" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code skip-lint]Performance[/code]. Description: [Performance] singleton snapshot.
 		</member>
-		<member name="blazium/justamcp/resources/Project Info" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Project Info" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Project Info[/code]. Description: Project name, engine version, paths, active scene, and play state.
 		</member>
-		<member name="blazium/justamcp/resources/Project Settings" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Project Settings" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Project Settings[/code]. Description: Common project settings subset.
 		</member>
-		<member name="blazium/justamcp/resources/Recent Engine Logs" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Recent Engine Logs" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Recent Engine Logs[/code]. Description: Paginated recent engine log lines captured by JustAMCP. Use blazium://logs/recent/start for the first page.
 		</member>
-		<member name="blazium/justamcp/resources/Recent Logs" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Recent Logs" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Recent Logs[/code]. Description: Recent JustAMCP engine log lines.
 		</member>
-		<member name="blazium/justamcp/resources/Scene Editing Guide" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Scene Editing Guide" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Scene Editing Guide[/code]. Description: How to choose scene, node, resource, signal, and group editing tools.
 		</member>
-		<member name="blazium/justamcp/resources/Scene Hierarchy" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Scene Hierarchy" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Scene Hierarchy[/code]. Description: Flattened hierarchy for the active edited scene.
 		</member>
-		<member name="blazium/justamcp/resources/Script Source" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Script Source" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Script Source[/code]. Description: Read a script by omitting the res:// prefix, such as blazium://script/scripts/player.gd.
 		</member>
-		<member name="blazium/justamcp/resources/Semantic Asset Entry" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Semantic Asset Entry" type="bool" setter="" getter="" default="true">
 		</member>
-		<member name="blazium/justamcp/resources/Semantic Index Rebuild" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Semantic Index Rebuild" type="bool" setter="" getter="" default="true">
 		</member>
-		<member name="blazium/justamcp/resources/Semantic Index Stats" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Semantic Index Stats" type="bool" setter="" getter="" default="true">
 		</member>
-		<member name="blazium/justamcp/resources/Semantic Search" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Semantic Search" type="bool" setter="" getter="" default="true">
 		</member>
-		<member name="blazium/justamcp/resources/Semantic Search (Limited)" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Semantic Search (Limited)" type="bool" setter="" getter="" default="true">
 		</member>
-		<member name="blazium/justamcp/resources/Semantic Search (Paginated)" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Semantic Search (Paginated)" type="bool" setter="" getter="" default="true">
 		</member>
-		<member name="blazium/justamcp/resources/Semantic Search (Tag Filtered)" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Semantic Search (Tag Filtered)" type="bool" setter="" getter="" default="true">
 		</member>
-		<member name="blazium/justamcp/resources/Semantic Similar Assets" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Semantic Similar Assets" type="bool" setter="" getter="" default="true">
 		</member>
-		<member name="blazium/justamcp/resources/Semantic Similar Assets (Limited)" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Semantic Similar Assets (Limited)" type="bool" setter="" getter="" default="true">
 		</member>
-		<member name="blazium/justamcp/resources/System Logs (Paginated)" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/System Logs (Paginated)" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]System Logs (Paginated)[/code]. Description: Paginated engine log lines as JSON. Use blazium://system/logs/start for the first page.
 		</member>
-		<member name="blazium/justamcp/resources/Test Results" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Test Results" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Test Results[/code]. Description: Latest Autowork test results when available.
 		</member>
-		<member name="blazium/justamcp/resources/Testing Loop Guide" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Testing Loop Guide" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Testing Loop Guide[/code]. Description: How to run, drive, inspect, screenshot, and stop a running game through JustAMCP.
 		</member>
-		<member name="blazium/justamcp/resources/Tool Index Guide" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Tool Index Guide" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Tool Index Guide[/code]. Description: Goal-oriented guide to the main JustAMCP tool families.
 		</member>
-		<member name="blazium/justamcp/resources/Troubleshooting Guide" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Troubleshooting Guide" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Troubleshooting Guide[/code]. Description: Common failures and recovery steps for runtime, project, and tool workflows.
 		</member>
-		<member name="blazium/justamcp/resources/Video Recordings Cache" type="String" setter="" getter="">
+		<member name="blazium/justamcp/resources/Video Recordings Cache" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Video Recordings Cache[/code]. Description: Returns an index of all sequential video snapshot frames captured by the runtime recording hook.
 		</member>
 		<member name="blazium/justamcp/server_enabled" type="bool" setter="" getter="" default="false">
@@ -1001,6 +1007,42 @@
 		</member>
 		<member name="blazium/justamcp/tools/animation_tools/blazium_set_blend_tree_node" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_set_blend_tree_node[/code] tool from the Animation Tools family to MCP clients. Adds or replaces an AnimationNodeAnimation inside an AnimationNodeBlendTree.
+		</member>
+		<member name="blazium/justamcp/tools/asset_tags_tools" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/asset_tags_tools/blazium_tags_add" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/asset_tags_tools/blazium_tags_add_to_asset" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/asset_tags_tools/blazium_tags_batch_set_on_assets" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/asset_tags_tools/blazium_tags_can_undo" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/asset_tags_tools/blazium_tags_find_assets" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/asset_tags_tools/blazium_tags_get_info" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/asset_tags_tools/blazium_tags_get_on_asset" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/asset_tags_tools/blazium_tags_get_unused" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/asset_tags_tools/blazium_tags_list" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/asset_tags_tools/blazium_tags_remove" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/asset_tags_tools/blazium_tags_remove_from_asset" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/asset_tags_tools/blazium_tags_rename" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/asset_tags_tools/blazium_tags_rescan" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/asset_tags_tools/blazium_tags_search_assets" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/asset_tags_tools/blazium_tags_set_on_asset" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/asset_tags_tools/blazium_tags_undo_last_change" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/asset_tags_tools/blazium_tags_update_comment" type="bool" setter="" getter="" default="true">
 		</member>
 		<member name="blazium/justamcp/tools/asset_tools" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], enables the Asset Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/asset_tools/[/code] can be toggled separately.
@@ -1259,6 +1301,20 @@
 		<member name="blazium/justamcp/tools/mcp_client_tools/blazium_mcp_client_list_remote_tools" type="bool" setter="" getter="" default="true">
 		</member>
 		<member name="blazium/justamcp/tools/mcp_client_tools/blazium_mcp_client_read_remote_resource" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/meta_tools" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/meta_tools/blazium_call_toolset" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/meta_tools/blazium_describe_toolset" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/meta_tools/blazium_execute_tool" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/meta_tools/blazium_get_guide" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/meta_tools/blazium_list_toolsets" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/meta_tools/blazium_search_tools" type="bool" setter="" getter="" default="true">
 		</member>
 		<member name="blazium/justamcp/tools/networking_tools" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], enables the Networking Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/networking_tools/[/code] can be toggled separately.
@@ -1811,6 +1867,22 @@
 		</member>
 		<member name="blazium/justamcp/tools/script_tools/blazium_validate_script" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_validate_script[/code] tool from the Script Tools family to MCP clients. Compiles a GDScript implicitly returning if valid or syntax errors mapped out.
+		</member>
+		<member name="blazium/justamcp/tools/semantic_search_tools" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="blazium/justamcp/tools/semantic_search_tools/blazium_semantic_find_similar" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/semantic_search_tools/blazium_semantic_index_stats" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/semantic_search_tools/blazium_semantic_rebuild_index" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/semantic_search_tools/blazium_semantic_search" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/semantic_search_tools/blazium_semantic_search_cancel" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/semantic_search_tools/blazium_semantic_search_enqueue" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/semantic_search_tools/blazium_semantic_search_poll" type="bool" setter="" getter="" default="true">
 		</member>
 		<member name="blazium/justamcp/tools/shader_tools" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], enables the Shader Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/shader_tools/[/code] can be toggled separately.

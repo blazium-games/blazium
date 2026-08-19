@@ -52,7 +52,7 @@ public:
 
 	void add_prompt(const Ref<JustAMCPPrompt> &p_prompt);
 
-	Dictionary list_prompts(const String &cursor = "");
+	Dictionary list_prompts(const String &cursor = "", bool p_include_unlisted = false);
 	Dictionary get_prompt(const String &p_name, const Dictionary &p_args);
 	Dictionary complete_prompt(const Dictionary &p_ref, const Dictionary &p_argument, const Dictionary &p_context = Dictionary());
 

@@ -62,7 +62,7 @@ void test_justamcp_bridge_execute_no_main_block() {
 	const uint64_t start_ms = OS::get_singleton()->get_ticks_msec();
 	Dictionary result = bridge.execute_tool("mcp_client_list_remote_tools", args);
 	const uint64_t elapsed_ms = OS::get_singleton()->get_ticks_msec() - start_ms;
-	CHECK(elapsed_ms < 50);
+	CHECK(elapsed_ms < justamcp_nonblocking_call_budget_ms());
 	CHECK(bool(result.get("_justamcp_async_pending", false)));
 
 	OS::get_singleton()->delay_usec(500000);

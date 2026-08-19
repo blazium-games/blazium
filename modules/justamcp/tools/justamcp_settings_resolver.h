@@ -36,10 +36,17 @@
 class JustAMCPSettingsResolver {
 public:
 	static bool uses_project_override();
+	static bool resolve_bool(const String &p_path, bool p_default);
+	static void set_category_default(const String &p_category, bool p_is_core);
 	static bool resolve_category_enabled(const String &p_category, bool p_default = true);
 	static bool resolve_tool_enabled(const String &p_category, const String &p_full_name, bool p_default = true);
 	static bool resolve_toolset_enabled(const String &p_name, bool p_default = true);
 	static bool resolve_tool_enabled(const String &p_category, const String &p_full_name, bool p_ignore_settings, bool p_include_disabled_tools, bool &r_cat_enabled, bool &r_tool_enabled);
+	static bool is_tool_listed(const String &p_category, const String &p_full_name);
+	static bool is_tool_executable(const String &p_category, const String &p_full_name);
+	static bool is_prompt_listed(const String &p_name);
+	static bool is_resource_listed(const String &p_name);
+	static bool resolve_allow_execute_tool_bypass();
 };
 
 #endif

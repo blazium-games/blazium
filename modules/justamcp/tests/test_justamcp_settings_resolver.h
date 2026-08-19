@@ -33,9 +33,14 @@
 
 void test_justamcp_settings_resolver();
 void test_justamcp_resource_manifest();
+void test_justamcp_list_vs_execute_and_active_count();
 
 TEST_CASE("[Modules][JustAMCP] settings resolver") {
 	test_justamcp_settings_resolver();
+}
+
+TEST_CASE("[Modules][JustAMCP] section list budget vs execute") {
+	test_justamcp_list_vs_execute_and_active_count();
 }
 
 TEST_CASE("[Modules][JustAMCP] resource manifest") {

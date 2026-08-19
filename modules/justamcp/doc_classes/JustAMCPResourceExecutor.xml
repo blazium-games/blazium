@@ -26,15 +26,17 @@
 		<method name="list_resource_templates">
 			<return type="Dictionary" />
 			<param index="0" name="cursor" type="String" default="&quot;&quot;" />
+			<param index="1" name="include_unlisted" type="bool" default="false" />
 			<description>
-				Returns a paginated MCP [code]resources/templates/list[/code] dictionary with [code]resourceTemplates[/code] and optional [code]nextCursor[/code].
+				Returns a paginated MCP [code]resources/templates/list[/code] dictionary with [code]resourceTemplates[/code] and optional [code]nextCursor[/code]. When [param include_unlisted] is [code]false[/code], templates disabled by the Resources section toggle or a per-resource toggle are omitted.
 			</description>
 		</method>
 		<method name="list_resources">
 			<return type="Dictionary" />
 			<param index="0" name="cursor" type="String" default="&quot;&quot;" />
+			<param index="1" name="include_unlisted" type="bool" default="false" />
 			<description>
-				Returns a paginated MCP [code]resources/list[/code] dictionary with [code]resources[/code] and optional [code]nextCursor[/code].
+				Returns a paginated MCP [code]resources/list[/code] dictionary with [code]resources[/code] and optional [code]nextCursor[/code]. When [param include_unlisted] is [code]false[/code], resources disabled by the Resources section toggle or a per-resource toggle are omitted.
 			</description>
 		</method>
 		<method name="read_resource">
