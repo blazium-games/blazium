@@ -341,6 +341,9 @@ void initialize_justamcp_module(ModuleInitializationLevel p_level) {
 		}
 #endif
 		_register_all_toolsets();
+		JustAMCPToolExecutor::register_tool_settings();
+		JustAMCPPromptExecutor::register_settings();
+		JustAMCPResourceExecutor::register_settings();
 		JustAMCPToolSchemaCache::get_schemas(false, false, false, false);
 		EditorPlugins::add_by_type<JustAMCPEditorPlugin>();
 	}

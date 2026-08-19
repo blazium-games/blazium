@@ -161,18 +161,12 @@ Dictionary JustAMCPToolsetRegistry::describe_toolset(const String &p_name) const
 	}
 	const ToolsetEntry &entry = toolsets[p_name];
 	const bool enabled = _is_toolset_enabled_live(p_name);
-	if (!enabled) {
-		result["ok"] = false;
-		result["error"] = "Toolset is disabled: " + p_name;
-		result["enabled"] = false;
-		return result;
-	}
 	if (!entry.get_schemas.is_valid()) {
 		result["ok"] = false;
 		result["error"] = "Toolset has no schema provider: " + p_name;
 		return result;
 	}
-	Variant schemas = entry.get_schemas.call(false, false, true);
+	Variant schemas = entry.get_schemas.call(false, true, true);
 	result["ok"] = true;
 	result["toolset_name"] = p_name;
 	result["description"] = entry.description;
@@ -189,7 +183,10 @@ Array JustAMCPToolsetRegistry::collect_tool_schemas(const String &p_name, bool p
 		return Array();
 	}
 	const ToolsetEntry &entry = toolsets[p_name];
-	if (!_is_toolset_enabled_live(p_name) || !entry.get_schemas.is_valid()) {
+	if (!entry.get_schemas.is_valid()) {
+		return Array();
+	}
+	if (!p_register_only && !p_ignore_settings && !_is_toolset_enabled_live(p_name)) {
 		return Array();
 	}
 	const Variant schemas = entry.get_schemas.call(p_register_only, p_ignore_settings, p_include_disabled_tools);
@@ -207,11 +204,6 @@ Dictionary JustAMCPToolsetRegistry::call_toolset(const String &p_toolset_name, c
 		return result;
 	}
 	const ToolsetEntry &entry = toolsets[p_toolset_name];
-	if (!_is_toolset_enabled_live(p_toolset_name)) {
-		result["ok"] = false;
-		result["error"] = "Toolset is disabled: " + p_toolset_name;
-		return result;
-	}
 	if (!entry.execute_tool.is_valid()) {
 		result["ok"] = false;
 		result["error"] = "Toolset has no executor: " + p_toolset_name;
@@ -221,9 +213,7 @@ Dictionary JustAMCPToolsetRegistry::call_toolset(const String &p_toolset_name, c
 	if (!full_tool_name.begins_with("blazium_")) {
 		full_tool_name = "blazium_" + full_tool_name;
 	}
-	bool cat_enabled = true;
-	bool tool_enabled = true;
-	if (!entry.category.is_empty() && !JustAMCPSettingsResolver::resolve_tool_enabled(entry.category, full_tool_name, false, false, cat_enabled, tool_enabled)) {
+	if (!entry.category.is_empty() && !JustAMCPSettingsResolver::is_tool_executable(entry.category, full_tool_name)) {
 		result["ok"] = false;
 		result["error"] = "Tool is disabled: " + full_tool_name;
 		return result;

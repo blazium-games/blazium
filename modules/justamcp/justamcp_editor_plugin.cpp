@@ -63,23 +63,25 @@ void JustAMCPConfigUI::_update_config() {
 	text_edit_cursor->set_text(JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_CURSOR));
 	text_edit_opencode->set_text(JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_OPENCODE));
 
-	int total_tools = JustAMCPToolSchemaCache::get_schemas(false, true, true, true).size();
-	int active_tools = JustAMCPToolSchemaCache::get_schemas(false, false, true, false).size();
+	int total_tools = JustAMCPToolSchemaCache::get_schemas(false, true, false, true).size();
+	int active_tools = JustAMCPToolSchemaCache::get_schemas(false, false, false, false).size();
 
 	JustAMCPResourceExecutor res_exec;
-	int total_res = res_exec.list_resources().get("resources", Array()).operator Array().size();
+	int total_res = res_exec.list_resources("", true).get("resources", Array()).operator Array().size();
+	int listed_res = res_exec.list_resources("", false).get("resources", Array()).operator Array().size();
 
 	JustAMCPPromptExecutor prmpt_exec;
-	int total_prompts = prmpt_exec.list_prompts().get("prompts", Array()).operator Array().size();
+	int total_prompts = prmpt_exec.list_prompts("", true).get("prompts", Array()).operator Array().size();
+	int listed_prompts = prmpt_exec.list_prompts("", false).get("prompts", Array()).operator Array().size();
 
 	if (stats_tools_label) {
 		stats_tools_label->set_text("Tools (Active): " + itos(active_tools) + " / " + itos(total_tools));
 	}
 	if (stats_resources_label) {
-		stats_resources_label->set_text("Resources: " + itos(total_res));
+		stats_resources_label->set_text("Resources: " + itos(listed_res) + " / " + itos(total_res));
 	}
 	if (stats_prompts_label) {
-		stats_prompts_label->set_text("Prompts: " + itos(total_prompts));
+		stats_prompts_label->set_text("Prompts: " + itos(listed_prompts) + " / " + itos(total_prompts));
 	}
 }
 
@@ -183,72 +185,6 @@ bool JustAMCPConfigInspectorPlugin::parse_property(Object *p_object, const Varia
 	if (p_path == "blazium/justamcp/z_mcp_config" || p_path == "z_mcp_config") {
 		JustAMCPConfigUI *ui = memnew(JustAMCPConfigUI);
 		add_custom_control(ui);
-		return true;
-	}
-
-	String found_path = "";
-	String prop_value = "";
-
-	JustAMCPPromptExecutor p_exec;
-	Array prompts = p_exec.list_prompts().get("prompts", Array());
-	for (int i = 0; i < prompts.size(); i++) {
-		Dictionary p = prompts[i];
-		String n = p["name"];
-		String d = p["description"];
-		if (p_path == n || p_path.ends_with("prompts/" + n)) {
-			found_path = "blazium/justamcp/prompts/" + n;
-			prop_value = d;
-			break;
-		}
-	}
-
-	if (found_path.is_empty()) {
-		JustAMCPResourceExecutor r_exec;
-		Array res = r_exec.list_resources().get("resources", Array());
-		for (int i = 0; i < res.size(); i++) {
-			Dictionary r = res[i];
-			String n = r["name"];
-			String d = r["description"];
-			if (p_path == n || p_path.ends_with("resources/" + n)) {
-				found_path = "blazium/justamcp/resources/" + n;
-				prop_value = d;
-				break;
-			}
-		}
-
-		if (found_path.is_empty()) {
-			Array tmpl = r_exec.list_resource_templates().get("resourceTemplates", Array());
-			for (int i = 0; i < tmpl.size(); i++) {
-				Dictionary r = tmpl[i];
-				String n = r["name"];
-				String d = r["description"];
-				if (p_path == n || p_path.ends_with("resources/" + n)) {
-					found_path = "blazium/justamcp/resources/" + n;
-					prop_value = d;
-					break;
-				}
-			}
-		}
-	}
-
-	if (!found_path.is_empty()) {
-		VBoxContainer *vbox = memnew(VBoxContainer);
-		vbox->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-
-		Label *lbl = memnew(Label);
-		lbl->set_text(found_path.get_file());
-		vbox->add_child(lbl);
-
-		TextEdit *text_edit = memnew(TextEdit);
-		text_edit->set_editable(false);
-		text_edit->set_text(prop_value);
-		text_edit->set_custom_minimum_size(Size2(0, 60));
-		text_edit->set_v_size_flags(Control::SIZE_EXPAND_FILL);
-		text_edit->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-		text_edit->add_theme_color_override("font_readonly_color", Color(0.8, 0.8, 0.8));
-		vbox->add_child(text_edit);
-
-		add_custom_control(vbox);
 		return true;
 	}
 

@@ -69,7 +69,7 @@ void test_justamcp_bridge_no_main_wait() {
 	const String body = "{\"jsonrpc\":\"2.0\",\"id\":77,\"method\":\"tools/call\",\"params\":{\"name\":\"blazium_mcp_client_list_remote_tools\",\"arguments\":{\"bridge_name\":\"missing\"},\"task\":{\"ttl\":60000}}}";
 	const Dictionary result = JustAMCPJsonRpcTransport::handle_json_rpc(&server, body, response);
 	const uint64_t elapsed_ms = OS::get_singleton()->get_ticks_msec() - start_ms;
-	CHECK(elapsed_ms < 50);
+	CHECK(elapsed_ms < justamcp_nonblocking_call_budget_ms());
 
 	const bool async_or_task = result.is_empty() || result.has("result") || result.has("error");
 	CHECK(async_or_task);

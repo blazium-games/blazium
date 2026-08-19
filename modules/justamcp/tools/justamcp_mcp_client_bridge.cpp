@@ -313,14 +313,7 @@ Array JustAMCPMCPClientBridge::get_tool_schemas(bool p_register_only, bool p_ign
 	auto add_schema = [&](const String &p_name, const String &p_desc, const Vector<String> &p_props, const Vector<String> &p_req, const String &p_task_support = "forbidden") {
 		const String full_name = "blazium_" + p_name;
 		if (p_register_only) {
-			const String cat_path = "blazium/justamcp/tools/" + current_category;
-			const String tool_path = cat_path + "/" + full_name;
-			GLOBAL_DEF_BASIC(PropertyInfo(Variant::BOOL, cat_path), is_core);
-			GLOBAL_DEF_BASIC(PropertyInfo(Variant::BOOL, tool_path), true);
-			if (EditorSettings::get_singleton()) {
-				EDITOR_DEF_BASIC(cat_path, is_core);
-				EDITOR_DEF_BASIC(tool_path, true);
-			}
+			JustAMCPToolSchemaBuilder::register_tool_settings(current_category, full_name, is_core);
 			return;
 		}
 		bool cat_enabled = true;

@@ -56,8 +56,8 @@ public:
 	static void _on_filesystem_changed();
 	void add_resource(const Ref<JustAMCPResource> &p_resource);
 
-	Dictionary list_resources(const String &cursor = "");
-	Dictionary list_resource_templates(const String &cursor = "");
+	Dictionary list_resources(const String &cursor = "", bool p_include_unlisted = false);
+	Dictionary list_resource_templates(const String &cursor = "", bool p_include_unlisted = false);
 	Dictionary read_resource(const String &p_uri);
 
 	JustAMCPResourceExecutor();

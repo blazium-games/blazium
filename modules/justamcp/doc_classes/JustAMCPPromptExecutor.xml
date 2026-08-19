@@ -43,8 +43,9 @@
 		<method name="list_prompts">
 			<return type="Dictionary" />
 			<param index="0" name="cursor" type="String" default="&quot;&quot;" />
+			<param index="1" name="include_unlisted" type="bool" default="false" />
 			<description>
-				Returns a paginated MCP [code]prompts/list[/code] dictionary with [code]prompts[/code] and optional [code]nextCursor[/code]. Invalid [param cursor] values return an error dictionary with code [code]-32602[/code].
+				Returns a paginated MCP [code]prompts/list[/code] dictionary with [code]prompts[/code] and optional [code]nextCursor[/code]. Invalid [param cursor] values return an error dictionary with code [code]-32602[/code]. When [param include_unlisted] is [code]false[/code], prompts disabled by the Prompts section toggle or a per-prompt toggle are omitted.
 			</description>
 		</method>
 	</methods>

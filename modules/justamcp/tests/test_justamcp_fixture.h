@@ -34,6 +34,16 @@
 #include "../justamcp_server.h"
 #include "../justamcp_session_manager.h"
 
+// Non-blocking MCP calls must return immediately. Sanitizers inflate wall time
+// enough that the 50ms budget flakes (CI saw 63ms under ASan/UBSan).
+static inline uint64_t justamcp_nonblocking_call_budget_ms() {
+#ifdef SANITIZERS_ENABLED
+	return 250;
+#else
+	return 50;
+#endif
+}
+
 class JustAMCPTestServerFixture {
 	JustAMCPServer server;
 

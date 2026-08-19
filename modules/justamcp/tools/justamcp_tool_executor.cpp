@@ -67,6 +67,7 @@
 #include "justamcp_scene_tools.h"
 #include "justamcp_script_tools.h"
 #include "justamcp_semantic_search_tools.h"
+#include "justamcp_settings_resolver.h"
 #include "justamcp_shader_tools.h"
 #include "justamcp_spatial_tools.h"
 #include "justamcp_theme_tools.h"
@@ -492,7 +493,9 @@ static Array _collect_tool_schemas(bool p_register_only, bool p_ignore_settings,
 		tools.push_back(t);
 	};
 
-	if (p_category_only.is_empty()) {
+	if (p_category_only.is_empty() || p_category_only == "meta_tools") {
+		current_category = "meta_tools";
+		is_core = true;
 		add_schema("search_tools", "Searches the engine native capabilities for a specific tool name matching your needs.",
 				Vector<String>{ "query", "string" }, Vector<String>{ "query" }, "forbidden", "worker");
 		add_schema("execute_tool", "Dynamically bypasses context omission to execute ANY tool in the engine by name.",
@@ -659,16 +662,18 @@ Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const D
 		return result;
 	}
 
-	if (target_schema.has("_meta") && !allow_disabled_dispatch) {
+	String listed_category;
+	if (target_schema.has("_meta")) {
 		Dictionary meta = target_schema["_meta"];
-		if (!meta.get("enabled", true)) {
-			Dictionary err;
-			err["code"] = -32601;
-			err["message"] = "Tool is disabled: " + p_tool_name;
-			result["ok"] = false;
-			result["error"] = err;
-			return result;
-		}
+		listed_category = meta.get("category", "");
+	}
+	if (!allow_disabled_dispatch && !JustAMCPToolDispatcher::is_tool_enabled(full_name, listed_category)) {
+		Dictionary err;
+		err["code"] = -32601;
+		err["message"] = "Tool is disabled: " + p_tool_name;
+		result["ok"] = false;
+		result["error"] = err;
+		return result;
 	}
 
 	if (justamcp_is_cancel_requested()) {
@@ -795,10 +800,7 @@ Dictionary JustAMCPToolExecutor::execute_registry_category_tool(const String &p_
 }
 
 Dictionary JustAMCPToolExecutor::execute_tool_direct(const String &p_tool_name, const Dictionary &p_args) {
-	bool allow_bypass = false;
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/allow_execute_tool_bypass")) {
-		allow_bypass = GLOBAL_GET("blazium/justamcp/allow_execute_tool_bypass");
-	}
+	const bool allow_bypass = JustAMCPSettingsResolver::resolve_allow_execute_tool_bypass();
 	const bool prev = allow_disabled_dispatch;
 	allow_disabled_dispatch = allow_bypass;
 	Dictionary result = execute_tool(p_tool_name, p_args);

@@ -195,7 +195,7 @@ Dictionary JustAMCPJsonRpcHelpers::format_tool_result(bool p_success, const Vari
 
 void JustAMCPJsonRpcHelpers::mark_mcp_tool_settings_dirty() {
 	mcp_tool_settings_dirty = true;
-	JustAMCPToolSchemaCache::mark_all_cached_categories_dirty();
+	JustAMCPToolSchemaCache::invalidate();
 }
 
 bool JustAMCPJsonRpcHelpers::should_broadcast_tools_list_changed() {

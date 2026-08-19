@@ -39,12 +39,7 @@
 #include "justamcp_toolset_registry.h"
 
 bool JustAMCPToolDispatcher::is_tool_enabled(const String &p_full_name, const String &p_category) {
-	if (p_category.is_empty()) {
-		return true;
-	}
-	bool cat_enabled = true;
-	bool tool_enabled = true;
-	return JustAMCPSettingsResolver::resolve_tool_enabled(p_category, p_full_name, false, false, cat_enabled, tool_enabled);
+	return JustAMCPSettingsResolver::is_tool_executable(p_category, p_full_name);
 }
 
 bool JustAMCPToolDispatcher::matches_prefix_route(const String &p_internal_name) {

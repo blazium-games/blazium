@@ -35,6 +35,7 @@
 #include "core/config/project_settings.h"
 #include "core/object/class_db.h"
 #include "editor/editor_settings.h"
+#include "justamcp_settings_resolver.h"
 #include "prompts/justamcp_prompt_asset_tagging_workflow.h"
 #include "prompts/justamcp_prompt_autowork_failure_analyzer.h"
 #include "prompts/justamcp_prompt_autowork_test_generator.h"
@@ -51,15 +52,19 @@
 
 void JustAMCPPromptExecutor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_prompt", "name", "args"), &JustAMCPPromptExecutor::get_prompt);
-	ClassDB::bind_method(D_METHOD("list_prompts", "cursor"), &JustAMCPPromptExecutor::list_prompts, DEFVAL(""));
+	ClassDB::bind_method(D_METHOD("list_prompts", "cursor", "include_unlisted"), &JustAMCPPromptExecutor::list_prompts, DEFVAL(""), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("complete_prompt", "ref", "argument", "context"), &JustAMCPPromptExecutor::complete_prompt, DEFVAL(Dictionary()));
 	ClassDB::bind_method(D_METHOD("add_prompt", "prompt"), &JustAMCPPromptExecutor::add_prompt);
 }
 
 void JustAMCPPromptExecutor::register_settings() {
-	JustAMCPPromptExecutor exec;
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::BOOL, "blazium/justamcp/prompts"), true);
+	if (EditorSettings::get_singleton()) {
+		EDITOR_DEF_BASIC("blazium/justamcp/prompts", true);
+	}
 
-	Dictionary dict = exec.list_prompts();
+	JustAMCPPromptExecutor exec;
+	Dictionary dict = exec.list_prompts("", true);
 	if (dict.has("prompts")) {
 		Array prompts = dict["prompts"];
 		for (int i = 0; i < prompts.size(); i++) {
@@ -68,10 +73,10 @@ void JustAMCPPromptExecutor::register_settings() {
 			String desc = p["description"];
 			String path = "blazium/justamcp/prompts/" + name;
 
-			GLOBAL_DEF_NOVAL_BASIC(PropertyInfo(Variant::STRING, path, PROPERTY_HINT_MULTILINE_TEXT, desc, PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY), String());
+			GLOBAL_DEF_BASIC(PropertyInfo(Variant::BOOL, path, PROPERTY_HINT_NONE, desc), true);
 			if (EditorSettings::get_singleton()) {
-				EDITOR_DEF_BASIC(path, String());
-				EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::STRING, path, PROPERTY_HINT_MULTILINE_TEXT, desc, PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY));
+				EDITOR_DEF_BASIC(path, true);
+				EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::BOOL, path, PROPERTY_HINT_NONE, desc));
 			}
 		}
 	}
@@ -107,10 +112,14 @@ void JustAMCPPromptExecutor::add_prompt(const Ref<JustAMCPPrompt> &p_prompt) {
 	}
 }
 
-Dictionary JustAMCPPromptExecutor::list_prompts(const String &cursor) {
+Dictionary JustAMCPPromptExecutor::list_prompts(const String &cursor, bool p_include_unlisted) {
 	Array prompts;
 	for (int i = 0; i < registered_prompts.size(); i++) {
 		if (registered_prompts[i].is_valid()) {
+			const String name = registered_prompts[i]->get_name();
+			if (!p_include_unlisted && !JustAMCPSettingsResolver::is_prompt_listed(name)) {
+				continue;
+			}
 			Dictionary prompt = registered_prompts[i]->get_prompt();
 			justamcp_attach_icons(prompt);
 			prompts.push_back(prompt);
