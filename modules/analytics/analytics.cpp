@@ -159,6 +159,9 @@ bool Analytics::_is_editor_context() const {
 bool Analytics::_can_queue() const {
 #ifdef ANALYTICS_ENABLED
 	if (_is_editor_context()) {
+		if (get_endpoint().strip_edges().is_empty()) {
+			return false;
+		}
 		return get_consent() == "accepted";
 	}
 	if (!_setting_bool("application/analytics/enabled", false)) {
@@ -411,36 +414,21 @@ void Analytics::set_anonymous(bool p_anonymous) {
 String Analytics::get_app_id() const {
 #ifdef TOOLS_ENABLED
 	if (_is_editor_context()) {
-		String editor_override;
-		if (EditorSettings::get_singleton() && EditorSettings::get_singleton()->has_setting("blazium/analytics/app_id")) {
-			editor_override = String(EditorSettings::get_singleton()->get_setting("blazium/analytics/app_id"));
-		}
-		const String baked = String(ANALYTICS_EDITOR_APP_ID);
-		return AppIdentity::resolve_app_id(editor_override, baked, String("blazium-editor"));
+		const String baked = String(ANALYTICS_EDITOR_APP_ID).strip_edges();
+		return baked.is_empty() ? AppIdentity::editor_fallback_app_id() : baked;
 	}
 #endif
-	return AppIdentity::resolve_app_id(String(), String(), _setting_string("application/config/name", String()));
+	return AppIdentity::resolve_app_id(String(), _setting_string("application/config/name", String()));
 }
 
 String Analytics::get_build_id() const {
 #ifdef TOOLS_ENABLED
 	if (_is_editor_context()) {
-		String editor_override;
-		if (EditorSettings::get_singleton() && EditorSettings::get_singleton()->has_setting("blazium/analytics/build_id")) {
-			editor_override = String(EditorSettings::get_singleton()->get_setting("blazium/analytics/build_id"));
-		}
-		String fallback = String(ANALYTICS_EDITOR_BUILD_ID);
-		if (fallback.is_empty() && Engine::get_singleton()) {
-			const Dictionary info = Engine::get_singleton()->get_version_info();
-			fallback = String(info.get("hash", String()));
-		}
-		if (fallback.is_empty()) {
-			fallback = String(VERSION_HASH);
-		}
-		return AppIdentity::resolve_build_id(editor_override, String(ANALYTICS_EDITOR_BUILD_ID), fallback);
+		const String baked = String(ANALYTICS_EDITOR_BUILD_ID).strip_edges();
+		return baked.is_empty() ? AppIdentity::editor_fallback_build_id() : baked;
 	}
 #endif
-	return AppIdentity::resolve_build_id(String(), String(), _setting_string("application/config/version", String()));
+	return AppIdentity::resolve_build_id(String(), _setting_string("application/config/version", String()));
 }
 
 String Analytics::get_app_version() const {
@@ -476,19 +464,9 @@ String Analytics::get_device_uid() const {
 String Analytics::get_endpoint() const {
 #ifdef TOOLS_ENABLED
 	if (_is_editor_context()) {
-		if (EditorSettings::get_singleton() && EditorSettings::get_singleton()->has_setting("blazium/analytics/endpoint")) {
-			const String override_ep = String(EditorSettings::get_singleton()->get_setting("blazium/analytics/endpoint"));
-			if (!override_ep.is_empty()) {
-				return override_ep;
-			}
-		}
 		return String(ANALYTICS_EDITOR_ENDPOINT);
 	}
 #endif
-	const String env = _env("BLAZIUM_ANALYTICS_ENDPOINT");
-	if (!env.is_empty()) {
-		return env;
-	}
 	return _setting_string("application/analytics/endpoint", String());
 }
 

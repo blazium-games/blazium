@@ -32,6 +32,7 @@
 #include "core/config/project_settings.h"
 #include "core/os/os.h"
 #include "core/templates/list.h"
+#include "core/version.h"
 
 String AppIdentity::cmdline_flag_value(const String &p_flag) {
 	if (!OS::get_singleton() || p_flag.is_empty()) {
@@ -106,26 +107,7 @@ String AppIdentity::project_first(const Vector<String> &p_keys) {
 	return String();
 }
 
-String AppIdentity::resolve_app_id(const String &p_editor_override, const String &p_baked, const String &p_fallback) {
-	const String cli = cmdline_flag_value("app-id");
-	if (!cli.is_empty()) {
-		return cli;
-	}
-	const String analytics_cli = cmdline_equals_value("--analytics-app-id=");
-	if (!analytics_cli.is_empty()) {
-		return analytics_cli;
-	}
-	Vector<String> envs;
-	envs.push_back("BLAZIUM_APP_ID");
-	envs.push_back("BLAZIUM_CRASH_REPORTER_APP_ID");
-	envs.push_back("BLAZIUM_ANALYTICS_APP_ID");
-	const String env = env_first(envs);
-	if (!env.is_empty()) {
-		return env;
-	}
-	if (!p_editor_override.strip_edges().is_empty()) {
-		return p_editor_override.strip_edges();
-	}
+String AppIdentity::resolve_app_id(const String &p_baked, const String &p_fallback) {
 	if (!p_baked.strip_edges().is_empty()) {
 		return p_baked.strip_edges();
 	}
@@ -139,26 +121,7 @@ String AppIdentity::resolve_app_id(const String &p_editor_override, const String
 	return p_fallback;
 }
 
-String AppIdentity::resolve_build_id(const String &p_editor_override, const String &p_baked, const String &p_fallback) {
-	const String cli = cmdline_flag_value("build-id");
-	if (!cli.is_empty()) {
-		return cli;
-	}
-	const String analytics_cli = cmdline_equals_value("--analytics-build-id=");
-	if (!analytics_cli.is_empty()) {
-		return analytics_cli;
-	}
-	Vector<String> envs;
-	envs.push_back("BLAZIUM_BUILD_ID");
-	envs.push_back("BLAZIUM_CRASH_REPORTER_BUILD_ID");
-	envs.push_back("BLAZIUM_ANALYTICS_BUILD_ID");
-	const String env = env_first(envs);
-	if (!env.is_empty()) {
-		return env;
-	}
-	if (!p_editor_override.strip_edges().is_empty()) {
-		return p_editor_override.strip_edges();
-	}
+String AppIdentity::resolve_build_id(const String &p_baked, const String &p_fallback) {
 	if (!p_baked.strip_edges().is_empty()) {
 		return p_baked.strip_edges();
 	}
@@ -170,4 +133,12 @@ String AppIdentity::resolve_build_id(const String &p_editor_override, const Stri
 		return project;
 	}
 	return p_fallback;
+}
+
+String AppIdentity::editor_fallback_app_id() {
+	return String("custom_blazium_engine");
+}
+
+String AppIdentity::editor_fallback_build_id() {
+	return String(VERSION_HASH);
 }

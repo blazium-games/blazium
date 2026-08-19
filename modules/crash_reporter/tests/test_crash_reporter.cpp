@@ -116,13 +116,15 @@ void test_crash_reporter_shared_identity() {
 	ProjectSettings::get_singleton()->set("application/crash_reporter/build_id", String());
 	ProjectSettings::get_singleton()->set("application/analytics/app_id", "analytics-only-app");
 	ProjectSettings::get_singleton()->set("application/analytics/build_id", "analytics-only-build");
-	CHECK(AppIdentity::resolve_app_id(String(), String(), "fallback") == "analytics-only-app");
-	CHECK(AppIdentity::resolve_build_id(String(), String(), "fallback") == "analytics-only-build");
+	CHECK(AppIdentity::resolve_app_id(String(), "fallback") == "analytics-only-app");
+	CHECK(AppIdentity::resolve_build_id(String(), "fallback") == "analytics-only-build");
 
 	ProjectSettings::get_singleton()->set("application/crash_reporter/app_id", "crash-only-app");
 	ProjectSettings::get_singleton()->set("application/crash_reporter/build_id", "crash-only-build");
-	CHECK(AppIdentity::resolve_app_id(String(), String(), "fallback") == "crash-only-app");
-	CHECK(AppIdentity::resolve_build_id(String(), String(), "fallback") == "crash-only-build");
+	CHECK(AppIdentity::resolve_app_id(String(), "fallback") == "crash-only-app");
+	CHECK(AppIdentity::resolve_build_id(String(), "fallback") == "crash-only-build");
+	CHECK(AppIdentity::resolve_app_id("baked-app", "fallback") == "baked-app");
+	CHECK(AppIdentity::resolve_build_id("baked-build", "fallback") == "baked-build");
 
 #ifdef MODULE_ANALYTICS_ENABLED
 	Analytics *a = Analytics::get_singleton();

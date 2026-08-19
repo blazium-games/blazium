@@ -5,7 +5,7 @@
 	</brief_description>
 	<description>
 		[Analytics] queues JSON events and optionally POSTs them to an ingest endpoint. Editor builds compiled with [code]editor_analytics=yes[/code] record demographic/usage events after consent. Export templates compiled with [code]analytics=yes[/code] expose a small game SDK ([method track], session start/end).
-		Consent priority is CLI [code]--analytics=[/code], then [code]BLAZIUM_ANALYTICS_CONSENT[/code], then Editor Settings or [method set_consent]. Anonymous mode (default) omits [code]device_uid[/code]; identified mode sends [method OS.get_unique_id]. See [method get_resolved_config].
+		Editor [method get_app_id], [method get_build_id], and ingest URL are baked at compile time ([code]editor_app_id[/code], [code]editor_build_id[/code], [code]editor_analytics_endpoint[/code]) and cannot be changed from CLI, environment, or Editor Settings. If [code]editor_app_id[/code] is omitted, the editor uses [code]custom_blazium_engine[/code]. If [code]editor_build_id[/code] is omitted, the editor uses the engine git hash. An empty editor ingest URL disables collection and sending (no queue growth). Exported games read [member ProjectSettings.application/analytics/app_id], [member ProjectSettings.application/analytics/build_id], and [member ProjectSettings.application/analytics/endpoint]. Consent priority is CLI [code]--analytics=[/code], then [code]BLAZIUM_ANALYTICS_CONSENT[/code], then Editor Settings or [method set_consent]. Anonymous mode (default) omits [code]device_uid[/code]; identified mode sends [method OS.get_unique_id]. See [method get_resolved_config].
 	</description>
 	<tutorials>
 	</tutorials>
@@ -19,7 +19,7 @@
 		<method name="get_app_id" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the resolved product id sent on every event and as [code]X-App-Id[/code] on flush. Shared with [method CrashReporter.get_app_id].
+				Returns the product id sent on every event and as [code]X-App-Id[/code] on flush. In the editor this is the SCons-baked value. In exported games it comes from Project Settings. Shared with [method CrashReporter.get_app_id]. There is no engine CLI override.
 			</description>
 		</method>
 		<method name="get_app_version" qualifiers="const">
@@ -37,7 +37,7 @@
 		<method name="get_build_id" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the resolved build id sent on every event and as [code]X-Build-Id[/code] on flush. Shared with [method CrashReporter.get_build_id].
+				Returns the build id sent on every event and as [code]X-Build-Id[/code] on flush. In the editor this is the SCons-baked value. In exported games it comes from Project Settings. Shared with [method CrashReporter.get_build_id]. There is no engine CLI override.
 			</description>
 		</method>
 		<method name="get_consent" qualifiers="const">
@@ -61,7 +61,7 @@
 		<method name="get_resolved_config" qualifiers="const">
 			<return type="Dictionary" />
 			<description>
-				Returns identity, consent, endpoint, and queue path after CLI, environment, settings, and bake-in overrides.
+				Returns identity, consent, endpoint, and queue path. Editor identity and ingest URL are compile-time only; an empty editor URL disables collection. Game identity and URL come from Project Settings.
 			</description>
 		</method>
 		<method name="identify">

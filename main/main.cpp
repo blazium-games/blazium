@@ -698,14 +698,10 @@ void Main::print_help(const char *p_binary) {
 	print_help_title("Analytics Options");
 	print_help_option("--analytics=<accepted|declined>", "Set analytics consent for this process (overrides settings).\n");
 	print_help_option("--analytics-mode=<anonymous|identified>", "Anonymous omits device_uid; identified sends OS.get_unique_id().\n");
-	print_help_option("--analytics-app-id=<id>", "Alias for --app-id (crash reporter and analytics).\n");
-	print_help_option("--analytics-build-id=<id>", "Alias for --build-id (crash reporter and analytics).\n");
 #endif
 
-	print_help_title("Identity Options");
-	print_help_option("--app-id <id>", "Override App ID for crash reporter and analytics.\n");
-	print_help_option("--build-id <id>", "Override Build ID for crash reporter and analytics.\n");
 #ifdef TOOLS_ENABLED
+	print_help_title("Crash Reporter Options");
 	print_help_option("--crash-reporter <path>", "Editor sidecar crash reporter executable (dumps + spawn; omitted = console only).\n", CLI_OPTION_AVAILABILITY_EDITOR);
 #endif
 
@@ -1965,23 +1961,6 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			}
 		} else if (arg.begins_with("--crash-reporter=")) {
 #endif
-		} else if (arg == "--app-id") {
-			if (N) {
-				N = N->next();
-			} else {
-				OS::get_singleton()->print("Missing <id> argument for --app-id <id>.\n");
-				goto error;
-			}
-		} else if (arg.begins_with("--app-id=")) {
-		} else if (arg == "--build-id") {
-			if (N) {
-				N = N->next();
-			} else {
-				OS::get_singleton()->print("Missing <id> argument for --build-id <id>.\n");
-				goto error;
-			}
-		} else if (arg.begins_with("--build-id=")) {
-		} else if (arg.begins_with("--analytics-app-id=") || arg.begins_with("--analytics-build-id=")) {
 		} else {
 			main_args.push_back(arg);
 		}

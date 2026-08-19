@@ -38,15 +38,20 @@
 static CrashReporter *crash_reporter = nullptr;
 
 void initialize_crash_reporter_module(ModuleInitializationLevel p_level) {
-	if (p_level != MODULE_INITIALIZATION_LEVEL_CORE) {
+	if (p_level == MODULE_INITIALIZATION_LEVEL_CORE) {
+		GDREGISTER_CLASS(CrashReporter);
+		crash_reporter_register_project_settings();
+
+		crash_reporter = memnew(CrashReporter);
+		Engine::get_singleton()->add_singleton(Engine::Singleton("CrashReporter", crash_reporter));
 		return;
 	}
 
-	GDREGISTER_CLASS(CrashReporter);
-	crash_reporter_register_project_settings();
-
-	crash_reporter = memnew(CrashReporter);
-	Engine::get_singleton()->add_singleton(Engine::Singleton("CrashReporter", crash_reporter));
+#ifdef TOOLS_ENABLED
+	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+		crash_reporter_register_editor_settings();
+	}
+#endif
 }
 
 void uninitialize_crash_reporter_module(ModuleInitializationLevel p_level) {
