@@ -30,3 +30,6 @@
 #pragma once
 
 void crash_reporter_register_project_settings();
+#ifdef TOOLS_ENABLED
+void crash_reporter_register_editor_settings();
+#endif

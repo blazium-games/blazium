@@ -29,10 +29,21 @@
 
 #include "analytics_project_settings.h"
 
+#include "core/config/app_identity.h"
 #include "core/config/project_settings.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_settings.h"
+
+#ifndef ANALYTICS_EDITOR_APP_ID
+#define ANALYTICS_EDITOR_APP_ID ""
+#endif
+#ifndef ANALYTICS_EDITOR_BUILD_ID
+#define ANALYTICS_EDITOR_BUILD_ID ""
+#endif
+#ifndef ANALYTICS_EDITOR_ENDPOINT
+#define ANALYTICS_EDITOR_ENDPOINT ""
+#endif
 #endif
 
 void analytics_register_project_settings() {
@@ -53,13 +64,24 @@ void analytics_register_editor_settings() {
 	if (!EditorSettings::get_singleton()) {
 		return;
 	}
+	EditorSettings *es = EditorSettings::get_singleton();
 	EDITOR_DEF_BASIC("blazium/analytics/consent", "unset");
 	EDITOR_DEF_BASIC("blazium/analytics/anonymous", true);
-	EDITOR_DEF_BASIC("blazium/analytics/endpoint", String());
-	EDITOR_DEF_BASIC("blazium/analytics/app_id", String());
-	EDITOR_DEF_BASIC("blazium/analytics/build_id", String());
-	if (EditorSettings::get_singleton()) {
-		EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::STRING, "blazium/analytics/consent", PROPERTY_HINT_ENUM, "unset,accepted,declined"));
-	}
+	const String baked_app_id = String(ANALYTICS_EDITOR_APP_ID).strip_edges();
+	const String baked_build_id = String(ANALYTICS_EDITOR_BUILD_ID).strip_edges();
+	const String baked_endpoint = String(ANALYTICS_EDITOR_ENDPOINT).strip_edges();
+	const String display_app_id = baked_app_id.is_empty() ? AppIdentity::editor_fallback_app_id() : baked_app_id;
+	const String display_build_id = baked_build_id.is_empty() ? AppIdentity::editor_fallback_build_id() : baked_build_id;
+	EDITOR_DEF_BASIC("blazium/analytics/endpoint", baked_endpoint);
+	EDITOR_DEF_BASIC("blazium/analytics/app_id", display_app_id);
+	EDITOR_DEF_BASIC("blazium/analytics/build_id", display_build_id);
+	es->set_setting("blazium/analytics/endpoint", baked_endpoint);
+	es->set_setting("blazium/analytics/app_id", display_app_id);
+	es->set_setting("blazium/analytics/build_id", display_build_id);
+	es->add_property_hint(PropertyInfo(Variant::STRING, "blazium/analytics/consent", PROPERTY_HINT_ENUM, "unset,accepted,declined"));
+	const uint32_t read_only = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY;
+	es->add_property_hint(PropertyInfo(Variant::STRING, "blazium/analytics/app_id", PROPERTY_HINT_NONE, "", read_only));
+	es->add_property_hint(PropertyInfo(Variant::STRING, "blazium/analytics/build_id", PROPERTY_HINT_NONE, "", read_only));
+	es->add_property_hint(PropertyInfo(Variant::STRING, "blazium/analytics/endpoint", PROPERTY_HINT_NONE, "", read_only));
 }
 #endif

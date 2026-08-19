@@ -40,6 +40,7 @@
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
 #include "core/os/os.h"
+#include "core/version.h"
 
 static String _analytics_test_dir(const String &p_suffix) {
 	return OS::get_singleton()->get_cache_path().path_join("analytics_module_test").path_join(p_suffix);
@@ -201,16 +202,18 @@ void test_analytics_shared_identity() {
 		ProjectSettings::get_singleton()->set("application/crash_reporter/app_id", "crash-ns-app");
 		ProjectSettings::get_singleton()->set("application/crash_reporter/build_id", "crash-ns-build");
 	}
-	CHECK(AppIdentity::resolve_app_id(String(), String(), "fallback") == "crash-ns-app");
-	CHECK(AppIdentity::resolve_build_id(String(), String(), "fallback") == "crash-ns-build");
+	CHECK(AppIdentity::editor_fallback_app_id() == "custom_blazium_engine");
+	CHECK(AppIdentity::editor_fallback_build_id() == String(VERSION_HASH));
+	CHECK(AppIdentity::resolve_app_id(String(), "fallback") == "crash-ns-app");
+	CHECK(AppIdentity::resolve_build_id(String(), "fallback") == "crash-ns-build");
 	if (ProjectSettings::get_singleton()) {
 		ProjectSettings::get_singleton()->set("application/crash_reporter/app_id", String());
 		ProjectSettings::get_singleton()->set("application/crash_reporter/build_id", String());
 		ProjectSettings::get_singleton()->set("application/analytics/app_id", "analytics-ns-app");
 		ProjectSettings::get_singleton()->set("application/analytics/build_id", "analytics-ns-build");
 	}
-	CHECK(AppIdentity::resolve_app_id(String(), String(), "fallback") == "analytics-ns-app");
-	CHECK(AppIdentity::resolve_build_id(String(), String(), "fallback") == "analytics-ns-build");
+	CHECK(AppIdentity::resolve_app_id(String(), "fallback") == "analytics-ns-app");
+	CHECK(AppIdentity::resolve_build_id(String(), "fallback") == "analytics-ns-build");
 #ifdef MODULE_CRASH_REPORTER_ENABLED
 	CrashReporter *cr = CrashReporter::get_singleton();
 	REQUIRE(cr != nullptr);

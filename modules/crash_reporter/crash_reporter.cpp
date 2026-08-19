@@ -46,7 +46,6 @@
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_paths.h"
-#include "editor/editor_settings.h"
 #endif
 
 CrashReporter *CrashReporter::singleton = nullptr;
@@ -220,29 +219,19 @@ bool CrashReporter::is_enabled() const {
 
 String CrashReporter::get_app_id() const {
 #ifdef TOOLS_ENABLED
-	String editor_override;
-	if (EditorSettings::get_singleton() && EditorSettings::get_singleton()->has_setting("blazium/analytics/app_id")) {
-		editor_override = String(EditorSettings::get_singleton()->get_setting("blazium/analytics/app_id"));
-	}
-	return AppIdentity::resolve_app_id(editor_override, CR_BAKED(APP_ID), String("blazium-editor"));
+	const String baked = CR_BAKED(APP_ID).strip_edges();
+	return baked.is_empty() ? AppIdentity::editor_fallback_app_id() : baked;
 #else
-	return AppIdentity::resolve_app_id(String(), String(), _setting_string("application/config/name", String()));
+	return AppIdentity::resolve_app_id(String(), _setting_string("application/config/name", String()));
 #endif
 }
 
 String CrashReporter::get_build_id() const {
 #ifdef TOOLS_ENABLED
-	String editor_override;
-	if (EditorSettings::get_singleton() && EditorSettings::get_singleton()->has_setting("blazium/analytics/build_id")) {
-		editor_override = String(EditorSettings::get_singleton()->get_setting("blazium/analytics/build_id"));
-	}
-	String fallback = CR_BAKED(BUILD_ID);
-	if (fallback.is_empty()) {
-		fallback = String(VERSION_HASH);
-	}
-	return AppIdentity::resolve_build_id(editor_override, CR_BAKED(BUILD_ID), fallback);
+	const String baked = CR_BAKED(BUILD_ID).strip_edges();
+	return baked.is_empty() ? AppIdentity::editor_fallback_build_id() : baked;
 #else
-	return AppIdentity::resolve_build_id(String(), String(), _setting_string("application/config/version", String()));
+	return AppIdentity::resolve_build_id(String(), _setting_string("application/config/version", String()));
 #endif
 }
 

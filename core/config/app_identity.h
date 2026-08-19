@@ -38,6 +38,8 @@ public:
 	static String cmdline_equals_value(const String &p_prefix);
 	static String env_first(const Vector<String> &p_names);
 	static String project_first(const Vector<String> &p_keys);
-	static String resolve_app_id(const String &p_editor_override, const String &p_baked, const String &p_fallback);
-	static String resolve_build_id(const String &p_editor_override, const String &p_baked, const String &p_fallback);
+	static String resolve_app_id(const String &p_baked, const String &p_fallback);
+	static String resolve_build_id(const String &p_baked, const String &p_fallback);
+	static String editor_fallback_app_id();
+	static String editor_fallback_build_id();
 };

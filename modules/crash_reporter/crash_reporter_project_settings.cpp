@@ -31,6 +31,18 @@
 
 #include "core/config/project_settings.h"
 
+#ifdef TOOLS_ENABLED
+#include "core/config/app_identity.h"
+#include "editor/editor_settings.h"
+
+#ifndef CRASH_REPORTER_EDITOR_APP_ID
+#define CRASH_REPORTER_EDITOR_APP_ID ""
+#endif
+#ifndef CRASH_REPORTER_EDITOR_BUILD_ID
+#define CRASH_REPORTER_EDITOR_BUILD_ID ""
+#endif
+#endif
+
 void crash_reporter_register_project_settings() {
 	GLOBAL_DEF_BASIC("application/crash_reporter/enabled", false);
 	GLOBAL_DEF_BASIC("application/crash_reporter/app_id", String());
@@ -71,3 +83,27 @@ void crash_reporter_register_project_settings() {
 	GLOBAL_DEF_BASIC(PropertyInfo(Variant::STRING, "application/crash_reporter/console_message", PROPERTY_HINT_MULTILINE_TEXT),
 			String("Crash dump created at: {path}\nPlease attach this file when reporting issues."));
 }
+
+#ifdef TOOLS_ENABLED
+void crash_reporter_register_editor_settings() {
+	if (!EditorSettings::get_singleton()) {
+		return;
+	}
+	EditorSettings *es = EditorSettings::get_singleton();
+	String baked_app_id = String(CRASH_REPORTER_EDITOR_APP_ID).strip_edges();
+	if (baked_app_id.is_empty()) {
+		baked_app_id = AppIdentity::editor_fallback_app_id();
+	}
+	String baked_build_id = String(CRASH_REPORTER_EDITOR_BUILD_ID).strip_edges();
+	if (baked_build_id.is_empty()) {
+		baked_build_id = AppIdentity::editor_fallback_build_id();
+	}
+	EDITOR_DEF_BASIC("blazium/crash_reporter/app_id", baked_app_id);
+	EDITOR_DEF_BASIC("blazium/crash_reporter/build_id", baked_build_id);
+	es->set_setting("blazium/crash_reporter/app_id", baked_app_id);
+	es->set_setting("blazium/crash_reporter/build_id", baked_build_id);
+	const uint32_t read_only = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY;
+	es->add_property_hint(PropertyInfo(Variant::STRING, "blazium/crash_reporter/app_id", PROPERTY_HINT_NONE, "", read_only));
+	es->add_property_hint(PropertyInfo(Variant::STRING, "blazium/crash_reporter/build_id", PROPERTY_HINT_NONE, "", read_only));
+}
+#endif

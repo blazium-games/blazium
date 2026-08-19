@@ -245,7 +245,7 @@
 			If [code]true[/code], game analytics events omit [code]device_uid[/code]. Identity fields such as [code]app_id[/code] are still sent.
 		</member>
 		<member name="application/analytics/app_id" type="String" setter="" getter="" default="&quot;&quot;">
-			Stable product id sent on every event and as [code]X-App-Id[/code]. Shared with [member application/crash_reporter/app_id] (crash reporter setting wins if both are set). Falls back to [member application/config/name] if empty.
+			Stable product id sent on every event and as [code]X-App-Id[/code] from exported games. Shared with [member application/crash_reporter/app_id] (crash reporter setting wins if both are set). Falls back to [member application/config/name] if empty. The editor App ID is baked at compile time and is not this setting.
 		</member>
 		<member name="application/analytics/app_version" type="String" setter="" getter="" default="&quot;&quot;">
 			Product version sent on every event. Falls back to [member application/config/version] if empty.
@@ -254,13 +254,13 @@
 			Build channel used for server filtering ([code]dev[/code], [code]beta[/code], [code]release[/code], or custom).
 		</member>
 		<member name="application/analytics/build_id" type="String" setter="" getter="" default="&quot;&quot;">
-			Build identifier (git SHA or CI build number) sent as [code]X-Build-Id[/code]. Shared with [member application/crash_reporter/build_id] (crash reporter setting wins if both are set). Falls back to [member application/config/version] if empty.
+			Build identifier (git SHA or CI build number) sent as [code]X-Build-Id[/code] from exported games. Shared with [member application/crash_reporter/build_id] (crash reporter setting wins if both are set). Falls back to [member application/config/version] if empty. The editor Build ID is baked at compile time and is not this setting.
 		</member>
 		<member name="application/analytics/enabled" type="bool" setter="" getter="" default="false">
 			Master switch after a template is compiled with [code]analytics=yes[/code]. When [code]false[/code], events are not queued or sent.
 		</member>
 		<member name="application/analytics/endpoint" type="String" setter="" getter="" default="&quot;&quot;">
-			POST URL for analytics ingest, e.g. [code]https://analytics.example.com/v1/events[/code]. Empty keeps events queued only.
+			POST URL for game analytics ingest, e.g. [code]https://analytics.example.com/v1/events[/code]. Empty keeps events queued only. The editor ingest URL is baked with [code]editor_analytics_endpoint[/code]; an empty editor URL disables collection and sending.
 		</member>
 		<member name="application/analytics/require_user_consent" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], [method Analytics.set_consent] must accept before events are queued.
@@ -340,7 +340,7 @@
 			Icon set in [code].ico[/code] format used on Windows to set the game's icon. This is done automatically on start by calling [method DisplayServer.set_native_icon].
 		</member>
 		<member name="application/crash_reporter/app_id" type="String" setter="" getter="" default="&quot;&quot;">
-			Stable product id sent with crash metadata and [code]X-App-Id[/code]. Shared with [member application/analytics/app_id]. Falls back to [member application/config/name] if empty.
+			Stable product id sent with crash metadata and [code]X-App-Id[/code] from exported games. Shared with [member application/analytics/app_id]. Falls back to [member application/config/name] if empty. The editor App ID is baked at compile time and is not this setting.
 		</member>
 		<member name="application/crash_reporter/app_name" type="String" setter="" getter="" default="&quot;&quot;">
 			Display name copied into crash metadata. Falls back to [member application/config/name] if empty.
@@ -352,7 +352,7 @@
 			Build channel used for server filtering ([code]dev[/code], [code]beta[/code], [code]release[/code], or custom).
 		</member>
 		<member name="application/crash_reporter/build_id" type="String" setter="" getter="" default="&quot;&quot;">
-			Build identifier sent with crash metadata and [code]X-Build-Id[/code]. Shared with [member application/analytics/build_id]. Falls back to [member application/config/version] if empty.
+			Build identifier sent with crash metadata and [code]X-Build-Id[/code] from exported games. Shared with [member application/analytics/build_id]. Falls back to [member application/config/version] if empty. The editor Build ID is baked at compile time and is not this setting.
 		</member>
 		<member name="application/crash_reporter/console_message" type="String" setter="" getter="" default="&quot;Crash dump created at: {path} Please attach this file when reporting issues.&quot;">
 			Printed after a dump is written. [code]{path}[/code] is replaced with the dump path.

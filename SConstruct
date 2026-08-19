@@ -238,8 +238,8 @@ opts.Add(
         False,
     )
 )
-opts.Add("editor_app_id", "Shared baked editor App ID (crash reporter + analytics)", "blazium-editor")
-opts.Add("editor_build_id", "Shared baked editor Build ID (empty = version hash at runtime)", "")
+opts.Add("editor_app_id", "Shared baked editor App ID (crash reporter + analytics)", "custom_blazium_engine")
+opts.Add("editor_build_id", "Shared baked editor Build ID (empty = git/VERSION_HASH)", "")
 opts.Add("editor_crash_reporter_app_id", "Alias for editor_app_id (empty uses editor_app_id)", "")
 opts.Add("editor_crash_reporter_app_name", "Baked editor crash reporter app_name", "Blazium Editor")
 opts.Add("editor_crash_reporter_build_id", "Alias for editor_build_id (empty uses editor_build_id)", "")
@@ -267,7 +267,7 @@ opts.Add(
 opts.Add("editor_analytics_app_id", "Alias for editor_app_id (empty uses editor_app_id)", "")
 opts.Add("editor_analytics_build_id", "Alias for editor_build_id (empty uses editor_build_id)", "")
 opts.Add("editor_analytics_build_channel", "Baked editor analytics build_channel", "dev")
-opts.Add("editor_analytics_endpoint", "Baked editor analytics ingest URL (empty = queue only)", "")
+opts.Add("editor_analytics_endpoint", "Baked editor analytics ingest URL (empty = disabled)", "")
 opts.Add(
     BoolVariable(
         "hub_register",
@@ -569,7 +569,7 @@ def _first_nonempty(*vals):
 editor_app_id = _first_nonempty(
     env.get("editor_crash_reporter_app_id", ""),
     env.get("editor_analytics_app_id", ""),
-    env.get("editor_app_id", "blazium-editor"),
+    env.get("editor_app_id", "custom_blazium_engine"),
 )
 editor_build_id = _first_nonempty(
     env.get("editor_crash_reporter_build_id", ""),
