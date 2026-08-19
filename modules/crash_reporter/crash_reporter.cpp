@@ -34,6 +34,7 @@
 #include "crash_reporter_project_settings.h"
 #include "crash_reporter_util.h"
 
+#include "core/config/app_identity.h"
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
@@ -45,6 +46,7 @@
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_paths.h"
+#include "editor/editor_settings.h"
 #endif
 
 CrashReporter *CrashReporter::singleton = nullptr;
@@ -87,7 +89,7 @@ void CrashReporter::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_contact_url"), &CrashReporter::get_contact_url);
 	ClassDB::bind_method(D_METHOD("get_privacy_policy_url"), &CrashReporter::get_privacy_policy_url);
 	ClassDB::bind_method(D_METHOD("get_reporter_path"), &CrashReporter::get_reporter_path);
-	ClassDB::bind_method(D_METHOD("get_api_key"), &CrashReporter::get_api_key);
+	ClassDB::bind_method(D_METHOD("get_build_id"), &CrashReporter::get_build_id);
 	ClassDB::bind_method(D_METHOD("get_upload_mode"), &CrashReporter::get_upload_mode);
 	ClassDB::bind_method(D_METHOD("is_enabled"), &CrashReporter::is_enabled);
 	ClassDB::bind_method(D_METHOD("write_minidump"), &CrashReporter::write_minidump);
@@ -172,6 +174,9 @@ int CrashReporter::_setting_int(const String &p_key, int p_fallback) const {
 #ifndef CRASH_REPORTER_EDITOR_APP_NAME
 #define CRASH_REPORTER_EDITOR_APP_NAME ""
 #endif
+#ifndef CRASH_REPORTER_EDITOR_BUILD_ID
+#define CRASH_REPORTER_EDITOR_BUILD_ID ""
+#endif
 #ifndef CRASH_REPORTER_EDITOR_BUILD_CHANNEL
 #define CRASH_REPORTER_EDITOR_BUILD_CHANNEL ""
 #endif
@@ -180,9 +185,6 @@ int CrashReporter::_setting_int(const String &p_key, int p_fallback) const {
 #endif
 #ifndef CRASH_REPORTER_EDITOR_CONTACT_URL
 #define CRASH_REPORTER_EDITOR_CONTACT_URL ""
-#endif
-#ifndef CRASH_REPORTER_EDITOR_API_KEY
-#define CRASH_REPORTER_EDITOR_API_KEY ""
 #endif
 
 bool CrashReporter::is_available() const {
@@ -217,19 +219,30 @@ bool CrashReporter::is_enabled() const {
 }
 
 String CrashReporter::get_app_id() const {
-	const String baked = CR_BAKED(APP_ID);
-	const String from_env = _resolve_env_or_baked("BLAZIUM_CRASH_REPORTER_APP_ID", baked, String());
 #ifdef TOOLS_ENABLED
-	return from_env.is_empty() ? String("blazium-editor") : from_env;
+	String editor_override;
+	if (EditorSettings::get_singleton() && EditorSettings::get_singleton()->has_setting("blazium/analytics/app_id")) {
+		editor_override = String(EditorSettings::get_singleton()->get_setting("blazium/analytics/app_id"));
+	}
+	return AppIdentity::resolve_app_id(editor_override, CR_BAKED(APP_ID), String("blazium-editor"));
 #else
-	if (!from_env.is_empty()) {
-		return from_env;
+	return AppIdentity::resolve_app_id(String(), String(), _setting_string("application/config/name", String()));
+#endif
+}
+
+String CrashReporter::get_build_id() const {
+#ifdef TOOLS_ENABLED
+	String editor_override;
+	if (EditorSettings::get_singleton() && EditorSettings::get_singleton()->has_setting("blazium/analytics/build_id")) {
+		editor_override = String(EditorSettings::get_singleton()->get_setting("blazium/analytics/build_id"));
 	}
-	const String setting = _setting_string("application/crash_reporter/app_id", String());
-	if (!setting.is_empty()) {
-		return setting;
+	String fallback = CR_BAKED(BUILD_ID);
+	if (fallback.is_empty()) {
+		fallback = String(VERSION_HASH);
 	}
-	return _setting_string("application/config/name", String());
+	return AppIdentity::resolve_build_id(editor_override, CR_BAKED(BUILD_ID), fallback);
+#else
+	return AppIdentity::resolve_build_id(String(), String(), _setting_string("application/config/version", String()));
 #endif
 }
 
@@ -309,19 +322,6 @@ String CrashReporter::get_endpoint() const {
 #endif
 }
 
-String CrashReporter::get_api_key() const {
-	const String baked = CR_BAKED(API_KEY);
-	const String from_env = _resolve_env_or_baked("BLAZIUM_CRASH_REPORTER_API_KEY", baked, String());
-#ifdef TOOLS_ENABLED
-	return from_env;
-#else
-	if (!from_env.is_empty()) {
-		return from_env;
-	}
-	return _setting_string("application/crash_reporter/api_key", String());
-#endif
-}
-
 String CrashReporter::get_crash_directory() const {
 #ifdef TOOLS_ENABLED
 	if (OS::get_singleton() && OS::get_singleton()->has_environment("BLAZIUM_CRASH_REPORTER_CRASH_DIR")) {
@@ -345,7 +345,14 @@ String CrashReporter::get_crash_directory() const {
 
 String CrashReporter::_resolve_reporter_path() const {
 #ifdef TOOLS_ENABLED
-	return String();
+	const String cli = AppIdentity::cmdline_flag_value("crash-reporter");
+	if (cli.is_empty()) {
+		return String();
+	}
+	if (cli.is_absolute_path()) {
+		return cli;
+	}
+	return OS::get_singleton()->get_executable_path().get_base_dir().path_join(cli);
 #else
 	String rel = _setting_string("application/crash_reporter/reporter_path", String());
 	if (rel.is_empty()) {
@@ -364,6 +371,9 @@ String CrashReporter::get_reporter_path() const {
 
 int CrashReporter::get_upload_mode() const {
 #ifdef TOOLS_ENABLED
+	if (!_resolve_reporter_path().is_empty()) {
+		return UPLOAD_SIDECAR;
+	}
 	return UPLOAD_DISABLED;
 #else
 	return _setting_int("application/crash_reporter/upload_mode", UPLOAD_DISABLED);
@@ -384,11 +394,11 @@ Dictionary CrashReporter::get_resolved_config() const {
 	d["app_id"] = get_app_id();
 	d["app_name"] = get_app_name();
 	d["app_version"] = get_app_version();
+	d["build_id"] = get_build_id();
 	d["build_channel"] = get_build_channel();
 	d["contact_url"] = get_contact_url();
 	d["privacy_policy_url"] = get_privacy_policy_url();
 	d["endpoint"] = get_endpoint();
-	d["api_key"] = get_api_key();
 	d["reporter_path"] = get_reporter_path();
 	d["crash_directory"] = get_crash_directory();
 	d["upload_mode"] = get_upload_mode();
@@ -408,7 +418,8 @@ void CrashReporter::_cache_breakpad_identity() {
 	const CharString arch = Engine::get_singleton()->get_architecture_name().utf8();
 	const CharString channel = get_build_channel().utf8();
 	const CharString contact = get_contact_url().utf8();
-	breakpad_cache_identity(app_id.get_data(), app_name.get_data(), app_version.get_data(), engine_version.get_data(), engine_hash.get_data(), os_name.get_data(), arch.get_data(), channel.get_data(), contact.get_data());
+	const CharString build_id = get_build_id().utf8();
+	breakpad_cache_identity(app_id.get_data(), app_name.get_data(), app_version.get_data(), engine_version.get_data(), engine_hash.get_data(), os_name.get_data(), arch.get_data(), channel.get_data(), contact.get_data(), build_id.get_data());
 
 	const int mode = get_upload_mode();
 	const bool spawn = is_enabled() && _setting_bool("application/crash_reporter/spawn_on_crash", true) && (mode == UPLOAD_SIDECAR || mode == UPLOAD_BOTH);
@@ -424,6 +435,9 @@ void CrashReporter::_print_console_dump(const String &p_path) {
 	if (!get_app_id().is_empty()) {
 		print_error(vformat("Crash reporter app_id: %s", get_app_id()));
 	}
+	if (!get_build_id().is_empty()) {
+		print_error(vformat("Crash reporter build_id: %s", get_build_id()));
+	}
 	if (!get_endpoint().is_empty()) {
 		print_error(vformat("Crash reporter endpoint: %s", get_endpoint()));
 	}
@@ -438,6 +452,12 @@ void CrashReporter::_enrich_pending_metadata() {
 		const Dictionary row = pending[i];
 		const String meta_path = row.get("metadata_path", String());
 		Dictionary meta = row.get("metadata", Dictionary());
+		if (String(meta.get("app_id", String())).is_empty()) {
+			meta["app_id"] = get_app_id();
+		}
+		if (String(meta.get("build_id", String())).is_empty()) {
+			meta["build_id"] = get_build_id();
+		}
 		meta["os"] = OS::get_singleton()->get_name();
 		meta["arch"] = Engine::get_singleton()->get_architecture_name();
 		meta["locale"] = OS::get_singleton()->get_locale();
@@ -464,10 +484,6 @@ void CrashReporter::_enrich_pending_metadata() {
 }
 
 Error CrashReporter::_launch_reporter_internal(const String &p_report_id) {
-#ifdef TOOLS_ENABLED
-	(void)p_report_id;
-	return ERR_UNAVAILABLE;
-#else
 	const String path = _resolve_reporter_path();
 	if (path.is_empty() || !FileAccess::exists(path)) {
 		return ERR_FILE_NOT_FOUND;
@@ -487,9 +503,9 @@ Error CrashReporter::_launch_reporter_internal(const String &p_report_id) {
 		args.push_back("--app-id");
 		args.push_back(get_app_id());
 	}
-	if (!get_api_key().is_empty()) {
-		args.push_back("--api-key");
-		args.push_back(get_api_key());
+	if (!get_build_id().is_empty()) {
+		args.push_back("--build-id");
+		args.push_back(get_build_id());
 	}
 	if (!get_contact_url().is_empty()) {
 		args.push_back("--contact-url");
@@ -507,7 +523,6 @@ Error CrashReporter::_launch_reporter_internal(const String &p_report_id) {
 	}
 	const bool open_console = _setting_bool("application/crash_reporter/spawn_open_console", false);
 	return OS::get_singleton()->create_process(path, args, nullptr, open_console);
-#endif
 }
 
 Error CrashReporter::launch_reporter(const String &p_report_id) {
@@ -565,6 +580,7 @@ Error CrashReporter::upload_report(const String &p_id) {
 		Dictionary meta;
 		meta["id"] = p_id;
 		meta["app_id"] = get_app_id();
+		meta["build_id"] = get_build_id();
 		meta_json = CrashReporterUtil::metadata_to_json(meta);
 	}
 
@@ -580,7 +596,7 @@ Error CrashReporter::upload_report(const String &p_id) {
 	emit_signal(SNAME("upload_progress"), p_id, (int64_t)0, (int64_t)body.data.size());
 
 	const String ua = vformat("BlaziumCrashReporter/%s", VERSION_FULL_NAME);
-	const CrashReporterHTTPResult result = CrashReporterHTTP::upload_report(get_endpoint(), get_api_key(), ua, body.data, body.content_type, _setting_int("application/crash_reporter/timeout_sec", 30), _setting_bool("application/crash_reporter/verify_tls", true), _setting_int("application/crash_reporter/retry_count", 3), _setting_int("application/crash_reporter/retry_backoff_sec", 5), &upload_cancel);
+	const CrashReporterHTTPResult result = CrashReporterHTTP::upload_report(get_endpoint(), get_app_id(), get_build_id(), ua, body.data, body.content_type, _setting_int("application/crash_reporter/timeout_sec", 30), _setting_bool("application/crash_reporter/verify_tls", true), _setting_int("application/crash_reporter/retry_count", 3), _setting_int("application/crash_reporter/retry_backoff_sec", 5), &upload_cancel);
 
 	uploading = false;
 	if (result.error == OK) {
@@ -641,6 +657,12 @@ void CrashReporter::_startup_actions() {
 #endif
 
 #ifdef TOOLS_ENABLED
+	if (!_resolve_reporter_path().is_empty() && is_enabled()) {
+		_enrich_pending_metadata();
+		if (has_pending_reports() && _setting_bool("application/crash_reporter/spawn_on_next_launch", true)) {
+			_launch_reporter_internal(String());
+		}
+	}
 	return;
 #else
 	if (!is_enabled()) {

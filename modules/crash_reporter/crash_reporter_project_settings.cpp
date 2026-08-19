@@ -36,6 +36,7 @@ void crash_reporter_register_project_settings() {
 	GLOBAL_DEF_BASIC("application/crash_reporter/app_id", String());
 	GLOBAL_DEF_BASIC("application/crash_reporter/app_name", String());
 	GLOBAL_DEF_BASIC("application/crash_reporter/app_version", String());
+	GLOBAL_DEF_BASIC("application/crash_reporter/build_id", String());
 	GLOBAL_DEF_BASIC("application/crash_reporter/build_channel", "release");
 	GLOBAL_DEF_BASIC("application/crash_reporter/contact_url", String());
 	GLOBAL_DEF_BASIC("application/crash_reporter/privacy_policy_url", String());
@@ -47,7 +48,6 @@ void crash_reporter_register_project_settings() {
 	GLOBAL_DEF_BASIC("application/crash_reporter/spawn_open_console", false);
 
 	GLOBAL_DEF_BASIC("application/crash_reporter/endpoint", String());
-	GLOBAL_DEF_BASIC("application/crash_reporter/api_key", String());
 	GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "application/crash_reporter/timeout_sec", PROPERTY_HINT_RANGE, "1,300,1"), 30);
 	GLOBAL_DEF_BASIC("application/crash_reporter/verify_tls", true);
 	GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "application/crash_reporter/upload_mode", PROPERTY_HINT_ENUM, "Disabled,InEngine,Sidecar,Both"), 0);

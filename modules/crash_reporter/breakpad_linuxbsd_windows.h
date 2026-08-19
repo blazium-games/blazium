@@ -34,7 +34,7 @@
 void initialize_breakpad(bool p_register_handlers);
 void disable_breakpad();
 void breakpad_set_dump_path(const char *p_utf8_path);
-void breakpad_cache_identity(const char *p_app_id, const char *p_app_name, const char *p_app_version, const char *p_engine_version, const char *p_engine_hash, const char *p_os, const char *p_arch, const char *p_build_channel, const char *p_contact_url);
+void breakpad_cache_identity(const char *p_app_id, const char *p_app_name, const char *p_app_version, const char *p_engine_version, const char *p_engine_hash, const char *p_os, const char *p_arch, const char *p_build_channel, const char *p_contact_url, const char *p_build_id);
 void breakpad_cache_spawn(const char *p_reporter_utf8, bool p_spawn_on_crash);
 void breakpad_handle_signal(int p_sig);
 void breakpad_handle_exception_pointers(void *p_exinfo);

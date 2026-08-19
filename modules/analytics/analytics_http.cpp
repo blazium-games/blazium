@@ -48,7 +48,7 @@ String AnalyticsHTTP::normalize_endpoint(const String &p_endpoint) {
 	return endpoint;
 }
 
-AnalyticsHTTPResult AnalyticsHTTP::post_events(const String &p_endpoint, const String &p_api_key, const String &p_user_agent, const Vector<uint8_t> &p_body, int p_timeout_sec, bool p_verify_tls) {
+AnalyticsHTTPResult AnalyticsHTTP::post_events(const String &p_endpoint, const String &p_app_id, const String &p_build_id, const String &p_user_agent, const Vector<uint8_t> &p_body, int p_timeout_sec, bool p_verify_tls) {
 	AnalyticsHTTPResult result;
 	const String endpoint = normalize_endpoint(p_endpoint);
 	String scheme;
@@ -106,8 +106,11 @@ AnalyticsHTTPResult AnalyticsHTTP::post_events(const String &p_endpoint, const S
 	headers.push_back("Content-Type: application/json");
 	headers.push_back("User-Agent: " + p_user_agent);
 	headers.push_back("Accept: application/json");
-	if (!p_api_key.is_empty()) {
-		headers.push_back("X-API-Key: " + p_api_key);
+	if (!p_app_id.is_empty()) {
+		headers.push_back("X-App-Id: " + p_app_id);
+	}
+	if (!p_build_id.is_empty()) {
+		headers.push_back("X-Build-Id: " + p_build_id);
 	}
 
 	err = client->request(HTTPClient::METHOD_POST, path, headers, p_body.ptr(), p_body.size());
@@ -144,7 +147,7 @@ String AnalyticsHTTP::normalize_endpoint(const String &p_endpoint) {
 	return p_endpoint.strip_edges();
 }
 
-AnalyticsHTTPResult AnalyticsHTTP::post_events(const String &, const String &, const String &, const Vector<uint8_t> &, int, bool) {
+AnalyticsHTTPResult AnalyticsHTTP::post_events(const String &, const String &, const String &, const String &, const Vector<uint8_t> &, int, bool) {
 	AnalyticsHTTPResult result;
 	result.error = ERR_UNAVAILABLE;
 	result.message = "Analytics HTTP is disabled in this build.";

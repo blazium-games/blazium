@@ -97,7 +97,6 @@ public:
 	String get_build_channel() const;
 	String get_device_uid() const;
 	String get_endpoint() const;
-	String get_api_key() const;
 	String get_queue_directory() const;
 
 	void track(const String &p_event, const Dictionary &p_properties = Dictionary());

@@ -36,6 +36,7 @@ void test_analytics_consent_and_identity();
 void test_analytics_anonymous_omits_device_uid();
 void test_analytics_identified_includes_device_uid();
 void test_analytics_payload_shape();
+void test_analytics_shared_identity();
 
 TEST_CASE("[Modules][Analytics] queue JSONL roundtrip") {
 	test_analytics_queue_roundtrip();
@@ -55,4 +56,8 @@ TEST_CASE("[Modules][Analytics] identified includes OS unique id") {
 
 TEST_CASE("[Modules][Analytics] payload identity envelope") {
 	test_analytics_payload_shape();
+}
+
+TEST_CASE("[Modules][Analytics] shared app_id and build_id") {
+	test_analytics_shared_identity();
 }

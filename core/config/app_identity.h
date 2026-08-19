@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  crash_reporter_http.h                                                 */
+/*  app_identity.h                                                        */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             BLAZIUM ENGINE                             */
@@ -29,28 +29,15 @@
 
 #pragma once
 
-#include "core/error/error_list.h"
 #include "core/string/ustring.h"
 #include "core/templates/vector.h"
 
-struct CrashReporterHTTPResult {
-	Error error = FAILED;
-	int response_code = 0;
-	String message;
-};
-
-class CrashReporterHTTP {
+class AppIdentity {
 public:
-	static CrashReporterHTTPResult upload_report(
-			const String &p_endpoint,
-			const String &p_app_id,
-			const String &p_build_id,
-			const String &p_user_agent,
-			const Vector<uint8_t> &p_body,
-			const String &p_content_type,
-			int p_timeout_sec,
-			bool p_verify_tls,
-			int p_retry_count,
-			int p_retry_backoff_sec,
-			bool *r_cancel = nullptr);
+	static String cmdline_flag_value(const String &p_flag);
+	static String cmdline_equals_value(const String &p_prefix);
+	static String env_first(const Vector<String> &p_names);
+	static String project_first(const Vector<String> &p_keys);
+	static String resolve_app_id(const String &p_editor_override, const String &p_baked, const String &p_fallback);
+	static String resolve_build_id(const String &p_editor_override, const String &p_baked, const String &p_fallback);
 };

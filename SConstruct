@@ -238,8 +238,11 @@ opts.Add(
         False,
     )
 )
-opts.Add("editor_crash_reporter_app_id", "Baked editor crash reporter app_id", "blazium-editor")
+opts.Add("editor_app_id", "Shared baked editor App ID (crash reporter + analytics)", "blazium-editor")
+opts.Add("editor_build_id", "Shared baked editor Build ID (empty = version hash at runtime)", "")
+opts.Add("editor_crash_reporter_app_id", "Alias for editor_app_id (empty uses editor_app_id)", "")
 opts.Add("editor_crash_reporter_app_name", "Baked editor crash reporter app_name", "Blazium Editor")
+opts.Add("editor_crash_reporter_build_id", "Alias for editor_build_id (empty uses editor_build_id)", "")
 opts.Add("editor_crash_reporter_build_channel", "Baked editor crash reporter build_channel", "dev")
 opts.Add("editor_crash_reporter_endpoint", "Baked editor crash reporter ingest URL (empty = console only)", "")
 opts.Add(
@@ -247,7 +250,6 @@ opts.Add(
     "Baked editor crash reporter contact/bug URL",
     "https://github.com/blazium-games/blazium/issues",
 )
-opts.Add("editor_crash_reporter_api_key", "Baked editor crash reporter X-API-Key (public client key)", "")
 opts.Add(
     BoolVariable(
         "analytics",
@@ -262,11 +264,10 @@ opts.Add(
         False,
     )
 )
-opts.Add("editor_analytics_app_id", "Baked editor analytics app_id", "blazium-editor")
-opts.Add("editor_analytics_build_id", "Baked editor analytics build_id (empty = version hash)", "")
+opts.Add("editor_analytics_app_id", "Alias for editor_app_id (empty uses editor_app_id)", "")
+opts.Add("editor_analytics_build_id", "Alias for editor_build_id (empty uses editor_build_id)", "")
 opts.Add("editor_analytics_build_channel", "Baked editor analytics build_channel", "dev")
 opts.Add("editor_analytics_endpoint", "Baked editor analytics ingest URL (empty = queue only)", "")
-opts.Add("editor_analytics_api_key", "Baked editor analytics X-API-Key (public client key)", "")
 opts.Add(
     BoolVariable(
         "hub_register",
@@ -558,6 +559,24 @@ def _crash_reporter_cpp_string(name, value):
     return f'{name}=\\"{escaped}\\"'
 
 
+def _first_nonempty(*vals):
+    for v in vals:
+        if str(v).strip():
+            return v
+    return ""
+
+
+editor_app_id = _first_nonempty(
+    env.get("editor_crash_reporter_app_id", ""),
+    env.get("editor_analytics_app_id", ""),
+    env.get("editor_app_id", "blazium-editor"),
+)
+editor_build_id = _first_nonempty(
+    env.get("editor_crash_reporter_build_id", ""),
+    env.get("editor_analytics_build_id", ""),
+    env.get("editor_build_id", ""),
+)
+
 if env.editor_build:
     if env.get("crash_reporter"):
         print_warning("crash_reporter=yes is ignored for editor builds; use editor_crash_reporter=yes.")
@@ -565,10 +584,11 @@ if env.editor_build:
         env.Append(CPPDEFINES=["CRASH_REPORTER_ENABLED", "USE_BREAKPAD"])
         env.Append(
             CPPDEFINES=[
-                _crash_reporter_cpp_string("CRASH_REPORTER_EDITOR_APP_ID", env.get("editor_crash_reporter_app_id", "")),
+                _crash_reporter_cpp_string("CRASH_REPORTER_EDITOR_APP_ID", editor_app_id),
                 _crash_reporter_cpp_string(
                     "CRASH_REPORTER_EDITOR_APP_NAME", env.get("editor_crash_reporter_app_name", "")
                 ),
+                _crash_reporter_cpp_string("CRASH_REPORTER_EDITOR_BUILD_ID", editor_build_id),
                 _crash_reporter_cpp_string(
                     "CRASH_REPORTER_EDITOR_BUILD_CHANNEL", env.get("editor_crash_reporter_build_channel", "")
                 ),
@@ -577,9 +597,6 @@ if env.editor_build:
                 ),
                 _crash_reporter_cpp_string(
                     "CRASH_REPORTER_EDITOR_CONTACT_URL", env.get("editor_crash_reporter_contact_url", "")
-                ),
-                _crash_reporter_cpp_string(
-                    "CRASH_REPORTER_EDITOR_API_KEY", env.get("editor_crash_reporter_api_key", "")
                 ),
             ]
         )
@@ -601,11 +618,10 @@ if env.editor_build:
         env.Append(CPPDEFINES=["ANALYTICS_ENABLED"])
         env.Append(
             CPPDEFINES=[
-                _analytics_cpp_string("ANALYTICS_EDITOR_APP_ID", env.get("editor_analytics_app_id", "")),
-                _analytics_cpp_string("ANALYTICS_EDITOR_BUILD_ID", env.get("editor_analytics_build_id", "")),
+                _analytics_cpp_string("ANALYTICS_EDITOR_APP_ID", editor_app_id),
+                _analytics_cpp_string("ANALYTICS_EDITOR_BUILD_ID", editor_build_id),
                 _analytics_cpp_string("ANALYTICS_EDITOR_BUILD_CHANNEL", env.get("editor_analytics_build_channel", "")),
                 _analytics_cpp_string("ANALYTICS_EDITOR_ENDPOINT", env.get("editor_analytics_endpoint", "")),
-                _analytics_cpp_string("ANALYTICS_EDITOR_API_KEY", env.get("editor_analytics_api_key", "")),
             ]
         )
 elif env.get("editor_analytics"):

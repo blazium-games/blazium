@@ -44,7 +44,6 @@ void analytics_register_project_settings() {
 	GLOBAL_DEF_BASIC("application/analytics/build_id", String());
 	GLOBAL_DEF_BASIC("application/analytics/app_version", String());
 	GLOBAL_DEF_BASIC("application/analytics/build_channel", "release");
-	GLOBAL_DEF_BASIC("application/analytics/api_key", String());
 	GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "application/analytics/timeout_sec", PROPERTY_HINT_RANGE, "1,120,1"), 15);
 	GLOBAL_DEF_BASIC("application/analytics/verify_tls", true);
 }
@@ -59,7 +58,6 @@ void analytics_register_editor_settings() {
 	EDITOR_DEF_BASIC("blazium/analytics/endpoint", String());
 	EDITOR_DEF_BASIC("blazium/analytics/app_id", String());
 	EDITOR_DEF_BASIC("blazium/analytics/build_id", String());
-	EDITOR_DEF_BASIC("blazium/analytics/api_key", String());
 	if (EditorSettings::get_singleton()) {
 		EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::STRING, "blazium/analytics/consent", PROPERTY_HINT_ENUM, "unset,accepted,declined"));
 	}

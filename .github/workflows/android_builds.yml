@@ -9,7 +9,7 @@ env:
   SCONSFLAGS: verbose=yes warnings=extra werror=yes debug_symbols=no module_text_server_fb_enabled=yes strict_checks=yes
 
 concurrency:
-  group: ci-${{ github.actor }}-${{ github.head_ref || github.run_number }}-${{ github.ref }}-android
+  group: ci-pr-${{ github.event.pull_request.number || github.ref_name }}-android
   cancel-in-progress: true
 
 jobs:

@@ -19,7 +19,7 @@
 		<method name="get_app_id" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the resolved product id sent on every event.
+				Returns the resolved product id sent on every event and as [code]X-App-Id[/code] on flush. Shared with [method CrashReporter.get_app_id].
 			</description>
 		</method>
 		<method name="get_app_version" qualifiers="const">
@@ -37,7 +37,7 @@
 		<method name="get_build_id" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the resolved build id. Empty is allowed; [code]app_id[/code] and [code]engine_version[/code] are still sent.
+				Returns the resolved build id sent on every event and as [code]X-Build-Id[/code] on flush. Shared with [method CrashReporter.get_build_id].
 			</description>
 		</method>
 		<method name="get_consent" qualifiers="const">
