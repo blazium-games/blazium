@@ -4,8 +4,8 @@
 		Engine singleton for crash dump detection, sidecar launch, and optional in-engine upload.
 	</brief_description>
 	<description>
-		[CrashReporter] records native crashes as Breakpad minidumps when the engine is built with [code]crash_reporter=yes[/code] (export templates) or [code]editor_crash_reporter=yes[/code] (editor). The editor prints dump paths to the console and never uploads. Flagged templates can spawn a custom reporter binary and/or POST pending dumps with [HTTPClient].
-		Configure identity, endpoint, and spawn behavior under [code]application/crash_reporter/*[/code] in Project Settings. See [method get_resolved_config].
+		[CrashReporter] records native crashes as Breakpad minidumps when the engine is built with [code]crash_reporter=yes[/code] (export templates) or [code]editor_crash_reporter=yes[/code] (editor). Identity is [method get_app_id] plus [method get_build_id] (shared with [Analytics]). Ingest POSTs send [code]X-App-Id[/code] and [code]X-Build-Id[/code].
+		The editor prints dump paths to the console. Pass [code]--crash-reporter &lt;path&gt;[/code] when launching the editor to spawn a sidecar. Exported games use [member ProjectSettings.application/crash_reporter/reporter_path] with [code]upload_mode[/code] Sidecar or Both. See [method get_resolved_config].
 	</description>
 	<tutorials>
 	</tutorials>
@@ -23,16 +23,10 @@
 				Deletes the dump, metadata, and state files for [param id].
 			</description>
 		</method>
-		<method name="get_api_key" qualifiers="const">
-			<return type="String" />
-			<description>
-				Returns the resolved ingest API key.
-			</description>
-		</method>
 		<method name="get_app_id" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the resolved product id sent with crash metadata.
+				Returns the resolved product id sent with crash metadata and [code]X-App-Id[/code]. Shared with [method Analytics.get_app_id].
 			</description>
 		</method>
 		<method name="get_app_name" qualifiers="const">
@@ -51,6 +45,12 @@
 			<return type="String" />
 			<description>
 				Returns the resolved build channel ([code]dev[/code], [code]beta[/code], [code]release[/code], or custom).
+			</description>
+		</method>
+		<method name="get_build_id" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the resolved build id sent with crash metadata and [code]X-Build-Id[/code]. Shared with [method Analytics.get_build_id].
 			</description>
 		</method>
 		<method name="get_contact_url" qualifiers="const">
@@ -92,7 +92,7 @@
 		<method name="get_reporter_path" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the resolved sidecar reporter executable path, or an empty string if none is configured.
+				Returns the resolved sidecar reporter executable. In the editor this comes from [code]--crash-reporter[/code]; in exported games it comes from [member ProjectSettings.application/crash_reporter/reporter_path]. Empty when none is configured.
 			</description>
 		</method>
 		<method name="get_resolved_config" qualifiers="const">
@@ -153,7 +153,7 @@
 			<return type="int" enum="Error" />
 			<param index="0" name="report_id" type="String" default="&quot;&quot;" />
 			<description>
-				Spawns the configured sidecar reporter. No-op in the editor.
+				Spawns the configured sidecar reporter. In the editor this requires [code]--crash-reporter &lt;path&gt;[/code].
 			</description>
 		</method>
 		<method name="mark_report_submitted">

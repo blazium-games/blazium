@@ -3,7 +3,7 @@ on:
   workflow_call:
 
 concurrency:
-  group: ci-${{ github.actor }}-${{ github.head_ref || github.run_number }}-${{ github.ref }}-static
+  group: ci-pr-${{ github.event.pull_request.number || github.ref_name }}-static
   cancel-in-progress: true
 
 jobs:

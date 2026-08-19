@@ -32,6 +32,11 @@
 #include "modules/analytics/analytics.h"
 #include "modules/analytics/analytics_queue.h"
 
+#ifdef MODULE_CRASH_REPORTER_ENABLED
+#include "modules/crash_reporter/crash_reporter.h"
+#endif
+
+#include "core/config/app_identity.h"
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
 #include "core/os/os.h"
@@ -177,8 +182,43 @@ void test_analytics_payload_shape() {
 	CHECK(int(props.get("level", 0)) == 3);
 	const Dictionary cfg = a->get_resolved_config();
 	CHECK(cfg.has("app_id"));
+	CHECK(cfg.has("build_id"));
 	CHECK(cfg.has("endpoint"));
 	CHECK(cfg.has("queue_dir"));
+	CHECK(!cfg.has("api_key"));
+#else
+	CHECK(Analytics::get_singleton() != nullptr);
+#endif
+}
+
+void test_analytics_shared_identity() {
+#ifdef ANALYTICS_ENABLED
+	Analytics *a = Analytics::get_singleton();
+	REQUIRE(a != nullptr);
+	if (ProjectSettings::get_singleton()) {
+		ProjectSettings::get_singleton()->set("application/analytics/app_id", String());
+		ProjectSettings::get_singleton()->set("application/analytics/build_id", String());
+		ProjectSettings::get_singleton()->set("application/crash_reporter/app_id", "crash-ns-app");
+		ProjectSettings::get_singleton()->set("application/crash_reporter/build_id", "crash-ns-build");
+	}
+	CHECK(AppIdentity::resolve_app_id(String(), String(), "fallback") == "crash-ns-app");
+	CHECK(AppIdentity::resolve_build_id(String(), String(), "fallback") == "crash-ns-build");
+	if (ProjectSettings::get_singleton()) {
+		ProjectSettings::get_singleton()->set("application/crash_reporter/app_id", String());
+		ProjectSettings::get_singleton()->set("application/crash_reporter/build_id", String());
+		ProjectSettings::get_singleton()->set("application/analytics/app_id", "analytics-ns-app");
+		ProjectSettings::get_singleton()->set("application/analytics/build_id", "analytics-ns-build");
+	}
+	CHECK(AppIdentity::resolve_app_id(String(), String(), "fallback") == "analytics-ns-app");
+	CHECK(AppIdentity::resolve_build_id(String(), String(), "fallback") == "analytics-ns-build");
+#ifdef MODULE_CRASH_REPORTER_ENABLED
+	CrashReporter *cr = CrashReporter::get_singleton();
+	REQUIRE(cr != nullptr);
+	CHECK(String(a->get_app_id()) == String(cr->get_app_id()));
+	CHECK(String(a->get_build_id()) == String(cr->get_build_id()));
+	CHECK(!cr->get_resolved_config().has("api_key"));
+#endif
+	CHECK(!a->get_resolved_config().has("api_key"));
 #else
 	CHECK(Analytics::get_singleton() != nullptr);
 #endif

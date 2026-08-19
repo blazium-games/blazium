@@ -35,7 +35,7 @@
 
 #if defined(CRASH_REPORTER_ENABLED) && !defined(TOOLS_ENABLED)
 
-static CrashReporterHTTPResult _upload_once(const String &p_endpoint, const String &p_api_key, const String &p_user_agent, const Vector<uint8_t> &p_body, const String &p_content_type, int p_timeout_sec, bool p_verify_tls, bool *r_cancel) {
+static CrashReporterHTTPResult _upload_once(const String &p_endpoint, const String &p_app_id, const String &p_build_id, const String &p_user_agent, const Vector<uint8_t> &p_body, const String &p_content_type, int p_timeout_sec, bool p_verify_tls, bool *r_cancel) {
 	CrashReporterHTTPResult result;
 	String scheme;
 	String host;
@@ -97,8 +97,11 @@ static CrashReporterHTTPResult _upload_once(const String &p_endpoint, const Stri
 	headers.push_back("Content-Type: " + p_content_type);
 	headers.push_back("User-Agent: " + p_user_agent);
 	headers.push_back("Accept: application/json");
-	if (!p_api_key.is_empty()) {
-		headers.push_back("X-API-Key: " + p_api_key);
+	if (!p_app_id.is_empty()) {
+		headers.push_back("X-App-Id: " + p_app_id);
+	}
+	if (!p_build_id.is_empty()) {
+		headers.push_back("X-Build-Id: " + p_build_id);
 	}
 
 	err = client->request(HTTPClient::METHOD_POST, path, headers, p_body.ptr(), p_body.size());
@@ -134,7 +137,7 @@ static CrashReporterHTTPResult _upload_once(const String &p_endpoint, const Stri
 	return result;
 }
 
-CrashReporterHTTPResult CrashReporterHTTP::upload_report(const String &p_endpoint, const String &p_api_key, const String &p_user_agent, const Vector<uint8_t> &p_body, const String &p_content_type, int p_timeout_sec, bool p_verify_tls, int p_retry_count, int p_retry_backoff_sec, bool *r_cancel) {
+CrashReporterHTTPResult CrashReporterHTTP::upload_report(const String &p_endpoint, const String &p_app_id, const String &p_build_id, const String &p_user_agent, const Vector<uint8_t> &p_body, const String &p_content_type, int p_timeout_sec, bool p_verify_tls, int p_retry_count, int p_retry_backoff_sec, bool *r_cancel) {
 	CrashReporterHTTPResult last;
 	const int attempts = MAX(p_retry_count, 0) + 1;
 	for (int i = 0; i < attempts; i++) {
@@ -143,7 +146,7 @@ CrashReporterHTTPResult CrashReporterHTTP::upload_report(const String &p_endpoin
 			last.message = "Cancelled.";
 			return last;
 		}
-		last = _upload_once(p_endpoint, p_api_key, p_user_agent, p_body, p_content_type, p_timeout_sec, p_verify_tls, r_cancel);
+		last = _upload_once(p_endpoint, p_app_id, p_build_id, p_user_agent, p_body, p_content_type, p_timeout_sec, p_verify_tls, r_cancel);
 		if (last.error == OK || last.error == ERR_SKIP || last.error == ERR_INVALID_PARAMETER) {
 			return last;
 		}
@@ -156,7 +159,7 @@ CrashReporterHTTPResult CrashReporterHTTP::upload_report(const String &p_endpoin
 
 #else
 
-CrashReporterHTTPResult CrashReporterHTTP::upload_report(const String &, const String &, const String &, const Vector<uint8_t> &, const String &, int, bool, int, int, bool *) {
+CrashReporterHTTPResult CrashReporterHTTP::upload_report(const String &, const String &, const String &, const String &, const Vector<uint8_t> &, const String &, int, bool, int, int, bool *) {
 	CrashReporterHTTPResult result;
 	result.error = ERR_UNAVAILABLE;
 	result.message = "In-engine HTTP upload is only available in crash_reporter templates.";

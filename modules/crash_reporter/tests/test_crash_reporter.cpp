@@ -32,6 +32,12 @@
 #include "modules/crash_reporter/crash_reporter.h"
 #include "modules/crash_reporter/crash_reporter_util.h"
 
+#ifdef MODULE_ANALYTICS_ENABLED
+#include "modules/analytics/analytics.h"
+#endif
+
+#include "core/config/app_identity.h"
+#include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/os/os.h"
@@ -85,12 +91,47 @@ void test_crash_reporter_metadata_json() {
 	Dictionary meta;
 	meta["id"] = "abc";
 	meta["app_id"] = "mygame";
+	meta["build_id"] = "build-9";
 	const String json = CrashReporterUtil::metadata_to_json(meta);
 	CHECK(json.contains("abc"));
 	const Dictionary parsed = CrashReporterUtil::parse_metadata_json(json);
 	CHECK(String(parsed.get("id", String())) == "abc");
 	CHECK(String(parsed.get("app_id", String())) == "mygame");
+	CHECK(String(parsed.get("build_id", String())) == "build-9");
 	CHECK(CrashReporterUtil::parse_metadata_json("not-json").is_empty());
+}
+
+void test_crash_reporter_shared_identity() {
+	CrashReporter *cr = CrashReporter::get_singleton();
+	REQUIRE(cr != nullptr);
+	const Dictionary cfg = cr->get_resolved_config();
+	CHECK(cfg.has("app_id"));
+	CHECK(cfg.has("build_id"));
+	CHECK(!cfg.has("api_key"));
+
+	if (!ProjectSettings::get_singleton()) {
+		return;
+	}
+	ProjectSettings::get_singleton()->set("application/crash_reporter/app_id", String());
+	ProjectSettings::get_singleton()->set("application/crash_reporter/build_id", String());
+	ProjectSettings::get_singleton()->set("application/analytics/app_id", "analytics-only-app");
+	ProjectSettings::get_singleton()->set("application/analytics/build_id", "analytics-only-build");
+	CHECK(AppIdentity::resolve_app_id(String(), String(), "fallback") == "analytics-only-app");
+	CHECK(AppIdentity::resolve_build_id(String(), String(), "fallback") == "analytics-only-build");
+
+	ProjectSettings::get_singleton()->set("application/crash_reporter/app_id", "crash-only-app");
+	ProjectSettings::get_singleton()->set("application/crash_reporter/build_id", "crash-only-build");
+	CHECK(AppIdentity::resolve_app_id(String(), String(), "fallback") == "crash-only-app");
+	CHECK(AppIdentity::resolve_build_id(String(), String(), "fallback") == "crash-only-build");
+
+#ifdef MODULE_ANALYTICS_ENABLED
+	Analytics *a = Analytics::get_singleton();
+	REQUIRE(a != nullptr);
+	const Dictionary acfg = a->get_resolved_config();
+	CHECK(!acfg.has("api_key"));
+	CHECK(String(cr->get_app_id()) == String(a->get_app_id()));
+	CHECK(String(cr->get_build_id()) == String(a->get_build_id()));
+#endif
 }
 
 void test_crash_reporter_dump_apis() {

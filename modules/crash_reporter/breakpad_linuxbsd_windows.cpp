@@ -54,6 +54,7 @@ static char g_engine_hash[128] = { 0 };
 static char g_os[64] = { 0 };
 static char g_arch[64] = { 0 };
 static char g_build_channel[64] = { 0 };
+static char g_build_id[256] = { 0 };
 static char g_contact_url[512] = { 0 };
 static char g_reporter_path[1024] = { 0 };
 static bool g_spawn_on_crash = false;
@@ -109,13 +110,14 @@ static void _write_sidecar(const char *p_dump_path) {
 			"\t\"app_id\": \"%s\",\n"
 			"\t\"app_name\": \"%s\",\n"
 			"\t\"app_version\": \"%s\",\n"
+			"\t\"build_id\": \"%s\",\n"
 			"\t\"build_channel\": \"%s\",\n"
 			"\t\"contact_url\": \"%s\",\n"
 			"\t\"os\": \"%s\",\n"
 			"\t\"arch\": \"%s\",\n"
 			"\t\"dump_path\": \"%s\"\n"
 			"}\n",
-			id, g_engine_version, g_engine_hash, g_app_id, g_app_name, g_app_version, g_build_channel, g_contact_url, g_os, g_arch, p_dump_path);
+			id, g_engine_version, g_engine_hash, g_app_id, g_app_name, g_app_version, g_build_id, g_build_channel, g_contact_url, g_os, g_arch, p_dump_path);
 	fclose(f);
 }
 
@@ -142,8 +144,8 @@ static void _spawn_reporter_win(const char *p_dump_path) {
 	if (n >= 4) {
 		id[n - 4] = 0;
 	}
-	snprintf(cmd, sizeof(cmd), "\"%s\" --crash-dir \"%s\" --report-id \"%s\" --app-id \"%s\"",
-			g_reporter_path, g_dump_dir, id, g_app_id);
+	snprintf(cmd, sizeof(cmd), "\"%s\" --crash-dir \"%s\" --report-id \"%s\" --app-id \"%s\" --build-id \"%s\"",
+			g_reporter_path, g_dump_dir, id, g_app_id, g_build_id);
 	CreateProcessA(nullptr, cmd, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi);
 	if (pi.hThread) {
 		CloseHandle(pi.hThread);
@@ -231,7 +233,7 @@ void breakpad_set_dump_path(const char *p_utf8_path) {
 #endif
 }
 
-void breakpad_cache_identity(const char *p_app_id, const char *p_app_name, const char *p_app_version, const char *p_engine_version, const char *p_engine_hash, const char *p_os, const char *p_arch, const char *p_build_channel, const char *p_contact_url) {
+void breakpad_cache_identity(const char *p_app_id, const char *p_app_name, const char *p_app_version, const char *p_engine_version, const char *p_engine_hash, const char *p_os, const char *p_arch, const char *p_build_channel, const char *p_contact_url, const char *p_build_id) {
 	_copy_cstr(g_app_id, sizeof(g_app_id), p_app_id);
 	_copy_cstr(g_app_name, sizeof(g_app_name), p_app_name);
 	_copy_cstr(g_app_version, sizeof(g_app_version), p_app_version);
@@ -241,6 +243,7 @@ void breakpad_cache_identity(const char *p_app_id, const char *p_app_name, const
 	_copy_cstr(g_arch, sizeof(g_arch), p_arch);
 	_copy_cstr(g_build_channel, sizeof(g_build_channel), p_build_channel);
 	_copy_cstr(g_contact_url, sizeof(g_contact_url), p_contact_url);
+	_copy_cstr(g_build_id, sizeof(g_build_id), p_build_id);
 }
 
 void breakpad_cache_spawn(const char *p_reporter_utf8, bool p_spawn_on_crash) {

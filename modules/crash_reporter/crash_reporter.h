@@ -101,7 +101,7 @@ public:
 	String get_contact_url() const;
 	String get_privacy_policy_url() const;
 	String get_reporter_path() const;
-	String get_api_key() const;
+	String get_build_id() const;
 	int get_upload_mode() const;
 	bool is_enabled() const;
 

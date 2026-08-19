@@ -44,7 +44,8 @@ public:
 	static String normalize_endpoint(const String &p_endpoint);
 	static AnalyticsHTTPResult post_events(
 			const String &p_endpoint,
-			const String &p_api_key,
+			const String &p_app_id,
+			const String &p_build_id,
 			const String &p_user_agent,
 			const Vector<uint8_t> &p_body,
 			int p_timeout_sec,
