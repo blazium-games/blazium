@@ -43,23 +43,46 @@
 #endif
 #endif
 
+#ifndef CRASH_REPORTER_TEMPLATE_APP_ID
+#define CRASH_REPORTER_TEMPLATE_APP_ID ""
+#endif
+#ifndef CRASH_REPORTER_TEMPLATE_BUILD_ID
+#define CRASH_REPORTER_TEMPLATE_BUILD_ID ""
+#endif
+#ifndef CRASH_REPORTER_TEMPLATE_ENDPOINT
+#define CRASH_REPORTER_TEMPLATE_ENDPOINT ""
+#endif
+
+static void _def_identity_setting(const String &p_key, const String &p_baked) {
+	const String baked = p_baked.strip_edges();
+	GLOBAL_DEF_BASIC(p_key, baked);
+	if (baked.is_empty() || !ProjectSettings::get_singleton()) {
+		return;
+	}
+	ProjectSettings::get_singleton()->set(p_key, baked);
+	ProjectSettings::get_singleton()->set_custom_property_info(PropertyInfo(Variant::STRING, p_key, PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY));
+}
+
 void crash_reporter_register_project_settings() {
 	GLOBAL_DEF_BASIC("application/crash_reporter/enabled", false);
-	GLOBAL_DEF_BASIC("application/crash_reporter/app_id", String());
+	_def_identity_setting("application/crash_reporter/app_id", String(CRASH_REPORTER_TEMPLATE_APP_ID));
 	GLOBAL_DEF_BASIC("application/crash_reporter/app_name", String());
 	GLOBAL_DEF_BASIC("application/crash_reporter/app_version", String());
-	GLOBAL_DEF_BASIC("application/crash_reporter/build_id", String());
+	_def_identity_setting("application/crash_reporter/build_id", String(CRASH_REPORTER_TEMPLATE_BUILD_ID));
 	GLOBAL_DEF_BASIC("application/crash_reporter/build_channel", "release");
 	GLOBAL_DEF_BASIC("application/crash_reporter/contact_url", String());
 	GLOBAL_DEF_BASIC("application/crash_reporter/privacy_policy_url", String());
 
 	GLOBAL_DEF_BASIC(PropertyInfo(Variant::STRING, "application/crash_reporter/reporter_path", PROPERTY_HINT_FILE), String());
+	GLOBAL_DEF_BASIC("application/crash_reporter/reporter_filename", "crash_reporter");
+	GLOBAL_DEF_BASIC("application/crash_reporter/reporter_filename.windows", "crash_reporter.exe");
+	GLOBAL_DEF_BASIC("application/crash_reporter/reporter_sha256", String());
 	GLOBAL_DEF_BASIC("application/crash_reporter/reporter_args", PackedStringArray());
 	GLOBAL_DEF_BASIC("application/crash_reporter/spawn_on_crash", true);
 	GLOBAL_DEF_BASIC("application/crash_reporter/spawn_on_next_launch", true);
 	GLOBAL_DEF_BASIC("application/crash_reporter/spawn_open_console", false);
 
-	GLOBAL_DEF_BASIC("application/crash_reporter/endpoint", String());
+	_def_identity_setting("application/crash_reporter/endpoint", String(CRASH_REPORTER_TEMPLATE_ENDPOINT));
 	GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "application/crash_reporter/timeout_sec", PROPERTY_HINT_RANGE, "1,300,1"), 30);
 	GLOBAL_DEF_BASIC("application/crash_reporter/verify_tls", true);
 	GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "application/crash_reporter/upload_mode", PROPERTY_HINT_ENUM, "Disabled,InEngine,Sidecar,Both"), 0);

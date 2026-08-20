@@ -268,6 +268,18 @@ opts.Add("editor_analytics_app_id", "Alias for editor_app_id (empty uses editor_
 opts.Add("editor_analytics_build_id", "Alias for editor_build_id (empty uses editor_build_id)", "")
 opts.Add("editor_analytics_build_channel", "Baked editor analytics build_channel", "dev")
 opts.Add("editor_analytics_endpoint", "Baked editor analytics ingest URL (empty = disabled)", "")
+opts.Add("template_app_id", "Optional baked export-template App ID (empty = Project Settings remain writable)", "")
+opts.Add("template_build_id", "Optional baked export-template Build ID (empty = Project Settings remain writable)", "")
+opts.Add(
+    "template_analytics_endpoint",
+    "Optional baked export-template analytics URL (empty = Project Settings remain writable)",
+    "",
+)
+opts.Add(
+    "template_crash_reporter_endpoint",
+    "Optional baked export-template crash ingest URL (empty = Project Settings remain writable)",
+    "",
+)
 opts.Add(
     BoolVariable(
         "hub_register",
@@ -628,6 +640,34 @@ elif env.get("editor_analytics"):
     print_warning("editor_analytics=yes is ignored for export templates; use analytics=yes.")
 elif env.get("analytics"):
     env.Append(CPPDEFINES=["ANALYTICS_ENABLED"])
+
+
+def _scons_or_environ(scons_key, environ_key):
+    v = str(env.get(scons_key, "")).strip()
+    if v:
+        return v
+    return os.environ.get(environ_key, "").strip()
+
+
+template_app_id = _scons_or_environ("template_app_id", "BLAZIUM_TEMPLATE_APP_ID")
+template_build_id = _scons_or_environ("template_build_id", "BLAZIUM_TEMPLATE_BUILD_ID")
+template_analytics_endpoint = _scons_or_environ("template_analytics_endpoint", "BLAZIUM_TEMPLATE_ANALYTICS_ENDPOINT")
+template_crash_endpoint = _scons_or_environ("template_crash_reporter_endpoint", "BLAZIUM_TEMPLATE_CRASH_ENDPOINT")
+
+if env.editor_build:
+    if template_app_id or template_build_id or template_analytics_endpoint or template_crash_endpoint:
+        print_warning("template_* identity flags are ignored for editor builds.")
+else:
+    env.Append(
+        CPPDEFINES=[
+            _crash_reporter_cpp_string("CRASH_REPORTER_TEMPLATE_APP_ID", template_app_id),
+            _crash_reporter_cpp_string("CRASH_REPORTER_TEMPLATE_BUILD_ID", template_build_id),
+            _crash_reporter_cpp_string("CRASH_REPORTER_TEMPLATE_ENDPOINT", template_crash_endpoint),
+            _analytics_cpp_string("ANALYTICS_TEMPLATE_APP_ID", template_app_id),
+            _analytics_cpp_string("ANALYTICS_TEMPLATE_BUILD_ID", template_build_id),
+            _analytics_cpp_string("ANALYTICS_TEMPLATE_ENDPOINT", template_analytics_endpoint),
+        ]
+    )
 
 # This is not part of fast_unsafe because the only downside it has compared to
 # the default is that SCons won't mark files that were changed in the last second

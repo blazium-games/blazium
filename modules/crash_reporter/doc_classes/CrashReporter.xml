@@ -5,7 +5,7 @@
 	</brief_description>
 	<description>
 		[CrashReporter] records native crashes as Breakpad minidumps when the engine is built with [code]crash_reporter=yes[/code] (export templates) or [code]editor_crash_reporter=yes[/code] (editor). Identity is [method get_app_id] plus [method get_build_id] (shared with [Analytics]). Ingest POSTs send [code]X-App-Id[/code] and [code]X-Build-Id[/code].
-		Editor identity is baked at compile time ([code]editor_app_id[/code], [code]editor_build_id[/code]) and cannot be set from CLI, environment, or Editor Settings. If [code]editor_app_id[/code] is omitted, the editor uses [code]custom_blazium_engine[/code]. If [code]editor_build_id[/code] is omitted, the editor uses the engine git hash. Exported games read [member ProjectSettings.application/crash_reporter/app_id] and [member ProjectSettings.application/crash_reporter/build_id]. The editor prints dump paths to the console. Pass [code]--crash-reporter &lt;path&gt;[/code] when launching the editor to spawn a sidecar (the sidecar still receives the already-resolved ids). Exported games use [member ProjectSettings.application/crash_reporter/reporter_path] with [code]upload_mode[/code] Sidecar or Both. See [method get_resolved_config].
+		Editor identity is baked at compile time ([code]editor_app_id[/code], [code]editor_build_id[/code]) and cannot be set from CLI, environment, or Editor Settings. If [code]editor_app_id[/code] is omitted, the editor uses [code]custom_blazium_engine[/code]. If [code]editor_build_id[/code] is omitted, the editor uses the engine git hash. Export templates may optionally bake [code]template_app_id[/code], [code]template_build_id[/code], and [code]template_crash_reporter_endpoint[/code]; a non-empty bake locks that field (Project Settings show it read-only). Empty template bakes stay writable and use Project Settings. The editor prints dump paths to the console. Pass [code]--crash-reporter &lt;path&gt;[/code] when launching the editor to spawn a sidecar (the sidecar still receives the already-resolved ids). Exported games look next to the executable for [member ProjectSettings.application/crash_reporter/reporter_filename] (or [member ProjectSettings.application/crash_reporter/reporter_path]) when [code]upload_mode[/code] is Sidecar or Both. Optional [member ProjectSettings.application/crash_reporter/reporter_sha256] is checked at startup. See [method get_resolved_config].
 	</description>
 	<tutorials>
 	</tutorials>
@@ -26,7 +26,7 @@
 		<method name="get_app_id" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the product id sent with crash metadata and [code]X-App-Id[/code]. In the editor this is the SCons-baked value. In exported games it comes from Project Settings. Shared with [method Analytics.get_app_id]. There is no engine CLI override.
+				Returns the product id sent with crash metadata and [code]X-App-Id[/code]. In the editor this is the SCons-baked value. In exported games a non-empty [code]template_app_id[/code] bake wins and is locked; otherwise Project Settings are used. Shared with [method Analytics.get_app_id]. There is no engine CLI override.
 			</description>
 		</method>
 		<method name="get_app_name" qualifiers="const">
@@ -50,7 +50,7 @@
 		<method name="get_build_id" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the build id sent with crash metadata and [code]X-Build-Id[/code]. In the editor this is the SCons-baked value. In exported games it comes from Project Settings. Shared with [method Analytics.get_build_id]. There is no engine CLI override.
+				Returns the build id sent with crash metadata and [code]X-Build-Id[/code]. In the editor this is the SCons-baked value. In exported games a non-empty [code]template_build_id[/code] bake wins and is locked; otherwise Project Settings are used. Shared with [method Analytics.get_build_id]. There is no engine CLI override.
 			</description>
 		</method>
 		<method name="get_contact_url" qualifiers="const">
@@ -92,7 +92,7 @@
 		<method name="get_reporter_path" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the resolved sidecar reporter executable. In the editor this comes from [code]--crash-reporter[/code]; in exported games it comes from [member ProjectSettings.application/crash_reporter/reporter_path]. Empty when none is configured.
+				Returns the resolved sidecar reporter executable. In the editor this comes from [code]--crash-reporter[/code]. In exported games it is the file next to the executable named by [member ProjectSettings.application/crash_reporter/reporter_filename], falling back to [member ProjectSettings.application/crash_reporter/reporter_path]. A non-empty [member ProjectSettings.application/crash_reporter/reporter_sha256] must match or this returns empty.
 			</description>
 		</method>
 		<method name="get_resolved_config" qualifiers="const">

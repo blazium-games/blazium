@@ -135,6 +135,21 @@ String AppIdentity::resolve_build_id(const String &p_baked, const String &p_fall
 	return p_fallback;
 }
 
+String AppIdentity::resolve_endpoint(const String &p_baked, const String &p_project_key, const String &p_fallback) {
+	if (!p_baked.strip_edges().is_empty()) {
+		return p_baked.strip_edges();
+	}
+	if (!p_project_key.is_empty()) {
+		Vector<String> keys;
+		keys.push_back(p_project_key);
+		const String project = project_first(keys);
+		if (!project.is_empty()) {
+			return project;
+		}
+	}
+	return p_fallback;
+}
+
 String AppIdentity::editor_fallback_app_id() {
 	return String("custom_blazium_engine");
 }

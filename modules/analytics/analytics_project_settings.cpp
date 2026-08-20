@@ -46,13 +46,33 @@
 #endif
 #endif
 
+#ifndef ANALYTICS_TEMPLATE_APP_ID
+#define ANALYTICS_TEMPLATE_APP_ID ""
+#endif
+#ifndef ANALYTICS_TEMPLATE_BUILD_ID
+#define ANALYTICS_TEMPLATE_BUILD_ID ""
+#endif
+#ifndef ANALYTICS_TEMPLATE_ENDPOINT
+#define ANALYTICS_TEMPLATE_ENDPOINT ""
+#endif
+
+static void _def_identity_setting(const String &p_key, const String &p_baked) {
+	const String baked = p_baked.strip_edges();
+	GLOBAL_DEF_BASIC(p_key, baked);
+	if (baked.is_empty() || !ProjectSettings::get_singleton()) {
+		return;
+	}
+	ProjectSettings::get_singleton()->set(p_key, baked);
+	ProjectSettings::get_singleton()->set_custom_property_info(PropertyInfo(Variant::STRING, p_key, PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY));
+}
+
 void analytics_register_project_settings() {
 	GLOBAL_DEF_BASIC("application/analytics/enabled", false);
 	GLOBAL_DEF_BASIC("application/analytics/require_user_consent", false);
 	GLOBAL_DEF_BASIC("application/analytics/anonymous", true);
-	GLOBAL_DEF_BASIC("application/analytics/endpoint", String());
-	GLOBAL_DEF_BASIC("application/analytics/app_id", String());
-	GLOBAL_DEF_BASIC("application/analytics/build_id", String());
+	_def_identity_setting("application/analytics/endpoint", String(ANALYTICS_TEMPLATE_ENDPOINT));
+	_def_identity_setting("application/analytics/app_id", String(ANALYTICS_TEMPLATE_APP_ID));
+	_def_identity_setting("application/analytics/build_id", String(ANALYTICS_TEMPLATE_BUILD_ID));
 	GLOBAL_DEF_BASIC("application/analytics/app_version", String());
 	GLOBAL_DEF_BASIC("application/analytics/build_channel", "release");
 	GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "application/analytics/timeout_sec", PROPERTY_HINT_RANGE, "1,120,1"), 15);
