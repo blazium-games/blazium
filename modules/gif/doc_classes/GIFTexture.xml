@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GIFTexture" inherits="Texture2D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A [Texture2D] that plays a [GIFAnimation].
+	</brief_description>
+	<description>
+		Drop this texture onto [Sprite2D], [Sprite3D], [TextureRect], materials, or shader uniforms. There is no 256-frame cap. Looping honors [member GIFAnimation.loop_count] when [member loop] is [code]true[/code].
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="animation" type="GIFAnimation" setter="set_animation" getter="get_animation">
+			The GIF to play.
+		</member>
+		<member name="current_frame" type="int" setter="set_current_frame" getter="get_current_frame" default="0">
+			Visible frame index.
+		</member>
+		<member name="loop" type="bool" setter="set_loop" getter="get_loop" default="true">
+			If [code]true[/code], playback repeats according to the Netscape loop count.
+		</member>
+		<member name="play" type="bool" setter="set_play" getter="get_play" default="true">
+			If [code]true[/code], the texture advances frames.
+		</member>
+		<member name="resource_local_to_scene" type="bool" setter="set_local_to_scene" getter="is_local_to_scene" overrides="Resource" default="false" />
+		<member name="speed_scale" type="float" setter="set_speed_scale" getter="get_speed_scale" default="1.0">
+			Playback speed. Negative values play in reverse.
+		</member>
+	</members>
+</class>

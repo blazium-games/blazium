@@ -148,6 +148,19 @@ TEST_CASE("[Image] Saving and loading") {
 			"The WebP image should load successfully.");
 #endif // MODULE_WEBP_ENABLED
 
+#ifdef MODULE_GIF_ENABLED
+	{
+		Ref<Image> image_gif_src = image->duplicate();
+		image_gif_src->fill(Color(1, 0.5f, 0.25f, 1));
+		PackedByteArray data_gif = image_gif_src->save_gif_to_buffer();
+		CHECK_MESSAGE(data_gif.size() > 0, "The image should save to a GIF buffer.");
+		Ref<Image> image_gif = memnew(Image());
+		CHECK_MESSAGE(
+				image_gif->load_gif_from_buffer(data_gif) == OK,
+				"The GIF image should load successfully.");
+	}
+#endif // MODULE_GIF_ENABLED
+
 	// Load PNG
 	Ref<Image> image_png = memnew(Image());
 	Ref<FileAccess> f_png = FileAccess::open(TestUtils::get_data_path("images/icon.png"), FileAccess::READ, &err);

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ResourceImporterGIF" inherits="ResourceImporter" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Imports a [code].gif[/code] file as a [GIFAnimation], [SpriteFrames], or first-frame texture.
+	</brief_description>
+	<description>
+		Default import creates a [GIFAnimation]. Choose [b]Sprite Frames[/b] to drop the file onto [AnimatedSprite2D], or [b]First Frame Texture[/b] for a still [ImageTexture]. Registering the GIF image loader also lets the existing texture importer treat [code].gif[/code] as a first-frame still.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="bake_compress" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="bake_storage" type="int" setter="" getter="" default="1">
+		</member>
+		<member name="dither" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="import_mode" type="int" setter="" getter="" default="0">
+		</member>
+	</members>
+</class>

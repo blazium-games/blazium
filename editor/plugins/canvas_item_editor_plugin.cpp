@@ -67,11 +67,18 @@
 #include "scene/gui/split_container.h"
 #include "scene/gui/subviewport_container.h"
 #include "scene/gui/texture_button.h"
+#include "scene/gui/texture_rect.h"
 #include "scene/gui/view_panner.h"
 #include "scene/main/canvas_layer.h"
 #include "scene/main/window.h"
 #include "scene/resources/packed_scene.h"
 #include "scene/resources/style_box_texture.h"
+
+#ifdef MODULE_GIF_ENABLED
+#include "modules/gif/gif_animation.h"
+#include "modules/gif/gif_sprite_2d.h"
+#include "modules/gif/gif_texture.h"
+#endif
 
 #define RULER_WIDTH (15 * EDSCALE)
 constexpr real_t SCALE_HANDLE_DISTANCE = 25;
@@ -5828,6 +5835,17 @@ void CanvasItemEditorViewport::_create_preview(const Vector<String> &files) cons
 		Ref<Resource> res = ResourceLoader::load(files[i]);
 		ERR_CONTINUE(res.is_null());
 
+#ifdef MODULE_GIF_ENABLED
+		Ref<GIFAnimation> gif_anim = res;
+		if (gif_anim.is_valid()) {
+			GIFSprite2D *gif_sprite = memnew(GIFSprite2D);
+			gif_sprite->set_animation(gif_anim);
+			gif_sprite->set_modulate(Color(1, 1, 1, 0.7f));
+			preview_node->add_child(gif_sprite);
+			add_preview = true;
+		}
+#endif
+
 		Ref<Texture2D> texture = res;
 		if (texture.is_valid()) {
 			Sprite2D *sprite = memnew(Sprite2D);
@@ -6109,6 +6127,47 @@ void CanvasItemEditorViewport::_perform_drop_data() {
 			continue;
 		}
 
+#ifdef MODULE_GIF_ENABLED
+		Ref<GIFAnimation> gif_anim = res;
+		if (gif_anim.is_valid()) {
+			Sprite2D *sprite_target = Object::cast_to<Sprite2D>(target_node);
+			TextureRect *rect_target = Object::cast_to<TextureRect>(target_node);
+			if (sprite_target || rect_target) {
+				Ref<GIFTexture> gif_tex;
+				gif_tex.instantiate();
+				gif_tex->set_animation(gif_anim);
+				Ref<Texture2D> prev_tex = sprite_target ? sprite_target->get_texture() : rect_target->get_texture();
+				undo_redo->add_do_property(target_node, "texture", gif_tex);
+				undo_redo->add_undo_property(target_node, "texture", prev_tex);
+			} else {
+				GIFSprite2D *gif_sprite = memnew(GIFSprite2D);
+				gif_sprite->set_animation(gif_anim);
+				const String &node_name = Node::adjust_name_casing(path.get_file().get_basename());
+				if (!node_name.is_empty()) {
+					gif_sprite->set_name(node_name);
+				}
+				if (target_node) {
+					undo_redo->add_do_method(target_node, "add_child", gif_sprite, true);
+					undo_redo->add_do_method(gif_sprite, "set_owner", EditorNode::get_singleton()->get_edited_scene());
+					undo_redo->add_do_reference(gif_sprite);
+					undo_redo->add_undo_method(target_node, "remove_child", gif_sprite);
+				} else {
+					undo_redo->add_do_method(EditorNode::get_singleton(), "set_edited_scene", gif_sprite);
+					undo_redo->add_do_method(gif_sprite, "set_owner", EditorNode::get_singleton()->get_edited_scene());
+					undo_redo->add_do_reference(gif_sprite);
+					undo_redo->add_undo_method(EditorNode::get_singleton(), "set_edited_scene", (Object *)nullptr);
+				}
+				Transform2D xform = canvas_item_editor->get_canvas_transform();
+				Point2 target_position = canvas_item_editor->snap_point(xform.affine_inverse().xform(drop_pos));
+				CanvasItem *parent_ci = Object::cast_to<CanvasItem>(target_node);
+				Point2 local_target_pos = parent_ci ? parent_ci->get_global_transform().affine_inverse().xform(target_position) : target_position;
+				undo_redo->add_do_method(gif_sprite, "set_position", local_target_pos);
+				undo_redo->add_do_method(editor_selection, "add_node", gif_sprite);
+			}
+			continue;
+		}
+#endif
+
 		Ref<Texture2D> texture = res;
 		if (texture.is_valid()) {
 			Node *child = Object::cast_to<Node>(ClassDB::instantiate(default_texture_node_type));
@@ -6171,7 +6230,7 @@ bool CanvasItemEditorViewport::can_drop_data(const Point2 &p_point, const Varian
 			memdelete(instantiated_scene);
 			instantiate_type |= SCENE;
 		}
-		if (ClassDB::is_parent_class(res_type, "Texture2D")) {
+		if (ClassDB::is_parent_class(res_type, "Texture2D") || ClassDB::is_parent_class(res_type, "GIFAnimation")) {
 			instantiate_type |= TEXTURE;
 		}
 		if (ClassDB::is_parent_class(res_type, "AudioStream")) {
@@ -6339,6 +6398,9 @@ CanvasItemEditorViewport::CanvasItemEditorViewport(CanvasItemEditor *p_canvas_it
 	default_texture_node_type = "Sprite2D";
 	// Node2D
 	texture_node_types.push_back("Sprite2D");
+#ifdef MODULE_GIF_ENABLED
+	texture_node_types.push_back("GIFSprite2D");
+#endif
 	texture_node_types.push_back("PointLight2D");
 	texture_node_types.push_back("CPUParticles2D");
 	texture_node_types.push_back("GPUParticles2D");

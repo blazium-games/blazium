@@ -105,6 +105,19 @@ Files extracted from upstream source:
 - `ca-bundle.crt`
 
 
+## cgif
+
+- Upstream: https://github.com/dloebl/cgif
+- Version: git (b1facf77a226e971fdd9c0f2fd616ab9b03562d9, 2026)
+- License: MIT
+
+Files extracted from upstream source:
+
+- `LICENSE`, `AUTHORS`
+- `inc/cgif.h`, `inc/cgif_raw.h`
+- `src/cgif.c`, `src/cgif_raw.c`, `src/cgif_rgb.c`
+
+
 ## clipper2
 
 - Upstream: https://github.com/AngusJohnson/Clipper2

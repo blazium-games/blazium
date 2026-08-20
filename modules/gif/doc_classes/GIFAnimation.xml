@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GIFAnimation" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Decoded or authored animated GIF resource.
+	</brief_description>
+	<description>
+		Holds GIF canvas size, Netscape loop count, source patches, and optional baked full-canvas frames. Use [method bake_frames] to compose disposal methods. Convert to [SpriteFrames] with [method to_sprite_frames] for [AnimatedSprite2D].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_source_frame">
+			<return type="void" />
+			<param index="0" name="image" type="Image" />
+			<param index="1" name="delay_cs" type="int" default="10" />
+			<param index="2" name="disposal" type="int" enum="GIFAnimation.Disposal" default="0" />
+			<param index="3" name="position" type="Vector2i" default="Vector2i(0, 0)" />
+			<description>
+				Appends a source frame. Delay is in hundredths of a second.
+			</description>
+		</method>
+		<method name="bake_frames">
+			<return type="int" enum="Error" />
+			<description>
+				Composes source patches onto the canvas using each frame's disposal method.
+			</description>
+		</method>
+		<method name="from_sprite_frames" qualifiers="static">
+			<return type="GIFAnimation" />
+			<param index="0" name="frames" type="SpriteFrames" />
+			<param index="1" name="animation_name" type="StringName" default="&amp;&quot;default&quot;" />
+			<description>
+				Builds a GIF animation from a [SpriteFrames] animation.
+			</description>
+		</method>
+		<method name="get_active_texture">
+			<return type="Texture2D" />
+			<param index="0" name="frame" type="int" />
+			<description>
+				Returns the texture used for the given frame in the current display mode.
+			</description>
+		</method>
+		<method name="get_baked_image" qualifiers="const">
+			<return type="Image" />
+			<param index="0" name="frame" type="int" />
+			<description>
+				Returns a composed full-canvas image, if baking has run.
+			</description>
+		</method>
+		<method name="get_frame_count" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the number of source frames.
+			</description>
+		</method>
+		<method name="get_frame_delay" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="frame" type="int" />
+			<description>
+				Returns the frame delay in hundredths of a second. Missing or zero delays use 10.
+			</description>
+		</method>
+		<method name="get_frame_delay_sec" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="frame" type="int" />
+			<description>
+				Returns the frame delay in seconds, at least 0.01.
+			</description>
+		</method>
+		<method name="get_frame_disposal" qualifiers="const">
+			<return type="int" enum="GIFAnimation.Disposal" />
+			<param index="0" name="frame" type="int" />
+			<description>
+				Returns the GIF disposal method for the frame.
+			</description>
+		</method>
+		<method name="get_frame_has_transparency" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="frame" type="int" />
+			<description>
+				Returns whether the frame uses a transparent color index.
+			</description>
+		</method>
+		<method name="get_frame_position" qualifiers="const">
+			<return type="Vector2i" />
+			<param index="0" name="frame" type="int" />
+			<description>
+				Returns the source patch origin on the canvas.
+			</description>
+		</method>
+		<method name="get_frame_transparent_color" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="frame" type="int" />
+			<description>
+				Returns the transparent palette index, or [code]-1[/code].
+			</description>
+		</method>
+		<method name="get_source_image" qualifiers="const">
+			<return type="Image" />
+			<param index="0" name="frame" type="int" />
+			<description>
+				Returns the undecoded source patch for the frame.
+			</description>
+		</method>
+		<method name="load_from_buffer">
+			<return type="int" enum="Error" />
+			<param index="0" name="buffer" type="PackedByteArray" />
+			<description>
+				Decodes a GIF from memory.
+			</description>
+		</method>
+		<method name="load_from_path">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Decodes a GIF from a file.
+			</description>
+		</method>
+		<method name="save_to_buffer" qualifiers="const">
+			<return type="PackedByteArray" />
+			<description>
+				Encodes this animation as GIF bytes.
+			</description>
+		</method>
+		<method name="save_to_path" qualifiers="const">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Encodes this animation to a [code].gif[/code] file.
+			</description>
+		</method>
+		<method name="to_sprite_frames">
+			<return type="SpriteFrames" />
+			<param index="0" name="animation_name" type="StringName" default="&amp;&quot;default&quot;" />
+			<description>
+				Bakes frames into a [SpriteFrames] animation. Disposal metadata is not preserved.
+			</description>
+		</method>
+		<method name="wrap_frame" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="frame" type="int" />
+			<description>
+				Wraps a frame index into the valid range.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="bake_compress" type="bool" setter="set_bake_compress" getter="get_bake_compress" default="false">
+			If [code]true[/code], baked frames are VRAM-compressed when possible.
+		</member>
+		<member name="bake_storage" type="int" setter="set_bake_storage" getter="get_bake_storage" enum="GIFAnimation.BakeStorage" default="1">
+			Whether baked frames are stored in the [code].res[/code] or rebuilt on load.
+		</member>
+		<member name="baked_frames" type="Image[]" setter="_set_baked_frames" getter="_get_baked_frames" default="[]">
+		</member>
+		<member name="canvas_size" type="Vector2i" setter="set_canvas_size" getter="get_canvas_size" default="Vector2i(0, 0)">
+			Logical GIF canvas size.
+		</member>
+		<member name="display_mode" type="int" setter="set_display_mode" getter="get_display_mode" enum="GIFAnimation.DisplayMode" default="0">
+			Whether playback uses source patches or composed frames.
+		</member>
+		<member name="dither" type="bool" setter="set_dither" getter="get_dither" default="true">
+			Enables color dithering when encoding.
+		</member>
+		<member name="loop_count" type="int" setter="set_loop_count" getter="get_loop_count" default="0">
+			Netscape loop count. [code]0[/code] means infinite.
+		</member>
+		<member name="source_frames" type="Image[]" setter="_set_source_frames" getter="_get_source_frames" default="[]">
+		</member>
+	</members>
+	<signals>
+		<signal name="frames_changed">
+			<description>
+				Emitted after frames are loaded or appended.
+			</description>
+		</signal>
+		<signal name="rebaked">
+			<description>
+				Emitted after [method bake_frames] finishes.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="DISPLAY_SOURCE" value="0" enum="DisplayMode">
+			Draw source patches.
+		</constant>
+		<constant name="DISPLAY_BAKED" value="1" enum="DisplayMode">
+			Draw composed full-canvas frames.
+		</constant>
+		<constant name="BAKE_STORE" value="0" enum="BakeStorage">
+			Store baked images in the resource.
+		</constant>
+		<constant name="BAKE_GENERATE_ON_LOAD" value="1" enum="BakeStorage">
+			Rebuild baked images when needed.
+		</constant>
+		<constant name="DISPOSAL_NONE" value="0" enum="Disposal">
+			No disposal specified.
+		</constant>
+		<constant name="DISPOSAL_DO_NOT_DISPOSE" value="1" enum="Disposal">
+			Leave the canvas as-is.
+		</constant>
+		<constant name="DISPOSAL_RESTORE_BACKGROUND" value="2" enum="Disposal">
+			Clear the frame rectangle to transparent.
+		</constant>
+		<constant name="DISPOSAL_RESTORE_PREVIOUS" value="3" enum="Disposal">
+			Restore the canvas from before this frame.
+		</constant>
+	</constants>
+</class>

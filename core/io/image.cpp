@@ -86,11 +86,13 @@ SavePNGFunc Image::save_png_func = nullptr;
 SaveJPGFunc Image::save_jpg_func = nullptr;
 SaveEXRFunc Image::save_exr_func = nullptr;
 SaveWebPFunc Image::save_webp_func = nullptr;
+SaveGIFFunc Image::save_gif_func = nullptr;
 
 SavePNGBufferFunc Image::save_png_buffer_func = nullptr;
 SaveJPGBufferFunc Image::save_jpg_buffer_func = nullptr;
 SaveEXRBufferFunc Image::save_exr_buffer_func = nullptr;
 SaveWebPBufferFunc Image::save_webp_buffer_func = nullptr;
+SaveGIFBufferFunc Image::save_gif_buffer_func = nullptr;
 
 // External loader function pointers.
 
@@ -98,6 +100,7 @@ ImageMemLoadFunc Image::_png_mem_loader_func = nullptr;
 ImageMemLoadFunc Image::_png_mem_unpacker_func = nullptr;
 ImageMemLoadFunc Image::_jpg_mem_loader_func = nullptr;
 ImageMemLoadFunc Image::_webp_mem_loader_func = nullptr;
+ImageMemLoadFunc Image::_gif_mem_loader_func = nullptr;
 ImageMemLoadFunc Image::_tga_mem_loader_func = nullptr;
 ImageMemLoadFunc Image::_bmp_mem_loader_func = nullptr;
 ScalableImageMemLoadFunc Image::_svg_scalable_mem_loader_func = nullptr;
@@ -2633,6 +2636,20 @@ Vector<uint8_t> Image::save_webp_to_buffer(const bool p_lossy, const float p_qua
 	return save_webp_buffer_func(Ref<Image>((Image *)this), p_lossy, p_quality);
 }
 
+Error Image::save_gif(const String &p_path) const {
+	if (save_gif_func == nullptr) {
+		return ERR_UNAVAILABLE;
+	}
+	return save_gif_func(p_path, Ref<Image>((Image *)this));
+}
+
+Vector<uint8_t> Image::save_gif_to_buffer() const {
+	if (save_gif_buffer_func == nullptr) {
+		return Vector<uint8_t>();
+	}
+	return save_gif_buffer_func(Ref<Image>((Image *)this));
+}
+
 int64_t Image::get_image_data_size(int p_width, int p_height, Format p_format, bool p_mipmaps) {
 	int mm;
 	return _get_dst_image_size(p_width, p_height, p_format, mm, p_mipmaps ? -1 : 0);
@@ -3541,6 +3558,8 @@ void Image::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("save_exr_to_buffer", "grayscale"), &Image::save_exr_to_buffer, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("save_webp", "path", "lossy", "quality"), &Image::save_webp, DEFVAL(false), DEFVAL(0.75f));
 	ClassDB::bind_method(D_METHOD("save_webp_to_buffer", "lossy", "quality"), &Image::save_webp_to_buffer, DEFVAL(false), DEFVAL(0.75f));
+	ClassDB::bind_method(D_METHOD("save_gif", "path"), &Image::save_gif);
+	ClassDB::bind_method(D_METHOD("save_gif_to_buffer"), &Image::save_gif_to_buffer);
 
 	ClassDB::bind_method(D_METHOD("detect_alpha"), &Image::detect_alpha);
 	ClassDB::bind_method(D_METHOD("is_invisible"), &Image::is_invisible);
@@ -3588,6 +3607,7 @@ void Image::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("load_png_from_buffer", "buffer"), &Image::load_png_from_buffer);
 	ClassDB::bind_method(D_METHOD("load_jpg_from_buffer", "buffer"), &Image::load_jpg_from_buffer);
 	ClassDB::bind_method(D_METHOD("load_webp_from_buffer", "buffer"), &Image::load_webp_from_buffer);
+	ClassDB::bind_method(D_METHOD("load_gif_from_buffer", "buffer"), &Image::load_gif_from_buffer);
 	ClassDB::bind_method(D_METHOD("load_tga_from_buffer", "buffer"), &Image::load_tga_from_buffer);
 	ClassDB::bind_method(D_METHOD("load_bmp_from_buffer", "buffer"), &Image::load_bmp_from_buffer);
 	ClassDB::bind_method(D_METHOD("load_ktx_from_buffer", "buffer"), &Image::load_ktx_from_buffer);
@@ -4042,6 +4062,10 @@ Error Image::load_webp_from_buffer(const Vector<uint8_t> &p_array) {
 	return _load_from_buffer(p_array, _webp_mem_loader_func);
 }
 
+Error Image::load_gif_from_buffer(const Vector<uint8_t> &p_array) {
+	return _load_from_buffer(p_array, _gif_mem_loader_func);
+}
+
 Error Image::load_tga_from_buffer(const Vector<uint8_t> &p_array) {
 	ERR_FAIL_NULL_V_MSG(
 			_tga_mem_loader_func,
@@ -4208,6 +4232,10 @@ Image::Image(const uint8_t *p_mem_png_jpg, int p_len) {
 
 	if (is_empty() && _webp_mem_loader_func) {
 		copy_internals_from(_webp_mem_loader_func(p_mem_png_jpg, p_len));
+	}
+
+	if (is_empty() && _gif_mem_loader_func) {
+		copy_internals_from(_gif_mem_loader_func(p_mem_png_jpg, p_len));
 	}
 }
 
