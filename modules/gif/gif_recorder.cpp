@@ -57,9 +57,10 @@ void GIFRecorder::_connect_process(bool p_connect) {
 
 Error GIFRecorder::_start_common() {
 	ERR_FAIL_COND_V_MSG(recording, ERR_ALREADY_IN_USE, "GIFRecorder is already recording.");
-	animation.instantiate();
-	animation->set_loop_count(loop_count);
-	animation->set_dither(dither);
+	texture.instantiate();
+	texture->set_netscape_loop_count(loop_count);
+	texture->set_dither(dither);
+	texture->set_play(false);
 	accum = 0;
 	frame_interval = fps > 0 ? (1.0 / double(fps)) : (1.0 / 12.0);
 	recording = true;
@@ -140,22 +141,23 @@ Error GIFRecorder::start_screen(int p_screen) {
 Error GIFRecorder::add_frame(const Ref<Image> &p_image) {
 	Ref<Image> img = _prepare_image(p_image);
 	ERR_FAIL_COND_V(img.is_null(), ERR_INVALID_PARAMETER);
-	if (animation.is_null()) {
-		animation.instantiate();
-		animation->set_loop_count(loop_count);
-		animation->set_dither(dither);
+	if (texture.is_null()) {
+		texture.instantiate();
+		texture->set_netscape_loop_count(loop_count);
+		texture->set_dither(dither);
+		texture->set_play(false);
 	}
 	const int cap = max_frames > 0 ? max_frames : gif_get_max_frames();
-	ERR_FAIL_COND_V_MSG(animation->get_frame_count() >= cap, ERR_OUT_OF_MEMORY, "GIFRecorder reached max_frames.");
+	ERR_FAIL_COND_V_MSG(texture->get_frame_count() >= cap, ERR_OUT_OF_MEMORY, "GIFRecorder reached max_frames.");
 	const int delay_cs = MAX(1, int(Math::round((fps > 0 ? (1.0 / double(fps)) : 0.1) * 100.0)));
-	animation->add_source_frame(img, delay_cs);
+	texture->add_source_frame(img, delay_cs);
 	return OK;
 }
 
-Ref<GIFAnimation> GIFRecorder::stop() {
+Ref<GIFTexture> GIFRecorder::stop() {
 	_connect_process(false);
 	recording = false;
-	Ref<GIFAnimation> result = animation;
+	Ref<GIFTexture> result = texture;
 	if (result.is_valid() && !pending_path.is_empty()) {
 		result->save_to_path(pending_path);
 		emit_signal(SNAME("recording_finished"), result, pending_path);
@@ -167,10 +169,10 @@ Ref<GIFAnimation> GIFRecorder::stop() {
 }
 
 Error GIFRecorder::save(const String &p_path) {
-	ERR_FAIL_COND_V(animation.is_null(), ERR_UNCONFIGURED);
-	animation->set_dither(dither);
-	animation->set_loop_count(loop_count);
-	return animation->save_to_path(p_path);
+	ERR_FAIL_COND_V(texture.is_null(), ERR_UNCONFIGURED);
+	texture->set_dither(dither);
+	texture->set_netscape_loop_count(loop_count);
+	return texture->save_to_path(p_path);
 }
 
 Error GIFRecorder::record_viewport(Viewport *p_viewport, const String &p_path, double p_duration_sec, int p_fps) {
@@ -261,7 +263,7 @@ void GIFRecorder::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "max_frames"), "set_max_frames", "get_max_frames");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "dither"), "set_dither", "get_dither");
 
-	ADD_SIGNAL(MethodInfo("recording_finished", PropertyInfo(Variant::OBJECT, "animation", PROPERTY_HINT_RESOURCE_TYPE, "GIFAnimation"), PropertyInfo(Variant::STRING, "path")));
+	ADD_SIGNAL(MethodInfo("recording_finished", PropertyInfo(Variant::OBJECT, "animation", PROPERTY_HINT_RESOURCE_TYPE, "GIFTexture"), PropertyInfo(Variant::STRING, "path")));
 
 	BIND_ENUM_CONSTANT(SOURCE_VIEWPORT);
 	BIND_ENUM_CONSTANT(SOURCE_WINDOW);

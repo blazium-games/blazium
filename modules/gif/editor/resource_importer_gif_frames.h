@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  gif_sprite_2d.h                                                       */
+/*  resource_importer_gif_frames.h                                        */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             BLAZIUM ENGINE                             */
@@ -29,54 +29,26 @@
 
 #pragma once
 
-#include "gif_animation.h"
-#include "scene/2d/node_2d.h"
+#include "core/io/resource_importer.h"
 
-class GIFSprite2D : public Node2D {
-	GDCLASS(GIFSprite2D, Node2D);
-
-	Ref<GIFAnimation> animation;
-	bool playing = true;
-	bool loop = true;
-	float speed_scale = 1.0;
-	int current_frame = 0;
-	float time = 0.0;
-	int loops_done = 0;
-	bool centered = true;
-	Point2 offset;
-
-	void _advance(double p_delta);
-	void _animation_changed();
-	Rect2 _get_rect() const;
-
-protected:
-	void _notification(int p_what);
-	static void _bind_methods();
+class ResourceImporterGIFFrames : public ResourceImporter {
+	GDCLASS(ResourceImporterGIFFrames, ResourceImporter);
 
 public:
-	void set_animation(const Ref<GIFAnimation> &p_animation);
-	Ref<GIFAnimation> get_animation() const;
-	void set_playing(bool p_playing);
-	bool is_playing() const;
-	void play();
-	void pause();
-	void stop();
-	void set_loop(bool p_loop);
-	bool get_loop() const;
-	void set_speed_scale(float p_scale);
-	float get_speed_scale() const;
-	void set_frame(int p_frame);
-	int get_frame() const;
-	void set_centered(bool p_centered);
-	bool is_centered() const;
-	void set_offset(const Point2 &p_offset);
-	Point2 get_offset() const;
+	virtual String get_importer_name() const override;
+	virtual String get_visible_name() const override;
+	virtual void get_recognized_extensions(List<String> *p_extensions) const override;
+	virtual String get_save_extension() const override;
+	virtual String get_resource_type() const override;
+	virtual float get_priority() const override;
 
-#ifdef DEBUG_ENABLED
-	virtual Rect2 _edit_get_rect() const override;
-	virtual bool _edit_use_rect() const override;
-#endif
-	virtual Rect2 get_anchorable_rect() const override;
+	virtual int get_preset_count() const override;
+	virtual String get_preset_name(int p_idx) const override;
 
-	GIFSprite2D();
+	virtual void get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset = 0) const override;
+	virtual bool get_option_visibility(const String &p_path, const String &p_option, const HashMap<StringName, Variant> &p_options) const override;
+
+	virtual Error import(ResourceUID::ID p_source_id, const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files = nullptr, Variant *r_metadata = nullptr) override;
+
+	virtual bool can_import_threaded() const override { return true; }
 };

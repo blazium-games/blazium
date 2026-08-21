@@ -46,6 +46,7 @@
 #include "scene/animation/animation_player.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/button.h"
+#include "scene/gui/check_button.h"
 #include "scene/gui/control.h"
 #include "scene/gui/label.h"
 #include "scene/gui/slider.h"
@@ -59,12 +60,12 @@
 class GIFInspectorControls : public VBoxContainer {
 	GDCLASS(GIFInspectorControls, VBoxContainer);
 
-	Ref<GIFAnimation> animation;
-	Ref<GIFTexture> preview_texture;
+	Ref<GIFTexture> target;
 	TextureRect *preview = nullptr;
-	HSlider *playhead = nullptr;
-	Button *play_btn = nullptr;
 	Label *info = nullptr;
+	Button *play_btn = nullptr;
+	CheckButton *loop_btn = nullptr;
+	HSlider *frame_slider = nullptr;
 
 	void _load_pressed() {
 		EditorFileDialog *fd = memnew(EditorFileDialog);
@@ -77,8 +78,8 @@ class GIFInspectorControls : public VBoxContainer {
 	}
 
 	void _file_loaded(const String &p_path) {
-		if (animation.is_valid()) {
-			animation->load_from_path(p_path);
+		if (target.is_valid()) {
+			target->load_from_path(p_path);
 			_refresh();
 		}
 	}
@@ -94,56 +95,71 @@ class GIFInspectorControls : public VBoxContainer {
 	}
 
 	void _file_saved(const String &p_path) {
-		if (animation.is_valid()) {
-			animation->save_to_path(p_path);
+		if (target.is_valid()) {
+			target->save_to_path(p_path);
 		}
 	}
 
 	void _rebake_pressed() {
-		if (animation.is_valid()) {
-			animation->bake_frames();
+		if (target.is_valid()) {
+			target->bake_frames();
 			_refresh();
 		}
 	}
 
 	void _play_toggled(bool p_pressed) {
-		if (preview_texture.is_valid()) {
-			preview_texture->set_play(p_pressed);
+		if (target.is_valid()) {
+			target->set_play(p_pressed);
 		}
-	}
-
-	void _playhead_changed(double p_value) {
-		if (preview_texture.is_valid()) {
-			preview_texture->set_play(false);
-			preview_texture->set_current_frame(int(p_value));
-			if (play_btn) {
-				play_btn->set_pressed(false);
+		if (play_btn) {
+			play_btn->set_text(p_pressed ? TTR("Stop") : TTR("Play"));
+			if (preview) {
+				preview->queue_redraw();
 			}
 		}
 	}
 
-	void _refresh() {
-		if (animation.is_null()) {
-			return;
-		}
-		if (preview_texture.is_valid()) {
-			preview_texture->set_animation(animation);
-		}
-		if (playhead) {
-			playhead->set_max(MAX(0, animation->get_frame_count() - 1));
-		}
-		if (info) {
-			info->set_text(vformat("%d frames, %dx%d, loop %d", animation->get_frame_count(), animation->get_canvas_size().x, animation->get_canvas_size().y, animation->get_loop_count()));
+	void _loop_toggled(bool p_pressed) {
+		if (target.is_valid()) {
+			target->set_loop(p_pressed);
 		}
 	}
 
-	void _sync_playhead() {
-		if (!playhead || preview_texture.is_null() || !preview_texture->get_play()) {
+	void _frame_changed(double p_value) {
+		if (target.is_valid()) {
+			target->set_current_frame(int(p_value));
+		}
+		if (play_btn && target.is_valid()) {
+			const bool playing = target->get_play();
+			play_btn->set_text(playing ? TTR("Stop") : TTR("Play"));
+			play_btn->set_pressed_no_signal(playing);
+		}
+		if (preview) {
+			preview->queue_redraw();
+		}
+	}
+
+	void _refresh() {
+		if (target.is_null()) {
 			return;
 		}
-		playhead->set_block_signals(true);
-		playhead->set_value(preview_texture->get_current_frame());
-		playhead->set_block_signals(false);
+		if (info) {
+			info->set_text(vformat("%d frames, %dx%d, loop %d", target->get_frame_count(), target->get_canvas_size().x, target->get_canvas_size().y, target->get_netscape_loop_count()));
+		}
+		if (play_btn) {
+			const bool playing = target->get_play();
+			play_btn->set_pressed_no_signal(playing);
+			play_btn->set_text(playing ? TTR("Stop") : TTR("Play"));
+		}
+		if (loop_btn) {
+			loop_btn->set_pressed_no_signal(target->get_loop());
+		}
+		if (frame_slider) {
+			frame_slider->set_block_signals(true);
+			frame_slider->set_max(MAX(0, target->get_frame_count() - 1));
+			frame_slider->set_value(target->get_current_frame());
+			frame_slider->set_block_signals(false);
+		}
 	}
 
 protected:
@@ -154,23 +170,23 @@ protected:
 				set_process(is_visible_in_tree());
 			} break;
 			case NOTIFICATION_PROCESS: {
+				if (target.is_valid() && target->get_play() && frame_slider) {
+					frame_slider->set_block_signals(true);
+					frame_slider->set_value(target->get_current_frame());
+					frame_slider->set_block_signals(false);
+				}
 				if (preview) {
 					preview->queue_redraw();
 				}
-				_sync_playhead();
 			} break;
 		}
 	}
 
 public:
-	void set_animation(const Ref<GIFAnimation> &p_anim) {
-		animation = p_anim;
-		if (preview_texture.is_null()) {
-			preview_texture.instantiate();
-		}
-		preview_texture->set_animation(animation);
+	void set_target(const Ref<GIFTexture> &p_texture) {
+		target = p_texture;
 		if (preview) {
-			preview->set_texture(preview_texture);
+			preview->set_texture(target);
 		}
 		_refresh();
 	}
@@ -185,6 +201,34 @@ public:
 
 		info = memnew(Label);
 		add_child(info);
+
+		HBoxContainer *row = memnew(HBoxContainer);
+		add_child(row);
+
+		play_btn = memnew(Button);
+		play_btn->set_toggle_mode(true);
+		play_btn->connect(SceneStringName(toggled), callable_mp(this, &GIFInspectorControls::_play_toggled));
+		play_btn->set_custom_minimum_size(Size2(80, 0) * EDSCALE);
+		row->add_child(play_btn);
+
+		loop_btn = memnew(CheckButton);
+		loop_btn->set_text(TTR("Loop"));
+		loop_btn->connect(SceneStringName(toggled), callable_mp(this, &GIFInspectorControls::_loop_toggled));
+		row->add_child(loop_btn);
+
+		HBoxContainer *slider_row = memnew(HBoxContainer);
+		add_child(slider_row);
+		Label *frame_label = memnew(Label);
+		frame_label->set_text(TTR("Frame"));
+		slider_row->add_child(frame_label);
+		frame_slider = memnew(HSlider);
+		frame_slider->set_min(0);
+		frame_slider->set_step(1);
+		frame_slider->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+		frame_slider->set_v_size_flags(Control::SIZE_SHRINK_CENTER);
+		frame_slider->set_custom_minimum_size(Size2(0, 20) * EDSCALE);
+		frame_slider->connect(SNAME("value_changed"), callable_mp(this, &GIFInspectorControls::_frame_changed));
+		slider_row->add_child(frame_slider);
 
 		HBoxContainer *btns = memnew(HBoxContainer);
 		add_child(btns);
@@ -201,59 +245,36 @@ public:
 		rebake->connect(SceneStringName(pressed), callable_mp(this, &GIFInspectorControls::_rebake_pressed));
 		btns->add_child(rebake);
 
-		play_btn = memnew(Button);
-		play_btn->set_text(TTR("Play"));
-		play_btn->set_toggle_mode(true);
-		play_btn->set_pressed(true);
-		play_btn->connect(SceneStringName(toggled), callable_mp(this, &GIFInspectorControls::_play_toggled));
-		add_child(play_btn);
-
-		playhead = memnew(HSlider);
-		playhead->set_min(0);
-		playhead->set_step(1);
-		playhead->connect(SNAME("value_changed"), callable_mp(this, &GIFInspectorControls::_playhead_changed));
-		add_child(playhead);
+		_refresh();
 	}
 };
 
 bool EditorInspectorPluginGIF::can_handle(Object *p_object) {
-	return Object::cast_to<GIFAnimation>(p_object) || Object::cast_to<GIFTexture>(p_object);
+	return Object::cast_to<GIFTexture>(p_object) != nullptr;
 }
 
 void EditorInspectorPluginGIF::parse_begin(Object *p_object) {
-	Ref<GIFAnimation> anim = Object::cast_to<GIFAnimation>(p_object);
-	if (anim.is_null()) {
-		GIFTexture *tex = Object::cast_to<GIFTexture>(p_object);
-		if (tex) {
-			anim = tex->get_animation();
-		}
-	}
-	if (anim.is_null()) {
+	Ref<GIFTexture> tex = Object::cast_to<GIFTexture>(p_object);
+	if (tex.is_null()) {
 		return;
 	}
 	GIFInspectorControls *controls = memnew(GIFInspectorControls);
-	controls->set_animation(anim);
+	controls->set_target(tex);
 	add_custom_control(controls);
 }
 
 bool GIFPreviewGenerator::handles(const String &p_type) const {
-	return p_type == "GIFAnimation" || p_type == "GIFTexture";
+	return p_type == "GIFTexture";
 }
 
 Ref<Texture2D> GIFPreviewGenerator::generate(const Ref<Resource> &p_from, const Size2 &p_size, Dictionary &p_metadata) const {
-	Ref<GIFAnimation> anim = p_from;
-	if (anim.is_null()) {
-		Ref<GIFTexture> tex = p_from;
-		if (tex.is_valid()) {
-			anim = tex->get_animation();
-		}
-	}
-	if (anim.is_null() || anim->get_frame_count() == 0) {
+	Ref<GIFTexture> tex = p_from;
+	if (tex.is_null() || tex->get_frame_count() == 0) {
 		return Ref<Texture2D>();
 	}
-	Ref<Image> img = anim->get_baked_image(0);
+	Ref<Image> img = tex->get_baked_image(0);
 	if (img.is_null()) {
-		img = anim->get_source_image(0);
+		img = tex->get_source_image(0);
 	}
 	if (img.is_null()) {
 		return Ref<Texture2D>();
@@ -283,12 +304,12 @@ Viewport *GIFEditorPlugin::_get_active_editor_viewport() const {
 
 void GIFEditorPlugin::_toggle_recording(GIFRecorder::Source p_source, Viewport *p_viewport) {
 	if (recorder.is_valid() && recorder->is_recording()) {
-		Ref<GIFAnimation> anim = recorder->stop();
+		Ref<GIFTexture> tex = recorder->stop();
 		pending_save_kind = "record";
 		if (!save_dialog) {
 			return;
 		}
-		save_dialog->set_meta("animation", anim);
+		save_dialog->set_meta("gif_texture", tex);
 		save_dialog->popup_file_dialog();
 		return;
 	}
@@ -337,8 +358,8 @@ void GIFEditorPlugin::_record_game_viewport() {
 		if (tree && tree->is_connected(SNAME("process_frame"), callable_mp(this, &GIFEditorPlugin::_process_game_capture))) {
 			tree->disconnect(SNAME("process_frame"), callable_mp(this, &GIFEditorPlugin::_process_game_capture));
 		}
-		Ref<GIFAnimation> anim = recorder->stop();
-		save_dialog->set_meta("animation", anim);
+		Ref<GIFTexture> tex = recorder->stop();
+		save_dialog->set_meta("gif_texture", tex);
 		save_dialog->popup_file_dialog();
 		return;
 	}
@@ -395,19 +416,19 @@ void GIFEditorPlugin::_export_animation_player() {
 			rec->add_frame(vp->get_texture()->get_image());
 		}
 	}
-	Ref<GIFAnimation> result = rec->stop();
+	Ref<GIFTexture> result = rec->stop();
 	if (result.is_null()) {
 		result.instantiate();
 	}
 	pending_save_kind = "anim";
-	save_dialog->set_meta("animation", result);
+	save_dialog->set_meta("gif_texture", result);
 	save_dialog->popup_file_dialog();
 }
 
 void GIFEditorPlugin::_save_dialog_file_selected(const String &p_path) {
-	Ref<GIFAnimation> anim = save_dialog->get_meta("animation");
-	if (anim.is_valid()) {
-		anim->save_to_path(p_path);
+	Ref<GIFTexture> tex = save_dialog->get_meta("gif_texture");
+	if (tex.is_valid()) {
+		tex->save_to_path(p_path);
 		print_line(vformat("Saved GIF: %s", p_path));
 	}
 }

@@ -30,7 +30,7 @@
 #pragma once
 
 #include "core/object/ref_counted.h"
-#include "gif_animation.h"
+#include "gif_texture.h"
 
 class Viewport;
 class Window;
@@ -59,7 +59,7 @@ private:
 	double accum = 0.0;
 	double frame_interval = 1.0 / 12.0;
 
-	Ref<GIFAnimation> animation;
+	Ref<GIFTexture> texture;
 	String pending_path;
 
 	void _process_frame();
@@ -88,7 +88,7 @@ public:
 	Error start_window();
 	Error start_screen(int p_screen = 0);
 	Error add_frame(const Ref<Image> &p_image);
-	Ref<GIFAnimation> stop();
+	Ref<GIFTexture> stop();
 	Error save(const String &p_path);
 
 	static Error record_viewport(Viewport *p_viewport, const String &p_path, double p_duration_sec, int p_fps = 12);

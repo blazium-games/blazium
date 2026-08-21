@@ -29,23 +29,23 @@
 
 #include "resource_saver_gif.h"
 
-#include "gif_animation.h"
 #include "gif_encode.h"
+#include "gif_texture.h"
 
 #include "core/io/image.h"
 #include "scene/resources/image_texture.h"
 
 Error ResourceSaverGIF::save(const Ref<Resource> &p_resource, const String &p_path, uint32_t p_flags) {
-	Ref<GIFAnimation> anim = p_resource;
-	if (anim.is_valid()) {
-		return anim->save_to_path(p_path);
+	Ref<GIFTexture> tex = p_resource;
+	if (tex.is_valid()) {
+		return tex->save_to_path(p_path);
 	}
 
 	Ref<Image> img = p_resource;
 	if (img.is_null()) {
-		Ref<ImageTexture> tex = p_resource;
-		ERR_FAIL_COND_V_MSG(tex.is_null(), ERR_INVALID_PARAMETER, "Can't save this resource as GIF.");
-		img = tex->get_image();
+		Ref<ImageTexture> img_tex = p_resource;
+		ERR_FAIL_COND_V_MSG(img_tex.is_null(), ERR_INVALID_PARAMETER, "Can't save this resource as GIF.");
+		img = img_tex->get_image();
 	}
 	ERR_FAIL_COND_V_MSG(img.is_null() || img->is_empty(), ERR_INVALID_PARAMETER, "Can't save empty image as GIF.");
 	Vector<uint8_t> buffer;
@@ -55,7 +55,7 @@ Error ResourceSaverGIF::save(const Ref<Resource> &p_resource, const String &p_pa
 }
 
 bool ResourceSaverGIF::recognize(const Ref<Resource> &p_resource) const {
-	return p_resource.is_valid() && (p_resource->is_class("GIFAnimation") || p_resource->is_class("Image") || p_resource->is_class("ImageTexture"));
+	return p_resource.is_valid() && (p_resource->is_class("GIFTexture") || p_resource->is_class("Image") || p_resource->is_class("ImageTexture"));
 }
 
 void ResourceSaverGIF::get_recognized_extensions(const Ref<Resource> &p_resource, List<String> *p_extensions) const {

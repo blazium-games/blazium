@@ -60,7 +60,7 @@
 			</description>
 		</method>
 		<method name="stop">
-			<return type="GIFAnimation" />
+			<return type="GIFTexture" />
 			<description>
 				Stops capture and returns the recorded animation.
 			</description>
@@ -85,7 +85,7 @@
 	</members>
 	<signals>
 		<signal name="recording_finished">
-			<param index="0" name="animation" type="GIFAnimation" />
+			<param index="0" name="animation" type="GIFTexture" />
 			<param index="1" name="path" type="String" />
 			<description>
 				Emitted when [method stop] finishes. [param path] is set when a pending save path was provided.

@@ -34,12 +34,11 @@
 #include "editor/editor_inspector.h"
 #include "editor/editor_resource_preview.h"
 #include "editor/plugins/editor_plugin.h"
-#include "modules/gif/gif_animation.h"
 #include "modules/gif/gif_recorder.h"
+#include "modules/gif/gif_texture.h"
 
 class Button;
 class EditorFileDialog;
-class HSlider;
 class TextureRect;
 
 class EditorInspectorPluginGIF : public EditorInspectorPlugin {

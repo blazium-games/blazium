@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  resource_importer_gif.h                                               */
+/*  resource_importer_gif_frames.cpp                                      */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             BLAZIUM ENGINE                             */
@@ -27,29 +27,60 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#pragma once
+#include "resource_importer_gif_frames.h"
 
-#include "core/io/resource_importer.h"
+#include "modules/gif/gif_texture.h"
 
-class ResourceImporterGIF : public ResourceImporter {
-	GDCLASS(ResourceImporterGIF, ResourceImporter);
+#include "core/io/resource_saver.h"
+#include "scene/resources/sprite_frames.h"
 
-public:
-	virtual String get_importer_name() const override;
-	virtual String get_visible_name() const override;
-	virtual void get_recognized_extensions(List<String> *p_extensions) const override;
-	virtual String get_save_extension() const override;
-	virtual String get_resource_type() const override;
-	virtual float get_priority() const override;
-	virtual int get_format_version() const override;
+String ResourceImporterGIFFrames::get_importer_name() const {
+	return "gif_sprite_frames";
+}
 
-	virtual int get_preset_count() const override;
-	virtual String get_preset_name(int p_idx) const override;
+String ResourceImporterGIFFrames::get_visible_name() const {
+	return "SpriteFrames";
+}
 
-	virtual void get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset = 0) const override;
-	virtual bool get_option_visibility(const String &p_path, const String &p_option, const HashMap<StringName, Variant> &p_options) const override;
+void ResourceImporterGIFFrames::get_recognized_extensions(List<String> *p_extensions) const {
+	p_extensions->push_back("gif");
+}
 
-	virtual Error import(ResourceUID::ID p_source_id, const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files = nullptr, Variant *r_metadata = nullptr) override;
+String ResourceImporterGIFFrames::get_save_extension() const {
+	return "res";
+}
 
-	virtual bool can_import_threaded() const override { return true; }
-};
+String ResourceImporterGIFFrames::get_resource_type() const {
+	return "SpriteFrames";
+}
+
+float ResourceImporterGIFFrames::get_priority() const {
+	return 1.0f;
+}
+
+int ResourceImporterGIFFrames::get_preset_count() const {
+	return 0;
+}
+
+String ResourceImporterGIFFrames::get_preset_name(int p_idx) const {
+	return String();
+}
+
+void ResourceImporterGIFFrames::get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset) const {
+}
+
+bool ResourceImporterGIFFrames::get_option_visibility(const String &p_path, const String &p_option, const HashMap<StringName, Variant> &p_options) const {
+	return true;
+}
+
+Error ResourceImporterGIFFrames::import(ResourceUID::ID p_source_id, const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata) {
+	Ref<GIFTexture> tex;
+	tex.instantiate();
+	const Error err = tex->load_from_path(p_source_file);
+	ERR_FAIL_COND_V_MSG(err != OK, err, vformat("Failed to decode GIF: '%s'.", p_source_file));
+
+	Ref<SpriteFrames> frames = tex->to_sprite_frames("default");
+	ERR_FAIL_COND_V_MSG(frames.is_null(), ERR_CANT_CREATE, vformat("Failed to build SpriteFrames from GIF: '%s'.", p_source_file));
+
+	return ResourceSaver::save(frames, p_save_path + ".res");
+}

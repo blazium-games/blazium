@@ -29,10 +29,10 @@
 
 #include "test_gif.h"
 
-#include "modules/gif/gif_animation.h"
 #include "modules/gif/gif_decode.h"
 #include "modules/gif/gif_encode.h"
 #include "modules/gif/gif_recorder.h"
+#include "modules/gif/gif_texture.h"
 
 #include "core/config/project_settings.h"
 #include "core/io/image.h"
@@ -122,26 +122,26 @@ void test_gif_encode_roundtrip() {
 	Vector<uint8_t> anim_buf;
 	CHECK(gif_encode_frames(frames, 0, false, true, anim_buf) == OK);
 
-	Ref<GIFAnimation> anim;
+	Ref<GIFTexture> anim;
 	anim.instantiate();
 	CHECK(anim->load_from_buffer(anim_buf) == OK);
 	CHECK(anim->get_frame_count() == 2);
 	CHECK(anim->get_frame_delay(0) >= 1);
-	CHECK(anim->get_loop_count() == 0);
+	CHECK(anim->get_netscape_loop_count() == 0);
 }
 
 void test_gif_disposal_compose() {
-	Ref<GIFAnimation> anim;
+	Ref<GIFTexture> anim;
 	anim.instantiate();
 	anim->set_canvas_size(Vector2i(2, 2));
 
 	Ref<Image> first = Image::create_empty(2, 2, false, Image::FORMAT_RGBA8);
 	first->fill(Color(1, 0, 0, 1));
-	anim->add_source_frame(first, 10, GIFAnimation::DISPOSAL_RESTORE_BACKGROUND, Vector2i());
+	anim->add_source_frame(first, 10, GIFTexture::DISPOSAL_RESTORE_BACKGROUND, Vector2i());
 
 	Ref<Image> second = Image::create_empty(1, 1, false, Image::FORMAT_RGBA8);
 	second->fill(Color(0, 1, 0, 1));
-	anim->add_source_frame(second, 10, GIFAnimation::DISPOSAL_NONE, Vector2i(0, 0));
+	anim->add_source_frame(second, 10, GIFTexture::DISPOSAL_NONE, Vector2i(0, 0));
 
 	CHECK(anim->bake_frames() == OK);
 	Ref<Image> baked0 = anim->get_baked_image(0);
@@ -152,18 +152,18 @@ void test_gif_disposal_compose() {
 	CHECK(baked1->get_pixel(0, 0).g > 0.9f);
 	CHECK(baked1->get_pixel(1, 1).a < 0.1f);
 
-	Ref<GIFAnimation> prev;
+	Ref<GIFTexture> prev;
 	prev.instantiate();
 	prev->set_canvas_size(Vector2i(2, 2));
 	Ref<Image> p0 = Image::create_empty(2, 2, false, Image::FORMAT_RGBA8);
 	p0->fill(Color(0, 0, 1, 1));
-	prev->add_source_frame(p0, 10, GIFAnimation::DISPOSAL_DO_NOT_DISPOSE, Vector2i());
+	prev->add_source_frame(p0, 10, GIFTexture::DISPOSAL_DO_NOT_DISPOSE, Vector2i());
 	Ref<Image> p1 = Image::create_empty(2, 2, false, Image::FORMAT_RGBA8);
 	p1->fill(Color(1, 1, 0, 1));
-	prev->add_source_frame(p1, 10, GIFAnimation::DISPOSAL_RESTORE_PREVIOUS, Vector2i());
+	prev->add_source_frame(p1, 10, GIFTexture::DISPOSAL_RESTORE_PREVIOUS, Vector2i());
 	Ref<Image> p2 = Image::create_empty(1, 1, false, Image::FORMAT_RGBA8);
 	p2->fill(Color(1, 0, 1, 1));
-	prev->add_source_frame(p2, 10, GIFAnimation::DISPOSAL_NONE, Vector2i(0, 0));
+	prev->add_source_frame(p2, 10, GIFTexture::DISPOSAL_NONE, Vector2i(0, 0));
 	CHECK(prev->bake_frames() == OK);
 	Ref<Image> b2 = prev->get_baked_image(2);
 	REQUIRE(b2.is_valid());
@@ -191,7 +191,7 @@ void test_gif_corrupt_buffer() {
 	GIFDecoded decoded;
 	CHECK(gif_decode_buffer(bad.ptr(), bad.size(), decoded) == ERR_FILE_CORRUPT);
 
-	Ref<GIFAnimation> anim;
+	Ref<GIFTexture> anim;
 	anim.instantiate();
 	CHECK(anim->load_from_buffer(bad) == ERR_FILE_CORRUPT);
 }
@@ -218,7 +218,7 @@ void test_gif_image_hooks() {
 }
 
 void test_gif_sprite_frames_convert() {
-	Ref<GIFAnimation> anim;
+	Ref<GIFTexture> anim;
 	anim.instantiate();
 	Ref<Image> img = Image::create_empty(2, 2, false, Image::FORMAT_RGBA8);
 	img->fill(Color(1, 0, 0));
@@ -230,7 +230,7 @@ void test_gif_sprite_frames_convert() {
 	REQUIRE(sf.is_valid());
 	CHECK(sf->get_frame_count("default") == 2);
 	if (RenderingServer::get_singleton() && sf->get_frame_texture("default", 0).is_valid()) {
-		Ref<GIFAnimation> back = GIFAnimation::from_sprite_frames(sf, "default");
+		Ref<GIFTexture> back = GIFTexture::from_sprite_frames(sf, "default");
 		REQUIRE(back.is_valid());
 		CHECK(back->get_frame_count() == 2);
 	}
@@ -263,13 +263,13 @@ void test_gif_decode_caps() {
 }
 
 void test_gif_active_texture_without_rebake() {
-	Ref<GIFAnimation> anim;
+	Ref<GIFTexture> anim;
 	anim.instantiate();
 	CHECK(anim->load_from_buffer(_make_solid_gif89a_1x1_red()) == OK);
 	CHECK(anim->get_frame_count() >= 1);
 
-	anim->set_bake_storage(GIFAnimation::BAKE_GENERATE_ON_LOAD);
-	anim->set_display_mode(GIFAnimation::DISPLAY_BAKED);
+	anim->set_bake_storage(GIFTexture::BAKE_GENERATE_ON_LOAD);
+	anim->set_display_mode(GIFTexture::DISPLAY_BAKED);
 	anim->_set_source_frames(anim->_get_source_frames());
 
 	if (!RenderingServer::get_singleton()) {
@@ -291,7 +291,7 @@ void test_gif_recorder_add_frame() {
 	b->fill(Color(0, 0, 1));
 	CHECK(rec->add_frame(a) == OK);
 	CHECK(rec->add_frame(b) == OK);
-	Ref<GIFAnimation> anim = rec->stop();
+	Ref<GIFTexture> anim = rec->stop();
 	REQUIRE(anim.is_valid());
 	CHECK(anim->get_frame_count() == 2);
 }

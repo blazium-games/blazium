@@ -633,9 +633,6 @@
 		<member name="blazium/gif/capture_source" type="int" setter="" getter="" default="0">
 			Hotkey capture source. [code]0[/code] records the root viewport. [code]1[/code] records the whole game window.
 		</member>
-		<member name="blazium/gif/default_import_mode" type="int" setter="" getter="" default="0">
-			Default importer mode for [code].gif[/code] files: GIF Animation, Sprite Frames, or first-frame texture.
-		</member>
 		<member name="blazium/gif/max_canvas_pixels" type="int" setter="" getter="" default="16777216">
 			Maximum width times height accepted when decoding or capturing a GIF. Larger canvases fail with an error.
 		</member>

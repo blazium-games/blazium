@@ -12,11 +12,10 @@ def configure(env):
 
 def get_doc_classes():
     return [
-        "GIFAnimation",
         "GIFTexture",
-        "GIFSprite2D",
         "GIFRecorder",
         "ResourceImporterGIF",
+        "ResourceImporterGIFFrames",
     ]
 
 

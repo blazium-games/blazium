@@ -29,17 +29,17 @@
 
 #include "resource_loader_gif.h"
 
-#include "gif_animation.h"
+#include "gif_texture.h"
 
 Ref<Resource> ResourceFormatLoaderGIF::load(const String &p_path, const String &p_original_path, Error *r_error, bool p_use_sub_threads, float *r_progress, ResourceFormatLoader::CacheMode p_cache_mode) {
-	Ref<GIFAnimation> anim;
-	anim.instantiate();
-	const Error err = anim->load_from_path(p_path);
+	Ref<GIFTexture> tex;
+	tex.instantiate();
+	const Error err = tex->load_from_path(p_path);
 	if (r_error) {
 		*r_error = err;
 	}
 	ERR_FAIL_COND_V(err != OK, Ref<Resource>());
-	return anim;
+	return tex;
 }
 
 void ResourceFormatLoaderGIF::get_recognized_extensions(List<String> *p_extensions) const {
@@ -47,12 +47,12 @@ void ResourceFormatLoaderGIF::get_recognized_extensions(List<String> *p_extensio
 }
 
 bool ResourceFormatLoaderGIF::handles_type(const String &p_type) const {
-	return p_type == "GIFAnimation" || p_type == "Resource";
+	return p_type == "GIFTexture" || p_type == "Texture2D" || p_type == "Resource";
 }
 
 String ResourceFormatLoaderGIF::get_resource_type(const String &p_path) const {
 	if (p_path.get_extension().to_lower() == "gif") {
-		return "GIFAnimation";
+		return "GIFTexture";
 	}
 	return "";
 }

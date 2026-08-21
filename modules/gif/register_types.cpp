@@ -29,9 +29,7 @@
 
 #include "register_types.h"
 
-#include "gif_animation.h"
 #include "gif_recorder.h"
-#include "gif_sprite_2d.h"
 #include "gif_texture.h"
 #include "image_loader_gif.h"
 #include "movie_writer_gif.h"
@@ -57,6 +55,7 @@
 #include "editor/gif_editor_plugin.h"
 #include "editor/plugins/editor_plugin.h"
 #include "editor/resource_importer_gif.h"
+#include "editor/resource_importer_gif_frames.h"
 #endif
 
 static Ref<ImageLoaderGIF> image_loader_gif;
@@ -84,7 +83,7 @@ static void _gif_hotkey_tick() {
 	}
 	gif_hotkey_was_down = true;
 	if (project_hotkey_recorder.is_valid() && project_hotkey_recorder->is_recording()) {
-		Ref<GIFAnimation> anim = project_hotkey_recorder->stop();
+		Ref<GIFTexture> anim = project_hotkey_recorder->stop();
 		const String dir = String(GLOBAL_GET("blazium/gif/capture_output_dir"));
 		const String path = dir.path_join("capture_" + itos(OS::get_singleton()->get_ticks_msec()) + ".gif");
 		if (anim.is_valid()) {
@@ -109,6 +108,10 @@ static void _editor_init() {
 	Ref<ResourceImporterGIF> gif_import;
 	gif_import.instantiate();
 	ResourceFormatImporter::get_singleton()->add_importer(gif_import);
+
+	Ref<ResourceImporterGIFFrames> gif_frames_import;
+	gif_frames_import.instantiate();
+	ResourceFormatImporter::get_singleton()->add_importer(gif_frames_import);
 }
 #endif
 
@@ -116,14 +119,11 @@ void initialize_gif_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
 		GLOBAL_DEF(PropertyInfo(Variant::INT, "blazium/gif/max_canvas_pixels", PROPERTY_HINT_RANGE, "65536,268435456,1"), 16777216);
 		GLOBAL_DEF(PropertyInfo(Variant::INT, "blazium/gif/max_frames", PROPERTY_HINT_RANGE, "1,65536,1"), 4096);
-		GLOBAL_DEF(PropertyInfo(Variant::INT, "blazium/gif/default_import_mode", PROPERTY_HINT_ENUM, "GIF Animation,Sprite Frames,First Frame Texture"), 0);
 		GLOBAL_DEF(PropertyInfo(Variant::INT, "blazium/gif/capture_hotkey", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT), 0);
 		GLOBAL_DEF(PropertyInfo(Variant::INT, "blazium/gif/capture_source", PROPERTY_HINT_ENUM, "Viewport,Window"), 0);
 		GLOBAL_DEF(PropertyInfo(Variant::STRING, "blazium/gif/capture_output_dir", PROPERTY_HINT_DIR), String("user://"));
 
-		GDREGISTER_CLASS(GIFAnimation);
 		GDREGISTER_CLASS(GIFTexture);
-		GDREGISTER_CLASS(GIFSprite2D);
 		GDREGISTER_CLASS(GIFRecorder);
 
 		image_loader_gif.instantiate();
@@ -149,6 +149,7 @@ void initialize_gif_module(ModuleInitializationLevel p_level) {
 #ifdef TOOLS_ENABLED
 	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
 		GDREGISTER_CLASS(ResourceImporterGIF);
+		GDREGISTER_CLASS(ResourceImporterGIFFrames);
 		EditorPlugins::add_by_type<GIFEditorPlugin>();
 		EditorNode::add_init_callback(_editor_init);
 	}
