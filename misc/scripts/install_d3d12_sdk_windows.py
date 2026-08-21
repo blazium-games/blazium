@@ -4,11 +4,30 @@ import os
 import shutil
 import subprocess
 import sys
+import time
+import urllib.error
 import urllib.request
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../"))
 
-from misc.utility.color import Ansi
+from misc.utility.color import Ansi  # noqa: E402
+
+
+def _urlretrieve_retry(url, dest, attempts=5):
+    last_err = None
+    for i in range(attempts):
+        try:
+            urllib.request.urlretrieve(url, dest)
+            return
+        except (urllib.error.URLError, OSError) as e:
+            last_err = e
+            if i + 1 == attempts:
+                raise
+            delay = 2**i
+            print(f"Download failed ({e}); retrying in {delay}s ({i + 1}/{attempts}) ...")
+            time.sleep(delay)
+    raise last_err
+
 
 # Base Godot dependencies path
 # If cross-compiling (no LOCALAPPDATA), we install in `bin`
@@ -46,7 +65,7 @@ print(f"{Ansi.BOLD}[1/3] Mesa NIR{Ansi.RESET}")
 if os.path.isfile(mesa_archive):
     os.remove(mesa_archive)
 print(f"Downloading Mesa NIR {mesa_filename} ...")
-urllib.request.urlretrieve(
+_urlretrieve_retry(
     f"https://github.com/godotengine/godot-nir-static/releases/download/{mesa_version}/{mesa_filename}",
     mesa_archive,
 )
@@ -73,7 +92,7 @@ print(f"{Ansi.BOLD}[2/3] WinPixEventRuntime{Ansi.RESET}")
 if os.path.isfile(pix_archive):
     os.remove(pix_archive)
 print(f"Downloading WinPixEventRuntime {pix_version} ...")
-urllib.request.urlretrieve(f"https://www.nuget.org/api/v2/package/WinPixEventRuntime/{pix_version}", pix_archive)
+_urlretrieve_retry(f"https://www.nuget.org/api/v2/package/WinPixEventRuntime/{pix_version}", pix_archive)
 if os.path.exists(pix_folder):
     print(f"Removing existing local WinPixEventRuntime installation in {pix_folder} ...")
     shutil.rmtree(pix_folder)
@@ -104,7 +123,7 @@ print(f"{Ansi.BOLD}[3/3] DirectX 12 Agility SDK{Ansi.RESET}")
 if os.path.isfile(agility_sdk_archive):
     os.remove(agility_sdk_archive)
 print(f"Downloading DirectX 12 Agility SDK {agility_sdk_version} ...")
-urllib.request.urlretrieve(
+_urlretrieve_retry(
     f"https://www.nuget.org/api/v2/package/Microsoft.Direct3D.D3D12/{agility_sdk_version}", agility_sdk_archive
 )
 if os.path.exists(agility_sdk_folder):
