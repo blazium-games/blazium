@@ -60,6 +60,15 @@
 #ifndef ANALYTICS_EDITOR_ENDPOINT
 #define ANALYTICS_EDITOR_ENDPOINT ""
 #endif
+#ifndef ANALYTICS_TEMPLATE_APP_ID
+#define ANALYTICS_TEMPLATE_APP_ID ""
+#endif
+#ifndef ANALYTICS_TEMPLATE_BUILD_ID
+#define ANALYTICS_TEMPLATE_BUILD_ID ""
+#endif
+#ifndef ANALYTICS_TEMPLATE_ENDPOINT
+#define ANALYTICS_TEMPLATE_ENDPOINT ""
+#endif
 
 Analytics *Analytics::singleton = nullptr;
 
@@ -418,7 +427,7 @@ String Analytics::get_app_id() const {
 		return baked.is_empty() ? AppIdentity::editor_fallback_app_id() : baked;
 	}
 #endif
-	return AppIdentity::resolve_app_id(String(), _setting_string("application/config/name", String()));
+	return AppIdentity::resolve_app_id(String(ANALYTICS_TEMPLATE_APP_ID), _setting_string("application/config/name", String()));
 }
 
 String Analytics::get_build_id() const {
@@ -428,7 +437,7 @@ String Analytics::get_build_id() const {
 		return baked.is_empty() ? AppIdentity::editor_fallback_build_id() : baked;
 	}
 #endif
-	return AppIdentity::resolve_build_id(String(), _setting_string("application/config/version", String()));
+	return AppIdentity::resolve_build_id(String(ANALYTICS_TEMPLATE_BUILD_ID), _setting_string("application/config/version", String()));
 }
 
 String Analytics::get_app_version() const {
@@ -467,7 +476,7 @@ String Analytics::get_endpoint() const {
 		return String(ANALYTICS_EDITOR_ENDPOINT);
 	}
 #endif
-	return _setting_string("application/analytics/endpoint", String());
+	return AppIdentity::resolve_endpoint(String(ANALYTICS_TEMPLATE_ENDPOINT), "application/analytics/endpoint");
 }
 
 String Analytics::get_queue_directory() const {

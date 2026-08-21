@@ -78,4 +78,7 @@ Error discard_report_files(const String &p_dump_path);
 Vector<uint8_t> read_file_capped(const String &p_path, int64_t p_max_bytes, Error *r_err = nullptr);
 Vector<uint8_t> read_log_tail(const String &p_path, int p_tail_kb);
 
+// Empty expected hash means no check. Expected is compared as lowercase hex.
+bool sidecar_sha256_matches(const String &p_path, const String &p_expected_sha256);
+
 } //namespace CrashReporterUtil

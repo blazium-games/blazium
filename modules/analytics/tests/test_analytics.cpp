@@ -214,6 +214,16 @@ void test_analytics_shared_identity() {
 	}
 	CHECK(AppIdentity::resolve_app_id(String(), "fallback") == "analytics-ns-app");
 	CHECK(AppIdentity::resolve_build_id(String(), "fallback") == "analytics-ns-build");
+	CHECK(AppIdentity::resolve_app_id("baked-app", "fallback") == "baked-app");
+	CHECK(AppIdentity::resolve_build_id("baked-build", "fallback") == "baked-build");
+	if (ProjectSettings::get_singleton()) {
+		ProjectSettings::get_singleton()->set("application/analytics/endpoint", "https://project.example/v1/events");
+	}
+	CHECK(AppIdentity::resolve_endpoint(String(), "application/analytics/endpoint") == "https://project.example/v1/events");
+	CHECK(AppIdentity::resolve_endpoint("https://baked.example/v1/events", "application/analytics/endpoint") == "https://baked.example/v1/events");
+	if (ProjectSettings::get_singleton()) {
+		ProjectSettings::get_singleton()->set("application/analytics/endpoint", String());
+	}
 #ifdef MODULE_CRASH_REPORTER_ENABLED
 	CrashReporter *cr = CrashReporter::get_singleton();
 	REQUIRE(cr != nullptr);

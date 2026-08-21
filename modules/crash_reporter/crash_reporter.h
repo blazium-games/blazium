@@ -61,7 +61,11 @@ private:
 	String _setting_string(const String &p_key, const String &p_fallback) const;
 	bool _setting_bool(const String &p_key, bool p_fallback) const;
 	int _setting_int(const String &p_key, int p_fallback) const;
+	mutable String cached_reporter_path;
+	mutable bool reporter_path_cached = false;
+
 	String _resolve_reporter_path() const;
+	String _compute_reporter_path() const;
 	void _cache_breakpad_identity();
 	void _enrich_pending_metadata();
 	Error _launch_reporter_internal(const String &p_report_id);

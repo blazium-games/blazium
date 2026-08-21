@@ -35,6 +35,7 @@ void test_crash_reporter_multipart();
 void test_crash_reporter_state_and_scan();
 void test_crash_reporter_metadata_json();
 void test_crash_reporter_shared_identity();
+void test_crash_reporter_sidecar_sha256();
 void test_crash_reporter_dump_apis();
 
 TEST_CASE("[Modules][CrashReporter] multipart body") {
@@ -51,6 +52,10 @@ TEST_CASE("[Modules][CrashReporter] metadata JSON") {
 
 TEST_CASE("[Modules][CrashReporter] shared app_id and build_id") {
 	test_crash_reporter_shared_identity();
+}
+
+TEST_CASE("[Modules][CrashReporter] sidecar SHA-256 match") {
+	test_crash_reporter_sidecar_sha256();
 }
 
 TEST_CASE("[Modules][CrashReporter] dump APIs") {

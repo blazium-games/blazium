@@ -125,6 +125,11 @@ void test_crash_reporter_shared_identity() {
 	CHECK(AppIdentity::resolve_build_id(String(), "fallback") == "crash-only-build");
 	CHECK(AppIdentity::resolve_app_id("baked-app", "fallback") == "baked-app");
 	CHECK(AppIdentity::resolve_build_id("baked-build", "fallback") == "baked-build");
+	CHECK(AppIdentity::resolve_endpoint(String(), "application/crash_reporter/endpoint") == String());
+	ProjectSettings::get_singleton()->set("application/crash_reporter/endpoint", "https://project.example/v1/reports");
+	CHECK(AppIdentity::resolve_endpoint(String(), "application/crash_reporter/endpoint") == "https://project.example/v1/reports");
+	CHECK(AppIdentity::resolve_endpoint("https://baked.example/v1/reports", "application/crash_reporter/endpoint") == "https://baked.example/v1/reports");
+	ProjectSettings::get_singleton()->set("application/crash_reporter/endpoint", String());
 
 #ifdef MODULE_ANALYTICS_ENABLED
 	Analytics *a = Analytics::get_singleton();
@@ -134,6 +139,25 @@ void test_crash_reporter_shared_identity() {
 	CHECK(String(cr->get_app_id()) == String(a->get_app_id()));
 	CHECK(String(cr->get_build_id()) == String(a->get_build_id()));
 #endif
+}
+
+void test_crash_reporter_sidecar_sha256() {
+	const String dir = OS::get_singleton()->get_cache_path().path_join("crash_reporter_sha_test");
+	Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
+	REQUIRE(da.is_valid());
+	da->make_dir_recursive(dir);
+	const String path = dir.path_join("sidecar.bin");
+	{
+		Ref<FileAccess> f = FileAccess::open(path, FileAccess::WRITE);
+		REQUIRE(f.is_valid());
+		f->store_buffer((const uint8_t *)"sidecar", 7);
+	}
+	const String sha = FileAccess::get_sha256(path);
+	CHECK(CrashReporterUtil::sidecar_sha256_matches(path, String()));
+	CHECK(CrashReporterUtil::sidecar_sha256_matches(path, sha));
+	CHECK(CrashReporterUtil::sidecar_sha256_matches(path, sha.to_upper()));
+	CHECK(!CrashReporterUtil::sidecar_sha256_matches(path, "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+	CHECK(!CrashReporterUtil::sidecar_sha256_matches(path + ".missing", sha));
 }
 
 void test_crash_reporter_dump_apis() {

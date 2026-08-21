@@ -185,6 +185,15 @@ int CrashReporter::_setting_int(const String &p_key, int p_fallback) const {
 #ifndef CRASH_REPORTER_EDITOR_CONTACT_URL
 #define CRASH_REPORTER_EDITOR_CONTACT_URL ""
 #endif
+#ifndef CRASH_REPORTER_TEMPLATE_APP_ID
+#define CRASH_REPORTER_TEMPLATE_APP_ID ""
+#endif
+#ifndef CRASH_REPORTER_TEMPLATE_BUILD_ID
+#define CRASH_REPORTER_TEMPLATE_BUILD_ID ""
+#endif
+#ifndef CRASH_REPORTER_TEMPLATE_ENDPOINT
+#define CRASH_REPORTER_TEMPLATE_ENDPOINT ""
+#endif
 
 bool CrashReporter::is_available() const {
 	return true;
@@ -222,7 +231,7 @@ String CrashReporter::get_app_id() const {
 	const String baked = CR_BAKED(APP_ID).strip_edges();
 	return baked.is_empty() ? AppIdentity::editor_fallback_app_id() : baked;
 #else
-	return AppIdentity::resolve_app_id(String(), _setting_string("application/config/name", String()));
+	return AppIdentity::resolve_app_id(String(CRASH_REPORTER_TEMPLATE_APP_ID), _setting_string("application/config/name", String()));
 #endif
 }
 
@@ -231,7 +240,7 @@ String CrashReporter::get_build_id() const {
 	const String baked = CR_BAKED(BUILD_ID).strip_edges();
 	return baked.is_empty() ? AppIdentity::editor_fallback_build_id() : baked;
 #else
-	return AppIdentity::resolve_build_id(String(), _setting_string("application/config/version", String()));
+	return AppIdentity::resolve_build_id(String(CRASH_REPORTER_TEMPLATE_BUILD_ID), _setting_string("application/config/version", String()));
 #endif
 }
 
@@ -299,11 +308,15 @@ String CrashReporter::get_privacy_policy_url() const {
 }
 
 String CrashReporter::get_endpoint() const {
-	const String baked = CR_BAKED(ENDPOINT);
-	const String from_env = _resolve_env_or_baked("BLAZIUM_CRASH_REPORTER_ENDPOINT", baked, String());
 #ifdef TOOLS_ENABLED
-	return from_env;
+	const String baked = CR_BAKED(ENDPOINT);
+	return _resolve_env_or_baked("BLAZIUM_CRASH_REPORTER_ENDPOINT", baked, String());
 #else
+	const String baked = String(CRASH_REPORTER_TEMPLATE_ENDPOINT).strip_edges();
+	if (!baked.is_empty()) {
+		return baked;
+	}
+	const String from_env = _resolve_env_or_baked("BLAZIUM_CRASH_REPORTER_ENDPOINT", String(), String());
 	if (!from_env.is_empty()) {
 		return from_env;
 	}
@@ -333,6 +346,15 @@ String CrashReporter::get_crash_directory() const {
 }
 
 String CrashReporter::_resolve_reporter_path() const {
+	if (reporter_path_cached) {
+		return cached_reporter_path;
+	}
+	reporter_path_cached = true;
+	cached_reporter_path = _compute_reporter_path();
+	return cached_reporter_path;
+}
+
+String CrashReporter::_compute_reporter_path() const {
 #ifdef TOOLS_ENABLED
 	const String cli = AppIdentity::cmdline_flag_value("crash-reporter");
 	if (cli.is_empty()) {
@@ -343,14 +365,30 @@ String CrashReporter::_resolve_reporter_path() const {
 	}
 	return OS::get_singleton()->get_executable_path().get_base_dir().path_join(cli);
 #else
-	String rel = _setting_string("application/crash_reporter/reporter_path", String());
-	if (rel.is_empty()) {
+	String filename = _setting_string("application/crash_reporter/reporter_filename", String()).strip_edges();
+	const String path_setting = _setting_string("application/crash_reporter/reporter_path", String()).strip_edges();
+	String rel;
+	if (!filename.is_empty()) {
+		rel = filename;
+	} else if (!path_setting.is_empty()) {
+		rel = path_setting;
+	} else {
+#ifdef WINDOWS_ENABLED
+		rel = "crash_reporter.exe";
+#else
+		rel = "crash_reporter";
+#endif
+	}
+	String path = rel;
+	if (!path.is_absolute_path() && OS::get_singleton()) {
+		path = OS::get_singleton()->get_executable_path().get_base_dir().path_join(rel);
+	}
+	const String expected_sha = _setting_string("application/crash_reporter/reporter_sha256", String());
+	if (!CrashReporterUtil::sidecar_sha256_matches(path, expected_sha)) {
+		ERR_PRINT(vformat("Crash reporter sidecar SHA-256 mismatch or missing file, skip spawn: %s", path));
 		return String();
 	}
-	if (rel.is_absolute_path()) {
-		return rel;
-	}
-	return OS::get_singleton()->get_executable_path().get_base_dir().path_join(rel);
+	return path;
 #endif
 }
 

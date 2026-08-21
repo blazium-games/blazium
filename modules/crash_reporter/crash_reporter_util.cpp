@@ -30,6 +30,7 @@
 #include "crash_reporter_util.h"
 
 #include "core/io/dir_access.h"
+#include "core/io/file_access.h"
 #include "core/io/json.h"
 #include "core/os/time.h"
 #include <cstring>
@@ -313,6 +314,17 @@ Vector<uint8_t> read_log_tail(const String &p_path, int p_tail_kb) {
 		f->get_buffer(data.ptrw(), data.size());
 	}
 	return data;
+}
+
+bool sidecar_sha256_matches(const String &p_path, const String &p_expected_sha256) {
+	const String expected = p_expected_sha256.strip_edges().to_lower();
+	if (expected.is_empty()) {
+		return true;
+	}
+	if (p_path.is_empty() || !FileAccess::exists(p_path)) {
+		return false;
+	}
+	return FileAccess::get_sha256(p_path).to_lower() == expected;
 }
 
 } //namespace CrashReporterUtil

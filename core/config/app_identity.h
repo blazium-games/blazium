@@ -40,6 +40,7 @@ public:
 	static String project_first(const Vector<String> &p_keys);
 	static String resolve_app_id(const String &p_baked, const String &p_fallback);
 	static String resolve_build_id(const String &p_baked, const String &p_fallback);
+	static String resolve_endpoint(const String &p_baked, const String &p_project_key, const String &p_fallback = String());
 	static String editor_fallback_app_id();
 	static String editor_fallback_build_id();
 };

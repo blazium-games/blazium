@@ -16,11 +16,20 @@ runs:
   using: composite
   steps:
     - name: Set up Python 3.x
+      id: setup-python
+      continue-on-error: true
       uses: actions/setup-python@v5
       with:
         # Semantic version range syntax or exact version of a Python version.
         python-version: ${{ inputs.python-version }}
         # Optional - x64 or x86 architecture, defaults to x64.
+        architecture: ${{ inputs.python-arch }}
+
+    - name: Set up Python 3.x (retry)
+      if: steps.setup-python.outcome == 'failure'
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
         architecture: ${{ inputs.python-arch }}
 
     - name: Setup SCons
