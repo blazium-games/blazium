@@ -35,6 +35,7 @@
 #include <winsock2.h>
 #else
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <unistd.h>
 #endif
 
