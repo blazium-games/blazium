@@ -39,6 +39,7 @@ void test_gif_corrupt_buffer();
 void test_gif_image_hooks();
 void test_gif_sprite_frames_convert();
 void test_gif_decode_caps();
+void test_gif_active_texture_without_rebake();
 void test_gif_recorder_add_frame();
 
 TEST_CASE("[Modules][GIF] decode frames delay transparency loop") {
@@ -71,6 +72,10 @@ TEST_CASE("[Modules][GIF] SpriteFrames conversion") {
 
 TEST_CASE("[Modules][GIF] decode cap rejection") {
 	test_gif_decode_caps();
+}
+
+TEST_CASE("[Modules][GIF] get_active_texture without explicit rebake") {
+	test_gif_active_texture_without_rebake();
 }
 
 TEST_CASE("[Modules][GIF] GIFRecorder add_frame") {

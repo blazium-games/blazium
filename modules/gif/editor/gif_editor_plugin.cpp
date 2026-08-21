@@ -137,6 +137,31 @@ class GIFInspectorControls : public VBoxContainer {
 		}
 	}
 
+	void _sync_playhead() {
+		if (!playhead || preview_texture.is_null() || !preview_texture->get_play()) {
+			return;
+		}
+		playhead->set_block_signals(true);
+		playhead->set_value(preview_texture->get_current_frame());
+		playhead->set_block_signals(false);
+	}
+
+protected:
+	void _notification(int p_what) {
+		switch (p_what) {
+			case NOTIFICATION_ENTER_TREE:
+			case NOTIFICATION_VISIBILITY_CHANGED: {
+				set_process(is_visible_in_tree());
+			} break;
+			case NOTIFICATION_PROCESS: {
+				if (preview) {
+					preview->queue_redraw();
+				}
+				_sync_playhead();
+			} break;
+		}
+	}
+
 public:
 	void set_animation(const Ref<GIFAnimation> &p_anim) {
 		animation = p_anim;
@@ -151,6 +176,7 @@ public:
 	}
 
 	GIFInspectorControls() {
+		set_process(true);
 		preview = memnew(TextureRect);
 		preview->set_custom_minimum_size(Size2(0, 160) * EDSCALE);
 		preview->set_stretch_mode(TextureRect::STRETCH_KEEP_ASPECT_CENTERED);

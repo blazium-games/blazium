@@ -105,8 +105,27 @@ void GIFAnimation::_rebuild_textures() {
 	baked_textures.clear();
 }
 
+bool GIFAnimation::_source_needs_composition() const {
+	for (int i = 0; i < source_frames.size(); i++) {
+		if (get_frame_has_transparency(i) || get_frame_position(i) != Vector2i()) {
+			return true;
+		}
+		const Ref<Image> img = source_frames[i];
+		if (img.is_null() || img->get_size() != canvas_size) {
+			return true;
+		}
+	}
+	return false;
+}
+
 void GIFAnimation::_ensure_baked() {
-	if (display_mode == DISPLAY_BAKED && baked_frames.size() != source_frames.size()) {
+	if (source_frames.is_empty()) {
+		return;
+	}
+	if (baked_frames.size() == source_frames.size()) {
+		return;
+	}
+	if (display_mode == DISPLAY_BAKED || _source_needs_composition()) {
 		bake_frames();
 	}
 }
@@ -269,7 +288,8 @@ int GIFAnimation::wrap_frame(int p_frame) const {
 Ref<Texture2D> GIFAnimation::get_active_texture(int p_frame) {
 	_ensure_baked();
 	const int i = wrap_frame(p_frame);
-	if (display_mode == DISPLAY_BAKED) {
+	const bool use_baked = (display_mode == DISPLAY_BAKED || _source_needs_composition()) && !baked_frames.is_empty();
+	if (use_baked) {
 		if (i < 0 || i >= baked_frames.size()) {
 			return Ref<Texture2D>();
 		}

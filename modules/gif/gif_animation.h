@@ -77,6 +77,7 @@ private:
 	PackedByteArray has_transparency;
 
 	void _compact_trailing_duplicates();
+	bool _source_needs_composition() const;
 	void _ensure_baked();
 	void _rebuild_textures();
 	void _clear_frames();

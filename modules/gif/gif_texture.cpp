@@ -31,6 +31,7 @@
 
 #include "core/object/message_queue.h"
 #include "core/os/os.h"
+#include "core/os/thread.h"
 #include "servers/rendering_server.h"
 
 void GIFTexture::_update_proxy() {
@@ -98,30 +99,44 @@ void GIFTexture::_update_proxy() {
 
 void GIFTexture::_finish_non_thread_safe_setup() {
 	RenderingServer::get_singleton()->connect("frame_pre_draw", callable_mp(this, &GIFTexture::_update_proxy));
+	_update_proxy();
 }
 
 void GIFTexture::_animation_changed() {
-	RWLockWrite w(rw_lock);
-	current_frame = 0;
-	time = 0;
-	loops_done = 0;
-	prev_ticks = 0;
+	{
+		RWLockWrite w(rw_lock);
+		current_frame = 0;
+		time = 0;
+		loops_done = 0;
+		prev_ticks = 0;
+	}
+	if (Thread::is_main_thread()) {
+		_update_proxy();
+	}
 }
 
 void GIFTexture::set_animation(const Ref<GIFAnimation> &p_animation) {
 	if (animation == p_animation) {
+		if (Thread::is_main_thread()) {
+			_update_proxy();
+		}
 		return;
 	}
 	if (animation.is_valid()) {
 		animation->disconnect_changed(callable_mp(this, &GIFTexture::_animation_changed));
 	}
-	RWLockWrite w(rw_lock);
-	animation = p_animation;
-	current_frame = 0;
-	time = 0;
-	loops_done = 0;
-	if (animation.is_valid()) {
-		animation->connect_changed(callable_mp(this, &GIFTexture::_animation_changed));
+	{
+		RWLockWrite w(rw_lock);
+		animation = p_animation;
+		current_frame = 0;
+		time = 0;
+		loops_done = 0;
+		if (animation.is_valid()) {
+			animation->connect_changed(callable_mp(this, &GIFTexture::_animation_changed));
+		}
+	}
+	if (Thread::is_main_thread()) {
+		_update_proxy();
 	}
 	emit_changed();
 }

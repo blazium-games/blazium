@@ -262,6 +262,25 @@ void test_gif_decode_caps() {
 	ProjectSettings::get_singleton()->set_setting("blazium/gif/max_frames", old_frames);
 }
 
+void test_gif_active_texture_without_rebake() {
+	Ref<GIFAnimation> anim;
+	anim.instantiate();
+	CHECK(anim->load_from_buffer(_make_solid_gif89a_1x1_red()) == OK);
+	CHECK(anim->get_frame_count() >= 1);
+
+	anim->set_bake_storage(GIFAnimation::BAKE_GENERATE_ON_LOAD);
+	anim->set_display_mode(GIFAnimation::DISPLAY_BAKED);
+	anim->_set_source_frames(anim->_get_source_frames());
+
+	if (!RenderingServer::get_singleton()) {
+		return;
+	}
+	Ref<Texture2D> tex = anim->get_active_texture(0);
+	REQUIRE(tex.is_valid());
+	CHECK(tex->get_width() == anim->get_canvas_size().x);
+	CHECK(tex->get_height() == anim->get_canvas_size().y);
+}
+
 void test_gif_recorder_add_frame() {
 	Ref<GIFRecorder> rec;
 	rec.instantiate();

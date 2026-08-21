@@ -51,6 +51,12 @@
 #include "scene/resources/image_texture.h"
 #include "servers/audio/audio_stream.h"
 
+#include "modules/modules_enabled.gen.h" // For gif.
+#ifdef MODULE_GIF_ENABLED
+#include "modules/gif/gif_animation.h"
+#include "modules/gif/gif_texture.h"
+#endif
+
 void EditorResourcePicker::_update_resource() {
 	String resource_path;
 	if (edited_resource.is_valid() && edited_resource->get_path().is_resource_file()) {
@@ -645,6 +651,11 @@ void EditorResourcePicker::_ensure_allowed_types() const {
 		} else if (ClassDB::is_parent_class("ImageTexture", base)) {
 			allowed_types_with_convert.insert("Image");
 		}
+#ifdef MODULE_GIF_ENABLED
+		if (ClassDB::is_parent_class("Texture2D", base) || ClassDB::is_parent_class("ImageTexture", base)) {
+			allowed_types_with_convert.insert("GIFAnimation");
+		}
+#endif
 	}
 }
 
@@ -797,6 +808,16 @@ void EditorResourcePicker::drop_data_fw(const Point2 &p_point, const Variant &p_
 					dropped_resource = texture;
 					break;
 				}
+
+#ifdef MODULE_GIF_ENABLED
+				if (ClassDB::is_parent_class("GIFTexture", at) && Ref<GIFAnimation>(dropped_resource).is_valid()) {
+					Ref<GIFTexture> gif_tex;
+					gif_tex.instantiate();
+					gif_tex->set_animation(dropped_resource);
+					dropped_resource = gif_tex;
+					break;
+				}
+#endif
 			}
 		}
 

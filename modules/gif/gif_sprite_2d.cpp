@@ -102,22 +102,15 @@ void GIFSprite2D::_notification(int p_what) {
 			if (tex.is_null()) {
 				return;
 			}
-			Size2 size = tex->get_size();
-			if (animation->get_display_mode() == GIFAnimation::DISPLAY_SOURCE) {
-				const Vector2i pos = animation->get_frame_position(current_frame);
-				size = animation->get_canvas_size();
-				Point2 draw_pos = offset + Vector2(pos);
-				if (centered) {
-					draw_pos -= size / 2;
-				}
-				tex->draw(get_canvas_item(), draw_pos);
-			} else {
-				Point2 draw_pos = offset;
-				if (centered) {
-					draw_pos -= size / 2;
-				}
-				tex->draw(get_canvas_item(), draw_pos);
+			Size2 size = animation->get_canvas_size();
+			if (size.x <= 0 || size.y <= 0) {
+				size = tex->get_size();
 			}
+			Point2 draw_pos = offset;
+			if (centered) {
+				draw_pos -= size / 2;
+			}
+			tex->draw_rect(get_canvas_item(), Rect2(draw_pos, size));
 		} break;
 	}
 }
