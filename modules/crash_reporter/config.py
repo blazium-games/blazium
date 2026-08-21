@@ -1,4 +1,6 @@
 def can_build(env, platform):
+    # Breakpad client is Windows/Linux only. Never build this module for web
+    # (editor or templates), Android, iOS, or other platforms.
     if platform not in ("windows", "linuxbsd"):
         return False
     if env.editor_build:

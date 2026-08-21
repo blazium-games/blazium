@@ -589,33 +589,43 @@ editor_build_id = _first_nonempty(
     env.get("editor_build_id", ""),
 )
 
+_crash_reporter_platforms = ("windows", "linuxbsd")
+
 if env.editor_build:
     if env.get("crash_reporter"):
         print_warning("crash_reporter=yes is ignored for editor builds; use editor_crash_reporter=yes.")
     if env.get("editor_crash_reporter"):
-        env.Append(CPPDEFINES=["CRASH_REPORTER_ENABLED", "USE_BREAKPAD"])
-        env.Append(
-            CPPDEFINES=[
-                _crash_reporter_cpp_string("CRASH_REPORTER_EDITOR_APP_ID", editor_app_id),
-                _crash_reporter_cpp_string(
-                    "CRASH_REPORTER_EDITOR_APP_NAME", env.get("editor_crash_reporter_app_name", "")
-                ),
-                _crash_reporter_cpp_string("CRASH_REPORTER_EDITOR_BUILD_ID", editor_build_id),
-                _crash_reporter_cpp_string(
-                    "CRASH_REPORTER_EDITOR_BUILD_CHANNEL", env.get("editor_crash_reporter_build_channel", "")
-                ),
-                _crash_reporter_cpp_string(
-                    "CRASH_REPORTER_EDITOR_ENDPOINT", env.get("editor_crash_reporter_endpoint", "")
-                ),
-                _crash_reporter_cpp_string(
-                    "CRASH_REPORTER_EDITOR_CONTACT_URL", env.get("editor_crash_reporter_contact_url", "")
-                ),
-            ]
-        )
+        if env["platform"] not in _crash_reporter_platforms:
+            print_warning(
+                f"editor_crash_reporter=yes is ignored on {env['platform']}; crash reporter is Windows/Linux only."
+            )
+        else:
+            env.Append(CPPDEFINES=["CRASH_REPORTER_ENABLED", "USE_BREAKPAD"])
+            env.Append(
+                CPPDEFINES=[
+                    _crash_reporter_cpp_string("CRASH_REPORTER_EDITOR_APP_ID", editor_app_id),
+                    _crash_reporter_cpp_string(
+                        "CRASH_REPORTER_EDITOR_APP_NAME", env.get("editor_crash_reporter_app_name", "")
+                    ),
+                    _crash_reporter_cpp_string("CRASH_REPORTER_EDITOR_BUILD_ID", editor_build_id),
+                    _crash_reporter_cpp_string(
+                        "CRASH_REPORTER_EDITOR_BUILD_CHANNEL", env.get("editor_crash_reporter_build_channel", "")
+                    ),
+                    _crash_reporter_cpp_string(
+                        "CRASH_REPORTER_EDITOR_ENDPOINT", env.get("editor_crash_reporter_endpoint", "")
+                    ),
+                    _crash_reporter_cpp_string(
+                        "CRASH_REPORTER_EDITOR_CONTACT_URL", env.get("editor_crash_reporter_contact_url", "")
+                    ),
+                ]
+            )
 elif env.get("editor_crash_reporter"):
     print_warning("editor_crash_reporter=yes is ignored for export templates; use crash_reporter=yes.")
 elif env.get("crash_reporter"):
-    env.Append(CPPDEFINES=["CRASH_REPORTER_ENABLED", "USE_BREAKPAD"])
+    if env["platform"] not in _crash_reporter_platforms:
+        print_warning(f"crash_reporter=yes is ignored on {env['platform']}; crash reporter is Windows/Linux only.")
+    else:
+        env.Append(CPPDEFINES=["CRASH_REPORTER_ENABLED", "USE_BREAKPAD"])
 
 
 def _analytics_cpp_string(name, value):
