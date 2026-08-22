@@ -27,8 +27,8 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "justamcp_animation_tools.h"
 #include "justamcp_agent_helpers.h"
+#include "justamcp_animation_tools.h"
 #include "justamcp_scene_file_io.h"
 
 #include "core/io/file_access.h"

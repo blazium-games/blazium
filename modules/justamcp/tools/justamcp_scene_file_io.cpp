@@ -39,8 +39,8 @@
 #include "scene/resources/packed_scene.h"
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_interface.h"
 #include "../justamcp_editor_scene_access.h"
+#include "editor/editor_interface.h"
 #endif
 
 String justamcp_resolve_project_path(const String &p_path) {
