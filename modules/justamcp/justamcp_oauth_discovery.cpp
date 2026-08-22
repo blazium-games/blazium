@@ -30,59 +30,23 @@
 #include "justamcp_oauth_discovery.h"
 
 #include "justamcp_server.h"
+#include "tools/justamcp_settings_resolver.h"
 
-#include "core/config/project_settings.h"
 #include "core/io/json.h"
-#ifdef TOOLS_ENABLED
-#include "editor/editor_settings.h"
-#endif
-
-static bool _justamcp_oauth_use_project_settings() {
-	if (!ProjectSettings::get_singleton()) {
-		return true;
-	}
-	if (bool(GLOBAL_GET("blazium/justamcp/override_editor_settings"))) {
-		return true;
-	}
-#ifdef TOOLS_ENABLED
-	if (!EditorSettings::get_singleton()) {
-		return true;
-	}
-#endif
-	return false;
-}
-
-static Variant _justamcp_oauth_read_setting(const String &p_name, const Variant &p_default) {
-	if (_justamcp_oauth_use_project_settings()) {
-		if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting(p_name)) {
-			return GLOBAL_GET(p_name);
-		}
-		return p_default;
-	}
-#ifdef TOOLS_ENABLED
-	if (EditorSettings::get_singleton() && EditorSettings::get_singleton()->has_setting(p_name)) {
-		return EditorSettings::get_singleton()->get_setting(p_name);
-	}
-#endif
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting(p_name)) {
-		return GLOBAL_GET(p_name);
-	}
-	return p_default;
-}
 
 bool JustAMCPOauthDiscovery::oauth_enabled() {
-	return bool(_justamcp_oauth_read_setting("blazium/justamcp/oauth_enabled", false));
+	return JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/oauth_enabled", false);
 }
 
 String JustAMCPOauthDiscovery::setting_string(const String &p_name, const String &p_default) {
-	return String(_justamcp_oauth_read_setting(p_name, p_default));
+	return JustAMCPSettingsResolver::resolve_string(p_name, p_default);
 }
 
 int JustAMCPOauthDiscovery::listening_port() {
 	if (JustAMCPServer::get_singleton() && JustAMCPServer::get_singleton()->get_listening_port() > 0) {
 		return JustAMCPServer::get_singleton()->get_listening_port();
 	}
-	return int(_justamcp_oauth_read_setting("blazium/justamcp/server_port", 6506));
+	return JustAMCPSettingsResolver::resolve_server_port();
 }
 
 String JustAMCPOauthDiscovery::resource_url() {

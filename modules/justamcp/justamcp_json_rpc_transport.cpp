@@ -41,6 +41,7 @@
 #include "tools/justamcp_json_rpc_router.h"
 #include "tools/justamcp_prompt_executor.h"
 #include "tools/justamcp_resource_executor.h"
+#include "tools/justamcp_settings_resolver.h"
 #include "tools/justamcp_task_manager.h"
 #include "tools/justamcp_tool_schema_cache.h"
 
@@ -248,7 +249,7 @@ Dictionary JustAMCPJsonRpcTransport::_handle_json_rpc_payload(JustAMCPServer *p_
 		}
 	}
 
-	const bool debug_logging = GLOBAL_GET("blazium/justamcp/enable_debug_logging");
+	const bool debug_logging = JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/enable_debug_logging", false);
 	if (debug_logging) {
 		p_server->_mcp_debug_log("Executing JSON-RPC Method: " + method + " (ID: " + request_id + ")");
 	}
@@ -543,24 +544,16 @@ Dictionary JustAMCPJsonRpcTransport::_handle_json_rpc_payload(JustAMCPServer *p_
 			}
 			const bool on_http = _is_http_transport(p_response);
 			if (p_task_augmented || on_http) {
-				if (!p_task_augmented && on_http && ProjectSettings::get_singleton() &&
-						ProjectSettings::get_singleton()->has_setting("blazium/justamcp/stateless_tool_blocking") &&
-						bool(GLOBAL_GET("blazium/justamcp/stateless_tool_blocking"))) {
+				if (!p_task_augmented && on_http && JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/stateless_tool_blocking", false)) {
 					return invalid_params("stateless_tool_blocking is not supported on HTTP transport. Use SSE/streamable responses or poll tasks/result with wait=false.");
 				}
 				return Dictionary();
 			}
-			bool blocking = false;
-			if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/stateless_tool_blocking")) {
-				blocking = bool(GLOBAL_GET("blazium/justamcp/stateless_tool_blocking"));
-			}
+			const bool blocking = JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/stateless_tool_blocking", false);
 			if (!blocking) {
 				return Dictionary();
 			}
-			int timeout_ms = 120000;
-			if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/stateless_tool_timeout_ms")) {
-				timeout_ms = int(GLOBAL_GET("blazium/justamcp/stateless_tool_timeout_ms"));
-			}
+			const int timeout_ms = JustAMCPSettingsResolver::resolve_int("blazium/justamcp/stateless_tool_timeout_ms", 120000);
 			if (p_server->_wait_for_stateless_tool_entry(p_entry, timeout_ms)) {
 				return p_entry->rpc_result;
 			}
@@ -569,16 +562,8 @@ Dictionary JustAMCPJsonRpcTransport::_handle_json_rpc_payload(JustAMCPServer *p_
 
 #ifdef TOOLS_ENABLED
 		if (has_task_param) {
-			int default_ttl = 600000;
-			int default_poll = 1000;
-			if (ProjectSettings::get_singleton()) {
-				if (ProjectSettings::get_singleton()->has_setting("blazium/justamcp/task_default_ttl_ms")) {
-					default_ttl = int(GLOBAL_GET("blazium/justamcp/task_default_ttl_ms"));
-				}
-				if (ProjectSettings::get_singleton()->has_setting("blazium/justamcp/task_poll_interval_ms")) {
-					default_poll = int(GLOBAL_GET("blazium/justamcp/task_poll_interval_ms"));
-				}
-			}
+			const int default_ttl = JustAMCPSettingsResolver::resolve_int("blazium/justamcp/task_default_ttl_ms", 600000);
+			const int default_poll = JustAMCPSettingsResolver::resolve_int("blazium/justamcp/task_poll_interval_ms", 1000);
 			const Dictionary task_params = params["task"];
 			const int ttl_ms = task_params.has("ttl") ? int(task_params["ttl"]) : default_ttl;
 			const int poll_ms = task_params.has("pollInterval") ? int(task_params["pollInterval"]) : default_poll;

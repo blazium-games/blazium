@@ -31,6 +31,7 @@
 
 #ifdef TESTS_ENABLED
 
+#include "../justamcp_cli_args.h"
 #include "../justamcp_server.h"
 #include "core/config/project_settings.h"
 #include "modules/modules_enabled.gen.h"
@@ -128,6 +129,29 @@ void test_justamcp_server_failed_listen_does_not_activate() {
 	CHECK(!server.is_server_started());
 	CHECK(server.get_listening_port() == -1);
 	CHECK(!HTTPServer::get_singleton()->is_listening());
+#endif
+}
+
+void test_justamcp_server_cli_port_wins_over_settings() {
+#if !defined(MODULE_HTTPSERVER_ENABLED)
+	return;
+#else
+	REQUIRE(HTTPServer::get_singleton());
+	_stop_httpserver_if_listening();
+
+	JustAMCPListenSettingsGuard settings;
+	settings.apply(true, 16506);
+	JustAMCPCliArgs::set_test_mcp_port(16516);
+
+	JustAMCPServer server;
+	server.test_start_server();
+	CHECK(server.is_server_started());
+	CHECK(server.get_listening_port() == 16516);
+	CHECK(HTTPServer::get_singleton()->is_listening());
+
+	server.test_stop_server();
+	JustAMCPCliArgs::clear_test_overrides();
+	_stop_httpserver_if_listening();
 #endif
 }
 

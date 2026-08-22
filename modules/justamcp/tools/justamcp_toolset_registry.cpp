@@ -109,18 +109,7 @@ void JustAMCPToolsetRegistry::unregister_toolset(const String &p_name) {
 }
 
 bool JustAMCPToolsetRegistry::is_discovery_enabled() const {
-	bool use_project_override = false;
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/override_editor_settings")) {
-		use_project_override = GLOBAL_GET("blazium/justamcp/override_editor_settings");
-	}
-	if (use_project_override || !EditorSettings::get_singleton()) {
-		if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/enable_toolset_discovery")) {
-			return GLOBAL_GET("blazium/justamcp/enable_toolset_discovery");
-		}
-	} else if (EditorSettings::get_singleton() && EditorSettings::get_singleton()->has_setting("blazium/justamcp/enable_toolset_discovery")) {
-		return EditorSettings::get_singleton()->get_setting("blazium/justamcp/enable_toolset_discovery");
-	}
-	return false;
+	return JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/enable_toolset_discovery", false);
 }
 
 Array JustAMCPToolsetRegistry::list_toolset_names() const {

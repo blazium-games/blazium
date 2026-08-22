@@ -27,18 +27,22 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifdef TOOLS_ENABLED
-
 #include "justamcp_settings_resolver.h"
 
+#include "../justamcp_cli_args.h"
 #include "core/config/project_settings.h"
+
+#ifdef TOOLS_ENABLED
 #include "core/templates/hash_map.h"
 #include "editor/editor_settings.h"
+#endif
 
+#ifdef TOOLS_ENABLED
 static HashMap<String, bool> &justamcp_category_defaults() {
 	static HashMap<String, bool> defaults;
 	return defaults;
 }
+#endif
 
 static bool _justamcp_variant_as_bool(const Variant &p_value, bool p_default) {
 	if (p_value.get_type() == Variant::BOOL) {
@@ -53,26 +57,104 @@ static bool _justamcp_variant_as_bool(const Variant &p_value, bool p_default) {
 	return p_value.booleanize();
 }
 
+static Variant _justamcp_read_setting(const String &p_path, bool *r_found) {
+	*r_found = false;
+#ifdef TOOLS_ENABLED
+	if (!JustAMCPSettingsResolver::uses_project_override() && EditorSettings::get_singleton() && EditorSettings::get_singleton()->has_setting(p_path)) {
+		*r_found = true;
+		return EditorSettings::get_singleton()->get_setting(p_path);
+	}
+#endif
+	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting(p_path)) {
+		*r_found = true;
+		return ProjectSettings::get_singleton()->get_setting(p_path);
+	}
+	return Variant();
+}
+
 bool JustAMCPSettingsResolver::uses_project_override() {
+	if (JustAMCPCliArgs::is_headless() || JustAMCPCliArgs::is_unit_test()) {
+		return true;
+	}
+#ifdef TOOLS_ENABLED
+	if (!EditorSettings::get_singleton()) {
+		return true;
+	}
+#endif
 	if (!ProjectSettings::get_singleton() || !ProjectSettings::get_singleton()->has_setting("blazium/justamcp/override_editor_settings")) {
+#ifndef TOOLS_ENABLED
+		return true;
+#else
 		return false;
+#endif
 	}
 	return GLOBAL_GET("blazium/justamcp/override_editor_settings");
 }
 
 bool JustAMCPSettingsResolver::resolve_bool(const String &p_path, bool p_default) {
-	if (uses_project_override() || !EditorSettings::get_singleton()) {
-		if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting(p_path)) {
-			return _justamcp_variant_as_bool(ProjectSettings::get_singleton()->get_setting(p_path), p_default);
-		}
+	bool found = false;
+	const Variant value = _justamcp_read_setting(p_path, &found);
+	if (!found) {
 		return p_default;
 	}
-	if (EditorSettings::get_singleton()->has_setting(p_path)) {
-		return _justamcp_variant_as_bool(EditorSettings::get_singleton()->get_setting(p_path), p_default);
-	}
-	return p_default;
+	return _justamcp_variant_as_bool(value, p_default);
 }
 
+int JustAMCPSettingsResolver::resolve_int(const String &p_path, int p_default) {
+	bool found = false;
+	const Variant value = _justamcp_read_setting(p_path, &found);
+	if (!found) {
+		return p_default;
+	}
+	return int(value);
+}
+
+String JustAMCPSettingsResolver::resolve_string(const String &p_path, const String &p_default) {
+	bool found = false;
+	const Variant value = _justamcp_read_setting(p_path, &found);
+	if (!found) {
+		return p_default;
+	}
+	return String(value);
+}
+
+Array JustAMCPSettingsResolver::resolve_array(const String &p_path, const Array &p_default) {
+	bool found = false;
+	const Variant value = _justamcp_read_setting(p_path, &found);
+	if (!found || value.get_type() != Variant::ARRAY) {
+		return p_default;
+	}
+	return value;
+}
+
+void JustAMCPSettingsResolver::set_array(const String &p_path, const Array &p_value) {
+#ifdef TOOLS_ENABLED
+	if (!uses_project_override() && EditorSettings::get_singleton()) {
+		EditorSettings::get_singleton()->set_setting(p_path, p_value);
+		return;
+	}
+#endif
+	ERR_FAIL_NULL(ProjectSettings::get_singleton());
+	ProjectSettings::get_singleton()->set_setting(p_path, p_value);
+	ProjectSettings::get_singleton()->save();
+}
+
+int JustAMCPSettingsResolver::resolve_server_port() {
+	const int cli_port = JustAMCPCliArgs::mcp_port();
+	if (cli_port > 0) {
+		return cli_port;
+	}
+	return resolve_int("blazium/justamcp/server_port", 6506);
+}
+
+bool JustAMCPSettingsResolver::resolve_server_enabled() {
+	if (JustAMCPCliArgs::enable_mcp() || JustAMCPCliArgs::enable_mcp_game_control()) {
+		return true;
+	}
+	return resolve_bool("blazium/justamcp/server_enabled", false);
+}
+
+#ifdef TOOLS_ENABLED
 void JustAMCPSettingsResolver::set_category_default(const String &p_category, bool p_is_core) {
 	if (p_category.is_empty()) {
 		return;
@@ -144,5 +226,4 @@ bool JustAMCPSettingsResolver::is_resource_listed(const String &p_name) {
 bool JustAMCPSettingsResolver::resolve_allow_execute_tool_bypass() {
 	return resolve_bool("blazium/justamcp/allow_execute_tool_bypass", false);
 }
-
 #endif

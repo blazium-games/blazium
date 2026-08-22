@@ -34,11 +34,9 @@
 #include "core/object/message_queue.h"
 #include "core/os/os.h"
 #include "core/os/time.h"
+#include "justamcp_cli_args.h"
+#include "tools/justamcp_settings_resolver.h"
 #include "tools/justamcp_tool_executor.h"
-
-#ifdef TOOLS_ENABLED
-#include "editor/editor_settings.h"
-#endif
 
 void JustAMCPRuntime::_thread_poll_wrapper(void *p_user) {
 	JustAMCPRuntime *runtime = (JustAMCPRuntime *)p_user;
@@ -187,77 +185,20 @@ void JustAMCPRuntime::push_error_log(const String &p_message, bool p_is_error) {
 }
 
 void JustAMCPRuntime::_start_server() {
-	const List<String> &args = OS::get_singleton()->get_cmdline_args();
-	for (const String &arg : args) {
-		if (arg == "--test" || arg == "--tests" || arg.begins_with("--aw-") ||
-				arg == "--help" || arg == "-h" || arg == "/?" || arg == "--version" ||
-				arg == "--check-only" || arg.begins_with("--export")) {
-			return;
-		}
+	if (JustAMCPCliArgs::skip_mcp_server()) {
+		return;
 	}
-
-	bool mcp_disabled = false;
-	for (const String &E : args) {
-		if (E == "--disable-game-mcp") {
-			mcp_disabled = true;
-			break;
-		}
-	}
-	if (mcp_disabled) {
+	if (JustAMCPCliArgs::disable_game_mcp() || JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/disable_game_mcp", false)) {
 		return;
 	}
 
-#ifdef TOOLS_ENABLED
-	bool is_headless = false;
-	for (const String &E : args) {
-		if (E == "--headless") {
-			is_headless = true;
-			break;
-		}
-	}
-
-	bool use_project_override = GLOBAL_GET("blazium/justamcp/override_editor_settings");
-
-	if (is_headless) {
-		use_project_override = true;
-	}
-
-	if (use_project_override || !EditorSettings::get_singleton()) {
-		enabled = GLOBAL_GET("blazium/justamcp/server_enabled");
-		port = GLOBAL_GET("blazium/justamcp/server_port");
+	port = JustAMCPSettingsResolver::resolve_server_port();
+	const bool game_control = JustAMCPCliArgs::enable_mcp_game_control() ||
+			JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/game_control_enabled", false);
+	if (JustAMCPCliArgs::enable_mcp() || game_control) {
+		enabled = true;
 	} else {
-		if (EditorSettings::get_singleton()->has_setting("blazium/justamcp/server_enabled")) {
-			enabled = EditorSettings::get_singleton()->get_setting("blazium/justamcp/server_enabled");
-		}
-		if (EditorSettings::get_singleton()->has_setting("blazium/justamcp/server_port")) {
-			port = EditorSettings::get_singleton()->get_setting("blazium/justamcp/server_port");
-		}
-	}
-#else
-
-	if (ProjectSettings::get_singleton()->has_setting("blazium/justamcp/disable_game_mcp")) {
-		if ((bool)GLOBAL_GET("blazium/justamcp/disable_game_mcp")) {
-			return;
-		}
-	}
-
-	bool game_control_enabled = false;
-	if (ProjectSettings::get_singleton()->has_setting("blazium/justamcp/game_control_enabled")) {
-		game_control_enabled = GLOBAL_GET("blazium/justamcp/game_control_enabled");
-	}
-	if (!game_control_enabled && !args.find("--enable-mcp-game-control")) {
-		return;
-	}
-
-	enabled = GLOBAL_GET("blazium/justamcp/server_enabled");
-	port = GLOBAL_GET("blazium/justamcp/server_port");
-#endif
-
-	if (OS::get_singleton()->get_cmdline_args().find("--enable-mcp")) {
-		enabled = true;
-	}
-	if (OS::get_singleton()->get_cmdline_args().find("--enable-mcp-game-control")) {
-		enabled = true;
+		enabled = JustAMCPSettingsResolver::resolve_server_enabled();
 	}
 
 	if (!enabled) {
@@ -268,10 +209,7 @@ void JustAMCPRuntime::_start_server() {
 		server->stop();
 	}
 
-	bool bind_to_localhost = true;
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/bind_to_localhost_only")) {
-		bind_to_localhost = GLOBAL_GET("blazium/justamcp/bind_to_localhost_only");
-	}
+	const bool bind_to_localhost = JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/bind_to_localhost_only", true);
 	String bind_address = bind_to_localhost ? "127.0.0.1" : "*";
 
 	Error err = server->listen(port, bind_address);

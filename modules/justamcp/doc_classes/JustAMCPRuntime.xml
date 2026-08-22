@@ -6,7 +6,7 @@
 	<description>
 		[JustAMCPRuntime] runs the local MCP endpoint and routes incoming commands to built-in tools, resources, prompts, or custom command callables. It is independent of the active [SceneTree], so it can keep serving editor automation while scenes are opened, closed, or changed.
 		[codeblock]
-		JustAMCPRuntime.port = 7777
+		JustAMCPRuntime.port = 6506
 		JustAMCPRuntime.enabled = true
 
 		JustAMCPRuntime.register_custom_command("double", func(value):
@@ -57,8 +57,8 @@
 		<member name="enabled" type="bool" setter="set_enabled" getter="is_enabled" default="false">
 			When [code]true[/code], the runtime server is active and can accept MCP traffic. Setting it to [code]false[/code] stops serving runtime requests.
 		</member>
-		<member name="port" type="int" setter="set_port" getter="get_port" default="7777">
-			TCP port used by the JustAMCP runtime server. Change this before enabling the runtime when a project needs a non-default port.
+		<member name="port" type="int" setter="set_port" getter="get_port" default="6506">
+			TCP port used by the JustAMCP runtime server. Defaults to the same [code]6506[/code] as the editor HTTP server. Override at launch with [code]--mcp-port[/code], or change this before enabling the runtime.
 		</member>
 	</members>
 	<signals>

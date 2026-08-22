@@ -47,7 +47,7 @@ private:
 	Vector<Ref<StreamPeerTCP>> clients;
 	HashMap<Ref<StreamPeerTCP>, String> client_buffers;
 	Mutex clients_mutex;
-	int port = 7777;
+	int port = 6506;
 	bool enabled = false;
 	Thread *server_thread = nullptr;
 	std::atomic<bool> quit_thread{ false };

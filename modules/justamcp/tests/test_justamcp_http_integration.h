@@ -46,6 +46,7 @@ void test_justamcp_http_catalogs_after_initialize();
 void test_justamcp_http_dual_accept_tools_list_returns_json();
 void test_justamcp_http_dual_accept_tools_call_uses_sse();
 void test_justamcp_mcp_config_client_field_shapes();
+void test_justamcp_mcp_config_json_uses_cli_port();
 
 TEST_CASE("[Modules][JustAMCP] http initialize creates session") {
 	test_justamcp_http_initialize_creates_session();
@@ -105,4 +106,8 @@ TEST_CASE("[Modules][JustAMCP] http dual-Accept tools/call uses SSE") {
 
 TEST_CASE("[Modules][JustAMCP] mcp config client field shapes") {
 	test_justamcp_mcp_config_client_field_shapes();
+}
+
+TEST_CASE("[Modules][JustAMCP] mcp config json uses CLI port") {
+	test_justamcp_mcp_config_json_uses_cli_port();
 }

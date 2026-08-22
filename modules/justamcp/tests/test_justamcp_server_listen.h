@@ -33,6 +33,7 @@
 
 void test_justamcp_server_start_listens();
 void test_justamcp_server_failed_listen_does_not_activate();
+void test_justamcp_server_cli_port_wins_over_settings();
 
 TEST_CASE("[Modules][JustAMCP] server start listens") {
 	test_justamcp_server_start_listens();
@@ -40,4 +41,8 @@ TEST_CASE("[Modules][JustAMCP] server start listens") {
 
 TEST_CASE("[Modules][JustAMCP] failed listen does not claim Activated") {
 	test_justamcp_server_failed_listen_does_not_activate();
+}
+
+TEST_CASE("[Modules][JustAMCP] CLI --mcp-port wins over settings") {
+	test_justamcp_server_cli_port_wins_over_settings();
 }

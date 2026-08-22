@@ -51,6 +51,7 @@
 #include "core/config/project_settings.h"
 #include "core/os/os.h"
 #include "editor/editor_settings.h"
+#include "justamcp_settings_resolver.h"
 
 #ifdef MODULE_ASSETTAGS_ENABLED
 static void _invalidate_tags_dictionary_cache() {
@@ -115,10 +116,7 @@ Dictionary JustAMCPAssetTagsTools::_require_elicitation(const String &p_action, 
 	const Dictionary schema = justamcp_confirm_enum_schema();
 	const String request_id = p_args.get("request_id", String::num_uint64(OS::get_singleton()->get_ticks_usec()));
 	if (JustAMCPServer *server = JustAMCPServer::get_singleton()) {
-		String demo_url;
-		if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/url_elicitation_demo_url")) {
-			demo_url = String(GLOBAL_GET("blazium/justamcp/url_elicitation_demo_url"));
-		}
+		const String demo_url = JustAMCPSettingsResolver::resolve_string("blazium/justamcp/url_elicitation_demo_url");
 		if (!demo_url.is_empty() && bool(p_args.get("url_elicit", false)) && justamcp_protocol_supports(server->get_negotiated_protocol_version(), JUSTAMCP_FEATURE_ELICITATION_URL)) {
 			server->send_url_elicitation_error(request_id, "elicitation_" + request_id, demo_url, "URL elicitation required for " + p_action);
 		} else {

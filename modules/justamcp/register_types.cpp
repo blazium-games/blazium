@@ -32,7 +32,11 @@
 
 #include "modules/modules_enabled.gen.h"
 
+#include "justamcp_cli_args.h"
 #include "justamcp_runtime.h"
+#include "tools/justamcp_settings_resolver.h"
+
+#include "core/config/engine.h"
 
 #ifdef TOOLS_ENABLED
 #include "core/config/project_settings.h"
@@ -147,47 +151,18 @@
 #include "core/os/os.h"
 #endif
 
-#include "servers/display_server.h"
-
-static bool _is_headless() {
-	if (DisplayServer::get_singleton() != nullptr) {
-		return DisplayServer::get_singleton()->get_name() == "headless";
-	}
-	if (OS::get_singleton() && OS::get_singleton()->get_cmdline_args().find("--headless")) {
-		return true;
-	}
-	return false;
+static bool _is_justamcp_editor_enabled() {
+	return JustAMCPSettingsResolver::resolve_server_enabled();
 }
 
-static bool _is_justamcp_enabled() {
-	if (OS::get_singleton()->get_cmdline_args().find("--enable-mcp")) {
+static bool _is_justamcp_game_control_requested() {
+	if (JustAMCPCliArgs::disable_game_mcp() || JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/disable_game_mcp", false)) {
+		return false;
+	}
+	if (JustAMCPCliArgs::enable_mcp_game_control()) {
 		return true;
 	}
-
-	bool use_project_override = false;
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/override_editor_settings")) {
-		use_project_override = GLOBAL_GET("blazium/justamcp/override_editor_settings");
-	}
-
-	if (_is_headless()) {
-		use_project_override = true;
-	}
-
-#ifdef TOOLS_ENABLED
-	if (use_project_override || !EditorSettings::get_singleton()) {
-#else
-	{
-#endif
-		if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/server_enabled")) {
-			return GLOBAL_GET("blazium/justamcp/server_enabled");
-		}
-#ifdef TOOLS_ENABLED
-	} else if (EditorSettings::get_singleton() && EditorSettings::get_singleton()->has_setting("blazium/justamcp/server_enabled")) {
-		return EditorSettings::get_singleton()->get_setting("blazium/justamcp/server_enabled");
-#endif
-	}
-
-	return false;
+	return JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/game_control_enabled", false);
 }
 
 #ifdef TOOLS_ENABLED
@@ -229,14 +204,17 @@ static void _register_all_toolsets() {
 void initialize_justamcp_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
 		GDREGISTER_CLASS(JustAMCPRuntime);
-		if (_is_justamcp_enabled()) {
-			JustAMCPRuntime *runtime = memnew(JustAMCPRuntime);
-			Engine::get_singleton()->add_singleton(Engine::Singleton("JustAMCPRuntime", runtime));
-		}
-#ifdef TOOLS_ENABLED
 		GLOBAL_DEF_BASIC("blazium/justamcp/game_control_enabled", false);
 		GLOBAL_DEF_BASIC("blazium/justamcp/disable_game_mcp", false);
-#endif
+		const bool editor_enabled = _is_justamcp_editor_enabled();
+		const bool game_control = _is_justamcp_game_control_requested();
+		if (editor_enabled || game_control) {
+			JustAMCPRuntime *runtime = memnew(JustAMCPRuntime);
+			Engine::get_singleton()->add_singleton(Engine::Singleton("JustAMCPRuntime", runtime));
+			if (game_control) {
+				runtime->set_enabled(true);
+			}
+		}
 	}
 
 #ifdef TOOLS_ENABLED

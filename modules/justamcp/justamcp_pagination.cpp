@@ -29,9 +29,9 @@
 
 #include "justamcp_pagination.h"
 
-#include "core/config/project_settings.h"
 #include "core/crypto/crypto_core.h"
 #include "core/io/marshalls.h"
+#include "tools/justamcp_settings_resolver.h"
 
 static const uint8_t CURSOR_MAGIC_0 = 'J';
 static const uint8_t CURSOR_MAGIC_1 = 'M';
@@ -39,19 +39,11 @@ static const uint8_t CURSOR_VERSION = 1;
 static const int CURSOR_PAYLOAD_SIZE = 7;
 
 int justamcp_pagination_page_size() {
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/list_page_size")) {
-		const int size = int(GLOBAL_GET("blazium/justamcp/list_page_size"));
-		return MAX(1, size);
-	}
-	return 50;
+	return MAX(1, JustAMCPSettingsResolver::resolve_int("blazium/justamcp/list_page_size", 50));
 }
 
 int justamcp_mcp_log_buffer_size() {
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/mcp_log_buffer_size")) {
-		const int size = int(GLOBAL_GET("blazium/justamcp/mcp_log_buffer_size"));
-		return MAX(1, size);
-	}
-	return 500;
+	return MAX(1, JustAMCPSettingsResolver::resolve_int("blazium/justamcp/mcp_log_buffer_size", 500));
 }
 
 String justamcp_pagination_cursor_from_uri_suffix(const String &p_suffix) {
