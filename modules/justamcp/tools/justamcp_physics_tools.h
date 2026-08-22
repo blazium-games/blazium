@@ -50,6 +50,7 @@ private:
 	Dictionary _add_raycast(const Dictionary &p_params);
 	Dictionary _setup_physics_body(const Dictionary &p_params);
 	Dictionary _get_collision_info(const Dictionary &p_params);
+	Dictionary validate_physics_setup(const Dictionary &p_params);
 
 protected:
 	static void _bind_methods();

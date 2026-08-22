@@ -55,6 +55,8 @@ public:
 	Dictionary remote_control_exec(const Dictionary &p_args);
 	Dictionary remote_control_eval(const Dictionary &p_args);
 	Dictionary remote_control_instance(const Dictionary &p_args);
+	Dictionary debugger_summary(const Dictionary &p_args);
+	Dictionary focus_window(const Dictionary &p_args);
 
 	JustAMCPRemoteControlTools();
 	~JustAMCPRemoteControlTools();

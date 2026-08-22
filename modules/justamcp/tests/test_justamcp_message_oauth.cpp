@@ -69,7 +69,9 @@ void test_justamcp_message_oauth_rejects_without_auth() {
 	ctx->set_body("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}");
 	Ref<HTTPResponse> response;
 	response.instantiate();
+	ERR_PRINT_OFF;
 	server.test_handle_message_post(ctx, response);
+	ERR_PRINT_ON;
 	CHECK(response->get_status() == 401);
 
 	ps->set_setting("blazium/justamcp/oauth_enabled", prev_enabled);

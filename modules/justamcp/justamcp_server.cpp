@@ -488,7 +488,12 @@ void JustAMCPServer::_start_server_internal(bool p_ignore_cmdline_block) {
 			listen_err = HTTPServer::get_singleton()->listen(port, bind_address, false);
 		}
 		if (listen_err != OK) {
-			ERR_PRINT("JustAMCP: Failed to listen on port " + itos(port) + " (error " + itos(listen_err) + ").");
+#ifdef TESTS_ENABLED
+			if (test_forced_listen_error == OK)
+#endif
+			{
+				ERR_PRINT("JustAMCP: Failed to listen on port " + itos(port) + " (error " + itos(listen_err) + ").");
+			}
 			return;
 		}
 	} else {

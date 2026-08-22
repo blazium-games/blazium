@@ -32,6 +32,7 @@
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
 #include "../justamcp_read_limits.h"
+#include "justamcp_scene_file_io.h"
 #include "justamcp_scene_tools.h"
 
 #include "core/config/project_settings.h"
@@ -481,6 +482,64 @@ Dictionary JustAMCPSceneTools::has_signal_connection(const Dictionary &p_args) {
 	ret["target"] = target_node_path;
 	ret["method"] = method_name;
 	ret["connected"] = connected;
+	return ret;
+}
+
+Dictionary JustAMCPSceneTools::get_node_warnings(const Dictionary &p_args) {
+	Node *owned = nullptr;
+	Node *root = JustAMCPEditorSceneAccess::get_edited_root();
+	const String file_path = p_args.get("file_path", p_args.get("scene_path", ""));
+	if (!file_path.is_empty()) {
+		const String resolved = justamcp_resolve_project_path(file_path);
+		if (root && !root->get_scene_file_path().is_empty() && root->get_scene_file_path() != resolved && root->get_scene_file_path() != file_path) {
+			root = nullptr;
+		}
+		if (!root) {
+			Dictionary load_err = justamcp_load_scene_root(resolved, &owned);
+			if (!load_err.is_empty()) {
+				return load_err;
+			}
+			root = owned;
+		}
+	}
+	if (!root) {
+		Dictionary ret;
+		ret["ok"] = false;
+		ret["error"] = "No scene is currently open. Pass file_path or open the scene first.";
+		return ret;
+	}
+
+	Array warnings;
+	List<Node *> stack;
+	stack.push_back(root);
+	while (!stack.is_empty()) {
+		Node *node = stack.front()->get();
+		stack.pop_front();
+		PackedStringArray node_warnings = node->get_configuration_warnings();
+		if (!node_warnings.is_empty()) {
+			Dictionary item;
+			item["path"] = node == root ? String(".") : String(root->get_path_to(node));
+			item["type"] = node->get_class();
+			Array texts;
+			for (int i = 0; i < node_warnings.size(); i++) {
+				texts.push_back(node_warnings[i]);
+			}
+			item["warnings"] = texts;
+			warnings.push_back(item);
+		}
+		for (int i = 0; i < node->get_child_count(); i++) {
+			stack.push_back(node->get_child(i));
+		}
+	}
+
+	Dictionary ret;
+	ret["ok"] = true;
+	ret["scene_path"] = file_path.is_empty() ? root->get_scene_file_path() : justamcp_resolve_project_path(file_path);
+	ret["warnings"] = warnings;
+	ret["count"] = warnings.size();
+	if (owned) {
+		memdelete(owned);
+	}
 	return ret;
 }
 

@@ -98,7 +98,6 @@ void JustAMCPServer::send_tool_result(const Variant &p_request_id, bool p_succes
 		if (session_manager && session_manager->get_request_tool_route(p_request_id, route_session_id, route_connection_id)) {
 			_send_sse_routed(JSON::stringify(rpc_with_id), route_session_id, route_connection_id);
 		} else {
-			WARN_PRINT_ONCE("JustAMCP: send_tool_result could not find queue entry for request id.");
 			_send_sse_routed(JSON::stringify(rpc_with_id), String(), -1);
 		}
 	}

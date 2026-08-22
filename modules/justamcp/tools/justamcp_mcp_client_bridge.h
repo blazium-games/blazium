@@ -33,8 +33,10 @@
 
 #include "core/object/class_db.h"
 #include "core/object/object.h"
+#include "core/object/worker_thread_pool.h"
 #include "core/os/mutex.h"
 #include "core/templates/hash_set.h"
+#include "core/templates/vector.h"
 
 class JustAMCPMCPClientBridge : public Object {
 	GDCLASS(JustAMCPMCPClientBridge, Object);
@@ -53,6 +55,8 @@ protected:
 
 	mutable HashSet<String> initialized_bridges;
 	mutable Mutex initialized_bridges_mutex;
+	mutable Mutex pending_remote_mutex;
+	mutable Vector<WorkerThreadPool::TaskID> pending_remote_tasks;
 
 	bool _try_schedule_remote_tool(const String &p_tool_name, const Dictionary &p_args, Dictionary &r_pending) const;
 
@@ -70,6 +74,7 @@ public:
 	Dictionary list_remote_tools(const Dictionary &p_args);
 	Dictionary call_remote_tool(const Dictionary &p_args);
 	Dictionary read_remote_resource(const Dictionary &p_args);
+	void wait_pending_remote_tasks();
 
 	JustAMCPMCPClientBridge();
 	~JustAMCPMCPClientBridge();

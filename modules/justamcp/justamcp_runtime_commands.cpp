@@ -120,6 +120,8 @@ Dictionary JustAMCPRuntime::execute_command(const String &p_command, const Dicti
 		return _cmd_runtime_capabilities(p_params);
 	} else if (p_command == "eval_expression") {
 		return _cmd_eval_expression(p_params);
+	} else if (p_command == "set_paused") {
+		return _cmd_set_paused(p_params);
 	} else if (p_command == "quit" || p_command == "runtime_quit") {
 		return _cmd_runtime_quit(p_params);
 	} else if (p_command == "network_state" || p_command == "get_network_info") {

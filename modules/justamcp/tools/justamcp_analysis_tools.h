@@ -36,12 +36,14 @@
 #include "scene/main/node.h"
 
 class JustAMCPEditorPlugin;
+class JustAMCPToolExecutor;
 
 class JustAMCPAnalysisTools : public Object {
 	GDCLASS(JustAMCPAnalysisTools, Object);
 
 private:
 	JustAMCPEditorPlugin *editor_plugin = nullptr;
+	JustAMCPToolExecutor *owner = nullptr;
 
 	void _collect_files_by_ext(const String &p_path, const Vector<String> &p_extensions, Array &r_out, bool p_include_addons, int p_max_results = 2000);
 	String _read_file_text(const String &p_file_path);
@@ -57,6 +59,7 @@ private:
 
 public:
 	void set_editor_plugin(JustAMCPEditorPlugin *p_plugin) { editor_plugin = p_plugin; }
+	void set_owner(JustAMCPToolExecutor *p_owner) { owner = p_owner; }
 
 	Dictionary execute_tool(const String &p_tool_name, const Dictionary &p_args);
 

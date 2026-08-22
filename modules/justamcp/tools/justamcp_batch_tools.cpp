@@ -31,6 +31,8 @@
 #include "../justamcp_editor_filesystem.h"
 #include "../justamcp_editor_scene_access.h"
 #include "../justamcp_read_limits.h"
+#include "../justamcp_tool_context.h"
+#include "justamcp_tool_executor.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_interface.h"
@@ -95,6 +97,86 @@ Dictionary JustAMCPBatchTools::execute_tool(const String &p_tool_name, const Dic
 	}
 	if (p_tool_name == "get_scene_dependencies") {
 		return _get_scene_dependencies(p_args);
+	}
+	if (p_tool_name == "batch_execute") {
+		if (!owner) {
+			Dictionary err;
+			err["ok"] = false;
+			err["error"] = "batch_execute is unavailable without a tool executor.";
+			return err;
+		}
+		Array steps = p_args.get("steps", Array());
+		bool stop_on_error = p_args.get("stop_on_error", true);
+		bool undo_on_error = p_args.get("undo_on_error", false);
+		Array results;
+		int completed = 0;
+		const int total_steps = steps.size();
+		justamcp_report_progress(0, total_steps > 0 ? total_steps : 1, "Starting batch_execute");
+		for (int i = 0; i < steps.size(); i++) {
+			if (justamcp_is_cancel_requested()) {
+				Dictionary err;
+				err["ok"] = false;
+				err["error"] = "cancelled";
+				results.push_back(err);
+				break;
+			}
+			justamcp_report_progress(i, total_steps > 0 ? total_steps : 1, vformat("batch step %d", i + 1));
+			if (steps[i].get_type() != Variant::DICTIONARY) {
+				Dictionary step_error;
+				step_error["ok"] = false;
+				step_error["error"] = "Step is not an object.";
+				results.push_back(step_error);
+				if (stop_on_error) {
+					break;
+				}
+				continue;
+			}
+			Dictionary step = steps[i];
+			String tool_name = step.get("tool_name", step.get("tool", ""));
+			if (tool_name == "batch_execute" || tool_name == "blazium_batch_execute") {
+				Dictionary step_error;
+				step_error["ok"] = false;
+				step_error["error"] = "Nested batch_execute is not allowed.";
+				results.push_back(step_error);
+				if (stop_on_error) {
+					break;
+				}
+				continue;
+			}
+			if (tool_name == "execute_tool" || tool_name == "blazium_execute_tool") {
+				Dictionary step_error;
+				step_error["ok"] = false;
+				step_error["error"] = "execute_tool is not allowed in batch_execute.";
+				results.push_back(step_error);
+				if (stop_on_error) {
+					break;
+				}
+				continue;
+			}
+			Dictionary args = step.get("arguments", step.get("args", Dictionary()));
+			Dictionary step_result = owner->execute_tool(tool_name, args);
+			results.push_back(step_result);
+			bool ok = step_result.get("ok", !step_result.has("error"));
+			if (!ok) {
+				if (undo_on_error && owner->editor_tools) {
+					for (int undo_idx = 0; undo_idx < completed; undo_idx++) {
+						owner->editor_tools->editor_undo(Dictionary());
+					}
+				}
+				if (stop_on_error) {
+					break;
+				}
+			} else {
+				completed++;
+			}
+		}
+		justamcp_report_progress(total_steps > 0 ? total_steps : 1, total_steps > 0 ? total_steps : 1, "batch_execute finished");
+		Dictionary ret;
+		ret["ok"] = true;
+		ret["results"] = results;
+		ret["completed"] = completed;
+		ret["count"] = results.size();
+		return ret;
 	}
 
 	Dictionary err;

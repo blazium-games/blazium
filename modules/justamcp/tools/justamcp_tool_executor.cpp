@@ -38,6 +38,7 @@
 #include "core/io/resource_saver.h"
 #include "core/os/os.h"
 #include "core/templates/hash_set.h"
+#include "justamcp_agent_helpers.h"
 #include "justamcp_analysis_tools.h"
 #include "justamcp_animation_tools.h"
 #include "justamcp_asset_tags_tools.h"
@@ -76,6 +77,7 @@
 #include "justamcp_tool_schema_builder.h"
 #include "justamcp_tool_schema_cache.h"
 #include "justamcp_toolset_registry.h"
+#include "modules/modules_enabled.gen.h"
 
 #ifdef TOOLS_ENABLED
 #include "../justamcp_editor_plugin.h"
@@ -387,6 +389,13 @@ void JustAMCPToolExecutor::_init_tools() {
 	multiuser_tools = memnew(JustAMCPMultiuserTools);
 #endif
 
+	if (analysis_tools) {
+		analysis_tools->set_owner(this);
+	}
+	if (batch_tools) {
+		batch_tools->set_owner(this);
+	}
+
 	if (editor_plugin) {
 		set_editor_plugin(editor_plugin);
 	}
@@ -454,10 +463,12 @@ static Array _collect_tool_schemas(bool p_register_only, bool p_ignore_settings,
 		if (!p_props.is_empty()) {
 			for (int i = 0; i < p_props.size(); i += 2) {
 				Dictionary p;
-				p["type"] = p_props[i + 1];
 				if (p_props[i + 1] == "any") {
-					p["type"] = "string";
-				} else if (p_props[i + 1] == "object") {
+					// Leave type unset so non-string values pass validation.
+				} else {
+					p["type"] = p_props[i + 1];
+				}
+				if (p_props[i + 1] == "object") {
 					p["properties"] = Dictionary();
 				} else if (p_props[i + 1] == "array") {
 					Dictionary items_dict;
@@ -499,7 +510,7 @@ static Array _collect_tool_schemas(bool p_register_only, bool p_ignore_settings,
 		add_schema("search_tools", "Searches the engine native capabilities for a specific tool name matching your needs.",
 				Vector<String>{ "query", "string" }, Vector<String>{ "query" }, "forbidden", "worker");
 		add_schema("execute_tool", "Dynamically bypasses context omission to execute ANY tool in the engine by name.",
-				Vector<String>{ "tool_name", "string", "arguments", "object" }, Vector<String>{ "tool_name", "arguments" });
+				Vector<String>{ "tool_name", "string", "arguments", "object" }, Vector<String>{ "tool_name" });
 		add_schema("get_guide", "Lists or reads built-in JustAMCP workflow guides mirrored from godot-mcp resources.",
 				Vector<String>{ "topic", "string", "slug", "string" }, Vector<String>{}, "forbidden", "worker");
 		add_schema("list_toolsets", "Lists registered JustAMCP toolsets when lazy tool discovery is enabled.",
@@ -564,18 +575,41 @@ static Array _collect_tool_schemas(bool p_register_only, bool p_ignore_settings,
 	}
 #endif
 
+#ifdef MODULE_REMOTE_CONTROL_ENABLED
+	if (p_category_only.is_empty() || p_category_only == "remote_control_tools") {
+		if (JustAMCPToolsetRegistry::get_singleton()) {
+			Array rc_schemas = JustAMCPToolsetRegistry::get_singleton()->collect_tool_schemas(
+					"RemoteControl", p_register_only, p_ignore_settings, p_include_disabled_tools);
+			if (!rc_schemas.is_empty() || p_register_only) {
+				current_category = "remote_control_tools";
+				is_core = false;
+				if (p_register_only) {
+					JustAMCPToolSchemaCache::invalidate_category(current_category);
+				}
+				for (int i = 0; i < rc_schemas.size(); i++) {
+					tools.push_back(rc_schemas[i]);
+				}
+			}
+		}
+	}
+#endif
+
 #ifdef MODULE_AUTOWORK_ENABLED
 	if (p_category_only.is_empty() || p_category_only == "autowork_tools") {
 		current_category = "autowork_tools";
 		is_core = false;
-		add_schema("autowork_run_all_tests", "Recursively traverses and executes all autowork test suites natively returning structured passing/failure statistics.",
-				Vector<String>{}, Vector<String>{}, "optional");
-		add_schema("autowork_run_tests_in_directory", "Recursively finds and executes all Godot autowork unit tests inside a given directory, returning formatted results.",
-				Vector<String>{ "directory_path", "string" }, Vector<String>{ "directory_path" }, "optional");
-		add_schema("autowork_run_test_script", "Executes an exact test script natively against the runtime test suite framework evaluating state.",
-				Vector<String>{ "script_path", "string" }, Vector<String>{ "script_path" }, "optional");
-		add_schema("autowork_run_test_by_name", "Performs regex lookup isolating explicit test pattern function names universally across suites for debugging single logic instances.",
-				Vector<String>{ "test_name", "string" }, Vector<String>{ "test_name" }, "optional");
+		add_schema("autowork_run_all_tests", "Runs Autowork test suites in-process and waits for results. Optional include_subdirs, prefix, suffix, select (script pattern), and sandboxed user:// junit_xml.",
+				Vector<String>{ "path", "string", "filter", "string", "timeout", "number", "include_subdirs", "boolean", "prefix", "string", "suffix", "string", "select", "string", "junit_xml", "string" }, Vector<String>{}, "optional");
+		add_schema("autowork_run_tests_in_directory", "Runs Autowork tests under a sandboxed directory. Optional include_subdirs, prefix, suffix, select, and user:// junit_xml.",
+				Vector<String>{ "directory_path", "string", "path", "string", "include_subdirs", "boolean", "prefix", "string", "suffix", "string", "select", "string", "junit_xml", "string", "timeout", "number" }, Vector<String>{ "directory_path" }, "optional");
+		add_schema("autowork_run_test_script", "Runs one Autowork test script in-process. Optional filter, timeout, and user:// junit_xml.",
+				Vector<String>{ "script_path", "string", "path", "string", "filter", "string", "timeout", "number", "junit_xml", "string" }, Vector<String>{ "script_path" }, "optional");
+		add_schema("autowork_run_test_by_name", "Runs Autowork methods whose names match test_name. Optional path, include_subdirs, prefix, suffix, select, and user:// junit_xml.",
+				Vector<String>{ "test_name", "string", "filter", "string", "path", "string", "include_subdirs", "boolean", "prefix", "string", "suffix", "string", "select", "string", "junit_xml", "string", "timeout", "number" }, Vector<String>{ "test_name" }, "optional");
+		add_schema("autowork_list_tests", "Discovers Autowork scripts and test_* methods without running them. Returns { path, tests[] } per script. Sandbox path; optional include_subdirs, prefix, suffix, select.",
+				Vector<String>{ "path", "string", "directory_path", "string", "include_subdirs", "boolean", "prefix", "string", "suffix", "string", "select", "string" }, Vector<String>{});
+		add_schema("autowork_is_running", "Returns whether an Autowork run is already in progress in this editor process.",
+				Vector<String>{}, Vector<String>{});
 	}
 #endif
 
@@ -639,10 +673,13 @@ Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const D
 		return result;
 	}
 
-	String internal_name = p_tool_name;
-	if (internal_name.begins_with("blazium_")) {
-		internal_name = internal_name.substr(8);
+	String requested_name = p_tool_name;
+	if (requested_name.begins_with("blazium_")) {
+		requested_name = requested_name.substr(8);
 	}
+	const String internal_name = justamcp_remap_tool_name(requested_name);
+	Dictionary args = justamcp_normalize_tool_args(p_args, internal_name);
+	justamcp_apply_alias_query_flags(requested_name, args);
 	String full_name = "blazium_" + internal_name;
 	if (!justamcp_is_valid_mcp_tool_name(p_tool_name) && !justamcp_is_valid_mcp_tool_name(full_name)) {
 		result["ok"] = false;
@@ -689,10 +726,35 @@ Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const D
 			Array req = inputSchema["required"];
 			for (int i = 0; i < req.size(); i++) {
 				String req_arg = req[i];
-				if (!p_args.has(req_arg)) {
+				if (!args.has(req_arg)) {
 					Dictionary err;
 					err["code"] = -32602;
 					err["message"] = "Missing required parameter for tool " + p_tool_name + ": " + req_arg;
+					result["ok"] = false;
+					result["error"] = err;
+					return result;
+				}
+				const Variant req_val = args[req_arg];
+				if (req_val.get_type() == Variant::STRING && String(req_val).strip_edges().is_empty()) {
+					Dictionary err;
+					err["code"] = -32602;
+					err["message"] = "Required parameter for tool " + p_tool_name + " must be a non-empty string: " + req_arg;
+					result["ok"] = false;
+					result["error"] = err;
+					return result;
+				}
+				if (req_val.get_type() == Variant::ARRAY && Array(req_val).is_empty()) {
+					Dictionary err;
+					err["code"] = -32602;
+					err["message"] = "Required parameter for tool " + p_tool_name + " must be a non-empty array: " + req_arg;
+					result["ok"] = false;
+					result["error"] = err;
+					return result;
+				}
+				if (req_val.get_type() == Variant::DICTIONARY && Dictionary(req_val).is_empty()) {
+					Dictionary err;
+					err["code"] = -32602;
+					err["message"] = "Required parameter for tool " + p_tool_name + " must be a non-empty object: " + req_arg;
 					result["ok"] = false;
 					result["error"] = err;
 					return result;
@@ -705,13 +767,13 @@ Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const D
 			Array prop_keys = props.keys();
 			for (int i = 0; i < prop_keys.size(); i++) {
 				String key = prop_keys[i];
-				if (!p_args.has(key)) {
+				if (!args.has(key)) {
 					continue;
 				}
 				Dictionary prop_def = props[key];
 				if (prop_def.has("type")) {
 					String exp_type = prop_def["type"];
-					Variant val = p_args[key];
+					Variant val = args[key];
 					bool valid = true;
 					if (exp_type == "string" && val.get_type() != Variant::STRING) {
 						valid = false;
@@ -742,12 +804,12 @@ Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const D
 
 #ifdef TOOLS_ENABLED
 	if (JustAMCPToolDispatcher::matches_prefix_route(internal_name)) {
-		return JustAMCPToolDispatcher::dispatch_prefix_tools(this, internal_name, p_args);
+		return JustAMCPToolDispatcher::dispatch_prefix_tools(this, internal_name, args);
 	}
 #endif
 
 	if (JustAMCPMetaTools::handles(internal_name)) {
-		return JustAMCPMetaTools::execute(this, internal_name, p_args);
+		return JustAMCPMetaTools::execute(this, internal_name, args);
 	}
 
 	String routed_category;
@@ -756,7 +818,7 @@ Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const D
 		routed_category = meta.get("category", "");
 	}
 	if (!routed_category.is_empty()) {
-		const Dictionary module_result = JustAMCPToolCategoryDispatch::dispatch_module_tools(this, routed_category, internal_name, p_args);
+		const Dictionary module_result = JustAMCPToolCategoryDispatch::dispatch_module_tools(this, routed_category, internal_name, args);
 		if (bool(module_result.get("handled", false))) {
 			Dictionary routed = module_result.duplicate();
 			routed.erase("handled");
@@ -764,7 +826,7 @@ Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const D
 		}
 	}
 
-	Dictionary composite = execute_composite_tool(internal_name, p_args);
+	Dictionary composite = execute_composite_tool(internal_name, args);
 	if (!composite.is_empty()) {
 		return composite;
 	}

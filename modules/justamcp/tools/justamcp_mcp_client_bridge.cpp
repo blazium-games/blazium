@@ -209,12 +209,20 @@ Dictionary JustAMCPMCPClientBridge::_rpc_request_sync(const String &p_bridge_nam
 	const uint64_t deadline_ms = OS::get_singleton()->get_ticks_msec() + 30000;
 	while (client->get_status() == HTTPClient::STATUS_CONNECTING || client->get_status() == HTTPClient::STATUS_RESOLVING) {
 		if (OS::get_singleton()->get_ticks_msec() >= deadline_ms) {
+			client->close();
 			Dictionary result;
 			result["ok"] = false;
 			result["error"] = "MCP bridge connection timed out";
 			return result;
 		}
 		client->poll();
+	}
+	if (client->get_status() != HTTPClient::STATUS_CONNECTED) {
+		client->close();
+		Dictionary result;
+		result["ok"] = false;
+		result["error"] = "Failed to connect to bridge host";
+		return result;
 	}
 
 	Dictionary request;
@@ -461,10 +469,30 @@ bool JustAMCPMCPClientBridge::_try_schedule_remote_tool(const String &p_tool_nam
 	job->tool_name = p_tool_name;
 	job->args = p_args;
 	job->request_id = request_id;
-	pool->add_native_task(&_justamcp_bridge_remote_worker, job, true, "JustAMCPBridgeRPC");
+	const WorkerThreadPool::TaskID task_id = pool->add_native_task(&_justamcp_bridge_remote_worker, job, true, "JustAMCPBridgeRPC");
+	if (task_id != WorkerThreadPool::INVALID_TASK_ID) {
+		MutexLock lock(pending_remote_mutex);
+		pending_remote_tasks.push_back(task_id);
+	}
 	r_pending["ok"] = true;
 	r_pending["_justamcp_async_pending"] = true;
 	return true;
+}
+
+void JustAMCPMCPClientBridge::wait_pending_remote_tasks() {
+	Vector<WorkerThreadPool::TaskID> ids;
+	{
+		MutexLock lock(pending_remote_mutex);
+		ids = pending_remote_tasks;
+		pending_remote_tasks.clear();
+	}
+	WorkerThreadPool *pool = WorkerThreadPool::get_singleton();
+	if (!pool) {
+		return;
+	}
+	for (int i = 0; i < ids.size(); i++) {
+		pool->wait_for_task_completion(ids[i]);
+	}
 }
 
 Dictionary JustAMCPMCPClientBridge::list_bridges(const Dictionary &p_args) {
@@ -574,6 +602,7 @@ JustAMCPMCPClientBridge::JustAMCPMCPClientBridge() {
 }
 
 JustAMCPMCPClientBridge::~JustAMCPMCPClientBridge() {
+	wait_pending_remote_tasks();
 	if (singleton == this) {
 		singleton = nullptr;
 	}

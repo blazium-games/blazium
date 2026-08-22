@@ -46,6 +46,7 @@ public:
 
 #ifdef TOOLS_ENABLED
 	static void set_category_default(const String &p_category, bool p_is_core);
+	static void set_tool_default(const String &p_category, const String &p_full_name, bool p_default_enabled);
 	static bool resolve_category_enabled(const String &p_category, bool p_default = true);
 	static bool resolve_tool_enabled(const String &p_category, const String &p_full_name, bool p_default = true);
 	static bool resolve_toolset_enabled(const String &p_name, bool p_default = true);

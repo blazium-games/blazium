@@ -68,6 +68,9 @@ void AutoworkCollector::add_script(const String &p_path) {
 	if (!script_pattern.is_empty() && !p_path.get_file().contains(script_pattern)) {
 		return;
 	}
+	if (!ResourceLoader::exists(p_path)) {
+		return;
+	}
 
 	Ref<Script> collected_script = ResourceLoader::load(p_path);
 	if (collected_script.is_null()) {

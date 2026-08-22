@@ -33,6 +33,7 @@
 #include "../justamcp_editor_filesystem.h"
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
+#include "justamcp_route_helpers.h"
 
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
@@ -581,6 +582,30 @@ Dictionary JustAMCPSceneTools::execute_tool(const String &p_tool_name, const Dic
 	}
 	if (p_tool_name == "has_signal_connection") {
 		return has_signal_connection(p_args);
+	}
+	if (p_tool_name == "get_node_warnings") {
+		return get_node_warnings(p_args);
+	}
+	if (p_tool_name == "set_mesh") {
+		return justamcp_set_node_resource_property(p_args, "mesh", "mesh_path");
+	}
+	if (p_tool_name == "set_material") {
+		return justamcp_set_node_resource_property(p_args, "material_override", "material_path");
+	}
+	if (p_tool_name == "set_sprite_texture") {
+		return justamcp_set_node_resource_property(p_args, "texture", "texture_path");
+	}
+	if (p_tool_name == "set_collision_shape") {
+		return justamcp_set_node_resource_property(p_args, "shape", "shape_path");
+	}
+	if (p_tool_name == "set_resource_property") {
+		return justamcp_set_resource_property_or_value(p_args);
+	}
+	if (p_tool_name == "save_resource_to_file") {
+		return justamcp_save_resource_to_file(p_args);
+	}
+	if (justamcp_is_runtime_bridge_tool(p_tool_name)) {
+		return justamcp_runtime_bridge_execute(p_tool_name, p_args);
 	}
 	return Dictionary();
 }

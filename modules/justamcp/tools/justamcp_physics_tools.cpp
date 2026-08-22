@@ -64,6 +64,9 @@
 
 #include "../justamcp_editor_scene_access.h"
 #include "../justamcp_mcp_tool_macros.h"
+#include "justamcp_agent_helpers.h"
+#include "justamcp_scene_file_io.h"
+#include "justamcp_tilemap_access.h"
 
 void JustAMCPPhysicsTools::_bind_methods() {}
 
@@ -127,6 +130,9 @@ Dictionary JustAMCPPhysicsTools::execute_tool(const String &p_tool_name, const D
 	}
 	if (p_tool_name == "get_collision_info") {
 		return _get_collision_info(p_args);
+	}
+	if (p_tool_name == "validate_physics_setup") {
+		return validate_physics_setup(p_args);
 	}
 
 	Dictionary err;
@@ -636,4 +642,125 @@ Dictionary JustAMCPPhysicsTools::_get_collision_info(const Dictionary &p_params)
 	info["shapes"] = shapes;
 
 	return MCP_SUCCESS(info);
+}
+
+Dictionary JustAMCPPhysicsTools::validate_physics_setup(const Dictionary &p_params) {
+	const String file_path = p_params.get("file_path", p_params.get("scene_path", ""));
+	if (file_path.is_empty()) {
+		return MCP_INVALID_PARAMS("file_path is required");
+	}
+	Node *root = nullptr;
+	Dictionary load_err = justamcp_load_scene_root(file_path, &root);
+	if (!load_err.is_empty()) {
+		return load_err.has("error") ? MCP_ERROR(-32000, String(load_err["error"])) : MCP_ERROR(-32000, "Failed to load scene");
+	}
+
+	Array issues;
+	Array suggestions;
+	auto check_body = [&](const String &p_path, bool p_is_character) {
+		Node *node = justamcp_find_node_in_root(root, p_path);
+		if (!node) {
+			Dictionary issue;
+			issue["path"] = p_path;
+			issue["message"] = "Node not found.";
+			issues.push_back(issue);
+			return;
+		}
+		if (!node->has_method("get_collision_mask") && !ClassDB::has_property(node->get_class(), "collision_mask")) {
+			Dictionary issue;
+			issue["path"] = p_path;
+			issue["message"] = "Node has no collision_layer/mask property";
+			issues.push_back(issue);
+			return;
+		}
+		const int mask = int(node->get("collision_mask"));
+		const int layer = int(node->get("collision_layer"));
+		if (mask == 0) {
+			Dictionary issue;
+			issue["path"] = p_path;
+			issue["message"] = "collision_mask is 0";
+			issues.push_back(issue);
+			suggestions.push_back("Set collision_mask so " + p_path + " can collide with platforms.");
+		}
+		bool has_shape = false;
+		for (int i = 0; i < node->get_child_count(); i++) {
+			Node *child = node->get_child(i);
+			if (child->is_class("CollisionShape2D") || child->is_class("CollisionShape3D")) {
+				Variant shape = child->get("shape");
+				if (shape.get_type() != Variant::NIL) {
+					has_shape = true;
+				} else {
+					Dictionary issue;
+					issue["path"] = String(root->get_path_to(child));
+					issue["message"] = "Collision shape is empty.";
+					issues.push_back(issue);
+				}
+			}
+		}
+		if (!has_shape) {
+			Dictionary issue;
+			issue["path"] = p_path;
+			issue["message"] = "No valid CollisionShape child.";
+			issues.push_back(issue);
+		}
+		if (p_is_character) {
+			Dictionary info;
+			info["path"] = p_path;
+			info["collision_layer"] = layer;
+			info["collision_mask"] = mask;
+		}
+	};
+
+	Array characters = p_params.get("character_nodes", Array());
+	Array platforms = p_params.get("platform_nodes", Array());
+	for (int i = 0; i < characters.size(); i++) {
+		check_body(String(characters[i]), true);
+	}
+
+	int platform_layers = 0;
+	for (int i = 0; i < platforms.size(); i++) {
+		const String path = String(platforms[i]);
+		check_body(path, false);
+		Node *node = justamcp_find_node_in_root(root, path);
+		if (!node) {
+			continue;
+		}
+		JustAMCPTileTarget tiles = justamcp_tile_target_from_node(node, 0);
+		if (tiles.valid()) {
+			Ref<TileSet> tileset = justamcp_tile_get_tileset(tiles);
+			if (tileset.is_null() || tileset->get_physics_layers_count() == 0) {
+				Dictionary issue;
+				issue["path"] = path;
+				issue["message"] = "TileSet has no physics layers configured.";
+				issues.push_back(issue);
+				suggestions.push_back("Configure TileSet physics layers on " + path + ".");
+			} else {
+				platform_layers |= int(tileset->get_physics_layer_collision_layer(0));
+			}
+		} else if (ClassDB::has_property(node->get_class(), "collision_layer")) {
+			platform_layers |= int(node->get("collision_layer"));
+		}
+	}
+
+	for (int i = 0; i < characters.size(); i++) {
+		Node *node = justamcp_find_node_in_root(root, String(characters[i]));
+		if (!node || !ClassDB::has_property(node->get_class(), "collision_mask")) {
+			continue;
+		}
+		const int mask = int(node->get("collision_mask"));
+		if (platform_layers != 0 && (mask & platform_layers) == 0) {
+			Dictionary issue;
+			issue["path"] = String(characters[i]);
+			issue["message"] = "collision_mask does not overlap platform collision_layers";
+			issues.push_back(issue);
+			suggestions.push_back("Overlap " + String(characters[i]) + " collision_mask with platform layers.");
+		}
+	}
+
+	memdelete(root);
+	Dictionary res;
+	res["issues"] = issues;
+	res["suggestions"] = suggestions;
+	res["valid"] = issues.is_empty();
+	return justamcp_ok(res);
 }

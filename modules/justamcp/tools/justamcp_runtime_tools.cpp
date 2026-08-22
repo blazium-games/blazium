@@ -30,6 +30,13 @@
 #include "justamcp_runtime_tools.h"
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
+#include "../justamcp_read_limits.h"
+#include "justamcp_agent_helpers.h"
+#include "justamcp_route_helpers.h"
+#include "modules/modules_enabled.gen.h"
+#ifdef MODULE_AUTOWORK_ENABLED
+#include "justamcp_autowork_tools.h"
+#endif
 #include "core/io/dir_access.h"
 #include "core/io/image.h"
 #include "core/math/expression.h"
@@ -45,13 +52,35 @@ void JustAMCPRuntimeTools::_bind_methods() {
 
 Dictionary JustAMCPRuntimeTools::runtime_execute_gdscript(const Dictionary &p_args) {
 	Dictionary result;
-	String code_snippet = p_args.get("code", "");
+	String code_snippet = p_args.get("code", p_args.get("script", ""));
 	String target_path = p_args.get("target_node", "");
 
 	if (code_snippet.is_empty()) {
 		result["ok"] = false;
 		result["error"] = "Code snippet is empty.";
 		return result;
+	}
+
+	const String lowered = code_snippet.to_lower();
+	const char *blocked[] = {
+		"os.execute",
+		"os.create_process",
+		"os.shell_open",
+		"fileaccess",
+		"diraccess",
+		"httpclient",
+		"httprequest",
+		"classdb",
+		"engine.get_singleton",
+		"resourceuid",
+		nullptr,
+	};
+	for (int i = 0; blocked[i] != nullptr; i++) {
+		if (lowered.contains(blocked[i])) {
+			result["ok"] = false;
+			result["error"] = "Expression contains a blocked identifier.";
+			return result;
+		}
 	}
 
 	Node *base_obj = nullptr;
@@ -87,73 +116,8 @@ Dictionary JustAMCPRuntimeTools::runtime_execute_gdscript(const Dictionary &p_ar
 		}
 	}
 
-	String full_script = "extends RefCounted\n";
-	full_script += "func eval(node_ref: Node) -> Variant:\n";
-
-	Vector<String> lines = code_snippet.split("\n");
-	for (int i = 0; i < lines.size(); ++i) {
-		full_script += "\t" + lines[i] + "\n";
-	}
-
-	Ref<GDScript> dyn_script;
-	dyn_script.instantiate();
-	dyn_script->set_source_code(full_script);
-
-	Error reload_err = dyn_script->reload();
-	if (reload_err != OK) {
-		result["ok"] = false;
-		result["error"] = "Failed to compile GDScript snippet.";
-		return result;
-	}
-
-	Object *instance = ClassDB::instantiate(dyn_script->get_instance_base_type());
-	Ref<RefCounted> ref_holder;
-	if (Object::cast_to<RefCounted>(instance)) {
-		ref_holder = Ref<RefCounted>(Object::cast_to<RefCounted>(instance));
-	}
-
-	if (instance) {
-		instance->set_script(Variant(dyn_script));
-
-		Callable::CallError err;
-		Variant ret_val;
-
-		Array args;
-		args.push_back(base_obj);
-
-		const Variant *argptrs[1];
-		argptrs[0] = &args[0];
-
-		ret_val = instance->callp(StringName("eval"), argptrs, 1, err);
-
-		if (err.error == Callable::CallError::CALL_OK) {
-			result["ok"] = true;
-			result["evaluation"] = "Script";
-
-			if (ret_val.get_type() != Variant::NIL && ret_val.get_type() != Variant::OBJECT) {
-				result["result"] = ret_val;
-			} else if (ret_val.get_type() == Variant::OBJECT) {
-				Object *obj = ret_val;
-				if (obj) {
-					result["result"] = String(obj->get_class());
-				}
-			} else {
-				result["result"] = Variant();
-			}
-		} else {
-			result["ok"] = false;
-			result["error"] = "Runtime execution call failed on method eval.";
-		}
-
-		if (!Object::cast_to<RefCounted>(instance)) {
-			memdelete(instance);
-		}
-
-		return result;
-	}
-
 	result["ok"] = false;
-	result["error"] = "Unable to instantiate execution context.";
+	result["error"] = "Snippet must be a valid Expression. Unrestricted GDScript compile is disabled.";
 	return result;
 }
 
@@ -243,9 +207,14 @@ Dictionary JustAMCPRuntimeTools::runtime_compare_screenshots(const Dictionary &p
 	int threshold = p_args.get("threshold", 10);
 
 	if (image_a_path.is_empty() || image_b_path.is_empty()) {
-		result["ok"] = false;
-		result["error"] = "Both 'image_a' and 'image_b' paths are required.";
-		return result;
+		return MCP_INVALID_PARAMS("Both 'image_a' and 'image_b' paths are required.");
+	}
+	String sandbox_error;
+	if (!justamcp_canonical_sandbox_path(image_a_path, image_a_path, sandbox_error)) {
+		return MCP_INVALID_PARAMS(sandbox_error);
+	}
+	if (!justamcp_canonical_sandbox_path(image_b_path, image_b_path, sandbox_error)) {
+		return MCP_INVALID_PARAMS(sandbox_error);
 	}
 
 	Ref<Image> img_a;
@@ -407,6 +376,41 @@ Dictionary JustAMCPRuntimeTools::execute_tool(const String &p_tool_name, const D
 	}
 	if (p_tool_name == "runtime_record_video") {
 		return runtime_record_video(p_args);
+	}
+	if (p_tool_name == "wait") {
+		return justamcp_wait(p_args);
+	}
+	if (p_tool_name == "get_runtime_status") {
+		return justamcp_get_runtime_status();
+	}
+	if (p_tool_name == "get_runtime_log") {
+		return justamcp_get_runtime_log(p_args);
+	}
+	if (p_tool_name == "runtime_run_autowork_tests") {
+#ifdef MODULE_AUTOWORK_ENABLED
+		JustAMCPAutoworkTools runner;
+		return runner.execute_tool(p_tool_name, p_args);
+#else
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = "Autowork is not compiled into this editor.";
+		return err;
+#endif
+	}
+	if (p_tool_name == "runtime_get_test_results") {
+#ifdef MODULE_AUTOWORK_ENABLED
+		JustAMCPAutoworkTools runner;
+		return runner.execute_tool(p_tool_name, p_args);
+#else
+		Dictionary result;
+		result["ok"] = true;
+		result["results"] = Array();
+		result["message"] = "No Autowork results yet.";
+		return result;
+#endif
+	}
+	if (justamcp_is_runtime_bridge_tool(p_tool_name)) {
+		return justamcp_runtime_bridge_execute(p_tool_name, p_args);
 	}
 	return Dictionary();
 }

@@ -68,6 +68,7 @@ public:
 	Dictionary create_navigation_region(const Dictionary &p_args);
 	Dictionary create_navigation_agent(const Dictionary &p_args);
 	Dictionary create_tween(const Dictionary &p_args);
+	Dictionary configure_sprite_frames(const Dictionary &p_args);
 
 private:
 	String _ensure_res_path(const String &p_path);

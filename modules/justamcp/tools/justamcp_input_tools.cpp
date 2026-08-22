@@ -100,12 +100,7 @@ Dictionary JustAMCPInputTools::execute_tool(const String &p_tool_name, const Dic
 		return _input_replay(p_args);
 	}
 
-	Dictionary err;
-	err["code"] = -32601;
-	err["message"] = "Method not found: " + p_tool_name;
-	Dictionary res;
-	res["error"] = err;
-	return Dictionary();
+	return MCP_ERROR(-32601, "Method not found: " + p_tool_name);
 }
 
 Dictionary JustAMCPInputTools::_simulate_key(const Dictionary &p_params) {

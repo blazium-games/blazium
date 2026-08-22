@@ -1236,7 +1236,7 @@ Error ProjectSettings::save_custom(const String &p_path, const CustomMap &p_cust
 		save_features += f;
 	}
 
-	if (p_path.ends_with(".godot") || p_path.ends_with("override.cfg")) {
+	if (p_path.ends_with(".godot") || p_path.ends_with(".blazium") || p_path.ends_with("override.cfg")) {
 		return _save_settings_text(p_path, save_props, p_custom, save_features);
 	} else if (p_path.ends_with(".binary")) {
 		return _save_settings_binary(p_path, save_props, p_custom, save_features);

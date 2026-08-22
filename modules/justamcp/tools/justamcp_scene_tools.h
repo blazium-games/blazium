@@ -75,6 +75,7 @@ public:
 	Dictionary list_connections(const Dictionary &p_args);
 	Dictionary list_node_signals(const Dictionary &p_args);
 	Dictionary has_signal_connection(const Dictionary &p_args);
+	Dictionary get_node_warnings(const Dictionary &p_args);
 
 	Dictionary create_area_2d(const Dictionary &p_args);
 	Dictionary create_line_2d(const Dictionary &p_args);

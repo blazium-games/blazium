@@ -42,6 +42,11 @@ static HashMap<String, bool> &justamcp_category_defaults() {
 	static HashMap<String, bool> defaults;
 	return defaults;
 }
+
+static HashMap<String, bool> &justamcp_tool_defaults() {
+	static HashMap<String, bool> defaults;
+	return defaults;
+}
 #endif
 
 static bool _justamcp_variant_as_bool(const Variant &p_value, bool p_default) {
@@ -162,6 +167,13 @@ void JustAMCPSettingsResolver::set_category_default(const String &p_category, bo
 	justamcp_category_defaults()[p_category] = p_is_core;
 }
 
+void JustAMCPSettingsResolver::set_tool_default(const String &p_category, const String &p_full_name, bool p_default_enabled) {
+	if (p_category.is_empty() || p_full_name.is_empty()) {
+		return;
+	}
+	justamcp_tool_defaults()[p_category + "/" + p_full_name] = p_default_enabled;
+}
+
 bool JustAMCPSettingsResolver::resolve_category_enabled(const String &p_category, bool p_default) {
 	bool def = p_default;
 	if (justamcp_category_defaults().has(p_category)) {
@@ -171,7 +183,12 @@ bool JustAMCPSettingsResolver::resolve_category_enabled(const String &p_category
 }
 
 bool JustAMCPSettingsResolver::resolve_tool_enabled(const String &p_category, const String &p_full_name, bool p_default) {
-	return resolve_bool("blazium/justamcp/tools/" + p_category + "/" + p_full_name, p_default);
+	bool def = p_default;
+	const String key = p_category + "/" + p_full_name;
+	if (justamcp_tool_defaults().has(key)) {
+		def = justamcp_tool_defaults()[key];
+	}
+	return resolve_bool("blazium/justamcp/tools/" + p_category + "/" + p_full_name, def);
 }
 
 bool JustAMCPSettingsResolver::resolve_toolset_enabled(const String &p_name, bool p_default) {
