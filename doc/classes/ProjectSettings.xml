@@ -633,6 +633,21 @@
 		<member name="blazium/coldstorage/z_connection_controls" type="String" setter="" getter="" default="&quot;&quot;">
 			Sentinel property that injects ColdStorage connection controls into the settings inspector. Not meant to be edited directly.
 		</member>
+		<member name="blazium/gif/capture_hotkey" type="int" setter="" getter="" default="0">
+			Physical key code that starts or stops [GIFRecorder] capture in exported templates. [code]0[/code] disables the hotkey. Ignored in the editor.
+		</member>
+		<member name="blazium/gif/capture_output_dir" type="String" setter="" getter="" default="&quot;user://&quot;">
+			Directory used when the capture hotkey saves a clip. Defaults to [code]user://[/code].
+		</member>
+		<member name="blazium/gif/capture_source" type="int" setter="" getter="" default="0">
+			Hotkey capture source. [code]0[/code] records the root viewport. [code]1[/code] records the whole game window.
+		</member>
+		<member name="blazium/gif/max_canvas_pixels" type="int" setter="" getter="" default="16777216">
+			Maximum width times height accepted when decoding or capturing a GIF. Larger canvases fail with an error.
+		</member>
+		<member name="blazium/gif/max_frames" type="int" setter="" getter="" default="4096">
+			Maximum number of frames accepted when decoding or capturing a GIF.
+		</member>
 		<member name="blazium/justamcp/accepted_protocol_versions" type="String" setter="" getter="" default="&quot;&quot;">
 			Optional comma-separated allowlist of MCP protocol versions this process will serve. Empty accepts every implemented version ([code]2026-07-28[/code] through [code]2024-11-05[/code]).
 		</member>

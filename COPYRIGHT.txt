@@ -216,6 +216,11 @@ Comment: CA certificates
 Copyright: Mozilla Contributors
 License: MPL-2.0
 
+Files: thirdparty/cgif/*
+Comment: cgif
+Copyright: 2021-2026, Daniel Löbl
+License: Expat
+
 Files: thirdparty/clipper2/*
 Comment: Clipper2
 Copyright: 2010-2025, Angus Johnson

@@ -51,6 +51,8 @@
 #include "scene/resources/image_texture.h"
 #include "servers/audio/audio_stream.h"
 
+#include "modules/modules_enabled.gen.h" // For gif.
+
 void EditorResourcePicker::_update_resource() {
 	String resource_path;
 	if (edited_resource.is_valid() && edited_resource->get_path().is_resource_file()) {

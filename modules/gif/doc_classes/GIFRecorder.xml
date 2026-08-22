@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GIFRecorder" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Records a viewport, window, or screen to an animated GIF.
+	</brief_description>
+	<description>
+		Works in the editor and in exported templates. Capture a [Viewport] with [method start_viewport], the engine window with [method start_window], or a display with [method start_screen]. Tests and manual control can push images with [method add_frame]. Call [method stop] then [method save], or use [method record_viewport] for a timed clip.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_frame">
+			<return type="int" enum="Error" />
+			<param index="0" name="image" type="Image" />
+			<description>
+				Appends a prepared frame. Used by unit tests and manual capture.
+			</description>
+		</method>
+		<method name="is_recording" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] while a timed capture is running.
+			</description>
+		</method>
+		<method name="record_viewport" qualifiers="static">
+			<return type="int" enum="Error" />
+			<param index="0" name="viewport" type="Viewport" />
+			<param index="1" name="path" type="String" />
+			<param index="2" name="duration_sec" type="float" />
+			<param index="3" name="fps" type="int" default="12" />
+			<description>
+				Records [param viewport] for [param duration_sec] seconds and writes [param path].
+			</description>
+		</method>
+		<method name="save">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Encodes collected frames to [param path].
+			</description>
+		</method>
+		<method name="start_screen">
+			<return type="int" enum="Error" />
+			<param index="0" name="screen" type="int" default="0" />
+			<description>
+				Starts capturing a display.
+			</description>
+		</method>
+		<method name="start_viewport">
+			<return type="int" enum="Error" />
+			<param index="0" name="viewport" type="Viewport" />
+			<description>
+				Starts capturing [param viewport] each process frame.
+			</description>
+		</method>
+		<method name="start_window">
+			<return type="int" enum="Error" />
+			<description>
+				Starts capturing the main engine or game window, including decorations.
+			</description>
+		</method>
+		<method name="stop">
+			<return type="GIFTexture" />
+			<description>
+				Stops capture and returns the recorded animation.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="dither" type="bool" setter="set_dither" getter="get_dither" default="true">
+			Enables encoder dithering.
+		</member>
+		<member name="fps" type="int" setter="set_fps" getter="get_fps" default="12">
+			Capture rate and encoded frame delay.
+		</member>
+		<member name="loop_count" type="int" setter="set_loop_count" getter="get_loop_count" default="0">
+			Netscape loop count written on encode. [code]0[/code] is infinite.
+		</member>
+		<member name="max_frames" type="int" setter="set_max_frames" getter="get_max_frames" default="0">
+			Optional cap. [code]0[/code] uses [code]blazium/gif/max_frames[/code].
+		</member>
+		<member name="max_size" type="Vector2i" setter="set_max_size" getter="get_max_size" default="Vector2i(480, 270)">
+			Downscales captured frames that exceed this size. [code](0, 0)[/code] disables scaling.
+		</member>
+	</members>
+	<signals>
+		<signal name="recording_finished">
+			<param index="0" name="animation" type="GIFTexture" />
+			<param index="1" name="path" type="String" />
+			<description>
+				Emitted when [method stop] finishes. [param path] is set when a pending save path was provided.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="SOURCE_VIEWPORT" value="0" enum="Source">
+			Capture one viewport.
+		</constant>
+		<constant name="SOURCE_WINDOW" value="1" enum="Source">
+			Capture the engine or game window.
+		</constant>
+		<constant name="SOURCE_SCREEN" value="2" enum="Source">
+			Capture a display.
+		</constant>
+	</constants>
+</class>

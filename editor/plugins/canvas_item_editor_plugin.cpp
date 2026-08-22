@@ -67,6 +67,7 @@
 #include "scene/gui/split_container.h"
 #include "scene/gui/subviewport_container.h"
 #include "scene/gui/texture_button.h"
+#include "scene/gui/texture_rect.h"
 #include "scene/gui/view_panner.h"
 #include "scene/main/canvas_layer.h"
 #include "scene/main/window.h"
@@ -6192,7 +6193,9 @@ bool CanvasItemEditorViewport::can_drop_data(const Point2 &p_point, const Varian
 	if (!preview_node->get_parent()) { // create preview only once
 		_create_preview(files);
 	}
-	ERR_FAIL_COND_V(preview_node->get_child_count() == 0, false);
+	if (preview_node->get_child_count() == 0) {
+		return false;
+	}
 
 	const Transform2D trans = canvas_item_editor->get_canvas_transform();
 	preview_node->set_position((p_point - trans.get_origin()) / trans.get_scale().x);
@@ -6254,7 +6257,8 @@ void CanvasItemEditorViewport::_show_texture_node_type_selector() {
 
 bool CanvasItemEditorViewport::_is_any_texture_selected() const {
 	for (int i = 0; i < selected_files.size(); ++i) {
-		if (ClassDB::is_parent_class(ResourceLoader::get_resource_type(selected_files[i]), "Texture2D")) {
+		const String &res_type = ResourceLoader::get_resource_type(selected_files[i]);
+		if (ClassDB::is_parent_class(res_type, "Texture2D")) {
 			return true;
 		}
 	}
