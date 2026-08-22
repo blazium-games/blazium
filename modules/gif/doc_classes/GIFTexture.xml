@@ -139,6 +139,9 @@
 		</method>
 	</methods>
 	<members>
+		<member name="autoplay_on_load" type="bool" setter="set_autoplay_on_load" getter="get_autoplay_on_load" default="true">
+			If [code]true[/code], playback starts automatically when the texture is loaded or instanced. Disable this to keep the first frame until [member play] is set.
+		</member>
 		<member name="bake_compress" type="bool" setter="set_bake_compress" getter="get_bake_compress" default="false">
 			Compress baked frame images.
 		</member>
