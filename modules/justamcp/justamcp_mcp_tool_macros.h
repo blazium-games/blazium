@@ -33,9 +33,14 @@
 #include "core/variant/variant.h"
 
 inline Dictionary justamcp_mcp_success(const Variant &p_data) {
+	if (p_data.get_type() == Variant::DICTIONARY) {
+		Dictionary r = Dictionary(p_data).duplicate();
+		r["ok"] = true;
+		return r;
+	}
 	Dictionary r;
 	r["ok"] = true;
-	r["result"] = p_data;
+	r["value"] = p_data;
 	return r;
 }
 

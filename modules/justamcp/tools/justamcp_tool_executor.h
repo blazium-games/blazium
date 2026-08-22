@@ -79,6 +79,8 @@ class JustAMCPToolExecutor : public Object {
 	GDCLASS(JustAMCPToolExecutor, Object);
 
 	friend class JustAMCPCategoryExecutorDispatch;
+	friend class JustAMCPAnalysisTools;
+	friend class JustAMCPBatchTools;
 
 private:
 	JustAMCPEditorPlugin *editor_plugin = nullptr;

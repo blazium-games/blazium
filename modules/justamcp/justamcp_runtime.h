@@ -106,6 +106,7 @@ private:
 	Dictionary _cmd_runtime_get_errors(const Dictionary &p_params);
 	Dictionary _cmd_runtime_capabilities(const Dictionary &p_params);
 	Dictionary _cmd_eval_expression(const Dictionary &p_params);
+	Dictionary _cmd_set_paused(const Dictionary &p_params);
 	Dictionary _cmd_runtime_quit(const Dictionary &p_params);
 	Dictionary _cmd_get_network_info(const Dictionary &p_params);
 	Dictionary _cmd_get_audio_info(const Dictionary &p_params);

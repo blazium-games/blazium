@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  test_justamcp_bridge_execute_no_main_block.cpp                        */
+/*  justamcp_scene_file_io.h                                              */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             BLAZIUM ENGINE                             */
@@ -27,55 +27,15 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "test_justamcp_bridge_execute_no_main_block.h"
-#include "test_justamcp_fixture.h"
+#pragma once
 
-#ifdef TESTS_ENABLED
+#include "core/string/ustring.h"
+#include "core/variant/dictionary.h"
 
-#if defined(MODULE_HTTPSERVER_ENABLED)
+class Node;
 
-#include "../justamcp_server.h"
-#include "../justamcp_tool_context.h"
-#include "../tools/justamcp_mcp_client_bridge.h"
-
-#include "core/config/project_settings.h"
-#include "core/object/message_queue.h"
-#include "core/os/os.h"
-#include "tests/test_macros.h"
-
-void test_justamcp_bridge_execute_no_main_block() {
-	JustAMCPTestServerFixture fixture;
-	JustAMCPServer &server = fixture.get_server();
-	(void)server;
-
-	JustAMCPMCPClientBridge bridge;
-	Dictionary add_args;
-	add_args["name"] = "slow-bridge";
-	add_args["url"] = "http://127.0.0.1:1/mcp";
-	Dictionary added = bridge.execute_tool("mcp_client_add_bridge", add_args);
-	CHECK(added.get("ok", false));
-
-	Dictionary args;
-	args["bridge_name"] = "slow-bridge";
-
-	JustAMCPToolContextScope scope(8801);
-	const uint64_t start_ms = OS::get_singleton()->get_ticks_msec();
-	Dictionary result = bridge.execute_tool("mcp_client_list_remote_tools", args);
-	const uint64_t elapsed_ms = OS::get_singleton()->get_ticks_msec() - start_ms;
-	CHECK(elapsed_ms < justamcp_nonblocking_call_budget_ms());
-	CHECK(bool(result.get("_justamcp_async_pending", false)));
-
-	bridge.wait_pending_remote_tasks();
-	if (MessageQueue::get_singleton()) {
-		MessageQueue::get_singleton()->flush();
-	}
-	ProjectSettings::get_singleton()->set_setting("blazium/justamcp/mcp_clients", Array());
-}
-
-#else
-void test_justamcp_bridge_execute_no_main_block() {
-	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required");
-}
-#endif
-
-#endif
+String justamcp_resolve_project_path(const String &p_path);
+Node *justamcp_find_node_in_root(Node *p_root, const String &p_path);
+Dictionary justamcp_load_scene_root(const String &p_path, Node **r_root);
+Dictionary justamcp_save_scene_root(Node *p_root, const String &p_path, bool p_free_root);
+void justamcp_refresh_project_path(const String &p_path);

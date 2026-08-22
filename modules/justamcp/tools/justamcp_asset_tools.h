@@ -48,6 +48,7 @@ public:
 	Dictionary execute_tool(const String &p_tool_name, const Dictionary &p_args);
 
 	Dictionary generate_2d_asset(const Dictionary &p_args);
+	Dictionary save_pixel_art(const Dictionary &p_args);
 
 	JustAMCPAssetTools();
 	~JustAMCPAssetTools();

@@ -37,15 +37,16 @@
 #include "core/config/project_settings.h"
 #include "editor/editor_settings.h"
 
-void JustAMCPToolSchemaBuilder::register_tool_settings(const String &p_category, const String &p_full_name, bool p_is_core) {
+void JustAMCPToolSchemaBuilder::register_tool_settings(const String &p_category, const String &p_full_name, bool p_is_core, bool p_default_enabled) {
 	const String cat_path = "blazium/justamcp/tools/" + p_category;
 	const String tool_path = cat_path + "/" + p_full_name;
 	JustAMCPSettingsResolver::set_category_default(p_category, p_is_core);
+	JustAMCPSettingsResolver::set_tool_default(p_category, p_full_name, p_default_enabled);
 	GLOBAL_DEF_BASIC(PropertyInfo(Variant::BOOL, cat_path), p_is_core);
-	GLOBAL_DEF_BASIC(PropertyInfo(Variant::BOOL, tool_path), true);
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::BOOL, tool_path), p_default_enabled);
 	if (EditorSettings::get_singleton()) {
 		EDITOR_DEF_BASIC(cat_path, p_is_core);
-		EDITOR_DEF_BASIC(tool_path, true);
+		EDITOR_DEF_BASIC(tool_path, p_default_enabled);
 	}
 }
 

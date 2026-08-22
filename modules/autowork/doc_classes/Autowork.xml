@@ -17,6 +17,12 @@
 		<link title="Autowork Module Tests">https://github.com/blazium-games/autowork_module_tests</link>
 	</tutorials>
 	<methods>
+		<method name="abort">
+			<return type="void" />
+			<description>
+				Stops an in-progress test run. Marks the suite aborted, frees active test instances, and emits [signal tests_finished].
+			</description>
+		</method>
 		<method name="add_directory">
 			<return type="void" />
 			<param index="0" name="path" type="String" />
@@ -104,10 +110,29 @@
 				Returns the number of scripts that contain tests.
 			</description>
 		</method>
+		<method name="is_aborted" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if [method abort] was called on this run.
+			</description>
+		</method>
+		<method name="is_finished" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when the current run has finished or been aborted.
+			</description>
+		</method>
 		<method name="run_tests">
 			<return type="void" />
 			<description>
 				Executes all collected tests.
+			</description>
+		</method>
+		<method name="set_json_output_path">
+			<return type="void" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Sets the JSON results path written when the run finishes. If empty, [code]user://autowork_results.json[/code] is used.
 			</description>
 		</method>
 		<method name="set_test">
@@ -117,5 +142,19 @@
 				Sets a filter pattern to determine which tests should be executed.
 			</description>
 		</method>
+		<method name="set_xml_output_path">
+			<return type="void" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Sets an optional JUnit XML results path written when the run finishes. Command-line [code]--aw-junit=[/code] overrides this path.
+			</description>
+		</method>
 	</methods>
+	<signals>
+		<signal name="tests_finished">
+			<description>
+				Emitted when a test run finishes or is aborted.
+			</description>
+		</signal>
+	</signals>
 </class>

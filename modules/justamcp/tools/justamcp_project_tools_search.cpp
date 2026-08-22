@@ -29,6 +29,7 @@
 
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_read_limits.h"
+#include "justamcp_agent_helpers.h"
 #include "justamcp_project_tools.h"
 
 #include "core/config/project_settings.h"
@@ -280,15 +281,13 @@ Dictionary JustAMCPProjectTools::uid_to_project_path(const Dictionary &p_args) {
 }
 
 Dictionary JustAMCPProjectTools::project_path_to_uid(const Dictionary &p_args) {
-	String path = String(p_args.get("path", "")).strip_edges();
-	if (path.is_empty()) {
+	String path;
+	String sandbox_error;
+	if (!justamcp_canonical_sandbox_path(String(p_args.get("path", "")), path, sandbox_error)) {
 		Dictionary err;
 		err["ok"] = false;
-		err["error"] = "path is required.";
+		err["error"] = sandbox_error;
 		return err;
-	}
-	if (!path.begins_with("res://")) {
-		path = "res://" + path;
 	}
 	ResourceUID *uid_api = ResourceUID::get_singleton();
 	if (!uid_api) {
@@ -307,10 +306,146 @@ Dictionary JustAMCPProjectTools::project_path_to_uid(const Dictionary &p_args) {
 		err["error"] = "No UID registered for path: " + path;
 		return err;
 	}
+	uid_api->update_cache();
 	Dictionary result;
 	result["ok"] = true;
 	result["path"] = path;
 	result["uid"] = uid_api->id_to_text(uid);
+	return result;
+}
+
+Dictionary JustAMCPProjectTools::asset_assign_uid(const Dictionary &p_args) {
+	String path;
+	String sandbox_error;
+	if (!justamcp_canonical_sandbox_path(String(p_args.get("path", "")), path, sandbox_error)) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = sandbox_error;
+		return err;
+	}
+	if (!FileAccess::exists(path)) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = "Asset file not found: " + path;
+		return err;
+	}
+	ResourceUID *uid_api = ResourceUID::get_singleton();
+	if (!uid_api) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = "ResourceUID singleton unavailable.";
+		return err;
+	}
+	String uid_text = String(p_args.get("uid", "")).strip_edges();
+	ResourceUID::ID uid = ResourceUID::INVALID_ID;
+	if (uid_text.is_empty()) {
+		uid = uid_api->create_id();
+		uid_api->add_id(uid, path);
+	} else {
+		uid = uid_api->text_to_id(uid_text);
+		if (uid == ResourceUID::INVALID_ID) {
+			Dictionary err;
+			err["ok"] = false;
+			err["error"] = "Invalid UID: " + uid_text;
+			return err;
+		}
+		if (uid_api->has_id(uid)) {
+			if (!bool(p_args.get("overwrite", false))) {
+				Dictionary err;
+				err["ok"] = false;
+				err["error"] = "UID already mapped. Pass overwrite=true to replace.";
+				return err;
+			}
+			uid_api->set_id(uid, path);
+		} else {
+			uid_api->add_id(uid, path);
+		}
+	}
+	uid_api->update_cache();
+	Dictionary result;
+	result["ok"] = true;
+	result["path"] = path;
+	result["uid"] = uid_api->id_to_text(uid);
+	return result;
+}
+
+Dictionary JustAMCPProjectTools::asset_update_uid(const Dictionary &p_args) {
+	String uid_text = String(p_args.get("uid", "")).strip_edges();
+	String path;
+	String sandbox_error;
+	if (uid_text.is_empty()) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = "uid is required.";
+		return err;
+	}
+	if (!justamcp_canonical_sandbox_path(String(p_args.get("path", "")), path, sandbox_error)) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = sandbox_error;
+		return err;
+	}
+	ResourceUID *uid_api = ResourceUID::get_singleton();
+	if (!uid_api) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = "ResourceUID singleton unavailable.";
+		return err;
+	}
+	const ResourceUID::ID uid = uid_api->text_to_id(uid_text);
+	if (uid == ResourceUID::INVALID_ID || !uid_api->has_id(uid)) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = "Unknown UID: " + uid_text;
+		return err;
+	}
+	uid_api->set_id(uid, path);
+	uid_api->update_cache();
+	Dictionary result;
+	result["ok"] = true;
+	result["uid"] = uid_text;
+	result["path"] = path;
+	return result;
+}
+
+Dictionary JustAMCPProjectTools::asset_remove_uid(const Dictionary &p_args) {
+	ResourceUID *uid_api = ResourceUID::get_singleton();
+	if (!uid_api) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = "ResourceUID singleton unavailable.";
+		return err;
+	}
+	String uid_text = String(p_args.get("uid", "")).strip_edges();
+	ResourceUID::ID uid = ResourceUID::INVALID_ID;
+	if (!uid_text.is_empty()) {
+		uid = uid_api->text_to_id(uid_text);
+	} else {
+		String path;
+		String sandbox_error;
+		if (!justamcp_canonical_sandbox_path(String(p_args.get("path", "")), path, sandbox_error)) {
+			Dictionary err;
+			err["ok"] = false;
+			err["error"] = sandbox_error;
+			return err;
+		}
+		uid = ResourceLoader::get_resource_uid(path);
+		if (uid != ResourceUID::INVALID_ID) {
+			uid_text = uid_api->id_to_text(uid);
+		}
+	}
+	if (uid == ResourceUID::INVALID_ID || !uid_api->has_id(uid)) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = "Unknown UID mapping.";
+		return err;
+	}
+	uid_api->remove_id(uid);
+	uid_api->update_cache();
+	Dictionary result;
+	result["ok"] = true;
+	result["uid"] = uid_text;
+	result["removed"] = true;
 	return result;
 }
 

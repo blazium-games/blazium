@@ -33,6 +33,7 @@
 
 #include "core/object/class_db.h"
 #include "core/object/object.h"
+#include "justamcp_tilemap_access.h"
 #include "scene/main/node.h"
 
 class JustAMCPEditorPlugin;
@@ -42,7 +43,18 @@ class JustAMCPTileMapTools : public Object {
 
 private:
 	JustAMCPEditorPlugin *editor_plugin = nullptr;
-	Node *_find_node_by_path(const String &p_path);
+
+	struct ResolvedTiles {
+		JustAMCPTileTarget target;
+		Node *owned_root = nullptr;
+		String file_path;
+		Dictionary error;
+		bool ok() const { return error.is_empty() && target.valid(); }
+	};
+
+	ResolvedTiles _resolve(const Dictionary &p_params);
+	void _commit_if_file(ResolvedTiles &p_resolved);
+	Dictionary _paint_cells(const Dictionary &p_params, const Vector<Vector2i> &p_cells, const String &p_label);
 
 public:
 	void set_editor_plugin(JustAMCPEditorPlugin *p_plugin) { editor_plugin = p_plugin; }
@@ -55,6 +67,12 @@ public:
 	Dictionary tilemap_clear(const Dictionary &p_params);
 	Dictionary tilemap_get_info(const Dictionary &p_params);
 	Dictionary tilemap_get_used_cells(const Dictionary &p_params);
+	Dictionary tilemap_draw_h_line(const Dictionary &p_params);
+	Dictionary tilemap_draw_v_line(const Dictionary &p_params);
+	Dictionary tilemap_draw_stairs(const Dictionary &p_params);
+	Dictionary tilemap_erase_rect(const Dictionary &p_params);
+	Dictionary tilemap_configure_atlas(const Dictionary &p_params);
+	Dictionary validate_tilemap_structure(const Dictionary &p_params);
 
 	JustAMCPTileMapTools();
 	~JustAMCPTileMapTools();

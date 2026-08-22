@@ -30,6 +30,12 @@
 #include "justamcp_project_tools.h"
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_read_limits.h"
+#include "justamcp_agent_helpers.h"
+#include "justamcp_route_helpers.h"
+
+#ifdef TOOLS_ENABLED
+#include "editor/editor_interface.h"
+#endif
 
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
@@ -110,11 +116,90 @@ Dictionary JustAMCPProjectTools::execute_tool(const String &p_tool_name, const D
 	if (tool_name == "project_path_to_uid") {
 		return project_path_to_uid(p_args);
 	}
+	if (tool_name == "asset_assign_uid") {
+		return asset_assign_uid(p_args);
+	}
+	if (tool_name == "asset_update_uid") {
+		return asset_update_uid(p_args);
+	}
+	if (tool_name == "asset_remove_uid") {
+		return asset_remove_uid(p_args);
+	}
+	if (tool_name == "project_run") {
+#ifdef TOOLS_ENABLED
+		if (bool(p_args.get("autosave", true)) && EditorInterface::get_singleton()) {
+			EditorInterface::get_singleton()->save_all_scenes();
+		}
+		if (!EditorInterface::get_singleton()) {
+			Dictionary err;
+			err["ok"] = false;
+			err["error"] = "Editor interface unavailable.";
+			return err;
+		}
+		if (bool(p_args.get("main", false))) {
+			EditorInterface::get_singleton()->play_main_scene();
+			Dictionary ret;
+			ret["ok"] = true;
+			ret["message"] = "Playing main scene.";
+			return ret;
+		}
+		String scene_path = p_args.get("scene_path", "");
+		if (scene_path.is_empty()) {
+			EditorInterface::get_singleton()->play_current_scene();
+			Dictionary ret;
+			ret["ok"] = true;
+			ret["message"] = "Playing current scene.";
+			return ret;
+		}
+		String sandbox_error;
+		if (!justamcp_canonical_sandbox_path(scene_path, scene_path, sandbox_error)) {
+			Dictionary err;
+			err["ok"] = false;
+			err["error"] = sandbox_error;
+			return err;
+		}
+		EditorInterface::get_singleton()->play_custom_scene(scene_path);
+		Dictionary ret;
+		ret["ok"] = true;
+		ret["scene_path"] = scene_path;
+		ret["message"] = "Playing scene: " + scene_path;
+		return ret;
+#else
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = "project_run is only available in editor builds.";
+		return err;
+#endif
+	}
+	if (tool_name == "inject_drag" || tool_name == "inject_scroll" || tool_name == "inject_gesture" || tool_name == "inject_gamepad") {
+		return justamcp_runtime_bridge_execute(tool_name, p_args);
+	}
 	if (tool_name == "add_autoload") {
 		return add_autoload(p_args);
 	}
 	if (tool_name == "remove_autoload") {
 		return remove_autoload(p_args);
+	}
+	if (tool_name == "read_file") {
+		return read_file(p_args);
+	}
+	if (tool_name == "read_directory") {
+		return read_directory(p_args);
+	}
+	if (tool_name == "create_file") {
+		return create_file(p_args);
+	}
+	if (tool_name == "edit_file") {
+		return edit_file(p_args);
+	}
+	if (tool_name == "move_file") {
+		return move_file(p_args);
+	}
+	if (tool_name == "copy_file") {
+		return copy_file(p_args);
+	}
+	if (tool_name == "delete_file") {
+		return delete_file(p_args);
 	}
 
 	return Dictionary();

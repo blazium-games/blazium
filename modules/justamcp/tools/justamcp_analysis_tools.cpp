@@ -41,6 +41,9 @@
 #include "core/object/script_language.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
+#include "justamcp_profiling_tools.h"
+#include "justamcp_script_tools.h"
+#include "justamcp_tool_executor.h"
 #include "scene/resources/packed_scene.h"
 
 JustAMCPAnalysisTools::JustAMCPAnalysisTools() {
@@ -67,6 +70,122 @@ Dictionary JustAMCPAnalysisTools::execute_tool(const String &p_tool_name, const 
 	}
 	if (p_tool_name == "get_project_statistics") {
 		return get_project_statistics(p_args);
+	}
+	if (p_tool_name == "project_symbol_search") {
+		Dictionary script_args;
+		script_args["query"] = p_args.get("query", "");
+		script_args["path"] = p_args.get("path", "res://");
+		script_args["include_addons"] = p_args.get("include_addons", false);
+		return find_script_references(script_args);
+	}
+	if (p_tool_name == "scene_validate") {
+		Dictionary ret;
+		Array issues;
+		Node *root = JustAMCPEditorSceneAccess::get_edited_root();
+		if (!root) {
+			issues.push_back("No edited scene is open.");
+		} else {
+			if (root->get_scene_file_path().is_empty()) {
+				issues.push_back("The current scene has not been saved to a scene file.");
+			}
+			List<Node *> stack;
+			stack.push_back(root);
+			while (!stack.is_empty()) {
+				Node *node = stack.front()->get();
+				stack.pop_front();
+				if (node != root && !node->get_owner()) {
+					issues.push_back("Node has no owner and may not be saved: " + String(root->get_path_to(node)));
+				}
+				Ref<Script> node_script = node->get_script();
+				if (node_script.is_valid() && !node_script->get_path().is_empty() && !ResourceLoader::exists(node_script->get_path())) {
+					issues.push_back("Missing script resource on node: " + String(root->get_path_to(node)));
+				}
+				for (int i = 0; i < node->get_child_count(); i++) {
+					stack.push_back(node->get_child(i));
+				}
+			}
+		}
+		ret["ok"] = true;
+		ret["valid"] = issues.is_empty();
+		ret["issues"] = issues;
+		return ret;
+	}
+	if (owner) {
+		if (p_tool_name == "project_state") {
+			Dictionary ret;
+			ret["ok"] = true;
+			ret["statistics"] = get_project_statistics(p_args);
+			Dictionary settings_args;
+			settings_args["max_results"] = 200;
+			ret["settings"] = owner->project_tools ? owner->project_tools->execute_tool("list_settings", settings_args) : Dictionary();
+			ret["current_scene"] = owner->scene_tools ? owner->scene_tools->get_current_scene(Dictionary()) : Dictionary();
+			return ret;
+		}
+		if (p_tool_name == "project_advise") {
+			Dictionary ret;
+			Array advice;
+			Dictionary current_scene = owner->scene_tools ? owner->scene_tools->get_current_scene(Dictionary()) : Dictionary();
+			if (!current_scene.get("ok", false)) {
+				advice.push_back("Open or create a scene before using scene/node editing tools.");
+			}
+			if (owner->editor_tools) {
+				Dictionary errors_args;
+				errors_args["limit"] = 50;
+				Dictionary errors = owner->editor_tools->editor_get_errors(errors_args);
+				if (int(errors.get("count", 0)) > 0) {
+					advice.push_back("Review recent editor errors before making structural changes.");
+				}
+			}
+			if (owner->project_tools) {
+				Dictionary map_args;
+				map_args["lod"] = 0;
+				Dictionary project_map = owner->project_tools->execute_tool("map_project", map_args);
+				if (int(project_map.get("total_scripts", 0)) == 0) {
+					advice.push_back("No scripts were found under res://; create scripts before requesting script intelligence.");
+				}
+			}
+			ret["ok"] = true;
+			ret["advice"] = advice;
+			ret["current_scene"] = current_scene;
+			return ret;
+		}
+		if (p_tool_name == "runtime_diagnose") {
+			Dictionary ret;
+			Dictionary errors_args;
+			errors_args["limit"] = p_args.get("limit", 100);
+			ret["ok"] = true;
+			ret["status"] = owner->execute_tool("blazium_get_runtime_status", Dictionary());
+			ret["errors"] = owner->editor_tools ? owner->editor_tools->editor_get_errors(errors_args) : Dictionary();
+			ret["performance"] = owner->profiling_tools ? owner->profiling_tools->execute_tool("get_performance_monitors", Dictionary()) : Dictionary();
+			return ret;
+		}
+		if (p_tool_name == "scene_analyze") {
+			Dictionary ret;
+			ret["ok"] = true;
+			ret["tree"] = owner->execute_tool("blazium_scene_tree_dump", Dictionary());
+			ret["complexity"] = analyze_scene_complexity(p_args);
+			return ret;
+		}
+		if (p_tool_name == "script_analyze") {
+			Dictionary script_args = p_args;
+			if (script_args.has("query") && !script_args.has("pattern")) {
+				script_args["pattern"] = script_args["query"];
+			}
+			return owner->script_tools ? owner->script_tools->execute_tool("search_in_scripts", script_args) : Dictionary();
+		}
+		if (p_tool_name == "project_index") {
+			Dictionary ret;
+			ret["ok"] = true;
+			ret["scripts"] = owner->project_tools ? owner->project_tools->execute_tool("map_project", p_args) : Dictionary();
+			ret["scenes"] = owner->project_tools ? owner->project_tools->execute_tool("map_scenes", p_args) : Dictionary();
+			ret["statistics"] = get_project_statistics(p_args);
+			return ret;
+		}
+		if (p_tool_name == "scene_dependency_graph") {
+			Dictionary deps_args;
+			deps_args["path"] = p_args.get("scene_path", p_args.get("path", ""));
+			return owner->batch_tools ? owner->batch_tools->execute_tool("get_scene_dependencies", deps_args) : Dictionary();
+		}
 	}
 
 	return Dictionary();
@@ -712,7 +831,10 @@ Dictionary JustAMCPAnalysisTools::get_project_statistics(const Dictionary &p_par
 
 	Array plugins;
 	String plugin_cfg_path = "res://addons";
-	PackedStringArray enabled_plugins = ProjectSettings::get_singleton()->get("editor_plugins/enabled");
+	PackedStringArray enabled_plugins;
+	if (ProjectSettings::get_singleton()->has_setting("editor_plugins/enabled")) {
+		enabled_plugins = ProjectSettings::get_singleton()->get("editor_plugins/enabled");
+	}
 
 	Ref<DirAccess> plugin_dir = DirAccess::open(plugin_cfg_path);
 	if (plugin_dir.is_valid()) {

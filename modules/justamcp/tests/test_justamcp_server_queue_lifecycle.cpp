@@ -31,6 +31,7 @@
 
 #include "test_justamcp_server_queue_lifecycle.h"
 #include "../justamcp_server.h"
+#include "../justamcp_session_manager.h"
 #include "../justamcp_tool_context.h"
 #include "../justamcp_tool_queue_state.h"
 #include "../mcp_tool_queue.h"
@@ -271,6 +272,10 @@ void test_justamcp_send_tool_result_lookup() {
 #if defined(MODULE_HTTPSERVER_ENABLED)
 	JustAMCPTestServerFixture fixture;
 	JustAMCPServer &server = fixture.get_server();
+	MCPSessionManager *session_manager = server.test_get_session_manager();
+	if (session_manager) {
+		session_manager->bind_request_tool_route(99, "lookup-session", 1);
+	}
 	MCPToolQueueEntry readonly_entry;
 	readonly_entry.request_id = 42;
 	readonly_entry.is_readonly_tool = true;

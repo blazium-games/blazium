@@ -106,6 +106,9 @@ Dictionary JustAMCPAnimationTools::execute_tool(const String &p_tool_name, const
 	if (p_tool_name == "create_tween") {
 		return create_tween(p_args);
 	}
+	if (p_tool_name == "configure_sprite_frames") {
+		return configure_sprite_frames(p_args);
+	}
 
 	return Dictionary();
 }

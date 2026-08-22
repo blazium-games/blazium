@@ -134,14 +134,17 @@ Dictionary JustAMCPExportTools::execute_tool(const String &p_tool_name, const Di
 		return _execute_blocking_tool_sync(p_tool_name, p_args);
 	} else if (p_tool_name == "get_android_preset_info") {
 		return _get_android_preset_info(p_args);
+	} else if (p_tool_name == "export_release" || p_tool_name == "export_debug" || p_tool_name == "export_custom") {
+		Dictionary export_args = p_args.duplicate();
+		if (p_tool_name == "export_release") {
+			export_args["debug"] = false;
+		} else if (p_tool_name == "export_debug") {
+			export_args["debug"] = true;
+		}
+		return _export_project(export_args);
 	}
 
-	Dictionary err;
-	err["code"] = -32601;
-	err["message"] = "Method not found: " + p_tool_name;
-	Dictionary res;
-	res["error"] = err;
-	return Dictionary();
+	return MCP_ERROR(-32601, "Method not found: " + p_tool_name);
 }
 
 String JustAMCPExportTools::_resolve_adb_path() const {

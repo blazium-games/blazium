@@ -45,6 +45,7 @@
 #include "scene/gui/base_button.h"
 #include "scene/gui/control.h"
 #include "scene/main/multiplayer_api.h"
+#include "scene/main/scene_tree.h"
 #include "scene/main/viewport.h"
 #include "scene/main/window.h"
 #include "servers/audio_server.h"
@@ -172,7 +173,7 @@ Dictionary JustAMCPRuntime::_cmd_runtime_capabilities(const Dictionary &p_params
 		"find_nodes", "get_node_property", "call_node_method",
 		"press_button", "wait_for_property",
 		"runtime_info", "runtime_get_errors", "runtime_capabilities",
-		"eval_expression", "runtime_quit", "get_network_info", "get_audio_info",
+		"eval_expression", "set_paused", "runtime_quit", "get_network_info", "get_audio_info",
 		"run_custom_command", "get_autoload", "find_nodes_by_script",
 		"batch_get_properties", "find_ui_elements", "click_button_by_text",
 		"navigate_to", "move_to", "monitor_properties",
@@ -232,6 +233,22 @@ Dictionary JustAMCPRuntime::_cmd_eval_expression(const Dictionary &p_params) {
 	Dictionary ret;
 	ret["type"] = "eval_result";
 	ret["result"] = String(result_v);
+	ret["value"] = result_v;
+	return ret;
+}
+
+Dictionary JustAMCPRuntime::_cmd_set_paused(const Dictionary &p_params) {
+	SceneTree *tree = Object::cast_to<SceneTree>(OS::get_singleton()->get_main_loop());
+	Dictionary ret;
+	if (!tree) {
+		ret["type"] = "error";
+		ret["message"] = "SceneTree is not available.";
+		return ret;
+	}
+	const bool paused = bool(p_params.get("paused", true));
+	tree->set_pause(paused);
+	ret["type"] = "paused";
+	ret["paused"] = tree->is_paused();
 	return ret;
 }
 

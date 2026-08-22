@@ -185,7 +185,9 @@ void test_justamcp_http_stateless_empty_body_400() {
 	headers["Content-Type"] = "application/json";
 	Ref<HTTPResponse> response;
 	response.instantiate();
+	ERR_PRINT_OFF;
 	server.test_handle_mcp_stateless_post(_make_test_context("POST", headers, String()), response);
+	ERR_PRINT_ON;
 	CHECK(response->get_status() == 400);
 }
 
@@ -204,7 +206,9 @@ void test_justamcp_http_oauth_rejects_invalid_credentials() {
 	headers["x-client-id"] = "test-client";
 	Ref<HTTPResponse> response;
 	response.instantiate();
+	ERR_PRINT_OFF;
 	CHECK(!server.test_validate_mcp_oauth(_make_test_context("POST", headers), response));
+	ERR_PRINT_ON;
 	CHECK(response->get_status() == 401);
 
 	ProjectSettings::get_singleton()->set_setting("blazium/justamcp/oauth_enabled", prev_enabled);

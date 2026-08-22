@@ -34,11 +34,14 @@
 #include "editor/plugins/editor_plugin.h"
 #include "scene/main/node.h"
 
+class JustAMCPToolExecutor;
+
 class JustAMCPBatchTools : public Object {
 	GDCLASS(JustAMCPBatchTools, Object);
 
 private:
 	EditorPlugin *editor_plugin = nullptr;
+	JustAMCPToolExecutor *owner = nullptr;
 
 	Node *_find_node_by_path(const String &p_path);
 
@@ -66,6 +69,7 @@ protected:
 
 public:
 	void set_editor_plugin(EditorPlugin *p_plugin) { editor_plugin = p_plugin; }
+	void set_owner(JustAMCPToolExecutor *p_owner) { owner = p_owner; }
 	Dictionary execute_tool(const String &p_tool_name, const Dictionary &p_args);
 
 	JustAMCPBatchTools();

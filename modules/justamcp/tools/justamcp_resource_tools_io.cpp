@@ -32,6 +32,7 @@
 #include "../justamcp_editor_filesystem.h"
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_read_limits.h"
+#include "justamcp_agent_helpers.h"
 #include "justamcp_resource_tools.h"
 
 #include "core/config/project_settings.h"
@@ -62,17 +63,7 @@
 #include "scene/resources/theme.h"
 
 String JustAMCPResourceTools::_ensure_res_path(const String &p_path) {
-	if (p_path.begins_with("res://")) {
-		return p_path;
-	}
-	if (p_path.begins_with("/")) {
-		String project_abs = ProjectSettings::get_singleton()->globalize_path("res://");
-		if (p_path.begins_with(project_abs)) {
-			String rel = p_path.substr(project_abs.length());
-			return "res://" + rel;
-		}
-	}
-	return "res://" + p_path;
+	return justamcp_ensure_res_path(p_path);
 }
 
 void JustAMCPResourceTools::_refresh_filesystem(const String &p_path) {

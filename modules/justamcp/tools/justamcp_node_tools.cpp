@@ -28,6 +28,8 @@
 /**************************************************************************/
 
 #include "justamcp_node_tools.h"
+#include "justamcp_agent_helpers.h"
+#include "justamcp_scene_file_io.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_undo_redo_manager.h"
@@ -106,12 +108,7 @@ Dictionary JustAMCPNodeTools::execute_tool(const String &p_tool_name, const Dict
 		return _find_nodes_in_group(p_args);
 	}
 
-	Dictionary err;
-	err["code"] = -32601;
-	err["message"] = "Method not found: " + p_tool_name;
-	Dictionary res;
-	res["error"] = err;
-	return Dictionary();
+	return MCP_ERROR(-32601, "Method not found: " + p_tool_name);
 }
 
 Dictionary JustAMCPNodeTools::_add_node(const Dictionary &p_params) {
@@ -470,19 +467,76 @@ Dictionary JustAMCPNodeTools::_get_node_properties(const Dictionary &p_params) {
 }
 
 Dictionary JustAMCPNodeTools::_add_resource(const Dictionary &p_params) {
-	if (!p_params.has("node_path")) {
+	Dictionary args = justamcp_normalize_tool_args(p_params);
+	if (!args.has("node_path")) {
 		return MCP_INVALID_PARAMS("Missing param: node_path");
 	}
-	if (!p_params.has("property")) {
+	if (!args.has("property")) {
 		return MCP_INVALID_PARAMS("Missing param: property");
 	}
-	if (!p_params.has("resource_type")) {
+	if (!args.has("resource_type")) {
 		return MCP_INVALID_PARAMS("Missing param: resource_type");
 	}
 
-	String node_path = p_params["node_path"];
-	String property = p_params["property"];
-	String resource_type = p_params["resource_type"];
+	String node_path = args["node_path"];
+	String property = args["property"];
+	String resource_type = args["resource_type"];
+	const String file_path = justamcp_resolve_project_path(args.get("file_path", ""));
+
+	Ref<Resource> resource;
+	if (resource_type.begins_with("load:")) {
+		const String load_path = justamcp_resolve_project_path(resource_type.substr(5));
+		resource = ResourceLoader::load(load_path);
+		if (resource.is_null()) {
+			return MCP_ERROR(-32000, "Failed to load resource: " + load_path);
+		}
+	} else {
+		if (!ClassDB::class_exists(resource_type) || !ClassDB::is_parent_class(resource_type, "Resource")) {
+			return MCP_INVALID_PARAMS("Unknown resource type: " + resource_type);
+		}
+		Object *_resource_obj = ClassDB::instantiate(resource_type);
+		resource = Ref<Resource>(Object::cast_to<Resource>(_resource_obj));
+		if (resource.is_null()) {
+			if (_resource_obj) {
+				memdelete(_resource_obj);
+			}
+			return MCP_INTERNAL("Failed to create resource");
+		}
+	}
+
+	if (args.has("resource_properties")) {
+		Dictionary rp = args["resource_properties"];
+		Array keys = rp.keys();
+		for (int i = 0; i < keys.size(); i++) {
+			String k = keys[i];
+			resource->set(k, rp[k]);
+		}
+	}
+
+	if (!file_path.is_empty()) {
+		Node *owned = nullptr;
+		Dictionary load_err = justamcp_load_scene_root(file_path, &owned);
+		if (!load_err.is_empty()) {
+			return load_err.has("error") ? MCP_ERROR(-32000, String(load_err["error"])) : MCP_ERROR(-32000, "Failed to load scene");
+		}
+		Node *node = justamcp_find_node_in_root(owned, node_path);
+		if (!node) {
+			memdelete(owned);
+			return MCP_NOT_FOUND("Node '" + node_path + "'");
+		}
+		node->set(property, resource);
+		Dictionary save_err = justamcp_save_scene_root(owned, file_path, true);
+		if (!save_err.is_empty()) {
+			return save_err.has("error") ? MCP_ERROR(-32000, String(save_err["error"])) : MCP_ERROR(-32000, "Failed to save scene");
+		}
+		Dictionary res;
+		res["ok"] = true;
+		res["file_path"] = file_path;
+		res["node_path"] = node_path;
+		res["property"] = property;
+		res["resource_type"] = resource_type;
+		return res;
+	}
 
 	Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 	if (!root) {
@@ -492,28 +546,6 @@ Dictionary JustAMCPNodeTools::_add_resource(const Dictionary &p_params) {
 	Node *node = _find_node_by_path(node_path);
 	if (!node) {
 		return MCP_NOT_FOUND("Node '" + node_path + "'");
-	}
-
-	if (!ClassDB::class_exists(resource_type) || !ClassDB::is_parent_class(resource_type, "Resource")) {
-		return MCP_INVALID_PARAMS("Unknown resource type: " + resource_type);
-	}
-
-	Object *_resource_obj = ClassDB::instantiate(resource_type);
-	Ref<Resource> resource = Ref<Resource>(Object::cast_to<Resource>(_resource_obj));
-	if (resource.is_null()) {
-		if (_resource_obj) {
-			memdelete(_resource_obj);
-		}
-		return MCP_INTERNAL("Failed to create resource");
-	}
-
-	if (p_params.has("resource_properties")) {
-		Dictionary rp = p_params["resource_properties"];
-		Array keys = rp.keys();
-		for (int i = 0; i < keys.size(); i++) {
-			String k = keys[i];
-			resource->set(k, rp[k]);
-		}
 	}
 
 	Variant old_value = node->get(property);

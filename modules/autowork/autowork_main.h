@@ -47,6 +47,10 @@ class Autowork : public Node {
 #ifdef TOOLS_ENABLED
 	bool restore_editor_scripting = false;
 #endif
+	bool finished = false;
+	bool aborted = false;
+	String json_output_path;
+	String xml_output_path;
 
 protected:
 	static void _bind_methods();
@@ -65,6 +69,11 @@ public:
 	void add_script(const String &p_path);
 	void set_test(const String &p_test_name);
 	void run_tests();
+	void abort();
+	void set_json_output_path(const String &p_path) { json_output_path = p_path; }
+	void set_xml_output_path(const String &p_path) { xml_output_path = p_path; }
+	bool is_finished() const { return finished; }
+	bool is_aborted() const { return aborted; }
 
 	int get_test_count() { return logger.is_valid() ? logger->get_test_count() : 0; }
 	int get_assert_count() { return logger.is_valid() ? (logger->get_passes() + logger->get_fails()) : 0; }

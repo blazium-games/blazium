@@ -30,6 +30,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_documentation_tools.h"
+#include "justamcp_route_helpers.h"
 
 #include "editor/doc_tools.h"
 #include "editor/editor_help.h"
@@ -264,6 +265,9 @@ Dictionary JustAMCPDocumentationTools::execute_tool(const String &p_tool_name, c
 
 	if (p_tool_name == "docs_get_member") {
 		return get_member_documentation(p_args);
+	}
+	if (p_tool_name == "classdb_query") {
+		return justamcp_classdb_query(p_args);
 	}
 
 	return Dictionary();

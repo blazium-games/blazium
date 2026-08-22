@@ -36,7 +36,7 @@
 
 class JustAMCPToolSchemaBuilder {
 public:
-	static void register_tool_settings(const String &p_category, const String &p_full_name, bool p_is_core);
+	static void register_tool_settings(const String &p_category, const String &p_full_name, bool p_is_core, bool p_default_enabled = true);
 	static bool resolve_tool_enabled(const String &p_category, const String &p_full_name, bool p_ignore_settings, bool p_include_disabled_tools, bool &r_cat_enabled, bool &r_tool_enabled);
 	static Dictionary build_tool_schema(const String &p_full_name, const String &p_desc, const String &p_category, bool p_enabled, const Vector<String> &p_props, const Vector<String> &p_req, const String &p_task_support = String(), const String &p_thread_affinity = String());
 };

@@ -49,6 +49,7 @@
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
 #include "editor/editor_undo_redo_manager.h"
+#include "justamcp_tilemap_access.h"
 #include "scene/2d/sprite_2d.h"
 #include "scene/2d/tile_map.h"
 #include "scene/3d/mesh_instance_3d.h"
@@ -367,23 +368,22 @@ Dictionary JustAMCPResourceTools::set_tilemap_cells(const Dictionary &p_args) {
 		return ret;
 	}
 
-	TileMap *tilemap = nullptr;
+	Node *tile_node = nullptr;
 	if (node_path == "." || node_path.is_empty()) {
-		tilemap = Object::cast_to<TileMap>(root);
+		tile_node = root;
 	} else {
-		tilemap = Object::cast_to<TileMap>(root->get_node_or_null(node_path));
+		tile_node = root->get_node_or_null(node_path);
 	}
-
-	if (!tilemap) {
+	JustAMCPTileTarget target = justamcp_tile_target_from_node(tile_node, int(p_args.get("layer", 0)));
+	if (!target.valid()) {
 		memdelete(root);
 		Dictionary ret;
 		ret["ok"] = false;
-		ret["error"] = "TileMap node not found";
+		ret["error"] = "TileMap or TileMapLayer node not found";
 		ret["tilemapNodePath"] = node_path;
 		return ret;
 	}
 
-	int layer = p_args.get("layer", 0);
 	Variant cells_var = p_args.get("cells", Array());
 	int cell_count = 0;
 
@@ -396,13 +396,13 @@ Dictionary JustAMCPResourceTools::set_tilemap_cells(const Dictionary &p_args) {
 			}
 			Dictionary cell = cells[i];
 			Dictionary coords = cell.get("coords", Dictionary());
-			Dictionary atlas_coords = cell.get("atlasCoords", Dictionary());
-			tilemap->set_cell(
-					layer,
+			Dictionary atlas_coords = cell.get("atlasCoords", cell.get("atlas_coords", Dictionary()));
+			justamcp_tile_set_cell(
+					target,
 					Vector2i(coords.get("x", 0), coords.get("y", 0)),
-					cell.get("sourceId", -1),
+					cell.get("sourceId", cell.get("source_id", -1)),
 					Vector2i(atlas_coords.get("x", 0), atlas_coords.get("y", 0)),
-					cell.get("alternativeTile", 0));
+					cell.get("alternativeTile", cell.get("alternative", 0)));
 		}
 	}
 

@@ -42,6 +42,9 @@ static const JustAMCPToolPrefixRoute PREFIX_ROUTES[] = {
 	{ "semantic_", "SemanticSearch" },
 #endif
 	{ "mcp_client_", "MCPClient" },
+#ifdef MODULE_REMOTE_CONTROL_ENABLED
+	{ "remote_control_", "RemoteControl" },
+#endif
 };
 
 static const JustAMCPToolPrefixRoute EXACT_ROUTES[] = {
@@ -55,6 +58,10 @@ static const JustAMCPToolPrefixRoute EXACT_ROUTES[] = {
 #endif
 	{ "mcp_client_list_bridges", "MCPClient" },
 	{ "mcp_client_call_remote_tool", "MCPClient" },
+#ifdef MODULE_REMOTE_CONTROL_ENABLED
+	{ "debugger_summary", "RemoteControl" },
+	{ "focus_window", "RemoteControl" },
+#endif
 };
 
 static HashMap<StringName, const char *> &get_exact_route_map() {

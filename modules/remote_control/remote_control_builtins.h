@@ -67,3 +67,4 @@ Dictionary remote_control_cmd_get_failed_run(const Dictionary &p_args);
 Dictionary remote_control_cmd_autowork_run(const Dictionary &p_args);
 Dictionary remote_control_cmd_autowork_status(const Dictionary &p_args);
 Dictionary remote_control_cmd_autowork_results(const Dictionary &p_args);
+Dictionary remote_control_cmd_focus_window(const Dictionary &p_args);

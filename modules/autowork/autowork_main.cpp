@@ -50,6 +50,12 @@ void Autowork::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_script", "path"), &Autowork::add_script);
 	ClassDB::bind_method(D_METHOD("set_test", "test_name"), &Autowork::set_test);
 	ClassDB::bind_method(D_METHOD("run_tests"), &Autowork::run_tests);
+	ClassDB::bind_method(D_METHOD("abort"), &Autowork::abort);
+	ClassDB::bind_method(D_METHOD("is_finished"), &Autowork::is_finished);
+	ClassDB::bind_method(D_METHOD("is_aborted"), &Autowork::is_aborted);
+	ClassDB::bind_method(D_METHOD("set_json_output_path", "path"), &Autowork::set_json_output_path);
+	ClassDB::bind_method(D_METHOD("set_xml_output_path", "path"), &Autowork::set_xml_output_path);
+	ADD_SIGNAL(MethodInfo("tests_finished"));
 
 	ClassDB::bind_method(D_METHOD("get_test_count"), &Autowork::get_test_count);
 	ClassDB::bind_method(D_METHOD("get_assert_count"), &Autowork::get_assert_count);
@@ -76,6 +82,11 @@ Autowork::Autowork() {
 }
 
 Autowork::~Autowork() {
+	if (!finished) {
+		aborted = true;
+		finished = true;
+		_restore_editor_scripting_if_needed();
+	}
 }
 
 void Autowork::add_directory(const String &p_path, const String &p_prefix, const String &p_suffix) {
@@ -111,7 +122,30 @@ void Autowork::_restore_editor_scripting_if_needed() {
 #endif
 }
 
+void Autowork::abort() {
+	if (finished && aborted) {
+		return;
+	}
+	aborted = true;
+	_restore_editor_scripting_if_needed();
+	for (int i = get_child_count() - 1; i >= 0; i--) {
+		Node *child = get_child(i);
+		if (child) {
+			child->queue_free();
+		}
+	}
+	finished = true;
+	emit_signal("tests_finished");
+}
+
 void Autowork::run_tests() {
+	finished = false;
+	aborted = false;
+	if (collector.is_null() || logger.is_null() || OS::get_singleton() == nullptr) {
+		finished = true;
+		emit_signal("tests_finished");
+		return;
+	}
 	ERR_FAIL_COND_MSG(collector.is_null(), "collector is null");
 	ERR_FAIL_COND_MSG(logger.is_null(), "logger is null");
 	OS *os = OS::get_singleton();
@@ -242,6 +276,8 @@ void Autowork::run_tests() {
 			if (hook->should_abort()) {
 				print_line("Autowork Main: Aborting tests due to pre-run script abort() call.");
 				_restore_editor_scripting_if_needed();
+				finished = true;
+				emit_signal("tests_finished");
 				return;
 			}
 		}
@@ -261,8 +297,11 @@ static func __run_tests__(
 	inc_test_count: Callable,
 	inc_orphans: Callable,
 	end_test: Callable,
+	should_abort: Callable,
 ):
 	for script: Dictionary in scripts:
+		if should_abort.is_valid() and should_abort.call():
+			break
 		print("Running Script: %s" % script["path"])
 
 		var test_instance: Node = get_test_instance.call(script)
@@ -273,6 +312,8 @@ static func __run_tests__(
 			await test_instance.call("_before_all")
 
 		for test: String in script["tests"]:
+			if should_abort.is_valid() and should_abort.call():
+				break
 			print("\t- %s" % test)
 
 			var is_parameterized: bool = false
@@ -290,7 +331,9 @@ static func __run_tests__(
 				if (!is_parameterized or param_index == 0):
 					inc_test_count.call()
 
-				var objects_before: int = int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
+				var objects_before: int = 0
+				if Engine.has_singleton("Performance"):
+					objects_before = int(Engine.get_singleton("Performance").call("get_monitor", 10))
 
 				if (test_instance.has_method("_before_each")):
 					await test_instance.call("_before_each")
@@ -303,7 +346,9 @@ static func __run_tests__(
 				if (test_instance.has_method("free_all")):
 					test_instance.call("free_all")
 
-				var objects_after: int = int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
+				var objects_after: int = objects_before
+				if Engine.has_singleton("Performance"):
+					objects_after = int(Engine.get_singleton("Performance").call("get_monitor", 10))
 				if (objects_after > objects_before):
 					inc_orphans.call(objects_after - objects_before)
 
@@ -317,6 +362,11 @@ static func __run_tests__(
 				else:
 					break
 
+		if should_abort.is_valid() and should_abort.call():
+			if is_instance_valid(test_instance):
+				test_instance.queue_free()
+			break
+
 		if (test_instance.has_method("_after_all")):
 			await test_instance.call("_after_all")
 
@@ -324,14 +374,19 @@ static func __run_tests__(
 
 	on_test_over.call()
 )";
+	Array scripts = collector->get_scripts();
+	if (scripts.is_empty()) {
+		_on_test_over();
+		return;
+	}
+
 	gd_proxy_runner->set_source_code(code);
 	Error err = gd_proxy_runner->reload();
 	if (err != OK) {
-		_restore_editor_scripting_if_needed();
-		ERR_FAIL_MSG("Error initializing proxy script");
+		_on_test_over();
+		return;
 	}
 
-	Array scripts = collector->get_scripts();
 	Callable get_test_instance = callable_mp(this, &Autowork::_get_test_instance);
 	Callable on_test_over = callable_mp(this, &Autowork::_on_test_over);
 
@@ -341,10 +396,14 @@ static func __run_tests__(
 	Callable inc_orphans = callable_mp(logger_ptr, &AutoworkLogger::inc_orphans);
 	Callable end_test = callable_mp(logger_ptr, &AutoworkLogger::end_test);
 
-	gd_proxy_runner->call("__run_tests__", scripts, get_test_instance, on_test_over, begin_test, inc_test_count, inc_orphans, end_test);
+	Callable should_abort = callable_mp(this, &Autowork::is_aborted);
+	gd_proxy_runner->call("__run_tests__", scripts, get_test_instance, on_test_over, begin_test, inc_test_count, inc_orphans, end_test, should_abort);
 }
 
 AutoworkTest *Autowork::_get_test_instance(Dictionary script_info) {
+	if (aborted) {
+		return nullptr;
+	}
 	Ref<Script> test_script = script_info["script"];
 
 	print_line(vformat("Running Script: %s", script_info["path"]));
@@ -380,6 +439,11 @@ AutoworkTest *Autowork::_get_test_instance(Dictionary script_info) {
 }
 
 void Autowork::_on_test_over() {
+	if (aborted) {
+		_restore_editor_scripting_if_needed();
+		finished = true;
+		return;
+	}
 	ERR_FAIL_COND_MSG(logger.is_null(), "logger is null");
 	_restore_editor_scripting_if_needed();
 	logger->print_summary();
@@ -410,12 +474,23 @@ void Autowork::_on_test_over() {
 			hook->call("_run");
 		}
 	}
+	if (junit_p.is_empty()) {
+		junit_p = xml_output_path;
+	}
 	if (!junit_p.is_empty()) {
 		logger->export_xml(junit_p);
+	}
+	if (json_p.is_empty()) {
+		json_p = json_output_path;
+	}
+	if (json_p.is_empty()) {
+		json_p = "user://autowork_results.json";
 	}
 	if (!json_p.is_empty()) {
 		logger->export_json(json_p);
 	}
+	finished = true;
+	emit_signal("tests_finished");
 
 	if (DisplayServer::get_singleton() && DisplayServer::get_singleton()->get_name() == "headless") {
 		SceneTree *tree = SceneTree::get_singleton();

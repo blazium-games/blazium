@@ -29,10 +29,15 @@
 
 #include "justamcp_asset_tools.h"
 #include "../justamcp_editor_filesystem.h"
+#include "../justamcp_mcp_tool_macros.h"
+#include "justamcp_agent_helpers.h"
 
 #include "core/config/project_settings.h"
+#include "core/crypto/crypto_core.h"
 #include "core/io/dir_access.h"
+#include "core/io/file_access.h"
 #include "core/io/image.h"
+#include "core/io/json.h"
 
 void JustAMCPAssetTools::_bind_methods() {}
 
@@ -43,6 +48,9 @@ Dictionary JustAMCPAssetTools::execute_tool(const String &p_tool_name, const Dic
 	}
 	if (tool_name == "generate_2d_asset") {
 		return generate_2d_asset(p_args);
+	}
+	if (p_tool_name == "save_pixel_art" || tool_name == "save_pixel_art") {
+		return save_pixel_art(p_args);
 	}
 
 	return Dictionary();
@@ -119,6 +127,83 @@ Dictionary JustAMCPAssetTools::generate_2d_asset(const Dictionary &p_args) {
 	ret["width"] = image->get_width();
 	ret["height"] = image->get_height();
 	ret["message"] = "Generated " + full_path + " (" + itos(image->get_width()) + "x" + itos(image->get_height()) + ")";
+	return ret;
+}
+
+Dictionary JustAMCPAssetTools::save_pixel_art(const Dictionary &p_args) {
+	String source = String(p_args.get("source_path", p_args.get("path", ""))).strip_edges();
+	const String png_b64 = String(p_args.get("png_base64", "")).strip_edges();
+	String filename = String(p_args.get("filename", "")).strip_edges();
+	if (source.is_empty() && png_b64.is_empty()) {
+		return MCP_INVALID_PARAMS("Provide source_path/path or png_base64.");
+	}
+
+	Ref<Image> image;
+	image.instantiate();
+	if (!png_b64.is_empty()) {
+		PackedByteArray bytes;
+		bytes.resize(png_b64.length());
+		size_t decoded_len = 0;
+		const CharString utf8 = png_b64.utf8();
+		if (CryptoCore::b64_decode(bytes.ptrw(), bytes.size(), &decoded_len, (const uint8_t *)utf8.get_data(), utf8.length()) != OK) {
+			return MCP_ERROR(-32000, "Failed to decode png_base64.");
+		}
+		bytes.resize((int)decoded_len);
+		if (image->load_png_from_buffer(bytes) != OK) {
+			return MCP_ERROR(-32000, "Failed to decode png_base64.");
+		}
+	} else {
+		String sandbox_error;
+		if (!justamcp_canonical_sandbox_path(source, source, sandbox_error)) {
+			return MCP_INVALID_PARAMS(sandbox_error);
+		}
+		if (image->load(source) != OK) {
+			return MCP_ERROR(-32000, "Failed to load image: " + source);
+		}
+		if (filename.is_empty()) {
+			filename = source.get_file();
+		}
+	}
+	if (filename.is_empty()) {
+		filename = "pixel_art.png";
+	}
+	if (!filename.get_file().get_basename().is_valid_filename()) {
+		return MCP_INVALID_PARAMS("filename is invalid.");
+	}
+	if (filename.get_extension().to_lower() != "png") {
+		filename += ".png";
+	}
+
+	String dest = String("res://assets/generated/").path_join(filename.get_file());
+	String dest_error;
+	if (!justamcp_canonical_sandbox_path(dest, dest, dest_error)) {
+		return MCP_INVALID_PARAMS(dest_error);
+	}
+	Ref<DirAccess> dir = DirAccess::create_for_path("res://assets/generated");
+	if (dir.is_valid() && !dir->dir_exists("res://assets/generated")) {
+		dir->make_dir_recursive("res://assets/generated");
+	}
+	if (image->save_png(dest) != OK) {
+		return MCP_ERROR(-32000, "Failed to save PNG: " + dest);
+	}
+	JustAMCPEditorFilesystem::refresh_path(dest);
+
+	Dictionary ret;
+	ret["ok"] = true;
+	ret["path"] = dest;
+	ret["width"] = image->get_width();
+	ret["height"] = image->get_height();
+	if (p_args.get("metadata", Variant()).get_type() == Variant::DICTIONARY) {
+		const String meta_path = dest.get_basename() + ".metadata.json";
+		Ref<FileAccess> meta_file = FileAccess::open(meta_path, FileAccess::WRITE);
+		if (meta_file.is_valid()) {
+			meta_file->store_string(JSON::stringify(Dictionary(p_args["metadata"])));
+			meta_file->close();
+			JustAMCPEditorFilesystem::refresh_path(meta_path);
+			ret["metadata_path"] = meta_path;
+		}
+	}
+	ret["message"] = "Saved pixel art to " + dest;
 	return ret;
 }
 

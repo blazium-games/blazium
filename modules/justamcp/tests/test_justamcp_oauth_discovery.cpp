@@ -76,7 +76,9 @@ void test_justamcp_oauth_401_www_authenticate() {
 	ctx->set_headers(Dictionary());
 	Ref<HTTPResponse> response;
 	response.instantiate();
+	ERR_PRINT_OFF;
 	CHECK(!server.test_validate_mcp_oauth(ctx, response));
+	ERR_PRINT_ON;
 	CHECK(response->get_status() == 401);
 	const String www = _header_value(response, "WWW-Authenticate");
 	CHECK(www.contains("Bearer"));

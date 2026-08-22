@@ -200,7 +200,9 @@ void test_justamcp_protocol_version_setting_and_cli() {
 
 	MCPSessionManager::clear_cli_protocol_version_override();
 	ps->set_setting("blazium/justamcp/protocol_version", "bogus");
+	ERR_PRINT_OFF;
 	CHECK(MCPSessionManager::latest_protocol_version() == k_modern_protocol);
+	ERR_PRINT_ON;
 
 	ps->set_setting("blazium/justamcp/protocol_version", prev_version);
 	ps->set_setting("blazium/justamcp/override_editor_settings", prev_override);

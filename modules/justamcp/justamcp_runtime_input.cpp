@@ -77,17 +77,23 @@ Dictionary JustAMCPRuntime::_cmd_inject_action(const Dictionary &p_params) {
 		return ret;
 	}
 
-	Ref<InputEventAction> press;
-	press.instantiate();
-	press->set_action(action);
-	press->set_pressed(true);
-	_inject_event(press);
+	const bool has_pressed = p_params.has("pressed") || p_params.has("hold");
+	const bool pressed = p_params.has("pressed") ? bool(p_params.get("pressed", true)) : true;
 
-	Ref<InputEventAction> release;
-	release.instantiate();
-	release->set_action(action);
-	release->set_pressed(false);
-	_inject_event(release);
+	if (!has_pressed || pressed) {
+		Ref<InputEventAction> press;
+		press.instantiate();
+		press->set_action(action);
+		press->set_pressed(true);
+		_inject_event(press);
+	}
+	if (!has_pressed || !pressed) {
+		Ref<InputEventAction> release;
+		release.instantiate();
+		release->set_action(action);
+		release->set_pressed(false);
+		_inject_event(release);
+	}
 
 	Dictionary ret;
 	ret["type"] = "input_injected";
@@ -110,17 +116,23 @@ Dictionary JustAMCPRuntime::_cmd_inject_key(const Dictionary &p_params) {
 		return ret;
 	}
 
-	Ref<InputEventKey> press;
-	press.instantiate();
-	press->set_keycode((Key)keycode);
-	press->set_pressed(true);
-	_inject_event(press);
+	const bool has_pressed = p_params.has("pressed") || p_params.has("hold");
+	const bool pressed = p_params.has("pressed") ? bool(p_params.get("pressed", true)) : true;
 
-	Ref<InputEventKey> release;
-	release.instantiate();
-	release->set_keycode((Key)keycode);
-	release->set_pressed(false);
-	_inject_event(release);
+	if (!has_pressed || pressed) {
+		Ref<InputEventKey> press;
+		press.instantiate();
+		press->set_keycode((Key)keycode);
+		press->set_pressed(true);
+		_inject_event(press);
+	}
+	if (!has_pressed || !pressed) {
+		Ref<InputEventKey> release;
+		release.instantiate();
+		release->set_keycode((Key)keycode);
+		release->set_pressed(false);
+		_inject_event(release);
+	}
 
 	Dictionary ret;
 	ret["type"] = "input_injected";
@@ -133,23 +145,36 @@ Dictionary JustAMCPRuntime::_cmd_inject_mouse_click(const Dictionary &p_params) 
 	float y = p_params.get("y", 0.0f);
 	Vector2 pos(x, y);
 
-	Ref<InputEventMouseButton> press;
-	press.instantiate();
-	press->set_position(pos);
-	press->set_global_position(pos);
-	press->set_button_index(MouseButton::LEFT);
-	press->set_button_mask(MouseButtonMask::LEFT);
-	press->set_pressed(true);
-	_inject_event(press);
+	const bool has_pressed = p_params.has("pressed") || p_params.has("hold");
+	const bool pressed = p_params.has("pressed") ? bool(p_params.get("pressed", true)) : true;
+	MouseButton button = MouseButton::LEFT;
+	const int button_index = int(p_params.get("button", 1));
+	if (button_index == 2) {
+		button = MouseButton::RIGHT;
+	} else if (button_index == 3) {
+		button = MouseButton::MIDDLE;
+	}
 
-	Ref<InputEventMouseButton> release;
-	release.instantiate();
-	release->set_position(pos);
-	release->set_global_position(pos);
-	release->set_button_index(MouseButton::LEFT);
-	release->set_button_mask(MouseButtonMask::NONE);
-	release->set_pressed(false);
-	_inject_event(release);
+	if (!has_pressed || pressed) {
+		Ref<InputEventMouseButton> press;
+		press.instantiate();
+		press->set_position(pos);
+		press->set_global_position(pos);
+		press->set_button_index(button);
+		press->set_button_mask(MouseButtonMask::LEFT);
+		press->set_pressed(true);
+		_inject_event(press);
+	}
+	if (!has_pressed || !pressed) {
+		Ref<InputEventMouseButton> release;
+		release.instantiate();
+		release->set_position(pos);
+		release->set_global_position(pos);
+		release->set_button_index(button);
+		release->set_button_mask(MouseButtonMask::NONE);
+		release->set_pressed(false);
+		_inject_event(release);
+	}
 
 	Dictionary ret;
 	ret["type"] = "input_injected";

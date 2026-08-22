@@ -63,8 +63,18 @@ public:
 	Dictionary search_in_files(const Dictionary &p_args);
 	Dictionary uid_to_project_path(const Dictionary &p_args);
 	Dictionary project_path_to_uid(const Dictionary &p_args);
+	Dictionary asset_assign_uid(const Dictionary &p_args);
+	Dictionary asset_update_uid(const Dictionary &p_args);
+	Dictionary asset_remove_uid(const Dictionary &p_args);
 	Dictionary add_autoload(const Dictionary &p_args);
 	Dictionary remove_autoload(const Dictionary &p_args);
+	Dictionary read_file(const Dictionary &p_args);
+	Dictionary read_directory(const Dictionary &p_args);
+	Dictionary create_file(const Dictionary &p_args);
+	Dictionary edit_file(const Dictionary &p_args);
+	Dictionary move_file(const Dictionary &p_args);
+	Dictionary copy_file(const Dictionary &p_args);
+	Dictionary delete_file(const Dictionary &p_args);
 
 private:
 	void _collect_matching_files(const String &p_path, const String &p_query, const String &p_file_type, Array &r_results, int p_max_results);

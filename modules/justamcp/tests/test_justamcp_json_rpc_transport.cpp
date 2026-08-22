@@ -45,7 +45,9 @@
 void test_justamcp_json_rpc_transport_invalid_json() {
 	JustAMCPTestServerFixture fixture;
 	JustAMCPServer &server = fixture.get_server();
+	ERR_PRINT_OFF;
 	Dictionary invalid = JustAMCPJsonRpcTransport::handle_json_rpc(&server, "{not-json", Ref<HTTPResponse>());
+	ERR_PRINT_ON;
 	CHECK(invalid.has("error"));
 	CHECK(int(invalid["error"].operator Dictionary().get("code", 0)) == -32700);
 

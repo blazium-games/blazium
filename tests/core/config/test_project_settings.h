@@ -179,6 +179,17 @@ TEST_CASE("[ProjectSettings] localize_path") {
 	TestProjectSettingsInternalsAccessor::resource_path() = old_resource_path;
 }
 
+TEST_CASE("[ProjectSettings] save_custom accepts blazium text format") {
+	const String temp_dir = TestUtils::get_temp_path("project_settings_save_blazium");
+	DirAccess::make_dir_recursive_absolute(temp_dir);
+	const String path = temp_dir.path_join(ProjectSettings::PROJECT_FILE_BLAZIUM);
+	DirAccess::remove_absolute(path);
+	const Error err = ProjectSettings::get_singleton()->save_custom(path, ProjectSettings::CustomMap(), Vector<String>(), false);
+	CHECK(err == OK);
+	CHECK(FileAccess::exists(path));
+	DirAccess::remove_absolute(path);
+}
+
 TEST_CASE("[ProjectSettings] is_project_settings_file") {
 	CHECK(ProjectSettings::is_project_settings_file("project.blazium"));
 	CHECK(ProjectSettings::is_project_settings_file("project.godot"));

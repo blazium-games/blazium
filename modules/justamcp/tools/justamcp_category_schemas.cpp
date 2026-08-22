@@ -42,8 +42,10 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 
 	current_category = "editor_tools";
 	is_core = false;
-	add_schema("editor_play_scene", "Runs the currently active or specified scene.",
-			Vector<String>{ "scene_path", "string" }, Vector<String>{}, "optional");
+	add_schema("editor_play_scene", "Runs the currently active or specified scene. With duration_ms, plays, delivers timed inputs (kind/type action|key|mouse|target|motion, at_ms, hold_ms), captures a screenshot, and stops.",
+			Vector<String>{ "scene_path", "string", "duration_ms", "number", "inputs", "array", "prompt", "string" }, Vector<String>{}, "optional");
+	add_schema("editor_run_scene", "Alias of editor_play_scene for timed playtest runs with duration_ms, inputs (kind/type, at_ms, hold_ms, action/key/x/y/target), screenshot, and delivery report.",
+			Vector<String>{ "scene_path", "string", "duration_ms", "number", "inputs", "array", "prompt", "string" }, Vector<String>{}, "optional");
 	add_schema("editor_play_main", "Runs the project's main scene.",
 			Vector<String>{}, Vector<String>{});
 	add_schema("editor_stop_play", "Terminates an active play session.",
@@ -58,8 +60,8 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{}, Vector<String>{});
 	add_schema("editor_redo", "Triggers Editor global redo action.",
 			Vector<String>{}, Vector<String>{});
-	add_schema("editor_take_screenshot", "Captures the editor or runtime viewport.",
-			Vector<String>{}, Vector<String>{});
+	add_schema("editor_take_screenshot", "Captures the editor or runtime viewport. Optional view (2D, 3D, Script) and scale.",
+			Vector<String>{ "view", "string", "scale", "number", "prompt", "string", "path", "string" }, Vector<String>{});
 	add_schema("editor_set_main_screen", "Switches between 2D, 3D, Script, and AssetLib views.",
 			Vector<String>{ "screen_name", "string" }, Vector<String>{ "screen_name" });
 	add_schema("editor_open_scene", "Invokes the editor natively to swap active tabs opening a given `.tscn` file onto the viewport.",
@@ -84,12 +86,24 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{}, Vector<String>{});
 	add_schema("editor_get_signals", "Lists signals for a class or node in the edited scene.",
 			Vector<String>{ "class_name", "string", "node_path", "string" }, Vector<String>{});
-	add_schema("open_in_godot", "Opens a script or scene path in the Blazium editor.",
+	add_schema("qa_start", "Starts a play session then pauses the SceneTree through JustAMCPRuntime. Fails if the runtime singleton is not live.",
+			Vector<String>{ "scene", "string", "scene_path", "string", "boot_ms", "number" }, Vector<String>{});
+	add_schema("qa_act", "Unpauses, delivers inputs, advances frames or until a probe is true, then pauses again. Requires a live JustAMCPRuntime.",
+			Vector<String>{ "inputs", "array", "probes", "array", "advance_frames", "number", "until", "string" }, Vector<String>{});
+	add_schema("qa_observe", "Evaluates probe expressions on the running tree while paused. Requires a live JustAMCPRuntime.",
+			Vector<String>{ "probes", "array" }, Vector<String>{});
+	add_schema("qa_watch", "Connects signal taps through JustAMCPRuntime. Later qa replies can include those events.",
+			Vector<String>{ "signals", "array" }, Vector<String>{ "signals" });
+	add_schema("qa_drive", "Evaluates a short sandboxed Expression against the running game through JustAMCPRuntime.",
+			Vector<String>{ "expr", "string", "code", "string" }, Vector<String>{});
+	add_schema("qa_stop", "Unpauses and stops the QA play session.",
+			Vector<String>{}, Vector<String>{});
+	add_schema("open_in_blazium", "Opens a script or scene path in the Blazium editor.",
 			Vector<String>{ "path", "string", "line", "number" }, Vector<String>{ "path" });
 	add_schema("rescan_filesystem", "Triggers the editor filesystem to rescan project files.",
 			Vector<String>{}, Vector<String>{}, "required");
-	add_schema("scene_tree_dump", "Dumps the currently edited scene tree with node names, types, scripts, and paths.",
-			Vector<String>{ "max_nodes", "number" }, Vector<String>{});
+	add_schema("scene_tree_dump", "Dumps the edited or file-based scene tree with optional filters, pagination, and XML format.",
+			Vector<String>{ "max_nodes", "number", "file_path", "string", "scene_path", "string", "root_node_path", "string", "max_depth", "number", "offset", "number", "limit", "number", "mode", "string", "format", "string", "type_filter", "string", "type_filter_inherit", "boolean", "name_filter", "string", "group_filter", "string", "group_filter_mode", "string", "script_filter", "string" }, Vector<String>{});
 
 	current_category = "documentation_tools";
 	is_core = true;
@@ -152,16 +166,16 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 
 	current_category = "runtime_tools";
 	is_core = false;
-	add_schema("execute_gdscript_snippet", "Dynamically evaluates raw GDScript source strings overriding static execution bypassing compiled states natively mapping memory contexts locally.",
+	add_schema("execute_gdscript_snippet", "Evaluates a short in-editor Expression. This is Expression-only and not a headless subprocess runner.",
 			Vector<String>{ "code", "string", "target_node", "string" }, Vector<String>{ "code" });
 	add_schema("signal_emit", "Fires Godot Event bindings internally passing variable parameter objects mapping signal arguments natively across local instances.",
 			Vector<String>{ "node_path", "string", "signal_name", "string", "args", "array" }, Vector<String>{ "node_path", "signal_name" });
-	add_schema("runtime_capture_output", "Grabs standard native string output streams logged during active execution natively exposing debug logs rapidly.",
-			Vector<String>{}, Vector<String>{});
-	add_schema("runtime_compare_screenshots", "Evaluates frame buffer pixel matches defining explicit rendering consistencies comparing layout tests natively validating UI shifts.",
-			Vector<String>{}, Vector<String>{});
-	add_schema("runtime_record_video", "Initializes MP4 rendering capturing frame by frame runtime layouts dynamically tracing rendering tests natively.",
-			Vector<String>{}, Vector<String>{});
+	add_schema("runtime_capture_output", "Returns recent native output lines captured during active execution.",
+			Vector<String>{ "lines", "number", "clear", "boolean" }, Vector<String>{});
+	add_schema("runtime_compare_screenshots", "Compares two sandboxed PNG paths and reports pixel differences.",
+			Vector<String>{ "image_a", "string", "image_b", "string", "threshold", "number" }, Vector<String>{ "image_a", "image_b" });
+	add_schema("runtime_record_video", "Records PNG frame sequences to res://.video_recordings/. action is start or stop.",
+			Vector<String>{ "action", "string" }, Vector<String>{ "action" });
 	add_schema("take_game_screenshot", "Captures the running game's viewport as a PNG base64 blob natively from the active viewport.",
 			Vector<String>{}, Vector<String>{});
 	add_schema("runtime_info", "Snapshots active engine state including FPS, current scene, and frame counters.",
@@ -184,9 +198,9 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "root", "string", "max_depth", "number", "include_properties", "boolean" }, Vector<String>{});
 	add_schema("runtime_inspect_node", "Returns runtime node metadata and properties for a specific node path.",
 			Vector<String>{ "node", "string", "include_properties", "boolean" }, Vector<String>{ "node" });
-	add_schema("runtime_run_gut_tests", "Returns native guidance for running GUT tests from the editor or command line.",
-			Vector<String>{ "test_script", "string" }, Vector<String>{});
-	add_schema("runtime_get_test_results", "Returns the currently available JustAMCP runtime test result snapshot.",
+	add_schema("runtime_run_autowork_tests", "Runs Autowork tests in-process. path may be a res:// or uid:// test script or directory; filter matches method names; timeout is seconds (default 30). Optional include_subdirs, prefix, suffix, select, and sandboxed user:// junit_xml.",
+			Vector<String>{ "path", "string", "filter", "string", "timeout", "number", "test_script", "string", "directory_path", "string", "test_name", "string", "include_subdirs", "boolean", "prefix", "string", "suffix", "string", "select", "string", "junit_xml", "string" }, Vector<String>{});
+	add_schema("runtime_get_test_results", "Returns the latest Autowork test result snapshot from user://autowork_results.json.",
 			Vector<String>{}, Vector<String>{});
 	add_schema("wait", "Sleeps server-side for a bounded interval to let runtime/editor state settle.",
 			Vector<String>{ "ms", "number", "seconds", "number" }, Vector<String>{});
@@ -219,6 +233,8 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "projectPath", "string", "baseScenePath", "string", "newScenePath", "string" }, Vector<String>{ "baseScenePath", "newScenePath" });
 	add_schema("list_scene_nodes", "Lists the hierarchical node structure of a given scene.",
 			Vector<String>{ "scene_path", "string", "depth", "number" }, Vector<String>{ "scene_path" });
+	add_schema("get_node_warnings", "Returns configuration warnings for nodes in the open editor scene, or a PackedScene oracle via file_path.",
+			Vector<String>{ "file_path", "string", "scene_path", "string" }, Vector<String>{});
 	add_schema("get_scene_file_content", "Reads the raw scene file text for inspection.",
 			Vector<String>{ "scenePath", "string", "path", "string" }, Vector<String>{});
 	add_schema("delete_scene", "Deletes a scene file from the project.",
@@ -386,6 +402,8 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "scene_path", "string", "parent_path", "string", "region_name", "string" }, Vector<String>{ "scene_path", "parent_path" });
 	add_schema("create_navigation_agent", "Injects a navigation agent node natively.",
 			Vector<String>{ "scene_path", "string", "parent_path", "string", "agent_name", "string" }, Vector<String>{ "scene_path", "parent_path" });
+	add_schema("configure_sprite_frames", "Creates or replaces SpriteFrames on an AnimatedSprite2D in a scene file. Each animations[] item needs mode frames or generated_atlas.",
+			Vector<String>{ "file_path", "string", "node_path", "string", "animations", "array" }, Vector<String>{ "file_path", "node_path", "animations" });
 
 	current_category = "project_tools";
 	is_core = true;
@@ -398,10 +416,16 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "query", "string", "path", "string", "max_results", "number", "regex", "boolean", "file_type", "string" }, Vector<String>{ "query" }, "forbidden", "worker");
 	add_schema("set_project_setting", "Sets a specific global setting in the project settings file (project.blazium or project.godot).",
 			Vector<String>{ "key", "string", "value", "string" }, Vector<String>{ "key", "value" });
-	add_schema("uid_to_project_path", "Resolves a Godot UID representation to an absolute res:// path.",
+	add_schema("uid_to_project_path", "Resolves a resource UID (uid://) to a sandboxed res:// or user:// path.",
 			Vector<String>{ "uid", "string" }, Vector<String>{ "uid" }, "forbidden", "worker");
-	add_schema("project_path_to_uid", "Converts a godot absolute res:// path to its UUID equivalent.",
+	add_schema("project_path_to_uid", "Resolves a sandboxed res:// or user:// asset path to its resource UID.",
 			Vector<String>{ "path", "string" }, Vector<String>{ "path" }, "forbidden", "worker");
+	add_schema("asset_assign_uid", "Binds a sandboxed asset file to a new or provided resource UID and persists the UID cache.",
+			Vector<String>{ "path", "string", "uid", "string", "overwrite", "boolean" }, Vector<String>{ "path" });
+	add_schema("asset_update_uid", "Repoints an existing resource UID to a new sandboxed asset path and persists the UID cache.",
+			Vector<String>{ "uid", "string", "path", "string" }, Vector<String>{ "uid", "path" });
+	add_schema("asset_remove_uid", "Removes a resource UID mapping without deleting the asset file.",
+			Vector<String>{ "uid", "string", "path", "string" }, Vector<String>{});
 	add_schema("add_autoload", "Injects a singleton scene or script as an autoload in project scope.",
 			Vector<String>{ "name", "string", "path", "string" }, Vector<String>{ "name", "path" });
 	add_schema("remove_autoload", "Detaches a singleton autoload from project scope.",
@@ -519,8 +543,8 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "node_path", "string", "property", "string", "value", "any" }, Vector<String>{ "node_path", "property", "value" });
 	add_schema("node_get_properties", "Interrogates internal parameters within Node bindings structurally.",
 			Vector<String>{ "node_path", "string", "category", "string" }, Vector<String>{ "node_path" });
-	add_schema("node_add_resource", "Embeds a godot Resource directly assigned directly onto a node structure natively.",
-			Vector<String>{ "node_path", "string", "property", "string", "resource_type", "string", "resource_properties", "object" }, Vector<String>{ "node_path", "property", "resource_type" });
+	add_schema("node_add_resource", "Assigns a Resource onto a live node or a scene file node. resource_type may be a class name or load:res://path.",
+			Vector<String>{ "node_path", "string", "property", "string", "property_path", "string", "resource_type", "string", "resource_properties", "object", "properties", "object", "file_path", "string" }, Vector<String>{ "node_path", "property", "resource_type" });
 	add_schema("node_set_anchor_preset", "Enables UI layout modifications bound towards native godot PRESET flags.",
 			Vector<String>{ "node_path", "string", "preset", "string", "keep_offsets", "boolean" }, Vector<String>{ "node_path", "preset" });
 	add_schema("node_rename", "Edits node semantic names directly within godot structures.",
@@ -599,6 +623,8 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "parent_path", "string", "body_type", "string", "name", "string", "dimension", "string", "collision_layer", "number", "collision_mask", "number" }, Vector<String>{ "parent_path", "body_type" });
 	add_schema("get_collision_info", "Walks a sub-hierarchy scraping Godot shape configurations for runtime representations.",
 			Vector<String>{ "node_path", "string" }, Vector<String>{ "node_path" });
+	add_schema("validate_physics_setup", "Validates character and platform collision masks, shapes, and TileSet physics layers in a scene file.",
+			Vector<String>{ "file_path", "string", "character_nodes", "array", "platform_nodes", "array" }, Vector<String>{ "file_path" });
 
 	current_category = "scene3d_tools";
 	is_core = false;
@@ -649,18 +675,30 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 
 	current_category = "tilemap_tools";
 	is_core = false;
-	add_schema("tilemap_set_cell", "Sets physical cell identifiers onto Grid memory iterations inside TileMapLayers natively.",
-			Vector<String>{ "node_path", "string", "x", "number", "y", "number", "source_id", "number", "atlas_x", "number", "atlas_y", "number", "alternative", "number" }, Vector<String>{ "node_path" });
-	add_schema("tilemap_fill_rect", "Calculates ranges iterating assignment coordinates spanning bounds uniformly for TileMapLayers natively.",
-			Vector<String>{ "node_path", "string", "x1", "number", "y1", "number", "x2", "number", "y2", "number", "source_id", "number", "atlas_x", "number", "atlas_y", "number", "alternative", "number" }, Vector<String>{ "node_path" });
-	add_schema("tilemap_get_cell", "Queries active TileSet state identifiers parsing out structural metadata from TileMapLayers natively.",
-			Vector<String>{ "node_path", "string", "x", "number", "y", "number" }, Vector<String>{ "node_path" });
-	add_schema("tilemap_clear", "Flushes runtime cell structs flushing grids locally for TileMapLayers natively.",
-			Vector<String>{ "node_path", "string" }, Vector<String>{ "node_path" });
-	add_schema("tilemap_get_info", "Reads memory maps dumping resource state representations across TileSets dynamically natively.",
-			Vector<String>{ "node_path", "string" }, Vector<String>{ "node_path" });
-	add_schema("tilemap_get_used_cells", "Calculates bounds pulling physical active grid locations via vector pointers across TileMapLayers natively.",
-			Vector<String>{ "node_path", "string", "max_count", "number" }, Vector<String>{ "node_path" });
+	add_schema("tilemap_set_cell", "Sets a cell on a live or file-based TileMap or TileMapLayer.",
+			Vector<String>{ "node_path", "string", "file_path", "string", "layer", "number", "x", "number", "y", "number", "source_id", "number", "atlas_x", "number", "atlas_y", "number", "alternative", "number" }, Vector<String>{ "node_path" });
+	add_schema("tilemap_fill_rect", "Fills a rectangle on a TileMap or TileMapLayer. Accepts x/y/width/height or x1/y1/x2/y2.",
+			Vector<String>{ "node_path", "string", "file_path", "string", "layer", "number", "x", "number", "y", "number", "width", "number", "height", "number", "x1", "number", "y1", "number", "x2", "number", "y2", "number", "source_id", "number", "atlas_x", "number", "atlas_y", "number", "alternative", "number" }, Vector<String>{ "node_path" });
+	add_schema("tilemap_get_cell", "Reads one cell from a live or file-based TileMap or TileMapLayer.",
+			Vector<String>{ "node_path", "string", "file_path", "string", "layer", "number", "x", "number", "y", "number" }, Vector<String>{ "node_path" });
+	add_schema("tilemap_clear", "Clears cells on a live or file-based TileMap layer or TileMapLayer.",
+			Vector<String>{ "node_path", "string", "file_path", "string", "layer", "number" }, Vector<String>{ "node_path" });
+	add_schema("tilemap_get_info", "Reads TileSet sources, used_rect, pixel_bounds, physics layers, and optional cells/ASCII from a TileMap or TileMapLayer.",
+			Vector<String>{ "node_path", "string", "tilemap_node", "string", "file_path", "string", "layer", "number", "include_cells", "boolean", "ascii", "boolean", "region", "object", "tileset_only", "boolean" }, Vector<String>{ "node_path" });
+	add_schema("tilemap_get_used_cells", "Lists used cells from a live or file-based TileMap or TileMapLayer.",
+			Vector<String>{ "node_path", "string", "file_path", "string", "layer", "number", "max_count", "number" }, Vector<String>{ "node_path" });
+	add_schema("tilemap_draw_h_line", "Draws a horizontal tile line on a TileMap or TileMapLayer.",
+			Vector<String>{ "node_path", "string", "file_path", "string", "layer", "number", "x", "number", "y", "number", "length", "number", "source_id", "number", "atlas_x", "number", "atlas_y", "number", "alternative", "number" }, Vector<String>{ "node_path", "length" });
+	add_schema("tilemap_draw_v_line", "Draws a vertical tile line on a TileMap or TileMapLayer.",
+			Vector<String>{ "node_path", "string", "file_path", "string", "layer", "number", "x", "number", "y", "number", "length", "number", "source_id", "number", "atlas_x", "number", "atlas_y", "number", "alternative", "number" }, Vector<String>{ "node_path", "length" });
+	add_schema("tilemap_draw_stairs", "Draws a stair-step tile path on a TileMap or TileMapLayer. direction is up or down.",
+			Vector<String>{ "node_path", "string", "file_path", "string", "layer", "number", "x", "number", "y", "number", "length", "number", "direction", "string", "source_id", "number", "atlas_x", "number", "atlas_y", "number", "alternative", "number" }, Vector<String>{ "node_path", "length" });
+	add_schema("tilemap_erase_rect", "Erases a rectangle of tiles on a TileMap or TileMapLayer.",
+			Vector<String>{ "node_path", "string", "file_path", "string", "layer", "number", "x", "number", "y", "number", "width", "number", "height", "number", "x1", "number", "y1", "number", "x2", "number", "y2", "number" }, Vector<String>{ "node_path" });
+	add_schema("tilemap_configure_atlas", "Creates or updates a TileSetAtlasSource on a TileMap or TileMapLayer and creates every atlas cell.",
+			Vector<String>{ "node_path", "string", "file_path", "string", "texture_path", "string", "tile_size_x", "number", "tile_size_y", "number", "separation_x", "number", "separation_y", "number", "source_id", "number", "physics_collision_layer", "number", "physics_collision_mask", "number", "add_collision_shapes", "boolean" }, Vector<String>{ "node_path", "texture_path" });
+	add_schema("validate_tilemap_structure", "Validates TileMap or TileMapLayer cell counts, continuity, and bounds.",
+			Vector<String>{ "node_path", "string", "file_path", "string", "layer", "number", "checks", "object", "tile_count", "number" }, Vector<String>{ "node_path" });
 
 	current_category = "project_tools";
 	is_core = false;
@@ -676,11 +714,27 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "operation", "string", "name", "string", "path", "string" }, Vector<String>{ "operation" });
 	add_schema("project_get_collision_layers", "Dumps named Godot physics layers extracting user-defined metadata from ProjectSettings configuration natively.",
 			Vector<String>{}, Vector<String>{});
+	add_schema("read_file", "Reads a res:// or user:// text file with numbered lines. Directories are listed the same way as read_directory.",
+			Vector<String>{ "file_path", "string", "path", "string", "start_line", "number", "max_lines", "number", "offset", "number", "limit", "number" }, Vector<String>{ "file_path" }, "forbidden", "worker");
+	add_schema("read_directory", "Lists a sandboxed res:// or user:// directory with offset/limit pagination.",
+			Vector<String>{ "file_path", "string", "path", "string", "offset", "number", "limit", "number" }, Vector<String>{ "file_path" }, "forbidden", "worker");
+	add_schema("create_file", "Creates a sandboxed res:// or user:// file.",
+			Vector<String>{ "file_path", "string", "path", "string", "content", "string", "overwrite", "boolean" }, Vector<String>{ "file_path", "content" });
+	add_schema("edit_file", "Replaces a unique search_text occurrence in a sandboxed project file.",
+			Vector<String>{ "file_path", "string", "path", "string", "search_text", "string", "replace_text", "string", "search", "string", "replace", "string" }, Vector<String>{ "file_path", "search_text" });
+	add_schema("move_file", "Moves a sandboxed res:// or user:// file.",
+			Vector<String>{ "from", "string", "to", "string", "file_path", "string", "destination", "string" }, Vector<String>{ "from", "to" });
+	add_schema("copy_file", "Copies a sandboxed res:// or user:// file. Refuses overwrite unless overwrite=true.",
+			Vector<String>{ "from", "string", "to", "string", "file_path", "string", "destination", "string", "overwrite", "boolean" }, Vector<String>{ "from", "to" });
+	add_schema("delete_file", "Deletes a sandboxed res:// or user:// file.",
+			Vector<String>{ "file_path", "string", "path", "string" }, Vector<String>{ "file_path" });
 
 	current_category = "asset_tools";
 	is_core = false;
 	add_schema("asset_generate_2d_asset", "Renders raw SVG code directly into Godot Image instances saving PNG assets to disk and scanning filesystem repositories natively.",
 			Vector<String>{ "svg_code", "string", "filename", "string", "save_path", "string", "scale", "number" }, Vector<String>{ "svg_code", "filename" });
+	add_schema("save_pixel_art", "Writes a sandboxed PNG (path or base64) to res://assets/generated/ plus optional metadata JSON. Does not call hosted image generation.",
+			Vector<String>{ "path", "string", "source_path", "string", "filename", "string", "png_base64", "string", "metadata", "object" }, Vector<String>{});
 
 	current_category = "blueprint_tools";
 	is_core = false;

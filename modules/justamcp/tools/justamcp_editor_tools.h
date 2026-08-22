@@ -70,11 +70,24 @@ public:
 	Dictionary editor_reload_project(const Dictionary &p_args);
 	Dictionary editor_save_all_scenes(const Dictionary &p_args);
 	Dictionary editor_get_signals(const Dictionary &p_args);
+	Dictionary qa_start(const Dictionary &p_args);
+	Dictionary qa_act(const Dictionary &p_args);
+	Dictionary qa_observe(const Dictionary &p_args);
+	Dictionary qa_watch(const Dictionary &p_args);
+	Dictionary qa_drive(const Dictionary &p_args);
+	Dictionary qa_stop(const Dictionary &p_args);
 
 	Dictionary execute_tool(const String &p_tool_name, const Dictionary &p_args);
 
 	JustAMCPEditorTools() {}
 	~JustAMCPEditorTools() {}
+
+private:
+	bool _wait_ms(int p_ms);
+	Dictionary _deliver_playtest_input(const Dictionary &p_input, int p_edge = 0);
+	Dictionary _capture_scaled_screenshot(const Dictionary &p_args, const String &p_output_path);
+	Dictionary _qa_set_paused(bool p_paused);
+	Dictionary _qa_eval_probes(const Array &p_probes);
 };
 
 #endif
