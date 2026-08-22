@@ -32,25 +32,14 @@
 #include "justamcp_json_rpc_transport.h"
 #include "justamcp_oauth_discovery.h"
 #include "justamcp_session_manager.h"
+#include "tools/justamcp_settings_resolver.h"
 
 #include "core/config/project_settings.h"
 #include "core/crypto/crypto.h"
 #include "core/crypto/crypto_core.h"
 #include "core/io/json.h"
 #include "core/os/os.h"
-#include "editor/editor_settings.h"
 #include "modules/httpserver/http_server.h"
-#include "servers/display_server.h"
-
-static bool _is_headless() {
-	if (DisplayServer::get_singleton() != nullptr) {
-		return DisplayServer::get_singleton()->get_name() == "headless";
-	}
-	if (OS::get_singleton() && OS::get_singleton()->get_cmdline_args().find("--headless")) {
-		return true;
-	}
-	return false;
-}
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 
@@ -73,10 +62,7 @@ static String _justamcp_redact_header_value(const String &p_key, const String &p
 }
 
 static String _justamcp_redact_debug_body(const String &p_body) {
-	bool oauth_enabled = false;
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/oauth_enabled")) {
-		oauth_enabled = GLOBAL_GET("blazium/justamcp/oauth_enabled");
-	}
+	const bool oauth_enabled = JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/oauth_enabled", false);
 	if (oauth_enabled) {
 		return "[body redacted: oauth enabled]";
 	}
@@ -98,31 +84,9 @@ void JustAMCPServer::_handle_cors_preflight(Ref<HTTPRequestContext> p_context, R
 
 bool JustAMCPServer::_validate_mcp_oauth(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
 #ifdef TOOLS_ENABLED
-	bool oauth_enabled = false;
-	String required_client_id = "";
-	String required_client_secret = "";
-
-	bool use_project_override = GLOBAL_GET("blazium/justamcp/override_editor_settings");
-
-	if (_is_headless()) {
-		use_project_override = true;
-	}
-
-	if (use_project_override || !EditorSettings::get_singleton()) {
-		oauth_enabled = GLOBAL_GET("blazium/justamcp/oauth_enabled");
-		required_client_id = String(GLOBAL_GET("blazium/justamcp/client_id"));
-		required_client_secret = String(GLOBAL_GET("blazium/justamcp/client_secret"));
-	} else if (EditorSettings::get_singleton()) {
-		if (EditorSettings::get_singleton()->has_setting("blazium/justamcp/oauth_enabled")) {
-			oauth_enabled = EditorSettings::get_singleton()->get_setting("blazium/justamcp/oauth_enabled");
-		}
-		if (EditorSettings::get_singleton()->has_setting("blazium/justamcp/client_id")) {
-			required_client_id = String(EditorSettings::get_singleton()->get_setting("blazium/justamcp/client_id"));
-		}
-		if (EditorSettings::get_singleton()->has_setting("blazium/justamcp/client_secret")) {
-			required_client_secret = String(EditorSettings::get_singleton()->get_setting("blazium/justamcp/client_secret"));
-		}
-	}
+	const bool oauth_enabled = JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/oauth_enabled", false);
+	const String required_client_id = JustAMCPSettingsResolver::resolve_string("blazium/justamcp/client_id");
+	const String required_client_secret = JustAMCPSettingsResolver::resolve_string("blazium/justamcp/client_secret");
 
 	if (oauth_enabled) {
 		if (required_client_id.is_empty() || required_client_secret.is_empty()) {
@@ -197,7 +161,7 @@ bool JustAMCPServer::_validate_mcp_oauth(Ref<HTTPRequestContext> p_context, Ref<
 }
 
 void JustAMCPServer::_handle_legacy_sse_connect(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
-	if (GLOBAL_GET("blazium/justamcp/enable_debug_logging")) {
+	if (JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/enable_debug_logging", false)) {
 		_mcp_debug_log("Incoming " + p_context->get_method() + " /sse connection attempt...");
 	}
 	if (!_validate_mcp_oauth(p_context, p_response)) {
@@ -254,7 +218,7 @@ void JustAMCPServer::_on_sse_connection_opened(int p_connection_id, const String
 		return;
 	}
 	if (p_path == "/sse") {
-		if (GLOBAL_GET("blazium/justamcp/enable_debug_logging")) {
+		if (JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/enable_debug_logging", false)) {
 			_mcp_debug_log("New SSE connection opened on " + p_path + " (ID: " + itos(p_connection_id) + ")");
 		}
 		current_sse_connection_id = p_connection_id;
@@ -262,27 +226,8 @@ void JustAMCPServer::_on_sse_connection_opened(int p_connection_id, const String
 			session_manager->track_legacy_broadcast_connection(p_connection_id);
 		}
 
-		int port = 6506;
-		bool use_project_override = GLOBAL_GET("blazium/justamcp/override_editor_settings");
-		bool bind_to_localhost = true;
-
-		if (_is_headless()) {
-			use_project_override = true;
-		}
-
-		if (use_project_override || !EditorSettings::get_singleton()) {
-			port = GLOBAL_GET("blazium/justamcp/server_port");
-			if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/bind_to_localhost_only")) {
-				bind_to_localhost = GLOBAL_GET("blazium/justamcp/bind_to_localhost_only");
-			}
-		} else if (EditorSettings::get_singleton()) {
-			if (EditorSettings::get_singleton()->has_setting("blazium/justamcp/server_port")) {
-				port = EditorSettings::get_singleton()->get_setting("blazium/justamcp/server_port");
-			}
-			if (EditorSettings::get_singleton()->has_setting("blazium/justamcp/bind_to_localhost_only")) {
-				bind_to_localhost = EditorSettings::get_singleton()->get_setting("blazium/justamcp/bind_to_localhost_only");
-			}
-		}
+		int port = get_listening_port() > 0 ? get_listening_port() : JustAMCPSettingsResolver::resolve_server_port();
+		const bool bind_to_localhost = JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/bind_to_localhost_only", true);
 
 		String host_authority;
 		if (bind_to_localhost) {
@@ -404,7 +349,7 @@ void JustAMCPServer::_handle_message_post(Ref<HTTPRequestContext> p_context, Ref
 		return;
 	}
 
-	if (GLOBAL_GET("blazium/justamcp/enable_debug_logging")) {
+	if (JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/enable_debug_logging", false)) {
 		Array keys = p_context->get_headers().keys();
 		String header_dump;
 		for (int i = 0; i < keys.size(); i++) {
@@ -437,7 +382,7 @@ void JustAMCPServer::_handle_mcp_stateless_post(Ref<HTTPRequestContext> p_contex
 		return;
 	}
 
-	const bool debug_logging = GLOBAL_GET("blazium/justamcp/enable_debug_logging");
+	const bool debug_logging = JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/enable_debug_logging", false);
 	if (debug_logging) {
 		Array keys = p_context->get_headers().keys();
 		String header_dump;

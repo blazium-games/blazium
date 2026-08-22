@@ -30,6 +30,7 @@
 #include "justamcp_session_manager.h"
 
 #include "justamcp_server.h"
+#include "tools/justamcp_settings_resolver.h"
 
 #include "core/config/project_settings.h"
 #include "core/crypto/crypto_core.h"
@@ -38,10 +39,6 @@
 #include "core/templates/list.h"
 
 #include "modules/modules_enabled.gen.h"
-
-#ifdef TOOLS_ENABLED
-#include "editor/editor_settings.h"
-#endif
 
 MCPSessionManager::MCPSessionManager(JustAMCPServer *p_owner) {
 	owner = p_owner;
@@ -90,19 +87,7 @@ bool MCPSessionManager::is_legacy_protocol_version(const String &p_version) {
 }
 
 static String _configured_accepted_protocol_versions() {
-#ifdef TOOLS_ENABLED
-	bool use_project = true;
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/override_editor_settings")) {
-		use_project = GLOBAL_GET("blazium/justamcp/override_editor_settings");
-	}
-	if (!use_project && EditorSettings::get_singleton() && EditorSettings::get_singleton()->has_setting("blazium/justamcp/accepted_protocol_versions")) {
-		return String(EditorSettings::get_singleton()->get_setting("blazium/justamcp/accepted_protocol_versions"));
-	}
-#endif
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/accepted_protocol_versions")) {
-		return String(GLOBAL_GET("blazium/justamcp/accepted_protocol_versions"));
-	}
-	return String();
+	return JustAMCPSettingsResolver::resolve_string("blazium/justamcp/accepted_protocol_versions");
 }
 
 Vector<String> MCPSessionManager::supported_protocol_versions() {
@@ -298,19 +283,7 @@ void MCPSessionManager::clear_cli_protocol_version_override() {
 }
 
 static String _configured_protocol_version() {
-#ifdef TOOLS_ENABLED
-	bool use_project = true;
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/override_editor_settings")) {
-		use_project = GLOBAL_GET("blazium/justamcp/override_editor_settings");
-	}
-	if (!use_project && EditorSettings::get_singleton() && EditorSettings::get_singleton()->has_setting("blazium/justamcp/protocol_version")) {
-		return String(EditorSettings::get_singleton()->get_setting("blazium/justamcp/protocol_version"));
-	}
-#endif
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/protocol_version")) {
-		return String(GLOBAL_GET("blazium/justamcp/protocol_version"));
-	}
-	return String();
+	return JustAMCPSettingsResolver::resolve_string("blazium/justamcp/protocol_version");
 }
 
 String MCPSessionManager::latest_protocol_version() {
@@ -389,7 +362,7 @@ bool MCPSessionManager::is_allowed_origin_string(const String &p_origin) {
 	if (p_origin.is_empty()) {
 		return false;
 	}
-	const String allowed = GLOBAL_GET("blazium/justamcp/streamable_http_allowed_origin");
+	const String allowed = JustAMCPSettingsResolver::resolve_string("blazium/justamcp/streamable_http_allowed_origin");
 	if (!allowed.is_empty()) {
 		return p_origin == allowed;
 	}
@@ -450,7 +423,7 @@ bool MCPSessionManager::is_allowed_origin_string(const String &p_origin) {
 }
 
 bool MCPSessionManager::validate_origin(const Ref<HTTPRequestContext> &p_context) {
-	const bool strict = GLOBAL_GET("blazium/justamcp/streamable_http_strict_origin");
+	const bool strict = JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/streamable_http_strict_origin", false);
 	if (!strict) {
 		return true;
 	}

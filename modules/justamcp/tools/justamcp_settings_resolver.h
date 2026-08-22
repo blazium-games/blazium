@@ -29,14 +29,22 @@
 
 #pragma once
 
-#ifdef TOOLS_ENABLED
-
 #include "core/string/ustring.h"
+#include "core/variant/array.h"
 
 class JustAMCPSettingsResolver {
 public:
 	static bool uses_project_override();
 	static bool resolve_bool(const String &p_path, bool p_default);
+	static int resolve_int(const String &p_path, int p_default);
+	static String resolve_string(const String &p_path, const String &p_default = String());
+	static Array resolve_array(const String &p_path, const Array &p_default = Array());
+	static void set_array(const String &p_path, const Array &p_value);
+
+	static int resolve_server_port();
+	static bool resolve_server_enabled();
+
+#ifdef TOOLS_ENABLED
 	static void set_category_default(const String &p_category, bool p_is_core);
 	static bool resolve_category_enabled(const String &p_category, bool p_default = true);
 	static bool resolve_tool_enabled(const String &p_category, const String &p_full_name, bool p_default = true);
@@ -47,6 +55,5 @@ public:
 	static bool is_prompt_listed(const String &p_name);
 	static bool is_resource_listed(const String &p_name);
 	static bool resolve_allow_execute_tool_bypass();
-};
-
 #endif
+};

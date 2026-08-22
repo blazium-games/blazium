@@ -33,10 +33,10 @@
 #include "modules/modules_enabled.gen.h"
 #include "tools/justamcp_json_rpc_helpers.h"
 
-#include "core/config/project_settings.h"
 #include "core/crypto/crypto_core.h"
 #include "core/io/json.h"
 #include "core/os/time.h"
+#include "tools/justamcp_settings_resolver.h"
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 #include "modules/httpserver/http_server.h"
@@ -98,10 +98,7 @@ void MCPSessionManager::_touch_session(MCPSession &p_session) {
 }
 
 void MCPSessionManager::_prune_expired_pending_post_sse() {
-	int timeout_sec = 120;
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/pending_post_sse_timeout_sec")) {
-		timeout_sec = int(GLOBAL_GET("blazium/justamcp/pending_post_sse_timeout_sec"));
-	}
+	int timeout_sec = JustAMCPSettingsResolver::resolve_int("blazium/justamcp/pending_post_sse_timeout_sec", 120);
 
 	if (timeout_sec < 1) {
 		timeout_sec = 1;
@@ -122,7 +119,7 @@ void MCPSessionManager::_prune_expired_pending_post_sse() {
 
 void MCPSessionManager::_expire_sessions() {
 	_prune_expired_pending_post_sse();
-	const int ttl_seconds = GLOBAL_GET("blazium/justamcp/session_ttl_seconds");
+	const int ttl_seconds = JustAMCPSettingsResolver::resolve_int("blazium/justamcp/session_ttl_seconds", 3600);
 	if (ttl_seconds <= 0) {
 		prune_request_routes();
 		return;
@@ -441,10 +438,7 @@ void MCPSessionManager::untrack_legacy_broadcast_connection(int p_connection_id)
 }
 
 void MCPSessionManager::prune_request_routes() {
-	int ttl_sec = 3600;
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/request_route_ttl_sec")) {
-		ttl_sec = int(GLOBAL_GET("blazium/justamcp/request_route_ttl_sec"));
-	}
+	int ttl_sec = JustAMCPSettingsResolver::resolve_int("blazium/justamcp/request_route_ttl_sec", 3600);
 	if (ttl_sec <= 0) {
 		return;
 	}

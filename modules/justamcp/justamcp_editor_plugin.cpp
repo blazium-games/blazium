@@ -37,6 +37,7 @@
 #include "tools/justamcp_json_rpc_helpers.h"
 #include "tools/justamcp_prompt_executor.h"
 #include "tools/justamcp_resource_executor.h"
+#include "tools/justamcp_settings_resolver.h"
 #include "tools/justamcp_tool_executor.h"
 #include "tools/justamcp_tool_schema_cache.h"
 
@@ -375,45 +376,13 @@ void JustAMCPEditorPlugin::_on_tool_requested(const Variant &p_request_id, const
 }
 
 String JustAMCPEditorPlugin::get_mcp_config_json(MCPConfigClient p_client) {
-	int port = 6506;
-	bool oauth_enabled = false;
-	String client_id = "";
-	String client_secret = "";
-
-	bool use_project_override = false;
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/override_editor_settings")) {
-		use_project_override = GLOBAL_GET("blazium/justamcp/override_editor_settings");
+	int port = JustAMCPSettingsResolver::resolve_server_port();
+	if (JustAMCPServer::get_singleton() && JustAMCPServer::get_singleton()->get_listening_port() > 0) {
+		port = JustAMCPServer::get_singleton()->get_listening_port();
 	}
-
-	if (use_project_override || !EditorSettings::get_singleton()) {
-		if (ProjectSettings::get_singleton()) {
-			if (ProjectSettings::get_singleton()->has_setting("blazium/justamcp/server_port")) {
-				port = static_cast<int>(GLOBAL_GET("blazium/justamcp/server_port"));
-			}
-			if (ProjectSettings::get_singleton()->has_setting("blazium/justamcp/oauth_enabled")) {
-				oauth_enabled = GLOBAL_GET("blazium/justamcp/oauth_enabled");
-			}
-			if (ProjectSettings::get_singleton()->has_setting("blazium/justamcp/client_id")) {
-				client_id = String(GLOBAL_GET("blazium/justamcp/client_id"));
-			}
-			if (ProjectSettings::get_singleton()->has_setting("blazium/justamcp/client_secret")) {
-				client_secret = String(GLOBAL_GET("blazium/justamcp/client_secret"));
-			}
-		}
-	} else if (EditorSettings::get_singleton()) {
-		if (EditorSettings::get_singleton()->has_setting("blazium/justamcp/server_port")) {
-			port = EditorSettings::get_singleton()->get_setting("blazium/justamcp/server_port");
-		}
-		if (EditorSettings::get_singleton()->has_setting("blazium/justamcp/oauth_enabled")) {
-			oauth_enabled = EditorSettings::get_singleton()->get_setting("blazium/justamcp/oauth_enabled");
-		}
-		if (EditorSettings::get_singleton()->has_setting("blazium/justamcp/client_id")) {
-			client_id = String(EditorSettings::get_singleton()->get_setting("blazium/justamcp/client_id"));
-		}
-		if (EditorSettings::get_singleton()->has_setting("blazium/justamcp/client_secret")) {
-			client_secret = String(EditorSettings::get_singleton()->get_setting("blazium/justamcp/client_secret"));
-		}
-	}
+	const bool oauth_enabled = JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/oauth_enabled", false);
+	const String client_id = JustAMCPSettingsResolver::resolve_string("blazium/justamcp/client_id");
+	const String client_secret = JustAMCPSettingsResolver::resolve_string("blazium/justamcp/client_secret");
 
 	const String mcp_url = "http://127.0.0.1:" + itos(port) + "/mcp";
 

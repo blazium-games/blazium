@@ -30,6 +30,7 @@
 #ifdef TESTS_ENABLED
 
 #include "test_justamcp_settings_resolver.h"
+#include "../justamcp_cli_args.h"
 #include "../tools/justamcp_json_rpc_helpers.h"
 #include "../tools/justamcp_prompt_executor.h"
 #include "../tools/justamcp_resource_manifest.h"
@@ -42,12 +43,52 @@
 #include "tests/test_macros.h"
 
 void test_justamcp_settings_resolver() {
+	// macOS editor CI runs `--test` without `--headless`; fixtures write Project Settings.
+	CHECK(JustAMCPSettingsResolver::uses_project_override());
 	bool cat_enabled = false;
 	bool tool_enabled = false;
 	CHECK(JustAMCPSettingsResolver::resolve_tool_enabled("asset_tags_tools", "blazium_tags_list", true, false, cat_enabled, tool_enabled));
 	CHECK(cat_enabled);
 	CHECK(tool_enabled);
 	CHECK(JustAMCPSettingsResolver::resolve_category_enabled("asset_tags_tools", true));
+}
+
+void test_justamcp_settings_resolver_typed_values() {
+	ProjectSettings *ps = ProjectSettings::get_singleton();
+	CHECK(ps);
+
+	const int prev_port = int(ps->get_setting("blazium/justamcp/server_port", 6506));
+	const String prev_origin = String(ps->get_setting("blazium/justamcp/streamable_http_allowed_origin", ""));
+	const bool prev_override = bool(ps->get_setting("blazium/justamcp/override_editor_settings", false));
+	const bool had_hosts = ps->has_setting("blazium/justamcp/bridge_url_allow_hosts");
+	const Variant prev_hosts = had_hosts ? ps->get_setting("blazium/justamcp/bridge_url_allow_hosts") : Variant();
+
+	ps->set_setting("blazium/justamcp/override_editor_settings", true);
+	ps->set_setting("blazium/justamcp/server_port", 6511);
+	ps->set_setting("blazium/justamcp/streamable_http_allowed_origin", "https://example.test");
+	Array hosts;
+	hosts.push_back("example.test");
+	ps->set_setting("blazium/justamcp/bridge_url_allow_hosts", hosts);
+
+	CHECK(JustAMCPSettingsResolver::resolve_int("blazium/justamcp/server_port", 6506) == 6511);
+	CHECK(JustAMCPSettingsResolver::resolve_string("blazium/justamcp/streamable_http_allowed_origin") == "https://example.test");
+	const Array resolved = JustAMCPSettingsResolver::resolve_array("blazium/justamcp/bridge_url_allow_hosts");
+	CHECK(resolved.size() == 1);
+	CHECK(String(resolved[0]) == "example.test");
+
+	JustAMCPCliArgs::set_test_mcp_port(6512);
+	CHECK(JustAMCPSettingsResolver::resolve_server_port() == 6512);
+	JustAMCPCliArgs::clear_test_overrides();
+	CHECK(JustAMCPSettingsResolver::resolve_server_port() == 6511);
+
+	ps->set_setting("blazium/justamcp/server_port", prev_port);
+	ps->set_setting("blazium/justamcp/streamable_http_allowed_origin", prev_origin);
+	ps->set_setting("blazium/justamcp/override_editor_settings", prev_override);
+	if (had_hosts) {
+		ps->set_setting("blazium/justamcp/bridge_url_allow_hosts", prev_hosts);
+	} else {
+		ps->clear("blazium/justamcp/bridge_url_allow_hosts");
+	}
 }
 
 void test_justamcp_resource_manifest() {

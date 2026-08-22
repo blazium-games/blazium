@@ -37,12 +37,10 @@
 #include "core/os/os.h"
 #include "core/os/thread.h"
 #include "core/os/time.h"
+#include "justamcp_settings_resolver.h"
 
 static int _justamcp_task_result_max_wait_ms() {
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/task_result_max_wait_ms")) {
-		return int(GLOBAL_GET("blazium/justamcp/task_result_max_wait_ms"));
-	}
-	return 120000;
+	return JustAMCPSettingsResolver::resolve_int("blazium/justamcp/task_result_max_wait_ms", 120000);
 }
 
 void JustAMCPTaskManager::_bind_methods() {
@@ -131,10 +129,7 @@ String JustAMCPTaskManager::create_task(int p_ttl_ms, int p_poll_interval_ms, co
 	MutexLock lock(tasks_mutex);
 	_purge_expired_tasks();
 
-	int max_tasks = 16;
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/task_max_concurrent")) {
-		max_tasks = int(GLOBAL_GET("blazium/justamcp/task_max_concurrent"));
-	}
+	const int max_tasks = JustAMCPSettingsResolver::resolve_int("blazium/justamcp/task_max_concurrent", 16);
 	if (tasks.size() >= (uint32_t)max_tasks) {
 		return String();
 	}

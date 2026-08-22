@@ -29,6 +29,7 @@
 
 #include "justamcp_server.h"
 
+#include "justamcp_cli_args.h"
 #include "justamcp_cors_policy.h"
 #include "justamcp_json_rpc_transport.h"
 #include "justamcp_notification_bus.h"
@@ -42,6 +43,7 @@
 #include "tools/justamcp_json_rpc_router.h"
 #include "tools/justamcp_prompt_executor.h"
 #include "tools/justamcp_resource_executor.h"
+#include "tools/justamcp_settings_resolver.h"
 #include "tools/justamcp_task_manager.h"
 #include "tools/justamcp_tool_executor.h"
 #include "tools/justamcp_tool_schema_cache.h"
@@ -51,28 +53,14 @@
 #include "core/object/class_db.h"
 #include "core/os/os.h"
 #include "editor/editor_settings.h"
-#include "servers/display_server.h"
 
 #include "modules/modules_enabled.gen.h"
 
-static bool _is_headless() {
-	if (DisplayServer::get_singleton() != nullptr) {
-		return DisplayServer::get_singleton()->get_name() == "headless";
-	}
-	if (OS::get_singleton() && OS::get_singleton()->get_cmdline_args().find("--headless")) {
-		return true;
-	}
-	return false;
-}
-
 static bool _justamcp_headless_project_server_requested() {
-	if (!_is_headless()) {
+	if (!JustAMCPCliArgs::is_headless()) {
 		return false;
 	}
-	if (!ProjectSettings::get_singleton()) {
-		return false;
-	}
-	return GLOBAL_GET("blazium/justamcp/server_enabled");
+	return JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/server_enabled", false);
 }
 
 void JustAMCPServer::_bind_methods() {
@@ -235,7 +223,7 @@ void JustAMCPServer::_print_handler_callback(void *p_user_data, const String &p_
 	if (!server->server_started) {
 		return;
 	}
-	if (!ProjectSettings::get_singleton() || !GLOBAL_GET("blazium/justamcp/forward_engine_logs")) {
+	if (!JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/forward_engine_logs", false)) {
 		return;
 	}
 
@@ -371,36 +359,13 @@ void JustAMCPServer::_notification(int p_what) {
 }
 
 int JustAMCPServer::_resolve_listening_port_from_settings() const {
-	int port = 6506;
-#ifdef TOOLS_ENABLED
-	bool use_project_override = GLOBAL_GET("blazium/justamcp/override_editor_settings");
-	if (_is_headless()) {
-		use_project_override = true;
-	}
-	if (use_project_override || !EditorSettings::get_singleton()) {
-		port = GLOBAL_GET("blazium/justamcp/server_port");
-	} else if (EditorSettings::get_singleton()->has_setting("blazium/justamcp/server_port")) {
-		port = EditorSettings::get_singleton()->get_setting("blazium/justamcp/server_port");
-	}
-#endif
-	return port;
+	return JustAMCPSettingsResolver::resolve_server_port();
 }
 
 void JustAMCPServer::_on_settings_changed() {
 #ifdef TOOLS_ENABLED
 	JustAMCPJsonRpcHelpers::mark_mcp_tool_settings_dirty();
-	bool is_enabled = false;
-	bool use_project_override = GLOBAL_GET("blazium/justamcp/override_editor_settings");
-
-	if (_is_headless()) {
-		use_project_override = true;
-	}
-
-	if (use_project_override || !EditorSettings::get_singleton()) {
-		is_enabled = GLOBAL_GET("blazium/justamcp/server_enabled");
-	} else if (EditorSettings::get_singleton()->has_setting("blazium/justamcp/server_enabled")) {
-		is_enabled = EditorSettings::get_singleton()->get_setting("blazium/justamcp/server_enabled");
-	}
+	bool is_enabled = JustAMCPSettingsResolver::resolve_server_enabled();
 
 	if (_justamcp_headless_project_server_requested()) {
 		is_enabled = true;
@@ -408,9 +373,7 @@ void JustAMCPServer::_on_settings_changed() {
 
 	if (!is_enabled && server_started) {
 		_stop_server();
-	}
-
-	else if (is_enabled && !server_started) {
+	} else if (is_enabled && !server_started) {
 		_start_server();
 	} else if (is_enabled && server_started) {
 		const int resolved_port = _resolve_listening_port_from_settings();
@@ -445,59 +408,19 @@ void JustAMCPServer::_start_server_internal(bool p_ignore_cmdline_block) {
 	}
 
 	const List<String> &args = OS::get_singleton()->get_cmdline_args();
-	if (!p_ignore_cmdline_block && !_justamcp_headless_project_server_requested()) {
-		for (const String &arg : args) {
-			if (arg == "--test" || arg == "--tests" || arg.begins_with("--aw-") ||
-					arg == "--help" || arg == "-h" || arg == "/?" || arg == "--version" ||
-					arg == "--check-only" || arg.begins_with("--export")) {
-				print_line("JustAMCP: Server not started (cmdline " + arg + " skips MCP).");
-				return;
-			}
-		}
+	if (!p_ignore_cmdline_block && JustAMCPCliArgs::skip_mcp_server() && !_justamcp_headless_project_server_requested()) {
+		print_line("JustAMCP: Server not started (cmdline skips MCP).");
+		return;
 	}
 
-	bool enabled = false;
-	int port = 6506;
-	bool bind_to_localhost = true;
+	bool enabled = JustAMCPSettingsResolver::resolve_server_enabled();
+	int port = JustAMCPSettingsResolver::resolve_server_port();
+	bool bind_to_localhost = JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/bind_to_localhost_only", true);
 
-#ifdef TOOLS_ENABLED
-	bool use_project_override = GLOBAL_GET("blazium/justamcp/override_editor_settings");
-
-	if (_is_headless()) {
-		use_project_override = true;
-	}
-
-	if (use_project_override || !EditorSettings::get_singleton()) {
-		enabled = GLOBAL_GET("blazium/justamcp/server_enabled");
-		port = GLOBAL_GET("blazium/justamcp/server_port");
-		if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/bind_to_localhost_only")) {
-			bind_to_localhost = GLOBAL_GET("blazium/justamcp/bind_to_localhost_only");
-		}
-	} else {
-		if (EditorSettings::get_singleton()->has_setting("blazium/justamcp/server_enabled")) {
-			enabled = EditorSettings::get_singleton()->get_setting("blazium/justamcp/server_enabled");
-		}
-		if (EditorSettings::get_singleton()->has_setting("blazium/justamcp/server_port")) {
-			port = EditorSettings::get_singleton()->get_setting("blazium/justamcp/server_port");
-		}
-		if (EditorSettings::get_singleton()->has_setting("blazium/justamcp/bind_to_localhost_only")) {
-			bind_to_localhost = EditorSettings::get_singleton()->get_setting("blazium/justamcp/bind_to_localhost_only");
-		}
-	}
-#endif
-
-	bool cmd_enable_mcp = false;
-	int cmd_port = -1;
 	String cmd_client_id = "";
 	String cmd_client_secret = "";
 
 	for (const List<String>::Element *E = args.front(); E; E = E->next()) {
-		if (E->get() == "--enable-mcp") {
-			cmd_enable_mcp = true;
-		}
-		if (E->get() == "--mcp-port" && E->next()) {
-			cmd_port = E->next()->get().to_int();
-		}
 		if (E->get() == "--mcp-client-id" && E->next()) {
 			cmd_client_id = E->next()->get();
 		}
@@ -521,12 +444,6 @@ void JustAMCPServer::_start_server_internal(bool p_ignore_cmdline_block) {
 		return;
 	}
 
-	if (cmd_enable_mcp) {
-		enabled = true;
-	}
-	if (cmd_port > 0) {
-		port = cmd_port;
-	}
 	if (!cmd_client_id.is_empty() && !cmd_client_secret.is_empty()) {
 		if (ProjectSettings::get_singleton()) {
 			ProjectSettings::get_singleton()->set_setting("blazium/justamcp/oauth_enabled", true);
@@ -547,15 +464,7 @@ void JustAMCPServer::_start_server_internal(bool p_ignore_cmdline_block) {
 		return;
 	}
 
-	bool oauth_enabled = false;
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/oauth_enabled")) {
-		oauth_enabled = GLOBAL_GET("blazium/justamcp/oauth_enabled");
-	}
-#ifdef TOOLS_ENABLED
-	if (!oauth_enabled && EditorSettings::get_singleton() && EditorSettings::get_singleton()->has_setting("blazium/justamcp/oauth_enabled")) {
-		oauth_enabled = EditorSettings::get_singleton()->get_setting("blazium/justamcp/oauth_enabled");
-	}
-#endif
+	const bool oauth_enabled = JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/oauth_enabled", false);
 	if (!bind_to_localhost && !oauth_enabled) {
 		ERR_PRINT("JustAMCP: Refusing to start server: bind_to_localhost_only is false without OAuth enabled. Enable OAuth or bind to localhost only.");
 		return;
@@ -588,7 +497,7 @@ void JustAMCPServer::_start_server_internal(bool p_ignore_cmdline_block) {
 
 	HTTPServer::get_singleton()->set_cors_enabled(true);
 	{
-		const String allowed_origin = String(GLOBAL_GET("blazium/justamcp/streamable_http_allowed_origin"));
+		const String allowed_origin = JustAMCPSettingsResolver::resolve_string("blazium/justamcp/streamable_http_allowed_origin");
 		const String cors_origin = justamcp_compute_startup_cors_origin(bind_to_localhost, oauth_enabled, allowed_origin);
 		if (!bind_to_localhost && cors_origin.is_empty()) {
 			WARN_PRINT("JustAMCP: bind_to_localhost_only is false without OAuth or streamable_http_allowed_origin; CORS Access-Control-Allow-Origin will not be set to *.");
@@ -636,7 +545,7 @@ void JustAMCPServer::_start_server_internal(bool p_ignore_cmdline_block) {
 
 #ifdef TOOLS_ENABLED
 void JustAMCPServer::_ensure_headless_tool_executor() {
-	if (!_is_headless()) {
+	if (!JustAMCPCliArgs::is_headless()) {
 		return;
 	}
 	if (!headless_tool_executor) {

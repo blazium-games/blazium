@@ -27,12 +27,12 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "core/config/project_settings.h"
 #include "core/io/json.h"
 #include "core/os/time.h"
 #include "justamcp_server.h"
 #include "justamcp_session_manager.h"
 #include "modules/modules_enabled.gen.h"
+#include "tools/justamcp_settings_resolver.h"
 #if defined(MODULE_HTTPSERVER_ENABLED)
 #include "modules/httpserver/http_request_context.h"
 #include "modules/httpserver/http_response.h"
@@ -42,7 +42,7 @@
 #if defined(MODULE_HTTPSERVER_ENABLED)
 
 bool MCPSessionManager::handle_mcp_delete(const Ref<HTTPRequestContext> &p_context, Ref<HTTPResponse> p_response) {
-	const bool allow_delete = GLOBAL_GET("blazium/justamcp/session_allow_client_delete");
+	const bool allow_delete = JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/session_allow_client_delete", true);
 	if (!allow_delete) {
 		p_response->set_status(405);
 		p_response->set_body("Session DELETE not enabled");

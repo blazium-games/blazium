@@ -42,21 +42,19 @@
 #include "scene/main/scene_tree.h"
 #include "tools/justamcp_json_rpc_helpers.h"
 #include "tools/justamcp_readonly_tools.h"
+#include "tools/justamcp_settings_resolver.h"
 #include "tools/justamcp_task_manager.h"
 #include "tools/justamcp_tool_executor.h"
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 
 static int _justamcp_readonly_worker_concurrency() {
-	int concurrency = 2;
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/readonly_worker_concurrency")) {
-		concurrency = int(GLOBAL_GET("blazium/justamcp/readonly_worker_concurrency"));
-	}
+	int concurrency = JustAMCPSettingsResolver::resolve_int("blazium/justamcp/readonly_worker_concurrency", 2);
 	if (concurrency < 0) {
 		concurrency = 0;
 	}
 
-	if (concurrency == 0 && ProjectSettings::get_singleton() && bool(GLOBAL_GET("blazium/justamcp/parallel_readonly_lane"))) {
+	if (concurrency == 0 && JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/parallel_readonly_lane", false)) {
 		concurrency = 1;
 	}
 	return concurrency;
@@ -133,10 +131,7 @@ MCPToolQueueEntry *JustAMCPServer::_enqueue_tool_request(const Variant &p_reques
 			entry->sse_connection_id = route_connection_id;
 		}
 	}
-	int max_per_session = 8;
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/max_pending_per_session")) {
-		max_per_session = int(GLOBAL_GET("blazium/justamcp/max_pending_per_session"));
-	}
+	const int max_per_session = JustAMCPSettingsResolver::resolve_int("blazium/justamcp/max_pending_per_session", 8);
 	if (max_per_session > 0 && !entry->session_id.is_empty() && mcp_tool_queue.count_pending_for_session(entry->session_id) >= max_per_session) {
 		memdelete(entry);
 		r_queue_full_error["jsonrpc"] = "2.0";
@@ -147,10 +142,7 @@ MCPToolQueueEntry *JustAMCPServer::_enqueue_tool_request(const Variant &p_reques
 		r_queue_full_error["error"] = error_dict;
 		return nullptr;
 	}
-	int max_enqueue_per_sec = 10;
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/max_enqueue_per_sec_per_session")) {
-		max_enqueue_per_sec = int(GLOBAL_GET("blazium/justamcp/max_enqueue_per_sec_per_session"));
-	}
+	const int max_enqueue_per_sec = JustAMCPSettingsResolver::resolve_int("blazium/justamcp/max_enqueue_per_sec_per_session", 10);
 	if (max_enqueue_per_sec > 0) {
 		const String rate_key = entry->session_id.is_empty() ? String("__anonymous__") : entry->session_id;
 		MutexLock rate_lock(session_enqueue_rate_mutex);

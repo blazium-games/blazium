@@ -42,6 +42,7 @@
 #include "core/object/worker_thread_pool.h"
 #include "core/os/thread.h"
 #include "editor/editor_settings.h"
+#include "justamcp_settings_resolver.h"
 
 JustAMCPMCPClientBridge *JustAMCPMCPClientBridge::singleton = nullptr;
 static uint64_t g_mcp_client_rpc_id = 1;
@@ -51,10 +52,10 @@ static bool _justamcp_bridge_host_allowed(const String &p_host) {
 	if (host == "127.0.0.1" || host == "localhost" || host == "::1" || host == "[::1]") {
 		return true;
 	}
-	if (!ProjectSettings::get_singleton() || !ProjectSettings::get_singleton()->has_setting("blazium/justamcp/bridge_url_allow_hosts")) {
+	const Array allow = JustAMCPSettingsResolver::resolve_array("blazium/justamcp/bridge_url_allow_hosts");
+	if (allow.is_empty()) {
 		return false;
 	}
-	const Array allow = GLOBAL_GET("blazium/justamcp/bridge_url_allow_hosts");
 	for (int i = 0; i < allow.size(); i++) {
 		if (String(allow[i]).strip_edges().to_lower() == host) {
 			return true;
@@ -103,15 +104,11 @@ JustAMCPMCPClientBridge *JustAMCPMCPClientBridge::get_singleton() {
 }
 
 Array JustAMCPMCPClientBridge::_load_bridges() const {
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/mcp_clients")) {
-		return GLOBAL_GET("blazium/justamcp/mcp_clients");
-	}
-	return Array();
+	return JustAMCPSettingsResolver::resolve_array("blazium/justamcp/mcp_clients");
 }
 
 void JustAMCPMCPClientBridge::_save_bridges(const Array &p_bridges) const {
-	ProjectSettings::get_singleton()->set_setting("blazium/justamcp/mcp_clients", p_bridges);
-	ProjectSettings::get_singleton()->save();
+	JustAMCPSettingsResolver::set_array("blazium/justamcp/mcp_clients", p_bridges);
 }
 
 Dictionary JustAMCPMCPClientBridge::_get_bridge_config(const String &p_bridge_name) const {

@@ -33,10 +33,10 @@
 #include "justamcp_notification_bus.h"
 #include "justamcp_pagination.h"
 
-#include "core/config/project_settings.h"
 #include "core/io/json.h"
 #include "core/os/time.h"
 #include "modules/httpserver/http_server.h"
+#include "tools/justamcp_settings_resolver.h"
 #include "tools/justamcp_task_manager.h"
 
 void JustAMCPServer::broadcast_prompts_list_changed() {
@@ -106,7 +106,7 @@ Dictionary JustAMCPServer::get_mcp_notification_log_page(const String &p_cursor)
 }
 
 void JustAMCPServer::_mcp_debug_log(const String &p_message) {
-	if (!GLOBAL_GET("blazium/justamcp/enable_debug_logging")) {
+	if (!JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/enable_debug_logging", false)) {
 		return;
 	}
 	Dictionary log_data;

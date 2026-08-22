@@ -38,6 +38,7 @@
 #include "../justamcp_session_manager.h"
 
 #ifdef TOOLS_ENABLED
+#include "../justamcp_cli_args.h"
 #include "../justamcp_editor_plugin.h"
 #endif
 
@@ -388,6 +389,19 @@ void test_justamcp_mcp_config_client_field_shapes() {
 #endif
 }
 
+void test_justamcp_mcp_config_json_uses_cli_port() {
+#ifdef TOOLS_ENABLED
+	JustAMCPCliArgs::set_test_mcp_port(16526);
+	const String cursor_cfg = JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_CURSOR);
+	const String ag_cfg = JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_ANTIGRAVITY);
+	JustAMCPCliArgs::clear_test_overrides();
+	CHECK(cursor_cfg.contains("http://127.0.0.1:16526/mcp"));
+	CHECK(ag_cfg.contains("http://127.0.0.1:16526/mcp"));
+#else
+	SUCCEED();
+#endif
+}
+
 #else
 void test_justamcp_http_initialize_creates_session() {
 	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required for HTTP integration tests");
@@ -426,6 +440,9 @@ void test_justamcp_http_catalogs_after_initialize() {
 	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required for HTTP integration tests");
 }
 void test_justamcp_mcp_config_client_field_shapes() {
+	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required for HTTP integration tests");
+}
+void test_justamcp_mcp_config_json_uses_cli_port() {
 	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required for HTTP integration tests");
 }
 #endif

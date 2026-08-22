@@ -693,7 +693,7 @@
 			Comma-separated OAuth scopes advertised in Protected Resource Metadata.
 		</member>
 		<member name="blazium/justamcp/override_editor_settings" type="bool" setter="" getter="" default="false">
-			If [code]true[/code], JustAMCP reads server, tool, prompt, and resource toggles from [ProjectSettings] instead of [EditorSettings]. Automatically enabled in headless mode and when using [code]--enable-mcp[/code].
+			If [code]true[/code], JustAMCP reads server, tool, prompt, and resource toggles from [ProjectSettings] instead of [EditorSettings]. Headless sessions always use Project Settings. The [code]--enable-mcp[/code] flag enables the HTTP server without forcing this override.
 		</member>
 		<member name="blazium/justamcp/parallel_readonly_lane" type="bool" setter="" getter="" default="false">
 		</member>

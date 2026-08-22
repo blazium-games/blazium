@@ -29,7 +29,6 @@
 
 #include "justamcp_server.h"
 
-#include "core/config/project_settings.h"
 #include "core/io/json.h"
 #include "core/os/time.h"
 #include "justamcp_server_request_lookup.h"
@@ -37,6 +36,7 @@
 #include "justamcp_tool_queue_state.h"
 #include "scene/main/scene_tree.h"
 #include "tools/justamcp_json_rpc_helpers.h"
+#include "tools/justamcp_settings_resolver.h"
 #include "tools/justamcp_task_manager.h"
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
@@ -185,10 +185,7 @@ void JustAMCPServer::_on_request_cancelled(const Variant &p_request_id, const St
 	}
 
 	if (is_in_flight) {
-		int deadline_ms = 5000;
-		if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/in_flight_cancel_deadline_ms")) {
-			deadline_ms = int(GLOBAL_GET("blazium/justamcp/in_flight_cancel_deadline_ms"));
-		}
+		int deadline_ms = JustAMCPSettingsResolver::resolve_int("blazium/justamcp/in_flight_cancel_deadline_ms", 5000);
 		if (deadline_ms <= 0) {
 			Dictionary cancelled;
 			cancelled["ok"] = false;
@@ -206,10 +203,7 @@ void JustAMCPServer::_on_request_cancelled(const Variant &p_request_id, const St
 }
 
 void JustAMCPServer::_enforce_in_flight_cancel_deadline(const Variant &p_request_id) {
-	int deadline_ms = 5000;
-	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/in_flight_cancel_deadline_ms")) {
-		deadline_ms = int(GLOBAL_GET("blazium/justamcp/in_flight_cancel_deadline_ms"));
-	}
+	int deadline_ms = JustAMCPSettingsResolver::resolve_int("blazium/justamcp/in_flight_cancel_deadline_ms", 5000);
 
 	MCPToolQueueEntry *target = nullptr;
 	uint64_t cancel_usec = 0;
