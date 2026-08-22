@@ -79,6 +79,7 @@ private:
 	PackedByteArray has_transparency;
 
 	bool play = false;
+	bool autoplay_on_load = true;
 	bool loop = true;
 	float speed_scale = 1.0;
 	int current_frame = 0;
@@ -96,6 +97,7 @@ private:
 
 	void _update_proxy();
 	void _finish_non_thread_safe_setup();
+	void _maybe_autoplay();
 	void _update_activity();
 	bool _is_playing_state() const;
 	static void _connect_heartbeat();
@@ -153,6 +155,8 @@ public:
 
 	void set_play(bool p_play);
 	bool get_play() const;
+	void set_autoplay_on_load(bool p_autoplay);
+	bool get_autoplay_on_load() const;
 	void set_loop(bool p_loop);
 	bool get_loop() const;
 	void set_speed_scale(float p_scale);

@@ -189,6 +189,7 @@ void GIFTexture::apply_decoded(const GIFDecoded &p_decoded) {
 		_apply_decoded(p_decoded);
 	}
 	_emit_data_changed();
+	_maybe_autoplay();
 }
 
 Error GIFTexture::load_from_path(const String &p_path) {
@@ -495,6 +496,7 @@ void GIFTexture::_set_source_frames(const TypedArray<Image> &p_frames) {
 		_rebuild_textures();
 	}
 	_emit_data_changed();
+	_maybe_autoplay();
 }
 
 TypedArray<Image> GIFTexture::_get_baked_frames() const {
@@ -520,6 +522,7 @@ void GIFTexture::_set_baked_frames(const TypedArray<Image> &p_frames) {
 		_rebuild_textures();
 	}
 	_emit_data_changed();
+	_maybe_autoplay();
 }
 
 void GIFTexture::_update_proxy() {
@@ -606,6 +609,13 @@ void GIFTexture::_update_proxy() {
 void GIFTexture::_finish_non_thread_safe_setup() {
 	_update_proxy();
 	_update_activity();
+}
+
+void GIFTexture::_maybe_autoplay() {
+	if (!autoplay_on_load || source_frames.is_empty()) {
+		return;
+	}
+	set_play(true);
 }
 
 bool GIFTexture::_is_playing_state() const {
@@ -703,6 +713,14 @@ void GIFTexture::set_play(bool p_play) {
 bool GIFTexture::get_play() const {
 	RWLockRead r(rw_lock);
 	return play;
+}
+
+void GIFTexture::set_autoplay_on_load(bool p_autoplay) {
+	autoplay_on_load = p_autoplay;
+}
+
+bool GIFTexture::get_autoplay_on_load() const {
+	return autoplay_on_load;
 }
 
 void GIFTexture::set_loop(bool p_loop) {
@@ -852,10 +870,12 @@ Ref<Image> GIFTexture::get_image() const {
 		frame = current_frame;
 	}
 	Ref<Texture2D> tex = const_cast<GIFTexture *>(this)->get_active_texture(frame);
-	if (tex.is_valid()) {
-		return tex->get_image();
+	Ref<Image> img = tex.is_valid() ? tex->get_image() : get_source_image(frame);
+	if (img.is_valid() && img->is_compressed()) {
+		img = img->duplicate();
+		img->decompress();
 	}
-	return get_source_image(frame);
+	return img;
 }
 
 bool GIFTexture::is_pixel_opaque(int p_x, int p_y) const {
@@ -958,6 +978,8 @@ void GIFTexture::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_play", "play"), &GIFTexture::set_play);
 	ClassDB::bind_method(D_METHOD("get_play"), &GIFTexture::get_play);
+	ClassDB::bind_method(D_METHOD("set_autoplay_on_load", "autoplay"), &GIFTexture::set_autoplay_on_load);
+	ClassDB::bind_method(D_METHOD("get_autoplay_on_load"), &GIFTexture::get_autoplay_on_load);
 	ClassDB::bind_method(D_METHOD("set_loop", "loop"), &GIFTexture::set_loop);
 	ClassDB::bind_method(D_METHOD("get_loop"), &GIFTexture::get_loop);
 	ClassDB::bind_method(D_METHOD("set_speed_scale", "scale"), &GIFTexture::set_speed_scale);
@@ -982,6 +1004,7 @@ void GIFTexture::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_get_baked_frames"), &GIFTexture::_get_baked_frames);
 	ClassDB::bind_method(D_METHOD("_set_baked_frames", "frames"), &GIFTexture::_set_baked_frames);
 
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "autoplay_on_load"), "set_autoplay_on_load", "get_autoplay_on_load");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "play"), "set_play", "get_play");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "loop"), "set_loop", "get_loop");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "speed_scale", PROPERTY_HINT_RANGE, "-60,60,0.1,or_less,or_greater"), "set_speed_scale", "get_speed_scale");

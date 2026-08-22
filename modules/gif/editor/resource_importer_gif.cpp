@@ -70,6 +70,10 @@ String ResourceImporterGIF::get_preset_name(int p_idx) const {
 }
 
 void ResourceImporterGIF::get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset) const {
+	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "display_mode", PROPERTY_HINT_ENUM, "Source,Baked"), 0));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "loop_count", PROPERTY_HINT_RANGE, "0,65535,1"), 0));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "autoplay_on_load"), true));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::FLOAT, "speed_scale", PROPERTY_HINT_RANGE, "-60,60,0.1,or_less,or_greater"), 1.0));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "bake_storage", PROPERTY_HINT_ENUM, "Store,Generate On Load"), 1));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "dither"), true));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "bake_compress"), false));
@@ -88,6 +92,11 @@ Error ResourceImporterGIF::import(ResourceUID::ID p_source_id, const String &p_s
 	tex->set_bake_storage(GIFTexture::BakeStorage(int(p_options["bake_storage"])));
 	tex->set_dither(bool(p_options["dither"]));
 	tex->set_bake_compress(bool(p_options["bake_compress"]));
+
+	tex->set_display_mode(GIFTexture::DisplayMode(int(p_options["display_mode"])));
+	tex->set_netscape_loop_count(int(p_options["loop_count"]));
+	tex->set_autoplay_on_load(bool(p_options["autoplay_on_load"]));
+	tex->set_speed_scale(float(p_options["speed_scale"]));
 
 	return ResourceSaver::save(tex, p_save_path + ".res");
 }

@@ -280,6 +280,9 @@ Ref<Texture2D> GIFPreviewGenerator::generate(const Ref<Resource> &p_from, const 
 		return Ref<Texture2D>();
 	}
 	img = img->duplicate();
+	if (img->is_compressed()) {
+		img->decompress();
+	}
 	if (p_size.x > 0 && p_size.y > 0) {
 		img->resize(MAX(1, int(p_size.x)), MAX(1, int(p_size.y)), Image::INTERPOLATE_BILINEAR);
 	}
