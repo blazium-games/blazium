@@ -31,72 +31,36 @@
 
 #include "justamcp_mcp_client_bridge.h"
 
+#include "../justamcp_mcp_apps.h"
+#include "../justamcp_mcp_client_http.h"
+#include "../justamcp_mcp_spec.h"
 #include "../justamcp_server.h"
 #include "../justamcp_session_manager.h"
 #include "../justamcp_tool_context.h"
+#include "justamcp_settings_resolver.h"
 #include "justamcp_tool_schema_builder.h"
 
 #include "core/config/project_settings.h"
-#include "core/io/http_client.h"
-#include "core/io/json.h"
 #include "core/object/worker_thread_pool.h"
 #include "core/os/thread.h"
 #include "editor/editor_settings.h"
-#include "justamcp_settings_resolver.h"
 
 JustAMCPMCPClientBridge *JustAMCPMCPClientBridge::singleton = nullptr;
-static uint64_t g_mcp_client_rpc_id = 1;
-
-static bool _justamcp_bridge_host_allowed(const String &p_host) {
-	const String host = p_host.strip_edges().to_lower();
-	if (host == "127.0.0.1" || host == "localhost" || host == "::1" || host == "[::1]") {
-		return true;
-	}
-	const Array allow = JustAMCPSettingsResolver::resolve_array("blazium/justamcp/bridge_url_allow_hosts");
-	if (allow.is_empty()) {
-		return false;
-	}
-	for (int i = 0; i < allow.size(); i++) {
-		if (String(allow[i]).strip_edges().to_lower() == host) {
-			return true;
-		}
-	}
-	return false;
-}
-
-static String _justamcp_normalize_url_scheme(const String &p_scheme) {
-	String scheme = p_scheme.strip_edges().to_lower();
-	if (scheme.ends_with("://")) {
-		scheme = scheme.substr(0, scheme.length() - 3);
-	}
-	return scheme;
-}
-
-static bool _justamcp_bridge_url_allowed(const String &p_url, String &r_error) {
-	String scheme;
-	String host;
-	int port = 0;
-	String path;
-	String fragment;
-	if (p_url.parse_url(scheme, host, port, path, fragment) != OK || host.is_empty()) {
-		r_error = "Invalid bridge URL";
-		return false;
-	}
-	scheme = _justamcp_normalize_url_scheme(scheme);
-	if (scheme != "http" && scheme != "https") {
-		r_error = "Bridge URL scheme must be http or https";
-		return false;
-	}
-	if (!_justamcp_bridge_host_allowed(host)) {
-		r_error = "Bridge URL host is not allow-listed (default: localhost / 127.0.0.1 / ::1). Extend blazium/justamcp/bridge_url_allow_hosts.";
-		return false;
-	}
-	return true;
-}
 
 void JustAMCPMCPClientBridge::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("provide_tool_schemas", "register_only", "ignore_settings", "include_disabled_tools"), &JustAMCPMCPClientBridge::provide_tool_schemas, DEFVAL(false), DEFVAL(false), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("execute_tool", "tool_name", "arguments"), &JustAMCPMCPClientBridge::execute_tool);
+	ClassDB::bind_method(D_METHOD("list_bridges", "args"), &JustAMCPMCPClientBridge::list_bridges, DEFVAL(Dictionary()));
+	ClassDB::bind_method(D_METHOD("add_bridge", "args"), &JustAMCPMCPClientBridge::add_bridge);
+	ClassDB::bind_method(D_METHOD("update_bridge", "args"), &JustAMCPMCPClientBridge::update_bridge);
+	ClassDB::bind_method(D_METHOD("remove_bridge", "args"), &JustAMCPMCPClientBridge::remove_bridge);
+	ClassDB::bind_method(D_METHOD("connect_bridge", "args"), &JustAMCPMCPClientBridge::connect_bridge);
+	ClassDB::bind_method(D_METHOD("disconnect_bridge", "args"), &JustAMCPMCPClientBridge::disconnect_bridge);
+	ClassDB::bind_method(D_METHOD("status_bridge", "args"), &JustAMCPMCPClientBridge::status_bridge);
+	ClassDB::bind_method(D_METHOD("list_remote_tools", "args"), &JustAMCPMCPClientBridge::list_remote_tools);
+	ClassDB::bind_method(D_METHOD("call_remote_tool", "args"), &JustAMCPMCPClientBridge::call_remote_tool);
+	ClassDB::bind_method(D_METHOD("read_remote_resource", "args"), &JustAMCPMCPClientBridge::read_remote_resource);
+	ClassDB::bind_method(D_METHOD("auto_connect_enabled_bridges"), &JustAMCPMCPClientBridge::auto_connect_enabled_bridges);
 }
 
 JustAMCPMCPClientBridge *JustAMCPMCPClientBridge::get_singleton() {
@@ -122,6 +86,68 @@ Dictionary JustAMCPMCPClientBridge::_get_bridge_config(const String &p_bridge_na
 	return Dictionary();
 }
 
+Dictionary JustAMCPMCPClientBridge::_redact_bridge(const Dictionary &p_bridge) const {
+	Dictionary redacted = p_bridge.duplicate();
+	const bool has_token = redacted.has("auth_token") && !String(redacted.get("auth_token", "")).is_empty();
+	const bool has_secret = redacted.has("client_secret") && !String(redacted.get("client_secret", "")).is_empty();
+	redacted.erase("auth_token");
+	redacted.erase("client_secret");
+	redacted["has_auth_token"] = has_token;
+	redacted["has_client_secret"] = has_secret;
+	return redacted;
+}
+
+Dictionary JustAMCPMCPClientBridge::_apply_bridge_fields(Dictionary p_bridge, const Dictionary &p_args, bool p_create) const {
+	static const char *keys[] = {
+		"name", "url", "protocol_version", "auth_token", "timeout_ms", "headers",
+		"enabled", "auto_connect", "expose_remote_tools", "oauth_mode",
+		"client_id", "client_secret", "cimd_url", "scopes"
+	};
+	for (int i = 0; i < (int)(sizeof(keys) / sizeof(keys[0])); i++) {
+		if (p_args.has(keys[i])) {
+			p_bridge[keys[i]] = p_args[keys[i]];
+		}
+	}
+	if (p_create) {
+		if (!p_bridge.has("protocol_version") || String(p_bridge["protocol_version"]).is_empty()) {
+			p_bridge["protocol_version"] = MCPSessionManager::latest_protocol_version();
+		}
+		if (!p_bridge.has("enabled")) {
+			p_bridge["enabled"] = true;
+		}
+		if (!p_bridge.has("auto_connect")) {
+			p_bridge["auto_connect"] = false;
+		}
+		if (!p_bridge.has("expose_remote_tools")) {
+			p_bridge["expose_remote_tools"] = false;
+		}
+		if (!p_bridge.has("oauth_mode") || String(p_bridge["oauth_mode"]).is_empty()) {
+			p_bridge["oauth_mode"] = "none";
+		}
+		if (!p_bridge.has("timeout_ms")) {
+			p_bridge["timeout_ms"] = 30000;
+		}
+	}
+	return p_bridge;
+}
+
+Ref<JustAMCPMCPClient> JustAMCPMCPClientBridge::_client_for(const String &p_bridge_name) const {
+	MutexLock lock(clients_mutex);
+	if (clients.has(p_bridge_name) && clients[p_bridge_name].is_valid()) {
+		clients[p_bridge_name]->configure(_get_bridge_config(p_bridge_name));
+		return clients[p_bridge_name];
+	}
+	const Dictionary config = _get_bridge_config(p_bridge_name);
+	if (config.is_empty()) {
+		return Ref<JustAMCPMCPClient>();
+	}
+	Ref<JustAMCPMCPClient> client;
+	client.instantiate();
+	client->configure(config);
+	clients[p_bridge_name] = client;
+	return client;
+}
+
 Error JustAMCPMCPClientBridge::_ensure_initialized(const String &p_bridge_name) const {
 	{
 		MutexLock lock(initialized_bridges_mutex);
@@ -129,17 +155,18 @@ Error JustAMCPMCPClientBridge::_ensure_initialized(const String &p_bridge_name) 
 			return OK;
 		}
 	}
-	Dictionary init_params;
-	init_params["protocolVersion"] = _get_bridge_config(p_bridge_name).get("protocol_version", MCPSessionManager::latest_protocol_version());
-	Dictionary init_result = _rpc_request(p_bridge_name, "initialize", init_params);
-	if (!init_result.get("ok", false)) {
+	Ref<JustAMCPMCPClient> client = _client_for(p_bridge_name);
+	if (client.is_null()) {
+		return ERR_DOES_NOT_EXIST;
+	}
+	Dictionary result = client->connect_remote();
+	if (!result.get("ok", false)) {
 		return ERR_CANT_CONNECT;
 	}
 	{
 		MutexLock lock(initialized_bridges_mutex);
 		initialized_bridges.insert(p_bridge_name);
 	}
-	_rpc_request(p_bridge_name, "notifications/initialized", Dictionary());
 	return OK;
 }
 
@@ -148,162 +175,14 @@ Dictionary JustAMCPMCPClientBridge::_rpc_request(const String &p_bridge_name, co
 }
 
 Dictionary JustAMCPMCPClientBridge::_rpc_request_sync(const String &p_bridge_name, const String &p_method, const Dictionary &p_params) const {
-	Dictionary bridge = _get_bridge_config(p_bridge_name);
-	if (bridge.is_empty()) {
+	Ref<JustAMCPMCPClient> client = _client_for(p_bridge_name);
+	if (client.is_null()) {
 		Dictionary err;
 		err["ok"] = false;
 		err["error"] = "Unknown bridge: " + p_bridge_name;
 		return err;
 	}
-
-	const String url = bridge.get("url", "");
-	if (url.is_empty()) {
-		Dictionary err;
-		err["ok"] = false;
-		err["error"] = "Bridge URL is empty";
-		return err;
-	}
-
-	String scheme;
-	String host;
-	int port = 0;
-	String path;
-	String fragment;
-	if (url.parse_url(scheme, host, port, path, fragment) != OK || host.is_empty()) {
-		Dictionary result;
-		result["ok"] = false;
-		result["error"] = "Invalid bridge URL";
-		return result;
-	}
-	scheme = _justamcp_normalize_url_scheme(scheme);
-	String allow_error;
-	if (!_justamcp_bridge_url_allowed(url, allow_error)) {
-		Dictionary result;
-		result["ok"] = false;
-		result["error"] = allow_error;
-		return result;
-	}
-	if (path.is_empty()) {
-		path = "/mcp";
-	}
-	if (port <= 0) {
-		port = scheme == "https" ? 443 : 80;
-	}
-
-	const String protocol = bridge.get("protocol_version", MCPSessionManager::latest_protocol_version());
-
-	Ref<HTTPClient> client = HTTPClient::create();
-	Ref<TLSOptions> tls;
-	if (scheme == "https") {
-		tls = TLSOptions::client();
-	}
-	Error err = client->connect_to_host(host, port, tls);
-	if (err != OK) {
-		Dictionary result;
-		result["ok"] = false;
-		result["error"] = "Failed to connect to bridge host";
-		return result;
-	}
-
-	client->set_blocking_mode(true);
-	const uint64_t deadline_ms = OS::get_singleton()->get_ticks_msec() + 30000;
-	while (client->get_status() == HTTPClient::STATUS_CONNECTING || client->get_status() == HTTPClient::STATUS_RESOLVING) {
-		if (OS::get_singleton()->get_ticks_msec() >= deadline_ms) {
-			client->close();
-			Dictionary result;
-			result["ok"] = false;
-			result["error"] = "MCP bridge connection timed out";
-			return result;
-		}
-		client->poll();
-	}
-	if (client->get_status() != HTTPClient::STATUS_CONNECTED) {
-		client->close();
-		Dictionary result;
-		result["ok"] = false;
-		result["error"] = "Failed to connect to bridge host";
-		return result;
-	}
-
-	Dictionary request;
-	request["jsonrpc"] = "2.0";
-	request["id"] = (int64_t)(++g_mcp_client_rpc_id);
-	request["method"] = p_method;
-	request["params"] = p_params;
-
-	Vector<String> headers;
-	headers.push_back("Content-Type: application/json");
-	headers.push_back("Accept: application/json");
-	headers.push_back("MCP-Protocol-Version: " + protocol);
-	if (bridge.has("auth_token")) {
-		const String token = bridge.get("auth_token", "");
-		if (!token.is_empty()) {
-			headers.push_back("Authorization: Bearer " + token);
-		}
-	}
-
-	const String body = JSON::stringify(request);
-	const Vector<uint8_t> body_bytes = body.to_utf8_buffer();
-	err = client->request(HTTPClient::METHOD_POST, path, headers, body_bytes.ptr(), body_bytes.size());
-	if (err != OK) {
-		Dictionary result;
-		result["ok"] = false;
-		result["error"] = "Failed to send MCP request";
-		return result;
-	}
-
-	while (client->get_status() == HTTPClient::STATUS_REQUESTING) {
-		if (OS::get_singleton()->get_ticks_msec() >= deadline_ms) {
-			Dictionary result;
-			result["ok"] = false;
-			result["error"] = "MCP bridge request timed out";
-			return result;
-		}
-		client->poll();
-	}
-
-	if (client->get_status() < HTTPClient::STATUS_BODY || client->get_status() > HTTPClient::STATUS_DISCONNECTED) {
-		Dictionary result;
-		result["ok"] = false;
-		result["error"] = "MCP request failed with status " + itos(client->get_status());
-		return result;
-	}
-
-	PackedByteArray response_body;
-	while (client->get_status() == HTTPClient::STATUS_BODY) {
-		if (OS::get_singleton()->get_ticks_msec() >= deadline_ms) {
-			Dictionary result;
-			result["ok"] = false;
-			result["error"] = "MCP bridge response timed out";
-			return result;
-		}
-		client->poll();
-		response_body.append_array(client->read_response_body_chunk());
-	}
-
-	Ref<JSON> json;
-	json.instantiate();
-	const String response_text = String::utf8((const char *)response_body.ptr(), response_body.size());
-	if (json->parse(response_text) != OK) {
-		Dictionary result;
-		result["ok"] = false;
-		result["error"] = "Invalid JSON response from bridge";
-		return result;
-	}
-
-	Dictionary payload = json->get_data();
-	Dictionary result;
-	result["ok"] = true;
-	result["bridge"] = p_bridge_name;
-	if (payload.has("result")) {
-		result["result"] = payload["result"];
-	} else if (payload.has("error")) {
-		result["ok"] = false;
-		result["error"] = payload["error"];
-	} else {
-		result["result"] = payload;
-	}
-	return result;
+	return client->rpc(p_method, p_params);
 }
 
 Array JustAMCPMCPClientBridge::provide_tool_schemas(bool p_register_only, bool p_ignore_settings, bool p_include_disabled_tools) {
@@ -363,8 +242,19 @@ Array JustAMCPMCPClientBridge::get_tool_schemas(bool p_register_only, bool p_ign
 	add_schema("mcp_client_list_bridges", "Lists configured outbound MCP client bridges.",
 			Vector<String>{}, Vector<String>{});
 	add_schema("mcp_client_add_bridge", "Adds an outbound MCP bridge (name, url, protocol_version, optional auth_token).",
-			Vector<String>{ "name", "string", "url", "string", "protocol_version", "string", "auth_token", "string" },
+			Vector<String>{ "name", "string", "url", "string", "protocol_version", "string", "auth_token", "string", "oauth_mode", "string", "auto_connect", "boolean", "expose_remote_tools", "boolean" },
 			Vector<String>{ "name", "url" });
+	add_schema("mcp_client_update_bridge", "Updates fields on an existing outbound MCP bridge.",
+			Vector<String>{ "name", "string", "url", "string", "protocol_version", "string", "auth_token", "string", "oauth_mode", "string", "auto_connect", "boolean", "expose_remote_tools", "boolean", "enabled", "boolean" },
+			Vector<String>{ "name" });
+	add_schema("mcp_client_remove_bridge", "Removes a configured outbound MCP bridge.",
+			Vector<String>{ "name", "string" }, Vector<String>{ "name" });
+	add_schema("mcp_client_connect", "Connects an outbound MCP bridge (discover or initialize).",
+			Vector<String>{ "name", "string" }, Vector<String>{ "name" }, "required");
+	add_schema("mcp_client_disconnect", "Disconnects an outbound MCP bridge.",
+			Vector<String>{ "name", "string" }, Vector<String>{ "name" });
+	add_schema("mcp_client_status", "Returns connection status for an outbound MCP bridge.",
+			Vector<String>{ "name", "string" }, Vector<String>{ "name" });
 	add_schema("mcp_client_list_remote_tools", "Proxies tools/list from a configured bridge.",
 			Vector<String>{ "bridge_name", "string" }, Vector<String>{ "bridge_name" }, "required");
 	add_schema("mcp_client_call_remote_tool", "Proxies tools/call to a configured bridge.",
@@ -373,7 +263,50 @@ Array JustAMCPMCPClientBridge::get_tool_schemas(bool p_register_only, bool p_ign
 	add_schema("mcp_client_read_remote_resource", "Proxies resources/read to a configured bridge.",
 			Vector<String>{ "bridge_name", "string", "uri", "string" }, Vector<String>{ "bridge_name", "uri" }, "required");
 
+	if (!p_register_only && singleton) {
+		MutexLock lock(singleton->clients_mutex);
+		for (const KeyValue<String, Array> &E : singleton->exposed_remote_tools) {
+			const Array remote = E.value;
+			for (int i = 0; i < remote.size(); i++) {
+				if (remote[i].get_type() != Variant::DICTIONARY) {
+					continue;
+				}
+				Dictionary remote_tool = remote[i];
+				String remote_name = String(remote_tool.get("name", ""));
+				if (remote_name.is_empty()) {
+					continue;
+				}
+				String exposed = "mcp_" + E.key + "_" + remote_name;
+				exposed = exposed.to_lower().replace("-", "_").replace(" ", "_");
+				if (exposed.length() > 64) {
+					exposed = exposed.substr(0, 64);
+				}
+				if (!justamcp_is_valid_mcp_tool_name(exposed)) {
+					continue;
+				}
+				remote_tool["name"] = "blazium_" + exposed;
+				Dictionary meta = remote_tool.has("_meta") ? Dictionary(remote_tool["_meta"]) : Dictionary();
+				meta["category"] = current_category;
+				meta["exposed_from"] = E.key;
+				remote_tool["_meta"] = meta;
+				tools.push_back(remote_tool);
+			}
+		}
+	}
+
 	return tools;
+}
+
+bool JustAMCPMCPClientBridge::_is_remote_network_tool(const String &p_tool_name) const {
+	return p_tool_name == "mcp_client_list_remote_tools" ||
+			p_tool_name == "mcp_client_call_remote_tool" ||
+			p_tool_name == "mcp_client_read_remote_resource" ||
+			p_tool_name == "mcp_client_connect" ||
+			p_tool_name == "mcp_client_list_remote_prompts" ||
+			p_tool_name == "mcp_client_get_remote_prompt" ||
+			p_tool_name == "mcp_client_list_remote_resources" ||
+			p_tool_name == "mcp_client_complete_remote" ||
+			p_tool_name.begins_with("mcp_");
 }
 
 Dictionary JustAMCPMCPClientBridge::execute_tool(const String &p_tool_name, const Dictionary &p_args) {
@@ -387,14 +320,23 @@ Dictionary JustAMCPMCPClientBridge::execute_tool(const String &p_tool_name, cons
 	if (tool_name == "mcp_client_add_bridge") {
 		return add_bridge(p_args);
 	}
-	if (tool_name == "mcp_client_list_remote_tools" ||
-			tool_name == "mcp_client_call_remote_tool" ||
-			tool_name == "mcp_client_read_remote_resource") {
+	if (tool_name == "mcp_client_update_bridge") {
+		return update_bridge(p_args);
+	}
+	if (tool_name == "mcp_client_remove_bridge") {
+		return remove_bridge(p_args);
+	}
+	if (tool_name == "mcp_client_disconnect") {
+		return disconnect_bridge(p_args);
+	}
+	if (tool_name == "mcp_client_status") {
+		return status_bridge(p_args);
+	}
+	if (_is_remote_network_tool(tool_name)) {
 		Dictionary pending;
 		if (_try_schedule_remote_tool(tool_name, p_args, pending)) {
 			return pending;
 		}
-
 		if (Thread::is_main_thread()) {
 			Dictionary err;
 			err["ok"] = false;
@@ -419,6 +361,32 @@ Dictionary JustAMCPMCPClientBridge::_execute_remote_tool_sync(const String &p_to
 	}
 	if (p_tool_name == "mcp_client_read_remote_resource") {
 		return read_remote_resource(p_args);
+	}
+	if (p_tool_name == "mcp_client_connect") {
+		return connect_bridge(p_args);
+	}
+	if (p_tool_name == "mcp_client_list_remote_prompts") {
+		return list_remote_prompts(p_args);
+	}
+	if (p_tool_name == "mcp_client_get_remote_prompt") {
+		return get_remote_prompt(p_args);
+	}
+	if (p_tool_name == "mcp_client_list_remote_resources") {
+		return list_remote_resources(p_args);
+	}
+	if (p_tool_name == "mcp_client_complete_remote") {
+		return complete_remote(p_args);
+	}
+	if (p_tool_name.begins_with("mcp_")) {
+		const String rest = p_tool_name.substr(4);
+		const int sep = rest.find("_");
+		if (sep > 0) {
+			Dictionary call_args;
+			call_args["bridge_name"] = rest.substr(0, sep);
+			call_args["tool_name"] = rest.substr(sep + 1);
+			call_args["arguments"] = p_args;
+			return call_remote_tool(call_args);
+		}
 	}
 	Dictionary err;
 	err["ok"] = false;
@@ -500,11 +468,7 @@ Dictionary JustAMCPMCPClientBridge::list_bridges(const Dictionary &p_args) {
 	Array raw = _load_bridges();
 	Array redacted;
 	for (int i = 0; i < raw.size(); i++) {
-		Dictionary bridge = Dictionary(raw[i]).duplicate();
-		const bool has_token = bridge.has("auth_token") && !String(bridge.get("auth_token", "")).is_empty();
-		bridge.erase("auth_token");
-		bridge["has_auth_token"] = has_token;
-		redacted.push_back(bridge);
+		redacted.push_back(_redact_bridge(Dictionary(raw[i])));
 	}
 	Dictionary result;
 	result["ok"] = true;
@@ -523,7 +487,7 @@ Dictionary JustAMCPMCPClientBridge::add_bridge(const Dictionary &p_args) {
 		return err;
 	}
 	String allow_error;
-	if (!_justamcp_bridge_url_allowed(url, allow_error)) {
+	if (!JustAMCPMCPClientHTTP::url_allowed(url, allow_error)) {
 		Dictionary err;
 		err["ok"] = false;
 		err["error"] = allow_error;
@@ -538,23 +502,171 @@ Dictionary JustAMCPMCPClientBridge::add_bridge(const Dictionary &p_args) {
 			return err;
 		}
 	}
-	Dictionary bridge;
-	bridge["name"] = name;
-	bridge["url"] = url;
-	bridge["protocol_version"] = p_args.get("protocol_version", MCPSessionManager::latest_protocol_version());
-	if (p_args.has("auth_token")) {
-		bridge["auth_token"] = p_args.get("auth_token", "");
-	}
+	Dictionary bridge = _apply_bridge_fields(Dictionary(), p_args, true);
 	bridges.push_back(bridge);
 	_save_bridges(bridges);
-	Dictionary redacted = bridge.duplicate();
-	const bool has_token = redacted.has("auth_token") && !String(redacted.get("auth_token", "")).is_empty();
-	redacted.erase("auth_token");
-	redacted["has_auth_token"] = has_token;
 	Dictionary result;
 	result["ok"] = true;
-	result["bridge"] = redacted;
+	result["bridge"] = _redact_bridge(bridge);
 	return result;
+}
+
+Dictionary JustAMCPMCPClientBridge::update_bridge(const Dictionary &p_args) {
+	const String name = p_args.get("name", "");
+	if (name.is_empty()) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = "name is required";
+		return err;
+	}
+	if (p_args.has("url")) {
+		String allow_error;
+		if (!JustAMCPMCPClientHTTP::url_allowed(String(p_args.get("url", "")), allow_error)) {
+			Dictionary err;
+			err["ok"] = false;
+			err["error"] = allow_error;
+			return err;
+		}
+	}
+	Array bridges = _load_bridges();
+	bool found = false;
+	Dictionary updated;
+	for (int i = 0; i < bridges.size(); i++) {
+		Dictionary bridge = bridges[i];
+		if (String(bridge.get("name", "")) == name) {
+			updated = _apply_bridge_fields(bridge, p_args, false);
+			bridges[i] = updated;
+			found = true;
+			break;
+		}
+	}
+	if (!found) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = "Unknown bridge: " + name;
+		return err;
+	}
+	_save_bridges(bridges);
+	{
+		MutexLock lock(clients_mutex);
+		if (clients.has(name) && clients[name].is_valid()) {
+			clients[name]->configure(updated);
+		}
+	}
+	Dictionary result;
+	result["ok"] = true;
+	result["bridge"] = _redact_bridge(updated);
+	return result;
+}
+
+Dictionary JustAMCPMCPClientBridge::remove_bridge(const Dictionary &p_args) {
+	const String name = p_args.get("name", "");
+	if (name.is_empty()) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = "name is required";
+		return err;
+	}
+	Array bridges = _load_bridges();
+	Array kept;
+	bool found = false;
+	for (int i = 0; i < bridges.size(); i++) {
+		if (String(Dictionary(bridges[i]).get("name", "")) == name) {
+			found = true;
+			continue;
+		}
+		kept.push_back(bridges[i]);
+	}
+	if (!found) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = "Unknown bridge: " + name;
+		return err;
+	}
+	_save_bridges(kept);
+	{
+		MutexLock lock(clients_mutex);
+		if (clients.has(name) && clients[name].is_valid()) {
+			clients[name]->disconnect_remote();
+		}
+		clients.erase(name);
+		exposed_remote_tools.erase(name);
+	}
+	{
+		MutexLock lock(initialized_bridges_mutex);
+		initialized_bridges.erase(name);
+	}
+	Dictionary result;
+	result["ok"] = true;
+	result["removed"] = name;
+	return result;
+}
+
+Dictionary JustAMCPMCPClientBridge::connect_bridge(const Dictionary &p_args) {
+	const String name = String(p_args.get("name", p_args.get("bridge_name", "")));
+	Ref<JustAMCPMCPClient> client = _client_for(name);
+	if (client.is_null()) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = "Unknown bridge: " + name;
+		return err;
+	}
+	Dictionary result = client->connect_remote();
+	if (result.get("ok", false)) {
+		MutexLock lock(initialized_bridges_mutex);
+		initialized_bridges.insert(name);
+		if (bool(_get_bridge_config(name).get("expose_remote_tools", false))) {
+			Dictionary listed = client->tools_list();
+			if (listed.get("ok", false) && listed.has("result")) {
+				const Dictionary inner = listed["result"];
+				MutexLock tools_lock(clients_mutex);
+				exposed_remote_tools[name] = inner.get("tools", Array());
+			}
+		}
+	}
+	return result;
+}
+
+Dictionary JustAMCPMCPClientBridge::disconnect_bridge(const Dictionary &p_args) {
+	const String name = String(p_args.get("name", p_args.get("bridge_name", "")));
+	Ref<JustAMCPMCPClient> client = _client_for(name);
+	if (client.is_valid()) {
+		client->disconnect_remote();
+	}
+	{
+		MutexLock lock(initialized_bridges_mutex);
+		initialized_bridges.erase(name);
+	}
+	Dictionary result;
+	result["ok"] = true;
+	result["name"] = name;
+	result["status"] = "disconnected";
+	return result;
+}
+
+Dictionary JustAMCPMCPClientBridge::status_bridge(const Dictionary &p_args) {
+	const String name = String(p_args.get("name", p_args.get("bridge_name", "")));
+	Ref<JustAMCPMCPClient> client = _client_for(name);
+	if (client.is_null()) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = "Unknown bridge: " + name;
+		return err;
+	}
+	return client->status();
+}
+
+void JustAMCPMCPClientBridge::auto_connect_enabled_bridges() {
+	const Array bridges = _load_bridges();
+	for (int i = 0; i < bridges.size(); i++) {
+		const Dictionary bridge = bridges[i];
+		if (!bool(bridge.get("enabled", true)) || !bool(bridge.get("auto_connect", false))) {
+			continue;
+		}
+		Dictionary args;
+		args["name"] = bridge.get("name", "");
+		connect_bridge(args);
+	}
 }
 
 Dictionary JustAMCPMCPClientBridge::list_remote_tools(const Dictionary &p_args) {
@@ -565,7 +677,31 @@ Dictionary JustAMCPMCPClientBridge::list_remote_tools(const Dictionary &p_args) 
 		err["error"] = "Failed to initialize MCP bridge session";
 		return err;
 	}
-	return _rpc_request(bridge_name, "tools/list", Dictionary());
+	Ref<JustAMCPMCPClient> client = _client_for(bridge_name);
+	Dictionary listed = client.is_valid() ? client->tools_list() : _rpc_request(bridge_name, "tools/list", Dictionary());
+	if (listed.get("ok", false) && JustAMCPMCPAppsHost::get_singleton() && listed.has("result")) {
+		const Array tools = Dictionary(listed["result"]).get("tools", Array());
+		for (int i = 0; i < tools.size(); i++) {
+			if (tools[i].get_type() != Variant::DICTIONARY) {
+				continue;
+			}
+			Dictionary ui = JustAMCPMCPAppsHost::detect_ui_meta(tools[i]);
+			if (bool(ui.get("present", false))) {
+				Dictionary read_args;
+				read_args["uri"] = ui.get("resourceUri", "");
+				Dictionary html = client->resources_read(read_args);
+				String text;
+				if (html.get("ok", false) && html.has("result")) {
+					const Array contents = Dictionary(html["result"]).get("contents", Array());
+					if (!contents.is_empty() && contents[0].get_type() == Variant::DICTIONARY) {
+						text = String(Dictionary(contents[0]).get("text", ""));
+					}
+				}
+				JustAMCPMCPAppsHost::get_singleton()->open_app(bridge_name, ui, text);
+			}
+		}
+	}
+	return listed;
 }
 
 Dictionary JustAMCPMCPClientBridge::call_remote_tool(const Dictionary &p_args) {
@@ -593,6 +729,55 @@ Dictionary JustAMCPMCPClientBridge::read_remote_resource(const Dictionary &p_arg
 	Dictionary params;
 	params["uri"] = p_args.get("uri", "");
 	return _rpc_request(bridge_name, "resources/read", params);
+}
+
+Dictionary JustAMCPMCPClientBridge::list_remote_prompts(const Dictionary &p_args) {
+	const String bridge_name = p_args.get("bridge_name", "");
+	if (_ensure_initialized(bridge_name) != OK) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = "Failed to initialize MCP bridge session";
+		return err;
+	}
+	return _rpc_request(bridge_name, "prompts/list", Dictionary());
+}
+
+Dictionary JustAMCPMCPClientBridge::get_remote_prompt(const Dictionary &p_args) {
+	const String bridge_name = p_args.get("bridge_name", "");
+	if (_ensure_initialized(bridge_name) != OK) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = "Failed to initialize MCP bridge session";
+		return err;
+	}
+	Dictionary params;
+	params["name"] = p_args.get("prompt_name", p_args.get("name", ""));
+	params["arguments"] = p_args.get("arguments", Dictionary());
+	return _rpc_request(bridge_name, "prompts/get", params);
+}
+
+Dictionary JustAMCPMCPClientBridge::list_remote_resources(const Dictionary &p_args) {
+	const String bridge_name = p_args.get("bridge_name", "");
+	if (_ensure_initialized(bridge_name) != OK) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = "Failed to initialize MCP bridge session";
+		return err;
+	}
+	return _rpc_request(bridge_name, "resources/list", Dictionary());
+}
+
+Dictionary JustAMCPMCPClientBridge::complete_remote(const Dictionary &p_args) {
+	const String bridge_name = p_args.get("bridge_name", "");
+	if (_ensure_initialized(bridge_name) != OK) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error"] = "Failed to initialize MCP bridge session";
+		return err;
+	}
+	Dictionary params = p_args.duplicate();
+	params.erase("bridge_name");
+	return _rpc_request(bridge_name, "completion/complete", params);
 }
 
 JustAMCPMCPClientBridge::JustAMCPMCPClientBridge() {

@@ -45,6 +45,7 @@
 #include "resources/justamcp_materials_resource_provider.h"
 #include "resources/justamcp_resource_autowork_results.h"
 #include "resources/justamcp_resource_project_file.h"
+#include "resources/justamcp_resource_ui.h"
 #include "resources/justamcp_resource_video_recordings.h"
 
 void JustAMCPResourceExecutor::_bind_methods() {
@@ -101,6 +102,7 @@ JustAMCPResourceExecutor::JustAMCPResourceExecutor() {
 	add_resource(memnew(JustAMCPResourceProjectFile));
 	add_resource(memnew(JustAMCPResourceVideoRecordings));
 	add_resource(memnew(JustAMCPResourceAutoworkResults));
+	add_resource(memnew(JustAMCPResourceUI));
 
 	if (Thread::is_main_thread() && EditorFileSystem::get_singleton()) {
 		const Callable cb = callable_mp_static(&JustAMCPResourceExecutor::_on_filesystem_changed);

@@ -396,6 +396,39 @@ void JustAMCPTaskManager::cancel_task_execution(const String &p_task_id, const S
 	_notify_status(p_task_id);
 }
 
+Dictionary JustAMCPTaskManager::update_task(const String &p_task_id, const Dictionary &p_patch) {
+	MutexLock lock(tasks_mutex);
+	_purge_expired_tasks();
+	if (!tasks.has(p_task_id) || !tasks[p_task_id]) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error_code"] = -32602;
+		err["error"] = "Failed to retrieve task: Task not found";
+		return err;
+	}
+	JustAMCPTaskRecord *task = tasks[p_task_id];
+	if (_is_terminal_status(task->status)) {
+		Dictionary err;
+		err["ok"] = false;
+		err["error_code"] = -32602;
+		err["error"] = "Cannot update a task that is already terminal.";
+		return err;
+	}
+	if (p_patch.has("statusMessage") || p_patch.has("status_message")) {
+		task->status_message = String(p_patch.get("statusMessage", p_patch.get("status_message", "")));
+	}
+	if (p_patch.has("pollInterval") || p_patch.has("poll_interval_ms")) {
+		task->poll_interval_ms = int(p_patch.get("pollInterval", p_patch.get("poll_interval_ms", task->poll_interval_ms)));
+	}
+	if (p_patch.has("ttl") || p_patch.has("ttl_ms")) {
+		task->ttl_ms = int(p_patch.get("ttl", p_patch.get("ttl_ms", task->ttl_ms)));
+	}
+	task->last_updated_at = _iso_timestamp_now();
+	lock.temp_unlock();
+	_notify_status(p_task_id);
+	return get_task(p_task_id);
+}
+
 bool JustAMCPTaskManager::is_cancel_requested(const String &p_task_id) const {
 	MutexLock lock(tasks_mutex);
 	if (!tasks.has(p_task_id) || !tasks[p_task_id]) {

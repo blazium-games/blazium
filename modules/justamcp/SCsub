@@ -6,11 +6,38 @@ Import("env_modules")
 
 env_justamcp = env_modules.Clone()
 
+
+def make_justamcp_host_html(target, source, env):
+    with open(source[0].srcnode().abspath, "r", encoding="utf-8") as src:
+        html = src.read()
+    delimiter = "JUSTAMCP_HTML"
+    if (")" + delimiter + '"') in html:
+        raise RuntimeError("apps/host.html contains the raw-string delimiter")
+    header = (
+        '#pragma once\n\nstatic const char justamcp_host_html[] = R"'
+        + delimiter
+        + "(\n"
+        + html
+        + "\n)"
+        + delimiter
+        + '";\n'
+    )
+    with open(str(target[0]), "w", encoding="utf-8", newline="\n") as dst:
+        dst.write(header)
+
+
+host_html_header = env_justamcp.Command(
+    "#modules/justamcp/justamcp_host_html.gen.h",
+    "#modules/justamcp/apps/host.html",
+    env.Run(make_justamcp_host_html),
+)
+
 # Blazium source files
 env_justamcp.add_source_files(env.modules_sources, "*.cpp")
 env_justamcp.add_source_files(env.modules_sources, "tools/*.cpp")
 env_justamcp.add_source_files(env.modules_sources, "tools/prompts/*.cpp")
 env_justamcp.add_source_files(env.modules_sources, "tools/resources/*.cpp")
+env.Depends(env.modules_sources, host_html_header)
 
 if env["tests"]:
     env_justamcp.Append(CPPDEFINES=["TESTS_ENABLED"])

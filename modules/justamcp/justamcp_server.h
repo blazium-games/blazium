@@ -148,6 +148,10 @@ private:
 	void _handle_mcp_stateless_post(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
 	void _handle_oauth_protected_resource(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
 	void _handle_oauth_authorization_server(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
+	void _handle_oauth_callback(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
+	void _handle_oauth_client_metadata(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
+	void _handle_mcp_apps_host(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
+	void _handle_mcp_apps_proxy(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
 	void _apply_oauth_www_authenticate(Ref<HTTPResponse> p_response);
 	Dictionary _handle_json_rpc(const String &p_body, Ref<HTTPResponse> p_response);
 	Dictionary _transport_handle_json_rpc(const String &p_body, Ref<HTTPResponse> p_response);
@@ -201,6 +205,7 @@ public:
 	void send_url_elicitation_error(const String &p_request_id, const String &p_elicitation_id, const String &p_url, const String &p_message);
 	void hold_tool_for_elicitation(const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args, const Dictionary &p_schema, const String &p_mode = "form");
 	void complete_elicitation(const String &p_request_id, const Dictionary &p_result);
+	bool apply_input_responses(const String &p_tool_name, Dictionary &r_args, const Dictionary &p_input_responses);
 	void handle_client_rpc_result(const String &p_session_id, const Dictionary &p_payload);
 	Array get_session_roots(const String &p_session_id) const;
 	String get_negotiated_protocol_version() const { return transport_negotiated_protocol; }
@@ -261,6 +266,10 @@ public:
 	void test_handle_message_post(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
 	void test_handle_oauth_protected_resource(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
 	void test_handle_oauth_authorization_server(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
+	void test_handle_oauth_callback(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
+	void test_handle_oauth_client_metadata(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
+	void test_handle_mcp_apps_host(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
+	void test_handle_mcp_apps_proxy(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response);
 #endif
 
 	void start_listening();

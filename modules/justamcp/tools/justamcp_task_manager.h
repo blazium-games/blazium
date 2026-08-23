@@ -101,6 +101,7 @@ public:
 	Dictionary get_task(const String &p_task_id);
 	Dictionary get_task_result(const String &p_task_id, bool p_wait = false);
 	Dictionary cancel_task(const String &p_task_id);
+	Dictionary update_task(const String &p_task_id, const Dictionary &p_patch);
 
 	void complete_task(const String &p_task_id, const Dictionary &p_result, bool p_is_error = false);
 	void fail_task(const String &p_task_id, const String &p_error);

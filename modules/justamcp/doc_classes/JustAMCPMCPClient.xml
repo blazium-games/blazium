@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPMCPClient" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Streamable HTTP MCP client for one remote server.
+	</brief_description>
+	<description>
+		Talks to a single remote MCP server over Streamable HTTP. Modern peers (2026-07-28) use [code]server/discover[/code], [code]_meta[/code] capabilities, and [code]Mcp-Method[/code] headers. Older peers fall back to [code]initialize[/code] plus [code]notifications/initialized[/code].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="completion_complete">
+			<return type="Dictionary" />
+			<param index="0" name="params" type="Dictionary" />
+			<description>
+				Proxies [code]completion/complete[/code].
+			</description>
+		</method>
+		<method name="configure">
+			<return type="void" />
+			<param index="0" name="config" type="Dictionary" />
+			<description>
+				Applies bridge settings such as [code]url[/code], [code]protocol_version[/code], [code]auth_token[/code], and OAuth fields.
+			</description>
+		</method>
+		<method name="connect_remote">
+			<return type="Dictionary" />
+			<description>
+				Discovers the remote server or falls back to a legacy initialize handshake.
+			</description>
+		</method>
+		<method name="disconnect_remote">
+			<return type="void" />
+			<description>
+				Stops subscription listening and clears the in-memory result cache.
+			</description>
+		</method>
+		<method name="discover">
+			<return type="Dictionary" />
+			<description>
+				Calls [code]server/discover[/code] on the remote peer.
+			</description>
+		</method>
+		<method name="prompts_get">
+			<return type="Dictionary" />
+			<param index="0" name="params" type="Dictionary" />
+			<description>
+				Proxies [code]prompts/get[/code].
+			</description>
+		</method>
+		<method name="prompts_list">
+			<return type="Dictionary" />
+			<param index="0" name="params" type="Dictionary" default="{}" />
+			<description>
+				Proxies [code]prompts/list[/code].
+			</description>
+		</method>
+		<method name="resources_list">
+			<return type="Dictionary" />
+			<param index="0" name="params" type="Dictionary" default="{}" />
+			<description>
+				Proxies [code]resources/list[/code].
+			</description>
+		</method>
+		<method name="resources_read">
+			<return type="Dictionary" />
+			<param index="0" name="params" type="Dictionary" />
+			<description>
+				Proxies [code]resources/read[/code].
+			</description>
+		</method>
+		<method name="resources_templates_list">
+			<return type="Dictionary" />
+			<param index="0" name="params" type="Dictionary" default="{}" />
+			<description>
+				Proxies [code]resources/templates/list[/code].
+			</description>
+		</method>
+		<method name="rpc">
+			<return type="Dictionary" />
+			<param index="0" name="method" type="String" />
+			<param index="1" name="params" type="Dictionary" />
+			<description>
+				Sends an arbitrary MCP JSON-RPC method with client [code]_meta[/code] attached.
+			</description>
+		</method>
+		<method name="status" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns connection status, negotiated protocol, and the last error if any.
+			</description>
+		</method>
+		<method name="tools_call">
+			<return type="Dictionary" />
+			<param index="0" name="params" type="Dictionary" />
+			<description>
+				Proxies [code]tools/call[/code], including InputRequiredResult retry with [code]inputResponses[/code].
+			</description>
+		</method>
+		<method name="tools_list">
+			<return type="Dictionary" />
+			<param index="0" name="params" type="Dictionary" default="{}" />
+			<description>
+				Proxies [code]tools/list[/code].
+			</description>
+		</method>
+	</methods>
+</class>

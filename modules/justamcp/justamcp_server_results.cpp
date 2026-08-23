@@ -286,6 +286,14 @@ void JustAMCPServer::report_tool_progress(const String &p_token, double p_progre
 
 void JustAMCPServer::send_elicitation_request(const String &p_request_id, const String &p_mode, const String &p_message, const Variant &p_url_or_schema) {
 #if defined(MODULE_HTTPSERVER_ENABLED)
+	if (justamcp_protocol_at_least(transport_negotiated_protocol, "2026-07-28")) {
+		Variant request_id = p_request_id;
+		if (p_request_id.is_valid_int()) {
+			request_id = p_request_id.to_int();
+		}
+		send_tool_result(request_id, true, justamcp_input_required_result(p_mode, p_message, p_url_or_schema), "");
+		return;
+	}
 	Dictionary rpc_request;
 	rpc_request["jsonrpc"] = "2.0";
 	rpc_request["method"] = "elicitation/create";
@@ -455,6 +463,52 @@ Array JustAMCPServer::get_session_roots(const String &p_session_id) const {
 	(void)p_session_id;
 #endif
 	return Array();
+}
+
+bool JustAMCPServer::apply_input_responses(const String &p_tool_name, Dictionary &r_args, const Dictionary &p_input_responses) {
+	PendingElicitation pending;
+	String found_key;
+	bool found = false;
+	{
+		MutexLock lock(pending_elicitation_mutex);
+		for (const KeyValue<String, PendingElicitation> &E : pending_elicitations) {
+			if (E.value.tool_name == p_tool_name) {
+				pending = E.value;
+				found_key = E.key;
+				found = true;
+			}
+		}
+	}
+	if (!found) {
+		return false;
+	}
+
+	String action;
+	Dictionary content;
+	String parse_error;
+	if (!justamcp_parse_elicit_result(p_input_responses, action, content, parse_error)) {
+		return false;
+	}
+	if (action == "decline" || action == "cancel") {
+		MutexLock lock(pending_elicitation_mutex);
+		pending_elicitations.erase(found_key);
+		r_args["confirmed"] = false;
+		return true;
+	}
+	String schema_error;
+	if (!justamcp_validate_elicit_content(pending.schema, content, schema_error)) {
+		return false;
+	}
+	{
+		MutexLock lock(pending_elicitation_mutex);
+		pending_elicitations.erase(found_key);
+	}
+	content = justamcp_apply_schema_defaults(pending.schema, content);
+	for (const Variant &key : content.keys()) {
+		r_args[key] = content[key];
+	}
+	r_args["confirmed"] = justamcp_elicit_content_is_confirmed(content);
+	return true;
 }
 
 bool JustAMCPServer::has_pending_elicitation(const Variant &p_request_id) const {

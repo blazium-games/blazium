@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  justamcp_resource_project_file.cpp                                    */
+/*  justamcp_resource_ui.cpp                                              */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             BLAZIUM ENGINE                             */
@@ -29,79 +29,95 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "justamcp_resource_project_file.h"
+#include "justamcp_resource_ui.h"
+
+#include "../../justamcp_mcp_apps.h"
 #include "../../justamcp_read_limits.h"
 #include "../justamcp_agent_helpers.h"
+
 #include "core/io/file_access.h"
 
-void JustAMCPResourceProjectFile::_bind_methods() {}
+void JustAMCPResourceUI::_bind_methods() {}
 
-JustAMCPResourceProjectFile::JustAMCPResourceProjectFile() {}
-JustAMCPResourceProjectFile::~JustAMCPResourceProjectFile() {}
+JustAMCPResourceUI::JustAMCPResourceUI() {}
+JustAMCPResourceUI::~JustAMCPResourceUI() {}
 
-String JustAMCPResourceProjectFile::get_uri() const {
-	return "res://{path}";
+String JustAMCPResourceUI::get_uri() const {
+	return "ui://.blazium/apps/{name}.html";
 }
 
-String JustAMCPResourceProjectFile::get_name() const {
-	return "Blazium Project File";
+String JustAMCPResourceUI::get_name() const {
+	return "JustAMCP MCP App UI";
 }
 
-bool JustAMCPResourceProjectFile::is_template() const {
+bool JustAMCPResourceUI::is_template() const {
 	return true;
 }
 
-Dictionary JustAMCPResourceProjectFile::get_schema() const {
+Dictionary JustAMCPResourceUI::get_schema() const {
 	Dictionary resource;
 	resource["uriTemplate"] = get_uri();
 	resource["name"] = get_name();
-	resource["description"] = "Read any file inside the active res:// Blazium project path.";
-	resource["mimeType"] = "text/plain";
+	resource["description"] = "Sandboxed MCP App HTML served from ui://.blazium/apps/*.html.";
+	resource["mimeType"] = "text/html";
 	return resource;
 }
 
-Dictionary JustAMCPResourceProjectFile::read_resource(const String &p_uri) {
+Dictionary JustAMCPResourceUI::read_resource(const String &p_uri) {
 	Dictionary result;
-
-	if (p_uri.begins_with("res://")) {
-		String canon;
-		String sandbox_error;
-		if (!justamcp_canonical_sandbox_path(p_uri, canon, sandbox_error)) {
-			result["ok"] = false;
-			result["error_code"] = -32602;
-			result["error"] = sandbox_error;
-			return result;
-		}
-		if (FileAccess::exists(canon)) {
-			int64_t file_size = 0;
-			if (!justamcp_file_within_read_limit(canon, JUSTAMCP_MAX_SYNC_READ_BYTES, file_size)) {
-				return justamcp_read_limit_error(canon, file_size, JUSTAMCP_MAX_SYNC_READ_BYTES);
-			}
-			Ref<FileAccess> file = FileAccess::open(canon, FileAccess::READ);
-			if (file.is_valid()) {
-				String raw_text = file->get_as_text();
-				result["ok"] = true;
-
-				Array contents;
-				Dictionary text_content;
-				text_content["uri"] = p_uri;
-				text_content["mimeType"] = "text/plain";
-				text_content["text"] = raw_text;
-				contents.push_back(text_content);
-
-				result["contents"] = contents;
-				return result;
-			}
-		}
+	String path;
+	String error;
+	if (!JustAMCPMCPAppsHost::sanitize_ui_uri(p_uri, path, error)) {
 		result["ok"] = false;
-		result["error_code"] = -32602;
-		result["error"] = "File not found or unreadable: " + p_uri;
+		result["error"] = error;
 		return result;
 	}
 
-	result["ok"] = false;
-	result["error_code"] = -32602;
-	result["error"] = "Mismatch URI.";
+	if (path == JustAMCPMCPAppsHost::ui_apps_prefix() + "host.html") {
+		Array contents;
+		Dictionary text_content;
+		text_content["uri"] = p_uri;
+		text_content["mimeType"] = "text/html";
+		text_content["text"] = JustAMCPMCPAppsHost::embedded_host_template();
+		contents.push_back(text_content);
+		result["ok"] = true;
+		result["contents"] = contents;
+		return result;
+	}
+
+	String file_path = "res://" + path;
+	String canon;
+	String sandbox_error;
+	if (!justamcp_canonical_sandbox_path(file_path, canon, sandbox_error)) {
+		result["ok"] = false;
+		result["error"] = sandbox_error;
+		return result;
+	}
+	file_path = canon;
+	if (!FileAccess::exists(file_path)) {
+		result["ok"] = false;
+		result["error"] = "UI resource not found.";
+		return result;
+	}
+	int64_t file_size = 0;
+	if (!justamcp_file_within_read_limit(file_path, JUSTAMCP_MAX_SYNC_READ_BYTES, file_size)) {
+		return justamcp_read_limit_error(file_path, file_size, JUSTAMCP_MAX_SYNC_READ_BYTES);
+	}
+	Ref<FileAccess> file = FileAccess::open(file_path, FileAccess::READ);
+	if (file.is_null()) {
+		result["ok"] = false;
+		result["error"] = "Failed to open UI resource.";
+		return result;
+	}
+
+	Array contents;
+	Dictionary text_content;
+	text_content["uri"] = p_uri;
+	text_content["mimeType"] = "text/html";
+	text_content["text"] = file->get_as_text();
+	contents.push_back(text_content);
+	result["ok"] = true;
+	result["contents"] = contents;
 	return result;
 }
 

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="{{JUSTAMCP_CSP}}">
+  <title>JustAMCP MCP App Host</title>
+  <style>html,body{margin:0;height:100%;background:#111;color:#eee;font:14px sans-serif}iframe{border:0;width:100%;height:100%}</style>
+</head>
+<body>
+  <iframe id="app" sandbox="allow-scripts" srcdoc="{{JUSTAMCP_APP_HTML}}"></iframe>
+  <script>
+    const app = document.getElementById("app");
+    window.addEventListener("message", async (ev) => {
+      if (ev.source !== app.contentWindow) return;
+      const msg = ev.data || {};
+      if (msg.method === "ui/initialize") {
+        app.contentWindow.postMessage({ jsonrpc: "2.0", id: msg.id, result: { protocolVersion: "2026-07-28" } }, "*");
+        return;
+      }
+      if (msg.method === "tools/call") {
+        try {
+          const r = await fetch("/mcp-apps/proxy", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(msg) });
+          app.contentWindow.postMessage(await r.json(), "*");
+        } catch (e) {
+          app.contentWindow.postMessage({ jsonrpc: "2.0", id: msg.id, error: { message: String(e) } }, "*");
+        }
+      }
+    });
+  </script>
+</body>
+</html>

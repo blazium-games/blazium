@@ -29,6 +29,7 @@
 
 #include "justamcp_tool_dispatch.h"
 
+#include "justamcp_mcp_spec.h"
 #include "justamcp_server.h"
 #include "justamcp_tool_context.h"
 #include "tools/justamcp_readonly_tools.h"
@@ -95,6 +96,10 @@ void JustAMCPToolDispatch::execute_and_send(JustAMCPServer *p_server, JustAMCPTo
 		Dictionary schema = result.get("elicitation_schema", Dictionary());
 		const String mode = result.get("elicitation_mode", "form");
 		p_server->hold_tool_for_elicitation(p_request_id, p_tool_name, p_args, schema, mode);
+		if (justamcp_protocol_at_least(p_server->get_negotiated_protocol_version(), "2026-07-28")) {
+			const String message = String(result.get("elicitation_message", "Additional input is required to continue."));
+			p_server->send_tool_result(p_request_id, true, justamcp_input_required_result(mode, message, schema), "");
+		}
 		return;
 	}
 

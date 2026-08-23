@@ -170,6 +170,15 @@ Dictionary JustAMCPJsonRpcHelpers::format_tool_result(bool p_success, const Vari
 		if (!justamcp_protocol_supports(protocol, JUSTAMCP_FEATURE_STRUCTURED_CONTENT)) {
 			result.erase("structuredContent");
 		}
+		if (p_result.get_type() == Variant::DICTIONARY) {
+			const Dictionary payload_meta = p_result;
+			if (payload_meta.has("resultType")) {
+				result["resultType"] = payload_meta["resultType"];
+			}
+			if (payload_meta.has("elicitation")) {
+				result["elicitation"] = payload_meta["elicitation"];
+			}
+		}
 		rpc_result["result"] = result;
 	} else {
 		Dictionary error_dict = p_result.get_type() == Variant::DICTIONARY ? Dictionary(p_result) : Dictionary();

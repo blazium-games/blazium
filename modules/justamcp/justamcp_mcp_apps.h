@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  test_justamcp_oauth_discovery.h                                       */
+/*  justamcp_mcp_apps.h                                                   */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             BLAZIUM ENGINE                             */
@@ -29,25 +29,48 @@
 
 #pragma once
 
-#include "tests/test_macros.h"
+#ifdef TOOLS_ENABLED
 
-void test_justamcp_oauth_401_www_authenticate();
-void test_justamcp_oauth_well_known_documents();
-void test_justamcp_oauth_cimd_client_id();
-void test_justamcp_oauth_client_dcr_and_issuer_store();
+#include "core/object/class_db.h"
+#include "core/object/object.h"
+#include "core/os/mutex.h"
+#include "core/templates/hash_map.h"
+#include "core/templates/hash_set.h"
 
-TEST_CASE("[Modules][JustAMCP] OAuth 401 includes WWW-Authenticate") {
-	test_justamcp_oauth_401_www_authenticate();
-}
+class JustAMCPMCPAppsHost : public Object {
+	GDCLASS(JustAMCPMCPAppsHost, Object);
 
-TEST_CASE("[Modules][JustAMCP] OAuth well-known discovery documents") {
-	test_justamcp_oauth_well_known_documents();
-}
+	static JustAMCPMCPAppsHost *singleton;
+	mutable Mutex apps_mutex;
+	HashMap<String, Dictionary> open_apps;
+	HashSet<String> consented_tools;
 
-TEST_CASE("[Modules][JustAMCP] OAuth CIMD client_id URL") {
-	test_justamcp_oauth_cimd_client_id();
-}
+protected:
+	static void _bind_methods();
 
-TEST_CASE("[Modules][JustAMCP] OAuth DCR body and issuer-keyed store") {
-	test_justamcp_oauth_client_dcr_and_issuer_store();
-}
+public:
+	static JustAMCPMCPAppsHost *get_singleton();
+
+	static Dictionary detect_ui_meta(const Dictionary &p_tool_or_result);
+	static bool permissions_granted(const Dictionary &p_requested, const Dictionary &p_user_grants);
+	static String csp_header(const Dictionary &p_csp);
+	static String host_page_html(const String &p_app_html, const String &p_csp);
+	static String embedded_host_template();
+	static String ui_apps_prefix();
+	static String bundled_host_uri();
+	static bool sanitize_ui_uri(const String &p_uri, String &r_path, String &r_error);
+	static Dictionary apps_extension_capability();
+
+	Dictionary open_app(const String &p_bridge_name, const Dictionary &p_ui_meta, const String &p_html);
+	Dictionary get_open_app(const String &p_uri) const;
+	Array list_open_apps() const;
+	String host_url() const;
+	Dictionary proxy_tools_call(const String &p_bridge_name, const String &p_tool_name, const Dictionary &p_arguments, bool p_user_consented);
+	void grant_tool_consent(const String &p_tool_key);
+	bool has_tool_consent(const String &p_tool_key) const;
+
+	JustAMCPMCPAppsHost();
+	~JustAMCPMCPAppsHost();
+};
+
+#endif

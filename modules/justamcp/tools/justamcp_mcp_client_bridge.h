@@ -31,10 +31,13 @@
 
 #ifdef TOOLS_ENABLED
 
+#include "../justamcp_mcp_client.h"
+
 #include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "core/object/worker_thread_pool.h"
 #include "core/os/mutex.h"
+#include "core/templates/hash_map.h"
 #include "core/templates/hash_set.h"
 #include "core/templates/vector.h"
 
@@ -52,13 +55,20 @@ protected:
 	Error _ensure_initialized(const String &p_bridge_name) const;
 	void _save_bridges(const Array &p_bridges) const;
 	Array _load_bridges() const;
+	Ref<JustAMCPMCPClient> _client_for(const String &p_bridge_name) const;
+	Dictionary _redact_bridge(const Dictionary &p_bridge) const;
+	Dictionary _apply_bridge_fields(Dictionary p_bridge, const Dictionary &p_args, bool p_create) const;
 
-	mutable HashSet<String> initialized_bridges;
+	mutable HashMap<String, Ref<JustAMCPMCPClient>> clients;
+	mutable Mutex clients_mutex;
+	mutable HashMap<String, Array> exposed_remote_tools;
 	mutable Mutex initialized_bridges_mutex;
+	mutable HashSet<String> initialized_bridges;
 	mutable Mutex pending_remote_mutex;
 	mutable Vector<WorkerThreadPool::TaskID> pending_remote_tasks;
 
 	bool _try_schedule_remote_tool(const String &p_tool_name, const Dictionary &p_args, Dictionary &r_pending) const;
+	bool _is_remote_network_tool(const String &p_tool_name) const;
 
 public:
 	Dictionary _execute_remote_tool_sync(const String &p_tool_name, const Dictionary &p_args);
@@ -71,9 +81,19 @@ public:
 
 	Dictionary list_bridges(const Dictionary &p_args);
 	Dictionary add_bridge(const Dictionary &p_args);
+	Dictionary update_bridge(const Dictionary &p_args);
+	Dictionary remove_bridge(const Dictionary &p_args);
+	Dictionary connect_bridge(const Dictionary &p_args);
+	Dictionary disconnect_bridge(const Dictionary &p_args);
+	Dictionary status_bridge(const Dictionary &p_args);
 	Dictionary list_remote_tools(const Dictionary &p_args);
 	Dictionary call_remote_tool(const Dictionary &p_args);
 	Dictionary read_remote_resource(const Dictionary &p_args);
+	Dictionary list_remote_prompts(const Dictionary &p_args);
+	Dictionary get_remote_prompt(const Dictionary &p_args);
+	Dictionary list_remote_resources(const Dictionary &p_args);
+	Dictionary complete_remote(const Dictionary &p_args);
+	void auto_connect_enabled_bridges();
 	void wait_pending_remote_tasks();
 
 	JustAMCPMCPClientBridge();

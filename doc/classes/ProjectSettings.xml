@@ -817,6 +817,8 @@
 		<member name="blazium/justamcp/resources/Input Map" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]Input Map[/code]. Description: Project input actions and their configured events.
 		</member>
+		<member name="blazium/justamcp/resources/JustAMCP MCP App UI" type="bool" setter="" getter="" default="true">
+		</member>
 		<member name="blazium/justamcp/resources/MCP Log Notifications" type="bool" setter="" getter="" default="true">
 			Read-only MCP resource metadata for [code]MCP Log Notifications[/code]. Description: Paginated buffered MCP notifications/message history. Use blazium://logs/mcp/start for the first page.
 		</member>
@@ -1350,11 +1352,21 @@
 		</member>
 		<member name="blazium/justamcp/tools/mcp_client_tools/blazium_mcp_client_call_remote_tool" type="bool" setter="" getter="" default="true">
 		</member>
+		<member name="blazium/justamcp/tools/mcp_client_tools/blazium_mcp_client_connect" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/mcp_client_tools/blazium_mcp_client_disconnect" type="bool" setter="" getter="" default="true">
+		</member>
 		<member name="blazium/justamcp/tools/mcp_client_tools/blazium_mcp_client_list_bridges" type="bool" setter="" getter="" default="true">
 		</member>
 		<member name="blazium/justamcp/tools/mcp_client_tools/blazium_mcp_client_list_remote_tools" type="bool" setter="" getter="" default="true">
 		</member>
 		<member name="blazium/justamcp/tools/mcp_client_tools/blazium_mcp_client_read_remote_resource" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/mcp_client_tools/blazium_mcp_client_remove_bridge" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/mcp_client_tools/blazium_mcp_client_status" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="blazium/justamcp/tools/mcp_client_tools/blazium_mcp_client_update_bridge" type="bool" setter="" getter="" default="true">
 		</member>
 		<member name="blazium/justamcp/tools/meta_tools" type="bool" setter="" getter="" default="true">
 		</member>

@@ -127,6 +127,8 @@ Dictionary JustAMCPOauthDiscovery::authorization_server_metadata() {
 	auth_methods.push_back("client_secret_post");
 	meta["token_endpoint_auth_methods_supported"] = auth_methods;
 	meta["scopes_supported"] = scopes_supported();
+	meta["client_id_metadata_document_supported"] = true;
+	meta["registration_endpoint"] = issuer + "/oauth/register";
 	Array response_types;
 	response_types.push_back("token");
 	meta["response_types_supported"] = response_types;

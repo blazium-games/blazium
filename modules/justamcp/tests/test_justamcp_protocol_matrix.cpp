@@ -92,6 +92,7 @@ void test_justamcp_protocol_matrix_initialize_capabilities() {
 		Dictionary caps = Dictionary(routed["result"])["capabilities"];
 		CHECK(caps.has("completions"));
 		CHECK(caps.has("tasks"));
+		CHECK(Dictionary(caps["tasks"]).has("update"));
 		CHECK(caps.has("elicitation"));
 		CHECK(Dictionary(caps["elicitation"]).has("form"));
 		CHECK(Dictionary(caps["elicitation"]).has("url"));

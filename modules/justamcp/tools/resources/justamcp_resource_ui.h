@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  test_justamcp_oauth_discovery.h                                       */
+/*  justamcp_resource_ui.h                                                */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             BLAZIUM ENGINE                             */
@@ -29,25 +29,25 @@
 
 #pragma once
 
-#include "tests/test_macros.h"
+#ifdef TOOLS_ENABLED
 
-void test_justamcp_oauth_401_www_authenticate();
-void test_justamcp_oauth_well_known_documents();
-void test_justamcp_oauth_cimd_client_id();
-void test_justamcp_oauth_client_dcr_and_issuer_store();
+#include "justamcp_resource.h"
 
-TEST_CASE("[Modules][JustAMCP] OAuth 401 includes WWW-Authenticate") {
-	test_justamcp_oauth_401_www_authenticate();
-}
+class JustAMCPResourceUI : public JustAMCPResource {
+	GDCLASS(JustAMCPResourceUI, JustAMCPResource);
 
-TEST_CASE("[Modules][JustAMCP] OAuth well-known discovery documents") {
-	test_justamcp_oauth_well_known_documents();
-}
+protected:
+	static void _bind_methods();
 
-TEST_CASE("[Modules][JustAMCP] OAuth CIMD client_id URL") {
-	test_justamcp_oauth_cimd_client_id();
-}
+public:
+	virtual String get_uri() const override;
+	virtual String get_name() const override;
+	virtual bool is_template() const override;
+	virtual Dictionary get_schema() const override;
+	virtual Dictionary read_resource(const String &p_uri) override;
 
-TEST_CASE("[Modules][JustAMCP] OAuth DCR body and issuer-keyed store") {
-	test_justamcp_oauth_client_dcr_and_issuer_store();
-}
+	JustAMCPResourceUI();
+	~JustAMCPResourceUI();
+};
+
+#endif

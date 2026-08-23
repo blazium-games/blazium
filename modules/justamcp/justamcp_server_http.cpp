@@ -30,6 +30,9 @@
 #include "justamcp_server.h"
 
 #include "justamcp_json_rpc_transport.h"
+#include "justamcp_mcp_apps.h"
+#include "justamcp_mcp_client_oauth.h"
+#include "justamcp_mcp_spec.h"
 #include "justamcp_oauth_discovery.h"
 #include "justamcp_session_manager.h"
 #include "tools/justamcp_settings_resolver.h"
@@ -476,5 +479,100 @@ void JustAMCPServer::_handle_oauth_authorization_server(Ref<HTTPRequestContext> 
 	p_response->set_status(200);
 	p_response->set_json(JustAMCPOauthDiscovery::authorization_server_metadata());
 }
+
+#ifdef TOOLS_ENABLED
+void JustAMCPServer::_handle_oauth_callback(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
+	Dictionary query = p_context.is_valid() ? p_context->get_query_params() : Dictionary();
+	Dictionary result = JustAMCPMCPClientOAuth::handle_loopback_callback(query);
+	p_response->set_status(result.get("ok", false) ? 200 : 400);
+	p_response->set_content_type("text/html; charset=utf-8");
+	if (result.get("ok", false)) {
+		p_response->set_body("<!DOCTYPE html><html><body><p>JustAMCP OAuth completed. You can close this window.</p></body></html>");
+	} else {
+		p_response->set_body("<!DOCTYPE html><html><body><p>JustAMCP OAuth failed: " + String(result.get("error", "unknown")).xml_escape() + "</p></body></html>");
+	}
+}
+
+void JustAMCPServer::_handle_oauth_client_metadata(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
+	(void)p_context;
+	p_response->set_status(200);
+	p_response->set_json(JustAMCPMCPClientOAuth::client_metadata_document(get_listening_port(), String()));
+}
+
+void JustAMCPServer::_handle_mcp_apps_host(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
+	if (session_manager && !MCPSessionManager::validate_origin(p_context)) {
+		p_response->set_status(403);
+		p_response->set_body("Forbidden");
+		return;
+	}
+	if (!JustAMCPMCPAppsHost::get_singleton() || p_context.is_null()) {
+		p_response->set_status(404);
+		p_response->set_body("Not found");
+		return;
+	}
+	const String uri = p_context->get_query_param("uri");
+	const Dictionary app = JustAMCPMCPAppsHost::get_singleton()->get_open_app(uri);
+	const String stored_html = String(app.get("html", ""));
+	if (app.is_empty() || stored_html.is_empty()) {
+		p_response->set_status(404);
+		p_response->set_body("Not found");
+		return;
+	}
+	const String csp = String(app.get("csp", JustAMCPMCPAppsHost::csp_header(Dictionary())));
+	p_response->set_status(200);
+	p_response->set_content_type("text/html; charset=utf-8");
+	p_response->add_header("Content-Security-Policy", csp);
+	p_response->set_body(JustAMCPMCPAppsHost::host_page_html(stored_html, csp));
+}
+
+void JustAMCPServer::_handle_mcp_apps_proxy(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
+	if (session_manager && !MCPSessionManager::validate_origin(p_context)) {
+		p_response->set_status(403);
+		p_response->set_body("Forbidden");
+		return;
+	}
+	if (p_context.is_null() || p_context->get_body().strip_edges().is_empty()) {
+		p_response->set_status(400);
+		p_response->set_body("JSON object required");
+		return;
+	}
+	Ref<JSON> json;
+	json.instantiate();
+	if (json->parse(p_context->get_body()) != OK || json->get_data().get_type() != Variant::DICTIONARY) {
+		p_response->set_status(400);
+		p_response->set_body("JSON object required");
+		return;
+	}
+	const Dictionary msg = json->get_data();
+	const Dictionary params = msg.has("params") && msg["params"].get_type() == Variant::DICTIONARY ? Dictionary(msg["params"]) : Dictionary();
+	const String tool_name = String(params.get("name", ""));
+	if (!justamcp_is_valid_mcp_tool_name(tool_name)) {
+		p_response->set_status(400);
+		p_response->set_body(justamcp_invalid_mcp_tool_name_message(tool_name));
+		return;
+	}
+	const String bridge_name = String(params.get("bridge", params.get("bridge_name", "")));
+	const Dictionary arguments = params.has("arguments") && params["arguments"].get_type() == Variant::DICTIONARY ? Dictionary(params["arguments"]) : Dictionary();
+	Dictionary result;
+	if (JustAMCPMCPAppsHost::get_singleton()) {
+		result = JustAMCPMCPAppsHost::get_singleton()->proxy_tools_call(bridge_name, tool_name, arguments, false);
+	} else {
+		result["ok"] = false;
+		result["error"] = "MCP Apps host is unavailable.";
+	}
+	Dictionary rpc;
+	rpc["jsonrpc"] = "2.0";
+	rpc["id"] = msg.get("id", Variant());
+	if (result.get("ok", false)) {
+		rpc["result"] = result.get("result", result);
+	} else {
+		Dictionary error;
+		error["message"] = result.get("error", "Proxy failed.");
+		rpc["error"] = error;
+	}
+	p_response->set_status(200);
+	p_response->set_json(JustAMCPJsonRpcTransport::sanitize_wire_rpc(rpc));
+}
+#endif
 
 #endif

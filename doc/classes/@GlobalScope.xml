@@ -1623,6 +1623,8 @@
 			The [JavaScriptBridge] singleton.
 			[b]Note:[/b] Only implemented on the Web platform.
 		</member>
+		<member name="JustAMCPMCPClientBridge" type="JustAMCPMCPClientBridge" setter="" getter="">
+		</member>
 		<member name="KickAPI" type="KickAPI" setter="" getter="">
 			The [KickAPI] singleton.
 		</member>

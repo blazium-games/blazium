@@ -35,6 +35,7 @@
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 
+#include "../justamcp_mcp_client_oauth.h"
 #include "../justamcp_oauth_discovery.h"
 #include "../justamcp_server.h"
 
@@ -148,11 +149,28 @@ void test_justamcp_oauth_cimd_client_id() {
 	ps->set_setting("blazium/justamcp/oauth_cimd_json", prev);
 }
 
+void test_justamcp_oauth_client_dcr_and_issuer_store() {
+#ifdef TOOLS_ENABLED
+	Dictionary dcr = JustAMCPMCPClientOAuth::build_dcr_request("http://127.0.0.1:6506/oauth/callback", "native", "none");
+	CHECK(String(dcr.get("application_type", "")) == "native");
+	CHECK(String(dcr.get("token_endpoint_auth_method", "")) == "none");
+	CHECK(Array(dcr.get("redirect_uris", Array()))[0] == "http://127.0.0.1:6506/oauth/callback");
+
+	String iss_error;
+	CHECK(!JustAMCPMCPClientOAuth::validate_iss("https://issuer.example", "https://evil.example", iss_error));
+	CHECK(JustAMCPMCPClientOAuth::issuer_storage_key("https://a.example") != JustAMCPMCPClientOAuth::issuer_storage_key("https://b.example"));
+
+	String cimd_error;
+	CHECK(JustAMCPMCPClientOAuth::validate_cimd_url("https://blazium.app/oauth/client-metadata.json", cimd_error));
+#endif
+}
+
 #else
 
 void test_justamcp_oauth_401_www_authenticate() {}
 void test_justamcp_oauth_well_known_documents() {}
 void test_justamcp_oauth_cimd_client_id() {}
+void test_justamcp_oauth_client_dcr_and_issuer_store() {}
 
 #endif
 

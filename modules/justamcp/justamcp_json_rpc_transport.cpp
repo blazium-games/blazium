@@ -446,6 +446,17 @@ Dictionary JustAMCPJsonRpcTransport::_handle_json_rpc_payload(JustAMCPServer *p_
 		return invalid_params("tasks/cancel requires 'params' object.");
 	}
 
+	if (method == "tasks/update") {
+#ifdef TOOLS_ENABLED
+		Dictionary routed = JustAMCPJsonRpcRouter::route_tasks_update(p_server, payload, req_id_var);
+		if (routed.get("handled", false)) {
+			routed.erase("handled");
+			return routed;
+		}
+#endif
+		return invalid_params("tasks/update requires 'params' object with taskId.");
+	}
+
 	if (method == "notifications/elicitation/complete") {
 		Dictionary params = payload.has("params") ? Dictionary(payload["params"]) : Dictionary();
 		String req_id = params.has("requestId") ? String(Variant(params["requestId"])) : "";
@@ -495,6 +506,9 @@ Dictionary JustAMCPJsonRpcTransport::_handle_json_rpc_payload(JustAMCPServer *p_
 		params = validated.get("params", Dictionary());
 		tool_name = validated.get("tool_name", "");
 		args = validated.get("arguments", Dictionary());
+		if (params.has("inputResponses") && params["inputResponses"].get_type() == Variant::DICTIONARY) {
+			p_server->apply_input_responses(tool_name, args, params["inputResponses"]);
+		}
 #else
 		if (!payload.has("params") || payload["params"].get_type() != Variant::DICTIONARY) {
 			return invalid_params("tools/call requires 'params' object.");

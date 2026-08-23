@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  test_justamcp_oauth_discovery.h                                       */
+/*  justamcp_mcp_client_http.h                                            */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             BLAZIUM ENGINE                             */
@@ -29,25 +29,24 @@
 
 #pragma once
 
-#include "tests/test_macros.h"
+#ifdef TOOLS_ENABLED
 
-void test_justamcp_oauth_401_www_authenticate();
-void test_justamcp_oauth_well_known_documents();
-void test_justamcp_oauth_cimd_client_id();
-void test_justamcp_oauth_client_dcr_and_issuer_store();
+#include "core/io/http_client.h"
+#include "core/string/ustring.h"
+#include "core/variant/dictionary.h"
 
-TEST_CASE("[Modules][JustAMCP] OAuth 401 includes WWW-Authenticate") {
-	test_justamcp_oauth_401_www_authenticate();
-}
+class JustAMCPMCPClientHTTP {
+public:
+	static String normalize_scheme(const String &p_scheme);
+	static bool host_allowed(const String &p_host);
+	static bool url_allowed(const String &p_url, String &r_error);
+	static bool parse_url(const String &p_url, String &r_scheme, String &r_host, int &r_port, String &r_path);
 
-TEST_CASE("[Modules][JustAMCP] OAuth well-known discovery documents") {
-	test_justamcp_oauth_well_known_documents();
-}
+	static Vector<String> streamable_headers(const String &p_method, const String &p_protocol, const String &p_auth_token, const Dictionary &p_extra_headers, bool p_modern, const String &p_mcp_name = String());
+	static Dictionary parse_json_or_sse(const String &p_body, const String &p_content_type);
 
-TEST_CASE("[Modules][JustAMCP] OAuth CIMD client_id URL") {
-	test_justamcp_oauth_cimd_client_id();
-}
+	static Dictionary request(const String &p_url, HTTPClient::Method p_method, const Vector<String> &p_headers, const String &p_body, int p_timeout_ms);
+	static Dictionary header_value(const Dictionary &p_headers, const String &p_name);
+};
 
-TEST_CASE("[Modules][JustAMCP] OAuth DCR body and issuer-keyed store") {
-	test_justamcp_oauth_client_dcr_and_issuer_store();
-}
+#endif
