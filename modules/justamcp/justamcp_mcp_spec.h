@@ -71,3 +71,4 @@ bool justamcp_parse_elicit_result(const Dictionary &p_result, String &r_action, 
 bool justamcp_elicit_content_is_confirmed(const Dictionary &p_content);
 
 Dictionary justamcp_url_elicitation_error_rpc(const Variant &p_request_id, const String &p_elicitation_id, const String &p_url, const String &p_message);
+Dictionary justamcp_input_required_result(const String &p_mode, const String &p_message, const Variant &p_url_or_schema);

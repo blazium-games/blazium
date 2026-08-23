@@ -36,7 +36,9 @@
 #include "justamcp_server.h"
 #include "tools/justamcp_tool_executor.h"
 
+#include "scene/gui/box_container.h"
 #include "scene/gui/button.h"
+#include "scene/gui/item_list.h"
 #include "scene/gui/label.h"
 #include "scene/gui/margin_container.h"
 #include "scene/gui/tab_container.h"
@@ -82,6 +84,8 @@ private:
 	JustAMCPServer *mcp_server = nullptr;
 	JustAMCPToolExecutor *tool_executor = nullptr;
 	Label *status_label = nullptr;
+	VBoxContainer *apps_dock = nullptr;
+	ItemList *apps_list = nullptr;
 	Ref<JustAMCPConfigInspectorPlugin> inspector_plugin;
 
 	void _setup_status_indicator();
@@ -91,6 +95,9 @@ private:
 	void _on_tool_requested(const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args);
 	void _invalidate_subscribed_editor_resources();
 	void _on_filesystem_changed_for_subscriptions();
+	void _refresh_apps_dock();
+	void _open_apps_host();
+	void _auto_connect_bridges();
 
 protected:
 	static void _bind_methods();

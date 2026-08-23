@@ -307,3 +307,28 @@ Dictionary justamcp_url_elicitation_error_rpc(const Variant &p_request_id, const
 	rpc_result["error"] = error;
 	return rpc_result;
 }
+
+Dictionary justamcp_input_required_result(const String &p_mode, const String &p_message, const Variant &p_url_or_schema) {
+	Dictionary payload;
+	payload["resultType"] = "input_required";
+	Dictionary elicitation;
+	elicitation["mode"] = p_mode;
+	elicitation["message"] = p_message;
+	if (p_mode == "url") {
+		elicitation["url"] = p_url_or_schema;
+	} else if (p_url_or_schema.get_type() == Variant::DICTIONARY) {
+		elicitation["requestedSchema"] = p_url_or_schema;
+		elicitation["schema"] = p_url_or_schema;
+	} else {
+		elicitation["requestedSchema"] = justamcp_confirm_enum_schema();
+		elicitation["schema"] = elicitation["requestedSchema"];
+	}
+	payload["elicitation"] = elicitation;
+	Array content;
+	Dictionary item;
+	item["type"] = "text";
+	item["text"] = p_message;
+	content.push_back(item);
+	payload["content"] = content;
+	return payload;
+}

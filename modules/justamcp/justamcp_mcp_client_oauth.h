@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  justamcp_json_rpc_router.h                                            */
+/*  justamcp_mcp_client_oauth.h                                           */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             BLAZIUM ENGINE                             */
@@ -32,30 +32,43 @@
 #ifdef TOOLS_ENABLED
 
 #include "core/variant/dictionary.h"
-#include "core/variant/variant.h"
 
-class JustAMCPResourceExecutor;
-class JustAMCPTaskManager;
-class JustAMCPPromptExecutor;
-class JustAMCPServer;
-
-class JustAMCPJsonRpcRouter {
+class JustAMCPMCPClientOAuth {
 public:
-	static String extract_list_cursor(const Dictionary &p_payload);
-	static Dictionary finalize_list_result(const Dictionary &p_result, const Variant &p_req_id);
-	static Dictionary finalize_action_result(const Dictionary &p_result, const Variant &p_req_id);
-	static Dictionary make_invalid_params(const Variant &p_req_id, const String &p_message);
-	static Dictionary route(const String &p_method, const Dictionary &p_payload, const Variant &p_req_id_var, JustAMCPResourceExecutor *p_resources, JustAMCPTaskManager *p_tasks);
-	static Dictionary route_tools_list(const String &p_cursor, const Variant &p_req_id_var);
-	static Dictionary route_prompts_list(const String &p_cursor, const Variant &p_req_id_var, JustAMCPPromptExecutor *p_prompts);
-	static Dictionary route_prompts_get(const Dictionary &p_payload, const Variant &p_req_id_var, JustAMCPPromptExecutor *p_prompts);
-	static Dictionary route_initialize(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);
-	static Dictionary route_discover(JustAMCPServer *p_server, const Variant &p_req_id_var);
-	static Dictionary route_ping(const Variant &p_req_id_var);
-	static Dictionary route_logging_set_level(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);
-	static Dictionary route_tasks_cancel(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);
-	static Dictionary route_tasks_update(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);
-	static Dictionary route_completion_complete(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);
+	struct TokenSet {
+		String access_token;
+		String refresh_token;
+		String token_type = "Bearer";
+		String issuer;
+		int expires_in = 0;
+	};
+
+	static String parse_www_authenticate_metadata_url(const String &p_header);
+	static Dictionary parse_protected_resource_metadata(const Dictionary &p_json);
+	static Dictionary parse_authorization_server_metadata(const Dictionary &p_json);
+	static Dictionary build_dcr_request(const String &p_redirect_uri, const String &p_application_type = "native", const String &p_token_auth_method = "none");
+	static bool validate_cimd_url(const String &p_url, String &r_error);
+	static bool validate_iss(const String &p_expected_issuer, const String &p_returned_iss, String &r_error);
+	static String issuer_storage_key(const String &p_issuer);
+	static String pkce_challenge_s256(const String &p_verifier);
+	static String generate_pkce_verifier();
+	static String generate_state();
+	static String to_base64url(const String &p_b64);
+
+	static Dictionary load_tokens(const String &p_issuer);
+	static void store_tokens(const String &p_issuer, const Dictionary &p_tokens);
+	static void clear_tokens(const String &p_issuer);
+	static String editor_token_path(const String &p_issuer);
+
+	static Dictionary client_metadata_document(int p_loopback_port, const String &p_cimd_url);
+	static Dictionary handle_loopback_callback(const Dictionary &p_query);
+	static bool register_pending_auth(const Dictionary &p_pending);
+	static Dictionary take_pending_auth(const String &p_state);
+
+	static Dictionary resolve_bearer_token(const Dictionary &p_bridge_config, const Dictionary &p_http_response);
+	static Dictionary begin_authorization(const Dictionary &p_bridge_config, const Dictionary &p_as_metadata);
+	static Dictionary exchange_code(const Dictionary &p_pending, const String &p_code);
+	static Dictionary refresh_access_token(const Dictionary &p_tokens, const Dictionary &p_as_metadata, const Dictionary &p_bridge_config);
 };
 
 #endif

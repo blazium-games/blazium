@@ -204,6 +204,24 @@ void JustAMCPServer::test_handle_oauth_protected_resource(Ref<HTTPRequestContext
 void JustAMCPServer::test_handle_oauth_authorization_server(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
 	_handle_oauth_authorization_server(p_context, p_response);
 }
+
+#ifdef TOOLS_ENABLED
+void JustAMCPServer::test_handle_oauth_callback(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
+	_handle_oauth_callback(p_context, p_response);
+}
+
+void JustAMCPServer::test_handle_oauth_client_metadata(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
+	_handle_oauth_client_metadata(p_context, p_response);
+}
+
+void JustAMCPServer::test_handle_mcp_apps_host(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
+	_handle_mcp_apps_host(p_context, p_response);
+}
+
+void JustAMCPServer::test_handle_mcp_apps_proxy(Ref<HTTPRequestContext> p_context, Ref<HTTPResponse> p_response) {
+	_handle_mcp_apps_proxy(p_context, p_response);
+}
+#endif
 #endif
 
 void JustAMCPServer::_print_handler_callback(void *p_user_data, const String &p_string, bool p_error, bool p_rich) {
@@ -527,6 +545,16 @@ void JustAMCPServer::_start_server_internal(bool p_ignore_cmdline_block) {
 	HTTPServer::get_singleton()->register_route("OPTIONS", "/.well-known/oauth-protected-resource/mcp", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
 	HTTPServer::get_singleton()->register_route("OPTIONS", "/.well-known/oauth-authorization-server", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
 	HTTPServer::get_singleton()->register_route("OPTIONS", "/.well-known/openid-configuration", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
+#ifdef TOOLS_ENABLED
+	HTTPServer::get_singleton()->register_route("GET", "/oauth/callback", callable_mp(this, &JustAMCPServer::_handle_oauth_callback));
+	HTTPServer::get_singleton()->register_route("GET", "/oauth/client-metadata.json", callable_mp(this, &JustAMCPServer::_handle_oauth_client_metadata));
+	HTTPServer::get_singleton()->register_route("GET", "/mcp-apps/host", callable_mp(this, &JustAMCPServer::_handle_mcp_apps_host));
+	HTTPServer::get_singleton()->register_route("POST", "/mcp-apps/proxy", callable_mp(this, &JustAMCPServer::_handle_mcp_apps_proxy));
+	HTTPServer::get_singleton()->register_route("OPTIONS", "/oauth/callback", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
+	HTTPServer::get_singleton()->register_route("OPTIONS", "/oauth/client-metadata.json", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
+	HTTPServer::get_singleton()->register_route("OPTIONS", "/mcp-apps/host", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
+	HTTPServer::get_singleton()->register_route("OPTIONS", "/mcp-apps/proxy", callable_mp(this, &JustAMCPServer::_handle_cors_preflight));
+#endif
 
 	if (!HTTPServer::get_singleton()->is_connected("sse_connection_opened", callable_mp(this, &JustAMCPServer::_on_sse_connection_opened))) {
 		HTTPServer::get_singleton()->connect("sse_connection_opened", callable_mp(this, &JustAMCPServer::_on_sse_connection_opened));
@@ -592,6 +620,16 @@ void JustAMCPServer::_stop_server() {
 		HTTPServer::get_singleton()->unregister_route("POST", "/mcp");
 		HTTPServer::get_singleton()->unregister_route("DELETE", "/mcp");
 		HTTPServer::get_singleton()->unregister_route("OPTIONS", "/mcp");
+#ifdef TOOLS_ENABLED
+		HTTPServer::get_singleton()->unregister_route("GET", "/oauth/callback");
+		HTTPServer::get_singleton()->unregister_route("GET", "/oauth/client-metadata.json");
+		HTTPServer::get_singleton()->unregister_route("GET", "/mcp-apps/host");
+		HTTPServer::get_singleton()->unregister_route("POST", "/mcp-apps/proxy");
+		HTTPServer::get_singleton()->unregister_route("OPTIONS", "/oauth/callback");
+		HTTPServer::get_singleton()->unregister_route("OPTIONS", "/oauth/client-metadata.json");
+		HTTPServer::get_singleton()->unregister_route("OPTIONS", "/mcp-apps/host");
+		HTTPServer::get_singleton()->unregister_route("OPTIONS", "/mcp-apps/proxy");
+#endif
 		if (session_manager) {
 			session_manager->clear_all();
 		}

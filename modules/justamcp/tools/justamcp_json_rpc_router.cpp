@@ -350,6 +350,7 @@ Dictionary JustAMCPJsonRpcRouter::route_initialize(JustAMCPServer *p_server, con
 		Dictionary tasks_cap;
 		tasks_cap["list"] = Dictionary();
 		tasks_cap["cancel"] = Dictionary();
+		tasks_cap["update"] = Dictionary();
 		Dictionary requests;
 		Dictionary tools;
 		tools["call"] = Dictionary();
@@ -410,8 +411,11 @@ Dictionary JustAMCPJsonRpcRouter::route_discover(JustAMCPServer *p_server, const
 	capabilities["elicitation"] = elicitation_cap;
 	Dictionary extensions;
 	if (p_server && p_server->task_manager) {
-		extensions["io.modelcontextprotocol/tasks"] = Dictionary();
+		Dictionary tasks_ext;
+		tasks_ext["update"] = Dictionary();
+		extensions["io.modelcontextprotocol/tasks"] = tasks_ext;
 	}
+	extensions["io.modelcontextprotocol/ui"] = Dictionary();
 	capabilities["extensions"] = extensions;
 	result["capabilities"] = capabilities;
 	result["instructions"] = "Use blazium_* tools and blazium:// resources. Prefer editor tools for scene/resource edits, runtime_* tools only when a game bridge is active, and guide resources such as blazium://guide/tool-index for workflow orientation.";
@@ -489,6 +493,37 @@ Dictionary JustAMCPJsonRpcRouter::route_tasks_cancel(JustAMCPServer *p_server, c
 	rpc_result["id"] = p_req_id_var;
 	if (result.get("ok", false)) {
 		result.erase("ok");
+		rpc_result["result"] = result;
+	} else {
+		Dictionary error_dict;
+		error_dict["code"] = result.get("error_code", -32603);
+		error_dict["message"] = result.get("error", "Task error.");
+		rpc_result["error"] = error_dict;
+	}
+	return rpc_result;
+}
+
+Dictionary JustAMCPJsonRpcRouter::route_tasks_update(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var) {
+	Dictionary empty;
+	empty["handled"] = false;
+	if (!p_server || !p_payload.has("params") || p_payload["params"].get_type() != Variant::DICTIONARY) {
+		return empty;
+	}
+	const Dictionary params = p_payload["params"];
+	if (!params.has("taskId") || params["taskId"].get_type() != Variant::STRING) {
+		return empty;
+	}
+	Dictionary result;
+	if (p_server->task_manager) {
+		result = p_server->task_manager->update_task(String(params["taskId"]), params);
+	}
+	Dictionary rpc_result;
+	rpc_result["handled"] = true;
+	rpc_result["jsonrpc"] = "2.0";
+	rpc_result["id"] = p_req_id_var;
+	if (result.get("ok", false)) {
+		result.erase("ok");
+		result["resultType"] = "complete";
 		rpc_result["result"] = result;
 	} else {
 		Dictionary error_dict;

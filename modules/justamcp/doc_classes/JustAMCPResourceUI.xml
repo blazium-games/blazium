@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPResourceUI" inherits="JustAMCPResource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Serves sandboxed MCP App HTML from [code]ui://[/code] URIs.
+	</brief_description>
+	<description>
+		Serves MCP App HTML from [code]ui://.blazium/apps/*.html[/code]. [code]ui://.blazium/apps/host.html[/code] is the embedded module host page; other [code]*.html[/code] names map to [code]res://.blazium/apps/[/code]. Paths containing [code]..[/code] or outside that prefix are rejected.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

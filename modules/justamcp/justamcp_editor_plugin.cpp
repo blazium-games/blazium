@@ -30,11 +30,13 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_editor_plugin.h"
+#include "justamcp_mcp_apps.h"
 #include "justamcp_project_settings.h"
 #include "justamcp_server.h"
 #include "justamcp_tool_context.h"
 #include "justamcp_tool_dispatch.h"
 #include "tools/justamcp_json_rpc_helpers.h"
+#include "tools/justamcp_mcp_client_bridge.h"
 #include "tools/justamcp_prompt_executor.h"
 #include "tools/justamcp_resource_executor.h"
 #include "tools/justamcp_settings_resolver.h"
@@ -42,6 +44,7 @@
 #include "tools/justamcp_tool_schema_cache.h"
 
 #include "core/config/project_settings.h"
+#include "core/os/os.h"
 #include "editor/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
@@ -198,6 +201,9 @@ void JustAMCPEditorPlugin::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_filesystem_changed_for_subscriptions"), &JustAMCPEditorPlugin::_on_filesystem_changed_for_subscriptions);
 	ClassDB::bind_method(D_METHOD("_show_configuration_dialog"), &JustAMCPEditorPlugin::_show_configuration_dialog);
 	ClassDB::bind_method(D_METHOD("_on_server_status_changed", "started"), &JustAMCPEditorPlugin::_on_server_status_changed);
+	ClassDB::bind_method(D_METHOD("_refresh_apps_dock"), &JustAMCPEditorPlugin::_refresh_apps_dock);
+	ClassDB::bind_method(D_METHOD("_open_apps_host"), &JustAMCPEditorPlugin::_open_apps_host);
+	ClassDB::bind_method(D_METHOD("_auto_connect_bridges"), &JustAMCPEditorPlugin::_auto_connect_bridges);
 }
 
 JustAMCPEditorPlugin::JustAMCPEditorPlugin() {
@@ -215,6 +221,33 @@ void JustAMCPEditorPlugin::_invalidate_subscribed_editor_resources() {
 
 void JustAMCPEditorPlugin::_on_filesystem_changed_for_subscriptions() {
 	JustAMCPResourceSubscriptions::notify_uri_changed("blazium://materials");
+}
+
+void JustAMCPEditorPlugin::_refresh_apps_dock() {
+	if (!apps_list) {
+		return;
+	}
+	apps_list->clear();
+	if (!JustAMCPMCPAppsHost::get_singleton()) {
+		return;
+	}
+	const Array apps = JustAMCPMCPAppsHost::get_singleton()->list_open_apps();
+	for (int i = 0; i < apps.size(); i++) {
+		const Dictionary app = apps[i];
+		apps_list->add_item(String(app.get("resourceUri", "app")));
+	}
+}
+
+void JustAMCPEditorPlugin::_open_apps_host() {
+	if (JustAMCPMCPAppsHost::get_singleton() && OS::get_singleton()) {
+		OS::get_singleton()->shell_open(JustAMCPMCPAppsHost::get_singleton()->host_url());
+	}
+}
+
+void JustAMCPEditorPlugin::_auto_connect_bridges() {
+	if (JustAMCPMCPClientBridge::get_singleton()) {
+		JustAMCPMCPClientBridge::get_singleton()->auto_connect_enabled_bridges();
+	}
 }
 
 void JustAMCPEditorPlugin::_notification(int p_what) {
@@ -277,6 +310,25 @@ void JustAMCPEditorPlugin::_notification(int p_what) {
 				}
 			}
 
+			apps_dock = memnew(VBoxContainer);
+			Label *apps_title = memnew(Label);
+			apps_title->set_text("MCP Apps");
+			apps_dock->add_child(apps_title);
+			apps_list = memnew(ItemList);
+			apps_list->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+			apps_dock->add_child(apps_list);
+			Button *refresh_apps = memnew(Button);
+			refresh_apps->set_text("Refresh");
+			refresh_apps->connect("pressed", callable_mp(this, &JustAMCPEditorPlugin::_refresh_apps_dock));
+			apps_dock->add_child(refresh_apps);
+			Button *open_host = memnew(Button);
+			open_host->set_text("Open host");
+			open_host->connect("pressed", callable_mp(this, &JustAMCPEditorPlugin::_open_apps_host));
+			apps_dock->add_child(open_host);
+			add_control_to_dock(DOCK_SLOT_RIGHT_UL, apps_dock);
+			_refresh_apps_dock();
+			call_deferred(SNAME("_auto_connect_bridges"));
+
 		} break;
 
 		case NOTIFICATION_EXIT_TREE: {
@@ -301,6 +353,13 @@ void JustAMCPEditorPlugin::_notification(int p_what) {
 			if (tool_executor) {
 				memdelete(tool_executor);
 				tool_executor = nullptr;
+			}
+
+			if (apps_dock) {
+				remove_control_from_docks(apps_dock);
+				apps_dock->queue_free();
+				apps_dock = nullptr;
+				apps_list = nullptr;
 			}
 
 			if (status_label) {

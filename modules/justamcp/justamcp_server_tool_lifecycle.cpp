@@ -31,6 +31,7 @@
 
 #include "core/io/json.h"
 #include "core/os/time.h"
+#include "justamcp_mcp_spec.h"
 #include "justamcp_server_request_lookup.h"
 #include "justamcp_session_manager.h"
 #include "justamcp_tool_queue_state.h"
@@ -263,6 +264,10 @@ void JustAMCPServer::_deferred_complete_tool_dict(const Variant &p_request_id, c
 			}
 		}
 		hold_tool_for_elicitation(p_request_id, tool_name, args, schema, mode);
+		if (justamcp_protocol_at_least(transport_negotiated_protocol, "2026-07-28")) {
+			const String message = String(result.get("elicitation_message", "Additional input is required to continue."));
+			send_tool_result(p_request_id, true, justamcp_input_required_result(mode, message, schema), "");
+		}
 		return;
 	}
 

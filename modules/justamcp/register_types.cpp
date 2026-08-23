@@ -54,9 +54,12 @@
 #ifdef MODULE_MULTIUSER_EDITOR_ENABLED
 #include "tools/justamcp_multiuser_tools.h"
 #endif
+#include "justamcp_mcp_apps.h"
+#include "justamcp_mcp_client.h"
 #include "tools/justamcp_asset_tags_tools.h"
 #include "tools/justamcp_category_registry.h"
 #include "tools/justamcp_mcp_client_bridge.h"
+#include "tools/resources/justamcp_resource_ui.h"
 #ifdef MODULE_REMOTE_CONTROL_ENABLED
 #include "tools/justamcp_remote_control_tools.h"
 #endif
@@ -117,8 +120,10 @@
 #include "tests/test_justamcp_json_rpc_transport.cpp"
 #include "tests/test_justamcp_legacy_message.cpp"
 #include "tests/test_justamcp_list_bridges_redacts_token.cpp"
+#include "tests/test_justamcp_mcp_client.cpp"
 #include "tests/test_justamcp_message_oauth.cpp"
 #include "tests/test_justamcp_non_object_json_400.cpp"
+#include "tests/test_justamcp_oauth_discovery.h"
 #include "tests/test_justamcp_origin_host_strict.cpp"
 #include "tests/test_justamcp_pending_survives_get_close.cpp"
 #include "tests/test_justamcp_phase_k.cpp"
@@ -253,7 +258,10 @@ void initialize_justamcp_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(JustAMCPPromptExecutor);
 		GDREGISTER_CLASS(JustAMCPResource);
 		GDREGISTER_CLASS(JustAMCPResourceProjectFile);
+		GDREGISTER_CLASS(JustAMCPResourceUI);
 		GDREGISTER_CLASS(JustAMCPResourceExecutor);
+		GDREGISTER_CLASS(JustAMCPMCPClient);
+		GDREGISTER_CLASS(JustAMCPMCPAppsHost);
 		GDREGISTER_CLASS(JustAMCPTaskManager);
 		GDREGISTER_CLASS(JustAMCPToolsetRegistry);
 		GDREGISTER_CLASS(JustAMCPAssetTagsTools);
@@ -297,8 +305,14 @@ void initialize_justamcp_module(ModuleInitializationLevel p_level) {
 					"semantic_search_tools");
 		}
 #endif
+		if (!JustAMCPMCPAppsHost::get_singleton()) {
+			memnew(JustAMCPMCPAppsHost);
+		}
 		if (JustAMCPToolsetRegistry::get_singleton()) {
 			JustAMCPMCPClientBridge *mcp_client_bridge = memnew(JustAMCPMCPClientBridge);
+			if (Engine::get_singleton() && !Engine::get_singleton()->has_singleton("JustAMCPMCPClientBridge")) {
+				Engine::get_singleton()->add_singleton(Engine::Singleton("JustAMCPMCPClientBridge", mcp_client_bridge));
+			}
 			JustAMCPToolsetRegistry::get_singleton()->register_toolset_with_owner(
 					"MCPClient",
 					"Outbound MCP client bridges to external MCP servers.",
@@ -340,6 +354,12 @@ void uninitialize_justamcp_module(ModuleInitializationLevel p_level) {
 	}
 #ifdef TOOLS_ENABLED
 	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+		if (Engine::get_singleton() && Engine::get_singleton()->has_singleton("JustAMCPMCPClientBridge")) {
+			Engine::get_singleton()->remove_singleton("JustAMCPMCPClientBridge");
+		}
+		if (JustAMCPMCPAppsHost *apps = JustAMCPMCPAppsHost::get_singleton()) {
+			memdelete(apps);
+		}
 		if (JustAMCPToolsetRegistry *registry = JustAMCPToolsetRegistry::get_singleton()) {
 			memdelete(registry);
 		}

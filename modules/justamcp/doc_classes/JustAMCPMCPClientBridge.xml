@@ -4,17 +4,65 @@
 		MCP tools for bridging to remote MCP servers.
 	</brief_description>
 	<description>
-		Exposes tools that list configured bridges, discover remote tools, and forward tool or resource calls to allow-listed remote MCP endpoints. Used by [JustAMCPToolExecutor] when MCP client bridging is enabled.
+		Host for outbound Streamable HTTP MCP clients. Lists, adds, updates, and removes [code]mcp_clients[/code] entries, connects bridges (discover or legacy initialize), and forwards tools, prompts, resources, and completions to allow-listed remote endpoints. Secrets such as [code]auth_token[/code] and [code]client_secret[/code] are redacted from list results.
 	</description>
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="add_bridge">
+			<return type="Dictionary" />
+			<param index="0" name="args" type="Dictionary" />
+			<description>
+				Adds a bridge. [param args] must include [code]name[/code] and [code]url[/code]. Optional fields include [code]protocol_version[/code], [code]auth_token[/code], [code]oauth_mode[/code], [code]auto_connect[/code], and [code]expose_remote_tools[/code].
+			</description>
+		</method>
+		<method name="auto_connect_enabled_bridges">
+			<return type="void" />
+			<description>
+				Connects every enabled bridge that has [code]auto_connect[/code] set.
+			</description>
+		</method>
+		<method name="call_remote_tool">
+			<return type="Dictionary" />
+			<param index="0" name="args" type="Dictionary" />
+			<description>
+				Proxies [code]tools/call[/code] to the named bridge.
+			</description>
+		</method>
+		<method name="connect_bridge">
+			<return type="Dictionary" />
+			<param index="0" name="args" type="Dictionary" />
+			<description>
+				Connects the bridge named in [param args].
+			</description>
+		</method>
+		<method name="disconnect_bridge">
+			<return type="Dictionary" />
+			<param index="0" name="args" type="Dictionary" />
+			<description>
+				Disconnects the named bridge and clears its session cache.
+			</description>
+		</method>
 		<method name="execute_tool">
 			<return type="Dictionary" />
 			<param index="0" name="tool_name" type="String" />
 			<param index="1" name="arguments" type="Dictionary" />
 			<description>
 				Executes the MCP client-bridge tool named by [param tool_name] with [param arguments] and returns the tool response dictionary.
+			</description>
+		</method>
+		<method name="list_bridges">
+			<return type="Dictionary" />
+			<param index="0" name="args" type="Dictionary" default="{}" />
+			<description>
+				Lists configured bridges with [code]auth_token[/code] and [code]client_secret[/code] redacted.
+			</description>
+		</method>
+		<method name="list_remote_tools">
+			<return type="Dictionary" />
+			<param index="0" name="args" type="Dictionary" />
+			<description>
+				Proxies [code]tools/list[/code] from the named bridge.
 			</description>
 		</method>
 		<method name="provide_tool_schemas">
@@ -24,6 +72,34 @@
 			<param index="2" name="include_disabled_tools" type="bool" default="false" />
 			<description>
 				Returns MCP JSON schema dictionaries for client-bridge tools. Set [param register_only] for registration metadata only, or [param ignore_settings] to bypass editor filtering.
+			</description>
+		</method>
+		<method name="read_remote_resource">
+			<return type="Dictionary" />
+			<param index="0" name="args" type="Dictionary" />
+			<description>
+				Proxies [code]resources/read[/code] to the named bridge.
+			</description>
+		</method>
+		<method name="remove_bridge">
+			<return type="Dictionary" />
+			<param index="0" name="args" type="Dictionary" />
+			<description>
+				Removes the bridge named in [param args].
+			</description>
+		</method>
+		<method name="status_bridge">
+			<return type="Dictionary" />
+			<param index="0" name="args" type="Dictionary" />
+			<description>
+				Returns connection status for the named bridge.
+			</description>
+		</method>
+		<method name="update_bridge">
+			<return type="Dictionary" />
+			<param index="0" name="args" type="Dictionary" />
+			<description>
+				Updates fields on an existing bridge. [param args] must include [code]name[/code].
 			</description>
 		</method>
 	</methods>

@@ -496,6 +496,31 @@ void test_justamcp_http_modern_get_delete_and_listen() {
 	CHECK(session_manager->handle_mcp_post(_make_ctx("POST", _modern_headers("subscriptions/listen"), _modern_body("subscriptions/listen", 8)), listen));
 	CHECK(listen->is_sse_response());
 	CHECK(_response_header(listen, "MCP-Session-Id").is_empty());
+
+	Ref<HTTPResponse> ping;
+	ping.instantiate();
+	CHECK(session_manager->handle_mcp_post(_make_ctx("POST", _modern_headers("ping"), _modern_body("ping", 9)), ping));
+	CHECK(ping->get_status() == 404);
+
+	Ref<HTTPResponse> logging;
+	logging.instantiate();
+	CHECK(session_manager->handle_mcp_post(_make_ctx("POST", _modern_headers("logging/setLevel"), _modern_body("logging/setLevel", 10, "{\"level\":\"debug\"}")), logging));
+	CHECK(logging->get_status() == 404);
+
+	Ref<HTTPResponse> subscribe;
+	subscribe.instantiate();
+	CHECK(session_manager->handle_mcp_post(_make_ctx("POST", _modern_headers("resources/subscribe"), _modern_body("resources/subscribe", 11, "{\"uri\":\"blazium://guide/tool-index\"}")), subscribe));
+	CHECK(subscribe->get_status() == 404);
+
+	const String session_id = _init_session(fixture.get_server(), session_manager, "2025-11-25");
+	Ref<HTTPResponse> get_legacy;
+	get_legacy.instantiate();
+	Dictionary legacy_get;
+	legacy_get["Accept"] = "text/event-stream";
+	legacy_get["MCP-Session-Id"] = session_id;
+	legacy_get["MCP-Protocol-Version"] = "2025-11-25";
+	CHECK(session_manager->handle_mcp_get(_make_ctx("GET", legacy_get), get_legacy));
+	CHECK(get_legacy->get_status() != 405);
 }
 
 void test_justamcp_accepted_protocol_versions_pinning() {
