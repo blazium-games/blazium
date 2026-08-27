@@ -183,6 +183,9 @@ Error AssetTagRuntime::bake_tags_for_export(const String &p_export_output_dir) {
 	if (!AssetTagStorage::load_index(index)) {
 		return ERR_CANT_OPEN;
 	}
+	if (index.is_empty()) {
+		return OK;
+	}
 	Ref<DirAccess> dir = _open_export_dir(p_export_output_dir);
 	if (dir.is_null()) {
 		return ERR_CANT_CREATE;

@@ -132,6 +132,9 @@ void EditorExport::add_export_platform(const Ref<EditorExportPlatform> &p_platfo
 
 	should_update_presets = true;
 	should_reload_presets = true;
+	if (is_inside_tree()) {
+		update_export_presets();
+	}
 }
 
 void EditorExport::remove_export_platform(const Ref<EditorExportPlatform> &p_platform) {
