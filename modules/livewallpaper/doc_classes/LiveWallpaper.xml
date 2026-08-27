@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="LiveWallpaper" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Runtime singleton that parents a Blazium window to the Windows desktop WorkerW as an animated wallpaper.
+	</brief_description>
+	<description>
+		[LiveWallpaper] is compiled when the livewallpaper module is enabled. Command-line switches apply only when [code]blazium/livewallpaper/enabled[/code] is [code]true[/code]. Run mode finds the desktop WorkerW ([code]Progman[/code] + [code]0x052C[/code]) and parents the engine window as a [code]WS_CHILD[/code] behind the icons. Preview ([code]--livewallpaper-preview[/code] or [code]/p[/code]) stays a normal window and never attaches. [code]--livewallpaper-quit[/code] signals a running instance to exit.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_mode" qualifiers="const">
+			<return type="int" enum="LiveWallpaper.Mode" />
+			<description>
+				Returns the active livewallpaper mode, or [constant MODE_DISABLED] when the project setting is off.
+			</description>
+		</method>
+		<method name="get_workerw" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the WorkerW HWND used as the embed parent, or [code]0[/code] in preview / when not attached.
+			</description>
+		</method>
+		<method name="is_attached" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when run mode found a WorkerW and the window is embedded.
+			</description>
+		</method>
+		<method name="request_exit">
+			<return type="void" />
+			<description>
+				Quits the livewallpaper process.
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="MODE_DISABLED" value="0" enum="Mode">
+			Project setting is off, or no livewallpaper mode was applied.
+		</constant>
+		<constant name="MODE_RUN" value="1" enum="Mode">
+			Attach to the desktop WorkerW (default when enabled).
+		</constant>
+		<constant name="MODE_PREVIEW" value="2" enum="Mode">
+			Windowed preview that does not attach ([code]--livewallpaper-preview[/code] or [code]/p[/code]).
+		</constant>
+		<constant name="MODE_QUIT" value="3" enum="Mode">
+			Signal a running instance to exit ([code]--livewallpaper-quit[/code]).
+		</constant>
+	</constants>
+</class>
