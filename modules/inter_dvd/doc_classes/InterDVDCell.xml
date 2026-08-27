@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="InterDVDCell" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		One DVD-Video cell: a Godot scene to bake, pre-encoded MPEG-2/VOB, or a source file to transcode.
+	</brief_description>
+	<description>
+		One muxed VOB cell. Export resolution order: [member encoded_path] if it exists; otherwise bake [member packed_scene] for [member duration_sec]; otherwise copy or transcode [member source_path]. A title PGC muxes every cell (cell N is chapter N / program N). A scene bake records 720×480 video plus a 48 kHz stereo AC3 track. Missing encoder plus no encoded cell is an export error unless dummy VOB is allowed. No CSS is applied.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_display_name" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the resource name, or the source/encoded file name, for inspector chapter lists.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="audio_path" type="String" setter="set_audio_path" getter="get_audio_path" default="&quot;&quot;">
+			Optional menu music file. Used when [member include_audio] is on and the cell has no picture-in-picture audio. A [member pip_source_path] soundtrack replaces this file.
+		</member>
+		<member name="bake_camera_path" type="NodePath" setter="set_bake_camera_path" getter="get_bake_camera_path" default="NodePath(&quot;&quot;)">
+			Optional [Camera2D] or [Camera3D] used for GPU bake. Empty uses the scene's current camera. A 3D scene with no camera is an authoring error (no camera is invented).
+		</member>
+		<member name="bake_hold_sec" type="float" setter="set_bake_hold_sec" getter="get_bake_hold_sec" default="0.0">
+			Seconds each unique bake frame is held. [code]0[/code] uses 30 fps, or a root [code]inter_dvd_bake_hold_sec()[/code] script hook if present.
+		</member>
+		<member name="default_highlight" type="Rect2" setter="set_default_highlight" getter="get_default_highlight" default="Rect2(0, 0, 0, 0)">
+			Fallback HLI rectangle when [method InterDVDButton.sync_highlight_from_scene] cannot resolve [member InterDVDButton.control_path]. Empty leaves the highlight unset.
+		</member>
+		<member name="duration_sec" type="float" setter="set_duration_sec" getter="get_duration_sec" default="0.0">
+			How long to play and bake this cell, in seconds. Required when [member packed_scene] is set. Also written as the PGC playback time.
+		</member>
+		<member name="encoded_path" type="String" setter="set_encoded_path" getter="get_encoded_path" default="&quot;&quot;">
+			Pre-encoded MPEG-2 or VOB path, or a bake cache produced from [member packed_scene].
+		</member>
+		<member name="include_audio" type="bool" setter="set_include_audio" getter="get_include_audio" default="true">
+			Mux AC3 when a soundtrack exists: PiP video audio first, then [member audio_path], then a scene [AudioStreamPlayer]. No dummy silent track.
+		</member>
+		<member name="loop_pad_sec" type="float" setter="set_loop_pad_sec" getter="get_loop_pad_sec" default="0.0">
+			Extra seconds appended after the picture-in-picture clip before the baked menu cycle repeats. Bake length becomes probed PiP duration plus this pad.
+		</member>
+		<member name="packed_scene" type="PackedScene" setter="set_packed_scene" getter="get_packed_scene">
+			Optional Godot scene recorded to NTSC DVD MPEG-2 at export time.
+		</member>
+		<member name="pip_lead_sec" type="float" setter="set_pip_lead_sec" getter="get_pip_lead_sec" default="0.4">
+			Seconds trimmed from the start of a picture-in-picture overlay after black-detect.
+		</member>
+		<member name="pip_rect" type="Rect2" setter="set_pip_rect" getter="get_pip_rect" default="Rect2(0, 0, 0, 0)">
+			PiP overlay rectangle used only when [member pip_slot_path] does not resolve. Empty means no default geometry.
+		</member>
+		<member name="pip_slot_path" type="NodePath" setter="set_pip_slot_path" getter="get_pip_slot_path" default="NodePath(&quot;&quot;)">
+			Control or Node2D that receives the scaled PiP video during a scene bake. Empty means no slot unless [member pip_rect] is set.
+		</member>
+		<member name="pip_source_path" type="String" setter="set_pip_source_path" getter="get_pip_source_path" default="&quot;&quot;">
+			Optional video composited into [member pip_slot_path] for the probed clip length, then the slot shows the baked still for [member loop_pad_sec] before the menu loops. If this file has audio, that soundtrack replaces [member audio_path] and scene music.
+		</member>
+		<member name="post_commands" type="PackedByteArray[]" setter="set_post_commands" getter="get_post_commands" default="[]">
+			Cell-post instruction stream (one 8-byte command typical). Empty non-last cells get a LinkPGN to the next chapter so the title plays through.
+		</member>
+		<member name="source_path" type="String" setter="set_source_path" getter="get_source_path" default="&quot;&quot;">
+			Source media. ffmpeg-readable files ([code].mp4[/code], [code].mkv[/code], [code].mov[/code], [code].avi[/code], [code].webm[/code]) are transcoded to NTSC DVD. MPEG-2/VOB ([code].mpg[/code], [code].mpeg[/code], [code].vob[/code], [code].m2v[/code]) is copied when already a program stream.
+		</member>
+		<member name="streams" type="InterDVDStream[]" setter="set_streams" getter="get_streams" default="[]">
+			Extra audio ([code]0x81+[/code]) and subtitle ([code]0x20+[/code]) streams. [member audio_path] remains stream 0.
+		</member>
+	</members>
+</class>

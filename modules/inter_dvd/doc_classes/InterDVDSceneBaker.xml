@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="InterDVDSceneBaker" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Records an [InterDVDCell] packed scene to NTSC DVD MPEG-2 plus audio.
+	</brief_description>
+	<description>
+		Instantiates [member InterDVDCell.packed_scene] in a 720×480 viewport, captures [member InterDVDCell.duration_sec] at 30 fps, and encodes with ffmpeg [code]-target ntsc-dvd[/code]. GPU capture uses the scene (or [member InterDVDCell.bake_camera_path]) camera; dummy/headless CPU-rasters common Node2D and Control types. A packed [Node3D] on the dummy renderer returns [constant ERR_UNAVAILABLE]. [AnimationPlayer] / [AnimatedSprite2D] scenes bake looping motion frames. A root [code]inter_dvd_bake_time(seconds)[/code] method is called each captured frame. [member InterDVDCell.bake_hold_sec] or [code]inter_dvd_bake_hold_sec()[/code] holds each unique frame. Cache path, AC3, GOP, PiP lead, and warmup come from ProjectSettings / [InterDVDProject] / [InterDVDCell]. Fails if the probed MPEG is shorter than the requested duration. Editor-only.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="bake_cell" qualifiers="static">
+			<return type="int" enum="Error" />
+			<param index="0" name="cell" type="InterDVDCell" />
+			<param index="1" name="ffmpeg" type="String" default="&quot;&quot;" />
+			<param index="2" name="auto_find_ffmpeg" type="bool" default="true" />
+			<description>
+				Bakes [param cell] when a packed scene is set and the cache is missing or dirty. Sets [member InterDVDCell.encoded_path] to the cached MPEG. Does not store machine ffmpeg paths.
+			</description>
+		</method>
+		<method name="raster_root" qualifiers="static">
+			<return type="Image" />
+			<param index="0" name="root" type="Node" />
+			<description>
+				CPU-raster [param root] and its visible children to a 720×480 [Image]. Used by headless bake and tests. Does not encode MPEG.
+			</description>
+		</method>
+	</methods>
+</class>

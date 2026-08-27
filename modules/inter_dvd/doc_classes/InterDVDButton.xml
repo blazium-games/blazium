@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="InterDVDButton" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A PCI HLI highlight plus a domain-validated 8-byte DVD-Video command.
+	</brief_description>
+	<description>
+		Menus and titles may have up to 36 buttons. Set [member action] to a hardware destination and [member target], [member title_n], or [member stream] as needed. The inspector lists named titles and video cells from [code]blazium/inter_dvd/project[/code]. [method resolve_command] encodes through [InterDVDInstruction]: Jump Title is JumpTT from the VMGM and LinkPGCN from a title; Jump Chapter is LinkPTT or JumpVTS_PTT; Jump Menu ids 2-7 are JumpSS or CallSS. JumpSS from the title domain is illegal. There is no URL, file, or app launch — a video file on disc is a muxed VOB cell reached by JumpTT / LinkPTT.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="resolve_command" qualifiers="const">
+			<return type="PackedByteArray" />
+			<param index="0" name="domain" type="int" enum="InterDVDButton.CommandDomain" default="0" />
+			<description>
+				Returns the 8-byte hardware command for [param domain] ([constant DOMAIN_VMGM] or [constant DOMAIN_VTST]).
+			</description>
+		</method>
+		<method name="sync_highlight_from_scene">
+			<return type="void" />
+			<param index="0" name="root" type="Node" />
+			<param index="1" name="default_highlight" type="Rect2" default="Rect2(0, 0, 0, 0)" />
+			<param index="2" name="title_safe_bottom" type="int" default="-1" />
+			<description>
+				Copies [member highlight] from the [CanvasItem] at [member control_path] (Control rect or Node2D [code]get_rect()[/code]). If the node is missing, uses [param default_highlight] only when that rect has area. Clamps to 720×480 even HLI edges and [param title_safe_bottom] (or ProjectSettings when [code]-1[/code]).
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="action" type="int" setter="set_action" getter="get_action" enum="InterDVDButton.Action" default="0">
+			Hardware navigation: play title/chapter, jump menu/PGC/program/cell, set stream, highlight, resume, exit, or [member command].
+		</member>
+		<member name="action_color" type="Color" setter="set_action_color" getter="get_action_color" default="Color(1, 0.35, 0.1, 1)">
+			Preferred pressed highlight. Authoring maps this to a PGC palette action slot.
+		</member>
+		<member name="adjacent_down" type="int" setter="set_adjacent_down" getter="get_adjacent_down" default="0">
+			Manual down neighbor (1-36). [code]0[/code] uses nearest-neighbor.
+		</member>
+		<member name="adjacent_left" type="int" setter="set_adjacent_left" getter="get_adjacent_left" default="0">
+			Manual left neighbor (1-36). [code]0[/code] uses nearest-neighbor.
+		</member>
+		<member name="adjacent_right" type="int" setter="set_adjacent_right" getter="get_adjacent_right" default="0">
+			Manual right neighbor (1-36). [code]0[/code] uses nearest-neighbor.
+		</member>
+		<member name="adjacent_up" type="int" setter="set_adjacent_up" getter="get_adjacent_up" default="0">
+			Manual up neighbor (1-36). [code]0[/code] uses nearest-neighbor.
+		</member>
+		<member name="auto_action" type="bool" setter="set_auto_action" getter="get_auto_action" default="false">
+			If [code]true[/code], highlighting this button also activates it.
+		</member>
+		<member name="button_number" type="int" setter="set_button_number" getter="get_button_number" default="0">
+			Optional numeric-select number (1-36). [code]0[/code] uses the array index.
+		</member>
+		<member name="color_group" type="int" setter="set_color_group" getter="get_color_group" default="1">
+			HLI color-group index (1-3). Select/action colors for this group are packed into that group's [code]btn_coli[/code] slot.
+		</member>
+		<member name="command" type="PackedByteArray" setter="set_command" getter="get_command" default="PackedByteArray()">
+			Raw 8-byte command used when [member action] is [constant ACTION_CUSTOM].
+		</member>
+		<member name="control_path" type="NodePath" setter="set_control_path" getter="get_control_path" default="NodePath(&quot;&quot;)">
+			Optional [CanvasItem] in the cell packed scene whose rectangle becomes [member highlight] at export.
+		</member>
+		<member name="forced_activated" type="bool" setter="set_forced_activated" getter="is_forced_activated" default="false">
+			If [code]true[/code], this button is the HLI forced-activated button (PGC still-time auto-fire).
+		</member>
+		<member name="forced_selected" type="bool" setter="set_forced_selected" getter="is_forced_selected" default="false">
+			If [code]true[/code], this button is the HLI forced-selected button.
+		</member>
+		<member name="hidden" type="bool" setter="set_hidden" getter="is_hidden" default="false">
+			If [code]true[/code], no highlight rectangle is written; the button remains numerically selectable.
+		</member>
+		<member name="highlight" type="Rect2" setter="set_highlight" getter="get_highlight" default="Rect2(0, 0, 0, 0)">
+			Highlight rectangle in 720×480 pixel space.
+		</member>
+		<member name="numeric_select" type="bool" setter="set_numeric_select" getter="get_numeric_select" default="true">
+			If [code]true[/code], the remote number keys can select this button.
+		</member>
+		<member name="select_color" type="Color" setter="set_select_color" getter="get_select_color" default="Color(1, 0.92, 0.2, 1)">
+			Preferred hover highlight. Authoring maps this to a PGC palette select slot.
+		</member>
+		<member name="stream" type="int" setter="set_stream" getter="get_stream" default="0">
+			Audio, subtitle, or angle stream index for SetSTN actions.
+		</member>
+		<member name="subtitle_on" type="bool" setter="set_subtitle_on" getter="get_subtitle_on" default="true">
+			Subtitle visibility flag for [constant ACTION_SET_SUBTITLE].
+		</member>
+		<member name="target" type="int" setter="set_target" getter="get_target" default="1">
+			Destination: 1-based title, chapter, program, cell, PGC, highlight button, or menu id (2-7).
+		</member>
+		<member name="title_n" type="int" setter="set_title_n" getter="get_title_n" default="1">
+			Title number used with [constant ACTION_JUMP_CHAPTER] from the VMGM (JumpVTS_PTT).
+		</member>
+	</members>
+	<constants>
+		<constant name="ACTION_JUMP_TITLE" value="0" enum="Action">
+			Play Title: JumpTT ([code]30 02[/code]) from the menu domain, or LinkPGCN ([code]20 04[/code]) from a title.
+		</constant>
+		<constant name="ACTION_JUMP_MENU" value="1" enum="Action">
+			JumpSS ([code]30 06[/code]) from the menu domain, or CallSS ([code]30 08[/code]) from a title. Menu ids: Title 2, Root 3, Subpicture 4, Audio 5, Angle 6, Chapter 7.
+		</constant>
+		<constant name="ACTION_JUMP_PGC" value="2" enum="Action">
+			LinkPGCN ([code]20 04[/code]) to [member target] in the current domain.
+		</constant>
+		<constant name="ACTION_CUSTOM" value="3" enum="Action">
+			Use [member command] as-is.
+		</constant>
+		<constant name="ACTION_JUMP_CHAPTER" value="4" enum="Action">
+			Play Chapter: LinkPTT from a title, or JumpVTS_PTT from the VMGM using [member title_n] and [member target].
+		</constant>
+		<constant name="ACTION_JUMP_PROGRAM" value="5" enum="Action">
+			LinkPGN to [member target].
+		</constant>
+		<constant name="ACTION_JUMP_CELL" value="6" enum="Action">
+			LinkCN to [member target].
+		</constant>
+		<constant name="ACTION_RESUME" value="7" enum="Action">
+			RSM. Legal only from a menu domain.
+		</constant>
+		<constant name="ACTION_SET_AUDIO" value="8" enum="Action">
+			SetSTN audio stream [member stream].
+		</constant>
+		<constant name="ACTION_SET_SUBTITLE" value="9" enum="Action">
+			SetSTN subtitle stream [member stream] and [member subtitle_on].
+		</constant>
+		<constant name="ACTION_SET_ANGLE" value="10" enum="Action">
+			SetSTN angle [member stream].
+		</constant>
+		<constant name="ACTION_HIGHLIGHT_BUTTON" value="11" enum="Action">
+			SetHL_BTNN to [member target] (1-36).
+		</constant>
+		<constant name="ACTION_EXIT" value="12" enum="Action">
+			Exit the disc.
+		</constant>
+		<constant name="DOMAIN_VMGM" value="0" enum="CommandDomain">
+			Title-menu (VMGM) highlight stream.
+		</constant>
+		<constant name="DOMAIN_VTST" value="1" enum="CommandDomain">
+			Title-domain (VTST) highlight stream.
+		</constant>
+	</constants>
+</class>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="InterDVDMenu" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Still or motion DVD menu with up to 36 buttons.
+	</brief_description>
+	<description>
+		Used when authoring VMG/VTSM menus. Playback happens on a burnt disc, not in the editor. Set [member Resource.resource_name] so button destination dropdowns can label this menu.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="button_group_mask" type="int" setter="set_button_group_mask" getter="get_button_group_mask" default="4096">
+			HLI BTN_MD word. Default [code]0x1000[/code] is one 4:3 group (libdvdread: reserved [code]zero1[/code]=0, [code]btngr_ns[/code]=1). Do not use [code]0x4000[/code]; that sets [code]zero1[/code] and leaves [code]btngr_ns[/code]=0.
+		</member>
+		<member name="buttons" type="InterDVDButton[]" setter="set_buttons" getter="get_buttons" default="[]">
+			Menu buttons (capped at 36).
+		</member>
+		<member name="cell" type="InterDVDCell" setter="set_cell" getter="get_cell">
+			Still or motion background cell. Uses the same mux path as a title video cell.
+		</member>
+		<member name="clut" type="PackedColorArray" setter="set_clut" getter="get_clut" default="PackedColorArray()">
+			Optional 16-entry PGC palette. Empty keeps the default gold highlight colors.
+		</member>
+		<member name="default_button" type="int" setter="set_default_button" getter="get_default_button" default="1">
+			Forced-selected button on the first NAV pack (1-36).
+		</member>
+		<member name="forced_activated_button" type="int" setter="set_forced_activated_button" getter="get_forced_activated_button" default="0">
+			HLI forced-activated button, or [code]0[/code] for none.
+		</member>
+		<member name="forced_selected_button" type="int" setter="set_forced_selected_button" getter="get_forced_selected_button" default="0">
+			HLI forced-selected button override, or [code]0[/code] to use [member default_button].
+		</member>
+		<member name="menu_type" type="int" setter="set_menu_type" getter="get_menu_type" enum="InterDVDMenu.MenuType" default="2">
+			PGCI_UT menu id: Title 2, Root 3, Subpicture 4, Audio 5, Angle 6, Chapter 7.
+		</member>
+		<member name="motion" type="bool" setter="set_motion" getter="is_motion" default="false">
+			If [code]true[/code], the menu uses a motion video cell.
+		</member>
+		<member name="next_pgc" type="int" setter="set_next_pgc" getter="get_next_pgc" default="1">
+			Next PGC number (default loops this menu).
+		</member>
+		<member name="prev_pgc" type="int" setter="set_prev_pgc" getter="get_prev_pgc" default="1">
+			Previous PGC number.
+		</member>
+		<member name="still_time" type="int" setter="set_still_time" getter="get_still_time" default="0">
+			PGC still time in seconds ([code]255[/code] = infinite).
+		</member>
+	</members>
+	<constants>
+		<constant name="MENU_TITLE" value="2" enum="MenuType">
+			Title menu.
+		</constant>
+		<constant name="MENU_ROOT" value="3" enum="MenuType">
+			Root menu.
+		</constant>
+		<constant name="MENU_SUBPICTURE" value="4" enum="MenuType">
+			Subpicture menu.
+		</constant>
+		<constant name="MENU_AUDIO" value="5" enum="MenuType">
+			Audio menu.
+		</constant>
+		<constant name="MENU_ANGLE" value="6" enum="MenuType">
+			Angle menu.
+		</constant>
+		<constant name="MENU_CHAPTER" value="7" enum="MenuType">
+			Chapter menu.
+		</constant>
+	</constants>
+</class>

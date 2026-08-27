@@ -648,6 +648,39 @@
 		<member name="blazium/gif/max_frames" type="int" setter="" getter="" default="4096">
 			Maximum number of frames accepted when decoding or capturing a GIF.
 		</member>
+		<member name="blazium/inter_dvd/ac3_bitrate_k" type="int" setter="" getter="" default="192">
+			Target AC-3 bitrate in kbps used when muxing Interactive DVD audio.
+		</member>
+		<member name="blazium/inter_dvd/ac3_channels" type="int" setter="" getter="" default="2">
+			Number of AC-3 channels used when muxing Interactive DVD audio.
+		</member>
+		<member name="blazium/inter_dvd/bake_warmup_frames" type="int" setter="" getter="" default="2">
+			Number of warmup frames rendered before baking an Interactive DVD cell.
+		</member>
+		<member name="blazium/inter_dvd/cache_path" type="String" setter="" getter="" default="&quot;res://.inter_dvd_cache&quot;">
+			Directory used to cache Interactive DVD bake and mux artifacts.
+		</member>
+		<member name="blazium/inter_dvd/default_parental_level" type="int" setter="" getter="" default="1">
+			Default parental level written into a new [InterDVDProject] template.
+		</member>
+		<member name="blazium/inter_dvd/default_region_mask" type="int" setter="" getter="" default="1">
+			Default region mask written into a new [InterDVDProject] template.
+		</member>
+		<member name="blazium/inter_dvd/gop_size" type="int" setter="" getter="" default="15">
+			MPEG GOP size used when encoding Interactive DVD video.
+		</member>
+		<member name="blazium/inter_dvd/pip_blackdetect_pix_th" type="float" setter="" getter="" default="0.12">
+			Pixel brightness threshold used when detecting black frames around picture-in-picture cells.
+		</member>
+		<member name="blazium/inter_dvd/pip_blackdetect_sec" type="float" setter="" getter="" default="2.5">
+			Seconds of black-frame detection used around picture-in-picture cells.
+		</member>
+		<member name="blazium/inter_dvd/project" type="String" setter="" getter="" default="&quot;&quot;">
+			Path to the [InterDVDProject] resource used by the Windows Interactive DVD exporter.
+		</member>
+		<member name="blazium/inter_dvd/title_safe_bottom" type="int" setter="" getter="" default="432">
+			Lowest safe scanline for Interactive DVD button and overlay placement.
+		</member>
 		<member name="blazium/justamcp/accepted_protocol_versions" type="String" setter="" getter="" default="&quot;&quot;">
 			Optional comma-separated allowlist of MCP protocol versions this process will serve. Empty accepts every implemented version ([code]2026-07-28[/code] through [code]2024-11-05[/code]).
 		</member>

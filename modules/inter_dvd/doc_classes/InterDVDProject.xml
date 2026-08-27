@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="InterDVDProject" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Authoring graph for a VIDEO_TS / AUDIO_TS disc.
+	</brief_description>
+	<description>
+		Describes VMG, titles, menus, region mask, and parental level. Export writes an unencrypted DVD-Video volume for burning. Point [code]blazium/inter_dvd/project[/code] at this resource.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_title_from_video">
+			<return type="InterDVDPGC" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Creates a title PGC with one cell whose [member InterDVDCell.source_path] is [param path], appends it to [member titles], and returns the title.
+			</description>
+		</method>
+		<method name="language_be16" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="language" type="String" />
+			<description>
+				Packs an ISO 639-1 code into the 16-bit IFO language field ([code]en[/code] is [code]0x656E[/code]).
+			</description>
+		</method>
+		<method name="sanitize_volume_id" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="id" type="String" />
+			<description>
+				Uppercase ISO9660 volume label: [code]A-Z0-9_[/code], max 32 characters. Empty input becomes [code]BLAZIUM_DVD[/code].
+			</description>
+		</method>
+		<method name="seed_from_project_settings">
+			<return type="void" />
+			<description>
+				Copies [code]blazium/inter_dvd[/code] ProjectSettings defaults onto this resource (region, parental, AC3, GOP, title-safe, warmup).
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="ac3_bitrate_k" type="int" setter="set_ac3_bitrate_k" getter="get_ac3_bitrate_k" default="192">
+			AC3 encode bitrate in kbps. Seeded from [code]blazium/inter_dvd/ac3_bitrate_k[/code].
+		</member>
+		<member name="audio_language" type="String" setter="set_audio_language" getter="get_audio_language" default="&quot;en&quot;">
+			Default ISO 639-1 code for title audio attributes.
+		</member>
+		<member name="bake_warmup_frames" type="int" setter="set_bake_warmup_frames" getter="get_bake_warmup_frames" default="2">
+			Viewport frames skipped before the first captured bake frame.
+		</member>
+		<member name="disc_title" type="String" setter="set_disc_title" getter="get_disc_title" default="&quot;&quot;">
+			Human title written into TXTDT_MGI (libdvdnav [code]get_title_string[/code]).
+		</member>
+		<member name="first_play" type="InterDVDPGC" setter="set_first_play" getter="get_first_play">
+			Optional First Play PGC (FPC).
+		</member>
+		<member name="gop_size" type="int" setter="set_gop_size" getter="get_gop_size" default="15">
+			MPEG GOP size passed to ffmpeg [code]-g[/code].
+		</member>
+		<member name="menu_language" type="String" setter="set_menu_language" getter="get_menu_language" default="&quot;en&quot;">
+			ISO 639-1 code written on VMGM/VTSM PGCI_UT language units.
+		</member>
+		<member name="menus" type="InterDVDMenu[]" setter="set_menus" getter="get_menus" default="[]">
+			[constant InterDVDMenu.MENU_TITLE] menus are concatenated into [code]VIDEO_TS.VOB[/code] (VMGM). Root, audio, subpicture, angle, and chapter menus are concatenated into [code]VTS_01_0.VOB[/code] (VTSM).
+		</member>
+		<member name="parental_level" type="int" setter="set_parental_level" getter="get_parental_level" default="1">
+			Default parental level.
+		</member>
+		<member name="provider_id" type="String" setter="set_provider_id" getter="get_provider_id" default="&quot;BLAZIUM INTER-DVD&quot;">
+			32-byte VMGI provider identifier.
+		</member>
+		<member name="region_mask" type="int" setter="set_region_mask" getter="get_region_mask" default="1">
+			Region mask written into the VMG.
+		</member>
+		<member name="serial" type="String" setter="set_serial" getter="get_serial" default="&quot;&quot;">
+			Optional disc serial string (max 15 characters) stored with TXTDT.
+		</member>
+		<member name="subtitle_language" type="String" setter="set_subtitle_language" getter="get_subtitle_language" default="&quot;en&quot;">
+			Default ISO 639-1 code for subtitle attributes when SPU PES is muxed.
+		</member>
+		<member name="title_safe_bottom" type="int" setter="set_title_safe_bottom" getter="get_title_safe_bottom" default="432">
+			NTSC title-safe bottom scanline for HLI clamp (buttons below this are lifted).
+		</member>
+		<member name="titles" type="InterDVDPGC[]" setter="set_titles" getter="get_titles" default="[]">
+			Title PGCs (one VTS). Every cell on each title is muxed; use [method add_title_from_video] to add a clip.
+		</member>
+		<member name="volume_id" type="String" setter="set_volume_id" getter="get_volume_id" default="&quot;BLAZIUM_DVD&quot;">
+			ISO9660 volume label passed to mkisofs [code]-V[/code] or oscdimg [code]-l[/code].
+		</member>
+	</members>
+</class>

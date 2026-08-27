@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="EditorExportPlatformWindowsInterDVD" inherits="EditorExportPlatform" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Exports a burnable VIDEO_TS / AUDIO_TS folder, ZIP, or ISO.
+	</brief_description>
+	<description>
+		Does not copy an engine executable and does not use a [code].inter_dvd[/code] template flavor. Missing ffmpeg is a configuration warning, not a missing engine template. ISO output needs [code]oscdimg[/code] or [code]mkisofs[/code] (Editor Setting [code]export/inter_dvd/iso_tool[/code]). Test the result on a burnt disc or a standalone DVD player, not inside Blazium.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="inter_dvd/allow_dummy_vob" type="bool" setter="" getter="">
+			When [code]true[/code], export writes a dummy title VOB if no MPEG-2 cell is configured. Keep [code]false[/code] for production discs.
+		</member>
+		<member name="inter_dvd/audio_language" type="String" setter="" getter="">
+			Preset override for [member InterDVDProject.audio_language].
+		</member>
+		<member name="inter_dvd/auto_find_ffmpeg" type="bool" setter="" getter="">
+			When [code]true[/code], export searches [code]PATH[/code] (and [code]FFMPEG_EXE[/code]) for ffmpeg. The discovered path is never written into the project or preset.
+		</member>
+		<member name="inter_dvd/ffmpeg" type="String" setter="" getter="">
+			Optional ffmpeg override. Leave empty and use [member inter_dvd/auto_find_ffmpeg] so no machine-specific path is stored in the project.
+		</member>
+		<member name="inter_dvd/iso_tool" type="String" setter="" getter="">
+		</member>
+		<member name="inter_dvd/menu_language" type="String" setter="" getter="">
+			Preset override for [member InterDVDProject.menu_language].
+		</member>
+		<member name="inter_dvd/output_kind" type="int" setter="" getter="">
+		</member>
+		<member name="inter_dvd/parental_level" type="int" setter="" getter="">
+			Seeded from [code]blazium/inter_dvd/default_parental_level[/code].
+		</member>
+		<member name="inter_dvd/provider_id" type="String" setter="" getter="">
+			Preset override for [member InterDVDProject.provider_id].
+		</member>
+		<member name="inter_dvd/region_mask" type="int" setter="" getter="">
+			Seeded from [code]blazium/inter_dvd/default_region_mask[/code].
+		</member>
+		<member name="inter_dvd/subtitle_language" type="String" setter="" getter="">
+			Preset override for [member InterDVDProject.subtitle_language].
+		</member>
+		<member name="inter_dvd/volume_id" type="String" setter="" getter="">
+			Preset override for [member InterDVDProject.volume_id] (ISO [code]-V[/code] / [code]-l[/code]).
+		</member>
+	</members>
+</class>
