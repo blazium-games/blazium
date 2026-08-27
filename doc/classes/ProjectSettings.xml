@@ -2206,6 +2206,39 @@
 		<member name="blazium/remote_control/token" type="String" setter="" getter="" default="&quot;&quot;">
 			Optional auth token for remote control requests. Override with [code]--remote-control-token=&lt;token&gt;[/code].
 		</member>
+		<member name="blazium/screensaver/change_password_scene" type="String" setter="" getter="" default="&quot;&quot;">
+			Scene used for [code]/a[/code] change-password. Empty uses the built-in dialog.
+		</member>
+		<member name="blazium/screensaver/configure_scene" type="String" setter="" getter="" default="&quot;&quot;">
+			Scene used for [code]/c[/code] configure. Empty uses the built-in dialog.
+		</member>
+		<member name="blazium/screensaver/cover_all_screens" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], [code]/s[/code] uses exclusive fullscreen.
+		</member>
+		<member name="blazium/screensaver/cover_mode" type="String" setter="" getter="" default="&quot;virtual&quot;">
+			How [code]/s[/code] covers monitors: [code]single[/code] one screen, [code]virtual[/code] the virtual desktop, or [code]clone[/code] the same scene on each monitor.
+		</member>
+		<member name="blazium/screensaver/enabled" type="bool" setter="" getter="" default="false">
+			Master switch. Control Panel [code]/s[/code] [code]/p[/code] [code]/c[/code] [code]/a[/code] apply only when this is [code]true[/code].
+		</member>
+		<member name="blazium/screensaver/lock_workstation_on_exit" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], calls [code]LockWorkStation()[/code] after a successful unlock or dismiss.
+		</member>
+		<member name="blazium/screensaver/password_enabled" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], [code]/s[/code] dismiss shows unlock UI when a password hash is stored.
+		</member>
+		<member name="blazium/screensaver/quit_on_input" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], keyboard or mouse input starts dismiss in run mode.
+		</member>
+		<member name="blazium/screensaver/quit_on_mouse_move_threshold" type="int" setter="" getter="" default="5">
+			Pixels of mouse movement required before dismiss counts in run mode.
+		</member>
+		<member name="blazium/screensaver/screen" type="int" setter="" getter="" default="-1">
+			Target monitor index for [code]single[/code] cover mode. [code]-1[/code] uses the primary screen unless a command-line screen is set.
+		</member>
+		<member name="blazium/screensaver/unlock_scene" type="String" setter="" getter="" default="&quot;&quot;">
+			Scene used for password unlock. Empty uses the built-in dialog.
+		</member>
 		<member name="blazium/semanticsearch/async_job_ttl_ms" type="int" setter="" getter="" default="1800000">
 		</member>
 		<member name="blazium/semanticsearch/backend" type="String" setter="" getter="" default="&quot;lexical&quot;">

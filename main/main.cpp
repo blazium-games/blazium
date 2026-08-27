@@ -131,6 +131,9 @@
 #ifdef MODULE_ANALYTICS_ENABLED
 #include "modules/analytics/analytics.h"
 #endif
+#ifdef MODULE_SCREENSAVER_ENABLED
+#include "modules/screensaver/screensaver_cmdline.h"
+#endif
 
 #if defined(MODULE_MONO_ENABLED) && defined(TOOLS_ENABLED)
 #include "modules/mono/editor/bindings_generator.h"
@@ -1126,6 +1129,9 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	I = args.front();
 	while (I) {
 		List<String>::Element *N = I->next();
+#ifdef MODULE_SCREENSAVER_ENABLED
+		bool screensaver_consumed_next = false;
+#endif
 
 		const String &arg = I->get();
 
@@ -1396,6 +1402,9 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			if (N) {
 				init_screen = N->get().to_int();
 				init_use_custom_screen = true;
+#ifdef MODULE_SCREENSAVER_ENABLED
+				ScreensaverCmdline::set_target_screen(init_screen);
+#endif
 
 				N = N->next();
 			} else {
@@ -1960,6 +1969,16 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 				goto error;
 			}
 		} else if (arg.begins_with("--crash-reporter=")) {
+#endif
+#ifdef MODULE_SCREENSAVER_ENABLED
+		} else if (
+#ifdef TOOLS_ENABLED
+				!editor && !project_manager &&
+#endif
+				ScreensaverCmdline::try_consume(arg, N ? N->get() : String(), screensaver_consumed_next)) {
+			if (screensaver_consumed_next && N) {
+				N = N->next();
+			}
 #endif
 		} else {
 			main_args.push_back(arg);
@@ -3188,6 +3207,17 @@ Error Main::setup2(bool p_show_boot_logo) {
 		} else {
 			context = DisplayServer::CONTEXT_ENGINE;
 		}
+
+#ifdef MODULE_SCREENSAVER_ENABLED
+		bool screensaver_use_position = false;
+		ScreensaverCmdline::apply_recorded(window_mode, window_flags, init_embed_parent_window_id, position, window_size, init_screen, screensaver_use_position);
+		if (screensaver_use_position) {
+			window_position = &position;
+		} else if (ScreensaverCmdline::should_clear_create_position()) {
+			// Project absolute (0,0) / exported initial_position_type=0 would ignore --screen.
+			window_position = nullptr;
+		}
+#endif
 
 		if (init_embed_parent_window_id) {
 			// Reset flags and other settings to be sure it's borderless and windowed. The position and size should have been initialized correctly

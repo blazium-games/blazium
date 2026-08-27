@@ -1686,6 +1686,9 @@
 		<member name="ResourceUID" type="ResourceUID" setter="" getter="">
 			The [ResourceUID] singleton.
 		</member>
+		<member name="Screensaver" type="Screensaver" setter="" getter="">
+			The [Screensaver] singleton.
+		</member>
 		<member name="SocketIOClient" type="SocketIOClient" setter="" getter="">
 			The [SocketIOClient] singleton.
 		</member>

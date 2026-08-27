@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Screensaver" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Runtime singleton for Windows screensaver modes ([code]/s[/code], [code]/p[/code], [code]/c[/code], [code]/a[/code]).
+	</brief_description>
+	<description>
+		[Screensaver] is compiled only when the screensaver module is enabled. Command-line switches apply only when [code]blazium/screensaver/enabled[/code] is [code]true[/code] in the exported project. Password hashes are stored per-user (HKCU on Windows, [code]user://screensaver_password.cfg[/code] elsewhere) and never as plaintext in the PCK.
+		[code]/s[/code] run coverage is selected by [code]blazium/screensaver/cover_mode[/code] ([code]single[/code], [code]virtual[/code], or [code]clone[/code]), or by [code]--screensaver-cover[/code]. A Windows host launch ([code]explorer.exe[/code] / [code]winlogon.exe[/code] [code]/S[/code], including the [code].scr[/code] open verb) spans every monitor even when the packed cover mode is [code]single[/code]. [code]cover_all_screens=true[/code] falls back to [code]virtual[/code] for CreateProcess child launches. [code]--screen N[/code], [code]/s:N[/code], [code]/s N[/code], or [code]blazium/screensaver/screen[/code] pin a borderless windowed cover to that monitor and override [code]virtual[/code]. Indexes are 0-based: [code]0[/code] is the primary monitor, then remaining displays left-to-right. A Windows-style value equal to the monitor count maps to the last display. Launching a [code].scr[/code] through Explorer or PowerShell uses the Windows open verb and only passes [code]/S[/code], so [code]--screen[/code] and [code]--screensaver-cover[/code] never reach the process. Use [code]CreateProcess[/code] (not ShellExecute), or set [code]BLAZIUM_SCREENSAVER_SCREEN[/code] and [code]BLAZIUM_SCREENSAVER_COVER[/code]. Placement uses a native popup [code]SetWindowPos[/code] every frame (not Godot [code]window_set_mode[/code] / [code]window_set_flag[/code]) so DisplayServer cannot snap the HWND back to the primary. The cover fills the chosen display. If a virtual span is clipped to one monitor, the other displays are covered with clone windows. [code]clone[/code] still copies the other monitors. Run mode never uses exclusive fullscreen.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="clear_password">
+			<return type="int" enum="Error" />
+			<param index="0" name="current_plain" type="String" />
+			<description>
+				Clears the stored password hash after verifying [param current_plain].
+			</description>
+		</method>
+		<method name="get_mode" qualifiers="const">
+			<return type="int" enum="Screensaver.Mode" />
+			<description>
+				Returns the active screensaver mode, or [constant MODE_DISABLED] when the project setting is off.
+			</description>
+		</method>
+		<method name="has_password" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if a password hash is stored for this application.
+			</description>
+		</method>
+		<method name="is_password_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns the per-user stored override if [method set_password_enabled] has been called, otherwise [code]blazium/screensaver/password_enabled[/code].
+			</description>
+		</method>
+		<method name="is_preview" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when launched with [code]/p[/code] (Control Panel preview). Preview never prompts for a password.
+			</description>
+		</method>
+		<method name="request_exit">
+			<return type="void" />
+			<description>
+				Starts dismiss. In run mode with a password, opens the unlock UI instead of quitting.
+			</description>
+		</method>
+		<method name="set_password">
+			<return type="int" enum="Error" />
+			<param index="0" name="old_plain" type="String" />
+			<param index="1" name="new_plain" type="String" />
+			<description>
+				Sets or changes the password. An empty [param new_plain] clears the secret. The hash is never written to [code]project.blazium[/code].
+			</description>
+		</method>
+		<method name="set_password_enabled">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				Persists whether unlock is required on dismiss. Stored per-user (HKCU on Windows, [code]user://screensaver_password.cfg[/code] elsewhere) so Control Panel [code]/c[/code] survives an exported [code].scr[/code].
+			</description>
+		</method>
+		<method name="verify_password" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="plain" type="String" />
+			<description>
+				Returns [code]true[/code] if [param plain] matches the stored salt+SHA-256 hash.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="password_changed">
+			<description>
+				Emitted after [method set_password] succeeds.
+			</description>
+		</signal>
+		<signal name="unlock_failed">
+			<description>
+				Emitted when unlock verification fails.
+			</description>
+		</signal>
+		<signal name="unlock_succeeded">
+			<description>
+				Emitted when unlock verification succeeds, just before quit.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="MODE_DISABLED" value="0" enum="Mode">
+			Screensaver project setting is off, or no Control Panel switch was applied.
+		</constant>
+		<constant name="MODE_RUN" value="1" enum="Mode">
+			Full-screen run ([code]/s[/code], [code]/s:N[/code], or a [code].scr[/code] with no switch). Cover modes: [code]single[/code] (one monitor), [code]virtual[/code] (one window spanning the virtual desktop), [code]clone[/code] (one fullscreen window per monitor).
+		</constant>
+		<constant name="MODE_PREVIEW" value="2" enum="Mode">
+			Embedded preview ([code]/p[/code]).
+		</constant>
+		<constant name="MODE_CONFIGURE" value="3" enum="Mode">
+			Configure dialog ([code]/c[/code]).
+		</constant>
+		<constant name="MODE_CHANGE_PASSWORD" value="4" enum="Mode">
+			Change-password dialog ([code]/a[/code]).
+		</constant>
+	</constants>
+</class>
