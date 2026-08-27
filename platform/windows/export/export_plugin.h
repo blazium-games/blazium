@@ -86,6 +86,7 @@ public:
 	virtual String get_export_option_warning(const EditorExportPreset *p_preset, const StringName &p_name) const override;
 
 	virtual String get_template_file_name(const String &p_target, const String &p_arch) const override;
+	virtual String get_exported_executable_extension() const { return "exe"; }
 	virtual Error fixup_embedded_pck(const String &p_path, int64_t p_embedded_start, int64_t p_embedded_size) override;
 
 	virtual Ref<Texture2D> get_run_icon() const override;

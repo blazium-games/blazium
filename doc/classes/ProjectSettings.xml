@@ -2188,6 +2188,15 @@
 		<member name="blazium/justamcp/z_mcp_config" type="String" setter="" getter="" default="&quot;&quot;">
 			Advanced JustAMCP JSON configuration managed by the editor plugin UI. Stores supplemental MCP server options not exposed as individual project settings.
 		</member>
+		<member name="blazium/livewallpaper/cover_all_screens" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], run mode sizes the window to the virtual desktop. If [code]false[/code], only the primary screen is covered.
+		</member>
+		<member name="blazium/livewallpaper/enabled" type="bool" setter="" getter="" default="false">
+			Master switch. WorkerW attach and [code]--livewallpaper-preview[/code] apply only when this is [code]true[/code].
+		</member>
+		<member name="blazium/livewallpaper/pause_on_lock" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], pauses the scene tree while the Windows session is locked.
+		</member>
 		<member name="blazium/remote_control/allow_eval" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], [RemoteControlServer] allows [code]POST /v1/eval[/code] expression evaluation.
 		</member>

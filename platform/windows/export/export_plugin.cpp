@@ -218,7 +218,7 @@ Error EditorExportPlatformWindows::export_project(const Ref<EditorExportPreset> 
 			}
 		}
 		tmp_app_dir->make_dir_recursive(tmp_dir_path);
-		path = tmp_dir_path.path_join(p_path.get_file().get_basename() + ".exe");
+		path = tmp_dir_path.path_join(p_path.get_file().get_basename() + "." + get_exported_executable_extension());
 	}
 
 	int export_angle = p_preset->get("application/export_angle");

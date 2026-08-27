@@ -1628,6 +1628,9 @@
 		<member name="KickAPI" type="KickAPI" setter="" getter="">
 			The [KickAPI] singleton.
 		</member>
+		<member name="LiveWallpaper" type="LiveWallpaper" setter="" getter="">
+			The [LiveWallpaper] singleton.
+		</member>
 		<member name="Marshalls" type="Marshalls" setter="" getter="">
 			The [Marshalls] singleton.
 		</member>
