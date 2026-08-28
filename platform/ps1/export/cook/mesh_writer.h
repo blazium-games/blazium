@@ -15,11 +15,14 @@
 #include "core/math/vector3.h"
 #include "core/templates/vector.h"
 
+#include <cstdint>
+
 namespace ps1_cook {
 
 struct CookTri {
 	Vector3 v[3];
 	Vector2 uv[3];
+	uint8_t tex_slot = 0;
 };
 
 struct MeshBlob {
@@ -29,7 +32,7 @@ struct MeshBlob {
 	float scale = 1.0f;
 };
 
-// Quantize to SVECTOR, cap to p_max_tris (stride sample). Y is flipped for PS1.
+// Quantize to SVECTOR, keep the first p_max_tris. Y is flipped for PS1.
 Error write_mesh_svector(const Vector<CookTri> &p_tris, int p_max_tris, MeshBlob &r_out);
 
 } // namespace ps1_cook

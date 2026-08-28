@@ -13,11 +13,16 @@
 
 #include "core/object/ref_counted.h"
 #include "core/string/ustring.h"
+#include "core/templates/vector.h"
 
 namespace ps1_cook {
 
 // CookABI is the cooked blob layout. Must match blazium-toolchain guest_abi.
-static const int kCookABI = 2;
+static const int kCookABI = 3;
+static const int kMaxTims = 4;
+static const int kMaxTris = 2048;
+static const int kMaxSprites = 2;
+static const int kMaxLights = 3;
 
 struct CookResult {
 	String tim_path;
@@ -28,7 +33,11 @@ struct CookResult {
 	String fmv_path;
 	String names_path;
 	String budget_path;
+	String warnings_path;
 	String report;
+	Vector<String> errors;
+	Vector<String> warnings;
+	Vector<String> infos;
 	int texels = 0;
 	int tris = 0;
 	int cooked_tris = 0;

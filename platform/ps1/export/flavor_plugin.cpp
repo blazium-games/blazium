@@ -23,9 +23,9 @@ PS1FlavorEditorPlugin::PS1FlavorEditorPlugin() {
 	dock = memnew(VBoxContainer);
 	const char *lines[] = {
 		"Blazium PS1 flavor (same exporter)",
+		"Slots: 4 TIM, 2048 tris, 3 lights, 2 Sprite2D",
 		"Affine UVs — warp is expected",
-		"Guest: SPRITE HUD, AABB, 3 lights, fog",
-		"FMV: blazium-toolchain ps1 fmv (MDEC/psxpress)",
+		"FMV stub, not an encoder (DecDCTReset only)",
 		"Not DuckStation / Sony BIOS / hardware",
 	};
 	for (const char *t : lines) {

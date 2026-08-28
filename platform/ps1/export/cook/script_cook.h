@@ -25,6 +25,15 @@ struct ScriptIR {
 	int16_t pos_z = 512;
 	int16_t geom_screen = 160;
 	uint16_t flags = 0;
+	uint16_t light_count = 0;
+	struct Light {
+		int16_t dx = 0;
+		int16_t dy = 0;
+		int16_t dz = 0;
+		uint8_t r = 128;
+		uint8_t g = 128;
+		uint8_t b = 128;
+	} lights[3];
 	Vector<String> accepted;
 	Vector<String> rejected;
 	String map_text;

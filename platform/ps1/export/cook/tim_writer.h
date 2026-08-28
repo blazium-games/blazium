@@ -24,6 +24,9 @@ struct TimBlob {
 };
 
 // 4-bit TIM + 16-color CLUT. Image is resized to at most 64×64 and aligned to 32.
+Error write_tim4(const Ref<Image> &p_image, int p_dest_x, int p_dest_y, int p_clut_x, int p_clut_y, TimBlob &r_out);
 Error write_tim4(const Ref<Image> &p_image, TimBlob &r_out);
+// TPAK header + concatenated TIMs (ABI 3).
+Error write_tpak(const Vector<TimBlob> &p_tims, TimBlob &r_out);
 
 } // namespace ps1_cook

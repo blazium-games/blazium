@@ -43,7 +43,7 @@
 #endif
 
 #define OT_LEN 1024
-#define PACKET_LEN 32768
+#define PACKET_LEN 98304
 #define SCREEN_W 320
 #define SCREEN_H 240
 
@@ -101,12 +101,33 @@ static int g_active;
 static uint8_t *g_pri;
 
 #ifdef BLAZIUM_PS1_HAS_TIM
-static void upload_cooked_tim() {
-	if (cooked_tim_size < 20 || cooked_tim[0] != 0x10) {
+static size_t tim_blob_size(const uint8_t *tim, size_t remain) {
+	if (remain < 20 || tim[0] != 0x10) {
+		return 0;
+	}
+	size_t used = 8;
+	const uint8_t *p = tim + 8;
+	if (tim[4] & 8) {
+		const uint32_t csz = uint32_t(p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24));
+		if (csz < 12 || used + csz > remain) {
+			return 0;
+		}
+		p += csz;
+		used += csz;
+	}
+	const uint32_t isz = uint32_t(p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24));
+	if (isz < 12 || used + isz > remain) {
+		return 0;
+	}
+	return used + isz;
+}
+
+static void upload_one_tim(const uint8_t *tim, size_t remain) {
+	if (remain < 20 || tim[0] != 0x10) {
 		return;
 	}
-	const uint8_t *p = cooked_tim + 8;
-	const uint32_t flags = uint32_t(cooked_tim[4]) | (uint32_t(cooked_tim[5]) << 8) | (uint32_t(cooked_tim[6]) << 16) | (uint32_t(cooked_tim[7]) << 24);
+	const uint8_t *p = tim + 8;
+	const uint32_t flags = uint32_t(tim[4]) | (uint32_t(tim[5]) << 8) | (uint32_t(tim[6]) << 16) | (uint32_t(tim[7]) << 24);
 	if (flags & 8) {
 		const uint16_t cx = uint16_t(p[4] | (p[5] << 8));
 		const uint16_t cy = uint16_t(p[6] | (p[7] << 8));
@@ -125,6 +146,25 @@ static void upload_cooked_tim() {
 	RECT ir{ short(ix), short(iy), short(iw), short(ih) };
 	LoadImage(&ir, (const uint32_t *)(p + 12));
 	DrawSync(0);
+}
+
+static void upload_cooked_tim() {
+	if (cooked_tim_size >= 8 && cooked_tim[0] == 'T' && cooked_tim[1] == 'P' && cooked_tim[2] == 'A' && cooked_tim[3] == 'K') {
+		const uint16_t n = uint16_t(cooked_tim[4] | (cooked_tim[5] << 8));
+		const uint8_t *p = cooked_tim + 8;
+		size_t left = cooked_tim_size - 8;
+		for (uint16_t i = 0; i < n; i++) {
+			const size_t sz = tim_blob_size(p, left);
+			if (sz == 0) {
+				break;
+			}
+			upload_one_tim(p, sz);
+			p += sz;
+			left -= sz;
+		}
+		return;
+	}
+	upload_one_tim(cooked_tim, cooked_tim_size);
 }
 #endif
 
@@ -253,10 +293,11 @@ static void draw_cooked_sprites(uint16_t clut) {
 typedef struct {
 	SVECTOR v[3];
 	uint8_t u0, v0, u1, v1, u2, v2;
-	uint16_t pad;
+	uint8_t tex;
+	uint8_t pad;
 } CookedTri;
 
-static int draw_cooked_mesh(uint16_t tpage, uint16_t clut) {
+static int draw_cooked_mesh(const uint16_t *tpages, const uint16_t *cluts) {
 	if (cooked_mesh_size < 4) {
 		return 0;
 	}
@@ -319,8 +360,11 @@ static int draw_cooked_mesh(uint16_t tpage, uint16_t clut) {
 		gte_stsxy1(&poly->x1);
 		gte_stsxy2(&poly->x2);
 		setUV3(poly, tris[i].u0, tris[i].v0, tris[i].u1, tris[i].v1, tris[i].u2, tris[i].v2);
-		poly->tpage = tpage;
-		poly->clut = clut;
+		{
+			const uint8_t slot = uint8_t(tris[i].tex & 3);
+			poly->tpage = tpages[slot];
+			poly->clut = cluts[slot];
+		}
 		addPrim(&g_fb[g_active].ot[otz], poly);
 		poly++;
 		drawn++;
@@ -364,6 +408,45 @@ int main(int argc, const char **argv) {
 			step = ry.f > 0.0f ? 1 : -1;
 		}
 		rot_step = int16_t(step);
+		if (cooked_script_size >= 46) {
+			const uint16_t light_n = uint16_t(cooked_script[14] | (cooked_script[15] << 8));
+			if (light_n > 0) {
+				int16_t dx[3] = { 0, 0, 0 };
+				int16_t dy[3] = { 0, 0, 0 };
+				int16_t dz[3] = { 0, 0, 0 };
+				int cr[3] = { 0, 0, 0 };
+				int cg[3] = { 0, 0, 0 };
+				int cb[3] = { 0, 0, 0 };
+				const int n = light_n > 3 ? 3 : int(light_n);
+				for (int i = 0; i < n; i++) {
+					const uint8_t *L = cooked_script + 16 + i * 10;
+					dx[i] = int16_t(L[0] | (L[1] << 8));
+					dy[i] = int16_t(L[2] | (L[3] << 8));
+					dz[i] = int16_t(L[4] | (L[5] << 8));
+					cr[i] = int(L[6]);
+					cg[i] = int(L[7]);
+					cb[i] = int(L[8]);
+				}
+				g_light_mtx.m[0][0] = dx[0];
+				g_light_mtx.m[0][1] = dx[1];
+				g_light_mtx.m[0][2] = dx[2];
+				g_light_mtx.m[1][0] = dy[0];
+				g_light_mtx.m[1][1] = dy[1];
+				g_light_mtx.m[1][2] = dy[2];
+				g_light_mtx.m[2][0] = dz[0];
+				g_light_mtx.m[2][1] = dz[1];
+				g_light_mtx.m[2][2] = dz[2];
+				g_color_mtx.m[0][0] = (ONE * cr[0]) / 255;
+				g_color_mtx.m[0][1] = (ONE * cr[1]) / 255;
+				g_color_mtx.m[0][2] = (ONE * cr[2]) / 255;
+				g_color_mtx.m[1][0] = (ONE * cg[0]) / 255;
+				g_color_mtx.m[1][1] = (ONE * cg[1]) / 255;
+				g_color_mtx.m[1][2] = (ONE * cg[2]) / 255;
+				g_color_mtx.m[2][0] = (ONE * cb[0]) / 255;
+				g_color_mtx.m[2][1] = (ONE * cb[1]) / 255;
+				g_color_mtx.m[2][2] = (ONE * cb[2]) / 255;
+			}
+		}
 	}
 #endif
 	gte_SetGeomScreen(geom_screen);
@@ -396,8 +479,13 @@ int main(int argc, const char **argv) {
 	StartPAD();
 	ChangeClearPAD(0);
 	const int font = FntOpen(8, 16, 304, 200, 0, 256);
-	const uint16_t tpage = getTPage(0, 0, 640, 0);
-	const uint16_t clut = getClut(0, 480);
+	uint16_t tpages[4];
+	uint16_t cluts[4];
+	for (int i = 0; i < 4; i++) {
+		tpages[i] = getTPage(0, 0, 640 + 64 * i, 0);
+		cluts[i] = getClut(0, 480 - i);
+	}
+	const uint16_t clut = cluts[0];
 
 	int frames = 0;
 
@@ -432,7 +520,7 @@ int main(int argc, const char **argv) {
 		}
 
 #ifdef BLAZIUM_PS1_HAS_MESH
-		draw_cooked_mesh(tpage, clut);
+		draw_cooked_mesh(tpages, cluts);
 #endif
 #ifdef BLAZIUM_PS1_HAS_SPRITE
 		if (g_spr_flags & 1) {

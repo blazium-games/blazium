@@ -33,6 +33,10 @@ static void append_u32(Vector<uint8_t> &o, uint32_t v) {
 }
 
 Error write_tim4(const Ref<Image> &p_image, TimBlob &r_out) {
+	return write_tim4(p_image, 640, 0, 0, 480, r_out);
+}
+
+Error write_tim4(const Ref<Image> &p_image, int p_dest_x, int p_dest_y, int p_clut_x, int p_clut_y, TimBlob &r_out) {
 	ERR_FAIL_COND_V(p_image.is_null() || p_image->is_empty(), ERR_INVALID_PARAMETER);
 
 	Ref<Image> img = p_image->duplicate();
@@ -99,8 +103,8 @@ Error write_tim4(const Ref<Image> &p_image, TimBlob &r_out) {
 	append_u32(out, 0x00000008); // 4-bit + CLUT
 
 	append_u32(out, clut_size);
-	append_u16(out, 0); // clut x
-	append_u16(out, 480); // clut y
+	append_u16(out, uint16_t(p_clut_x));
+	append_u16(out, uint16_t(p_clut_y));
 	append_u16(out, 16);
 	append_u16(out, 1);
 	for (int i = 0; i < 16; i++) {
@@ -108,8 +112,8 @@ Error write_tim4(const Ref<Image> &p_image, TimBlob &r_out) {
 	}
 
 	append_u32(out, img_size);
-	append_u16(out, 640); // image x (tpage)
-	append_u16(out, 0);
+	append_u16(out, uint16_t(p_dest_x));
+	append_u16(out, uint16_t(p_dest_y));
 	append_u16(out, uint16_t(width_units));
 	append_u16(out, uint16_t(h));
 	for (int y = 0; y < h; y++) {
@@ -124,6 +128,31 @@ Error write_tim4(const Ref<Image> &p_image, TimBlob &r_out) {
 	r_out.pixel_w = w;
 	r_out.pixel_h = h;
 	r_out.vram_bytes = int(clut_size + img_size);
+	return OK;
+}
+
+Error write_tpak(const Vector<TimBlob> &p_tims, TimBlob &r_out) {
+	ERR_FAIL_COND_V(p_tims.is_empty(), ERR_INVALID_PARAMETER);
+	Vector<uint8_t> out;
+	out.push_back('T');
+	out.push_back('P');
+	out.push_back('A');
+	out.push_back('K');
+	append_u16(out, uint16_t(p_tims.size()));
+	append_u16(out, 0);
+	int vram = 0;
+	int pw = 0;
+	int ph = 0;
+	for (int i = 0; i < p_tims.size(); i++) {
+		out.append_array(p_tims[i].bytes);
+		vram += p_tims[i].vram_bytes;
+		pw += p_tims[i].pixel_w;
+		ph = MAX(ph, p_tims[i].pixel_h);
+	}
+	r_out.bytes = out;
+	r_out.pixel_w = pw;
+	r_out.pixel_h = ph;
+	r_out.vram_bytes = vram;
 	return OK;
 }
 

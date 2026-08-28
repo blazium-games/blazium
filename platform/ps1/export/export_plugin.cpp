@@ -168,8 +168,7 @@ void EditorExportPlatformPS1::get_platform_features(List<String> *r_features) co
 
 void EditorExportPlatformPS1::get_export_options(List<ExportOption> *r_options) const {
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "ps1/output_kind", PROPERTY_HINT_ENUM, "PS-X EXE"), 0));
-	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "ps1/region", PROPERTY_HINT_ENUM, "NTSC,PAL"), 0));
-	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "ps1/width", PROPERTY_HINT_ENUM, "320,256,512,640"), 0));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::BOOL, "ps1/make_iso"), false));
 }
 
 List<String> EditorExportPlatformPS1::get_binary_extensions(const Ref<EditorExportPreset> &p_preset) const {
@@ -203,6 +202,13 @@ bool EditorExportPlatformPS1::has_valid_project_configuration(const Ref<EditorEx
 		r_error += "PS1 export forbids GDExtension and C# (" + hit + ").\n";
 		return false;
 	}
+	const String main_scene = ProjectSettings::get_singleton() ? String(ProjectSettings::get_singleton()->get("application/run/main_scene")) : String();
+	if (main_scene.is_empty()) {
+		r_error += "PS1 export requires application/run/main_scene.\n";
+		return false;
+	}
+	r_error += "Note: guest is 320x240 NTSC; audio is WAV-only (else a beep).\n";
+	r_error += "Note: cook keeps first 2048 triangles and first 4 albedo TIMs; no GDScript/Luau VM.\n";
 	return true;
 }
 
@@ -233,11 +239,13 @@ Error EditorExportPlatformPS1::export_project(const Ref<EditorExportPreset> &p_p
 
 	ps1_cook::CookResult cooked;
 	const Error cook_err = ps1_cook::cook_project(p_path.get_base_dir(), cooked);
-	if (cook_err != OK) {
-		add_message(EXPORT_MESSAGE_ERROR, "PS1", cooked.report.is_empty() ? String("Cook failed.") : cooked.report);
-		return cook_err;
+	_emit_cook_messages(cooked);
+	if (cook_err != OK || !cooked.errors.is_empty()) {
+		if (cooked.errors.is_empty()) {
+			add_message(EXPORT_MESSAGE_ERROR, "PS1", cooked.report.is_empty() ? String("Cook failed.") : cooked.report);
+		}
+		return cook_err != OK ? cook_err : FAILED;
 	}
-	add_message(EXPORT_MESSAGE_INFO, "PS1", cooked.report);
 
 	List<String> args;
 	args.push_back("ps1");
@@ -290,6 +298,78 @@ Error EditorExportPlatformPS1::export_project(const Ref<EditorExportPreset> &p_p
 		return FAILED;
 	}
 	add_message(EXPORT_MESSAGE_INFO, "PS1", "Wrote PS-X EXE " + p_path);
+
+	if (bool(p_preset->get("ps1/make_iso"))) {
+		String iso_warn;
+		if (_try_make_iso(p_path, iso_warn) != OK) {
+			add_message(EXPORT_MESSAGE_WARNING, "PS1", iso_warn.is_empty() ? String("ISO skipped because mkpsxiso is missing.") : iso_warn);
+		}
+	}
+	return OK;
+}
+
+void EditorExportPlatformPS1::_emit_cook_messages(const ps1_cook::CookResult &p_cooked) {
+	for (int i = 0; i < p_cooked.errors.size(); i++) {
+		add_message(EXPORT_MESSAGE_ERROR, "PS1", p_cooked.errors[i]);
+	}
+	for (int i = 0; i < p_cooked.warnings.size(); i++) {
+		add_message(EXPORT_MESSAGE_WARNING, "PS1", p_cooked.warnings[i]);
+	}
+	for (int i = 0; i < p_cooked.infos.size(); i++) {
+		add_message(EXPORT_MESSAGE_INFO, "PS1", p_cooked.infos[i]);
+	}
+	if (!p_cooked.report.is_empty()) {
+		add_message(EXPORT_MESSAGE_INFO, "PS1", p_cooked.report);
+	}
+}
+
+Error EditorExportPlatformPS1::_try_make_iso(const String &p_exe_path, String &r_warning) {
+	const String dir = p_exe_path.get_base_dir();
+	const String cnf = dir.path_join("SYSTEM.CNF");
+	const String xml = dir.path_join("iso.xml");
+	const String iso_out = dir.path_join(p_exe_path.get_file().get_basename() + ".bin");
+
+	Ref<FileAccess> cf = FileAccess::open(cnf, FileAccess::WRITE);
+	if (cf.is_null()) {
+		r_warning = "Could not write SYSTEM.CNF for ISO.";
+		return FAILED;
+	}
+	cf->store_string("BOOT = cdrom:\\GAME.EXE;1\nTCB = 4\nEVENT = 10\nSTACK = 801FFFF0\n");
+
+	Ref<FileAccess> xf = FileAccess::open(xml, FileAccess::WRITE);
+	if (xf.is_null()) {
+		r_warning = "Could not write iso.xml.";
+		return FAILED;
+	}
+	xf->store_string(
+			"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+			"<iso_project>\n"
+			"\t<track type=\"data\">\n"
+			"\t\t<identifiers system=\"PLAYSTATION\" application=\"PLAYSTATION\" volume=\"BLAZIUM\" volume_set=\"BLAZIUM\" publisher=\"BLAZIUM\" data_preparer=\"BLAZIUM\" />\n"
+			"\t\t<directory_tree>\n"
+			"\t\t\t<file name=\"SYSTEM.CNF\" source=\"" +
+			cnf.xml_escape(true) + "\" type=\"data\" />\n"
+								   "\t\t\t<file name=\"GAME.EXE\" source=\"" +
+			p_exe_path.xml_escape(true) + "\" type=\"data\" />\n"
+									  "\t\t</directory_tree>\n"
+									  "\t</track>\n"
+									  "</iso_project>\n");
+
+	List<String> args;
+	args.push_back("ps1");
+	args.push_back("iso");
+	args.push_back("--xml");
+	args.push_back(xml);
+	args.push_back("--out");
+	args.push_back(iso_out);
+	String output;
+	int exitcode = 0;
+	const Error err = _spawn_toolchain(args, output, exitcode);
+	if (err != OK || exitcode != 0) {
+		r_warning = "ISO skipped because mkpsxiso is missing or failed.\n" + output;
+		return FAILED;
+	}
+	add_message(EXPORT_MESSAGE_INFO, "PS1", "Wrote ISO " + iso_out);
 	return OK;
 }
 

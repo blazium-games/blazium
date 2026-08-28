@@ -125,6 +125,16 @@ Error write_script_ir(const String &p_export_dir, const ScriptIR &p_ir) {
 	i16(p_ir.pos_z);
 	i16(p_ir.geom_screen);
 	i16(int16_t(p_ir.flags));
+	i16(int16_t(p_ir.light_count));
+	for (int i = 0; i < 3; i++) {
+		i16(p_ir.lights[i].dx);
+		i16(p_ir.lights[i].dy);
+		i16(p_ir.lights[i].dz);
+		bytes.push_back(p_ir.lights[i].r);
+		bytes.push_back(p_ir.lights[i].g);
+		bytes.push_back(p_ir.lights[i].b);
+		bytes.push_back(0);
+	}
 	Ref<FileAccess> ir = FileAccess::open(p_export_dir.path_join("SCRIPT.IR"), FileAccess::WRITE);
 	ERR_FAIL_COND_V(ir.is_null(), ERR_CANT_CREATE);
 	ir->store_buffer(bytes);

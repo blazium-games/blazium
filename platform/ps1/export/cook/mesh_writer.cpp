@@ -28,18 +28,11 @@ Error write_mesh_svector(const Vector<CookTri> &p_tris, int p_max_tris, MeshBlob
 	ERR_FAIL_COND_V(p_tris.is_empty(), ERR_INVALID_PARAMETER);
 	const int src_n = p_tris.size();
 	const int max_tris = MAX(1, p_max_tris);
-	const int stride = MAX(1, src_n / max_tris);
-	int out_n = 0;
-	for (int i = 0; i < src_n && out_n < max_tris; i += stride) {
-		out_n++;
-	}
+	const int out_n = MIN(src_n, max_tris);
 
 	Vector3 mn(1e9f, 1e9f, 1e9f);
 	Vector3 mx(-1e9f, -1e9f, -1e9f);
-	for (int i = 0; i < src_n; i += stride) {
-		if ((i / stride) >= out_n) {
-			break;
-		}
+	for (int i = 0; i < out_n; i++) {
 		for (int k = 0; k < 3; k++) {
 			const Vector3 &p = p_tris[i].v[k];
 			mn.x = MIN(mn.x, p.x);
@@ -57,9 +50,8 @@ Error write_mesh_svector(const Vector<CookTri> &p_tris, int p_max_tris, MeshBlob
 
 	Vector<uint8_t> out;
 	append_u16(out, uint16_t(out_n));
-	append_u16(out, 1); // has UV
-	int written = 0;
-	for (int i = 0; i < src_n && written < out_n; i += stride) {
+	append_u16(out, 1); // has UV + tex_slot
+	for (int i = 0; i < out_n; i++) {
 		const CookTri &t = p_tris[i];
 		for (int k = 0; k < 3; k++) {
 			const Vector3 p = (t.v[k] - center) * scale;
@@ -74,12 +66,12 @@ Error write_mesh_svector(const Vector<CookTri> &p_tris, int p_max_tris, MeshBlob
 			out.push_back(uint8_t(u));
 			out.push_back(uint8_t(v));
 		}
-		append_u16(out, 0);
-		written++;
+		out.push_back(t.tex_slot & 3);
+		out.push_back(0);
 	}
 
 	r_out.bytes = out;
-	r_out.tri_count = written;
+	r_out.tri_count = out_n;
 	r_out.center = center;
 	r_out.scale = scale;
 	return OK;
