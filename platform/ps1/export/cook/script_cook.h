@@ -34,9 +34,21 @@ struct ScriptIR {
 		uint8_t g = 128;
 		uint8_t b = 128;
 	} lights[3];
+	uint16_t display_w = 320;
+	uint16_t display_h = 240;
+	uint8_t region = 0;
+	uint8_t display_flags = 0;
+	uint16_t gd_count = 0;
+	uint16_t luau_count = 0;
+	int16_t cam_rx = 0;
+	int16_t cam_ry = 0;
+	int16_t cam_rz = 0;
 	Vector<String> accepted;
 	Vector<String> rejected;
+	Vector<String> attached;
 	String map_text;
+	String gdbc_path;
+	String luau_path;
 };
 
 bool source_is_rejected(const String &p_source, String &r_why);

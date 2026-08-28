@@ -13,8 +13,10 @@
 
 #include "mesh_writer.h"
 #include "script_cook.h"
+#include "str_writer.h"
 #include "tim_writer.h"
 #include "vag_writer.h"
+#include "xa_writer.h"
 
 #include "core/config/project_settings.h"
 #include "core/io/image.h"
@@ -29,6 +31,7 @@
 #include "scene/3d/audio_stream_player_3d.h"
 #include "scene/3d/camera_3d.h"
 #include "scene/3d/light_3d.h"
+#include "scene/gui/video_stream_player.h"
 #include "scene/3d/mesh_instance_3d.h"
 #include "scene/3d/node_3d.h"
 #include "scene/animation/animation_player.h"
@@ -37,6 +40,7 @@
 #include "scene/resources/material.h"
 #include "scene/resources/mesh.h"
 #include "scene/resources/packed_scene.h"
+#include "core/object/script_language.h"
 #include "scene/resources/texture.h"
 
 namespace ps1_cook {
@@ -66,12 +70,15 @@ struct SceneGather {
 	int light_count = 0;
 	int animation_player_count = 0;
 	HashSet<String> uncooked_types;
+	Vector<String> attached_scripts;
+	VideoStreamPlayer *video = nullptr;
 };
 
 static const char *kAllowed[] = {
 	"Node", "Node3D", "MeshInstance3D", "Camera3D", "AnimationPlayer",
 	"Sprite2D", "Node2D", "AudioStreamPlayer", "AudioStreamPlayer3D",
-	"DirectionalLight3D", "OmniLight3D", "SpotLight3D", "Light3D"
+	"DirectionalLight3D", "OmniLight3D", "SpotLight3D", "Light3D",
+	"VideoStreamPlayer", "Control", "CanvasItem"
 };
 
 static bool type_allowed(const String &p_cls) {
@@ -283,6 +290,12 @@ static void walk_scene(Node *p_node, SceneGather &r_g) {
 		Color c = ol->get_color();
 		c *= float(ol->get_param(Light3D::PARAM_ENERGY));
 		add_light(r_g, xf.origin, c);
+	} else if (SpotLight3D *sl = Object::cast_to<SpotLight3D>(p_node)) {
+		const Transform3D xf = world_xform_3d(sl);
+		const Vector3 dir = -xf.basis.get_column(Vector3::AXIS_Z);
+		Color c = sl->get_color();
+		c *= float(sl->get_param(Light3D::PARAM_ENERGY));
+		add_light(r_g, dir, c);
 	} else if (Object::cast_to<Light3D>(p_node)) {
 		r_g.light_count++;
 	}
@@ -298,6 +311,17 @@ static void walk_scene(Node *p_node, SceneGather &r_g) {
 			r_g.sprites.push_back(spr);
 		}
 	}
+	if (VideoStreamPlayer *vp = Object::cast_to<VideoStreamPlayer>(p_node)) {
+		if (!r_g.video) {
+			r_g.video = vp;
+		}
+	}
+	if (p_node->get_script()) {
+		const Ref<Script> sc = p_node->get_script();
+		if (sc.is_valid() && !sc->get_path().is_empty()) {
+			r_g.attached_scripts.push_back(sc->get_path());
+		}
+	}
 	if (Object::cast_to<AnimationPlayer>(p_node)) {
 		r_g.animation_player_count++;
 	}
@@ -307,7 +331,18 @@ static void walk_scene(Node *p_node, SceneGather &r_g) {
 }
 
 static Ref<Image> try_load_png(const String &p_path) {
-	if (!FileAccess::exists(p_path) && !ResourceLoader::exists(p_path)) {
+	if (ResourceLoader::exists(p_path)) {
+		Ref<Texture2D> tex = ResourceLoader::load(p_path);
+		Ref<Image> from_tex = image_from_texture(tex);
+		if (from_tex.is_valid()) {
+			return from_tex;
+		}
+		Ref<Image> as_img = ResourceLoader::load(p_path);
+		if (as_img.is_valid() && !as_img->is_empty()) {
+			return as_img;
+		}
+	}
+	if (!FileAccess::exists(p_path)) {
 		return Ref<Image>();
 	}
 	Ref<Image> loaded;
@@ -315,8 +350,7 @@ static Ref<Image> try_load_png(const String &p_path) {
 	if (loaded->load(p_path) == OK && !loaded->is_empty()) {
 		return loaded;
 	}
-	Ref<Texture2D> tex = ResourceLoader::load(p_path);
-	return image_from_texture(tex);
+	return Ref<Image>();
 }
 
 static Ref<Image> load_industrial_image(Vector<CookTri> &r_tris, Vector<Ref<Image>> &r_images, Vector<String> &r_names, String &r_src_name) {
@@ -410,6 +444,8 @@ static void write_industrial_sprites(Vector<uint8_t> &spr) {
 struct SpriteCook {
 	Vector2 pos;
 	Vector2 size;
+	Vector2 uv;
+	uint8_t tex_slot = 0;
 };
 
 static void write_scene_sprites(const Vector<SpriteCook> &p_sprites, Vector<uint8_t> &spr) {
@@ -427,9 +463,9 @@ static void write_scene_sprites(const Vector<SpriteCook> &p_sprites, Vector<uint
 		const int h = CLAMP(int(p_sprites[i].size.y), 1, 255);
 		u16(uint16_t(w));
 		u16(uint16_t(h));
-		spr.push_back(0);
-		spr.push_back(0);
-		u16(0);
+		spr.push_back(uint8_t(CLAMP(int(p_sprites[i].uv.x), 0, 255)));
+		spr.push_back(uint8_t(CLAMP(int(p_sprites[i].uv.y), 0, 255)));
+		u16(uint16_t(p_sprites[i].tex_slot & 3));
 	}
 }
 
@@ -453,7 +489,7 @@ static void write_warnings_file(const String &p_path, const CookResult &p_out) {
 	}
 }
 
-Error cook_project(const String &p_export_dir, CookResult &r_out) {
+Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOptions &p_opts) {
 	Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
 	const Error mk = da->make_dir_recursive(p_export_dir);
 	ERR_FAIL_COND_V(mk != OK && mk != ERR_ALREADY_EXISTS, mk);
@@ -510,11 +546,14 @@ Error cook_project(const String &p_export_dir, CookResult &r_out) {
 	struct CamCook {
 		bool valid = false;
 		Vector3 pos;
+		Vector3 euler;
 		float fov = 75.0f;
 	} cam_cook;
 	if (Camera3D *cam = gathered.cam_current ? gathered.cam_current : gathered.cam_any) {
 		cam_cook.valid = true;
-		cam_cook.pos = world_xform_3d(cam).origin;
+		const Transform3D xf = world_xform_3d(cam);
+		cam_cook.pos = xf.origin;
+		cam_cook.euler = xf.basis.get_euler();
 		cam_cook.fov = float(cam->get_fov());
 	}
 	Vector<SpriteCook> sprite_cooks;
@@ -524,7 +563,19 @@ Error cook_project(const String &p_export_dir, CookResult &r_out) {
 		SpriteCook sc;
 		sc.pos = world_xform_2d(s).xform(r.position);
 		sc.size = r.size;
+		sc.uv = Vector2(0, 0);
+		String tex_name;
+		const Ref<Image> simg = image_from_texture(s->get_texture());
+		if (s->is_region_enabled()) {
+			const Rect2 rr = s->get_region_rect();
+			sc.uv = rr.position;
+		}
+		sc.tex_slot = register_image(gathered, simg, s->get_texture().is_valid() ? s->get_texture()->get_path() : tex_name);
 		sprite_cooks.push_back(sc);
+	}
+	if (!sprite_cooks.is_empty() && !used_industrial) {
+		images = gathered.images;
+		image_names = gathered.image_names;
 	}
 	Vector<CookLight> lights = gathered.lights;
 	if (root) {
@@ -560,15 +611,42 @@ Error cook_project(const String &p_export_dir, CookResult &r_out) {
 	if (gathered.had_non_wav_audio) {
 		r_out.warnings.push_back("OGG/MP3/other audio is not cooked; VAG is WAV-only or a beep.");
 	}
-	r_out.warnings.push_back("FMV is DecDCTReset only; blazium-toolchain ps1 fmv does not encode STR/XA.");
+	const int display_w = p_opts.width > 0 ? p_opts.width : 320;
+	const int display_h = p_opts.region == 1 ? 256 : 240;
+	r_out.display_w = display_w;
+	r_out.display_h = display_h;
+	if (display_w == 640 && display_h == 256) {
+		r_out.warnings.push_back("PAL 640 uses full VRAM height for framebuffers; CLUTs sit at x=640.");
+	}
 
 	Vector<TimBlob> tims;
 	int vram_total = 0;
+	const int clut_x = (p_opts.region == 1 || display_w >= 640) ? 640 : 0;
 	for (int i = 0; i < images.size() && i < kMaxTims; i++) {
 		TimBlob one;
-		const int dest_x = 640 + 64 * i;
+		int dest_x = 640 + 64 * i;
+		int dest_y = 0;
+		if (display_w >= 640) {
+			const int below = ((display_h * 2) + 63) & ~63;
+			dest_x = 0;
+			dest_y = below + 64 * i;
+			if (dest_y + 64 > 512) {
+				dest_x = 640 + 64 * i;
+				dest_y = 0;
+			}
+		}
+		if (dest_x < display_w && dest_y < display_h * 2) {
+			r_out.errors.push_back(vformat("VRAM clash: TIM %d dest (%d,%d) overlaps %dx%d double-buffer.", i, dest_x, dest_y, display_w, display_h));
+			r_out.report = r_out.errors[r_out.errors.size() - 1];
+			return ERR_OUT_OF_MEMORY;
+		}
+		if (dest_x + 64 > 1024 || dest_y + 64 > 512) {
+			r_out.errors.push_back(vformat("VRAM clash: TIM %d dest (%d,%d) exceeds 1024x512.", i, dest_x, dest_y));
+			r_out.report = r_out.errors[r_out.errors.size() - 1];
+			return ERR_OUT_OF_MEMORY;
+		}
 		const int clut_y = 480 - i;
-		const Error terr = write_tim4(images[i], dest_x, 0, 0, clut_y, one);
+		const Error terr = write_tim4(images[i], dest_x, dest_y, clut_x, clut_y, one);
 		if (terr != OK) {
 			r_out.errors.push_back("TIM cook failed for " + image_names[i]);
 			r_out.report = r_out.errors[r_out.errors.size() - 1];
@@ -649,11 +727,58 @@ Error cook_project(const String &p_export_dir, CookResult &r_out) {
 		ERR_FAIL_COND_V(sf.is_null(), ERR_CANT_CREATE);
 		sf->store_buffer(spr);
 	}
-	r_out.fmv_path = p_export_dir.path_join("FMV00.MAP");
 	{
+		Vector<Ref<Image>> fmv_frames;
+		Ref<DirAccess> fmv_dir = DirAccess::open("res://fmv");
+		if (fmv_dir.is_valid()) {
+			fmv_dir->list_dir_begin();
+			for (String n = fmv_dir->get_next(); !n.is_empty(); n = fmv_dir->get_next()) {
+				if (n.ends_with(".png") || n.ends_with(".jpg")) {
+					Ref<Image> img = try_load_png(String("res://fmv").path_join(n));
+					if (img.is_valid()) {
+						fmv_frames.push_back(img);
+					}
+				}
+			}
+		}
+		if (fmv_frames.is_empty() && gathered.video) {
+			r_out.warnings.push_back("VideoStreamPlayer present but compressed video is not decoded; add res://fmv/*.png.");
+		}
+		r_out.fmv_path = p_export_dir.path_join("FMV00.MAP");
 		Ref<FileAccess> ff = FileAccess::open(r_out.fmv_path, FileAccess::WRITE);
 		ERR_FAIL_COND_V(ff.is_null(), ERR_CANT_CREATE);
-		ff->store_string("FMV: guest DecDCTReset only. ps1 fmv does not encode.\n");
+		if (fmv_frames.is_empty()) {
+			ff->store_string("FMV: no VideoStreamPlayer frames and no res://fmv images; skipped.\n");
+			r_out.infos.push_back("FMV skipped (no source).");
+		} else {
+			StrBlob str;
+			const Error serr = write_str_frames(fmv_frames, str);
+			if (serr != OK) {
+				r_out.errors.push_back("STR encode failed.");
+				ff->store_string("FMV: encode failed.\n");
+				return serr;
+			}
+			r_out.str_path = p_export_dir.path_join("FMV00.STR");
+			Ref<FileAccess> sf = FileAccess::open(r_out.str_path, FileAccess::WRITE);
+			ERR_FAIL_COND_V(sf.is_null(), ERR_CANT_CREATE);
+			sf->store_buffer(str.bytes);
+			ff->store_string(vformat("FMV: MIT STR %d frame(s) %dx%d (%d bytes)\n", str.frames, str.width, str.height, str.bytes.size()));
+			r_out.infos.push_back(vformat("STR %d frames %d bytes", str.frames, str.bytes.size()));
+			if (gathered.wav.is_valid()) {
+				Vector<int16_t> pcm;
+				int rate = 22050;
+				pcm_from_wav(gathered.wav, pcm, rate);
+				XaBlob xa;
+				if (write_xa_pcm(pcm, rate, xa) == OK) {
+					r_out.xa_path = p_export_dir.path_join("FMV00.XA");
+					Ref<FileAccess> xf = FileAccess::open(r_out.xa_path, FileAccess::WRITE);
+					if (xf.is_valid()) {
+						xf->store_buffer(xa.bytes);
+						r_out.infos.push_back(vformat("XA %d bytes", xa.bytes.size()));
+					}
+				}
+			}
+		}
 	}
 
 	ScriptIR ir;
@@ -663,11 +788,14 @@ Error cook_project(const String &p_export_dir, CookResult &r_out) {
 		return serr;
 	}
 	for (int i = 0; i < ir.rejected.size(); i++) {
-		if (ir.rejected[i].contains("spin.gd") || ir.rejected[i].contains("spin.luau")) {
-			r_out.errors.push_back("Rejected allow-listed demo script: " + ir.rejected[i]);
-			r_out.report = r_out.errors[r_out.errors.size() - 1];
-			return ERR_UNCONFIGURED;
+		const String &rej = ir.rejected[i];
+		const bool fixture = rej.contains("illegal_") || rej.contains("/tests/") || rej.contains("test_") || rej.contains("run_tests.gd");
+		if (fixture) {
+			continue;
 		}
+		r_out.errors.push_back("Rejected game script: " + rej);
+		r_out.report = r_out.errors[r_out.errors.size() - 1];
+		return ERR_UNCONFIGURED;
 	}
 
 	if (cam_cook.valid) {
@@ -682,7 +810,13 @@ Error cook_project(const String &p_export_dir, CookResult &r_out) {
 		const float fov = Math::deg_to_rad(cam_cook.fov);
 		const float half = MAX(0.05f, Math::tan(fov * 0.5f));
 		ir.geom_screen = int16_t(CLAMP(int(120.0f / half), 80, 256));
+		ir.cam_rx = clamp_i16(cam_cook.euler.x * 4096.0f / float(Math::TAU));
+		ir.cam_ry = clamp_i16(cam_cook.euler.y * 4096.0f / float(Math::TAU));
+		ir.cam_rz = clamp_i16(cam_cook.euler.z * 4096.0f / float(Math::TAU));
 	}
+	ir.display_w = uint16_t(display_w);
+	ir.display_h = uint16_t(display_h);
+	ir.region = uint8_t(p_opts.region == 1 ? 1 : 0);
 	ir.light_count = uint16_t(lights.size());
 	for (int i = 0; i < lights.size() && i < kMaxLights; i++) {
 		ir.lights[i].dx = clamp_i16(lights[i].dir.x * 4096.0f);
@@ -702,20 +836,36 @@ Error cook_project(const String &p_export_dir, CookResult &r_out) {
 		return werr;
 	}
 	r_out.script_path = p_export_dir.path_join("SCRIPT.IR");
+	r_out.gdbc_path = ir.gdbc_path;
+	r_out.luau_path = ir.luau_path;
 
 	Ref<FileAccess> nf = FileAccess::open(r_out.names_path, FileAccess::WRITE);
 	ERR_FAIL_COND_V(nf.is_null(), ERR_CANT_CREATE);
-	nf->store_line(src_name + " -> TEX00.TIM MESH00.bin SFX00.VAG SPRITE00.bin FMV00.MAP SCRIPT.IR");
+	nf->store_line(src_name + " -> TEX00.TIM MESH00.bin SFX00.VAG SPRITE00.bin FMV00.MAP SCRIPT.IR SCRIPT.GD.BC SCRIPT.LU.BC");
 
 	r_out.texels = packed.pixel_w * MAX(1, packed.pixel_h);
 	r_out.tris = src_tris.size();
 	r_out.cooked_tris = mesh.tri_count;
 	r_out.vram_bytes = packed.vram_bytes;
-	const int ram_blob = packed.bytes.size() + mesh.bytes.size() + vag.bytes.size();
+	int extra_blob = 0;
+	if (!r_out.gdbc_path.is_empty() && FileAccess::exists(r_out.gdbc_path)) {
+		extra_blob += FileAccess::get_file_as_bytes(r_out.gdbc_path).size();
+	}
+	if (!r_out.luau_path.is_empty() && FileAccess::exists(r_out.luau_path)) {
+		extra_blob += FileAccess::get_file_as_bytes(r_out.luau_path).size();
+	}
+	if (!r_out.str_path.is_empty() && FileAccess::exists(r_out.str_path)) {
+		extra_blob += FileAccess::get_file_as_bytes(r_out.str_path).size();
+	}
+	if (!r_out.xa_path.is_empty() && FileAccess::exists(r_out.xa_path)) {
+		extra_blob += FileAccess::get_file_as_bytes(r_out.xa_path).size();
+	}
+	const int ram_blob = packed.bytes.size() + mesh.bytes.size() + vag.bytes.size() + extra_blob;
 	r_out.over_budget = packed.vram_bytes > kVramLimit || ram_blob > kRamLimit || vag.bytes.size() > kSpuLimit;
 
-	r_out.infos.push_back(vformat("guest_abi=%d src=%s tims=%d tris=%d cooked=%d lights=%d sprites=%d%s",
+	r_out.infos.push_back(vformat("guest_abi=%d src=%s tims=%d tris=%d cooked=%d lights=%d sprites=%d display=%s %dx%d gd=%d luau=%d%s",
 			kCookABI, src_name, tims.size(), src_tris.size(), mesh.tri_count, lights.size(), sprite_cooks.size(),
+			p_opts.region == 1 ? "PAL" : "NTSC", display_w, display_h, ir.gd_count, ir.luau_count,
 			used_industrial ? " industrial_fallback" : ""));
 
 	r_out.report = vformat("PS1 cook budget: TPAK %d TIM(s) (%d bytes) tris=%d cooked=%d VRAM=%d/%d RAM_blob=%d/%d SPU=%d/%d src=%s%s",

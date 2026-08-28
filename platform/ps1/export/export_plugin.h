@@ -30,7 +30,7 @@ class EditorExportPlatformPS1 : public EditorExportPlatform {
 	bool _scan_forbidden(const String &p_dir, String &r_hit) const;
 	Error _spawn_toolchain(const List<String> &p_args, String &r_output, int &r_exit) const;
 	void _emit_cook_messages(const ps1_cook::CookResult &p_cooked);
-	Error _try_make_iso(const String &p_exe_path, String &r_warning);
+	Error _try_make_iso(const String &p_exe_path, const ps1_cook::CookResult &p_cooked, String &r_warning);
 
 public:
 	virtual void get_preset_features(const Ref<EditorExportPreset> &p_preset, List<String> *r_features) const override;

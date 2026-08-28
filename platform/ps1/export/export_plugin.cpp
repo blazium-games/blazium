@@ -168,6 +168,8 @@ void EditorExportPlatformPS1::get_platform_features(List<String> *r_features) co
 
 void EditorExportPlatformPS1::get_export_options(List<ExportOption> *r_options) const {
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "ps1/output_kind", PROPERTY_HINT_ENUM, "PS-X EXE"), 0));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "ps1/region", PROPERTY_HINT_ENUM, "NTSC,PAL"), 0));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "ps1/width", PROPERTY_HINT_ENUM, "320,256,512,640"), 0));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::BOOL, "ps1/make_iso"), false));
 }
 
@@ -207,8 +209,8 @@ bool EditorExportPlatformPS1::has_valid_project_configuration(const Ref<EditorEx
 		r_error += "PS1 export requires application/run/main_scene.\n";
 		return false;
 	}
-	r_error += "Note: guest is 320x240 NTSC; audio is WAV-only (else a beep).\n";
-	r_error += "Note: cook keeps first 2048 triangles and first 4 albedo TIMs; no GDScript/Luau VM.\n";
+	r_error += "Note: audio is WAV-only (else a beep). Display is NTSC/PAL at 256/320/512/640.\n";
+	r_error += "Note: cook keeps first 2048 triangles and first 4 albedo TIMs. Guest VM first-slice: _process + rotate_y/Input.\n";
 	return true;
 }
 
@@ -237,8 +239,13 @@ Error EditorExportPlatformPS1::export_project(const Ref<EditorExportPreset> &p_p
 	Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
 	da->make_dir_recursive(p_path.get_base_dir());
 
+	ps1_cook::CookOptions opts;
+	static const int widths[] = { 320, 256, 512, 640 };
+	const int wsel = int(p_preset->get("ps1/width"));
+	opts.width = widths[CLAMP(wsel, 0, 3)];
+	opts.region = int(p_preset->get("ps1/region")) == 1 ? 1 : 0;
 	ps1_cook::CookResult cooked;
-	const Error cook_err = ps1_cook::cook_project(p_path.get_base_dir(), cooked);
+	const Error cook_err = ps1_cook::cook_project(p_path.get_base_dir(), cooked, opts);
 	_emit_cook_messages(cooked);
 	if (cook_err != OK || !cooked.errors.is_empty()) {
 		if (cooked.errors.is_empty()) {
@@ -276,6 +283,22 @@ Error EditorExportPlatformPS1::export_project(const Ref<EditorExportPreset> &p_p
 		args.push_back("--script");
 		args.push_back(cooked.script_path);
 	}
+	if (!cooked.gdbc_path.is_empty()) {
+		args.push_back("--gdbc");
+		args.push_back(cooked.gdbc_path);
+	}
+	if (!cooked.luau_path.is_empty()) {
+		args.push_back("--luau");
+		args.push_back(cooked.luau_path);
+	}
+	if (!cooked.str_path.is_empty()) {
+		args.push_back("--str");
+		args.push_back(cooked.str_path);
+	}
+	if (!cooked.xa_path.is_empty()) {
+		args.push_back("--xa");
+		args.push_back(cooked.xa_path);
+	}
 
 	String output;
 	int exitcode = 0;
@@ -301,7 +324,7 @@ Error EditorExportPlatformPS1::export_project(const Ref<EditorExportPreset> &p_p
 
 	if (bool(p_preset->get("ps1/make_iso"))) {
 		String iso_warn;
-		if (_try_make_iso(p_path, iso_warn) != OK) {
+		if (_try_make_iso(p_path, cooked, iso_warn) != OK) {
 			add_message(EXPORT_MESSAGE_WARNING, "PS1", iso_warn.is_empty() ? String("ISO skipped because mkpsxiso is missing.") : iso_warn);
 		}
 	}
@@ -323,7 +346,7 @@ void EditorExportPlatformPS1::_emit_cook_messages(const ps1_cook::CookResult &p_
 	}
 }
 
-Error EditorExportPlatformPS1::_try_make_iso(const String &p_exe_path, String &r_warning) {
+Error EditorExportPlatformPS1::_try_make_iso(const String &p_exe_path, const ps1_cook::CookResult &p_cooked, String &r_warning) {
 	const String dir = p_exe_path.get_base_dir();
 	const String cnf = dir.path_join("SYSTEM.CNF");
 	const String xml = dir.path_join("iso.xml");
@@ -349,9 +372,17 @@ Error EditorExportPlatformPS1::_try_make_iso(const String &p_exe_path, String &r
 			"\t\t<directory_tree>\n"
 			"\t\t\t<file name=\"SYSTEM.CNF\" source=\"" +
 			cnf.xml_escape(true) + "\" type=\"data\" />\n"
-								   "\t\t\t<file name=\"GAME.EXE\" source=\"" +
-			p_exe_path.xml_escape(true) + "\" type=\"data\" />\n"
-									  "\t\t</directory_tree>\n"
+			"\t\t\t<file name=\"GAME.EXE\" source=\"" +
+			p_exe_path.xml_escape(true) + "\" type=\"data\" />\n");
+	auto add_file = [&](const String &name, const String &src) {
+		if (!src.is_empty() && FileAccess::exists(src)) {
+			xf->store_string("\t\t\t<file name=\"" + name + "\" source=\"" + src.xml_escape(true) + "\" type=\"data\" />\n");
+		}
+	};
+	add_file("FMV00.STR", p_cooked.str_path);
+	add_file("FMV00.XA", p_cooked.xa_path);
+	xf->store_string(
+			"\t\t</directory_tree>\n"
 									  "\t</track>\n"
 									  "</iso_project>\n");
 

@@ -38,14 +38,21 @@
 #include <psxsn.h>
 #include <psxspu.h>
 
+#include "fmv_play.h"
+#include "script_vm.h"
+
 #ifndef BLAZIUM_PS1_COOK_ABI
-#define BLAZIUM_PS1_COOK_ABI 1
+#define BLAZIUM_PS1_COOK_ABI 4
 #endif
 
 #define OT_LEN 1024
 #define PACKET_LEN 98304
-#define SCREEN_W 320
-#define SCREEN_H 240
+#define SCREEN_W g_screen_w
+#define SCREEN_H g_screen_h
+
+static int g_screen_w = 320;
+static int g_screen_h = 240;
+static int g_region = 0;
 
 #ifdef BLAZIUM_PS1_HAS_TIM
 extern const uint8_t cooked_tim[];
@@ -70,6 +77,21 @@ extern const size_t cooked_sprite_size;
 #ifdef BLAZIUM_PS1_HAS_SCRIPT
 extern const uint8_t cooked_script[];
 extern const size_t cooked_script_size;
+#endif
+
+#ifdef BLAZIUM_PS1_HAS_GDBC
+extern const uint8_t cooked_gdbc[];
+extern const size_t cooked_gdbc_size;
+#endif
+
+#ifdef BLAZIUM_PS1_HAS_LUAU
+extern const uint8_t cooked_luau[];
+extern const size_t cooked_luau_size;
+#endif
+
+#ifdef BLAZIUM_PS1_HAS_STR
+extern const uint8_t cooked_str[];
+extern const size_t cooked_str_size;
 #endif
 
 static MATRIX g_color_mtx = {
@@ -101,6 +123,27 @@ static int g_active;
 static uint8_t *g_pri;
 
 #ifdef BLAZIUM_PS1_HAS_TIM
+static int16_t g_tp_x[4] = { 640, 704, 768, 832 };
+static int16_t g_tp_y[4] = { 0, 0, 0, 0 };
+static int16_t g_cl_x[4] = { 0, 0, 0, 0 };
+static int16_t g_cl_y[4] = { 480, 479, 478, 477 };
+
+static void record_tim_dest(int slot, const uint8_t *tim, size_t remain) {
+	if (slot < 0 || slot >= 4 || remain < 20 || tim[0] != 0x10) {
+		return;
+	}
+	const uint8_t *p = tim + 8;
+	const uint32_t flags = uint32_t(tim[4]) | (uint32_t(tim[5]) << 8) | (uint32_t(tim[6]) << 16) | (uint32_t(tim[7]) << 24);
+	if (flags & 8) {
+		g_cl_x[slot] = int16_t(p[4] | (p[5] << 8));
+		g_cl_y[slot] = int16_t(p[6] | (p[7] << 8));
+		const uint32_t csz = uint32_t(p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24));
+		p += csz;
+	}
+	g_tp_x[slot] = int16_t(p[4] | (p[5] << 8));
+	g_tp_y[slot] = int16_t(p[6] | (p[7] << 8));
+}
+
 static size_t tim_blob_size(const uint8_t *tim, size_t remain) {
 	if (remain < 20 || tim[0] != 0x10) {
 		return 0;
@@ -158,6 +201,7 @@ static void upload_cooked_tim() {
 			if (sz == 0) {
 				break;
 			}
+			record_tim_dest(int(i), p, sz);
 			upload_one_tim(p, sz);
 			p += sz;
 			left -= sz;
@@ -381,8 +425,7 @@ int main(int argc, const char **argv) {
 	ResetGraph(0);
 	DecDCTReset(0);
 	InitGeom();
-	gte_SetGeomOffset(SCREEN_W / 2, SCREEN_H / 2);
-	int16_t geom_screen = SCREEN_W / 2;
+	int16_t geom_screen = 160;
 	int16_t rot_step = 12;
 	SVECTOR rot = { 0, 0, 0, 0 };
 	VECTOR pos = { 0, 0, 512 };
@@ -447,8 +490,30 @@ int main(int argc, const char **argv) {
 				g_color_mtx.m[2][2] = (ONE * cb[2]) / 255;
 			}
 		}
+		if (cooked_script_size >= 60) {
+			const uint16_t dw = uint16_t(cooked_script[46] | (cooked_script[47] << 8));
+			const uint16_t dh = uint16_t(cooked_script[48] | (cooked_script[49] << 8));
+			if (dw == 256 || dw == 320 || dw == 512 || dw == 640) {
+				g_screen_w = int(dw);
+			}
+			if (dh == 240 || dh == 256) {
+				g_screen_h = int(dh);
+			}
+			g_region = cooked_script[50] ? 1 : 0;
+			rot.vx = int16_t(cooked_script[56] | (cooked_script[57] << 8));
+			rot.vy = int16_t(cooked_script[58] | (cooked_script[59] << 8));
+			if (cooked_script_size >= 62) {
+				rot.vz = int16_t(cooked_script[60] | (cooked_script[61] << 8));
+			}
+		}
 	}
 #endif
+	if (g_region) {
+		SetVideoMode(MODE_PAL);
+	} else {
+		SetVideoMode(MODE_NTSC);
+	}
+	gte_SetGeomOffset(SCREEN_W / 2, SCREEN_H / 2);
 	gte_SetGeomScreen(geom_screen);
 	gte_SetBackColor(32, 32, 32);
 	gte_SetFarColor(32, 0, 48);
@@ -478,12 +543,35 @@ int main(int argc, const char **argv) {
 	InitPAD(g_pad[0], 34, g_pad[1], 34);
 	StartPAD();
 	ChangeClearPAD(0);
-	const int font = FntOpen(8, 16, 304, 200, 0, 256);
+#ifdef BLAZIUM_PS1_HAS_STR
+	fmv_play_embedded(cooked_str, cooked_str_size, SCREEN_W, SCREEN_H, g_pad[0]);
+#endif
+	{
+		const uint8_t *gdbc = nullptr;
+		size_t gdbc_n = 0;
+		const uint8_t *luau = nullptr;
+		size_t luau_n = 0;
+#ifdef BLAZIUM_PS1_HAS_GDBC
+		gdbc = cooked_gdbc;
+		gdbc_n = cooked_gdbc_size;
+#endif
+#ifdef BLAZIUM_PS1_HAS_LUAU
+		luau = cooked_luau;
+		luau_n = cooked_luau_size;
+#endif
+		script_vm_init(gdbc, gdbc_n, luau, luau_n);
+	}
+	const int font = FntOpen(8, 16, SCREEN_W - 16, SCREEN_H - 40, 0, 256);
 	uint16_t tpages[4];
 	uint16_t cluts[4];
 	for (int i = 0; i < 4; i++) {
+#ifdef BLAZIUM_PS1_HAS_TIM
+		tpages[i] = getTPage(0, 0, g_tp_x[i], g_tp_y[i]);
+		cluts[i] = getClut(g_cl_x[i], g_cl_y[i]);
+#else
 		tpages[i] = getTPage(0, 0, 640 + 64 * i, 0);
 		cluts[i] = getClut(0, 480 - i);
+#endif
 	}
 	const uint16_t clut = cluts[0];
 
@@ -500,7 +588,18 @@ int main(int argc, const char **argv) {
 			MulMatrix0(&g_light_mtx, &mtx, &lmtx);
 			gte_SetLightMatrix(&lmtx);
 		}
-		rot.vy += rot_step;
+		{
+			ScriptVMHost host;
+			host.rot_x = &rot.vx;
+			host.rot_y = &rot.vy;
+			host.rot_z = &rot.vz;
+			host.pos_x = &pos.vx;
+			host.pos_y = &pos.vy;
+			host.pos_z = &pos.vz;
+			if (!script_vm_process(1.0f / 60.0f, &host)) {
+				rot.vy += rot_step;
+			}
+		}
 		{
 			const PADTYPE *pad = (const PADTYPE *)g_pad[0];
 			if (pad->stat == 0) {
