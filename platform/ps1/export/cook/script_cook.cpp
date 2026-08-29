@@ -110,8 +110,9 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "int" || p_name == "float" || p_name == "str" ||
 			p_name == "sign" || p_name == "sqrt" || p_name == "pow" ||
 			p_name == "move_toward" || p_name == "deg_to_rad" || p_name == "rad_to_deg" ||
-			p_name == "randf" || p_name == "randi" || p_name == "randf_range" ||
+			p_name == "randf" || p_name == "randi" || p_name == "randf_range" || p_name == "randi_range" ||
 			p_name == "get_ticks_msec" || p_name == "create_timer" || p_name == "is_timer_done" ||
+			p_name == "get_vector" || p_name == "push_error" || p_name == "get_frames_per_second" ||
 			p_name == "play" || p_name == "stop" || p_name == "is_playing" ||
 			p_name == "queue_free" || p_name == "load" || p_name == "instantiate" ||
 			p_name == "change_scene" || p_name == "change_scene_to_file" || p_name == "get_tree";
@@ -209,7 +210,7 @@ static bool luau_source_unbound(const String &p_source, String &r_why) {
 }
 
 static bool skip_script_dir(const String &p_name) {
-	return p_name == ".godot" || p_name == "export" || p_name == "tests" || p_name == "tools";
+	return p_name == ".godot" || p_name == "export" || p_name == "tests" || p_name == "tools" || p_name == "addons";
 }
 
 static void append_u16(Vector<uint8_t> &o, uint16_t v) {
@@ -577,7 +578,7 @@ static Vector<uint8_t> pack_official_gdbc(const Vector<String> &p_paths, const V
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 9);
+	append_u16(out, 10);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int s = 0; s < p_paths.size(); s++) {
 		append_str(out, p_paths[s]);
@@ -669,7 +670,7 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 9);
+	append_u16(out, 10);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int i = 0; i < p_paths.size(); i++) {
 		append_str(out, p_paths[i]);
@@ -752,10 +753,13 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 			"set_visible", "is_visible", "abs", "clamp", "lerp", "min", "max",
 			"sin", "cos", "floor", "ceil", "round",
 			"int", "float", "str", "sign", "sqrt", "pow", "move_toward",
-			"deg_to_rad", "rad_to_deg", "randf", "randi", "randf_range",
+			"deg_to_rad", "rad_to_deg", "randf", "randi", "randf_range", "randi_range",
 			"get_ticks_msec", "create_timer", "is_timer_done",
+			"get_vector", "push_error", "get_frames_per_second",
 			"play", "stop", "is_playing", "queue_free",
-			"load", "instantiate", "change_scene", "change_scene_to_file", "get_tree"
+			"load", "instantiate", "change_scene", "change_scene_to_file", "get_tree",
+			"set_position", "set_rotation", "look_at", "grab_focus", "release_focus",
+			"print", "push_warning"
 		};
 		for (const char *nm : named) {
 			if (src.contains(String(nm) + "(") || src.contains(String(nm) + " (")) {
@@ -864,7 +868,7 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 		}
 	}
 
-	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 9)\n", r_out.rotate_y);
+	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 10)\n", r_out.rotate_y);
 	for (int i = 0; i < r_out.accepted.size(); i++) {
 		r_out.map_text += "OK " + r_out.accepted[i] + "\n";
 	}

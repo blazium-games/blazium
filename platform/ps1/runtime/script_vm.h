@@ -21,7 +21,7 @@
 #define PS1_MAX_TILES 256
 #endif
 #ifndef PS1_MAX_PACKS
-#define PS1_MAX_PACKS 4
+#define PS1_MAX_PACKS 8
 #endif
 #ifndef PS1_MAX_CLIPS
 #define PS1_MAX_CLIPS 8

@@ -210,7 +210,7 @@ bool EditorExportPlatformPS1::has_valid_project_configuration(const Ref<EditorEx
 		return false;
 	}
 	r_error += "Note: audio is WAV-only (else a beep). Display is NTSC/PAL at 256/320/512/640.\n";
-	r_error += "Note: cook keeps first 8192 triangles and first 16 albedo TIMs. Guest VM: first-slice GDScript opcodes (_ready/_process/_physics_process, timers, scene packs, xform anim) + Luau tape (official Luau is not interpreted).\n";
+	r_error += "Note: cook keeps first 8192 triangles and first 16 albedo TIMs. Guest VM: first-slice opcodes (_ready/_process/_physics_process, timers, 8 scene packs, xform anim) + Luau tape (official Luau is not interpreted).\n";
 	return true;
 }
 

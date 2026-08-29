@@ -42,7 +42,7 @@
 #include "script_vm.h"
 
 #ifndef BLAZIUM_PS1_COOK_ABI
-#define BLAZIUM_PS1_COOK_ABI 9
+#define BLAZIUM_PS1_COOK_ABI 10
 #endif
 
 #define OT_LEN 2048
@@ -422,7 +422,13 @@ static void draw_cooked_tiles(uint16_t *tpages, uint16_t *cluts) {
 	const ScriptVMTile *tiles = script_vm_tiles();
 	const uint8_t tw = g_tile_w ? g_tile_w : 16;
 	const uint8_t th = g_tile_h ? g_tile_h : 16;
+	const ScriptVMNode *nodes = script_vm_nodes();
+	const int nn = script_vm_node_count();
 	for (int i = 0; i < n; i++) {
+		const int nid = int(tiles[i].node_id);
+		if (nid >= 0 && nid < nn && !(nodes[nid].flags & 1)) {
+			continue;
+		}
 		if ((uint8_t *)((SPRT *)g_pri + 1) > g_fb[g_active].packet + PACKET_LEN) {
 			break;
 		}
@@ -813,7 +819,7 @@ int main(int argc, const char **argv) {
 	if (cooked_node_size >= 8 && cooked_node[0] == 'N' && cooked_node[1] == 'O' && cooked_node[2] == 'D' && cooked_node[3] == 'E') {
 		const uint16_t ver = uint16_t(cooked_node[4] | (cooked_node[5] << 8));
 		const uint16_t nc = uint16_t(cooked_node[6] | (cooked_node[7] << 8));
-		if (ver == 9) {
+		if (ver == 10) {
 			ScriptVMNode parsed[PS1_MAX_NODES];
 			const uint8_t *p = cooked_node + 8;
 			const uint8_t *end = cooked_node + cooked_node_size;
@@ -855,7 +861,7 @@ int main(int argc, const char **argv) {
 	if (cooked_hud_size >= 8 && cooked_hud[0] == 'H' && cooked_hud[1] == 'U' && cooked_hud[2] == 'D' && cooked_hud[3] == '0') {
 		const uint16_t ver = uint16_t(cooked_hud[4] | (cooked_hud[5] << 8));
 		const uint16_t nc = uint16_t(cooked_hud[6] | (cooked_hud[7] << 8));
-		if (ver == 9) {
+		if (ver == 10) {
 			ScriptVMHud parsed[PS1_MAX_HUD];
 			const uint8_t *p = cooked_hud + 8;
 			const uint8_t *end = cooked_hud + cooked_hud_size;
@@ -914,7 +920,7 @@ int main(int argc, const char **argv) {
 		const uint16_t nc = uint16_t(cooked_tile[6] | (cooked_tile[7] << 8));
 		g_tile_w = cooked_tile[8];
 		g_tile_h = cooked_tile[9];
-		if (ver == 9) {
+		if (ver == 10) {
 			ScriptVMTile parsed[PS1_MAX_TILES];
 			const uint8_t *p = cooked_tile + 10;
 			const uint8_t *end = cooked_tile + cooked_tile_size;
@@ -938,7 +944,7 @@ int main(int argc, const char **argv) {
 	if (cooked_scene_size >= 8 && cooked_scene[0] == 'S' && cooked_scene[1] == 'C' && cooked_scene[2] == 'E' && cooked_scene[3] == 'N') {
 		const uint16_t ver = uint16_t(cooked_scene[4] | (cooked_scene[5] << 8));
 		const uint16_t nc = uint16_t(cooked_scene[6] | (cooked_scene[7] << 8));
-		if (ver == 9) {
+		if (ver == 10) {
 			ScriptVMPack parsed[PS1_MAX_PACKS];
 			const uint8_t *p = cooked_scene + 8;
 			const uint8_t *end = cooked_scene + cooked_scene_size;
@@ -982,7 +988,7 @@ int main(int argc, const char **argv) {
 	if (cooked_anim_size >= 8 && cooked_anim[0] == 'A' && cooked_anim[1] == 'N' && cooked_anim[2] == 'I' && cooked_anim[3] == 'M') {
 		const uint16_t ver = uint16_t(cooked_anim[4] | (cooked_anim[5] << 8));
 		const uint16_t nc = uint16_t(cooked_anim[6] | (cooked_anim[7] << 8));
-		if (ver == 9) {
+		if (ver == 10) {
 			ScriptVMAnimClip parsed[PS1_MAX_CLIPS];
 			const uint8_t *p = cooked_anim + 8;
 			const uint8_t *end = cooked_anim + cooked_anim_size;

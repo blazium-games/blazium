@@ -425,8 +425,10 @@ static void write_host_rot(const ScriptVMHost *host, const char *name, float arg
 	}
 }
 
+static int pad_pressed(const ScriptVMHost *host, const char *action, int just);
+
 static void apply_method(const ScriptVMHost *host, int node, const char *name, float arg, const GVar *argv, int argc) {
-	if (name_is(name, "print") || name_is(name, "push_warning") || name_is(name, "get_node")) {
+	if (name_is(name, "print") || name_is(name, "push_warning") || name_is(name, "push_error") || name_is(name, "get_node")) {
 		return;
 	}
 	if (name_is(name, "hide") && node_ok(node)) {
@@ -680,6 +682,16 @@ static void activate_pack(int pack, const ScriptVMHost *host) {
 			*host->rot_z = g_packs[pack].cam_rz;
 		}
 	}
+	for (int h = 0; h < g_nhud; h++) {
+		const int nid = int(g_hud[h].node_id);
+		const int vis = nid >= 0 && nid < g_nnode && (g_nodes[nid].flags & 1);
+		if (vis) {
+			g_hud[h].flags = uint8_t(g_hud[h].flags | 1);
+		} else {
+			g_hud[h].flags = uint8_t(g_hud[h].flags & ~uint8_t(1));
+		}
+	}
+	g_did_ready = 0;
 }
 
 static int instantiate_pack(int pack, int parent) {
@@ -1002,6 +1014,63 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 		const float a = as_float(argv[0]);
 		const float b = as_float(argv[1]);
 		*ret = gv_float(a + (b - a) * u);
+		return 1;
+	}
+	if (name_is(name, "randi_range") && argc >= 2) {
+		g_rng = g_rng * 1664525u + 1013904223u;
+		int a = int(as_float(argv[0]));
+		int b = int(as_float(argv[1]));
+		if (b < a) {
+			const int t = a;
+			a = b;
+			b = t;
+		}
+		const int span = b - a + 1;
+		*ret = gv_int(a + (span > 0 ? int(g_rng % uint32_t(span)) : 0));
+		return 1;
+	}
+	if (name_is(name, "get_vector")) {
+		const char *nx = "ui_left";
+		const char *px = "ui_right";
+		const char *ny = "ui_up";
+		const char *py = "ui_down";
+		if (argv && argc >= 4) {
+			if (argv[0].type == V_STR) {
+				nx = argv[0].s;
+			}
+			if (argv[1].type == V_STR) {
+				px = argv[1].s;
+			}
+			if (argv[2].type == V_STR) {
+				ny = argv[2].s;
+			}
+			if (argv[3].type == V_STR) {
+				py = argv[3].s;
+			}
+		}
+		float x = 0.0f;
+		float y = 0.0f;
+		if (pad_pressed(host, px, 0)) {
+			x += 1.0f;
+		}
+		if (pad_pressed(host, nx, 0)) {
+			x -= 1.0f;
+		}
+		if (pad_pressed(host, py, 0)) {
+			y += 1.0f;
+		}
+		if (pad_pressed(host, ny, 0)) {
+			y -= 1.0f;
+		}
+		*ret = gv_v2(x, y);
+		return 1;
+	}
+	if (name_is(name, "push_error")) {
+		*ret = gv_nil();
+		return 1;
+	}
+	if (name_is(name, "get_frames_per_second")) {
+		*ret = gv_int(60);
 		return 1;
 	}
 	if (name_is(name, "get_ticks_msec")) {
@@ -1610,7 +1679,7 @@ static int run_official(const uint8_t *blob, size_t size, const char *want, floa
 	if (size < 8 || blob[0] != 'G' || blob[1] != 'D' || blob[2] != 'B' || blob[3] != 'C') {
 		return 0;
 	}
-	if (ru16(blob + 4) != 9) {
+	if (ru16(blob + 4) != 10) {
 		return 0;
 	}
 	const uint16_t nscripts = ru16(blob + 6);
@@ -2080,7 +2149,7 @@ static int run_tape(const uint8_t *blob, size_t size, const char *want, float de
 	if (size < 8 || blob[0] != 'G' || blob[1] != 'D' || blob[2] != 'B' || blob[3] != 'C') {
 		return 0;
 	}
-	if (ru16(blob + 4) != 9) {
+	if (ru16(blob + 4) != 10) {
 		return 0;
 	}
 	const uint16_t npaths = ru16(blob + 6);
