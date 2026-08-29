@@ -187,6 +187,8 @@ static float g_music_fade_from = 1;
 static float g_music_fade_to = 1;
 static float g_music_fade_left = 0;
 static float g_music_fade_dur = 0;
+static int g_last_shot_nid = -1;
+static int16_t g_hp_max[PS1_MAX_NODES];
 static int16_t g_hud_ox = 0, g_hud_oy = 0;
 static ScriptVMShot g_shot[32];
 static int g_nshot = 32;
@@ -432,6 +434,7 @@ void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, 
 		g_wall_until[i] = 0;
 		g_was_wall[i] = 0;
 		g_invuln_until[i] = 0;
+		g_hp_max[i] = 0;
 		g_cp_x[i] = g_cp_y[i] = g_cp_z[i] = 0;
 		g_cp_set[i] = 0;
 		g_ysort[i] = 0;
@@ -462,6 +465,7 @@ void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, 
 	g_fade_out_left = 0;
 	g_fade_out_dur = 0;
 	g_hitstop_until = 0;
+	g_last_shot_nid = -1;
 	g_cp_scene[0] = 0;
 	g_cp_scene_set = 0;
 	g_say_hud = -1;
@@ -1062,6 +1066,35 @@ static int kit_nid(int node, const GVar *argv, int argc) {
 
 static int kit_invuln(int nid) {
 	return node_ok(nid) && g_invuln_until[nid] > g_ticks_ms;
+}
+
+static int kit_get_hp(int nid) {
+	return node_ok(nid) ? int(g_meta[nid]) : 0;
+}
+
+static void kit_set_hp(int nid, int n) {
+	if (!node_ok(nid)) {
+		return;
+	}
+	g_meta[nid] = int16_t(n);
+}
+
+static void kit_set_hp_cap(int nid, int n) {
+	kit_set_hp(nid, n);
+	if (node_ok(nid) && n > 0) {
+		g_hp_max[nid] = int16_t(n);
+	}
+}
+
+static int kit_shot_hit_first() {
+	for (int i = 0; i < 32; i++) {
+		if (g_shot[i].hit < 0 || kit_invuln(int(g_shot[i].hit))) {
+			continue;
+		}
+		g_last_shot_nid = int(g_shot[i].hit);
+		return g_last_shot_nid;
+	}
+	return -1;
 }
 
 static int kit_can_jump(int nid) {
@@ -3971,6 +4004,27 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 		*ret = gv_int(node_ok(nid) ? int(g_meta[nid]) : 0);
 		return 1;
 	}
+	if (name_is(name, "set_hp")) {
+		int nid = node;
+		int n = 0;
+		if (argv && argc >= 2) {
+			nid = argv[0].type == V_OBJ ? argv[0].i : int(as_float(argv[0]));
+			n = int(as_float(argv[1]));
+		} else if (argv && argc == 1) {
+			n = int(as_float(argv[0]));
+		}
+		if (!node_ok(nid)) {
+			*ret = gv_int(0);
+			return 1;
+		}
+		kit_set_hp_cap(nid, n);
+		*ret = gv_int(kit_get_hp(nid));
+		return 1;
+	}
+	if (name_is(name, "get_hp")) {
+		*ret = gv_int(kit_get_hp(kit_nid(node, argv, argc)));
+		return 1;
+	}
 	if (name_is(name, "set_angular_velocity")) {
 		int nid = node;
 		float ax = 0, ay = 0, az = 0;
@@ -4824,6 +4878,52 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 		*ret = gv_bool(1);
 		return 1;
 	}
+	if (name_is(name, "nav_follow")) {
+		int nid = node;
+		int ai = 0;
+		if (argv && argc > 0 && argv[0].type == V_OBJ) {
+			nid = argv[0].i;
+			ai = 1;
+		}
+		if (!node_ok(nid) || !argv || argc <= ai) {
+			*ret = gv_bool(0);
+			return 1;
+		}
+		float gx = 0, gy = 0, gz = 0;
+		if (argv[ai].type == V_V3) {
+			gx = argv[ai].x;
+			gy = argv[ai].y;
+			gz = argv[ai].z;
+		} else if (argv[ai].type == V_OBJ && node_ok(argv[ai].i)) {
+			gx = float(g_nodes[argv[ai].i].px);
+			gy = float(-g_nodes[argv[ai].i].py);
+			gz = float(g_nodes[argv[ai].i].pz);
+		} else {
+			*ret = gv_bool(0);
+			return 1;
+		}
+		float spd = argc > ai + 1 ? as_float(argv[ai + 1]) : 4;
+		GVar nargs[2];
+		nargs[0] = gv_obj(nid);
+		nargs[1] = gv_v3(gx, gy, gz);
+		GVar hop = gv_nil();
+		apply_call(host, nid, "nav_next", 0, nargs, 2, &hop);
+		GVar fargs[3];
+		fargs[0] = gv_obj(nid);
+		if (hop.type == V_V3) {
+			fargs[1] = hop;
+		} else {
+			fargs[1] = gv_v3(gx, gy, gz);
+		}
+		fargs[2] = gv_float(spd);
+		GVar dummy = gv_nil();
+		apply_call(host, nid, "follow_node", 0, fargs, 3, &dummy);
+		const float dx = gx - float(g_nodes[nid].px);
+		const float dy = gy - float(-g_nodes[nid].py);
+		const float dz = gz - float(g_nodes[nid].pz);
+		*ret = gv_bool(dx * dx + dy * dy + dz * dz > 16.0f);
+		return 1;
+	}
 	if (name_is(name, "raycast_group")) {
 		float ox = 0, oy = 0, oz = 0, dx = 0, dy = 0, dz = 1, dist = 64;
 		int bit = -1;
@@ -4934,8 +5034,18 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 		if (i < 0 || i >= 32 || g_shot[i].hit < 0 || kit_invuln(int(g_shot[i].hit))) {
 			*ret = gv_nil();
 		} else {
+			g_last_shot_nid = int(g_shot[i].hit);
 			*ret = gv_obj(int(g_shot[i].hit));
 		}
+		return 1;
+	}
+	if (name_is(name, "shot_hit_any")) {
+		const int hit = kit_shot_hit_first();
+		*ret = hit >= 0 ? gv_obj(hit) : gv_nil();
+		return 1;
+	}
+	if (name_is(name, "last_shot_hit")) {
+		*ret = (g_last_shot_nid >= 0 && node_ok(g_last_shot_nid)) ? gv_obj(g_last_shot_nid) : gv_nil();
 		return 1;
 	}
 	if (name_is(name, "clip_orbit")) {
@@ -5352,6 +5462,10 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			name_is(name, "set_air_jumps") || name_is(name, "set_wall_jump") ||
 			name_is(name, "set_checkpoint") || name_is(name, "respawn") ||
 			name_is(name, "set_hitstop") || name_is(name, "knockback") ||
+			name_is(name, "shot_hit_any") || name_is(name, "last_shot_hit") ||
+			name_is(name, "set_hp") || name_is(name, "get_hp") || name_is(name, "hurt") ||
+			name_is(name, "portal") || name_is(name, "nav_follow") || name_is(name, "move_planar") ||
+			name_is(name, "save_slot") || name_is(name, "load_slot") ||
 			name_is(name, "stop_music") || name_is(name, "set_music_fade") ||
 			name_is(name, "say") || name_is(name, "say_done") ||
 			name_is(name, "swap_pack") || name_is(name, "set_checkpoint_scene") ||
@@ -5408,6 +5522,31 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 				return 1;
 			}
 			*ret = gv_bool(load_pack_resident(lp));
+			return 1;
+		}
+		if (name_is(name, "portal")) {
+			const float fade = argv && argc > 2 ? as_float(argv[2]) : 0;
+			GVar ok = gv_nil();
+			apply_call(host, node, "swap_pack", 0, argv, argc >= 2 ? 2 : argc, &ok);
+			if (!as_truth(ok)) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			GVar dummy = gv_nil();
+			if (argv && argc > 1) {
+				GVar sc[1];
+				sc[0] = argv[1];
+				apply_call(host, node, "set_checkpoint_scene", 0, sc, 1, &dummy);
+				if (fade <= 0) {
+					apply_call(host, node, "change_scene", 0, sc, 1, &dummy);
+				} else {
+					GVar fd[2];
+					fd[0] = argv[1];
+					fd[1] = gv_float(fade);
+					apply_call(host, node, "change_scene_fade", 0, fd, 2, &dummy);
+				}
+			}
+			*ret = gv_bool(1);
 			return 1;
 		}
 		if (name_is(name, "set_checkpoint_scene")) {
@@ -6188,6 +6327,43 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			*ret = gv_v3(vx, vy, vz);
 			return 1;
 		}
+		if (name_is(name, "move_planar")) {
+			int nid = node;
+			int ai = 0;
+			if (argv && argc > 0 && argv[0].type == V_OBJ) {
+				nid = argv[0].i;
+				ai = 1;
+			}
+			if (!node_ok(nid) || !argv || argc < ai + 3) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			const float ax = as_float(argv[ai]);
+			const float ay = as_float(argv[ai + 1]);
+			const float spd = as_float(argv[ai + 2]);
+			const int hi = hit_of_node(nid);
+			const int dim2 = (hi >= 0 && g_hits[hi].dim == 2) || g_nodes[nid].type == 3 || g_nodes[nid].type == 6;
+			g_nvel[nid][0] = ax * spd;
+			if (dim2) {
+				if (ay > 0.05f || ay < -0.05f) {
+					g_nvel[nid][1] = ay * spd;
+				}
+				g_nvel[nid][2] = 0;
+			} else {
+				g_nvel[nid][2] = ay * spd;
+			}
+			if (ax > 0.1f || ax < -0.1f) {
+				GVar fl[3];
+				fl[0] = gv_obj(nid);
+				fl[1] = gv_bool(ax < 0);
+				fl[2] = gv_bool(0);
+				GVar dummy = gv_nil();
+				apply_call(host, nid, "set_flip", 0, fl, 3, &dummy);
+			}
+			GVar sl[1];
+			sl[0] = gv_obj(nid);
+			return apply_call(host, nid, "move_and_slide", 0, sl, 1, ret);
+		}
 		if (name_is(name, "move_and_drive")) {
 			int nid = node;
 			float throttle = 0;
@@ -6618,6 +6794,59 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 				g_nvel[nid][2] += as_float(argv[ai + 2]);
 			}
 			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "hurt")) {
+			int nid = node;
+			int ai = 0;
+			if (argv && argc > 0 && argv[0].type == V_OBJ) {
+				nid = argv[0].i;
+				ai = 1;
+			}
+			if (!node_ok(nid)) {
+				*ret = gv_int(0);
+				return 1;
+			}
+			if (kit_invuln(nid)) {
+				*ret = gv_int(kit_get_hp(nid));
+				return 1;
+			}
+			const int amount = argv && argc > ai ? int(as_float(argv[ai])) : 1;
+			float vx = 0, vy = 0, vz = 0;
+			if (argv && argc > ai + 1 && argv[ai + 1].type == V_V3) {
+				vx = argv[ai + 1].x;
+				vy = argv[ai + 1].y;
+				vz = argv[ai + 1].z;
+			} else if (argv && argc > ai + 3) {
+				vx = as_float(argv[ai + 1]);
+				vy = as_float(argv[ai + 2]);
+				vz = as_float(argv[ai + 3]);
+			}
+			int hp = kit_get_hp(nid) - amount;
+			kit_set_hp(nid, hp);
+			GVar one[2];
+			one[0] = gv_obj(nid);
+			one[1] = gv_float(800);
+			GVar dummy = gv_nil();
+			apply_call(host, nid, "set_invuln", 0, one, 2, &dummy);
+			GVar hs[1];
+			hs[0] = gv_float(80);
+			apply_call(host, nid, "set_hitstop", 0, hs, 1, &dummy);
+			GVar kb[4];
+			kb[0] = gv_obj(nid);
+			kb[1] = gv_float(vx);
+			kb[2] = gv_float(vy);
+			kb[3] = gv_float(vz);
+			apply_call(host, nid, "knockback", 0, kb, 4, &dummy);
+			if (hp <= 0) {
+				GVar rn[1];
+				rn[0] = gv_obj(nid);
+				apply_call(host, nid, "respawn", 0, rn, 1, &dummy);
+				const int restore = g_hp_max[nid] > 0 ? int(g_hp_max[nid]) : 3;
+				kit_set_hp_cap(nid, restore);
+				hp = restore;
+			}
+			*ret = gv_int(hp);
 			return 1;
 		}
 		if (name_is(name, "stop_music")) {
@@ -7187,6 +7416,25 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 				*ret = gv_bool(g_mc_len >= 0);
 			}
 			mc_persist();
+			return 1;
+		}
+		if (name_is(name, "save_slot")) {
+			const int slot = argv && argc > 0 ? int(as_float(argv[0])) : 0;
+			g_mc_title[0] = 'S';
+			g_mc_title[1] = 'L';
+			g_mc_title[2] = 'O';
+			g_mc_title[3] = 'T';
+			g_mc_title[4] = char('0' + (slot < 0 ? 0 : (slot > 9 ? 9 : slot)));
+			g_mc_title[5] = 0;
+			if (g_mc_len < 12) {
+				g_mc_len = 12;
+			}
+			mc_persist();
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "load_slot")) {
+			*ret = gv_bool(g_mc_len > 0);
 			return 1;
 		}
 		if (name_is(name, "memcard_load")) {
@@ -8914,6 +9162,7 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 	if (!g_ready) {
 		return 0;
 	}
+	g_last_shot_nid = -1;
 	g_host = host;
 	if (!g_boot_slices && g_npack > 0) {
 		g_boot_slices = 1;

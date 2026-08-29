@@ -255,6 +255,16 @@ void PS1::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("say_done"), &PS1::say_done);
 	ClassDB::bind_method(D_METHOD("swap_pack", "unload_path", "load_path"), &PS1::swap_pack);
 	ClassDB::bind_method(D_METHOD("set_checkpoint_scene", "path"), &PS1::set_checkpoint_scene);
+	ClassDB::bind_method(D_METHOD("shot_hit_any"), &PS1::shot_hit_any);
+	ClassDB::bind_method(D_METHOD("last_shot_hit"), &PS1::last_shot_hit);
+	ClassDB::bind_method(D_METHOD("set_hp", "node", "n"), &PS1::set_hp);
+	ClassDB::bind_method(D_METHOD("get_hp", "node"), &PS1::get_hp);
+	ClassDB::bind_method(D_METHOD("hurt", "node", "amount", "vx", "vy", "vz"), &PS1::hurt);
+	ClassDB::bind_method(D_METHOD("portal", "unload_path", "load_path", "fade"), &PS1::portal);
+	ClassDB::bind_method(D_METHOD("nav_follow", "node", "goal", "speed"), &PS1::nav_follow);
+	ClassDB::bind_method(D_METHOD("move_planar", "node", "ax", "ay", "speed"), &PS1::move_planar);
+	ClassDB::bind_method(D_METHOD("save_slot", "slot"), &PS1::save_slot);
+	ClassDB::bind_method(D_METHOD("load_slot", "slot"), &PS1::load_slot);
 	ClassDB::bind_method(D_METHOD("set_path_progress", "node", "t"), &PS1::set_path_progress);
 	ClassDB::bind_method(D_METHOD("get_path_progress", "node"), &PS1::get_path_progress);
 	ClassDB::bind_method(D_METHOD("get_path_point", "path", "i"), &PS1::get_path_point);

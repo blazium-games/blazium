@@ -905,6 +905,46 @@ public:
 		_fail_ps1();
 		return false;
 	}
+	Variant shot_hit_any() {
+		_fail_ps1();
+		return Variant();
+	}
+	Variant last_shot_hit() const {
+		_fail_ps1();
+		return Variant();
+	}
+	int set_hp(const Variant &p_node, int p_n) {
+		_fail_ps1();
+		return 0;
+	}
+	int get_hp(const Variant &p_node) const {
+		_fail_ps1();
+		return 0;
+	}
+	int hurt(const Variant &p_node, int p_amount, float p_vx, float p_vy, float p_vz) {
+		_fail_ps1();
+		return 0;
+	}
+	bool portal(const String &p_unload, const String &p_load, float p_fade) {
+		_fail_ps1();
+		return false;
+	}
+	bool nav_follow(const Variant &p_node, const Variant &p_goal, float p_speed) {
+		_fail_ps1();
+		return false;
+	}
+	Variant move_planar(const Variant &p_node, float p_ax, float p_ay, float p_speed) {
+		_fail_ps1();
+		return Variant();
+	}
+	bool save_slot(int p_slot) {
+		_fail_ps1();
+		return false;
+	}
+	bool load_slot(int p_slot) {
+		_fail_ps1();
+		return false;
+	}
 	bool set_path_progress(const Variant &p_node, float p_t) {
 		_fail_ps1();
 		return false;

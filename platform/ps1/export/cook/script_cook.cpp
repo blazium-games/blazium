@@ -139,6 +139,10 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "stop_music" || p_name == "set_music_fade" ||
 			p_name == "say" || p_name == "say_done" ||
 			p_name == "swap_pack" || p_name == "set_checkpoint_scene" ||
+			p_name == "shot_hit_any" || p_name == "last_shot_hit" ||
+			p_name == "set_hp" || p_name == "get_hp" || p_name == "hurt" ||
+			p_name == "portal" || p_name == "nav_follow" || p_name == "move_planar" ||
+			p_name == "save_slot" || p_name == "load_slot" ||
 			p_name == "set_frame" || p_name == "set_flip" ||
 			p_name == "get_frame" || p_name == "get_flip_h" || p_name == "set_flip_h" ||
 			p_name == "get_x" || p_name == "get_y" || p_name == "get_z" ||
@@ -909,6 +913,8 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 			"set_checkpoint", "respawn", "set_frame", "set_flip",
 			"set_hitstop", "knockback", "stop_music", "set_music_fade",
 			"say", "say_done", "swap_pack", "set_checkpoint_scene",
+			"shot_hit_any", "last_shot_hit", "set_hp", "get_hp", "hurt",
+			"portal", "nav_follow", "move_planar", "save_slot", "load_slot",
 			"get_frame", "get_flip_h", "set_flip_h",
 			"get_forward", "get_right", "get_up", "translate_local", "move_and_fly",
 			"apply_gravity", "add_velocity", "spawn_shot", "shot_hit", "get_ray_node",
