@@ -53,7 +53,7 @@ Error write_vag_beep(VagBlob &r_out) {
 	return OK;
 }
 
-Error write_vag_pcm(const Vector<int16_t> &p_pcm, int p_sample_rate, int p_max_bytes, VagBlob &r_out) {
+Error write_vag_pcm(const Vector<int16_t> &p_pcm, int p_sample_rate, int p_max_bytes, VagBlob &r_out, bool p_loop) {
 	if (p_pcm.is_empty()) {
 		return write_vag_beep(r_out);
 	}
@@ -99,7 +99,7 @@ Error write_vag_pcm(const Vector<int16_t> &p_pcm, int p_sample_rate, int p_max_b
 			shift++;
 		}
 		out.push_back(uint8_t(shift));
-		out.push_back(b == blocks - 1 ? 0x01 : 0x00);
+		out.push_back(b == blocks - 1 ? (p_loop ? 0x03 : 0x01) : 0x00);
 		for (int i = 0; i < 28; i += 2) {
 			const int sh = 12 - shift;
 			int n0 = sh >= 0 ? (int(smp[i]) >> sh) : (int(smp[i]) << (-sh));

@@ -50,6 +50,7 @@ struct ScriptIR {
 	Vector<String> warnings;
 	HashMap<String, uint16_t> path_owners;
 	Vector<String> cooked_gd;
+	Vector<String> extra_scenes;
 	String map_text;
 	String gdbc_path;
 	String luau_path;
@@ -57,6 +58,7 @@ struct ScriptIR {
 
 bool source_is_rejected(const String &p_source, String &r_why);
 bool method_is_allowlisted(const String &p_name);
+void collect_literal_scenes(const String &p_source, Vector<String> &r_paths);
 Error cook_scripts(const String &p_export_dir, ScriptIR &r_out);
 Error write_script_ir(const String &p_export_dir, const ScriptIR &p_ir);
 

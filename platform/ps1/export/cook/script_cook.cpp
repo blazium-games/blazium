@@ -54,13 +54,36 @@ static String strip_line_comments(const String &p_source) {
 bool source_is_rejected(const String &p_source, String &r_why) {
 	const String src = strip_line_comments(p_source);
 	const char *bad[] = {
-		"eval(", "load(", "ClassDB.get_class_list", "ClassDB.", "HTTPClient",
+		"eval(", "ClassDB.get_class_list", "ClassDB.", "HTTPClient",
 		"Thread.", "await ", "func lambda", "preload(", "OS.execute", "FileAccess.store",
 		"callv("
 	};
 	for (const char *b : bad) {
 		if (src.contains(b)) {
 			r_why = b;
+			return true;
+		}
+	}
+	int p = 0;
+	while (true) {
+		const int hit = src.find("load(", p);
+		if (hit < 0) {
+			break;
+		}
+		p = hit + 5;
+		const int q = src.find("\"", hit);
+		if (q < 0) {
+			r_why = "load(";
+			return true;
+		}
+		const int e = src.find("\"", q + 1);
+		if (e <= q + 1) {
+			r_why = "load(";
+			return true;
+		}
+		const String path = src.substr(q + 1, e - q - 1);
+		if (!path.ends_with(".tscn")) {
+			r_why = "load(" + path + ")";
 			return true;
 		}
 	}
@@ -72,7 +95,7 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "translate" || p_name == "get_node" ||
 			p_name == "is_action_pressed" || p_name == "is_action_just_pressed" ||
 			p_name == "is_action_just_released" ||
-			p_name == "_ready" || p_name == "_process" ||
+			p_name == "_ready" || p_name == "_process" || p_name == "_physics_process" ||
 			p_name == "hide" || p_name == "show" ||
 			p_name == "set_position" || p_name == "set_rotation" ||
 			p_name == "look_at" || p_name == "print" || p_name == "push_warning" ||
@@ -83,7 +106,15 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "abs" || p_name == "clamp" || p_name == "lerp" ||
 			p_name == "min" || p_name == "max" ||
 			p_name == "sin" || p_name == "cos" ||
-			p_name == "floor" || p_name == "ceil" || p_name == "round";
+			p_name == "floor" || p_name == "ceil" || p_name == "round" ||
+			p_name == "int" || p_name == "float" || p_name == "str" ||
+			p_name == "sign" || p_name == "sqrt" || p_name == "pow" ||
+			p_name == "move_toward" || p_name == "deg_to_rad" || p_name == "rad_to_deg" ||
+			p_name == "randf" || p_name == "randi" || p_name == "randf_range" ||
+			p_name == "get_ticks_msec" || p_name == "create_timer" || p_name == "is_timer_done" ||
+			p_name == "play" || p_name == "stop" || p_name == "is_playing" ||
+			p_name == "queue_free" || p_name == "load" || p_name == "instantiate" ||
+			p_name == "change_scene" || p_name == "change_scene_to_file" || p_name == "get_tree";
 }
 
 static bool member_is_allowlisted(const String &p_name) {
@@ -136,8 +167,7 @@ static void warn_unknown_actions(const String &p_source, ScriptIR &r_out) {
 static bool luau_source_unbound(const String &p_source, String &r_why) {
 	const String src = strip_line_comments(p_source);
 	const char *bad[] = {
-		"queue_free", "instantiate", "change_scene", "get_tree", "call_deferred",
-		"rpc", "create_tween", "duplicate"
+		"call_deferred", "rpc", "create_tween", "duplicate"
 	};
 	for (const char *b : bad) {
 		if (src.contains(String(b) + "(") || src.contains(String(b) + " (")) {
@@ -170,9 +200,7 @@ static bool luau_source_unbound(const String &p_source, String &r_why) {
 		if (j >= src.length() || src[j] != '(' || ident.is_empty() || method_is_allowlisted(ident)) {
 			continue;
 		}
-		if (c == ':' || ident == "queue_free" || ident == "instantiate" || ident == "load" ||
-				ident == "preload" || ident == "get_tree" || ident == "change_scene" ||
-				ident == "call_deferred" || ident == "duplicate") {
+		if (c == ':' || ident == "preload" || ident == "call_deferred" || ident == "duplicate") {
 			r_why = ident;
 			return true;
 		}
@@ -314,6 +342,8 @@ static int host_opcode_size(const Vector<int> &code, int ip) {
 			const int iac = code[ip + 1];
 			return 4 + iac;
 		}
+		case Op::OPCODE_CAST_TO_BUILTIN:
+			return 4;
 		default:
 			return 0;
 	}
@@ -360,7 +390,8 @@ static bool opcode_allowed(int op) {
 			op == Op::OPCODE_GET_KEYED_VALIDATED || op == Op::OPCODE_SET_KEYED_VALIDATED ||
 			op == Op::OPCODE_GET_INDEXED_VALIDATED || op == Op::OPCODE_SET_INDEXED_VALIDATED ||
 			op == Op::OPCODE_ITERATE_BEGIN || op == Op::OPCODE_ITERATE_BEGIN_INT ||
-			op == Op::OPCODE_ITERATE || op == Op::OPCODE_ITERATE_INT;
+			op == Op::OPCODE_ITERATE || op == Op::OPCODE_ITERATE_INT ||
+			op == Op::OPCODE_CAST_TO_BUILTIN;
 }
 
 static String call_name_at(const GDScriptFunction *fn, const Vector<int> &code, int ip) {
@@ -446,6 +477,13 @@ static Error scan_and_normalize(const String &p_path, GDScript *script, GDScript
 			const String pname = String(op == Op::OPCODE_GET_NAMED_VALIDATED ? fn->get_getter_name(code[ip + 3]) : fn->get_setter_name(code[ip + 3]));
 			if (pname.is_empty() || !member_is_allowlisted(pname)) {
 				r_err = vformat("%s:%s:%d unbound member '%s'", p_path, String(fn->get_name()), ip, pname.is_empty() ? String("?") : pname);
+				return ERR_UNCONFIGURED;
+			}
+		}
+		if (op == Op::OPCODE_CAST_TO_BUILTIN) {
+			const int typ = (ip + 3 < code.size()) ? code[ip + 3] : -1;
+			if (typ != int(Variant::INT) && typ != int(Variant::FLOAT) && typ != int(Variant::STRING)) {
+				r_err = vformat("%s:%s:%d cast type %d is not int/float/string", p_path, String(fn->get_name()), ip, typ);
 				return ERR_UNCONFIGURED;
 			}
 		}
@@ -539,7 +577,7 @@ static Vector<uint8_t> pack_official_gdbc(const Vector<String> &p_paths, const V
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 8);
+	append_u16(out, 9);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int s = 0; s < p_paths.size(); s++) {
 		append_str(out, p_paths[s]);
@@ -631,7 +669,7 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 8);
+	append_u16(out, 9);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int i = 0; i < p_paths.size(); i++) {
 		append_str(out, p_paths[i]);
@@ -712,7 +750,12 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 		const char *named[] = {
 			"get_parent", "get_child", "get_child_count", "has_node", "get_node_or_null",
 			"set_visible", "is_visible", "abs", "clamp", "lerp", "min", "max",
-			"sin", "cos", "floor", "ceil", "round"
+			"sin", "cos", "floor", "ceil", "round",
+			"int", "float", "str", "sign", "sqrt", "pow", "move_toward",
+			"deg_to_rad", "rad_to_deg", "randf", "randi", "randf_range",
+			"get_ticks_msec", "create_timer", "is_timer_done",
+			"play", "stop", "is_playing", "queue_free",
+			"load", "instantiate", "change_scene", "change_scene_to_file", "get_tree"
 		};
 		for (const char *nm : named) {
 			if (src.contains(String(nm) + "(") || src.contains(String(nm) + " (")) {
@@ -754,6 +797,9 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 		};
 		emit_fn("_ready", ready_code);
 		emit_fn("_process", code);
+		if (src.contains("_physics_process")) {
+			emit_fn("_physics_process", code);
+		}
 	}
 	return out;
 }
@@ -789,6 +835,7 @@ static void walk_scripts(const String &p_dir, ScriptIR &r_out) {
 		} else {
 			r_out.accepted.push_back(path);
 			warn_unknown_actions(src, r_out);
+			collect_literal_scenes(src, r_out.extra_scenes);
 			if (src.contains("0.4") && (src.contains("rotate_y") || src.contains("delta * 0.4"))) {
 				r_out.rotate_y = 0.4f;
 			}
@@ -813,10 +860,11 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 		} else if (!r_out.accepted.has(path)) {
 			r_out.accepted.push_back(path);
 			warn_unknown_actions(src, r_out);
+			collect_literal_scenes(src, r_out.extra_scenes);
 		}
 	}
 
-	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 8)\n", r_out.rotate_y);
+	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 9)\n", r_out.rotate_y);
 	for (int i = 0; i < r_out.accepted.size(); i++) {
 		r_out.map_text += "OK " + r_out.accepted[i] + "\n";
 	}
@@ -901,6 +949,30 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 	ERR_FAIL_COND_V(f.is_null(), ERR_CANT_CREATE);
 	f->store_string(r_out.map_text);
 	return OK;
+}
+
+void collect_literal_scenes(const String &p_source, Vector<String> &r_paths) {
+	const String src = strip_line_comments(p_source);
+	int p = 0;
+	while (true) {
+		const int hit = src.find("res://", p);
+		if (hit < 0) {
+			break;
+		}
+		int e = hit;
+		while (e < src.length()) {
+			const char32_t c = src[e];
+			if (c == '"' || c == '\'' || c == ')' || c == ',' || c == ' ' || c == '\n' || c == '\r' || c == '\t') {
+				break;
+			}
+			e++;
+		}
+		p = e > hit ? e : hit + 6;
+		const String path = src.substr(hit, e - hit);
+		if (path.ends_with(".tscn") && !r_paths.has(path)) {
+			r_paths.push_back(path);
+		}
+	}
 }
 
 Error write_script_ir(const String &p_export_dir, const ScriptIR &p_ir) {

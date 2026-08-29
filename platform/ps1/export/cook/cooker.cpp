@@ -54,6 +54,8 @@
 #include "scene/3d/node_3d.h"
 #include "scene/main/canvas_layer.h"
 #include "scene/animation/animation_player.h"
+#include "scene/3d/skeleton_3d.h"
+#include "scene/resources/animation.h"
 #include "scene/audio/audio_stream_player.h"
 #include "scene/resources/2d/tile_set.h"
 #include "scene/resources/audio_stream_wav.h"
@@ -89,6 +91,11 @@ struct SceneGather {
 	Vector<CookLight> lights;
 	int light_count = 0;
 	int animation_player_count = 0;
+	bool had_skeleton = false;
+	bool had_anim_skip = false;
+	bool had_anim_tree = false;
+	Vector<Node *> node_ptrs;
+	Vector<AnimationPlayer *> anim_players;
 	HashSet<String> uncooked_types;
 	Vector<String> attached_scripts;
 	VideoStreamPlayer *video = nullptr;
@@ -143,7 +150,7 @@ struct SceneGather {
 };
 
 static const char *kAllowed[] = {
-	"Node", "Node3D", "MeshInstance3D", "Camera3D", "AnimationPlayer",
+	"Node", "Node3D", "MeshInstance3D", "Camera3D", "AnimationPlayer", "Skeleton3D",
 	"Sprite2D", "Node2D", "AudioStreamPlayer", "AudioStreamPlayer3D",
 	"DirectionalLight3D", "OmniLight3D", "SpotLight3D", "Light3D",
 	"VideoStreamPlayer", "Control", "CanvasLayer", "Label", "Button",
@@ -518,6 +525,12 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 			cn.type = 3;
 		} else if (Object::cast_to<Camera3D>(p_node)) {
 			cn.type = 4;
+		} else if (Object::cast_to<AnimationPlayer>(p_node)) {
+			cn.type = 7;
+		} else if (Object::cast_to<AudioStreamPlayer>(p_node) || Object::cast_to<AudioStreamPlayer3D>(p_node)) {
+			cn.type = 8;
+		} else if (Object::cast_to<VideoStreamPlayer>(p_node)) {
+			cn.type = 9;
 		} else if (Object::cast_to<Control>(p_node)) {
 			cn.type = 5;
 		} else if (Object::cast_to<TileMap>(p_node) || Object::cast_to<TileMapLayer>(p_node)) {
@@ -554,6 +567,7 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 		cn.tri_hi = cn.tri_lo;
 		my = r_g.nodes.size();
 		r_g.nodes.push_back(cn);
+		r_g.node_ptrs.push_back(p_node);
 	} else {
 		r_g.node_dropped++;
 	}
@@ -655,8 +669,20 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 			r_g.attached_scripts.push_back(sc->get_path());
 		}
 	}
-	if (Object::cast_to<AnimationPlayer>(p_node)) {
+	if (AnimationPlayer *ap = Object::cast_to<AnimationPlayer>(p_node)) {
 		r_g.animation_player_count++;
+		r_g.anim_players.push_back(ap);
+	}
+	if (Object::cast_to<Skeleton3D>(p_node) || p_node->is_class("SkeletonModifier3D") || p_node->is_class("Skin")) {
+		r_g.had_skeleton = true;
+	}
+	if (MeshInstance3D *skin_mi = Object::cast_to<MeshInstance3D>(p_node)) {
+		if (skin_mi->get_skin().is_valid()) {
+			r_g.had_skeleton = true;
+		}
+	}
+	if (p_node->is_class("AnimationTree")) {
+		r_g.had_anim_tree = true;
 	}
 	if (Object::cast_to<CanvasLayer>(p_node)) {
 		r_g.canvas_layer_count++;
@@ -797,7 +823,7 @@ static void write_node_table(const Vector<SceneGather::CookedNode> &p_nodes, flo
 	o.push_back('O');
 	o.push_back('D');
 	o.push_back('E');
-	u16(8);
+	u16(9);
 	u16(uint16_t(p_nodes.size()));
 	const float s = p_scale > 0.0f ? p_scale : 1.0f;
 	for (int i = 0; i < p_nodes.size(); i++) {
@@ -841,7 +867,7 @@ static void write_hud_table(const Vector<SceneGather::HudRow> &p_hud, Vector<uin
 	o.push_back('U');
 	o.push_back('D');
 	o.push_back('0');
-	u16(8);
+	u16(9);
 	u16(uint16_t(p_hud.size()));
 	for (int i = 0; i < p_hud.size(); i++) {
 		const SceneGather::HudRow &h = p_hud[i];
@@ -886,7 +912,7 @@ static void write_tile_table(const SceneGather &p_g, Vector<uint8_t> &o) {
 	o.push_back('I');
 	o.push_back('L');
 	o.push_back('E');
-	u16(8);
+	u16(9);
 	u16(uint16_t(p_g.tiles.size()));
 	o.push_back(p_g.tile_w);
 	o.push_back(p_g.tile_h);
@@ -898,6 +924,255 @@ static void write_tile_table(const SceneGather &p_g, Vector<uint8_t> &o) {
 		o.push_back(t.v);
 		o.push_back(t.tex);
 		o.push_back(t.node_id);
+	}
+}
+
+struct ScenePackCook {
+	String path;
+	uint16_t node_lo = 0, node_hi = 0;
+	uint16_t tri_lo = 0, tri_hi = 0;
+	uint16_t hud_lo = 0, hud_hi = 0;
+	uint16_t tile_lo = 0, tile_hi = 0;
+	bool has_cam = false;
+	Vector3 cam_pos;
+	Vector3 cam_euler;
+};
+
+struct AnimKeyCook {
+	uint16_t t_ms = 0;
+	uint8_t node_id = 0;
+	uint8_t flags = 1;
+	Vector3 pos;
+	Vector3 euler;
+};
+
+struct AnimClipCook {
+	String name;
+	Vector<AnimKeyCook> keys;
+};
+
+static int node_index_of(const SceneGather &p_g, const Node *p_node) {
+	for (int i = 0; i < p_g.node_ptrs.size(); i++) {
+		if (p_g.node_ptrs[i] == p_node) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+static void merge_anim_key(AnimClipCook &r_clip, const AnimKeyCook &p_key) {
+	for (int i = 0; i < r_clip.keys.size(); i++) {
+		if (r_clip.keys[i].t_ms == p_key.t_ms && r_clip.keys[i].node_id == p_key.node_id) {
+			AnimKeyCook &k = r_clip.keys.write[i];
+			if (p_key.flags & 2) {
+				k.pos = p_key.pos;
+			}
+			if (p_key.flags & 4) {
+				k.euler = p_key.euler;
+			}
+			if (p_key.flags & 8) {
+				k.flags = uint8_t((k.flags & ~uint8_t(1)) | (p_key.flags & 1));
+			}
+			k.flags |= uint8_t(p_key.flags & 14);
+			return;
+		}
+	}
+	if (r_clip.keys.size() < kMaxAnimKeys) {
+		r_clip.keys.push_back(p_key);
+	}
+}
+
+static void cook_anim_clips(SceneGather &p_g, Vector<AnimClipCook> &r_clips, bool &r_had_skip) {
+	for (int i = 0; i < p_g.anim_players.size() && r_clips.size() < kMaxAnimClips; i++) {
+		AnimationPlayer *ap = p_g.anim_players[i];
+		if (!ap) {
+			continue;
+		}
+		List<StringName> names;
+		ap->get_animation_list(&names);
+		Node *rel = ap->get_node_or_null(ap->get_root_node());
+		if (!rel) {
+			rel = ap->get_parent() ? ap->get_parent() : ap;
+		}
+		for (const List<StringName>::Element *E = names.front(); E && r_clips.size() < kMaxAnimClips; E = E->next()) {
+			const Ref<Animation> anim = ap->get_animation(E->get());
+			if (anim.is_null()) {
+				continue;
+			}
+			AnimClipCook clip;
+			clip.name = String(E->get());
+			for (int t = 0; t < anim->get_track_count(); t++) {
+				const Animation::TrackType tt = anim->track_get_type(t);
+				if (tt != Animation::TYPE_POSITION_3D && tt != Animation::TYPE_ROTATION_3D && tt != Animation::TYPE_VALUE) {
+					r_had_skip = true;
+					continue;
+				}
+				const NodePath np = anim->track_get_path(t);
+				Node *target = rel ? rel->get_node_or_null(np) : nullptr;
+				if (!target) {
+					target = ap->get_node_or_null(np);
+				}
+				const int nid = node_index_of(p_g, target);
+				if (nid < 0) {
+					continue;
+				}
+				const String sub = np.get_concatenated_subnames();
+				const bool is_vis = sub == "visible" || sub.ends_with(":visible");
+				const bool is_pos = tt == Animation::TYPE_POSITION_3D || sub == "position" || sub.ends_with(":position");
+				const bool is_rot = tt == Animation::TYPE_ROTATION_3D || sub == "rotation" || sub.ends_with(":rotation");
+				if (tt == Animation::TYPE_VALUE && !is_vis && !is_pos && !is_rot) {
+					r_had_skip = true;
+					continue;
+				}
+				const Vector3 rest_pos = nid < p_g.nodes.size() ? p_g.nodes[nid].pos : Vector3();
+				const Vector3 rest_eu = nid < p_g.nodes.size() ? p_g.nodes[nid].euler : Vector3();
+				for (int k = 0; k < anim->track_get_key_count(t); k++) {
+					AnimKeyCook key;
+					key.t_ms = uint16_t(CLAMP(int(anim->track_get_key_time(t, k) * 1000.0), 0, 65535));
+					key.node_id = uint8_t(CLAMP(nid, 0, 255));
+					key.pos = rest_pos;
+					key.euler = rest_eu;
+					key.flags = 1;
+					const Variant val = anim->track_get_key_value(t, k);
+					if (is_pos && val.get_type() == Variant::VECTOR3) {
+						key.pos = val;
+						key.flags |= 2;
+					} else if (is_rot) {
+						if (val.get_type() == Variant::QUATERNION) {
+							key.euler = Basis(Quaternion(val)).get_euler();
+							key.flags |= 4;
+						} else if (val.get_type() == Variant::VECTOR3) {
+							key.euler = val;
+							key.flags |= 4;
+						}
+					} else if (is_vis) {
+						key.flags = uint8_t((key.flags & ~uint8_t(1)) | (bool(val) ? 1 : 0));
+						key.flags |= 8;
+					}
+					merge_anim_key(clip, key);
+				}
+			}
+			if (!clip.keys.is_empty()) {
+				r_clips.push_back(clip);
+			}
+		}
+	}
+}
+
+static void write_scene_packs(const Vector<ScenePackCook> &p_packs, float p_scale, Vector<uint8_t> &o) {
+	auto u16 = [&](uint16_t v) {
+		o.push_back(uint8_t(v & 0xff));
+		o.push_back(uint8_t(v >> 8));
+	};
+	auto i16 = [&](int16_t v) { u16(uint16_t(v)); };
+	auto append_str = [&](const String &s) {
+		const CharString utf = s.utf8();
+		o.push_back(uint8_t(CLAMP(utf.length(), 0, 255)));
+		for (int i = 0; i < utf.length() && i < 255; i++) {
+			o.push_back(uint8_t(utf[i]));
+		}
+	};
+	o.push_back('S');
+	o.push_back('C');
+	o.push_back('E');
+	o.push_back('N');
+	u16(9);
+	u16(uint16_t(p_packs.size()));
+	const float s = p_scale > 0.0f ? p_scale : 1.0f;
+	for (int i = 0; i < p_packs.size(); i++) {
+		const ScenePackCook &p = p_packs[i];
+		append_str(p.path);
+		u16(p.node_lo);
+		u16(p.node_hi);
+		u16(p.tri_lo);
+		u16(p.tri_hi);
+		u16(p.hud_lo);
+		u16(p.hud_hi);
+		u16(p.tile_lo);
+		u16(p.tile_hi);
+		o.push_back(p.has_cam ? 1 : 0);
+		i16(clamp_i16(-p.cam_pos.x * s));
+		i16(clamp_i16(p.cam_pos.y * s));
+		i16(clamp_i16(p.cam_pos.z * s));
+		i16(clamp_i16(p.cam_euler.x * 4096.0f / float(Math::TAU)));
+		i16(clamp_i16(p.cam_euler.y * 4096.0f / float(Math::TAU)));
+		i16(clamp_i16(p.cam_euler.z * 4096.0f / float(Math::TAU)));
+	}
+}
+
+static void write_anim_clips(const Vector<AnimClipCook> &p_clips, float p_scale, Vector<uint8_t> &o) {
+	auto u16 = [&](uint16_t v) {
+		o.push_back(uint8_t(v & 0xff));
+		o.push_back(uint8_t(v >> 8));
+	};
+	auto i16 = [&](int16_t v) { u16(uint16_t(v)); };
+	o.push_back('A');
+	o.push_back('N');
+	o.push_back('I');
+	o.push_back('M');
+	u16(9);
+	u16(uint16_t(p_clips.size()));
+	const float s = p_scale > 0.0f ? p_scale : 1.0f;
+	for (int i = 0; i < p_clips.size(); i++) {
+		const AnimClipCook &c = p_clips[i];
+		const CharString utf = c.name.utf8();
+		o.push_back(uint8_t(CLAMP(utf.length(), 0, 255)));
+		for (int k = 0; k < utf.length() && k < 255; k++) {
+			o.push_back(uint8_t(utf[k]));
+		}
+		const int nk = MIN(c.keys.size(), kMaxAnimKeys);
+		o.push_back(uint8_t(nk));
+		for (int k = 0; k < nk; k++) {
+			const AnimKeyCook &key = c.keys[k];
+			u16(key.t_ms);
+			o.push_back(key.node_id);
+			o.push_back(uint8_t(key.flags & 1));
+			i16(clamp_i16(key.pos.x * s));
+			i16(clamp_i16(-key.pos.y * s));
+			i16(clamp_i16(key.pos.z * s));
+			i16(clamp_i16(key.euler.x * 4096.0f / float(Math::TAU)));
+			i16(clamp_i16(key.euler.y * 4096.0f / float(Math::TAU)));
+			i16(clamp_i16(key.euler.z * 4096.0f / float(Math::TAU)));
+		}
+	}
+}
+
+static void scan_script_scenes(Vector<String> &r_paths) {
+	Vector<String> stack;
+	stack.push_back("res://");
+	while (!stack.is_empty()) {
+		const String dir = stack[stack.size() - 1];
+		stack.resize(stack.size() - 1);
+		Ref<DirAccess> da = DirAccess::open(dir);
+		if (da.is_null()) {
+			continue;
+		}
+		da->list_dir_begin();
+		for (String n = da->get_next(); !n.is_empty(); n = da->get_next()) {
+			if (n == "." || n == ".." || n.begins_with(".")) {
+				continue;
+			}
+			const String path = dir.path_join(n);
+			if (da->current_is_dir()) {
+				if (n == "export" || n == ".godot" || n == "addons" || n == "tests" || n == "tools") {
+					continue;
+				}
+				stack.push_back(path);
+				continue;
+			}
+			if (!(n.ends_with(".gd") || n.ends_with(".luau"))) {
+				continue;
+			}
+			if (n == "run_tests.gd" || n.begins_with("test_")) {
+				continue;
+			}
+			const String src = FileAccess::get_file_as_string(path);
+			String why;
+			if (source_is_rejected(src, why)) {
+				continue;
+			}
+			collect_literal_scenes(src, r_paths);
+		}
 	}
 }
 
@@ -929,25 +1204,101 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		return FAILED;
 	}
 
-	r_out.warnings.push_back("only application/run/main_scene is cooked; other PackedScenes are not scanned.");
+	r_out.warnings.push_back("only literal res://*.tscn paths are cooked (max 4 packs, shared caps).");
+	r_out.warnings.push_back("instantiate copies into unused NODE slots; queue_free does not reclaim them.");
+	r_out.warnings.push_back("create_timer has 8 slots; poll is_timer_done (no timeout signal).");
+	r_out.warnings.push_back("VideoStreamPlayer.play() replays the boot STR (blocking; START skips).");
 
 	SceneGather gathered;
 	String src_name;
-	Node *root = nullptr;
+	Vector<Node *> live_roots;
+	Vector<ScenePackCook> packs;
 	if (ResourceLoader::exists(main_scene)) {
 		Ref<PackedScene> ps = ResourceLoader::load(main_scene);
 		if (ps.is_valid()) {
-			root = ps->instantiate();
+			Node *root = ps->instantiate();
+			live_roots.push_back(root);
 			walk_scene(root, gathered, -1);
 			if (!gathered.tris.is_empty()) {
 				src_name = main_scene;
 			}
+			ScenePackCook main_pack;
+			main_pack.path = main_scene;
+			main_pack.node_hi = uint16_t(gathered.nodes.size());
+			main_pack.tri_hi = uint16_t(gathered.tris.size());
+			main_pack.hud_hi = uint16_t(gathered.hud.size());
+			main_pack.tile_hi = uint16_t(gathered.tiles.size());
+			if (Camera3D *cam = gathered.cam_current ? gathered.cam_current : gathered.cam_any) {
+				main_pack.has_cam = true;
+				const Transform3D xf = world_xform_3d(cam);
+				main_pack.cam_pos = xf.origin;
+				main_pack.cam_euler = xf.basis.get_euler();
+			}
+			packs.push_back(main_pack);
 		}
 	} else {
 		r_out.errors.push_back("main_scene does not exist: " + main_scene);
 		r_out.report = r_out.errors[0];
 		return FAILED;
 	}
+
+	Vector<String> extra_scenes;
+	scan_script_scenes(extra_scenes);
+	for (int i = 0; i < extra_scenes.size(); i++) {
+		const String path = extra_scenes[i];
+		if (path == main_scene) {
+			continue;
+		}
+		if (!ResourceLoader::exists(path)) {
+			r_out.errors.push_back("change_scene/load path not cooked: " + path);
+			r_out.report = r_out.errors[r_out.errors.size() - 1];
+			for (int r = 0; r < live_roots.size(); r++) {
+				memdelete(live_roots[r]);
+			}
+			return ERR_UNCONFIGURED;
+		}
+		if (packs.size() >= kMaxScenePacks) {
+			r_out.warnings.push_back("kept first 4 scene packs (shared caps).");
+			break;
+		}
+		Ref<PackedScene> extra = ResourceLoader::load(path);
+		if (extra.is_null()) {
+			r_out.errors.push_back("change_scene/load path not cooked: " + path);
+			r_out.report = r_out.errors[r_out.errors.size() - 1];
+			for (int r = 0; r < live_roots.size(); r++) {
+				memdelete(live_roots[r]);
+			}
+			return ERR_UNCONFIGURED;
+		}
+		Node *er = extra->instantiate();
+		live_roots.push_back(er);
+		ScenePackCook pack;
+		pack.path = path;
+		pack.node_lo = uint16_t(gathered.nodes.size());
+		pack.tri_lo = uint16_t(gathered.tris.size());
+		pack.hud_lo = uint16_t(gathered.hud.size());
+		pack.tile_lo = uint16_t(gathered.tiles.size());
+		walk_scene(er, gathered, -1);
+		pack.node_hi = uint16_t(gathered.nodes.size());
+		pack.tri_hi = uint16_t(gathered.tris.size());
+		pack.hud_hi = uint16_t(gathered.hud.size());
+		pack.tile_hi = uint16_t(gathered.tiles.size());
+		for (int n = pack.node_lo; n < pack.node_hi && n < gathered.nodes.size(); n++) {
+			gathered.nodes.write[n].flags = uint8_t(gathered.nodes[n].flags & ~uint8_t(1));
+			if (gathered.nodes[n].type == 4 && !pack.has_cam && n < gathered.node_ptrs.size()) {
+				if (Camera3D *cam = Object::cast_to<Camera3D>(gathered.node_ptrs[n])) {
+					pack.has_cam = true;
+					const Transform3D xf = world_xform_3d(cam);
+					pack.cam_pos = xf.origin;
+					pack.cam_euler = xf.basis.get_euler();
+				}
+			}
+		}
+		packs.push_back(pack);
+	}
+
+	Vector<AnimClipCook> anim_clips;
+	cook_anim_clips(gathered, anim_clips, gathered.had_anim_skip);
 
 	Vector<CookTri> src_tris = gathered.tris;
 	Vector<Ref<Image>> images = gathered.images;
@@ -969,8 +1320,8 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		if (gathered.sprites.is_empty() && !gathered.video && !have_fmv && gathered.hud.is_empty() && gathered.tiles.is_empty()) {
 			r_out.errors.push_back("main_scene has no MeshInstance3D, Sprite2D, FMV, HUD, or tiles; not substituting Industrial.");
 			r_out.report = r_out.errors[0];
-			if (root) {
-				memdelete(root);
+			for (int r = 0; r < live_roots.size(); r++) {
+				memdelete(live_roots[r]);
 			}
 			return ERR_UNCONFIGURED;
 		}
@@ -1028,10 +1379,12 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		image_names = gathered.image_names;
 	}
 	Vector<CookLight> lights = gathered.lights;
-	if (root) {
-		memdelete(root);
-		root = nullptr;
+	for (int r = 0; r < live_roots.size(); r++) {
+		memdelete(live_roots[r]);
 	}
+	live_roots.clear();
+	gathered.node_ptrs.clear();
+	gathered.anim_players.clear();
 
 	if (src_tris.size() > kMaxTris) {
 		r_out.warnings.push_back(vformat("kept first %d of %d triangles (dropped %d). Reduce mesh density.", kMaxTris, src_tris.size(), src_tris.size() - kMaxTris));
@@ -1049,7 +1402,13 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		r_out.warnings.push_back(vformat("used one Camera3D; ignored %d extra camera(s).", gathered.camera_count - 1));
 	}
 	if (gathered.animation_player_count > 0) {
-		r_out.warnings.push_back("AnimationPlayer is not cooked (no skeletal/anim guest).");
+		r_out.warnings.push_back("AnimationPlayer cooks position/rotation/visible tracks (8 clips, 32 keys). Method/audio/bezier/blend/AnimationTree are skipped.");
+	}
+	if (gathered.had_anim_skip || gathered.had_anim_tree) {
+		r_out.warnings.push_back("Animation method/audio/bezier/blend/AnimationTree tracks are skipped.");
+	}
+	if (gathered.had_skeleton) {
+		r_out.warnings.push_back("Skeleton3D skinning is not applied; mesh is bind pose. AnimationPlayer node xform tracks still play.");
 	}
 	if (!gathered.uncooked_types.is_empty()) {
 		PackedStringArray types;
@@ -1168,7 +1527,8 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		Vector<int16_t> pcm;
 		int rate = 22050;
 		pcm_from_wav(gathered.wav, pcm, rate);
-		const Error verr = write_vag_pcm(pcm, rate, kSpuLimit, vag);
+		const bool loop = gathered.wav->get_loop_mode() != AudioStreamWAV::LOOP_DISABLED;
+		const Error verr = write_vag_pcm(pcm, rate, kSpuLimit, vag, loop);
 		if (verr != OK) {
 			r_out.errors.push_back("VAG cook failed.");
 			return verr;
@@ -1288,6 +1648,33 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	if (ir.luau_count > 0) {
 		r_out.warnings.push_back("official Luau bytecode is not interpreted; first-slice tape only.");
 	}
+	{
+		bool had_script_row = false;
+		for (int i = 0; i < gathered.nodes.size(); i++) {
+			if (!gathered.nodes[i].script_path.is_empty()) {
+				had_script_row = true;
+				break;
+			}
+		}
+		if (had_script_row) {
+			r_out.warnings.push_back("NODE.script is unused; GDBC owner binds scripts.");
+		}
+	}
+	for (int i = 0; i < ir.extra_scenes.size(); i++) {
+		const String path = ir.extra_scenes[i];
+		bool found = false;
+		for (int p = 0; p < packs.size(); p++) {
+			if (packs[p].path == path) {
+				found = true;
+				break;
+			}
+		}
+		if (!found) {
+			r_out.errors.push_back("change_scene/load path not cooked: " + path);
+			r_out.report = r_out.errors[r_out.errors.size() - 1];
+			return ERR_UNCONFIGURED;
+		}
+	}
 	for (int i = 0; i < ir.accepted.size(); i++) {
 		const String src = FileAccess::get_file_as_string(ir.accepted[i]);
 		if (src.contains(".connect(")) {
@@ -1383,10 +1770,26 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		ERR_FAIL_COND_V(tf.is_null(), ERR_CANT_CREATE);
 		tf->store_buffer(tileb);
 	}
+	{
+		Vector<uint8_t> scenb;
+		write_scene_packs(packs, mesh.scale, scenb);
+		r_out.scene_path = p_export_dir.path_join("SCENE00.bin");
+		Ref<FileAccess> sf = FileAccess::open(r_out.scene_path, FileAccess::WRITE);
+		ERR_FAIL_COND_V(sf.is_null(), ERR_CANT_CREATE);
+		sf->store_buffer(scenb);
+	}
+	if (!anim_clips.is_empty()) {
+		Vector<uint8_t> animb;
+		write_anim_clips(anim_clips, mesh.scale, animb);
+		r_out.anim_path = p_export_dir.path_join("ANIM00.bin");
+		Ref<FileAccess> af = FileAccess::open(r_out.anim_path, FileAccess::WRITE);
+		ERR_FAIL_COND_V(af.is_null(), ERR_CANT_CREATE);
+		af->store_buffer(animb);
+	}
 
 	Ref<FileAccess> nf = FileAccess::open(r_out.names_path, FileAccess::WRITE);
 	ERR_FAIL_COND_V(nf.is_null(), ERR_CANT_CREATE);
-	nf->store_line(src_name + " -> TEX00.TIM MESH00.bin SFX00.VAG SPRITE00.bin FMV00.MAP SCRIPT.IR SCRIPT.GD.BC SCRIPT.LU.BC NODE00.bin HUD00.bin TILE00.bin");
+	nf->store_line(src_name + " -> TEX00.TIM MESH00.bin SFX00.VAG SPRITE00.bin FMV00.MAP SCRIPT.IR SCRIPT.GD.BC SCRIPT.LU.BC NODE00.bin HUD00.bin TILE00.bin SCENE00.bin ANIM00.bin");
 
 	r_out.texels = packed.pixel_w * MAX(1, packed.pixel_h);
 	r_out.tris = src_tris.size();
@@ -1413,6 +1816,12 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	}
 	if (!r_out.tile_path.is_empty() && FileAccess::exists(r_out.tile_path)) {
 		extra_blob += FileAccess::get_file_as_bytes(r_out.tile_path).size();
+	}
+	if (!r_out.scene_path.is_empty() && FileAccess::exists(r_out.scene_path)) {
+		extra_blob += FileAccess::get_file_as_bytes(r_out.scene_path).size();
+	}
+	if (!r_out.anim_path.is_empty() && FileAccess::exists(r_out.anim_path)) {
+		extra_blob += FileAccess::get_file_as_bytes(r_out.anim_path).size();
 	}
 	const int ram_blob = packed.bytes.size() + mesh.bytes.size() + vag.bytes.size() + extra_blob;
 	r_out.over_budget = packed.vram_bytes > kVramLimit || ram_blob > kRamLimit || vag.bytes.size() > kSpuLimit;

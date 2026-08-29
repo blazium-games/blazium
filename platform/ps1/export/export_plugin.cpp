@@ -210,7 +210,7 @@ bool EditorExportPlatformPS1::has_valid_project_configuration(const Ref<EditorEx
 		return false;
 	}
 	r_error += "Note: audio is WAV-only (else a beep). Display is NTSC/PAL at 256/320/512/640.\n";
-	r_error += "Note: cook keeps first 8192 triangles and first 16 albedo TIMs. Guest VM: first-slice GDScript opcodes (_ready/_process) + Luau tape (official Luau is not interpreted).\n";
+	r_error += "Note: cook keeps first 8192 triangles and first 16 albedo TIMs. Guest VM: first-slice GDScript opcodes (_ready/_process/_physics_process, timers, scene packs, xform anim) + Luau tape (official Luau is not interpreted).\n";
 	return true;
 }
 
@@ -310,6 +310,14 @@ Error EditorExportPlatformPS1::export_project(const Ref<EditorExportPreset> &p_p
 	if (!cooked.tile_path.is_empty()) {
 		args.push_back("--tile");
 		args.push_back(cooked.tile_path);
+	}
+	if (!cooked.scene_path.is_empty()) {
+		args.push_back("--scene");
+		args.push_back(cooked.scene_path);
+	}
+	if (!cooked.anim_path.is_empty()) {
+		args.push_back("--anim");
+		args.push_back(cooked.anim_path);
 	}
 	if (int(p_preset->get("ps1/output_kind")) != 0) {
 		add_message(EXPORT_MESSAGE_WARNING, "PS1", "ps1/output_kind is unread; output is PS-X EXE. Use ps1/make_iso for a disc image.");

@@ -24,6 +24,7 @@ struct VagBlob {
 // MIT 4-bit SPU ADPCM beep (VAGp). Do not paste GPL encoders.
 Error write_vag_beep(VagBlob &r_out);
 // Filter-0 SPU ADPCM from mono PCM16. p_max_bytes includes the 48-byte header.
-Error write_vag_pcm(const Vector<int16_t> &p_pcm, int p_sample_rate, int p_max_bytes, VagBlob &r_out);
+// Last ADPCM flag is 0x03 when p_loop, else 0x01 (beep stays one-shot).
+Error write_vag_pcm(const Vector<int16_t> &p_pcm, int p_sample_rate, int p_max_bytes, VagBlob &r_out, bool p_loop = false);
 
 } // namespace ps1_cook
