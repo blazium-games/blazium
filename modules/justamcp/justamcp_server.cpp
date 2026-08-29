@@ -34,34 +34,29 @@
 #include "justamcp_json_rpc_transport.h"
 #include "justamcp_notification_bus.h"
 #include "justamcp_pagination.h"
+#ifdef TOOLS_ENABLED
+#include "editor/editor_settings.h"
 #include "justamcp_project_settings.h"
-#include "justamcp_server_request_lookup.h"
-#include "justamcp_session_manager.h"
 #include "justamcp_tool_dispatch.h"
-#include "justamcp_tool_queue_state.h"
-#include "tools/justamcp_json_rpc_helpers.h"
-#include "tools/justamcp_json_rpc_router.h"
 #include "tools/justamcp_prompt_executor.h"
 #include "tools/justamcp_resource_executor.h"
-#include "tools/justamcp_settings_resolver.h"
 #include "tools/justamcp_task_manager.h"
 #include "tools/justamcp_tool_executor.h"
 #include "tools/justamcp_tool_schema_cache.h"
+#endif
+#include "justamcp_server_request_lookup.h"
+#include "justamcp_session_manager.h"
+#include "justamcp_tool_queue_state.h"
+#include "tools/justamcp_json_rpc_helpers.h"
+#include "tools/justamcp_json_rpc_router.h"
+#include "tools/justamcp_settings_resolver.h"
 
 #include "core/config/project_settings.h"
 #include "core/object/callable_method_pointer.h"
 #include "core/object/class_db.h"
 #include "core/os/os.h"
-#include "editor/editor_settings.h"
 
 #include "modules/modules_enabled.gen.h"
-
-static bool _justamcp_headless_project_server_requested() {
-	if (!JustAMCPCliArgs::is_headless()) {
-		return false;
-	}
-	return JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/server_enabled", false);
-}
 
 void JustAMCPServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_server_started"), &JustAMCPServer::is_server_started);
@@ -377,17 +372,16 @@ void JustAMCPServer::_notification(int p_what) {
 }
 
 int JustAMCPServer::_resolve_listening_port_from_settings() const {
+	if (runtime_host) {
+		return JustAMCPSettingsResolver::resolve_runtime_port();
+	}
 	return JustAMCPSettingsResolver::resolve_server_port();
 }
 
 void JustAMCPServer::_on_settings_changed() {
 #ifdef TOOLS_ENABLED
 	JustAMCPJsonRpcHelpers::mark_mcp_tool_settings_dirty();
-	bool is_enabled = JustAMCPSettingsResolver::resolve_server_enabled();
-
-	if (_justamcp_headless_project_server_requested()) {
-		is_enabled = true;
-	}
+	bool is_enabled = runtime_host ? JustAMCPSettingsResolver::resolve_runtime_enabled() : JustAMCPSettingsResolver::resolve_server_enabled();
 
 	if (!is_enabled && server_started) {
 		_stop_server();
@@ -426,13 +420,17 @@ void JustAMCPServer::_start_server_internal(bool p_ignore_cmdline_block) {
 	}
 
 	const List<String> &args = OS::get_singleton()->get_cmdline_args();
-	if (!p_ignore_cmdline_block && JustAMCPCliArgs::skip_mcp_server() && !_justamcp_headless_project_server_requested()) {
+	if (!p_ignore_cmdline_block && JustAMCPCliArgs::skip_mcp_server()) {
 		print_line("JustAMCP: Server not started (cmdline skips MCP).");
 		return;
 	}
 
-	bool enabled = JustAMCPSettingsResolver::resolve_server_enabled();
-	int port = JustAMCPSettingsResolver::resolve_server_port();
+	bool enabled = runtime_host ? JustAMCPSettingsResolver::resolve_runtime_enabled() : JustAMCPSettingsResolver::resolve_server_enabled();
+	int port = _resolve_listening_port_from_settings();
+	if (runtime_host && JustAMCPSettingsResolver::runtime_port_conflicts_with_editor()) {
+		ERR_PRINT("JustAMCP: Game MCP port " + itos(port) + " equals the editor port. Set blazium/justamcp/export_port or --mcp-game-port to a different value.");
+		return;
+	}
 	bool bind_to_localhost = JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/bind_to_localhost_only", true);
 
 	String cmd_client_id = "";
@@ -478,7 +476,11 @@ void JustAMCPServer::_start_server_internal(bool p_ignore_cmdline_block) {
 	}
 
 	if (!enabled) {
-		print_line("JustAMCP: Server not started (disabled; pass --enable-mcp or set blazium/justamcp/server_enabled).");
+		if (runtime_host) {
+			print_line("JustAMCP: Game MCP host not started (disabled; pass --enable-mcp or --enable-mcp-game-control, or set blazium/justamcp/game_control_enabled).");
+		} else {
+			print_line("JustAMCP: Server not started (disabled; pass --enable-mcp or set blazium/justamcp/server_enabled).");
+		}
 		return;
 	}
 
@@ -504,6 +506,22 @@ void JustAMCPServer::_start_server_internal(bool p_ignore_cmdline_block) {
 #endif
 		{
 			listen_err = HTTPServer::get_singleton()->listen(port, bind_address, false);
+		}
+		if (listen_err != OK && runtime_host) {
+			const int retry_port = port + 1;
+			const int editor_port = JustAMCPSettingsResolver::resolve_server_port();
+			if (retry_port > 0 && retry_port != editor_port) {
+#ifdef TESTS_ENABLED
+				if (test_forced_listen_error == OK)
+#endif
+				{
+					listen_err = HTTPServer::get_singleton()->listen(retry_port, bind_address, false);
+				}
+				if (listen_err == OK) {
+					WARN_PRINT("JustAMCP: Game MCP port " + itos(port) + " was busy (remote_control also defaults to 6507). Listening on " + itos(retry_port) + ". Set blazium/justamcp/export_port to pin the game port.");
+					port = retry_port;
+				}
+			}
 		}
 		if (listen_err != OK) {
 #ifdef TESTS_ENABLED

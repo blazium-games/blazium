@@ -523,6 +523,29 @@ void test_justamcp_http_modern_get_delete_and_listen() {
 	CHECK(get_legacy->get_status() != 405);
 }
 
+void test_justamcp_http_get_concatenated_modern_legacy_header() {
+	CHECK(MCPSessionManager::protocol_header_allows_legacy_sse("2025-11-25"));
+	CHECK(MCPSessionManager::protocol_header_allows_legacy_sse("2026-07-28, 2025-11-25"));
+	CHECK(MCPSessionManager::protocol_header_allows_legacy_sse("2025-11-25, 2026-07-28"));
+	CHECK(MCPSessionManager::protocol_header_allows_legacy_sse(String()));
+	CHECK(!MCPSessionManager::protocol_header_allows_legacy_sse(k_modern_protocol));
+
+	JustAMCPTestServerFixture fixture;
+	MCPSessionManager *session_manager = fixture.get_server().test_get_session_manager();
+	TEST_FAIL_COND(session_manager == nullptr, "Session manager is required");
+
+	const String session_id = _init_session(fixture.get_server(), session_manager, "2025-11-25");
+	Ref<HTTPResponse> response;
+	response.instantiate();
+	Dictionary headers;
+	headers["Accept"] = "text/event-stream";
+	headers["MCP-Session-Id"] = session_id;
+	headers["MCP-Protocol-Version"] = "2026-07-28, 2025-11-25";
+	CHECK(session_manager->handle_mcp_get(_make_ctx("GET", headers), response));
+	CHECK(response->get_status() != 405);
+	CHECK(response->is_sse_response());
+}
+
 void test_justamcp_accepted_protocol_versions_pinning() {
 	ProjectSettings *ps = ProjectSettings::get_singleton();
 	TEST_FAIL_COND(ps == nullptr, "ProjectSettings is required");
@@ -614,6 +637,9 @@ void test_justamcp_http_initialize_modern_client_stays_legacy() {
 	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required");
 }
 void test_justamcp_http_modern_get_delete_and_listen() {
+	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required");
+}
+void test_justamcp_http_get_concatenated_modern_legacy_header() {
 	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required");
 }
 void test_justamcp_accepted_protocol_versions_pinning() {

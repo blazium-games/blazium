@@ -672,11 +672,14 @@
 		</member>
 		<member name="blazium/justamcp/enable_toolset_discovery" type="bool" setter="" getter="" default="true">
 		</member>
+		<member name="blazium/justamcp/export_port" type="int" setter="" getter="" default="0">
+			TCP port for the exported or play-mode JustAMCP HTTP MCP host ([code]POST /mcp[/code]). [code]0[/code] means the editor [member blazium/justamcp/server_port] plus one (6506 → 6507). Override at launch with [code]--mcp-game-port[/code]. Must not equal the editor port. [code]remote_control[/code] also defaults to 6507; if bind fails the host retries once on port+1.
+		</member>
 		<member name="blazium/justamcp/forward_engine_logs" type="bool" setter="" getter="" default="true">
 			If [code]true[/code] and the JustAMCP server is running, engine [code]print[/code] output is forwarded to MCP clients via [code]notifications/message[/code] ([code]logger: engine[/code]). Respects the client's [code]logging/setLevel[/code] minimum severity.
 		</member>
 		<member name="blazium/justamcp/game_control_enabled" type="bool" setter="" getter="" default="false">
-			If [code]true[/code], allows AI interacting via JustAMCP to natively trigger in-game commands and inputs over the pipeline, granting them orchestration control over gameplay mechanics.
+			If [code]true[/code], starts the game JustAMCP host (Streamable HTTP on the export port plus the TCP command bridge). Autowork [code]--aw-*[/code] does not start MCP unless [code]--enable-mcp[/code] or [code]--enable-mcp-game-control[/code] is also passed. Exported templates include the HTTP host only; editor tools are not compiled in.
 		</member>
 		<member name="blazium/justamcp/in_flight_cancel_deadline_ms" type="int" setter="" getter="" default="5000">
 		</member>
@@ -713,6 +716,9 @@
 		<member name="blazium/justamcp/parallel_readonly_lane" type="bool" setter="" getter="" default="false">
 		</member>
 		<member name="blazium/justamcp/pending_post_sse_timeout_sec" type="int" setter="" getter="" default="120">
+		</member>
+		<member name="blazium/justamcp/project_mcp_dir" type="String" setter="" getter="" default="&quot;res://mcp&quot;">
+			Folder that holds project-owned MCP registration scripts. When game MCP starts, JustAMCP runs [code]register.gd[/code] and/or [code]register.luau[/code] from this directory so they can call [method JustAMCPRuntime.register_tool] and [method JustAMCPRuntime.register_prompt].
 		</member>
 		<member name="blazium/justamcp/prompts" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], JustAMCP includes prompts in [code]prompts/list[/code]. Individual prompt toggles under [code]blazium/justamcp/prompts/[/code] still apply. Search and get still reach unlisted prompts.
@@ -900,10 +906,10 @@
 			Read-only MCP resource metadata for [code]Video Recordings Cache[/code]. Description: Returns an index of all sequential video snapshot frames captured by the runtime recording hook.
 		</member>
 		<member name="blazium/justamcp/server_enabled" type="bool" setter="" getter="" default="false">
-			If [code]true[/code], starts the JustAMCP Model Context Protocol (MCP) HTTP server when the editor loads. Also enabled by the [code]--enable-mcp[/code] command-line flag.
+			If [code]true[/code], starts the editor JustAMCP MCP HTTP server when the editor loads. Also enabled by [code]--enable-mcp[/code]. Autowork [code]--aw-*[/code], [code]--test[/code], and [code]--export*[/code] skip MCP unless [code]--enable-mcp[/code] or [code]--enable-mcp-game-control[/code] is also on the command line. The server is not constructed when this is [code]false[/code].
 		</member>
 		<member name="blazium/justamcp/server_port" type="int" setter="" getter="" default="6506">
-			TCP port for the JustAMCP MCP HTTP endpoint ([code]POST /mcp[/code]). Override at launch with [code]--mcp-port[/code].
+			TCP port for the editor JustAMCP MCP HTTP endpoint ([code]POST /mcp[/code]). Override at launch with [code]--mcp-port[/code]. The game host uses [member blazium/justamcp/export_port] or this value plus one, never this port.
 		</member>
 		<member name="blazium/justamcp/session_allow_client_delete" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], MCP clients may terminate a Streamable HTTP session with [code]DELETE /mcp[/code] and the [code]MCP-Session-Id[/code] header.

@@ -47,7 +47,7 @@ private:
 	Vector<Ref<StreamPeerTCP>> clients;
 	HashMap<Ref<StreamPeerTCP>, String> client_buffers;
 	Mutex clients_mutex;
-	int port = 6506;
+	int port = 6507;
 	bool enabled = false;
 	Thread *server_thread = nullptr;
 	std::atomic<bool> quit_thread{ false };
@@ -61,6 +61,9 @@ private:
 	Vector<uint64_t> _screenshot_timestamps;
 
 	class JustAMCPToolExecutor *executor = nullptr;
+	class JustAMCPServer *http_host = nullptr;
+	Vector<Object *> project_mcp_instances;
+	bool project_scripts_loaded = false;
 
 	Vector<Dictionary> _error_log;
 	Mutex _error_log_mutex;
@@ -70,6 +73,7 @@ private:
 	static const char *_BLOCKED_METHODS[];
 	static const char *_EVAL_BLOCKED_PATTERNS[];
 
+	static void _debug_print(const String &p_message);
 	void _start_server();
 	void _send_welcome(Ref<StreamPeerTCP> p_client);
 	void _handle_message(Ref<StreamPeerTCP> p_client, const String &p_data);
@@ -164,6 +168,16 @@ public:
 
 	void register_custom_command(const String &p_name, const Callable &p_callable);
 	void unregister_custom_command(const String &p_name);
+
+	void register_tool(const String &p_name, const String &p_description, const Dictionary &p_input_schema, const Callable &p_callable);
+	void unregister_tool(const String &p_name);
+	void register_prompt(const String &p_name, const String &p_description, const Callable &p_callable);
+	void unregister_prompt(const String &p_name);
+	Array list_tools() const;
+	bool is_listening() const;
+
+	static bool is_valid_project_mcp_dir(const String &p_dir);
+	void load_project_mcp_scripts();
 
 	JustAMCPRuntime();
 	~JustAMCPRuntime();

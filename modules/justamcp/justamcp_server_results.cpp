@@ -36,8 +36,10 @@
 #include "justamcp_tool_dispatch.h"
 #include "justamcp_tool_queue_state.h"
 #include "tools/justamcp_json_rpc_helpers.h"
+#ifdef TOOLS_ENABLED
 #include "tools/justamcp_task_manager.h"
 #include "tools/justamcp_tool_executor.h"
+#endif
 
 #include "core/config/project_settings.h"
 #include "core/io/json.h"

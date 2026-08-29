@@ -42,6 +42,7 @@
 #include "core/object/script_language.h"
 #include "core/os/os.h"
 #include "core/os/time.h"
+#include "justamcp_project_registry.h"
 #include "justamcp_read_limits.h"
 #include "main/performance.h"
 #include "scene/gui/base_button.h"
@@ -50,11 +51,11 @@
 #include "scene/main/viewport.h"
 #include "scene/main/window.h"
 #include "servers/audio_server.h"
-#include "tools/justamcp_tool_executor.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_interface.h"
 #include "editor/editor_settings.h"
+#include "tools/justamcp_tool_executor.h"
 #endif
 
 Dictionary JustAMCPRuntime::execute_command(const String &p_command, const Dictionary &p_params) {
@@ -317,13 +318,6 @@ void JustAMCPRuntime::unregister_custom_command(const String &p_name) {
 	_custom_commands.erase(p_name);
 }
 Dictionary JustAMCPRuntime::_cmd_tool_call(const Dictionary &p_params) {
-	if (!executor) {
-		Dictionary ret;
-		ret["type"] = "error";
-		ret["message"] = "Tool executor not initialized";
-		return ret;
-	}
-
 	String tool_name = p_params.get("name", "");
 	Dictionary tool_args = p_params.get("args", Dictionary());
 
@@ -334,13 +328,31 @@ Dictionary JustAMCPRuntime::_cmd_tool_call(const Dictionary &p_params) {
 		return ret;
 	}
 
-	return executor->execute_tool(tool_name, tool_args);
+	if (JustAMCPProjectRegistry::has_tool(tool_name)) {
+		return JustAMCPProjectRegistry::call_tool(tool_name, tool_args);
+	}
+
+#ifdef TOOLS_ENABLED
+	if (executor) {
+		return executor->execute_tool(tool_name, tool_args);
+	}
+#endif
+	Dictionary ret;
+	ret["type"] = "error";
+	ret["message"] = "Unknown project tool: " + tool_name;
+	return ret;
 }
 
 Dictionary JustAMCPRuntime::_cmd_list_tools(const Dictionary &p_params) {
 	Dictionary ret;
 	ret["type"] = "tool_list";
-	ret["tools"] = JustAMCPToolExecutor::get_tool_schemas(false, true);
+#ifdef TOOLS_ENABLED
+	if (executor) {
+		ret["tools"] = JustAMCPToolExecutor::get_tool_schemas(false, true);
+		return ret;
+	}
+#endif
+	ret["tools"] = JustAMCPProjectRegistry::list_tool_schemas();
 	return ret;
 }
 Dictionary JustAMCPRuntime::_cmd_get_log_tail(const Dictionary &p_params) {

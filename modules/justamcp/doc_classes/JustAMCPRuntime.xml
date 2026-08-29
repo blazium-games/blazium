@@ -4,20 +4,19 @@
 		Engine singleton that hosts the JustAMCP runtime server.
 	</brief_description>
 	<description>
-		[JustAMCPRuntime] runs the local MCP endpoint and routes incoming commands to built-in tools, resources, prompts, or custom command callables. It is independent of the active [SceneTree], so it can keep serving editor automation while scenes are opened, closed, or changed.
+		[JustAMCPRuntime] hosts the exported or play-mode MCP endpoint. The HTTP host exposes only project-owned tools and prompts registered with [method register_tool] and [method register_prompt]. The TCP bridge still accepts [method register_custom_command]. It is independent of the active [SceneTree], so it can keep serving while scenes are opened, closed, or changed.
+		The game HTTP MCP host listens on [member ProjectSettings.blazium/justamcp/export_port] when set, otherwise the editor port plus one (6506 → 6507). Autowork [code]--aw-*[/code] does not start MCP unless [code]--enable-mcp[/code] or [code]--enable-mcp-game-control[/code] is also passed. Project-owned Cursor tools register through [method register_tool]; TCP [method register_custom_command] stays for the game-control bridge.
 		[codeblock]
-		JustAMCPRuntime.port = 6506
+		JustAMCPRuntime.port = 6507
 		JustAMCPRuntime.enabled = true
+
+		JustAMCPRuntime.register_tool("echo", "Echo text", {"type": "object", "properties": {"text": {"type": "string"}}}, func(args):
+		    return args.get("text", "")
+		)
 
 		JustAMCPRuntime.register_custom_command("double", func(value):
 		    return value * 2
 		)
-
-		var result = JustAMCPRuntime.execute_command("run_custom_command", {
-		    "name": "double",
-		    "args": [21],
-		})
-		print(result["result"])
 		[/codeblock]
 	</description>
 	<tutorials>
@@ -29,6 +28,24 @@
 			<param index="1" name="params" type="Dictionary" />
 			<description>
 				Executes a runtime command with [param params] and returns the command result dictionary. Commands include built-in runtime operations, tool dispatch, resources, prompts, and [code]run_custom_command[/code].
+			</description>
+		</method>
+		<method name="is_listening" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when the HTTP MCP host or TCP game-control bridge is accepting connections.
+			</description>
+		</method>
+		<method name="list_tools" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns schemas for project-owned tools registered with [method register_tool].
+			</description>
+		</method>
+		<method name="load_project_mcp_scripts">
+			<return type="void" />
+			<description>
+				Loads [code]register.gd[/code] and [code]register.luau[/code] from [member ProjectSettings.blazium/justamcp/project_mcp_dir] (default [code]res://mcp[/code]) so those scripts can call [method register_tool] and [method register_prompt].
 			</description>
 		</method>
 		<method name="poll">
@@ -45,6 +62,25 @@
 				Registers [param callable] under [param name] so MCP clients can invoke it with [code]execute_command("run_custom_command", {"name": name, "args": [...]})[/code]. Registering the same name replaces the previous callable.
 			</description>
 		</method>
+		<method name="register_prompt">
+			<return type="void" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="description" type="String" />
+			<param index="2" name="callable" type="Callable" />
+			<description>
+				Registers a project-owned MCP prompt. [param callable] receives the prompt argument dictionary and should return messages or a string. Same ClassDB API for GDScript and Luau.
+			</description>
+		</method>
+		<method name="register_tool">
+			<return type="void" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="description" type="String" />
+			<param index="2" name="input_schema" type="Dictionary" />
+			<param index="3" name="callable" type="Callable" />
+			<description>
+				Registers a project-owned Streamable HTTP MCP tool that appears in [code]tools/list[/code] and is invoked by [code]tools/call[/code]. [param input_schema] is a JSON Schema object. Same ClassDB API for GDScript and Luau.
+			</description>
+		</method>
 		<method name="unregister_custom_command">
 			<return type="void" />
 			<param index="0" name="name" type="String" />
@@ -52,13 +88,27 @@
 				Removes the custom command registered as [param name]. Calls to [code]run_custom_command[/code] with that name will return an error after removal.
 			</description>
 		</method>
+		<method name="unregister_prompt">
+			<return type="void" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Removes the project-owned MCP prompt registered as [param name].
+			</description>
+		</method>
+		<method name="unregister_tool">
+			<return type="void" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Removes the project-owned MCP tool registered as [param name].
+			</description>
+		</method>
 	</methods>
 	<members>
 		<member name="enabled" type="bool" setter="set_enabled" getter="is_enabled" default="false">
 			When [code]true[/code], the runtime server is active and can accept MCP traffic. Setting it to [code]false[/code] stops serving runtime requests.
 		</member>
-		<member name="port" type="int" setter="set_port" getter="get_port" default="6506">
-			TCP port used by the JustAMCP runtime server. Defaults to the same [code]6506[/code] as the editor HTTP server. Override at launch with [code]--mcp-port[/code], or change this before enabling the runtime.
+		<member name="port" type="int" setter="set_port" getter="get_port" default="6507">
+			Game MCP port. Defaults to the editor HTTP port plus one (6506 → 6507). Override with [code]--mcp-game-port[/code] or [member ProjectSettings.blazium/justamcp/export_port]. Never bind the editor port. [code]remote_control[/code] also defaults to 6507; if bind fails the host retries once on port+1.
 		</member>
 	</members>
 	<signals>

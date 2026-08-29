@@ -30,6 +30,7 @@
 #include "justamcp_settings_resolver.h"
 
 #include "../justamcp_cli_args.h"
+#include "core/config/engine.h"
 #include "core/config/project_settings.h"
 
 #ifdef TOOLS_ENABLED
@@ -146,10 +147,30 @@ void JustAMCPSettingsResolver::set_array(const String &p_path, const Array &p_va
 
 int JustAMCPSettingsResolver::resolve_server_port() {
 	const int cli_port = JustAMCPCliArgs::mcp_port();
-	if (cli_port > 0) {
+	if (JustAMCPCliArgs::is_valid_port(cli_port)) {
 		return cli_port;
 	}
-	return resolve_int("blazium/justamcp/server_port", 6506);
+	const int port = resolve_int("blazium/justamcp/server_port", 6506);
+	if (JustAMCPCliArgs::is_valid_port(port)) {
+		return port;
+	}
+	return 6506;
+}
+
+int JustAMCPSettingsResolver::resolve_runtime_port() {
+	const int cli_port = JustAMCPCliArgs::mcp_game_port();
+	if (JustAMCPCliArgs::is_valid_port(cli_port)) {
+		return cli_port;
+	}
+	const int export_port = resolve_int("blazium/justamcp/export_port", 0);
+	if (JustAMCPCliArgs::is_valid_port(export_port)) {
+		return export_port;
+	}
+	const int editor_port = resolve_server_port();
+	if (!JustAMCPCliArgs::is_valid_port(editor_port) || editor_port >= 65535) {
+		return 6507;
+	}
+	return editor_port + 1;
 }
 
 bool JustAMCPSettingsResolver::resolve_server_enabled() {
@@ -157,6 +178,38 @@ bool JustAMCPSettingsResolver::resolve_server_enabled() {
 		return true;
 	}
 	return resolve_bool("blazium/justamcp/server_enabled", false);
+}
+
+bool JustAMCPSettingsResolver::resolve_runtime_enabled() {
+	if (JustAMCPCliArgs::disable_game_mcp() || resolve_bool("blazium/justamcp/disable_game_mcp", false)) {
+		return false;
+	}
+	if (JustAMCPCliArgs::enable_mcp_game_control()) {
+		return true;
+	}
+#ifdef TOOLS_ENABLED
+	if (Engine::get_singleton() && Engine::get_singleton()->is_editor_hint()) {
+		return resolve_bool("blazium/justamcp/game_control_enabled", false);
+	}
+#endif
+	if (JustAMCPCliArgs::enable_mcp()) {
+		return true;
+	}
+	return resolve_bool("blazium/justamcp/game_control_enabled", false);
+}
+
+bool JustAMCPSettingsResolver::should_instantiate_editor_server() {
+	return JustAMCPCliArgs::should_instantiate_editor_server_for(JustAMCPCliArgs::skip_mcp_server(), resolve_server_enabled());
+}
+
+bool JustAMCPSettingsResolver::should_instantiate_runtime() {
+	return JustAMCPCliArgs::should_instantiate_runtime_for(JustAMCPCliArgs::skip_mcp_server(), resolve_runtime_enabled());
+}
+
+bool JustAMCPSettingsResolver::runtime_port_conflicts_with_editor() {
+	const int editor_port = resolve_server_port();
+	const int game_port = resolve_runtime_port();
+	return editor_port > 0 && game_port > 0 && editor_port == game_port;
 }
 
 #ifdef TOOLS_ENABLED

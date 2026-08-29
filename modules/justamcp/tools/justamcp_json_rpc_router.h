@@ -29,8 +29,6 @@
 
 #pragma once
 
-#ifdef TOOLS_ENABLED
-
 #include "core/variant/dictionary.h"
 #include "core/variant/variant.h"
 
@@ -45,6 +43,8 @@ public:
 	static Dictionary finalize_list_result(const Dictionary &p_result, const Variant &p_req_id);
 	static Dictionary finalize_action_result(const Dictionary &p_result, const Variant &p_req_id);
 	static Dictionary make_invalid_params(const Variant &p_req_id, const String &p_message);
+	static Dictionary route_runtime_host_initialize(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id);
+#ifdef TOOLS_ENABLED
 	static Dictionary route(const String &p_method, const Dictionary &p_payload, const Variant &p_req_id_var, JustAMCPResourceExecutor *p_resources, JustAMCPTaskManager *p_tasks);
 	static Dictionary route_tools_list(const String &p_cursor, const Variant &p_req_id_var);
 	static Dictionary route_prompts_list(const String &p_cursor, const Variant &p_req_id_var, JustAMCPPromptExecutor *p_prompts);
@@ -56,6 +56,5 @@ public:
 	static Dictionary route_tasks_cancel(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);
 	static Dictionary route_tasks_update(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);
 	static Dictionary route_completion_complete(JustAMCPServer *p_server, const Dictionary &p_payload, const Variant &p_req_id_var);
-};
-
 #endif
+};

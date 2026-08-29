@@ -37,7 +37,23 @@ class JustAMCPToolExecutor;
 
 class JustAMCPToolDispatch {
 public:
+#ifdef TOOLS_ENABLED
 	static void execute_and_send(JustAMCPServer *p_server, JustAMCPToolExecutor *p_executor, const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args);
-
 	static bool try_schedule_worker_execute(JustAMCPServer *p_server, const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args);
+#else
+	static void execute_and_send(JustAMCPServer *p_server, JustAMCPToolExecutor *p_executor, const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args) {
+		(void)p_server;
+		(void)p_executor;
+		(void)p_request_id;
+		(void)p_tool_name;
+		(void)p_args;
+	}
+	static bool try_schedule_worker_execute(JustAMCPServer *p_server, const Variant &p_request_id, const String &p_tool_name, const Dictionary &p_args) {
+		(void)p_server;
+		(void)p_request_id;
+		(void)p_tool_name;
+		(void)p_args;
+		return false;
+	}
+#endif
 };

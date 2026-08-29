@@ -42,7 +42,12 @@ public:
 	static void set_array(const String &p_path, const Array &p_value);
 
 	static int resolve_server_port();
+	static int resolve_runtime_port();
 	static bool resolve_server_enabled();
+	static bool resolve_runtime_enabled();
+	static bool should_instantiate_editor_server();
+	static bool should_instantiate_runtime();
+	static bool runtime_port_conflicts_with_editor();
 
 #ifdef TOOLS_ENABLED
 	static void set_category_default(const String &p_category, bool p_is_core);

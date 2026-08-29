@@ -136,6 +136,22 @@ String MCPSessionManager::first_protocol_version_token(const String &p_header) {
 	return String();
 }
 
+bool MCPSessionManager::protocol_header_allows_legacy_sse(const String &p_header) {
+	const Vector<String> parts = p_header.split(",", false);
+	bool saw_version = false;
+	for (int i = 0; i < parts.size(); i++) {
+		const String version = parts[i].strip_edges();
+		if (version.is_empty()) {
+			continue;
+		}
+		saw_version = true;
+		if (is_legacy_protocol_version(version)) {
+			return true;
+		}
+	}
+	return !saw_version;
+}
+
 Dictionary MCPSessionManager::header_mismatch_error(const Variant &p_id, const String &p_message) {
 	Dictionary err;
 	err["jsonrpc"] = "2.0";

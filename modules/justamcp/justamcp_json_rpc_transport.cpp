@@ -35,15 +35,19 @@
 
 #include "justamcp_log_levels.h"
 #include "justamcp_mcp_spec.h"
+#include "justamcp_pagination.h"
+#include "justamcp_project_registry.h"
 #include "justamcp_server.h"
 #include "justamcp_session_manager.h"
 #include "tools/justamcp_json_rpc_helpers.h"
 #include "tools/justamcp_json_rpc_router.h"
+#include "tools/justamcp_settings_resolver.h"
+#ifdef TOOLS_ENABLED
 #include "tools/justamcp_prompt_executor.h"
 #include "tools/justamcp_resource_executor.h"
-#include "tools/justamcp_settings_resolver.h"
 #include "tools/justamcp_task_manager.h"
 #include "tools/justamcp_tool_schema_cache.h"
+#endif
 
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
@@ -342,13 +346,18 @@ Dictionary JustAMCPJsonRpcTransport::_handle_json_rpc_payload(JustAMCPServer *p_
 
 	if (method == "initialize") {
 #ifdef TOOLS_ENABLED
-		Dictionary routed = JustAMCPJsonRpcRouter::route_initialize(p_server, payload, req_id_var);
-		if (routed.get("handled", false)) {
-			routed.erase("handled");
-			return routed;
+		if (!p_server || !p_server->is_runtime_host()) {
+			Dictionary routed = JustAMCPJsonRpcRouter::route_initialize(p_server, payload, req_id_var);
+			if (routed.get("handled", false)) {
+				routed.erase("handled");
+				return routed;
+			}
+			return invalid_params("initialize requires 'params' object.");
 		}
 #endif
-		return invalid_params("initialize requires 'params' object.");
+		Dictionary routed = JustAMCPJsonRpcRouter::route_runtime_host_initialize(p_server, payload, req_id_var);
+		routed.erase("handled");
+		return routed;
 	}
 
 	if (method == "ping") {
@@ -368,43 +377,56 @@ Dictionary JustAMCPJsonRpcTransport::_handle_json_rpc_payload(JustAMCPServer *p_
 	if (method == "tools/list") {
 		const String cursor = JustAMCPJsonRpcRouter::extract_list_cursor(payload);
 #ifdef TOOLS_ENABLED
-		Dictionary routed = JustAMCPJsonRpcRouter::route_tools_list(cursor, req_id_var);
-		routed.erase("handled");
-		return routed;
-#else
-		Dictionary empty;
-		empty["ok"] = true;
-		empty["tools"] = Array();
-		Dictionary routed = JustAMCPJsonRpcRouter::finalize_list_result(empty, req_id_var);
-		routed.erase("handled");
-		return routed;
+		if (!p_server || !p_server->is_runtime_host()) {
+			Dictionary routed = JustAMCPJsonRpcRouter::route_tools_list(cursor, req_id_var);
+			routed.erase("handled");
+			return routed;
+		}
 #endif
+		Dictionary page = justamcp_pagination_slice_array(JustAMCPProjectRegistry::list_tool_schemas(), cursor, "tools");
+		Dictionary routed = JustAMCPJsonRpcRouter::finalize_list_result(page, req_id_var);
+		routed.erase("handled");
+		return routed;
 	}
 
 	if (method == "prompts/list") {
 		const String cursor = JustAMCPJsonRpcRouter::extract_list_cursor(payload);
 #ifdef TOOLS_ENABLED
-		Dictionary routed = JustAMCPJsonRpcRouter::route_prompts_list(cursor, req_id_var, p_server->prompt_executor);
-		routed.erase("handled");
-		return routed;
-#else
-		Dictionary empty;
-		empty["ok"] = true;
-		empty["prompts"] = Array();
-		Dictionary routed = JustAMCPJsonRpcRouter::finalize_list_result(empty, req_id_var);
-		routed.erase("handled");
-		return routed;
+		if (!p_server || !p_server->is_runtime_host()) {
+			Dictionary routed = JustAMCPJsonRpcRouter::route_prompts_list(cursor, req_id_var, p_server->prompt_executor);
+			routed.erase("handled");
+			return routed;
+		}
 #endif
+		Dictionary page = justamcp_pagination_slice_array(JustAMCPProjectRegistry::list_prompt_schemas(), cursor, "prompts");
+		Dictionary routed = JustAMCPJsonRpcRouter::finalize_list_result(page, req_id_var);
+		routed.erase("handled");
+		return routed;
 	}
 
 	if (method == "prompts/get") {
 #ifdef TOOLS_ENABLED
-		Dictionary routed = JustAMCPJsonRpcRouter::route_prompts_get(payload, req_id_var, p_server->prompt_executor);
+		if (!p_server || !p_server->is_runtime_host()) {
+			Dictionary routed = JustAMCPJsonRpcRouter::route_prompts_get(payload, req_id_var, p_server->prompt_executor);
+			routed.erase("handled");
+			return routed;
+		}
+#endif
+		if (!payload.has("params") || payload["params"].get_type() != Variant::DICTIONARY) {
+			return invalid_params("prompts/get requires 'params' object.");
+		}
+		const Dictionary prompt_params = payload["params"];
+		if (!prompt_params.has("name") || prompt_params["name"].get_type() != Variant::STRING) {
+			return invalid_params("prompts/get requires 'name' string.");
+		}
+		const String prompt_name = prompt_params["name"];
+		const Dictionary prompt_args = prompt_params.has("arguments") && prompt_params["arguments"].get_type() == Variant::DICTIONARY ? Dictionary(prompt_params["arguments"]) : Dictionary();
+		if (!JustAMCPProjectRegistry::has_prompt(prompt_name)) {
+			return invalid_params("Unknown project prompt: " + prompt_name);
+		}
+		Dictionary routed = JustAMCPJsonRpcRouter::finalize_action_result(JustAMCPProjectRegistry::call_prompt(prompt_name, prompt_args), req_id_var);
 		routed.erase("handled");
 		return routed;
-#else
-		return invalid_params("prompts/get is unavailable.");
-#endif
 	}
 
 	if (method == "notifications/cancelled") {
@@ -521,7 +543,19 @@ Dictionary JustAMCPJsonRpcTransport::_handle_json_rpc_payload(JustAMCPServer *p_
 		args = params.has("arguments") && params["arguments"].get_type() == Variant::DICTIONARY ? Dictionary(params["arguments"]) : Dictionary();
 #endif
 
-#ifdef TOOLS_ENABLED
+		if (JustAMCPProjectRegistry::has_tool(tool_name)) {
+			Dictionary mcp = JustAMCPProjectRegistry::call_tool_mcp(tool_name, args);
+			mcp["id"] = req_id_var;
+			return mcp;
+		}
+
+		if (p_server && p_server->is_runtime_host()) {
+			return invalid_params("Unknown project tool: " + tool_name);
+		}
+
+#ifndef TOOLS_ENABLED
+		return invalid_params("Unknown project tool: " + tool_name);
+#else
 		const String task_support = JustAMCPJsonRpcHelpers::get_tool_task_support(tool_name);
 		const bool has_task_param = params.has("task") && params["task"].get_type() == Variant::DICTIONARY;
 		if (task_support == "forbidden" && has_task_param) {

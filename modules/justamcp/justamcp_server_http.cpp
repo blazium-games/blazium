@@ -46,6 +46,7 @@
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 
+#ifdef TOOLS_ENABLED
 static bool _justamcp_secure_string_equal(const String &p_a, const String &p_b, bool &r_crypto_available) {
 	Ref<Crypto> crypto = Ref<Crypto>(Crypto::create());
 	if (crypto.is_null()) {
@@ -55,6 +56,7 @@ static bool _justamcp_secure_string_equal(const String &p_a, const String &p_b, 
 	r_crypto_available = true;
 	return crypto->constant_time_compare(p_a.to_utf8_buffer(), p_b.to_utf8_buffer());
 }
+#endif
 
 static String _justamcp_redact_header_value(const String &p_key, const String &p_value) {
 	const String key = p_key.to_lower();

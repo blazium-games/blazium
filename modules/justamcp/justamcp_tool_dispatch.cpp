@@ -29,6 +29,8 @@
 
 #include "justamcp_tool_dispatch.h"
 
+#ifdef TOOLS_ENABLED
+
 #include "justamcp_mcp_spec.h"
 #include "justamcp_server.h"
 #include "justamcp_tool_context.h"
@@ -178,3 +180,5 @@ bool JustAMCPToolDispatch::try_schedule_worker_execute(JustAMCPServer *p_server,
 	executor->track_worker_task(task_id);
 	return true;
 }
+
+#endif
