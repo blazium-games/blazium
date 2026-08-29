@@ -496,6 +496,80 @@ static uint8_t cook_group_bits(Node *p_node, SceneGather &r_g) {
 	return bits;
 }
 
+static uint8_t ensure_group_bit(SceneGather &r_g, const String &p_name) {
+	if (p_name.is_empty()) {
+		return 0;
+	}
+	Vector<String> &names = group_table(r_g);
+	int bit = -1;
+	for (int k = 0; k < names.size(); k++) {
+		if (names[k] == p_name) {
+			bit = k;
+			break;
+		}
+	}
+	if (bit < 0) {
+		if (names.size() >= 8) {
+			r_g.groups_dropped++;
+			return 0;
+		}
+		bit = names.size();
+		names.push_back(p_name);
+	}
+	return uint8_t(1u << bit);
+}
+
+static String kit_point_group(Node *p_node) {
+	if (!p_node) {
+		return String();
+	}
+	const String nm = String(p_node->get_name()).to_lower();
+	if (nm == "spawn" || p_node->is_in_group("spawn") || p_node->has_meta("ps1_spawn")) {
+		return "spawn";
+	}
+	if (nm == "checkpoint" || p_node->is_in_group("checkpoint") || p_node->has_meta("ps1_checkpoint")) {
+		return "checkpoint";
+	}
+	if (nm == "portal" || p_node->is_in_group("portal") || p_node->has_meta("ps1_dest") || p_node->has_meta("ps1_portal")) {
+		return "portal";
+	}
+	return String();
+}
+
+static void cook_portal_dest(Node *p_node, SceneGather &r_g) {
+	if (!p_node || r_g.text_lines.size() >= kMaxTextLines) {
+		return;
+	}
+	String dest;
+	if (p_node->has_meta("ps1_dest") && p_node->get_meta("ps1_dest").get_type() == Variant::STRING) {
+		dest = p_node->get_meta("ps1_dest");
+	} else if (p_node->has_meta("ps1_portal") && p_node->get_meta("ps1_portal").get_type() == Variant::STRING) {
+		dest = p_node->get_meta("ps1_portal");
+	}
+	if (dest.is_empty()) {
+		return;
+	}
+	String unload;
+	if (p_node->has_meta("ps1_unload") && p_node->get_meta("ps1_unload").get_type() == Variant::STRING) {
+		unload = p_node->get_meta("ps1_unload");
+	}
+	String fade;
+	if (p_node->has_meta("ps1_fade")) {
+		fade = String::num(double(p_node->get_meta("ps1_fade")), 2);
+	}
+	String text = dest;
+	if (!unload.is_empty()) {
+		text = unload + ">" + dest;
+	}
+	if (!fade.is_empty()) {
+		text += "|" + fade;
+	}
+	SceneGather::TextLine tl;
+	tl.name = p_node->get_name();
+	tl.text = text;
+	r_g.text_lines.push_back(tl);
+}
+
 static Ref<Image> image_from_texture(const Ref<Texture2D> &p_tex) {
 	if (p_tex.is_null()) {
 		return Ref<Image>();
@@ -1377,6 +1451,15 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 			}
 		}
 		cn.group = cook_group_bits(p_node, r_g);
+		{
+			const String kit = kit_point_group(p_node);
+			if (!kit.is_empty()) {
+				cn.group |= ensure_group_bit(r_g, kit);
+				if (kit == "portal") {
+					cook_portal_dest(p_node, r_g);
+				}
+			}
+		}
 		if (ParallaxLayer *pl = Object::cast_to<ParallaxLayer>(p_node)) {
 			const Vector2 sc = pl->get_motion_scale();
 			cn.scroll = uint8_t(CLAMP(int(sc.x * 128.0f), 1, 255));
@@ -1787,7 +1870,7 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 			r_g.canvas_oy = int16_t(CLAMP(int(o.y), -32768, 32767));
 		}
 	}
-	if ((Object::cast_to<Marker2D>(p_node) || Object::cast_to<Marker3D>(p_node) || p_node->is_in_group("waypoint") || p_node->is_in_group("waypoints")) && my >= 0) {
+	if ((Object::cast_to<Marker2D>(p_node) || Object::cast_to<Marker3D>(p_node) || p_node->is_in_group("waypoint") || p_node->is_in_group("waypoints")) && my >= 0 && kit_point_group(p_node).is_empty()) {
 		if (r_g.ways.size() < 32) {
 			SceneGather::WayRow w;
 			w.node = uint8_t(my);
@@ -2747,7 +2830,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	r_out.warnings.push_back("get_node walks the cooked tree; FileAccess user:// is the 24 KiB payload; not CARD BIOS. Memcard is Sony MC/SC wrap of user:// via pcdrv SAVE.MCD.");
 	r_out.warnings.push_back("can_load_* is a real budget/slice check; missing slice → false. is_*_loaded is the resident flag.");
 	r_out.warnings.push_back("2D/3D Godot scenes cook to AABB/mesh/sprite/HUD/cam/light while they fit 2 MiB; CharacterBody velocity + argless move_and_slide; AABB slide, not Jolt / Viewport / NavigationServer / skin.");
-	r_out.warnings.push_back("ABI 20: get_forward/right/up, translate_local, move_and_fly (6DoF AABB, not RigidBody); per-node is_on_floor; apply_gravity; set_coyote/set_jump_buffer/can_jump/consume_jump; set_one_way_pass; change_scene_fade; set_invuln/set_air_jumps/set_wall_jump/set_checkpoint/respawn/set_frame/set_flip; set_hitstop/knockback/say/swap_pack/stop_music/set_music_fade/set_checkpoint_scene; shot_hit_any/hurt/portal/nav_follow/move_planar/save_slot; set_spawn/set_global_position/unload_extras; set_process_when_paused/tween_is_done/overlaps_group/unload_pack_of/quit; node.x/y/z same units as set_position; get_tree().paused; to_global/to_local; TileMap set_cell/erase_cell; Engine.time_scale; load_meshes/unload_meshes/load_textures/unload_textures; load_tiles/unload_tiles/load_hud/unload_hud; get_flip_v/set_flip_v; honest TXT/SFX/HIT reclaim; unload_scene cascades ANIM/SPRITE/HIT/CAM/TXT/SFX/MUSIC; z_index/collision_layer; Color modulate (no ABI bump).");
+	r_out.warnings.push_back("ABI 20: get_forward/right/up, translate_local, move_and_fly (6DoF AABB, not RigidBody); per-node is_on_floor; apply_gravity; set_coyote/set_jump_buffer/can_jump/consume_jump; set_one_way_pass; change_scene_fade; set_invuln/set_air_jumps/set_wall_jump/set_checkpoint/respawn/set_frame/set_flip; set_hitstop/knockback/say/swap_pack/stop_music/set_music_fade/set_checkpoint_scene; shot_hit_any/hurt/portal/nav_follow/move_planar/save_slot; set_spawn/set_global_position/unload_extras; set_process_when_paused/tween_is_done/overlaps_group/unload_pack_of/quit; node.x/y/z same units as set_position; get_tree().paused; to_global/to_local; TileMap set_cell/erase_cell; Engine.time_scale; load_meshes/unload_meshes/load_textures/unload_textures; load_tiles/unload_tiles/load_hud/unload_hud; get_flip_v/set_flip_v; honest TXT/SFX/HIT reclaim; unload_scene cascades ANIM/SPRITE/HIT/CAM/TXT/SFX/MUSIC; z_index/collision_layer; Color modulate; scene Spawn/Checkpoint/Portal nodes (no ABI bump).");
 	r_out.warnings.push_back("raycast_group + get_ray_point/node; 32 shots are not nodes; orbit clip; y-sort; wrap_position; set_cull_dist is draw cull.");
 	r_out.warnings.push_back("follow_node; 32 marker waypoints; 8 paths x 16 points; PathFollow tick; not Curve3D.");
 	r_out.warnings.push_back("32-vert NAV graph; nav_next one hop; not NavigationServer / get_nav_path.");

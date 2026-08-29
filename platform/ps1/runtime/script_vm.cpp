@@ -256,6 +256,7 @@ static int read_host_file(const char *path, uint8_t *dst, int max);
 static int write_host_file(const char *path, const uint8_t *src, int n);
 static void copy_str(char *dst, int max, const char *src);
 static int pack_id_of(int node);
+static int group_bit_of(const char *name);
 static int aabb_overlap(int a, int b, int mask);
 static int hit_of_node(int node);
 static int mc_restore();
@@ -1764,6 +1765,58 @@ static void node_world(int n, float *px, float *py, float *pz, float *rx, float 
 	}
 }
 
+static int kit_find_player() {
+	if (g_spawn_set && node_ok(g_spawn_nid)) {
+		return g_spawn_nid;
+	}
+	const int pbit = group_bit_of("player");
+	if (pbit >= 0) {
+		const uint8_t mask = uint8_t(1u << pbit);
+		for (int i = 0; i < g_nnode; i++) {
+			if (g_node_used[i] && (g_group[i] & mask) && (g_nodes[i].flags & 1)) {
+				return i;
+			}
+		}
+	}
+	for (int i = 0; i < g_nnode; i++) {
+		if (!g_node_used[i] || int(g_node_pack[i]) != 0) {
+			continue;
+		}
+		const uint8_t t = g_nodes[i].type;
+		if (t == 3 || t == 5 || t == 6 || t == 11) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+static void kit_bind_scene_points(int pack) {
+	if (pack < 0 || pack >= g_npack) {
+		return;
+	}
+	const int sbit = group_bit_of("spawn");
+	if (sbit < 0) {
+		return;
+	}
+	const uint8_t mask = uint8_t(1u << sbit);
+	for (int i = 0; i < g_nnode; i++) {
+		if (!g_node_used[i] || int(g_node_pack[i]) != pack || !(g_group[i] & mask)) {
+			continue;
+		}
+		float px, py, pz, rx, ry, rz;
+		node_world(i, &px, &py, &pz, &rx, &ry, &rz);
+		g_spawn_x = px;
+		g_spawn_y = -py;
+		g_spawn_z = pz;
+		const int pl = kit_find_player();
+		if (node_ok(pl)) {
+			g_spawn_nid = pl;
+			g_spawn_set = 1;
+		}
+		break;
+	}
+}
+
 static int node_is_2d(int n) {
 	if (!node_ok(n)) {
 		return 0;
@@ -2879,6 +2932,7 @@ static int load_pack_resident(int pack) {
 	bump_ram(int(g_packs[pack].ram_bytes));
 	g_packs[pack].charged = g_packs[pack].ram_bytes;
 	g_did_ready = 0;
+	kit_bind_scene_points(pack);
 	return 1;
 }
 
@@ -6594,6 +6648,7 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 		if (name_is(name, "load_scene")) {
 			int ok = load_pack_resident(pack);
 			if (ok) {
+				kit_bind_scene_points(pack);
 				kit_apply_spawn();
 			}
 			*ret = gv_bool(ok);
@@ -8790,6 +8845,7 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			return 1;
 		}
 		activate_pack(pack, host);
+		kit_bind_scene_points(pack);
 		kit_apply_spawn();
 		*ret = gv_int(1);
 		return 1;
@@ -10493,6 +10549,127 @@ static int run_tape(const uint8_t *blob, size_t size, const char *want, float de
 	return ran;
 }
 
+static float kit_parse_fade(const char *s) {
+	if (!s || !s[0]) {
+		return 0.25f;
+	}
+	float v = 0.0f;
+	int dec = 0;
+	float place = 1.0f;
+	int any = 0;
+	for (int i = 0; s[i]; i++) {
+		if (s[i] >= '0' && s[i] <= '9') {
+			any = 1;
+			if (dec) {
+				place *= 0.1f;
+				v += float(s[i] - '0') * place;
+			} else {
+				v = v * 10.0f + float(s[i] - '0');
+			}
+		} else if (s[i] == '.' && !dec) {
+			dec = 1;
+		}
+	}
+	return any ? v : 0.25f;
+}
+
+static void kit_tick_kit_areas(const ScriptVMHost *host) {
+	const int pl = kit_find_player();
+	if (!node_ok(pl)) {
+		return;
+	}
+	const int cbit = group_bit_of("checkpoint");
+	if (cbit >= 0) {
+		const int hit = kit_first_in_group_overlap(pl, cbit, 1);
+		if (hit >= 0) {
+			GVar dummy = gv_nil();
+			GVar args[1];
+			args[0] = gv_obj(pl);
+			apply_call(host, pl, "set_checkpoint", 0, args, 1, &dummy);
+			if (g_active_pack >= 0 && g_active_pack < g_npack && g_packs[g_active_pack].path[0]) {
+				GVar sc{};
+				sc.type = V_STR;
+				copy_str(sc.s, 32, g_packs[g_active_pack].path);
+				apply_call(host, pl, "set_checkpoint_scene", 0, &sc, 1, &dummy);
+			}
+		}
+	}
+	const int pbit = group_bit_of("portal");
+	if (pbit < 0) {
+		return;
+	}
+	const int portal = kit_first_in_group_overlap(pl, pbit, 1);
+	if (portal < 0) {
+		return;
+	}
+	const char *raw = "";
+	for (int i = 0; i < g_ntxt; i++) {
+		if (g_txt[i].name[0] && name_is(g_txt[i].name, g_nodes[portal].name)) {
+			raw = g_txt[i].text;
+			break;
+		}
+	}
+	if (!raw[0]) {
+		return;
+	}
+	const char *gt = nullptr;
+	const char *bar = nullptr;
+	for (const char *c = raw; *c; c++) {
+		if (*c == '>' && !gt) {
+			gt = c;
+		}
+		if (*c == '|' && !bar) {
+			bar = c;
+		}
+	}
+	char unload[64];
+	char dest[64];
+	unload[0] = 0;
+	dest[0] = 0;
+	if (gt) {
+		int n = 0;
+		for (const char *c = raw; c < gt && n < 63; c++) {
+			unload[n++] = *c;
+		}
+		unload[n] = 0;
+		const char *ds = gt + 1;
+		const char *de = bar ? bar : (raw + 64);
+		n = 0;
+		for (const char *c = ds; *c && c < de && n < 63; c++) {
+			dest[n++] = *c;
+		}
+		dest[n] = 0;
+	} else {
+		const char *de = bar ? bar : (raw + 64);
+		int n = 0;
+		for (const char *c = raw; *c && c < de && n < 63; c++) {
+			dest[n++] = *c;
+		}
+		dest[n] = 0;
+	}
+	float fade = 0.25f;
+	if (bar && bar[1]) {
+		fade = kit_parse_fade(bar + 1);
+	}
+	if (!unload[0]) {
+		const int pk = int(g_node_pack[portal]);
+		if (pk > 0 && pk < g_npack) {
+			copy_str(unload, 64, g_packs[pk].path);
+		}
+	}
+	if (!dest[0]) {
+		return;
+	}
+	GVar argv[3];
+	argv[0].type = V_STR;
+	copy_str(argv[0].s, 32, unload);
+	argv[1].type = V_STR;
+	copy_str(argv[1].s, 32, dest);
+	argv[2] = gv_float(fade);
+	GVar dummy = gv_nil();
+	apply_call(host, pl, "portal", 0, argv, 3, &dummy);
+}
+
 static void emit_sig(int src, uint8_t sig, const ScriptVMHost *host, const uint8_t *tape, size_t tape_n) {
 	for (int i = 0; i < PS1_MAX_CONNS; i++) {
 		if (!g_conn[i].used || g_conn[i].sig != sig || g_conn[i].src != src) {
@@ -10528,7 +10705,10 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 		load_pack_slice(0, "NAV");
 		load_pack_slice(0, "PATH");
 		load_pack_slice(0, "WAY");
+		kit_bind_scene_points(0);
+		kit_apply_spawn();
 	}
+	kit_tick_kit_areas(host);
 	script_vm_hud_tick(host);
 	int ran = 0;
 	const uint8_t *tape = nullptr;
