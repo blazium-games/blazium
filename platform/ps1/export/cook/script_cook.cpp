@@ -149,6 +149,7 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "unload_pack_of" || p_name == "quit" ||
 			p_name == "set_frame" || p_name == "set_flip" ||
 			p_name == "get_frame" || p_name == "get_flip_h" || p_name == "set_flip_h" ||
+			p_name == "get_flip_v" || p_name == "set_flip_v" ||
 			p_name == "get_x" || p_name == "get_y" || p_name == "get_z" ||
 			p_name == "set_x" || p_name == "set_y" || p_name == "set_z" ||
 			p_name == "connect" || p_name == "disconnect" ||
@@ -178,6 +179,10 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "load_textures" || p_name == "unload_textures" ||
 			p_name == "can_load_textures" || p_name == "is_textures_loaded" ||
 			p_name == "load_tim" || p_name == "unload_tim" ||
+			p_name == "load_tiles" || p_name == "unload_tiles" ||
+			p_name == "can_load_tiles" || p_name == "is_tiles_loaded" ||
+			p_name == "load_hud" || p_name == "unload_hud" ||
+			p_name == "can_load_hud" || p_name == "is_hud_loaded" ||
 			p_name == "is_action_pressed_on" || p_name == "is_action_just_pressed_on" ||
 			p_name == "is_action_just_released_on" ||
 			p_name == "memcard_present" || p_name == "memcard_ready" || p_name == "memcard_format" ||
@@ -231,6 +236,8 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "load_mesh" || p_name == "unload_mesh" ||
 			p_name == "load_textures" || p_name == "unload_textures" || p_name == "can_load_textures" || p_name == "is_textures_loaded" ||
 			p_name == "load_tim" || p_name == "unload_tim" ||
+			p_name == "load_tiles" || p_name == "unload_tiles" || p_name == "can_load_tiles" || p_name == "is_tiles_loaded" ||
+			p_name == "load_hud" || p_name == "unload_hud" || p_name == "can_load_hud" || p_name == "is_hud_loaded" ||
 			p_name == "add_to_group" || p_name == "remove_from_group" || p_name == "is_in_group" ||
 			p_name == "count_in_group" || p_name == "get_in_group" || p_name == "get_first_in_group" ||
 			p_name == "find_nearest" || p_name == "set_billboard" || p_name == "get_billboard" ||
@@ -270,6 +277,7 @@ static bool member_is_allowlisted(const String &p_name) {
 			p_name == "get_x" || p_name == "get_y" || p_name == "get_z" ||
 			p_name == "set_x" || p_name == "set_y" || p_name == "set_z" ||
 			p_name == "get_frame" || p_name == "set_frame" || p_name == "get_flip_h" || p_name == "set_flip_h" ||
+			p_name == "get_flip_v" || p_name == "set_flip_v" ||
 			p_name == "frame" || p_name == "flip_h" || p_name == "flip_v" || p_name == "modulate" || p_name == "speed_scale" ||
 			p_name == "velocity" || p_name == "billboard" ||
 			p_name == "get_velocity" || p_name == "set_velocity" ||
@@ -938,7 +946,10 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 			"overlaps_group", "overlaps_group_entered",
 			"unload_pack_of", "quit",
 			"get_x", "get_y", "get_z", "set_x", "set_y", "set_z",
-			"get_frame", "get_flip_h", "set_flip_h",
+			"get_frame", "get_flip_h", "set_flip_h", "get_flip_v", "set_flip_v",
+			"set_path_progress", "get_path_progress",
+			"load_tiles", "unload_tiles", "can_load_tiles", "is_tiles_loaded",
+			"load_hud", "unload_hud", "can_load_hud", "is_hud_loaded",
 			"wrap_position", "raycast_group", "set_y_sort", "kill_tweens", "tween_count",
 			"get_forward", "get_right", "get_up", "translate_local", "move_and_fly",
 			"apply_gravity", "add_velocity", "spawn_shot", "shot_hit", "get_ray_node",

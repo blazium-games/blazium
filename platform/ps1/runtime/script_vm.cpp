@@ -807,6 +807,10 @@ void script_vm_set_packs(const ScriptVMPack *packs, int count) {
 		g_ntim_used = int(g_packs[0].tim_count);
 		g_packs[0].mesh_resident = (g_packs[0].tri_count > 0 || g_packs[0].tri_hi > g_packs[0].tri_lo) ? 1 : 0;
 		g_packs[0].tim_resident = g_packs[0].tim_count > 0 ? 1 : 0;
+		g_packs[0].hud_resident = (g_packs[0].hud_count > 0 || g_packs[0].hud_hi > g_packs[0].hud_lo) ? 1 : 0;
+		g_packs[0].tile_resident = (g_packs[0].tile_count > 0 || g_packs[0].tile_hi > g_packs[0].tile_lo) ? 1 : 0;
+		g_packs[0].hud_ram = uint32_t(g_packs[0].hud_count) * uint32_t(sizeof(ScriptVMHud));
+		g_packs[0].tile_ram = uint32_t(g_packs[0].tile_count) * uint32_t(sizeof(ScriptVMTile));
 		g_packs[0].charged = g_packs[0].ram_bytes;
 		g_packs[0].mesh_ram = uint32_t(g_packs[0].tri_count) * 32u;
 		g_packs[0].tim_ram = 0;
@@ -852,6 +856,10 @@ void script_vm_set_anims(const ScriptVMAnimClip *clips, int count) {
 	g_nclip = count > PS1_MAX_CLIPS ? PS1_MAX_CLIPS : count;
 	for (int i = 0; i < g_nclip; i++) {
 		g_clips[i] = clips[i];
+		g_clips[i].pack = 0;
+	}
+	if (g_npack > 0 && g_nclip > 0) {
+		g_packs[0].anim_resident = 1;
 	}
 }
 
@@ -1359,7 +1367,7 @@ static void say_apply(int hid, int nch) {
 
 static int find_child(int parent, const char *name, int nlen) {
 	for (int i = 0; i < g_nnode; i++) {
-		if (g_nodes[i].parent != parent) {
+		if (!g_node_used[i] || g_nodes[i].parent != parent) {
 			continue;
 		}
 		if (name_eq_n(g_nodes[i].name, name, nlen)) {
@@ -2362,6 +2370,145 @@ static int reclaim_pack_tim(int pack) {
 	return 1;
 }
 
+static int reclaim_pack_hud(int pack) {
+	if (pack < 0 || pack >= g_npack || !g_packs[pack].hud_resident) {
+		return 0;
+	}
+	const int lo = int(g_packs[pack].hud_lo);
+	const int hi = int(g_packs[pack].hud_hi);
+	for (int h = lo; h < hi && h < g_nhud; h++) {
+		g_hud_used[h] = 0;
+		g_hud[h].flags = 0;
+	}
+	for (int h = 0; h < g_nhud; h++) {
+		if (!g_hud_used[h]) {
+			continue;
+		}
+		const int nid = int(g_hud[h].node_id);
+		if (pack_owns_node(pack, nid)) {
+			g_hud_used[h] = 0;
+			g_hud[h].flags = 0;
+		}
+	}
+	pack_refund(pack, g_packs[pack].hud_ram);
+	g_packs[pack].hud_ram = 0;
+	g_packs[pack].hud_resident = 0;
+	g_packs[pack].hud_lo = 0;
+	g_packs[pack].hud_hi = 0;
+	return 1;
+}
+
+static int reclaim_pack_tile(int pack) {
+	if (pack < 0 || pack >= g_npack || !g_packs[pack].tile_resident) {
+		return 0;
+	}
+	const int lo = int(g_packs[pack].tile_lo);
+	const int hi = int(g_packs[pack].tile_hi);
+	for (int t = lo; t < hi && t < g_ntile; t++) {
+		g_tile_used[t] = 0;
+	}
+	for (int t = 0; t < g_ntile; t++) {
+		if (!g_tile_used[t]) {
+			continue;
+		}
+		const int nid = int(g_tiles[t].node_id);
+		if (pack_owns_node(pack, nid)) {
+			g_tile_used[t] = 0;
+		}
+	}
+	pack_refund(pack, g_packs[pack].tile_ram);
+	g_packs[pack].tile_ram = 0;
+	g_packs[pack].tile_resident = 0;
+	g_packs[pack].tile_lo = 0;
+	g_packs[pack].tile_hi = 0;
+	return 1;
+}
+
+static void compact_clips_of(int pack) {
+	int w = 0;
+	for (int i = 0; i < g_nclip; i++) {
+		if (g_clips[i].pack == uint8_t(pack)) {
+			if (g_anim_clip == i) {
+				g_anim_clip = -1;
+				g_anim_playing = 0;
+			}
+			continue;
+		}
+		if (w != i) {
+			g_clips[w] = g_clips[i];
+			if (g_anim_clip == i) {
+				g_anim_clip = w;
+			}
+		}
+		w++;
+	}
+	g_nclip = w;
+}
+
+static void compact_sprites_of(int pack) {
+	int map[PS1_MAX_SPRITES];
+	for (int i = 0; i < PS1_MAX_SPRITES; i++) {
+		map[i] = -1;
+	}
+	int w = 0;
+	for (int i = 0; i < g_nspr; i++) {
+		if (g_sprs[i].pack == uint8_t(pack)) {
+			continue;
+		}
+		map[i] = w;
+		if (w != i) {
+			g_sprs[w] = g_sprs[i];
+		}
+		w++;
+	}
+	for (int n = 0; n < g_nnode; n++) {
+		if (!g_node_used[n]) {
+			continue;
+		}
+		const int si = int(g_nodes[n].sprite);
+		if (si < 0 || si >= g_nspr) {
+			continue;
+		}
+		if (map[si] >= 0) {
+			g_nodes[n].sprite = int16_t(map[si]);
+		} else {
+			g_nodes[n].sprite = -1;
+		}
+	}
+	g_nspr = w;
+}
+
+static void compact_cams_of(int pack) {
+	int map[PS1_MAX_CAMS];
+	for (int i = 0; i < PS1_MAX_CAMS; i++) {
+		map[i] = -1;
+	}
+	int w = 0;
+	for (int i = 0; i < g_ncam; i++) {
+		if (g_cams[i].pack == uint8_t(pack)) {
+			continue;
+		}
+		map[i] = w;
+		if (w != i) {
+			g_cams[w] = g_cams[i];
+		}
+		w++;
+	}
+	if (g_cam_cur >= 0 && g_cam_cur < PS1_MAX_CAMS) {
+		g_cam_cur = map[g_cam_cur];
+	}
+	g_ncam = w;
+}
+
+static int pack_local_node(int pack, int local) {
+	const int lo = int(g_packs[pack].node_lo);
+	const int hi = int(g_packs[pack].node_hi);
+	if (local < 0 || lo + local >= hi) {
+		return -1;
+	}
+	return lo + local;
+}
+
 static int load_pack_resident(int pack);
 static int unload_pack_resident(int pack);
 static void reclaim_instance(int node);
@@ -2635,6 +2782,14 @@ static int load_pack_resident(int pack) {
 	g_packs[pack].hud_hi = uint16_t(hgot > 0 ? hbase + hgot : 0);
 	g_packs[pack].tile_lo = uint16_t(tgot > 0 ? tbase : 0);
 	g_packs[pack].tile_hi = uint16_t(tgot > 0 ? tbase + tgot : 0);
+	if (hgot > 0) {
+		g_packs[pack].hud_resident = 1;
+		g_packs[pack].hud_ram = uint32_t(hgot) * uint32_t(sizeof(ScriptVMHud));
+	}
+	if (tgot > 0) {
+		g_packs[pack].tile_resident = 1;
+		g_packs[pack].tile_ram = uint32_t(tgot) * uint32_t(sizeof(ScriptVMTile));
+	}
 	if (tims > 0 && g_host && g_host->upload_tpak) {
 		const int tbk = try_read_pack_blob(pack, "TPAK", g_load_buf, int(sizeof(g_load_buf)));
 		if (tbk > 0) {
@@ -2690,6 +2845,8 @@ static int unload_pack_resident(int pack) {
 	}
 	reclaim_pack_mesh(pack);
 	reclaim_pack_tim(pack);
+	reclaim_pack_hud(pack);
+	reclaim_pack_tile(pack);
 	for (int n = 0; n < g_nnode; n++) {
 		if (!g_node_used[n] || !(g_nodes[n].flags & 4)) {
 			continue;
@@ -3112,6 +3269,90 @@ static int load_pack_slice(int pack, const char *kind) {
 		g_packs[pack].charged += g_packs[pack].tim_ram;
 		return 1;
 	}
+	if (name_is(kind, "HUD")) {
+		if (g_packs[pack].hud_resident) {
+			return 1;
+		}
+		const int n = try_read_pack_blob(pack, "HUD", g_load_buf, int(sizeof(g_load_buf)));
+		if (n <= 0) {
+			return 0;
+		}
+		ScriptVMHud hudn[PS1_MAX_HUD];
+		const int hgot = parse_hud_into(g_load_buf, n, hudn, PS1_MAX_HUD);
+		if (hgot <= 0) {
+			return 0;
+		}
+		const int ram = hgot * int(sizeof(ScriptVMHud));
+		if (!budgets_fit(0, hgot, 0, 0, 0, ram)) {
+			return 0;
+		}
+		const int hbase = find_free_run(g_hud_used, PS1_MAX_HUD, hgot);
+		if (hbase < 0) {
+			return 0;
+		}
+		for (int h = 0; h < hgot; h++) {
+			const int dsth = hbase + h;
+			g_hud[dsth] = hudn[h];
+			const int local = int(hudn[h].node_id);
+			const int nid = pack_local_node(pack, local);
+			if (nid >= 0) {
+				g_hud[dsth].node_id = uint8_t(nid);
+			}
+			g_hud_used[dsth] = 1;
+			if (dsth + 1 > g_nhud) {
+				g_nhud = dsth + 1;
+			}
+		}
+		g_packs[pack].hud_lo = uint16_t(hbase);
+		g_packs[pack].hud_hi = uint16_t(hbase + hgot);
+		g_packs[pack].hud_resident = 1;
+		g_packs[pack].hud_ram = uint32_t(ram);
+		bump_ram(ram);
+		g_packs[pack].charged += g_packs[pack].hud_ram;
+		return 1;
+	}
+	if (name_is(kind, "TILE")) {
+		if (g_packs[pack].tile_resident) {
+			return 1;
+		}
+		const int n = try_read_pack_blob(pack, "TILE", g_load_buf, int(sizeof(g_load_buf)));
+		if (n <= 0) {
+			return 0;
+		}
+		ScriptVMTile tilen[PS1_MAX_TILES];
+		const int tgot = parse_tiles_into(g_load_buf, n, tilen, PS1_MAX_TILES);
+		if (tgot <= 0) {
+			return 0;
+		}
+		const int ram = tgot * int(sizeof(ScriptVMTile));
+		if (!budgets_fit(0, 0, tgot, 0, 0, ram)) {
+			return 0;
+		}
+		const int tbase = find_free_run(g_tile_used, PS1_MAX_TILES, tgot);
+		if (tbase < 0) {
+			return 0;
+		}
+		for (int t = 0; t < tgot; t++) {
+			const int dstt = tbase + t;
+			g_tiles[dstt] = tilen[t];
+			const int local = int(tilen[t].node_id);
+			const int nid = pack_local_node(pack, local);
+			if (nid >= 0) {
+				g_tiles[dstt].node_id = uint8_t(nid);
+			}
+			g_tile_used[dstt] = 1;
+			if (dstt + 1 > g_ntile) {
+				g_ntile = dstt + 1;
+			}
+		}
+		g_packs[pack].tile_lo = uint16_t(tbase);
+		g_packs[pack].tile_hi = uint16_t(tbase + tgot);
+		g_packs[pack].tile_resident = 1;
+		g_packs[pack].tile_ram = uint32_t(ram);
+		bump_ram(ram);
+		g_packs[pack].charged += g_packs[pack].tile_ram;
+		return 1;
+	}
 	if (pack == 0 && name_is(kind, "ANIM") && g_nclip > 0) {
 		g_packs[0].anim_resident = 1;
 		return 1;
@@ -3182,6 +3423,7 @@ static int load_pack_slice(int pack, const char *kind) {
 					clip.loop = 1;
 				}
 			}
+			clip.pack = uint8_t(pack);
 			g_clips[g_nclip++] = clip;
 			added++;
 		}
@@ -3204,10 +3446,12 @@ static int load_pack_slice(int pack, const char *kind) {
 		return 1;
 	}
 	if (name_is(kind, "SPRITE")) {
+		if (g_packs[pack].sprite_resident) {
+			return 1;
+		}
 		if (n >= 4) {
 			const int nc = int(g_load_buf[0] | (g_load_buf[1] << 8));
 			const uint8_t *p = g_load_buf + 4;
-			g_nspr = 0;
 			for (int i = 0; i < nc && g_nspr < PS1_MAX_SPRITES && p + 14 <= g_load_buf + n; i++) {
 				ScriptVMSprite s{};
 				s.x = int16_t(p[0] | (p[1] << 8));
@@ -3300,6 +3544,9 @@ static int load_pack_slice(int pack, const char *kind) {
 		return 0;
 	}
 	if (name_is(kind, "CAM")) {
+		if (g_packs[pack].cam_resident) {
+			return 1;
+		}
 		if (g_load_buf[0] == 'C' && g_load_buf[1] == 'A' && g_load_buf[2] == 'M' && g_load_buf[3] == '0' && ru16(g_load_buf + 4) == PS1_COOK_ABI) {
 			const int nc = int(ru16(g_load_buf + 6));
 			const uint8_t *p = g_load_buf + 8;
@@ -3424,7 +3671,7 @@ static int unload_pack_slice(int pack, const char *kind) {
 		return 0;
 	}
 	if (pack == 0 && !name_is(kind, "TXT") && !name_is(kind, "SFX") && !name_is(kind, "MUSIC") &&
-			!name_is(kind, "MESH") && !name_is(kind, "TPAK")) {
+			!name_is(kind, "MESH") && !name_is(kind, "TPAK") && !name_is(kind, "HUD") && !name_is(kind, "TILE")) {
 		return 0;
 	}
 	if (name_is(kind, "MESH")) {
@@ -3433,11 +3680,19 @@ static int unload_pack_slice(int pack, const char *kind) {
 	if (name_is(kind, "TPAK")) {
 		return reclaim_pack_tim(pack);
 	}
+	if (name_is(kind, "HUD")) {
+		return reclaim_pack_hud(pack);
+	}
+	if (name_is(kind, "TILE")) {
+		return reclaim_pack_tile(pack);
+	}
 	if (name_is(kind, "ANIM")) {
+		compact_clips_of(pack);
 		g_packs[pack].anim_resident = 0;
 		return 1;
 	}
 	if (name_is(kind, "SPRITE")) {
+		compact_sprites_of(pack);
 		g_packs[pack].sprite_resident = 0;
 		return 1;
 	}
@@ -3470,6 +3725,7 @@ static int unload_pack_slice(int pack, const char *kind) {
 		if (g_cam_cur >= 0 && g_cam_cur < g_ncam && g_cams[g_cam_cur].pack == uint8_t(pack)) {
 			return 0;
 		}
+		compact_cams_of(pack);
 		g_packs[pack].cam_resident = 0;
 		return 1;
 	}
@@ -6099,6 +6355,11 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			name_is(name, "load_textures") || name_is(name, "unload_textures") ||
 			name_is(name, "can_load_textures") || name_is(name, "is_textures_loaded") ||
 			name_is(name, "load_tim") || name_is(name, "unload_tim") ||
+			name_is(name, "load_tiles") || name_is(name, "unload_tiles") ||
+			name_is(name, "can_load_tiles") || name_is(name, "is_tiles_loaded") ||
+			name_is(name, "load_hud") || name_is(name, "unload_hud") ||
+			name_is(name, "can_load_hud") || name_is(name, "is_hud_loaded") ||
+			name_is(name, "get_flip_v") || name_is(name, "set_flip_v") ||
 			name_is(name, "is_action_pressed_on") || name_is(name, "is_action_just_pressed_on") ||
 			name_is(name, "is_action_just_released_on") ||
 			name_is(name, "memcard_present") || name_is(name, "memcard_ready") || name_is(name, "memcard_format") ||
@@ -7666,7 +7927,8 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			*ret = gv_int(g_sprs[si].frame);
 			return 1;
 		}
-		if (name_is(name, "set_flip") || name_is(name, "set_flip_h") || name_is(name, "get_flip_h")) {
+		if (name_is(name, "set_flip") || name_is(name, "set_flip_h") || name_is(name, "get_flip_h") ||
+				name_is(name, "set_flip_v") || name_is(name, "get_flip_v")) {
 			int nid = node;
 			int h = 0;
 			int v = 0;
@@ -7674,18 +7936,30 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 				if (argv[0].type == V_OBJ) {
 					nid = argv[0].i;
 					if (argc > 1) {
-						h = as_truth(argv[1]);
+						if (name_is(name, "set_flip_v")) {
+							v = as_truth(argv[1]);
+						} else {
+							h = as_truth(argv[1]);
+						}
 					}
 					if (argc > 2) {
 						v = as_truth(argv[2]);
 					}
-				} else if (argc == 1 && !name_is(name, "get_flip_h")) {
-					h = as_truth(argv[0]);
+				} else if (argc == 1 && !name_is(name, "get_flip_h") && !name_is(name, "get_flip_v")) {
+					if (name_is(name, "set_flip_v")) {
+						v = as_truth(argv[0]);
+					} else {
+						h = as_truth(argv[0]);
+					}
 				} else if (argc >= 2) {
 					nid = int(as_float(argv[0]));
-					h = as_truth(argv[1]);
-					if (argc > 2) {
-						v = as_truth(argv[2]);
+					if (name_is(name, "set_flip_v")) {
+						v = as_truth(argv[1]);
+					} else {
+						h = as_truth(argv[1]);
+						if (argc > 2) {
+							v = as_truth(argv[2]);
+						}
 					}
 				} else {
 					nid = int(as_float(argv[0]));
@@ -7706,7 +7980,10 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 					g_sprs[si].flip_v = uint8_t(v ? 1 : 0);
 				}
 			}
-			*ret = gv_bool(g_sprs[si].flip_h);
+			if (name_is(name, "set_flip_v")) {
+				g_sprs[si].flip_v = uint8_t(v ? 1 : 0);
+			}
+			*ret = gv_bool(name_is(name, "get_flip_v") || name_is(name, "set_flip_v") ? g_sprs[si].flip_v : g_sprs[si].flip_h);
 			return 1;
 		}
 		if (name_is(name, "is_on_floor")) {
@@ -8126,6 +8403,56 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			}
 			const int want = int(g_packs[pack].tim_count);
 			*ret = gv_bool(try_read_pack_blob(pack, "TPAK", g_load_buf, 8) > 0 && budgets_fit(0, 0, 0, 0, want, 0));
+			return 1;
+		}
+		if (name_is(name, "load_tiles")) {
+			*ret = gv_bool(load_pack_slice(pack, "TILE"));
+			return 1;
+		}
+		if (name_is(name, "unload_tiles")) {
+			*ret = gv_bool(unload_pack_slice(pack, "TILE"));
+			return 1;
+		}
+		if (name_is(name, "is_tiles_loaded")) {
+			*ret = gv_bool(pack >= 0 && pack < g_npack && g_packs[pack].tile_resident);
+			return 1;
+		}
+		if (name_is(name, "can_load_tiles")) {
+			if (pack < 0 || pack >= g_npack) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			if (g_packs[pack].tile_resident) {
+				*ret = gv_bool(1);
+				return 1;
+			}
+			const int want = int(g_packs[pack].tile_count);
+			*ret = gv_bool(try_read_pack_blob(pack, "TILE", g_load_buf, 8) > 0 && budgets_fit(0, 0, want, 0, 0, want * int(sizeof(ScriptVMTile))));
+			return 1;
+		}
+		if (name_is(name, "load_hud")) {
+			*ret = gv_bool(load_pack_slice(pack, "HUD"));
+			return 1;
+		}
+		if (name_is(name, "unload_hud")) {
+			*ret = gv_bool(unload_pack_slice(pack, "HUD"));
+			return 1;
+		}
+		if (name_is(name, "is_hud_loaded")) {
+			*ret = gv_bool(pack >= 0 && pack < g_npack && g_packs[pack].hud_resident);
+			return 1;
+		}
+		if (name_is(name, "can_load_hud")) {
+			if (pack < 0 || pack >= g_npack) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			if (g_packs[pack].hud_resident) {
+				*ret = gv_bool(1);
+				return 1;
+			}
+			const int want = int(g_packs[pack].hud_count);
+			*ret = gv_bool(try_read_pack_blob(pack, "HUD", g_load_buf, 8) > 0 && budgets_fit(0, want, 0, 0, 0, want * int(sizeof(ScriptVMHud))));
 			return 1;
 		}
 		if (name_is(name, "is_action_pressed_on") || name_is(name, "is_action_just_pressed_on") ||

@@ -266,6 +266,46 @@ public:
 		_fail_ps1();
 		return false;
 	}
+	bool load_tiles(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool unload_tiles(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool can_load_tiles(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool is_tiles_loaded(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool load_hud(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool unload_hud(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool can_load_hud(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool is_hud_loaded(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool get_flip_v(const Variant &p_node) const {
+		_fail_ps1();
+		return false;
+	}
+	bool set_flip_v(const Variant &p_node, bool p_v) {
+		_fail_ps1();
+		return false;
+	}
 	bool add_to_group(const Variant &p_node, const String &p_name) {
 		_fail_ps1();
 		return false;

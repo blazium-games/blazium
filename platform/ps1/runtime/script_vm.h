@@ -118,9 +118,13 @@ struct ScriptVMPack {
 	uint8_t way_resident;
 	uint8_t mesh_resident;
 	uint8_t tim_resident;
+	uint8_t hud_resident;
+	uint8_t tile_resident;
 	uint8_t tim_lo, tim_hi;
 	uint32_t mesh_ram;
 	uint32_t tim_ram;
+	uint32_t hud_ram;
+	uint32_t tile_ram;
 	uint32_t charged;
 };
 
@@ -177,6 +181,7 @@ struct ScriptVMAnimClip {
 	char name[32];
 	uint8_t nkeys;
 	uint8_t loop;
+	uint8_t pack;
 	ScriptVMAnimKey keys[PS1_MAX_KEYS];
 };
 

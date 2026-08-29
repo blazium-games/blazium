@@ -94,6 +94,16 @@ void PS1::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("unload_textures", "path"), &PS1::unload_textures);
 	ClassDB::bind_method(D_METHOD("can_load_textures", "path"), &PS1::can_load_textures);
 	ClassDB::bind_method(D_METHOD("is_textures_loaded", "path"), &PS1::is_textures_loaded);
+	ClassDB::bind_method(D_METHOD("load_tiles", "path"), &PS1::load_tiles);
+	ClassDB::bind_method(D_METHOD("unload_tiles", "path"), &PS1::unload_tiles);
+	ClassDB::bind_method(D_METHOD("can_load_tiles", "path"), &PS1::can_load_tiles);
+	ClassDB::bind_method(D_METHOD("is_tiles_loaded", "path"), &PS1::is_tiles_loaded);
+	ClassDB::bind_method(D_METHOD("load_hud", "path"), &PS1::load_hud);
+	ClassDB::bind_method(D_METHOD("unload_hud", "path"), &PS1::unload_hud);
+	ClassDB::bind_method(D_METHOD("can_load_hud", "path"), &PS1::can_load_hud);
+	ClassDB::bind_method(D_METHOD("is_hud_loaded", "path"), &PS1::is_hud_loaded);
+	ClassDB::bind_method(D_METHOD("get_flip_v", "node"), &PS1::get_flip_v);
+	ClassDB::bind_method(D_METHOD("set_flip_v", "node", "v"), &PS1::set_flip_v);
 	ClassDB::bind_method(D_METHOD("add_to_group", "node", "name"), &PS1::add_to_group);
 	ClassDB::bind_method(D_METHOD("remove_from_group", "node", "name"), &PS1::remove_from_group);
 	ClassDB::bind_method(D_METHOD("is_in_group", "node", "name"), &PS1::is_in_group);
