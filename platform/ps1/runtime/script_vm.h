@@ -288,4 +288,5 @@ int script_vm_tile_count();
 const ScriptVMTile *script_vm_tiles();
 void script_vm_hud_tick(const ScriptVMHost *host);
 int script_vm_process(float delta, const ScriptVMHost *host);
+int script_vm_should_quit();
 const char *script_vm_last_error();

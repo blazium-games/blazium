@@ -1964,6 +1964,9 @@ int main(int argc, const char **argv) {
 			if (!script_vm_process(g_region ? 1.0f / 50.0f : 1.0f / 60.0f, &host)) {
 				rot.vy += rot_step;
 			}
+			if (script_vm_should_quit()) {
+				break;
+			}
 			block_cam = host.hud_focus_blocks_cam;
 			if (g_cam_scale > 0) {
 				gte_SetGeomScreen(g_cam_scale);

@@ -268,6 +268,12 @@ void PS1::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_spawn", "node", "x", "y", "z"), &PS1::set_spawn);
 	ClassDB::bind_method(D_METHOD("unload_extras"), &PS1::unload_extras);
 	ClassDB::bind_method(D_METHOD("set_global_position", "node", "pos"), &PS1::set_global_position);
+	ClassDB::bind_method(D_METHOD("set_process_when_paused", "node", "on"), &PS1::set_process_when_paused);
+	ClassDB::bind_method(D_METHOD("tween_is_done", "tw"), &PS1::tween_is_done);
+	ClassDB::bind_method(D_METHOD("overlaps_group", "node", "group"), &PS1::overlaps_group);
+	ClassDB::bind_method(D_METHOD("overlaps_group_entered", "node", "group"), &PS1::overlaps_group_entered);
+	ClassDB::bind_method(D_METHOD("unload_pack_of", "node"), &PS1::unload_pack_of);
+	ClassDB::bind_method(D_METHOD("quit"), &PS1::quit);
 	ClassDB::bind_method(D_METHOD("set_path_progress", "node", "t"), &PS1::set_path_progress);
 	ClassDB::bind_method(D_METHOD("get_path_progress", "node"), &PS1::get_path_progress);
 	ClassDB::bind_method(D_METHOD("get_path_point", "path", "i"), &PS1::get_path_point);

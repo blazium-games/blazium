@@ -957,6 +957,29 @@ public:
 		_fail_ps1();
 		return false;
 	}
+	bool set_process_when_paused(const Variant &p_node, bool p_on) {
+		_fail_ps1();
+		return false;
+	}
+	bool tween_is_done(const Variant &p_tw) {
+		_fail_ps1();
+		return false;
+	}
+	Variant overlaps_group(const Variant &p_node, const Variant &p_group) {
+		_fail_ps1();
+		return Variant();
+	}
+	bool overlaps_group_entered(const Variant &p_node, const Variant &p_group) {
+		_fail_ps1();
+		return false;
+	}
+	bool unload_pack_of(const Variant &p_node) {
+		_fail_ps1();
+		return false;
+	}
+	void quit() {
+		_fail_ps1();
+	}
 	bool set_path_progress(const Variant &p_node, float p_t) {
 		_fail_ps1();
 		return false;

@@ -193,6 +193,11 @@ static int g_spawn_nid = -1;
 static float g_spawn_x = 0, g_spawn_y = 0, g_spawn_z = 0;
 static uint8_t g_spawn_set = 0;
 static int g_active_pack = 0;
+static uint8_t g_run_paused[PS1_MAX_NODES];
+static uint8_t g_run_paused_root = 0;
+static uint8_t g_grp_ov[PS1_MAX_NODES];
+static uint8_t g_node_pack[PS1_MAX_NODES];
+static int g_quit = 0;
 static int16_t g_hud_ox = 0, g_hud_oy = 0;
 static ScriptVMShot g_shot[32];
 static int g_nshot = 32;
@@ -206,6 +211,7 @@ struct TweenSlot {
 	float t;
 	float dur;
 	uint8_t loop;
+	uint8_t done;
 };
 static TweenSlot g_tween[8];
 static float g_path_prog[PS1_MAX_NODES];
@@ -247,6 +253,10 @@ static int budgets_fit(int nodes, int hud, int tiles, int tris, int tims, int ra
 static int read_host_file(const char *path, uint8_t *dst, int max);
 static int write_host_file(const char *path, const uint8_t *src, int n);
 static void copy_str(char *dst, int max, const char *src);
+static int pack_id_of(int node);
+static int aabb_overlap(int a, int b, int mask);
+static int hit_of_node(int node);
+static int mc_restore();
 
 enum {
 	kTapeReturn = 0,
@@ -380,6 +390,7 @@ void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, 
 		g_node_used[i] = 0;
 		g_node_ready[i] = 0;
 		g_inst_group[i] = 0;
+		g_node_pack[i] = 0;
 	}
 	for (int i = 0; i < PS1_MAX_HUD; i++) {
 		g_hud_used[i] = 0;
@@ -476,6 +487,13 @@ void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, 
 	g_spawn_x = g_spawn_y = g_spawn_z = 0;
 	g_spawn_set = 0;
 	g_active_pack = 0;
+	g_run_paused_root = 0;
+	g_quit = 0;
+	for (int i = 0; i < PS1_MAX_NODES; i++) {
+		g_run_paused[i] = 0;
+		g_grp_ov[i] = 0;
+		g_node_pack[i] = 0;
+	}
 	g_say_hud = -1;
 	g_say_text[0] = 0;
 	g_say_len = 0;
@@ -495,6 +513,7 @@ void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, 
 	g_boot_slices = 0;
 	for (int i = 0; i < 8; i++) {
 		g_tween[i].used = 0;
+		g_tween[i].done = 0;
 		g_timer_node[i] = 0xff;
 	}
 	for (int i = 0; i < 32; i++) {
@@ -515,44 +534,7 @@ void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, 
 	g_fmv_pack = -1;
 	g_mc_var.type = V_NIL;
 	g_mc_var.s[0] = 0;
-	{
-		uint8_t hdr[64];
-		const int n = read_host_file("SAVE.MCD", hdr, int(sizeof(hdr)));
-		if (n >= 8 && hdr[0] == 'M' && hdr[1] == 'C' && ((hdr[2] == '1' && hdr[3] == '9') || (hdr[2] == '2' && hdr[3] == '0'))) {
-			g_mc_var.type = hdr[4];
-			g_mc_len = int(hdr[5] | (hdr[6] << 8));
-			if (g_mc_len > int(sizeof(g_mc_payload))) {
-				g_mc_len = int(sizeof(g_mc_payload));
-			}
-			const int got = read_host_file("SAVE.BIN", g_mc_payload, g_mc_len);
-			if (got > 0) {
-				g_mc_len = got;
-			}
-			if (g_mc_var.type == V_STR) {
-				copy_str(g_mc_var.s, 32, (const char *)g_mc_payload);
-			} else if (g_mc_var.type == V_INT) {
-				g_mc_var.i = int(g_mc_payload[0] | (g_mc_payload[1] << 8) | (g_mc_payload[2] << 16) | (g_mc_payload[3] << 24));
-			} else if (g_mc_var.type == V_FLOAT) {
-				union {
-					float f;
-					uint32_t u;
-				} x;
-				x.u = uint32_t(g_mc_payload[0] | (g_mc_payload[1] << 8) | (g_mc_payload[2] << 16) | (g_mc_payload[3] << 24));
-				g_mc_var.f = x.f;
-			} else if (g_mc_var.type == V_V2 || g_mc_var.type == V_V3) {
-				union {
-					float f;
-					uint32_t u;
-				} x[3];
-				for (int i = 0; i < 3; i++) {
-					x[i].u = uint32_t(g_mc_payload[i * 4] | (g_mc_payload[i * 4 + 1] << 8) | (g_mc_payload[i * 4 + 2] << 16) | (g_mc_payload[i * 4 + 3] << 24));
-				}
-				g_mc_var.x = x[0].f;
-				g_mc_var.y = x[1].f;
-				g_mc_var.z = x[2].f;
-			}
-		}
-	}
+	mc_restore();
 }
 
 void script_vm_set_nodes(const ScriptVMNode *nodes, int count) {
@@ -570,6 +552,7 @@ void script_vm_set_nodes(const ScriptVMNode *nodes, int count) {
 		g_nodes[i] = nodes[i];
 		g_node_used[i] = 1;
 		g_group[i] = g_parse_groups[i];
+		g_node_pack[i] = 0;
 		g_scroll[i] = g_parse_scroll[i];
 		g_ysort[i] = g_parse_ysort[i];
 		g_kind[i] = g_parse_kind[i];
@@ -1157,6 +1140,59 @@ static int kit_frozen() {
 	return g_paused || g_hitstop_until > g_ticks_ms;
 }
 
+static int kit_skip_process(int nid) {
+	if (g_hitstop_until > g_ticks_ms) {
+		return 1;
+	}
+	if (!g_paused) {
+		return 0;
+	}
+	if (nid < 0) {
+		return !g_run_paused_root;
+	}
+	if (!node_ok(nid)) {
+		return 1;
+	}
+	return !g_run_paused[nid];
+}
+
+static int kit_pack_of_node(int nid) {
+	if (node_ok(nid)) {
+		return int(g_node_pack[nid]);
+	}
+	return pack_id_of(nid);
+}
+
+static int kit_first_in_group_overlap(int nid, int bit, int entered) {
+	if (!node_ok(nid) || bit < 0) {
+		return -1;
+	}
+	const uint8_t mask = uint8_t(1u << bit);
+	const int self = hit_of_node(nid);
+	int found = -1;
+	for (int i = 0; i < g_nnode; i++) {
+		if (i == nid || !g_node_used[i] || !(g_group[i] & mask) || !(g_nodes[i].flags & 1)) {
+			continue;
+		}
+		if (aabb_overlap(self, hit_of_node(i), 0xFF)) {
+			found = i;
+			break;
+		}
+	}
+	if (entered) {
+		const int was = g_grp_ov[nid] & mask;
+		if (found >= 0) {
+			g_grp_ov[nid] = uint8_t(g_grp_ov[nid] | mask);
+		} else {
+			g_grp_ov[nid] = uint8_t(g_grp_ov[nid] & uint8_t(~mask));
+		}
+		if (!(found >= 0 && !was)) {
+			return -1;
+		}
+	}
+	return found;
+}
+
 static int pack_can_fit(int pack) {
 	if (pack < 0 || pack >= g_npack) {
 		return 0;
@@ -1386,6 +1422,17 @@ static void apply_method(const ScriptVMHost *host, int node, const char *name, f
 	if (name_is(name, "set_global_position") && node_ok(node)) {
 		if (argv && argc > 0 && argv[0].type == V_V3) {
 			kit_set_global_pos(node, argv[0].x, argv[0].y, argv[0].z);
+		}
+		return;
+	}
+	if ((name_is(name, "set_x") || name_is(name, "set_y") || name_is(name, "set_z")) && node_ok(node)) {
+		const float v = argv && argc > 0 ? as_float(argv[0]) : arg;
+		if (name_is(name, "set_x")) {
+			g_nodes[node].px = int16_t(v);
+		} else if (name_is(name, "set_y")) {
+			g_nodes[node].py = int16_t(-v);
+		} else {
+			g_nodes[node].pz = int16_t(v);
 		}
 		return;
 	}
@@ -2261,6 +2308,7 @@ static int load_pack_resident(int pack) {
 		}
 		g_nodes[dst].flags = uint8_t(g_nodes[dst].flags | 1);
 		g_group[dst] = g_parse_groups[i];
+		g_node_pack[dst] = uint8_t(pack);
 		g_scroll[dst] = g_parse_scroll[i];
 		g_node_ready[dst] = 0;
 		if (dst + 1 > g_nnode) {
@@ -2503,6 +2551,7 @@ static int instantiate_pack(int pack, int parent) {
 		g_nodes[dst].flags = uint8_t(g_nodes[dst].flags | 1 | 4);
 		g_inst_group[dst] = grp;
 		g_group[dst] = g_group[lo + i];
+		g_node_pack[dst] = uint8_t(pack);
 		g_scroll[dst] = g_scroll[lo + i];
 		g_nvel[dst][0] = g_nvel[dst][1] = g_nvel[dst][2] = 0;
 		g_node_ready[dst] = 0;
@@ -2624,6 +2673,7 @@ static void reclaim_instance(int node) {
 		g_node_used[n] = 0;
 		g_node_ready[n] = 0;
 		g_inst_group[n] = 0;
+		g_node_pack[n] = 0;
 		g_group[n] = 0;
 		g_scroll[n] = 0;
 		fn++;
@@ -3201,6 +3251,47 @@ static void mc_encode_var() {
 	}
 }
 
+static int mc_restore() {
+	uint8_t hdr[64];
+	const int n = read_host_file("SAVE.MCD", hdr, int(sizeof(hdr)));
+	if (n < 8 || hdr[0] != 'M' || hdr[1] != 'C' || !((hdr[2] == '1' && hdr[3] == '9') || (hdr[2] == '2' && hdr[3] == '0'))) {
+		return 0;
+	}
+	g_mc_var.type = hdr[4];
+	g_mc_len = int(hdr[5] | (hdr[6] << 8));
+	if (g_mc_len > int(sizeof(g_mc_payload))) {
+		g_mc_len = int(sizeof(g_mc_payload));
+	}
+	const int got = read_host_file("SAVE.BIN", g_mc_payload, g_mc_len);
+	if (got > 0) {
+		g_mc_len = got;
+	}
+	if (g_mc_var.type == V_STR) {
+		copy_str(g_mc_var.s, 32, (const char *)g_mc_payload);
+	} else if (g_mc_var.type == V_INT) {
+		g_mc_var.i = int(g_mc_payload[0] | (g_mc_payload[1] << 8) | (g_mc_payload[2] << 16) | (g_mc_payload[3] << 24));
+	} else if (g_mc_var.type == V_FLOAT) {
+		union {
+			float f;
+			uint32_t u;
+		} x;
+		x.u = uint32_t(g_mc_payload[0] | (g_mc_payload[1] << 8) | (g_mc_payload[2] << 16) | (g_mc_payload[3] << 24));
+		g_mc_var.f = x.f;
+	} else if (g_mc_var.type == V_V2 || g_mc_var.type == V_V3) {
+		union {
+			float f;
+			uint32_t u;
+		} x[3];
+		for (int i = 0; i < 3; i++) {
+			x[i].u = uint32_t(g_mc_payload[i * 4] | (g_mc_payload[i * 4 + 1] << 8) | (g_mc_payload[i * 4 + 2] << 16) | (g_mc_payload[i * 4 + 3] << 24));
+		}
+		g_mc_var.x = x[0].f;
+		g_mc_var.y = x[1].f;
+		g_mc_var.z = x[2].f;
+	}
+	return g_mc_len > 0 || g_mc_var.type != V_NIL;
+}
+
 static void mc_persist() {
 	uint8_t hdr[8];
 	hdr[0] = 'M';
@@ -3547,6 +3638,41 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			return 1;
 		}
 		*ret = gv_v3(float(g_nodes[node].px), float(-g_nodes[node].py), float(g_nodes[node].pz));
+		return 1;
+	}
+	if ((name_is(name, "get_x") || name_is(name, "get_y") || name_is(name, "get_z") ||
+			name_is(name, "set_x") || name_is(name, "set_y") || name_is(name, "set_z"))) {
+		int nid = node;
+		int ai = 0;
+		if (argv && argc > 0 && argv[0].type == V_OBJ) {
+			nid = argv[0].i;
+			ai = 1;
+		}
+		if (!node_ok(nid)) {
+			*ret = gv_nil();
+			return 1;
+		}
+		if (name_is(name, "get_x")) {
+			*ret = gv_float(float(g_nodes[nid].px));
+			return 1;
+		}
+		if (name_is(name, "get_y")) {
+			*ret = gv_float(float(-g_nodes[nid].py));
+			return 1;
+		}
+		if (name_is(name, "get_z")) {
+			*ret = gv_float(float(g_nodes[nid].pz));
+			return 1;
+		}
+		const float v = argv && argc > ai ? as_float(argv[ai]) : arg;
+		if (name_is(name, "set_x")) {
+			g_nodes[nid].px = int16_t(v);
+		} else if (name_is(name, "set_y")) {
+			g_nodes[nid].py = int16_t(-v);
+		} else {
+			g_nodes[nid].pz = int16_t(v);
+		}
+		*ret = gv_bool(1);
 		return 1;
 	}
 	if (name_is(name, "abs")) {
@@ -4738,11 +4864,13 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			g_tween[tid].to[2] = tz;
 			g_tween[tid].t = 0;
 			g_tween[tid].dur = sec;
+			g_tween[tid].done = 0;
 			*ret = gv_obj(kTweenBase + tid);
 			return 1;
 		}
 		if (name_is(name, "stop") || name_is(name, "kill")) {
 			g_tween[tid].used = 0;
+			g_tween[tid].done = 1;
 			*ret = gv_bool(1);
 			return 1;
 		}
@@ -4763,6 +4891,7 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 		g_tween[id].node = -1;
 		g_tween[id].t = 0;
 		g_tween[id].dur = 1;
+		g_tween[id].done = 0;
 		*ret = gv_obj(kTweenBase + id);
 		return 1;
 	}
@@ -4774,9 +4903,26 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 		for (int i = 0; i < 8; i++) {
 			if (g_tween[i].used && (nid < 0 || int(g_tween[i].node) == nid)) {
 				g_tween[i].used = 0;
+				g_tween[i].done = 1;
 			}
 		}
 		*ret = gv_bool(1);
+		return 1;
+	}
+	if (name_is(name, "tween_is_done")) {
+		int tid = -1;
+		if (node >= kTweenBase && node < kTweenBase + 8) {
+			tid = node - kTweenBase;
+		} else if (argv && argc > 0 && argv[0].type == V_OBJ && argv[0].i >= kTweenBase && argv[0].i < kTweenBase + 8) {
+			tid = argv[0].i - kTweenBase;
+		} else if (argv && argc > 0) {
+			tid = int(as_float(argv[0]));
+		}
+		if (tid < 0 || tid >= 8) {
+			*ret = gv_bool(1);
+			return 1;
+		}
+		*ret = gv_bool(g_tween[tid].done || !g_tween[tid].used || (g_tween[tid].dur > 0 && g_tween[tid].t >= g_tween[tid].dur));
 		return 1;
 	}
 	if (name_is(name, "tween_count")) {
@@ -5533,6 +5679,11 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			name_is(name, "portal") || name_is(name, "nav_follow") || name_is(name, "move_planar") ||
 			name_is(name, "save_slot") || name_is(name, "load_slot") ||
 			name_is(name, "set_spawn") || name_is(name, "unload_extras") || name_is(name, "set_global_position") ||
+			name_is(name, "set_process_when_paused") || name_is(name, "tween_is_done") ||
+			name_is(name, "overlaps_group") || name_is(name, "overlaps_group_entered") ||
+			name_is(name, "unload_pack_of") || name_is(name, "quit") ||
+			name_is(name, "get_x") || name_is(name, "get_y") || name_is(name, "get_z") ||
+			name_is(name, "set_x") || name_is(name, "set_y") || name_is(name, "set_z") ||
 			name_is(name, "stop_music") || name_is(name, "set_music_fade") ||
 			name_is(name, "say") || name_is(name, "say_done") ||
 			name_is(name, "swap_pack") || name_is(name, "set_checkpoint_scene") ||
@@ -5654,6 +5805,23 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 				}
 			}
 			*ret = gv_int(n);
+			return 1;
+		}
+		if (name_is(name, "unload_pack_of")) {
+			int nid = node;
+			if (argv && argc > 0) {
+				if (argv[0].type == V_OBJ) {
+					nid = argv[0].i;
+				} else {
+					nid = int(as_float(argv[0]));
+				}
+			}
+			const int pack = kit_pack_of_node(nid);
+			if (pack <= 0) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			*ret = gv_bool(unload_pack_resident(pack));
 			return 1;
 		}
 		if (name_is(name, "set_checkpoint_scene")) {
@@ -6019,6 +6187,27 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 		}
 		if (name_is(name, "is_paused")) {
 			*ret = gv_bool(g_paused);
+			return 1;
+		}
+		if (name_is(name, "set_process_when_paused")) {
+			int nid = node;
+			int ai = 0;
+			if (argv && argc > 0 && argv[0].type == V_OBJ) {
+				nid = argv[0].i;
+				ai = 1;
+			}
+			const int on = argv && argc > ai ? as_truth(argv[ai]) : 1;
+			if (nid < 0) {
+				g_run_paused_root = on ? 1 : 0;
+			} else if (node_ok(nid)) {
+				g_run_paused[nid] = on ? 1 : 0;
+			}
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "quit")) {
+			g_quit = 1;
+			*ret = gv_bool(1);
 			return 1;
 		}
 		if (name_is(name, "attach_camera")) {
@@ -7312,6 +7501,24 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			*ret = gv_bool(entered);
 			return 1;
 		}
+		if (name_is(name, "overlaps_group") || name_is(name, "overlaps_group_entered")) {
+			int nid = node_ok(node) ? node : -1;
+			int gi = 0;
+			if (argv && argc > 0 && argv[0].type == V_OBJ) {
+				nid = argv[0].i;
+				gi = 1;
+			}
+			const int bit = group_bit_arg(argv, argc, gi);
+			const int found = kit_first_in_group_overlap(nid, bit, name_is(name, "overlaps_group_entered") ? 1 : 0);
+			if (found < 0) {
+				*ret = name_is(name, "overlaps_group_entered") ? gv_bool(0) : gv_nil();
+			} else if (name_is(name, "overlaps_group_entered")) {
+				*ret = gv_bool(1);
+			} else {
+				*ret = gv_obj(found);
+			}
+			return 1;
+		}
 		if (name_is(name, "has_overlapping_areas") || name_is(name, "get_overlapping_area_count")) {
 			const int self = hit_of_node(node);
 			int mask = 0xFF;
@@ -7545,7 +7752,14 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			return 1;
 		}
 		if (name_is(name, "load_slot")) {
-			*ret = gv_bool(g_mc_len > 0);
+			const int slot = argv && argc > 0 ? int(as_float(argv[0])) : 0;
+			g_mc_title[0] = 'S';
+			g_mc_title[1] = 'L';
+			g_mc_title[2] = 'O';
+			g_mc_title[3] = 'T';
+			g_mc_title[4] = char('0' + (slot < 0 ? 0 : (slot > 9 ? 9 : slot)));
+			g_mc_title[5] = 0;
+			*ret = gv_bool(mc_restore());
 			return 1;
 		}
 		if (name_is(name, "memcard_load")) {
@@ -8274,6 +8488,10 @@ static void get_prop(int node, const char *n, GVar *d) {
 		copy_str(d->s, 32, g_nodes[node].name);
 	} else if (prop_named(n, "position")) {
 		*d = gv_v3(float(g_nodes[node].px), float(-g_nodes[node].py), float(g_nodes[node].pz));
+	} else if (prop_named(n, "global_position")) {
+		float px, py, pz, rx, ry, rz;
+		node_world(node, &px, &py, &pz, &rx, &ry, &rz);
+		*d = gv_v3(px, -py, pz);
 	} else if (prop_named(n, "rotation")) {
 		const float s = (2.0f * 3.14159265f) / 4096.0f;
 		*d = gv_v3(float(g_nodes[node].rx) * s, float(g_nodes[node].ry) * s, float(g_nodes[node].rz) * s);
@@ -8392,6 +8610,12 @@ static void set_prop(int node, const char *n, const GVar *s) {
 			g_nodes[node].px = int16_t(s->x);
 			g_nodes[node].py = int16_t(-s->y);
 			g_nodes[node].pz = int16_t(s->z);
+		}
+	} else if (prop_named(n, "global_position")) {
+		if (s->type == V_V3) {
+			kit_set_global_pos(node, s->x, s->y, s->z);
+		} else if (s->type == V_V2) {
+			kit_set_global_pos(node, s->x, s->y, 0);
 		}
 	} else if (prop_named(n, "rotation")) {
 		if (s->type == V_V3) {
@@ -9307,7 +9531,7 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 			}
 			g_node_ready[n] = 1;
 		}
-		if (!kit_frozen() && !(g_nodes[n].flags & 2)) {
+		if (!kit_skip_process(n) && !(g_nodes[n].flags & 2)) {
 			if (g_gdbc && g_gdbc_size) {
 				ran |= run_official(g_gdbc, g_gdbc_size, "_process", delta, host, n, si);
 			}
@@ -9326,7 +9550,7 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 			}
 			g_did_ready = 1;
 		}
-		if (!kit_frozen()) {
+		if (!kit_skip_process(-1)) {
 			if (g_gdbc && g_gdbc_size) {
 				ran |= run_official(g_gdbc, g_gdbc_size, "_process", delta, host, -1, -1);
 			}
@@ -9569,6 +9793,7 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 					g_tween[i].t = 0;
 				} else {
 					g_tween[i].used = 0;
+					g_tween[i].done = 1;
 				}
 			}
 		}
@@ -9775,27 +10000,28 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 			}
 		}
 	}
-	if (!kit_frozen()) {
-		if (dispatched) {
-			for (int n = 0; n < g_nnode; n++) {
-				if (!g_node_used[n] || !(g_nodes[n].flags & 1) || (g_nodes[n].flags & 8) || g_nodes[n].script < 0) {
-					continue;
-				}
-				const int si = int(g_nodes[n].script);
-				if (g_gdbc && g_gdbc_size) {
-					ran |= run_official(g_gdbc, g_gdbc_size, "_physics_process", delta, host, n, si);
-				}
-				if (tape) {
-					ran |= run_tape(tape, tape_n, "_physics_process", delta, host, n, si);
-				}
+	if (dispatched) {
+		for (int n = 0; n < g_nnode; n++) {
+			if (!g_node_used[n] || !(g_nodes[n].flags & 1) || (g_nodes[n].flags & 8) || g_nodes[n].script < 0) {
+				continue;
 			}
-		} else {
+			if (kit_skip_process(n)) {
+				continue;
+			}
+			const int si = int(g_nodes[n].script);
 			if (g_gdbc && g_gdbc_size) {
-				ran |= run_official(g_gdbc, g_gdbc_size, "_physics_process", delta, host, -1, -1);
+				ran |= run_official(g_gdbc, g_gdbc_size, "_physics_process", delta, host, n, si);
 			}
 			if (tape) {
-				ran |= run_tape(tape, tape_n, "_physics_process", delta, host, -1, -1);
+				ran |= run_tape(tape, tape_n, "_physics_process", delta, host, n, si);
 			}
+		}
+	} else if (!kit_skip_process(-1)) {
+		if (g_gdbc && g_gdbc_size) {
+			ran |= run_official(g_gdbc, g_gdbc_size, "_physics_process", delta, host, -1, -1);
+		}
+		if (tape) {
+			ran |= run_tape(tape, tape_n, "_physics_process", delta, host, -1, -1);
 		}
 	}
 	for (int i = 0; i < g_nhud; i++) {
@@ -9803,6 +10029,10 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 	}
 	pad_tick(host);
 	return ran;
+}
+
+int script_vm_should_quit() {
+	return g_quit;
 }
 
 int script_vm_script_cam() {
