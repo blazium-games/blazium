@@ -207,6 +207,7 @@ struct ScriptVMHost {
 	void (*stop_sfx)(const char *name);
 	void (*set_sfx_volume)(const char *name, int vol);
 	void (*set_music_volume)(int vol);
+	void (*stop_music)(void);
 	void (*set_light)(int index, int dx, int dy, int dz, int r, int g, int b);
 	int (*load_music)(const uint8_t *blob, int size);
 	void (*unload_music)(void);

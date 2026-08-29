@@ -247,6 +247,14 @@ void PS1::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("respawn", "node"), &PS1::respawn);
 	ClassDB::bind_method(D_METHOD("set_frame", "node", "i"), &PS1::set_frame);
 	ClassDB::bind_method(D_METHOD("set_flip", "node", "h", "v"), &PS1::set_flip);
+	ClassDB::bind_method(D_METHOD("set_hitstop", "ms"), &PS1::set_hitstop);
+	ClassDB::bind_method(D_METHOD("knockback", "node", "vx", "vy", "vz"), &PS1::knockback);
+	ClassDB::bind_method(D_METHOD("stop_music"), &PS1::stop_music);
+	ClassDB::bind_method(D_METHOD("set_music_fade", "to_vol", "ms"), &PS1::set_music_fade);
+	ClassDB::bind_method(D_METHOD("say", "hud", "line", "cps"), &PS1::say);
+	ClassDB::bind_method(D_METHOD("say_done"), &PS1::say_done);
+	ClassDB::bind_method(D_METHOD("swap_pack", "unload_path", "load_path"), &PS1::swap_pack);
+	ClassDB::bind_method(D_METHOD("set_checkpoint_scene", "path"), &PS1::set_checkpoint_scene);
 	ClassDB::bind_method(D_METHOD("set_path_progress", "node", "t"), &PS1::set_path_progress);
 	ClassDB::bind_method(D_METHOD("get_path_progress", "node"), &PS1::get_path_progress);
 	ClassDB::bind_method(D_METHOD("get_path_point", "path", "i"), &PS1::get_path_point);

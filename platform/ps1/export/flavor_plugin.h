@@ -874,6 +874,37 @@ public:
 		_fail_ps1();
 		return false;
 	}
+	void set_hitstop(float p_ms) {
+		_fail_ps1();
+	}
+	bool knockback(const Variant &p_node, float p_vx, float p_vy, float p_vz) {
+		_fail_ps1();
+		return false;
+	}
+	bool stop_music() {
+		_fail_ps1();
+		return false;
+	}
+	bool set_music_fade(float p_to_vol, float p_ms) {
+		_fail_ps1();
+		return false;
+	}
+	bool say(const Variant &p_hud, const String &p_line, float p_cps) {
+		_fail_ps1();
+		return false;
+	}
+	bool say_done() const {
+		_fail_ps1();
+		return true;
+	}
+	bool swap_pack(const String &p_unload, const String &p_load) {
+		_fail_ps1();
+		return false;
+	}
+	bool set_checkpoint_scene(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
 	bool set_path_progress(const Variant &p_node, float p_t) {
 		_fail_ps1();
 		return false;

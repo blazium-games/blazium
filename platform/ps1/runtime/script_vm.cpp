@@ -173,6 +173,20 @@ static int16_t g_cp_x[PS1_MAX_NODES], g_cp_y[PS1_MAX_NODES], g_cp_z[PS1_MAX_NODE
 static uint8_t g_cp_set[PS1_MAX_NODES];
 static float g_fade_out_left = 0;
 static float g_fade_out_dur = 0;
+static float g_hitstop_until = 0;
+static char g_cp_scene[64];
+static uint8_t g_cp_scene_set = 0;
+static int g_say_hud = -1;
+static char g_say_text[64];
+static int g_say_len = 0;
+static int g_say_shown = 0;
+static float g_say_accum = 0;
+static float g_say_cps = 20;
+static float g_music_vol_f = 1;
+static float g_music_fade_from = 1;
+static float g_music_fade_to = 1;
+static float g_music_fade_left = 0;
+static float g_music_fade_dur = 0;
 static int16_t g_hud_ox = 0, g_hud_oy = 0;
 static ScriptVMShot g_shot[32];
 static int g_nshot = 32;
@@ -223,6 +237,7 @@ static int g_boot_slices = 0;
 static int node_ok(int id);
 static int pad_pressed_on(const ScriptVMHost *host, const char *action, int just, int device);
 static int hud_index_for_node(int node);
+static int budgets_fit(int nodes, int hud, int tiles, int tris, int tims, int ram);
 static int read_host_file(const char *path, uint8_t *dst, int max);
 static int write_host_file(const char *path, const uint8_t *src, int n);
 static void copy_str(char *dst, int max, const char *src);
@@ -446,6 +461,20 @@ void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, 
 	g_wall_jump_ms = 0;
 	g_fade_out_left = 0;
 	g_fade_out_dur = 0;
+	g_hitstop_until = 0;
+	g_cp_scene[0] = 0;
+	g_cp_scene_set = 0;
+	g_say_hud = -1;
+	g_say_text[0] = 0;
+	g_say_len = 0;
+	g_say_shown = 0;
+	g_say_accum = 0;
+	g_say_cps = 20;
+	g_music_vol_f = 1;
+	g_music_fade_from = 1;
+	g_music_fade_to = 1;
+	g_music_fade_left = 0;
+	g_music_fade_dur = 0;
 	g_hud_ox = 0;
 	g_hud_oy = 0;
 	g_nvert = g_nedge = g_nav_loaded = 0;
@@ -1052,6 +1081,43 @@ static int kit_can_jump(int nid) {
 		return 1;
 	}
 	return g_air_left[nid] > 0;
+}
+
+static int kit_frozen() {
+	return g_paused || g_hitstop_until > g_ticks_ms;
+}
+
+static int pack_can_fit(int pack) {
+	if (pack < 0 || pack >= g_npack) {
+		return 0;
+	}
+	if (g_packs[pack].resident) {
+		return 1;
+	}
+	int n = int(g_packs[pack].node_count);
+	int h = int(g_packs[pack].hud_count);
+	int t = int(g_packs[pack].tile_count);
+	int tr = int(g_packs[pack].tri_count);
+	int ti = int(g_packs[pack].tim_count);
+	int r = int(g_packs[pack].ram_bytes);
+	return budgets_fit(n, h, t, tr, ti, r);
+}
+
+static void say_apply(int hid, int nch) {
+	if (hid < 0 || hid >= g_nhud || !g_hud_used[hid]) {
+		return;
+	}
+	if (nch < 0) {
+		nch = 0;
+	}
+	if (nch > 63) {
+		nch = 63;
+	}
+	int i = 0;
+	for (; i < nch && g_say_text[i]; i++) {
+		g_hud[hid].text[i] = g_say_text[i];
+	}
+	g_hud[hid].text[i] = 0;
 }
 
 static int find_child(int parent, const char *name, int nlen) {
@@ -5285,6 +5351,10 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			name_is(name, "set_invuln") || name_is(name, "is_invuln") ||
 			name_is(name, "set_air_jumps") || name_is(name, "set_wall_jump") ||
 			name_is(name, "set_checkpoint") || name_is(name, "respawn") ||
+			name_is(name, "set_hitstop") || name_is(name, "knockback") ||
+			name_is(name, "stop_music") || name_is(name, "set_music_fade") ||
+			name_is(name, "say") || name_is(name, "say_done") ||
+			name_is(name, "swap_pack") || name_is(name, "set_checkpoint_scene") ||
 			name_is(name, "set_frame") || name_is(name, "set_flip") ||
 			name_is(name, "get_frame") || name_is(name, "get_flip_h") || name_is(name, "set_flip_h") ||
 			name_is(name, "raycast_point") || name_is(name, "is_on_floor") || name_is(name, "is_on_wall") ||
@@ -5324,6 +5394,28 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			} else if (argv[0].type == V_INT || argv[0].type == V_FLOAT) {
 				pack = int(as_float(argv[0]));
 			}
+		}
+		if (name_is(name, "swap_pack")) {
+			const char *un = argv && argc > 0 && argv[0].type == V_STR ? argv[0].s : "";
+			const char *ld = argv && argc > 1 && argv[1].type == V_STR ? argv[1].s : "";
+			const int up = find_pack_path(un);
+			const int lp = find_pack_path(ld);
+			if (up >= 0) {
+				unload_pack_resident(up);
+			}
+			if (lp < 0 || !pack_can_fit(lp)) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			*ret = gv_bool(load_pack_resident(lp));
+			return 1;
+		}
+		if (name_is(name, "set_checkpoint_scene")) {
+			const char *path = argv && argc > 0 && argv[0].type == V_STR ? argv[0].s : "";
+			copy_str(g_cp_scene, 64, path);
+			g_cp_scene_set = g_cp_scene[0] ? 1 : 0;
+			*ret = gv_bool(g_cp_scene_set);
+			return 1;
 		}
 		if (name_is(name, "load_scene")) {
 			*ret = gv_bool(load_pack_resident(pack));
@@ -6487,7 +6579,130 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			g_nodes[nid].py = g_cp_y[nid];
 			g_nodes[nid].pz = g_cp_z[nid];
 			g_nvel[nid][0] = g_nvel[nid][1] = g_nvel[nid][2] = 0;
+			if (g_cp_scene_set && g_cp_scene[0]) {
+				const int pack = find_pack_path(g_cp_scene);
+				if (pack >= 0 && load_pack_resident(pack)) {
+					activate_pack(pack, host);
+				}
+			}
 			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "set_hitstop")) {
+			float ms = argv && argc > 0 ? as_float(argv[0]) : 0;
+			if (ms < 0) {
+				ms = 0;
+			}
+			g_hitstop_until = g_ticks_ms + ms;
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "knockback")) {
+			int nid = node;
+			int ai = 0;
+			if (argv && argc > 0 && argv[0].type == V_OBJ) {
+				nid = argv[0].i;
+				ai = 1;
+			}
+			if (!node_ok(nid)) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			if (argv && argc > ai && argv[ai].type == V_V3) {
+				g_nvel[nid][0] += argv[ai].x;
+				g_nvel[nid][1] += argv[ai].y;
+				g_nvel[nid][2] += argv[ai].z;
+			} else if (argv && argc > ai + 2) {
+				g_nvel[nid][0] += as_float(argv[ai]);
+				g_nvel[nid][1] += as_float(argv[ai + 1]);
+				g_nvel[nid][2] += as_float(argv[ai + 2]);
+			}
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "stop_music")) {
+			if (host && host->stop_music) {
+				host->stop_music();
+			}
+			g_music_fade_left = 0;
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "set_music_fade")) {
+			float to = argv && argc > 0 ? as_float(argv[0]) : 0;
+			float ms = argv && argc > 1 ? as_float(argv[1]) : 0;
+			if (to < 0) {
+				to = 0;
+			}
+			if (to > 1) {
+				to = 1;
+			}
+			if (ms < 0) {
+				ms = 0;
+			}
+			g_music_fade_from = g_music_vol_f;
+			g_music_fade_to = to;
+			g_music_fade_dur = ms / 1000.0f;
+			g_music_fade_left = g_music_fade_dur;
+			if (g_music_fade_dur <= 0) {
+				g_music_vol_f = to;
+				g_music_fade_left = 0;
+				if (host && host->set_music_volume) {
+					host->set_music_volume(int(to * 0x3fff));
+				}
+			}
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "say")) {
+			int hid = -1;
+			const char *ln = "";
+			float cps = 20;
+			if (argv && argc > 0) {
+				if (argv[0].type == V_OBJ) {
+					hid = hud_index_for_node(argv[0].i);
+				} else {
+					hid = hud_index_for_node(int(as_float(argv[0])));
+				}
+			} else if (node_ok(node)) {
+				hid = hud_index_for_node(node);
+			}
+			if (argv && argc > 1 && argv[1].type == V_STR) {
+				ln = argv[1].s;
+			}
+			if (argv && argc > 2) {
+				cps = as_float(argv[2]);
+			}
+			if (hid < 0 || hid >= g_nhud || !g_hud_used[hid] || !ln[0]) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			int found = -1;
+			for (int i = 0; i < g_ntxt; i++) {
+				if (g_txt[i].name[0] && name_is(g_txt[i].name, ln)) {
+					found = i;
+					break;
+				}
+			}
+			if (found >= 0) {
+				copy_str(g_say_text, 64, g_txt[found].text);
+			} else {
+				copy_str(g_say_text, 64, ln);
+			}
+			g_say_len = 0;
+			while (g_say_text[g_say_len] && g_say_len < 63) {
+				g_say_len++;
+			}
+			g_say_hud = hid;
+			g_say_shown = 0;
+			g_say_accum = 0;
+			g_say_cps = cps > 0 ? cps : 20;
+			say_apply(hid, 0);
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "say_done")) {
+			*ret = gv_bool(g_say_hud < 0 || g_say_shown >= g_say_len);
 			return 1;
 		}
 		if (name_is(name, "set_frame") || name_is(name, "get_frame")) {
@@ -6611,13 +6826,16 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			return 1;
 		}
 		if (name_is(name, "set_music_volume")) {
-			int vol = argv && argc > 0 ? int(as_float(argv[0]) * 0x3fff) : 0x3fff;
-			if (vol < 0) {
-				vol = 0;
+			float vf = argv && argc > 0 ? as_float(argv[0]) : 1;
+			if (vf < 0) {
+				vf = 0;
 			}
-			if (vol > 0x3fff) {
-				vol = 0x3fff;
+			if (vf > 1) {
+				vf = 1;
 			}
+			g_music_vol_f = vf;
+			g_music_fade_left = 0;
+			int vol = int(vf * 0x3fff);
 			if (host && host->set_music_volume) {
 				host->set_music_volume(vol);
 			}
@@ -8728,7 +8946,7 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 			}
 			g_node_ready[n] = 1;
 		}
-		if (!g_paused && !(g_nodes[n].flags & 2)) {
+		if (!kit_frozen() && !(g_nodes[n].flags & 2)) {
 			if (g_gdbc && g_gdbc_size) {
 				ran |= run_official(g_gdbc, g_gdbc_size, "_process", delta, host, n, si);
 			}
@@ -8747,7 +8965,7 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 			}
 			g_did_ready = 1;
 		}
-		if (!g_paused) {
+		if (!kit_frozen()) {
 			if (g_gdbc && g_gdbc_size) {
 				ran |= run_official(g_gdbc, g_gdbc_size, "_process", delta, host, -1, -1);
 			}
@@ -8765,6 +8983,29 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 		} else {
 			g_fade_a = int(255.0f * (g_fade_out_left / g_fade_out_dur));
 		}
+	}
+	if (g_music_fade_left > 0) {
+		g_music_fade_left -= delta;
+		float t = 1.0f;
+		if (g_music_fade_dur > 0) {
+			t = 1.0f - (g_music_fade_left / g_music_fade_dur);
+		}
+		if (t > 1.0f || g_music_fade_left <= 0) {
+			t = 1.0f;
+			g_music_fade_left = 0;
+		}
+		g_music_vol_f = g_music_fade_from + (g_music_fade_to - g_music_fade_from) * t;
+		if (host && host->set_music_volume) {
+			host->set_music_volume(int(g_music_vol_f * 0x3fff));
+		}
+	}
+	if (g_say_hud >= 0 && g_say_shown < g_say_len) {
+		g_say_accum += delta * g_say_cps;
+		while (g_say_accum >= 1.0f && g_say_shown < g_say_len) {
+			g_say_accum -= 1.0f;
+			g_say_shown++;
+		}
+		say_apply(g_say_hud, g_say_shown);
 	}
 	for (int i = 0; i < g_nnode; i++) {
 		if (!g_node_used[i] || g_invuln_until[i] <= 0) {
@@ -8809,7 +9050,7 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 			g_sprs[s].frame = uint8_t((int(g_sprs[s].frame) + 1) % int(g_sprs[s].nframes));
 		}
 	}
-	if (!g_paused) {
+	if (!kit_frozen()) {
 		for (int n = 0; n < g_nnode; n++) {
 			if (!g_node_used[n] || (g_nodes[n].flags & 8)) {
 				continue;
@@ -9173,7 +9414,7 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 			}
 		}
 	}
-	if (!g_paused) {
+	if (!kit_frozen()) {
 		if (dispatched) {
 			for (int n = 0; n < g_nnode; n++) {
 				if (!g_node_used[n] || !(g_nodes[n].flags & 1) || (g_nodes[n].flags & 8) || g_nodes[n].script < 0) {

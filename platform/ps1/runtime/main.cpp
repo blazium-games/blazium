@@ -625,22 +625,27 @@ static void host_unload_sfx() {
 
 static int host_play_sfx(const char *name) {
 #ifdef BLAZIUM_PS1_HAS_VAG
-	if (!name || !name[0] || !g_nsfx) {
+	if (!g_nsfx) {
 		return 0;
 	}
 	int clip = -1;
-	for (int i = 0; i < g_nsfx; i++) {
-		int same = 1;
-		for (int k = 0; k < 16 && (name[k] || g_sfx[i].name[k]); k++) {
-			if (name[k] != g_sfx[i].name[k]) {
-				same = 0;
+	if (name && name[0]) {
+		for (int i = 0; i < g_nsfx; i++) {
+			int same = 1;
+			for (int k = 0; k < 16 && (name[k] || g_sfx[i].name[k]); k++) {
+				if (name[k] != g_sfx[i].name[k]) {
+					same = 0;
+					break;
+				}
+			}
+			if (same) {
+				clip = i;
 				break;
 			}
 		}
-		if (same) {
-			clip = i;
-			break;
-		}
+	}
+	if (clip < 0 && (g_nsfx == 1 || !name || !name[0])) {
+		clip = 0;
 	}
 	if (clip < 0) {
 		return 0;
@@ -779,6 +784,11 @@ static void host_unload_music() {
 	g_vag_on = 0;
 	play_cooked_vag();
 #endif
+}
+
+static void host_stop_music() {
+	SpuSetKey(0, 1 << 0);
+	SpuSetVoiceVolume(0, 0, 0);
 }
 
 static void host_play_fmv_blob(const uint8_t *blob, int size) {
@@ -1942,6 +1952,7 @@ int main(int argc, const char **argv) {
 			host.stop_sfx = host_stop_sfx;
 			host.set_sfx_volume = host_set_sfx_vol;
 			host.set_music_volume = host_set_music_vol;
+			host.stop_music = host_stop_music;
 			host.set_light = host_set_light;
 			host.load_music = host_load_music;
 			host.unload_music = host_unload_music;
