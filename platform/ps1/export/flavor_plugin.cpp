@@ -239,6 +239,14 @@ void PS1::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("consume_jump", "node"), &PS1::consume_jump);
 	ClassDB::bind_method(D_METHOD("set_one_way_pass", "node", "on"), &PS1::set_one_way_pass);
 	ClassDB::bind_method(D_METHOD("change_scene_fade", "path", "seconds"), &PS1::change_scene_fade);
+	ClassDB::bind_method(D_METHOD("set_invuln", "node", "ms"), &PS1::set_invuln);
+	ClassDB::bind_method(D_METHOD("is_invuln", "node"), &PS1::is_invuln);
+	ClassDB::bind_method(D_METHOD("set_air_jumps", "n"), &PS1::set_air_jumps);
+	ClassDB::bind_method(D_METHOD("set_wall_jump", "ms"), &PS1::set_wall_jump);
+	ClassDB::bind_method(D_METHOD("set_checkpoint", "node"), &PS1::set_checkpoint);
+	ClassDB::bind_method(D_METHOD("respawn", "node"), &PS1::respawn);
+	ClassDB::bind_method(D_METHOD("set_frame", "node", "i"), &PS1::set_frame);
+	ClassDB::bind_method(D_METHOD("set_flip", "node", "h", "v"), &PS1::set_flip);
 	ClassDB::bind_method(D_METHOD("set_path_progress", "node", "t"), &PS1::set_path_progress);
 	ClassDB::bind_method(D_METHOD("get_path_progress", "node"), &PS1::get_path_progress);
 	ClassDB::bind_method(D_METHOD("get_path_point", "path", "i"), &PS1::get_path_point);

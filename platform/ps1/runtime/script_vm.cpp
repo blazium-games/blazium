@@ -163,6 +163,14 @@ static float g_jump_buf_until[PS1_MAX_NODES];
 static uint8_t g_one_way_pass[PS1_MAX_NODES];
 static uint8_t g_was_floor[PS1_MAX_NODES];
 static uint8_t g_auto_jump[PS1_MAX_NODES];
+static uint8_t g_air_jumps = 0;
+static uint8_t g_air_left[PS1_MAX_NODES];
+static float g_wall_jump_ms = 0;
+static float g_wall_until[PS1_MAX_NODES];
+static uint8_t g_was_wall[PS1_MAX_NODES];
+static float g_invuln_until[PS1_MAX_NODES];
+static int16_t g_cp_x[PS1_MAX_NODES], g_cp_y[PS1_MAX_NODES], g_cp_z[PS1_MAX_NODES];
+static uint8_t g_cp_set[PS1_MAX_NODES];
 static float g_fade_out_left = 0;
 static float g_fade_out_dur = 0;
 static int16_t g_hud_ox = 0, g_hud_oy = 0;
@@ -405,6 +413,12 @@ void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, 
 		g_one_way_pass[i] = 0;
 		g_was_floor[i] = 0;
 		g_auto_jump[i] = 0;
+		g_air_left[i] = 0;
+		g_wall_until[i] = 0;
+		g_was_wall[i] = 0;
+		g_invuln_until[i] = 0;
+		g_cp_x[i] = g_cp_y[i] = g_cp_z[i] = 0;
+		g_cp_set[i] = 0;
 		g_ysort[i] = 0;
 		g_kind[i] = 0;
 		g_path_id[i] = 0;
@@ -428,6 +442,8 @@ void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, 
 	g_body_gz = 0;
 	g_coyote_ms = 0;
 	g_jump_buf_ms = 0;
+	g_air_jumps = 0;
+	g_wall_jump_ms = 0;
 	g_fade_out_left = 0;
 	g_fade_out_dur = 0;
 	g_hud_ox = 0;
@@ -1015,6 +1031,10 @@ static int kit_nid(int node, const GVar *argv, int argc) {
 	return node;
 }
 
+static int kit_invuln(int nid) {
+	return node_ok(nid) && g_invuln_until[nid] > g_ticks_ms;
+}
+
 static int kit_can_jump(int nid) {
 	if (!node_ok(nid)) {
 		return 0;
@@ -1025,7 +1045,13 @@ static int kit_can_jump(int nid) {
 	if (g_floor_n[nid]) {
 		return 1;
 	}
-	return g_coyote_until[nid] > g_ticks_ms;
+	if (g_coyote_until[nid] > g_ticks_ms) {
+		return 1;
+	}
+	if (g_wall_n[nid] || g_wall_until[nid] > g_ticks_ms) {
+		return 1;
+	}
+	return g_air_left[nid] > 0;
 }
 
 static int find_child(int parent, const char *name, int nlen) {
@@ -2515,6 +2541,9 @@ static int aabb_overlap(int a, int b, int mask) {
 		if (g_hits[a].max_z < g_hits[b].min_z || g_hits[b].max_z < g_hits[a].min_z) {
 			return 0;
 		}
+	}
+	if (kit_invuln(int(g_hits[a].node_id)) || kit_invuln(int(g_hits[b].node_id))) {
+		return 0;
 	}
 	return 1;
 }
@@ -4836,7 +4865,7 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 	}
 	if (name_is(name, "shot_hit")) {
 		const int i = argv && argc > 0 ? int(as_float(argv[0])) : -1;
-		if (i < 0 || i >= 32 || g_shot[i].hit < 0) {
+		if (i < 0 || i >= 32 || g_shot[i].hit < 0 || kit_invuln(int(g_shot[i].hit))) {
 			*ret = gv_nil();
 		} else {
 			*ret = gv_obj(int(g_shot[i].hit));
@@ -5253,6 +5282,11 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			name_is(name, "set_fade") || name_is(name, "set_light") ||
 			name_is(name, "set_coyote") || name_is(name, "set_jump_buffer") ||
 			name_is(name, "can_jump") || name_is(name, "consume_jump") || name_is(name, "set_one_way_pass") ||
+			name_is(name, "set_invuln") || name_is(name, "is_invuln") ||
+			name_is(name, "set_air_jumps") || name_is(name, "set_wall_jump") ||
+			name_is(name, "set_checkpoint") || name_is(name, "respawn") ||
+			name_is(name, "set_frame") || name_is(name, "set_flip") ||
+			name_is(name, "get_frame") || name_is(name, "get_flip_h") || name_is(name, "set_flip_h") ||
 			name_is(name, "raycast_point") || name_is(name, "is_on_floor") || name_is(name, "is_on_wall") ||
 			name_is(name, "is_on_ceiling") || name_is(name, "set_hitbox_layer") || name_is(name, "get_hitbox_layer") ||
 			name_is(name, "shake_camera") || name_is(name, "set_paused") || name_is(name, "is_paused") ||
@@ -6050,10 +6084,15 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 					g_auto_jump[nid] = 1;
 				}
 				g_coyote_until[nid] = g_ticks_ms + g_coyote_ms;
+				g_air_left[nid] = g_air_jumps;
 			} else if (g_was_floor[nid] && g_coyote_ms > 0) {
 				g_coyote_until[nid] = g_ticks_ms + g_coyote_ms;
 			}
+			if (!g_on_wall && g_was_wall[nid] && g_wall_jump_ms > 0) {
+				g_wall_until[nid] = g_ticks_ms + g_wall_jump_ms;
+			}
 			g_was_floor[nid] = uint8_t(g_on_floor);
+			g_was_wall[nid] = uint8_t(g_on_wall);
 			*ret = gv_v3(vx, vy, vz);
 			return 1;
 		}
@@ -6332,9 +6371,15 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 				*ret = gv_bool(0);
 				return 1;
 			}
+			const int grounded = g_floor_n[nid] || g_auto_jump[nid] || g_coyote_until[nid] > g_ticks_ms;
+			const int walled = g_wall_n[nid] || g_wall_until[nid] > g_ticks_ms;
+			if (!grounded && !walled && g_air_left[nid] > 0) {
+				g_air_left[nid]--;
+			}
 			g_auto_jump[nid] = 0;
 			g_coyote_until[nid] = 0;
 			g_jump_buf_until[nid] = 0;
+			g_wall_until[nid] = 0;
 			*ret = gv_bool(1);
 			return 1;
 		}
@@ -6360,6 +6405,171 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			}
 			g_one_way_pass[nid] = uint8_t(on ? 1 : 0);
 			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "set_invuln")) {
+			int nid = node;
+			float ms = 0;
+			if (argv && argc > 0) {
+				if (argv[0].type == V_OBJ) {
+					nid = argv[0].i;
+					if (argc > 1) {
+						ms = as_float(argv[1]);
+					}
+				} else if (argc == 1) {
+					ms = as_float(argv[0]);
+				} else {
+					nid = int(as_float(argv[0]));
+					ms = as_float(argv[1]);
+				}
+			}
+			if (!node_ok(nid)) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			if (ms < 0) {
+				ms = 0;
+			}
+			g_invuln_until[nid] = g_ticks_ms + ms;
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "is_invuln")) {
+			const int nid = kit_nid(node, argv, argc);
+			*ret = gv_bool(kit_invuln(nid));
+			return 1;
+		}
+		if (name_is(name, "set_air_jumps")) {
+			int n = argv && argc > 0 ? int(as_float(argv[0])) : 0;
+			if (n < 0) {
+				n = 0;
+			}
+			if (n > 8) {
+				n = 8;
+			}
+			g_air_jumps = uint8_t(n);
+			for (int i = 0; i < PS1_MAX_NODES; i++) {
+				if (g_floor_n[i]) {
+					g_air_left[i] = g_air_jumps;
+				}
+			}
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "set_wall_jump")) {
+			g_wall_jump_ms = argv && argc > 0 ? as_float(argv[0]) : 0;
+			if (g_wall_jump_ms < 0) {
+				g_wall_jump_ms = 0;
+			}
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "set_checkpoint")) {
+			const int nid = kit_nid(node, argv, argc);
+			if (!node_ok(nid)) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			g_cp_x[nid] = g_nodes[nid].px;
+			g_cp_y[nid] = g_nodes[nid].py;
+			g_cp_z[nid] = g_nodes[nid].pz;
+			g_cp_set[nid] = 1;
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "respawn")) {
+			const int nid = kit_nid(node, argv, argc);
+			if (!node_ok(nid) || !g_cp_set[nid]) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			g_nodes[nid].px = g_cp_x[nid];
+			g_nodes[nid].py = g_cp_y[nid];
+			g_nodes[nid].pz = g_cp_z[nid];
+			g_nvel[nid][0] = g_nvel[nid][1] = g_nvel[nid][2] = 0;
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "set_frame") || name_is(name, "get_frame")) {
+			int nid = node;
+			int fr = 0;
+			if (argv && argc > 0) {
+				if (argv[0].type == V_OBJ) {
+					nid = argv[0].i;
+					if (argc > 1) {
+						fr = int(as_float(argv[1]));
+					}
+				} else if (argc == 1 && !name_is(name, "get_frame")) {
+					fr = int(as_float(argv[0]));
+				} else if (argc >= 2) {
+					nid = int(as_float(argv[0]));
+					fr = int(as_float(argv[1]));
+				} else {
+					nid = int(as_float(argv[0]));
+				}
+			}
+			if (!node_ok(nid)) {
+				*ret = gv_int(0);
+				return 1;
+			}
+			const int si = int(g_nodes[nid].sprite);
+			if (si < 0 || si >= g_nspr) {
+				*ret = gv_int(0);
+				return 1;
+			}
+			if (name_is(name, "set_frame")) {
+				if (fr < 0) {
+					fr = 0;
+				}
+				if (g_sprs[si].nframes && fr >= int(g_sprs[si].nframes)) {
+					fr = int(g_sprs[si].nframes) - 1;
+				}
+				g_sprs[si].frame = uint8_t(fr);
+			}
+			*ret = gv_int(g_sprs[si].frame);
+			return 1;
+		}
+		if (name_is(name, "set_flip") || name_is(name, "set_flip_h") || name_is(name, "get_flip_h")) {
+			int nid = node;
+			int h = 0;
+			int v = 0;
+			if (argv && argc > 0) {
+				if (argv[0].type == V_OBJ) {
+					nid = argv[0].i;
+					if (argc > 1) {
+						h = as_truth(argv[1]);
+					}
+					if (argc > 2) {
+						v = as_truth(argv[2]);
+					}
+				} else if (argc == 1 && !name_is(name, "get_flip_h")) {
+					h = as_truth(argv[0]);
+				} else if (argc >= 2) {
+					nid = int(as_float(argv[0]));
+					h = as_truth(argv[1]);
+					if (argc > 2) {
+						v = as_truth(argv[2]);
+					}
+				} else {
+					nid = int(as_float(argv[0]));
+				}
+			}
+			if (!node_ok(nid)) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			const int si = int(g_nodes[nid].sprite);
+			if (si < 0 || si >= g_nspr) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			if (name_is(name, "set_flip") || name_is(name, "set_flip_h")) {
+				g_sprs[si].flip_h = uint8_t(h ? 1 : 0);
+				if (name_is(name, "set_flip")) {
+					g_sprs[si].flip_v = uint8_t(v ? 1 : 0);
+				}
+			}
+			*ret = gv_bool(g_sprs[si].flip_h);
 			return 1;
 		}
 		if (name_is(name, "is_on_floor")) {
@@ -8253,7 +8463,17 @@ static int run_official(const uint8_t *blob, size_t size, const char *want, floa
 					const int argc = ri32(codeb + (ip + 2 + iac) * 4);
 					const uint32_t da = uint32_t(ri32(codeb + (ip + 2 + argc) * 4));
 					GVar *d = slot(stack, nstack, cvars, nc, da);
-					if (d && argc >= 2) {
+					if (d && argc == 1) {
+						const uint32_t a0 = uint32_t(ri32(codeb + (ip + 2) * 4));
+						GVar *x = slot(stack, nstack, cvars, nc, a0);
+						const float fv = x ? as_float(*x) : 0.0f;
+						const int typ = (op == OP_CONSTRUCT) ? ri32(codeb + (ip + 3 + iac) * 4) : 2;
+						if (typ == 3) {
+							*d = gv_float(fv);
+						} else {
+							*d = gv_int(int(fv));
+						}
+					} else if (d && argc >= 2) {
 						const uint32_t a0 = uint32_t(ri32(codeb + (ip + 2) * 4));
 						const uint32_t a1 = uint32_t(ri32(codeb + (ip + 3) * 4));
 						GVar *x = slot(stack, nstack, cvars, nc, a0);
@@ -8546,6 +8766,21 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 			g_fade_a = int(255.0f * (g_fade_out_left / g_fade_out_dur));
 		}
 	}
+	for (int i = 0; i < g_nnode; i++) {
+		if (!g_node_used[i] || g_invuln_until[i] <= 0) {
+			continue;
+		}
+		if (g_invuln_until[i] > g_ticks_ms) {
+			if ((int(g_ticks_ms) / 80) & 1) {
+				g_nodes[i].flags = uint8_t(g_nodes[i].flags & ~uint8_t(1));
+			} else {
+				g_nodes[i].flags = uint8_t(g_nodes[i].flags | uint8_t(1));
+			}
+		} else {
+			g_nodes[i].flags = uint8_t(g_nodes[i].flags | uint8_t(1));
+			g_invuln_until[i] = 0;
+		}
+	}
 	for (int t = 0; t < 8; t++) {
 		if (g_timer_used[t] && g_ticks_ms >= g_timer_end[t]) {
 			emit_sig(kTimerBase + t, SIG_TIMEOUT, host, tape, tape_n);
@@ -8751,6 +8986,9 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 					continue;
 				}
 				if (g_shot[s].owner >= 0 && int(g_hits[h].node_id) == int(g_shot[s].owner)) {
+					continue;
+				}
+				if (kit_invuln(int(g_hits[h].node_id))) {
 					continue;
 				}
 				if (g_shot[s].x >= g_hits[h].min_x && g_shot[s].x <= g_hits[h].max_x &&

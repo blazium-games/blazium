@@ -132,6 +132,11 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "change_scene" || p_name == "change_scene_to_file" || p_name == "change_scene_fade" || p_name == "get_tree" ||
 			p_name == "set_coyote" || p_name == "set_jump_buffer" || p_name == "can_jump" ||
 			p_name == "consume_jump" || p_name == "set_one_way_pass" ||
+			p_name == "set_invuln" || p_name == "is_invuln" ||
+			p_name == "set_air_jumps" || p_name == "set_wall_jump" ||
+			p_name == "set_checkpoint" || p_name == "respawn" ||
+			p_name == "set_frame" || p_name == "set_flip" ||
+			p_name == "get_frame" || p_name == "get_flip_h" || p_name == "set_flip_h" ||
 			p_name == "get_x" || p_name == "get_y" || p_name == "get_z" ||
 			p_name == "set_x" || p_name == "set_y" || p_name == "set_z" ||
 			p_name == "connect" || p_name == "disconnect" ||
@@ -240,6 +245,7 @@ static bool member_is_allowlisted(const String &p_name) {
 			p_name == "focus" || p_name == "x" || p_name == "y" || p_name == "z" ||
 			p_name == "get_x" || p_name == "get_y" || p_name == "get_z" ||
 			p_name == "set_x" || p_name == "set_y" || p_name == "set_z" ||
+			p_name == "get_frame" || p_name == "set_frame" || p_name == "get_flip_h" || p_name == "set_flip_h" ||
 			p_name == "frame" || p_name == "flip_h" || p_name == "flip_v" || p_name == "modulate" || p_name == "speed_scale" ||
 			p_name == "velocity" || p_name == "billboard" ||
 			p_name == "get_velocity" || p_name == "set_velocity" ||
@@ -627,16 +633,16 @@ static Error scan_and_normalize(const String &p_path, GDScript *script, GDScript
 		if (op == Op::OPCODE_CONSTRUCT) {
 			const int iac = (ip + 1 < code.size()) ? code[ip + 1] : 0;
 			const int typ = (ip + 3 + iac < code.size()) ? code[ip + 3 + iac] : -1;
-			if (typ != int(Variant::VECTOR2) && typ != int(Variant::VECTOR3)) {
-				r_err = vformat("%s:%s:%d construct type %d is not Vector2/Vector3", p_path, String(fn->get_name()), ip, typ);
+			if (typ != int(Variant::INT) && typ != int(Variant::FLOAT) && typ != int(Variant::VECTOR2) && typ != int(Variant::VECTOR3)) {
+				r_err = vformat("%s:%s:%d construct type %d is not Int/Float/Vector2/Vector3", p_path, String(fn->get_name()), ip, typ);
 				return ERR_UNCONFIGURED;
 			}
 		}
 		if (op == Op::OPCODE_CONSTRUCT_VALIDATED) {
 			const int iac = (ip + 1 < code.size()) ? code[ip + 1] : 0;
 			const int argc = (ip + 2 + iac < code.size()) ? code[ip + 2 + iac] : -1;
-			if (argc != 2 && argc != 3) {
-				r_err = vformat("%s:%s:%d construct validated argc %d is not Vector2/Vector3", p_path, String(fn->get_name()), ip, argc);
+			if (argc != 1 && argc != 2 && argc != 3) {
+				r_err = vformat("%s:%s:%d construct validated argc %d is not Int/Float/Vector2/Vector3", p_path, String(fn->get_name()), ip, argc);
 				return ERR_UNCONFIGURED;
 			}
 		}
@@ -895,6 +901,9 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 			"play", "stop", "is_playing", "queue_free",
 			"load", "instantiate", "change_scene", "change_scene_to_file", "change_scene_fade", "get_tree",
 			"set_coyote", "set_jump_buffer", "can_jump", "consume_jump", "set_one_way_pass",
+			"set_invuln", "is_invuln", "set_air_jumps", "set_wall_jump",
+			"set_checkpoint", "respawn", "set_frame", "set_flip",
+			"get_frame", "get_flip_h", "set_flip_h",
 			"get_forward", "get_right", "get_up", "translate_local", "move_and_fly",
 			"apply_gravity", "add_velocity", "spawn_shot", "shot_hit", "get_ray_node",
 			"create_tween", "tween_property", "world_to_screen", "clip_orbit", "set_cull_dist",

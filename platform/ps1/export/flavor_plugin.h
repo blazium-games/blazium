@@ -844,6 +844,36 @@ public:
 		_fail_ps1();
 		return false;
 	}
+	bool set_invuln(const Variant &p_node, float p_ms) {
+		_fail_ps1();
+		return false;
+	}
+	bool is_invuln(const Variant &p_node) const {
+		_fail_ps1();
+		return false;
+	}
+	void set_air_jumps(int p_n) {
+		_fail_ps1();
+	}
+	void set_wall_jump(float p_ms) {
+		_fail_ps1();
+	}
+	bool set_checkpoint(const Variant &p_node) {
+		_fail_ps1();
+		return false;
+	}
+	bool respawn(const Variant &p_node) {
+		_fail_ps1();
+		return false;
+	}
+	bool set_frame(const Variant &p_node, int p_i) {
+		_fail_ps1();
+		return false;
+	}
+	bool set_flip(const Variant &p_node, bool p_h, bool p_v) {
+		_fail_ps1();
+		return false;
+	}
 	bool set_path_progress(const Variant &p_node, float p_t) {
 		_fail_ps1();
 		return false;
