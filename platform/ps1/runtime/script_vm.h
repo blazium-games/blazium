@@ -21,7 +21,13 @@
 #define PS1_MAX_TILES 256
 #endif
 #ifndef PS1_MAX_PACKS
-#define PS1_MAX_PACKS 8
+#define PS1_MAX_PACKS 24
+#endif
+#ifndef PS1_MAX_TRIS
+#define PS1_MAX_TRIS 8192
+#endif
+#ifndef PS1_RAM_BUDGET
+#define PS1_RAM_BUDGET 2097152
 #endif
 #ifndef PS1_MAX_CLIPS
 #define PS1_MAX_CLIPS 8
@@ -78,6 +84,9 @@ struct ScriptVMPack {
 	uint8_t has_cam;
 	int16_t cam_px, cam_py, cam_pz;
 	int16_t cam_rx, cam_ry, cam_rz;
+	uint16_t node_count, tri_count, hud_count, tile_count, tim_count;
+	uint32_t ram_bytes;
+	uint8_t resident;
 };
 
 struct ScriptVMAnimKey {
@@ -122,6 +131,9 @@ void script_vm_set_tiles(const ScriptVMTile *tiles, int count);
 void script_vm_set_packs(const ScriptVMPack *packs, int count);
 void script_vm_set_anims(const ScriptVMAnimClip *clips, int count);
 void script_vm_set_actions(const ScriptVMAction *actions, int count);
+void script_vm_set_mesh(const uint8_t *blob, size_t size);
+int script_vm_tri_count();
+const uint8_t *script_vm_tris();
 int script_vm_node_count();
 const ScriptVMNode *script_vm_nodes();
 int script_vm_hud_count();

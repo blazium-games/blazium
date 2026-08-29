@@ -42,7 +42,7 @@
 #include "script_vm.h"
 
 #ifndef BLAZIUM_PS1_COOK_ABI
-#define BLAZIUM_PS1_COOK_ABI 12
+#define BLAZIUM_PS1_COOK_ABI 13
 #endif
 
 #define OT_LEN 2048
@@ -637,13 +637,24 @@ static void compose_node_mtx(int idx, MATRIX *out) {
 }
 
 static int draw_cooked_mesh(const MATRIX *view, const uint16_t *tpages, const uint16_t *cluts) {
-	if (cooked_mesh_size < 4) {
+	const uint8_t *mesh = script_vm_tris();
+	int mesh_n = script_vm_tri_count();
+	size_t mesh_sz = mesh ? (4 + size_t(mesh_n) * sizeof(CookedTri)) : 0;
+	if (!mesh || mesh_n <= 0) {
+		if (cooked_mesh_size < 4) {
+			return 0;
+		}
+		mesh = cooked_mesh;
+		mesh_sz = cooked_mesh_size;
+		mesh_n = int(cooked_mesh[0] | (cooked_mesh[1] << 8));
+	}
+	if (mesh_sz < 4) {
 		return 0;
 	}
-	const uint16_t tri_n = uint16_t(cooked_mesh[0] | (cooked_mesh[1] << 8));
-	const CookedTri *tris = (const CookedTri *)(cooked_mesh + 4);
+	const uint16_t tri_n = uint16_t(mesh_n);
+	const CookedTri *tris = (const CookedTri *)(mesh + 4);
 	const size_t need = 4 + size_t(tri_n) * sizeof(CookedTri);
-	if (need > cooked_mesh_size) {
+	if (need > mesh_sz) {
 		return 0;
 	}
 	const int nnode = script_vm_node_count();
@@ -855,7 +866,7 @@ int main(int argc, const char **argv) {
 	if (cooked_node_size >= 8 && cooked_node[0] == 'N' && cooked_node[1] == 'O' && cooked_node[2] == 'D' && cooked_node[3] == 'E') {
 		const uint16_t ver = uint16_t(cooked_node[4] | (cooked_node[5] << 8));
 		const uint16_t nc = uint16_t(cooked_node[6] | (cooked_node[7] << 8));
-		if (ver == 12) {
+		if (ver == 13) {
 			ScriptVMNode parsed[PS1_MAX_NODES];
 			const uint8_t *p = cooked_node + 8;
 			const uint8_t *end = cooked_node + cooked_node_size;
@@ -897,7 +908,7 @@ int main(int argc, const char **argv) {
 	if (cooked_hud_size >= 8 && cooked_hud[0] == 'H' && cooked_hud[1] == 'U' && cooked_hud[2] == 'D' && cooked_hud[3] == '0') {
 		const uint16_t ver = uint16_t(cooked_hud[4] | (cooked_hud[5] << 8));
 		const uint16_t nc = uint16_t(cooked_hud[6] | (cooked_hud[7] << 8));
-		if (ver == 12) {
+		if (ver == 13) {
 			ScriptVMHud parsed[PS1_MAX_HUD];
 			const uint8_t *p = cooked_hud + 8;
 			const uint8_t *end = cooked_hud + cooked_hud_size;
@@ -956,7 +967,7 @@ int main(int argc, const char **argv) {
 		const uint16_t nc = uint16_t(cooked_tile[6] | (cooked_tile[7] << 8));
 		g_tile_w = cooked_tile[8];
 		g_tile_h = cooked_tile[9];
-		if (ver == 12) {
+		if (ver == 13) {
 			ScriptVMTile parsed[PS1_MAX_TILES];
 			const uint8_t *p = cooked_tile + 10;
 			const uint8_t *end = cooked_tile + cooked_tile_size;
@@ -980,7 +991,7 @@ int main(int argc, const char **argv) {
 	if (cooked_scene_size >= 8 && cooked_scene[0] == 'S' && cooked_scene[1] == 'C' && cooked_scene[2] == 'E' && cooked_scene[3] == 'N') {
 		const uint16_t ver = uint16_t(cooked_scene[4] | (cooked_scene[5] << 8));
 		const uint16_t nc = uint16_t(cooked_scene[6] | (cooked_scene[7] << 8));
-		if (ver == 12) {
+		if (ver == 13) {
 			ScriptVMPack parsed[PS1_MAX_PACKS];
 			const uint8_t *p = cooked_scene + 8;
 			const uint8_t *end = cooked_scene + cooked_scene_size;
@@ -994,7 +1005,7 @@ int main(int argc, const char **argv) {
 				}
 				pack.path[cpy] = 0;
 				p += sl;
-				if (p + 17 + 12 > end) {
+				if (p + 16 + 1 + 12 + 30 > end) {
 					break;
 				}
 				pack.node_lo = uint16_t(p[0] | (p[1] << 8));
@@ -1014,17 +1025,31 @@ int main(int argc, const char **argv) {
 				pack.cam_ry = int16_t(p[8] | (p[9] << 8));
 				pack.cam_rz = int16_t(p[10] | (p[11] << 8));
 				p += 12;
+				if (p + 30 > end) {
+					break;
+				}
+				pack.node_count = uint16_t(p[0] | (p[1] << 8));
+				pack.tri_count = uint16_t(p[2] | (p[3] << 8));
+				pack.hud_count = uint16_t(p[4] | (p[5] << 8));
+				pack.tile_count = uint16_t(p[6] | (p[7] << 8));
+				pack.tim_count = uint16_t(p[8] | (p[9] << 8));
+				p += 10;
+				pack.ram_bytes = uint32_t(p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24));
+				p += 20;
 				parsed[got++] = pack;
 			}
 			script_vm_set_packs(parsed, got);
 		}
 	}
 #endif
+#ifdef BLAZIUM_PS1_HAS_MESH
+	script_vm_set_mesh(cooked_mesh, cooked_mesh_size);
+#endif
 #ifdef BLAZIUM_PS1_HAS_ANIM
 	if (cooked_anim_size >= 8 && cooked_anim[0] == 'A' && cooked_anim[1] == 'N' && cooked_anim[2] == 'I' && cooked_anim[3] == 'M') {
 		const uint16_t ver = uint16_t(cooked_anim[4] | (cooked_anim[5] << 8));
 		const uint16_t nc = uint16_t(cooked_anim[6] | (cooked_anim[7] << 8));
-		if (ver == 12) {
+		if (ver == 13) {
 			ScriptVMAnimClip parsed[PS1_MAX_CLIPS];
 			const uint8_t *p = cooked_anim + 8;
 			const uint8_t *end = cooked_anim + cooked_anim_size;

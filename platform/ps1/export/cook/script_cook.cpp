@@ -118,7 +118,15 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "play" || p_name == "stop" || p_name == "is_playing" ||
 			p_name == "queue_free" || p_name == "load" || p_name == "instantiate" ||
 			p_name == "change_scene" || p_name == "change_scene_to_file" || p_name == "get_tree" ||
-			p_name == "connect" || p_name == "disconnect";
+			p_name == "connect" || p_name == "disconnect" ||
+			p_name == "load_scene" || p_name == "unload_scene" || p_name == "is_scene_loaded" ||
+			p_name == "get_loaded_scene_count" || p_name == "get_loaded_scene" ||
+			p_name == "get_static_memory_usage" || p_name == "get_static_memory_peak_usage" ||
+			p_name == "get_ram_budget" || p_name == "get_free_ram" ||
+			p_name == "can_load_scene" || p_name == "can_instantiate" ||
+			p_name == "get_node_count" || p_name == "get_node_budget" ||
+			p_name == "get_triangle_count" || p_name == "get_triangle_budget" ||
+			p_name == "get_free_nodes" || p_name == "get_free_hud" || p_name == "get_free_tiles";
 }
 
 static bool member_is_allowlisted(const String &p_name) {
@@ -591,7 +599,7 @@ static Vector<uint8_t> pack_official_gdbc(const Vector<String> &p_paths, const V
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 12);
+	append_u16(out, 13);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int s = 0; s < p_paths.size(); s++) {
 		append_str(out, p_paths[s]);
@@ -683,7 +691,7 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 12);
+	append_u16(out, 13);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int i = 0; i < p_paths.size(); i++) {
 		append_str(out, p_paths[i]);
@@ -771,6 +779,10 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 			"get_vector", "push_error", "get_frames_per_second",
 			"play", "stop", "is_playing", "queue_free",
 			"load", "instantiate", "change_scene", "change_scene_to_file", "get_tree",
+			"load_scene", "unload_scene", "is_scene_loaded", "get_loaded_scene_count", "get_loaded_scene",
+			"get_static_memory_usage", "get_static_memory_peak_usage", "get_ram_budget", "get_free_ram",
+			"can_load_scene", "can_instantiate", "get_node_count", "get_node_budget",
+			"get_triangle_count", "get_triangle_budget", "get_free_nodes", "get_free_hud", "get_free_tiles",
 			"set_position", "set_rotation", "look_at", "grab_focus", "release_focus",
 			"print", "push_warning", "connect", "disconnect"
 		};
@@ -1033,7 +1045,7 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 		}
 	}
 
-	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 12)\n", r_out.rotate_y);
+	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 13)\n", r_out.rotate_y);
 	for (int i = 0; i < r_out.accepted.size(); i++) {
 		r_out.map_text += "OK " + r_out.accepted[i] + "\n";
 	}

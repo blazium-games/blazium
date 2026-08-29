@@ -14,12 +14,14 @@
 #include "export_plugin.h"
 #include "flavor_plugin.h"
 
+#include "core/config/project_settings.h"
 #include "editor/editor_node.h"
 #include "editor/editor_settings.h"
 #include "editor/export/editor_export.h"
 
 void register_ps1_exporter_types() {
 	GDREGISTER_VIRTUAL_CLASS(EditorExportPlatformPS1);
+	GDREGISTER_CLASS(PS1);
 	GDREGISTER_CLASS(PS1FlavorEditorPlugin);
 }
 
@@ -31,6 +33,8 @@ static void _ps1_flavor_init() {
 
 void register_ps1_exporter() {
 #if defined(WINDOWS_ENABLED) || defined(LINUXBSD_ENABLED)
+	GLOBAL_DEF(PropertyInfo(Variant::BOOL, "ps1/enabled"), false);
+
 	EDITOR_DEF("export/ps1/toolchain", "");
 	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::STRING, "export/ps1/toolchain", PROPERTY_HINT_GLOBAL_FILE, "*.exe,*.bin,*"));
 	EDITOR_DEF("export/ps1/runtime_src", "");

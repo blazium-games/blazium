@@ -19,6 +19,8 @@
 #include "core/io/file_access.h"
 #include "core/io/json.h"
 #include "core/os/os.h"
+#include "core/templates/hash_map.h"
+#include "core/templates/pair.h"
 #include "editor/editor_node.h"
 #include "editor/editor_settings.h"
 #include "editor/themes/editor_scale.h"
@@ -210,7 +212,7 @@ bool EditorExportPlatformPS1::has_valid_project_configuration(const Ref<EditorEx
 		return false;
 	}
 	r_error += "Note: audio is WAV-only (else a beep). Display is NTSC/PAL at 256/320/512/640.\n";
-	r_error += "Note: cook keeps first 8192 triangles and first 16 albedo TIMs. Guest VM: first-slice opcodes (pack-gated scripts, instantiate reclaim, InputMap pad, 16-slot timeout/pressed/anim connect, PAL 50 Hz) + Luau tape (official Luau is not interpreted).\n";
+	r_error += "Note: cook keeps first 8192 triangles and first 16 albedo TIMs per pack. Guest VM: first-slice opcodes (24 ISO packs, PS1.* RAM/load APIs, budgeted instantiate, InputMap pad, 16-slot timeout/pressed/anim connect, PAL 50 Hz) + Luau tape (official Luau is not interpreted).\n";
 	return true;
 }
 
@@ -346,7 +348,7 @@ Error EditorExportPlatformPS1::export_project(const Ref<EditorExportPreset> &p_p
 	add_message(EXPORT_MESSAGE_INFO, "PS1", "Wrote PS-X EXE " + p_path);
 
 	if (bool(p_preset->get("ps1/make_iso"))) {
-		add_message(EXPORT_MESSAGE_WARNING, "PS1", "ISO is SYSTEM.CNF + GAME.EXE + optional FMV/XA; TEX/MESH/SCRIPT/VAG/SPRITE/HUD/TILE are embedded in the EXE.");
+		add_message(EXPORT_MESSAGE_WARNING, "PS1", "ISO is SYSTEM.CNF + GAME.EXE + optional FMV/XA + export/packs; pack 0 TEX/MESH/SCRIPT/VAG/SPRITE/HUD/TILE stay embedded in the EXE.");
 		String iso_warn;
 		if (_try_make_iso(p_path, cooked, iso_warn) != OK) {
 			add_message(EXPORT_MESSAGE_WARNING, "PS1", iso_warn.is_empty() ? String("ISO skipped because mkpsxiso is missing.") : iso_warn);
@@ -406,6 +408,30 @@ Error EditorExportPlatformPS1::_try_make_iso(const String &p_exe_path, const ps1
 	add_file("FMV00.STR", p_cooked.str_path);
 	add_file("FMV00.XA", p_cooked.xa_path);
 	add_file("NODE00.bin", p_cooked.node_path);
+	HashMap<String, Vector<String>> pack_dirs;
+	for (int i = 0; i < p_cooked.extra_pack_files.size(); i++) {
+		const String src = p_cooked.extra_pack_files[i];
+		if (src.is_empty() || !FileAccess::exists(src)) {
+			continue;
+		}
+		const String nn = src.get_base_dir().get_file();
+		if (!pack_dirs.has(nn)) {
+			pack_dirs[nn] = Vector<String>();
+		}
+		pack_dirs[nn].push_back(src);
+	}
+	if (!pack_dirs.is_empty()) {
+		xf->store_string("\t\t\t<dir name=\"PACKS\">\n");
+		for (const KeyValue<String, Vector<String>> &E : pack_dirs) {
+			xf->store_string("\t\t\t\t<dir name=\"" + E.key + "\">\n");
+			for (int f = 0; f < E.value.size(); f++) {
+				const String src = E.value[f];
+				xf->store_string("\t\t\t\t\t<file name=\"" + src.get_file().to_upper() + "\" source=\"" + src.xml_escape(true) + "\" type=\"data\" />\n");
+			}
+			xf->store_string("\t\t\t\t</dir>\n");
+		}
+		xf->store_string("\t\t\t</dir>\n");
+	}
 	xf->store_string(
 			"\t\t</directory_tree>\n"
 									  "\t</track>\n"

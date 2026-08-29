@@ -823,7 +823,7 @@ static void write_node_table(const Vector<SceneGather::CookedNode> &p_nodes, flo
 	o.push_back('O');
 	o.push_back('D');
 	o.push_back('E');
-	u16(12);
+	u16(13);
 	u16(uint16_t(p_nodes.size()));
 	const float s = p_scale > 0.0f ? p_scale : 1.0f;
 	for (int i = 0; i < p_nodes.size(); i++) {
@@ -867,7 +867,7 @@ static void write_hud_table(const Vector<SceneGather::HudRow> &p_hud, Vector<uin
 	o.push_back('U');
 	o.push_back('D');
 	o.push_back('0');
-	u16(12);
+	u16(13);
 	u16(uint16_t(p_hud.size()));
 	for (int i = 0; i < p_hud.size(); i++) {
 		const SceneGather::HudRow &h = p_hud[i];
@@ -912,7 +912,7 @@ static void write_tile_table(const SceneGather &p_g, Vector<uint8_t> &o) {
 	o.push_back('I');
 	o.push_back('L');
 	o.push_back('E');
-	u16(12);
+	u16(13);
 	u16(uint16_t(p_g.tiles.size()));
 	o.push_back(p_g.tile_w);
 	o.push_back(p_g.tile_h);
@@ -936,6 +936,8 @@ struct ScenePackCook {
 	bool has_cam = false;
 	Vector3 cam_pos;
 	Vector3 cam_euler;
+	uint16_t node_count = 0, tri_count = 0, hud_count = 0, tile_count = 0, tim_count = 0;
+	uint32_t ram_bytes = 0, node_bytes = 0, mesh_bytes = 0, hud_bytes = 0, tile_bytes = 0;
 };
 
 struct AnimKeyCook {
@@ -1065,6 +1067,12 @@ static void write_scene_packs(const Vector<ScenePackCook> &p_packs, float p_scal
 		o.push_back(uint8_t(v >> 8));
 	};
 	auto i16 = [&](int16_t v) { u16(uint16_t(v)); };
+	auto u32 = [&](uint32_t v) {
+		o.push_back(uint8_t(v & 0xff));
+		o.push_back(uint8_t((v >> 8) & 0xff));
+		o.push_back(uint8_t((v >> 16) & 0xff));
+		o.push_back(uint8_t((v >> 24) & 0xff));
+	};
 	auto append_str = [&](const String &s) {
 		const CharString utf = s.utf8();
 		o.push_back(uint8_t(CLAMP(utf.length(), 0, 255)));
@@ -1076,7 +1084,7 @@ static void write_scene_packs(const Vector<ScenePackCook> &p_packs, float p_scal
 	o.push_back('C');
 	o.push_back('E');
 	o.push_back('N');
-	u16(12);
+	u16(13);
 	u16(uint16_t(p_packs.size()));
 	const float s = p_scale > 0.0f ? p_scale : 1.0f;
 	for (int i = 0; i < p_packs.size(); i++) {
@@ -1097,6 +1105,16 @@ static void write_scene_packs(const Vector<ScenePackCook> &p_packs, float p_scal
 		i16(clamp_i16(p.cam_euler.x * 4096.0f / float(Math::TAU)));
 		i16(clamp_i16(p.cam_euler.y * 4096.0f / float(Math::TAU)));
 		i16(clamp_i16(p.cam_euler.z * 4096.0f / float(Math::TAU)));
+		u16(p.node_count);
+		u16(p.tri_count);
+		u16(p.hud_count);
+		u16(p.tile_count);
+		u16(p.tim_count);
+		u32(p.ram_bytes);
+		u32(p.node_bytes);
+		u32(p.mesh_bytes);
+		u32(p.hud_bytes);
+		u32(p.tile_bytes);
 	}
 }
 
@@ -1110,7 +1128,7 @@ static void write_anim_clips(const Vector<AnimClipCook> &p_clips, float p_scale,
 	o.push_back('N');
 	o.push_back('I');
 	o.push_back('M');
-	u16(12);
+	u16(13);
 	u16(uint16_t(p_clips.size()));
 	const float s = p_scale > 0.0f ? p_scale : 1.0f;
 	for (int i = 0; i < p_clips.size(); i++) {
@@ -1204,9 +1222,12 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		return FAILED;
 	}
 
-	r_out.warnings.push_back("only literal res://*.tscn paths are cooked (max 8 packs, shared caps).");
-	r_out.warnings.push_back("change_scene swaps the active pack (HUD/tiles/mesh/sprites follow); only that pack's scripts run _ready/_process; AnimationPlayer stops.");
-	r_out.warnings.push_back("instantiate copies NODE+HUD+TILE into free slots; queue_free reclaims instance copies (not templates).");
+	r_out.warnings.push_back("24 literal packs; extra packs are ISO/pcdrv files. Several may be resident if they fit 2 MiB + 128 nodes + 8192 tris + 16 TIM.");
+	r_out.warnings.push_back("PS1.load_scene/unload_scene/can_load_scene/can_instantiate + PS1.get_free_ram/get_static_memory_usage; over-budget load or instantiate is refused. PS1.* is PS1 export only (OS.has_feature(\"ps1\")); not registered on a normal game.");
+	r_out.warnings.push_back("NPCs should instantiate from a few resident templates; each copy spends node/HUD/TILE slots + row RAM. Do not give each NPC its own pack.");
+	r_out.warnings.push_back("instantiate fails (nil) when free nodes/HUD/tiles or 2 MiB would overflow; queue_free or PS1.unload_scene first. Mesh/TIM are shared with the loaded template. PS1.* is not available on a non-PS1 export.");
+	r_out.warnings.push_back("change_scene loads a pack if it fits, then makes it active (camera/_ready). Other residents stay drawn.");
+	r_out.warnings.push_back("extra packs stream from ISO (ps1/make_iso); EXE embed is pack 0 only.");
 	r_out.warnings.push_back("create_timer has 8 slots; poll is_timer_done or connect timeout.");
 	r_out.warnings.push_back("VideoStreamPlayer.play() replays the boot STR (blocking; START skips).");
 	r_out.warnings.push_back("loop flag is ADPCM 0x02/0x03 on the single embedded WAV; stop keys off voice 0.");
@@ -1233,6 +1254,10 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			main_pack.tri_hi = uint16_t(gathered.tris.size());
 			main_pack.hud_hi = uint16_t(gathered.hud.size());
 			main_pack.tile_hi = uint16_t(gathered.tiles.size());
+			main_pack.node_count = main_pack.node_hi;
+			main_pack.tri_count = main_pack.tri_hi;
+			main_pack.hud_count = main_pack.hud_hi;
+			main_pack.tile_count = main_pack.tile_hi;
 			if (Camera3D *cam = gathered.cam_current ? gathered.cam_current : gathered.cam_any) {
 				main_pack.has_cam = true;
 				const Transform3D xf = world_xform_3d(cam);
@@ -1249,6 +1274,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 
 	Vector<String> extra_scenes;
 	scan_script_scenes(extra_scenes);
+	Vector<SceneGather> extra_gathers;
 	for (int i = 0; i < extra_scenes.size(); i++) {
 		const String path = extra_scenes[i];
 		if (path == main_scene) {
@@ -1263,7 +1289,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			return ERR_UNCONFIGURED;
 		}
 		if (packs.size() >= kMaxScenePacks) {
-			r_out.warnings.push_back("kept first 8 scene packs (shared caps).");
+			r_out.warnings.push_back("kept first 24 scene packs.");
 			break;
 		}
 		Ref<PackedScene> extra = ResourceLoader::load(path);
@@ -1277,28 +1303,36 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		}
 		Node *er = extra->instantiate();
 		live_roots.push_back(er);
+		SceneGather extra_g;
+		walk_scene(er, extra_g, -1);
 		ScenePackCook pack;
 		pack.path = path;
-		pack.node_lo = uint16_t(gathered.nodes.size());
-		pack.tri_lo = uint16_t(gathered.tris.size());
-		pack.hud_lo = uint16_t(gathered.hud.size());
-		pack.tile_lo = uint16_t(gathered.tiles.size());
-		walk_scene(er, gathered, -1);
-		pack.node_hi = uint16_t(gathered.nodes.size());
-		pack.tri_hi = uint16_t(gathered.tris.size());
-		pack.hud_hi = uint16_t(gathered.hud.size());
-		pack.tile_hi = uint16_t(gathered.tiles.size());
-		for (int n = pack.node_lo; n < pack.node_hi && n < gathered.nodes.size(); n++) {
-			gathered.nodes.write[n].flags = uint8_t(gathered.nodes[n].flags & ~uint8_t(1));
-			if (gathered.nodes[n].type == 4 && !pack.has_cam && n < gathered.node_ptrs.size()) {
-				if (Camera3D *cam = Object::cast_to<Camera3D>(gathered.node_ptrs[n])) {
-					pack.has_cam = true;
-					const Transform3D xf = world_xform_3d(cam);
-					pack.cam_pos = xf.origin;
-					pack.cam_euler = xf.basis.get_euler();
-				}
-			}
+		pack.node_count = uint16_t(extra_g.nodes.size());
+		pack.tri_count = uint16_t(MIN(extra_g.tris.size(), kMaxTris));
+		pack.hud_count = uint16_t(extra_g.hud.size());
+		pack.tile_count = uint16_t(extra_g.tiles.size());
+		pack.tim_count = uint16_t(MIN(extra_g.images.size(), kMaxTims));
+		if (Camera3D *cam = extra_g.cam_current ? extra_g.cam_current : extra_g.cam_any) {
+			pack.has_cam = true;
+			const Transform3D xf = world_xform_3d(cam);
+			pack.cam_pos = xf.origin;
+			pack.cam_euler = xf.basis.get_euler();
 		}
+		if (extra_g.node_dropped > 0) {
+			r_out.warnings.push_back(vformat("kept first %d of %d nodes in %s.", kMaxNodes, kMaxNodes + extra_g.node_dropped, path));
+		}
+		if (extra_g.tris.size() > kMaxTris) {
+			r_out.warnings.push_back(vformat("kept first %d of %d triangles in %s.", kMaxTris, extra_g.tris.size(), path));
+		}
+		if (extra_g.hud_dropped > 0) {
+			r_out.warnings.push_back(vformat("kept first %d of %d HUD widgets in %s.", kMaxHud, kMaxHud + extra_g.hud_dropped, path));
+		}
+		if (extra_g.tile_dropped > 0) {
+			r_out.warnings.push_back(vformat("kept first %d of %d tiles in %s.", kMaxTiles, kMaxTiles + extra_g.tile_dropped, path));
+		}
+		extra_g.node_ptrs.clear();
+		extra_g.anim_players.clear();
+		extra_gathers.push_back(extra_g);
 		packs.push_back(pack);
 	}
 
@@ -1642,6 +1676,14 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			ir.path_owners[gathered.nodes[i].script_path] = uint16_t(i);
 		}
 	}
+	for (int e = 0; e < extra_gathers.size(); e++) {
+		for (int i = 0; i < extra_gathers[e].nodes.size(); i++) {
+			const String &sp = extra_gathers[e].nodes[i].script_path;
+			if (!sp.is_empty() && !ir.path_owners.has(sp)) {
+				ir.path_owners[sp] = 0xffff;
+			}
+		}
+	}
 	const Error serr = cook_scripts(p_export_dir, ir);
 	if (serr != OK) {
 		r_out.errors.push_back("Script cook failed.");
@@ -1738,18 +1780,24 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	r_out.gdbc_path = ir.gdbc_path;
 	r_out.luau_path = ir.luau_path;
 
-	for (int i = 0; i < gathered.nodes.size(); i++) {
-		gathered.nodes.write[i].script_index = -1;
-		const String &sp = gathered.nodes[i].script_path;
-		if (sp.is_empty()) {
-			continue;
-		}
-		for (int j = 0; j < ir.cooked_gd.size(); j++) {
-			if (ir.cooked_gd[j] == sp) {
-				gathered.nodes.write[i].script_index = int16_t(j);
-				break;
+	auto bind_scripts = [&](SceneGather &g) {
+		for (int i = 0; i < g.nodes.size(); i++) {
+			g.nodes.write[i].script_index = -1;
+			const String &sp = g.nodes[i].script_path;
+			if (sp.is_empty()) {
+				continue;
+			}
+			for (int j = 0; j < ir.cooked_gd.size(); j++) {
+				if (ir.cooked_gd[j] == sp) {
+					g.nodes.write[i].script_index = int16_t(j);
+					break;
+				}
 			}
 		}
+	};
+	bind_scripts(gathered);
+	for (int e = 0; e < extra_gathers.size(); e++) {
+		bind_scripts(extra_gathers.write[e]);
 	}
 	{
 		Vector<uint8_t> nodeb;
@@ -1758,6 +1806,11 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		Ref<FileAccess> nd = FileAccess::open(r_out.node_path, FileAccess::WRITE);
 		ERR_FAIL_COND_V(nd.is_null(), ERR_CANT_CREATE);
 		nd->store_buffer(nodeb);
+		if (!packs.is_empty()) {
+			packs.write[0].node_bytes = uint32_t(nodeb.size());
+			packs.write[0].mesh_bytes = uint32_t(mesh.bytes.size());
+			packs.write[0].tim_count = uint16_t(tims.size());
+		}
 	}
 	{
 		Vector<uint8_t> hudb;
@@ -1766,6 +1819,9 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		Ref<FileAccess> hf = FileAccess::open(r_out.hud_path, FileAccess::WRITE);
 		ERR_FAIL_COND_V(hf.is_null(), ERR_CANT_CREATE);
 		hf->store_buffer(hudb);
+		if (!packs.is_empty()) {
+			packs.write[0].hud_bytes = uint32_t(hudb.size());
+		}
 	}
 	{
 		Vector<uint8_t> tileb;
@@ -1774,7 +1830,80 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		Ref<FileAccess> tf = FileAccess::open(r_out.tile_path, FileAccess::WRITE);
 		ERR_FAIL_COND_V(tf.is_null(), ERR_CANT_CREATE);
 		tf->store_buffer(tileb);
+		if (!packs.is_empty()) {
+			packs.write[0].tile_bytes = uint32_t(tileb.size());
+			packs.write[0].ram_bytes = packs[0].node_bytes + packs[0].mesh_bytes + packs[0].hud_bytes + packs[0].tile_bytes + uint32_t(packed.bytes.size());
+		}
 	}
+	for (int e = 0; e < extra_gathers.size(); e++) {
+		const int pack_i = e + 1;
+		if (pack_i >= packs.size()) {
+			break;
+		}
+		SceneGather &eg = extra_gathers.write[e];
+		const String nn = vformat("%02d", pack_i);
+		const String pdir = p_export_dir.path_join("packs").path_join(nn);
+		Ref<DirAccess> pda = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
+		pda->make_dir_recursive(pdir);
+		Vector<uint8_t> nodeb;
+		write_node_table(eg.nodes, mesh.scale, nodeb);
+		const String nodep = pdir.path_join("NODE" + nn + ".bin");
+		Ref<FileAccess> nf = FileAccess::open(nodep, FileAccess::WRITE);
+		ERR_FAIL_COND_V(nf.is_null(), ERR_CANT_CREATE);
+		nf->store_buffer(nodeb);
+		r_out.extra_pack_files.push_back(nodep);
+		Vector<uint8_t> hudb;
+		write_hud_table(eg.hud, hudb);
+		const String hudp = pdir.path_join("HUD" + nn + ".bin");
+		Ref<FileAccess> hf = FileAccess::open(hudp, FileAccess::WRITE);
+		ERR_FAIL_COND_V(hf.is_null(), ERR_CANT_CREATE);
+		hf->store_buffer(hudb);
+		r_out.extra_pack_files.push_back(hudp);
+		Vector<uint8_t> tileb;
+		write_tile_table(eg, tileb);
+		const String tilep = pdir.path_join("TILE" + nn + ".bin");
+		Ref<FileAccess> tf = FileAccess::open(tilep, FileAccess::WRITE);
+		ERR_FAIL_COND_V(tf.is_null(), ERR_CANT_CREATE);
+		tf->store_buffer(tileb);
+		r_out.extra_pack_files.push_back(tilep);
+		MeshBlob emesh;
+		if (!eg.tris.is_empty()) {
+			write_mesh_svector(eg.tris, kMaxTris, emesh);
+			const String meshp = pdir.path_join("MESH" + nn + ".bin");
+			Ref<FileAccess> mf = FileAccess::open(meshp, FileAccess::WRITE);
+			ERR_FAIL_COND_V(mf.is_null(), ERR_CANT_CREATE);
+			mf->store_buffer(emesh.bytes);
+			r_out.extra_pack_files.push_back(meshp);
+		}
+		uint32_t tpak_bytes = 0;
+		if (!eg.images.is_empty()) {
+			Vector<TimBlob> etim;
+			for (int t = 0; t < eg.images.size() && t < kMaxTims; t++) {
+				TimBlob one;
+				if (write_tim4(eg.images[t], one) == OK) {
+					etim.push_back(one);
+				}
+			}
+			if (!etim.is_empty()) {
+				TimBlob etpak;
+				if (write_tpak(etim, etpak) == OK) {
+					const String timp = pdir.path_join("TPAK" + nn + ".bin");
+					Ref<FileAccess> tmf = FileAccess::open(timp, FileAccess::WRITE);
+					if (tmf.is_valid()) {
+						tmf->store_buffer(etpak.bytes);
+						tpak_bytes = uint32_t(etpak.bytes.size());
+						r_out.extra_pack_files.push_back(timp);
+					}
+				}
+			}
+		}
+		packs.write[pack_i].node_bytes = uint32_t(nodeb.size());
+		packs.write[pack_i].hud_bytes = uint32_t(hudb.size());
+		packs.write[pack_i].tile_bytes = uint32_t(tileb.size());
+		packs.write[pack_i].mesh_bytes = uint32_t(emesh.bytes.size());
+		packs.write[pack_i].ram_bytes = packs[pack_i].node_bytes + packs[pack_i].mesh_bytes + packs[pack_i].hud_bytes + packs[pack_i].tile_bytes + tpak_bytes;
+	}
+	r_out.pack_count = packs.size();
 	{
 		Vector<uint8_t> scenb;
 		write_scene_packs(packs, mesh.scale, scenb);
@@ -1831,8 +1960,8 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	const int ram_blob = packed.bytes.size() + mesh.bytes.size() + vag.bytes.size() + extra_blob;
 	r_out.over_budget = packed.vram_bytes > kVramLimit || ram_blob > kRamLimit || vag.bytes.size() > kSpuLimit;
 
-	r_out.infos.push_back(vformat("guest_abi=%d nodes=%d hud=%d tiles=%d src=%s tims=%d tris=%d cooked=%d lights=%d sprites=%d display=%s %dx%d gd=%d luau=%d",
-			kCookABI, gathered.nodes.size(), gathered.hud.size(), gathered.tiles.size(), src_name, tims.size(), src_tris.size(), mesh.tri_count, lights.size(), sprite_cooks.size(),
+	r_out.infos.push_back(vformat("guest_abi=%d nodes=%d hud=%d tiles=%d packs=%d src=%s tims=%d tris=%d cooked=%d lights=%d sprites=%d display=%s %dx%d gd=%d luau=%d",
+			kCookABI, gathered.nodes.size(), gathered.hud.size(), gathered.tiles.size(), packs.size(), src_name, tims.size(), src_tris.size(), mesh.tri_count, lights.size(), sprite_cooks.size(),
 			p_opts.region == 1 ? "PAL" : "NTSC", display_w, display_h, ir.gd_count, ir.luau_count));
 
 	r_out.report = vformat("PS1 cook budget: TPAK %d TIM(s) (%d bytes) tris=%d cooked=%d VRAM=%d/%d RAM_blob=%d/%d SPU=%d/%d src=%s%s",
