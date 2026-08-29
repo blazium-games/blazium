@@ -8488,6 +8488,12 @@ static void get_prop(int node, const char *n, GVar *d) {
 		copy_str(d->s, 32, g_nodes[node].name);
 	} else if (prop_named(n, "position")) {
 		*d = gv_v3(float(g_nodes[node].px), float(-g_nodes[node].py), float(g_nodes[node].pz));
+	} else if (prop_named(n, "x")) {
+		*d = gv_float(float(g_nodes[node].px));
+	} else if (prop_named(n, "y")) {
+		*d = gv_float(float(-g_nodes[node].py));
+	} else if (prop_named(n, "z")) {
+		*d = gv_float(float(g_nodes[node].pz));
 	} else if (prop_named(n, "global_position")) {
 		float px, py, pz, rx, ry, rz;
 		node_world(node, &px, &py, &pz, &rx, &ry, &rz);
@@ -8611,6 +8617,12 @@ static void set_prop(int node, const char *n, const GVar *s) {
 			g_nodes[node].py = int16_t(-s->y);
 			g_nodes[node].pz = int16_t(s->z);
 		}
+	} else if (prop_named(n, "x")) {
+		g_nodes[node].px = int16_t(as_float(*s));
+	} else if (prop_named(n, "y")) {
+		g_nodes[node].py = int16_t(-as_float(*s));
+	} else if (prop_named(n, "z")) {
+		g_nodes[node].pz = int16_t(as_float(*s));
 	} else if (prop_named(n, "global_position")) {
 		if (s->type == V_V3) {
 			kit_set_global_pos(node, s->x, s->y, s->z);
