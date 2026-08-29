@@ -101,6 +101,7 @@ struct ScriptVMHost {
 	void (*stop_vag)(void);
 	int (*vag_playing)(void);
 	void (*play_fmv)(void);
+	int region;
 };
 
 void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, size_t luau_size);

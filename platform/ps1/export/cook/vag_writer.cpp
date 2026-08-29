@@ -99,7 +99,13 @@ Error write_vag_pcm(const Vector<int16_t> &p_pcm, int p_sample_rate, int p_max_b
 			shift++;
 		}
 		out.push_back(uint8_t(shift));
-		out.push_back(b == blocks - 1 ? (p_loop ? 0x03 : 0x01) : 0x00);
+		uint8_t flag = 0x00;
+		if (b == blocks - 1) {
+			flag = p_loop ? 0x03 : 0x01;
+		} else if (b == 0 && p_loop) {
+			flag = 0x02;
+		}
+		out.push_back(flag);
 		for (int i = 0; i < 28; i += 2) {
 			const int sh = 12 - shift;
 			int n0 = sh >= 0 ? (int(smp[i]) >> sh) : (int(smp[i]) << (-sh));

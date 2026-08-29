@@ -578,7 +578,7 @@ static Vector<uint8_t> pack_official_gdbc(const Vector<String> &p_paths, const V
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 10);
+	append_u16(out, 11);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int s = 0; s < p_paths.size(); s++) {
 		append_str(out, p_paths[s]);
@@ -670,7 +670,7 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 10);
+	append_u16(out, 11);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int i = 0; i < p_paths.size(); i++) {
 		append_str(out, p_paths[i]);
@@ -868,7 +868,7 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 		}
 	}
 
-	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 10)\n", r_out.rotate_y);
+	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 11)\n", r_out.rotate_y);
 	for (int i = 0; i < r_out.accepted.size(); i++) {
 		r_out.map_text += "OK " + r_out.accepted[i] + "\n";
 	}

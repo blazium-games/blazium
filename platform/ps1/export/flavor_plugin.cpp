@@ -26,9 +26,9 @@ PS1FlavorEditorPlugin::PS1FlavorEditorPlugin() {
 		"Slots: 16 TIM, 8192 tris, 3 lights, 16 Sprite2D, 128 nodes",
 		"32 HUD widgets (pad-focus; poll pressed/value, no signals)",
 		"256 TileMap tiles; first-slice VM (no official Luau, no skinning)",
-		"8 literal .tscn packs; change_scene swaps HUD/tiles/mesh + _ready",
-		"AnimationPlayer xform clips",
-		"Loop VAG + replayable FMV (play() on VideoStreamPlayer)",
+		"8 packs; change_scene isolates scripts + sprites + stops anim",
+		"AnimationPlayer xform clips; PAL 50 Hz / NTSC 60",
+		"VAG loop/stop + replayable FMV (play() on VideoStreamPlayer)",
 		"FMV: in-editor MIT STR/XA (not psxpress)",
 		"Not DuckStation / Sony BIOS / hardware",
 	};

@@ -823,7 +823,7 @@ static void write_node_table(const Vector<SceneGather::CookedNode> &p_nodes, flo
 	o.push_back('O');
 	o.push_back('D');
 	o.push_back('E');
-	u16(10);
+	u16(11);
 	u16(uint16_t(p_nodes.size()));
 	const float s = p_scale > 0.0f ? p_scale : 1.0f;
 	for (int i = 0; i < p_nodes.size(); i++) {
@@ -867,7 +867,7 @@ static void write_hud_table(const Vector<SceneGather::HudRow> &p_hud, Vector<uin
 	o.push_back('U');
 	o.push_back('D');
 	o.push_back('0');
-	u16(10);
+	u16(11);
 	u16(uint16_t(p_hud.size()));
 	for (int i = 0; i < p_hud.size(); i++) {
 		const SceneGather::HudRow &h = p_hud[i];
@@ -912,7 +912,7 @@ static void write_tile_table(const SceneGather &p_g, Vector<uint8_t> &o) {
 	o.push_back('I');
 	o.push_back('L');
 	o.push_back('E');
-	u16(10);
+	u16(11);
 	u16(uint16_t(p_g.tiles.size()));
 	o.push_back(p_g.tile_w);
 	o.push_back(p_g.tile_h);
@@ -1076,7 +1076,7 @@ static void write_scene_packs(const Vector<ScenePackCook> &p_packs, float p_scal
 	o.push_back('C');
 	o.push_back('E');
 	o.push_back('N');
-	u16(10);
+	u16(11);
 	u16(uint16_t(p_packs.size()));
 	const float s = p_scale > 0.0f ? p_scale : 1.0f;
 	for (int i = 0; i < p_packs.size(); i++) {
@@ -1110,7 +1110,7 @@ static void write_anim_clips(const Vector<AnimClipCook> &p_clips, float p_scale,
 	o.push_back('N');
 	o.push_back('I');
 	o.push_back('M');
-	u16(10);
+	u16(11);
 	u16(uint16_t(p_clips.size()));
 	const float s = p_scale > 0.0f ? p_scale : 1.0f;
 	for (int i = 0; i < p_clips.size(); i++) {
@@ -1205,10 +1205,12 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	}
 
 	r_out.warnings.push_back("only literal res://*.tscn paths are cooked (max 8 packs, shared caps).");
-	r_out.warnings.push_back("change_scene swaps the active pack (HUD/tiles/mesh follow); _ready runs again.");
+	r_out.warnings.push_back("change_scene swaps the active pack (HUD/tiles/mesh/sprites follow); only that pack's scripts run _ready/_process; AnimationPlayer stops.");
 	r_out.warnings.push_back("instantiate copies into unused NODE slots; queue_free does not reclaim them.");
 	r_out.warnings.push_back("create_timer has 8 slots; poll is_timer_done (no timeout signal).");
 	r_out.warnings.push_back("VideoStreamPlayer.play() replays the boot STR (blocking; START skips).");
+	r_out.warnings.push_back("loop flag is ADPCM 0x02/0x03 on the single embedded WAV; stop keys off voice 0.");
+	r_out.warnings.push_back("PAL display uses 50 Hz delta; NTSC stays 60.");
 
 	SceneGather gathered;
 	String src_name;

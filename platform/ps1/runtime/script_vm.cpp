@@ -133,6 +133,14 @@ static float rf32(const uint8_t *p) {
 	return x.f;
 }
 
+static int owner_node_visible(int owner) {
+	const int id = (owner == 0xffff) ? 0 : owner;
+	if (id < 0 || id >= g_nnode) {
+		return 1;
+	}
+	return (g_nodes[id].flags & 1) != 0;
+}
+
 void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, size_t luau_size) {
 	g_gdbc = gdbc;
 	g_gdbc_size = gdbc_size;
@@ -662,6 +670,13 @@ static void activate_pack(int pack, const ScriptVMHost *host) {
 			}
 		}
 	}
+	g_anim_playing = 0;
+	g_anim_clip = -1;
+	g_anim_ms = 0.0f;
+	for (int t = 0; t < 8; t++) {
+		g_timer_used[t] = 0;
+		g_timer_end[t] = 0.0f;
+	}
 	if (g_packs[pack].has_cam && host) {
 		if (host->pos_x) {
 			*host->pos_x = g_packs[pack].cam_px;
@@ -741,6 +756,9 @@ static void tick_anim(float delta) {
 	}
 	const float t = g_anim_ms;
 	for (int n = 0; n < g_nnode; n++) {
+		if (!(g_nodes[n].flags & 1)) {
+			continue;
+		}
 		int a = -1;
 		int b = -1;
 		for (int i = 0; i < c->nkeys; i++) {
@@ -1070,7 +1088,7 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 		return 1;
 	}
 	if (name_is(name, "get_frames_per_second")) {
-		*ret = gv_int(60);
+		*ret = gv_int(host && host->region ? 50 : 60);
 		return 1;
 	}
 	if (name_is(name, "get_ticks_msec")) {
@@ -1679,7 +1697,7 @@ static int run_official(const uint8_t *blob, size_t size, const char *want, floa
 	if (size < 8 || blob[0] != 'G' || blob[1] != 'D' || blob[2] != 'B' || blob[3] != 'C') {
 		return 0;
 	}
-	if (ru16(blob + 4) != 10) {
+	if (ru16(blob + 4) != 11) {
 		return 0;
 	}
 	const uint16_t nscripts = ru16(blob + 6);
@@ -1829,6 +1847,9 @@ static int run_official(const uint8_t *blob, size_t size, const char *want, floa
 				p += sl;
 			}
 			if (!name_is(fname, want)) {
+				continue;
+			}
+			if (!owner_node_visible(int(owner))) {
 				continue;
 			}
 			const int nstack = stack_size > 4 && stack_size < 48 ? int(stack_size) : 16;
@@ -2149,7 +2170,7 @@ static int run_tape(const uint8_t *blob, size_t size, const char *want, float de
 	if (size < 8 || blob[0] != 'G' || blob[1] != 'D' || blob[2] != 'B' || blob[3] != 'C') {
 		return 0;
 	}
-	if (ru16(blob + 4) != 10) {
+	if (ru16(blob + 4) != 11) {
 		return 0;
 	}
 	const uint16_t npaths = ru16(blob + 6);
@@ -2230,6 +2251,9 @@ static int run_tape(const uint8_t *blob, size_t size, const char *want, float de
 			continue;
 		}
 		const int owner = (f / 2 < nown) ? int(owners[f / 2]) : 0;
+		if (!owner_node_visible(owner)) {
+			continue;
+		}
 		const int self = (owner == 0xffff) ? 0 : owner;
 		float stack[8];
 		int sp = 0;
