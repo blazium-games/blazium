@@ -42,7 +42,7 @@
 #include "script_vm.h"
 
 #ifndef BLAZIUM_PS1_COOK_ABI
-#define BLAZIUM_PS1_COOK_ABI 11
+#define BLAZIUM_PS1_COOK_ABI 12
 #endif
 
 #define OT_LEN 2048
@@ -822,12 +822,40 @@ int main(int argc, const char **argv) {
 		luau_n = cooked_luau_size;
 #endif
 		script_vm_init(gdbc, gdbc_n, luau, luau_n);
+#ifdef BLAZIUM_PS1_HAS_SCRIPT
+		if (cooked_script_size >= 67 && cooked_script[62] == 'I' && cooked_script[63] == 'N' && cooked_script[64] == 'P' && cooked_script[65] == '1') {
+			const int nc = int(cooked_script[66]);
+			ScriptVMAction acts[PS1_MAX_ACTIONS];
+			const uint8_t *p = cooked_script + 67;
+			const uint8_t *end = cooked_script + cooked_script_size;
+			int got = 0;
+			for (int i = 0; i < nc && i < PS1_MAX_ACTIONS && p < end; i++) {
+				const uint8_t nl = *p++;
+				ScriptVMAction a{};
+				uint8_t cpy = nl < 15 ? nl : 15;
+				for (uint8_t k = 0; k < cpy && p < end; k++) {
+					a.name[k] = char(*p++);
+				}
+				if (nl > cpy) {
+					p += (nl - cpy);
+				}
+				a.name[cpy] = 0;
+				if (p + 2 > end) {
+					break;
+				}
+				a.mask = uint16_t(p[0] | (p[1] << 8));
+				p += 2;
+				acts[got++] = a;
+			}
+			script_vm_set_actions(acts, got);
+		}
+#endif
 	}
 #ifdef BLAZIUM_PS1_HAS_NODE
 	if (cooked_node_size >= 8 && cooked_node[0] == 'N' && cooked_node[1] == 'O' && cooked_node[2] == 'D' && cooked_node[3] == 'E') {
 		const uint16_t ver = uint16_t(cooked_node[4] | (cooked_node[5] << 8));
 		const uint16_t nc = uint16_t(cooked_node[6] | (cooked_node[7] << 8));
-		if (ver == 11) {
+		if (ver == 12) {
 			ScriptVMNode parsed[PS1_MAX_NODES];
 			const uint8_t *p = cooked_node + 8;
 			const uint8_t *end = cooked_node + cooked_node_size;
@@ -869,7 +897,7 @@ int main(int argc, const char **argv) {
 	if (cooked_hud_size >= 8 && cooked_hud[0] == 'H' && cooked_hud[1] == 'U' && cooked_hud[2] == 'D' && cooked_hud[3] == '0') {
 		const uint16_t ver = uint16_t(cooked_hud[4] | (cooked_hud[5] << 8));
 		const uint16_t nc = uint16_t(cooked_hud[6] | (cooked_hud[7] << 8));
-		if (ver == 11) {
+		if (ver == 12) {
 			ScriptVMHud parsed[PS1_MAX_HUD];
 			const uint8_t *p = cooked_hud + 8;
 			const uint8_t *end = cooked_hud + cooked_hud_size;
@@ -928,7 +956,7 @@ int main(int argc, const char **argv) {
 		const uint16_t nc = uint16_t(cooked_tile[6] | (cooked_tile[7] << 8));
 		g_tile_w = cooked_tile[8];
 		g_tile_h = cooked_tile[9];
-		if (ver == 11) {
+		if (ver == 12) {
 			ScriptVMTile parsed[PS1_MAX_TILES];
 			const uint8_t *p = cooked_tile + 10;
 			const uint8_t *end = cooked_tile + cooked_tile_size;
@@ -952,7 +980,7 @@ int main(int argc, const char **argv) {
 	if (cooked_scene_size >= 8 && cooked_scene[0] == 'S' && cooked_scene[1] == 'C' && cooked_scene[2] == 'E' && cooked_scene[3] == 'N') {
 		const uint16_t ver = uint16_t(cooked_scene[4] | (cooked_scene[5] << 8));
 		const uint16_t nc = uint16_t(cooked_scene[6] | (cooked_scene[7] << 8));
-		if (ver == 11) {
+		if (ver == 12) {
 			ScriptVMPack parsed[PS1_MAX_PACKS];
 			const uint8_t *p = cooked_scene + 8;
 			const uint8_t *end = cooked_scene + cooked_scene_size;
@@ -996,7 +1024,7 @@ int main(int argc, const char **argv) {
 	if (cooked_anim_size >= 8 && cooked_anim[0] == 'A' && cooked_anim[1] == 'N' && cooked_anim[2] == 'I' && cooked_anim[3] == 'M') {
 		const uint16_t ver = uint16_t(cooked_anim[4] | (cooked_anim[5] << 8));
 		const uint16_t nc = uint16_t(cooked_anim[6] | (cooked_anim[7] << 8));
-		if (ver == 11) {
+		if (ver == 12) {
 			ScriptVMAnimClip parsed[PS1_MAX_CLIPS];
 			const uint8_t *p = cooked_anim + 8;
 			const uint8_t *end = cooked_anim + cooked_anim_size;

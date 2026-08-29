@@ -8,6 +8,8 @@
 
 #include "script_cook.h"
 
+#include "core/input/input_event.h"
+#include "core/input/input_map.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/templates/hash_map.h"
@@ -115,7 +117,8 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "get_vector" || p_name == "push_error" || p_name == "get_frames_per_second" ||
 			p_name == "play" || p_name == "stop" || p_name == "is_playing" ||
 			p_name == "queue_free" || p_name == "load" || p_name == "instantiate" ||
-			p_name == "change_scene" || p_name == "change_scene_to_file" || p_name == "get_tree";
+			p_name == "change_scene" || p_name == "change_scene_to_file" || p_name == "get_tree" ||
+			p_name == "connect" || p_name == "disconnect";
 }
 
 static bool member_is_allowlisted(const String &p_name) {
@@ -149,6 +152,16 @@ static void warn_unknown_actions(const String &p_source, ScriptIR &r_out) {
 		}
 		const String act = p_source.substr(q + 1, e - q - 1);
 		if (action_is_known(act)) {
+			continue;
+		}
+		bool mapped = false;
+		for (int i = 0; i < r_out.input_actions.size(); i++) {
+			if (r_out.input_actions[i].name == act) {
+				mapped = true;
+				break;
+			}
+		}
+		if (mapped) {
 			continue;
 		}
 		const String msg = "unknown Input action '" + act + "' is not mapped on PS1 (false at runtime).";
@@ -578,7 +591,7 @@ static Vector<uint8_t> pack_official_gdbc(const Vector<String> &p_paths, const V
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 11);
+	append_u16(out, 12);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int s = 0; s < p_paths.size(); s++) {
 		append_str(out, p_paths[s]);
@@ -670,7 +683,7 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 11);
+	append_u16(out, 12);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int i = 0; i < p_paths.size(); i++) {
 		append_str(out, p_paths[i]);
@@ -759,7 +772,7 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 			"play", "stop", "is_playing", "queue_free",
 			"load", "instantiate", "change_scene", "change_scene_to_file", "get_tree",
 			"set_position", "set_rotation", "look_at", "grab_focus", "release_focus",
-			"print", "push_warning"
+			"print", "push_warning", "connect", "disconnect"
 		};
 		for (const char *nm : named) {
 			if (src.contains(String(nm) + "(") || src.contains(String(nm) + " (")) {
@@ -784,6 +797,53 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 			add_name("rotate_y");
 		}
 		Vector<uint8_t> ready_code;
+		{
+			int rp = src.find("func _ready");
+			if (rp < 0) {
+				rp = src.find("function _ready");
+			}
+			if (rp >= 0) {
+				int rend = src.length();
+				const int n1 = src.find("\nfunc ", rp + 1);
+				const int n2 = src.find("\nfunction ", rp + 1);
+				if (n1 >= 0 && n1 < rend) {
+					rend = n1;
+				}
+				if (n2 >= 0 && n2 < rend) {
+					rend = n2;
+				}
+				const String ready_src = src.substr(rp, rend - rp);
+				if (ready_src.contains("is_action_pressed") || ready_src.contains("is_action_just_pressed") || ready_src.contains("is_action_just_released")) {
+					String act = "is_action_pressed";
+					if (ready_src.contains("is_action_just_released")) {
+						act = "is_action_just_released";
+					} else if (ready_src.contains("is_action_just_pressed")) {
+						act = "is_action_just_pressed";
+					}
+					add_name(first_quoted_action(ready_src));
+					ready_code.push_back(kTapeCallNamed);
+					ready_code.push_back(add_name(act));
+				}
+				for (const char *nm : named) {
+					if (ready_src.contains(String(nm) + "(") || ready_src.contains(String(nm) + " (")) {
+						ready_code.push_back(kTapeCallNamed);
+						ready_code.push_back(add_name(nm));
+					}
+				}
+				if (ready_src.contains("get_node")) {
+					String node_name = ".";
+					const int q = ready_src.find("get_node(\"");
+					if (q >= 0) {
+						const int e = ready_src.find("\"", q + 10);
+						if (e > q + 10) {
+							node_name = ready_src.substr(q + 10, e - (q + 10));
+						}
+					}
+					ready_code.push_back(kTapeCallGetNode);
+					ready_code.push_back(add_name(node_name));
+				}
+			}
+		}
 		ready_code.push_back(kTapeReturn);
 		auto emit_fn = [&](const String &fname, const Vector<uint8_t> &body) {
 			append_str(out, fname);
@@ -847,7 +907,112 @@ static void walk_scripts(const String &p_dir, ScriptIR &r_out) {
 	}
 }
 
+static uint16_t mask_from_input_event(const Ref<InputEvent> &p_ev) {
+	const Ref<InputEventKey> key = p_ev;
+	if (key.is_valid()) {
+		const Key k = key->get_physical_keycode() != Key::NONE ? key->get_physical_keycode() : key->get_keycode();
+		if (k == Key::LEFT || k == Key::A) {
+			return 1 << 7;
+		}
+		if (k == Key::RIGHT || k == Key::D) {
+			return 1 << 5;
+		}
+		if (k == Key::UP || k == Key::W) {
+			return 1 << 4;
+		}
+		if (k == Key::DOWN || k == Key::S) {
+			return 1 << 6;
+		}
+		if (k == Key::ENTER || k == Key::KP_ENTER || k == Key::SPACE || k == Key::Z) {
+			return 1 << 14;
+		}
+		if (k == Key::ESCAPE || k == Key::BACKSPACE) {
+			return 1 << 13;
+		}
+		if (k == Key::SHIFT) {
+			return 1 << 15;
+		}
+		if (k == Key::CTRL) {
+			return 1 << 12;
+		}
+		if (k == Key::TAB) {
+			return 1 << 11;
+		}
+	}
+	const Ref<InputEventJoypadButton> joy = p_ev;
+	if (joy.is_valid()) {
+		const JoyButton b = joy->get_button_index();
+		if (b == JoyButton::A || b == JoyButton::DPAD_DOWN) {
+			return (b == JoyButton::DPAD_DOWN) ? uint16_t(1 << 6) : uint16_t(1 << 14);
+		}
+		if (b == JoyButton::B) {
+			return 1 << 13;
+		}
+		if (b == JoyButton::X) {
+			return 1 << 15;
+		}
+		if (b == JoyButton::Y) {
+			return 1 << 12;
+		}
+		if (b == JoyButton::LEFT_SHOULDER) {
+			return 1 << 10;
+		}
+		if (b == JoyButton::RIGHT_SHOULDER) {
+			return 1 << 11;
+		}
+		if (b == JoyButton::START) {
+			return 1 << 3;
+		}
+		if (b == JoyButton::BACK) {
+			return 1 << 0;
+		}
+		if (b == JoyButton::DPAD_LEFT) {
+			return 1 << 7;
+		}
+		if (b == JoyButton::DPAD_RIGHT) {
+			return 1 << 5;
+		}
+		if (b == JoyButton::DPAD_UP) {
+			return 1 << 4;
+		}
+	}
+	return 0;
+}
+
+static void cook_input_map(ScriptIR &r_out) {
+	InputMap *im = InputMap::get_singleton();
+	if (!im) {
+		return;
+	}
+	const List<StringName> actions = im->get_actions();
+	for (const StringName &sn : actions) {
+		const String name = String(sn);
+		if (action_is_known(name)) {
+			continue;
+		}
+		const List<Ref<InputEvent>> *evs = im->action_get_events(sn);
+		if (!evs) {
+			continue;
+		}
+		uint16_t mask = 0;
+		for (const Ref<InputEvent> &e : *evs) {
+			mask = uint16_t(mask | mask_from_input_event(e));
+		}
+		if (!mask) {
+			continue;
+		}
+		if (r_out.input_actions.size() >= 16) {
+			break;
+		}
+		ScriptIR::InputAction row;
+		row.name = name;
+		row.mask = mask;
+		r_out.input_actions.push_back(row);
+	}
+}
+
 Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
+	cook_input_map(r_out);
 	walk_scripts("res://", r_out);
 	for (int i = 0; i < r_out.attached.size(); i++) {
 		const String path = r_out.attached[i];
@@ -868,7 +1033,7 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 		}
 	}
 
-	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 11)\n", r_out.rotate_y);
+	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 12)\n", r_out.rotate_y);
 	for (int i = 0; i < r_out.accepted.size(); i++) {
 		r_out.map_text += "OK " + r_out.accepted[i] + "\n";
 	}
@@ -1018,6 +1183,22 @@ Error write_script_ir(const String &p_export_dir, const ScriptIR &p_ir) {
 	i16(p_ir.cam_rx);
 	i16(p_ir.cam_ry);
 	i16(p_ir.cam_rz);
+	if (!p_ir.input_actions.is_empty()) {
+		bytes.push_back('I');
+		bytes.push_back('N');
+		bytes.push_back('P');
+		bytes.push_back('1');
+		bytes.push_back(uint8_t(MIN(p_ir.input_actions.size(), 16)));
+		for (int i = 0; i < p_ir.input_actions.size() && i < 16; i++) {
+			const CharString utf = p_ir.input_actions[i].name.utf8();
+			const int n = MIN(utf.length(), 15);
+			bytes.push_back(uint8_t(n));
+			for (int c = 0; c < n; c++) {
+				bytes.push_back(uint8_t(utf[c]));
+			}
+			append_u16(bytes, p_ir.input_actions[i].mask);
+		}
+	}
 	Ref<FileAccess> ir = FileAccess::open(p_export_dir.path_join("SCRIPT.IR"), FileAccess::WRITE);
 	ERR_FAIL_COND_V(ir.is_null(), ERR_CANT_CREATE);
 	ir->store_buffer(bytes);

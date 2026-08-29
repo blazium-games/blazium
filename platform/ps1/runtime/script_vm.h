@@ -29,6 +29,12 @@
 #ifndef PS1_MAX_KEYS
 #define PS1_MAX_KEYS 32
 #endif
+#ifndef PS1_MAX_ACTIONS
+#define PS1_MAX_ACTIONS 16
+#endif
+#ifndef PS1_MAX_CONNS
+#define PS1_MAX_CONNS 16
+#endif
 
 struct ScriptVMNode {
 	int16_t parent;
@@ -88,6 +94,11 @@ struct ScriptVMAnimClip {
 	ScriptVMAnimKey keys[PS1_MAX_KEYS];
 };
 
+struct ScriptVMAction {
+	char name[16];
+	uint16_t mask;
+};
+
 struct ScriptVMHost {
 	int16_t *rot_x;
 	int16_t *rot_y;
@@ -110,6 +121,7 @@ void script_vm_set_hud(const ScriptVMHud *hud, int count);
 void script_vm_set_tiles(const ScriptVMTile *tiles, int count);
 void script_vm_set_packs(const ScriptVMPack *packs, int count);
 void script_vm_set_anims(const ScriptVMAnimClip *clips, int count);
+void script_vm_set_actions(const ScriptVMAction *actions, int count);
 int script_vm_node_count();
 const ScriptVMNode *script_vm_nodes();
 int script_vm_hud_count();

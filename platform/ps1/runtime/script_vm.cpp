@@ -36,8 +36,27 @@ static int g_nclip = 0;
 static int g_anim_playing = 0;
 static int g_anim_clip = -1;
 static float g_anim_ms = 0.0f;
+static int g_anim_just_finished = 0;
+static uint8_t g_node_used[PS1_MAX_NODES];
+static uint8_t g_node_ready[PS1_MAX_NODES];
+static uint8_t g_inst_group[PS1_MAX_NODES];
+static uint8_t g_next_group = 1;
+static uint8_t g_hud_used[PS1_MAX_HUD];
+static uint8_t g_tile_used[PS1_MAX_TILES];
+static ScriptVMAction g_actions[PS1_MAX_ACTIONS];
+static int g_naction = 0;
 static const int kTreeId = -2;
 static const int kPackBase = 1000;
+static const int kTimerBase = 2000;
+enum { SIG_TIMEOUT = 1, SIG_PRESSED = 2, SIG_ANIM = 3 };
+struct ScriptVMConn {
+	int src;
+	uint8_t sig;
+	int dest;
+	char method[24];
+	uint8_t used;
+};
+static ScriptVMConn g_conn[PS1_MAX_CONNS];
 
 enum {
 	kTapeReturn = 0,
@@ -159,6 +178,22 @@ void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, 
 		g_timer_used[i] = 0;
 		g_timer_end[i] = 0.0f;
 	}
+	for (int i = 0; i < PS1_MAX_NODES; i++) {
+		g_node_used[i] = 0;
+		g_node_ready[i] = 0;
+		g_inst_group[i] = 0;
+	}
+	for (int i = 0; i < PS1_MAX_HUD; i++) {
+		g_hud_used[i] = 0;
+	}
+	for (int i = 0; i < PS1_MAX_TILES; i++) {
+		g_tile_used[i] = 0;
+	}
+	for (int i = 0; i < PS1_MAX_CONNS; i++) {
+		g_conn[i].used = 0;
+	}
+	g_naction = 0;
+	g_next_group = 1;
 }
 
 void script_vm_set_nodes(const ScriptVMNode *nodes, int count) {
@@ -167,8 +202,14 @@ void script_vm_set_nodes(const ScriptVMNode *nodes, int count) {
 		return;
 	}
 	g_nnode = count > PS1_MAX_NODES ? PS1_MAX_NODES : count;
+	for (int i = 0; i < PS1_MAX_NODES; i++) {
+		g_node_used[i] = 0;
+		g_node_ready[i] = 0;
+		g_inst_group[i] = 0;
+	}
 	for (int i = 0; i < g_nnode; i++) {
 		g_nodes[i] = nodes[i];
+		g_node_used[i] = 1;
 	}
 }
 
@@ -179,8 +220,12 @@ void script_vm_set_hud(const ScriptVMHud *hud, int count) {
 		return;
 	}
 	g_nhud = count > PS1_MAX_HUD ? PS1_MAX_HUD : count;
+	for (int i = 0; i < PS1_MAX_HUD; i++) {
+		g_hud_used[i] = 0;
+	}
 	for (int i = 0; i < g_nhud; i++) {
 		g_hud[i] = hud[i];
+		g_hud_used[i] = 1;
 	}
 }
 
@@ -190,8 +235,12 @@ void script_vm_set_tiles(const ScriptVMTile *tiles, int count) {
 		return;
 	}
 	g_ntile = count > PS1_MAX_TILES ? PS1_MAX_TILES : count;
+	for (int i = 0; i < PS1_MAX_TILES; i++) {
+		g_tile_used[i] = 0;
+	}
 	for (int i = 0; i < g_ntile; i++) {
 		g_tiles[i] = tiles[i];
+		g_tile_used[i] = 1;
 	}
 }
 
@@ -214,6 +263,17 @@ void script_vm_set_anims(const ScriptVMAnimClip *clips, int count) {
 	g_nclip = count > PS1_MAX_CLIPS ? PS1_MAX_CLIPS : count;
 	for (int i = 0; i < g_nclip; i++) {
 		g_clips[i] = clips[i];
+	}
+}
+
+void script_vm_set_actions(const ScriptVMAction *actions, int count) {
+	g_naction = 0;
+	if (!actions || count <= 0) {
+		return;
+	}
+	g_naction = count > PS1_MAX_ACTIONS ? PS1_MAX_ACTIONS : count;
+	for (int i = 0; i < g_naction; i++) {
+		g_actions[i] = actions[i];
 	}
 }
 
@@ -355,7 +415,7 @@ static int name_eq_n(const char *a, const char *b, int n) {
 }
 
 static int node_ok(int id) {
-	return id >= 0 && id < g_nnode;
+	return id >= 0 && id < g_nnode && g_node_used[id];
 }
 
 static int find_child(int parent, const char *name, int nlen) {
@@ -706,7 +766,39 @@ static void activate_pack(int pack, const ScriptVMHost *host) {
 			g_hud[h].flags = uint8_t(g_hud[h].flags & ~uint8_t(1));
 		}
 	}
+	for (int n = 0; n < g_nnode; n++) {
+		if (g_node_used[n] && (g_nodes[n].flags & 1)) {
+			g_node_ready[n] = 0;
+		}
+	}
 	g_did_ready = 0;
+}
+
+static int find_free_node() {
+	for (int i = 0; i < PS1_MAX_NODES; i++) {
+		if (!g_node_used[i]) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+static int find_free_hud() {
+	for (int i = 0; i < PS1_MAX_HUD; i++) {
+		if (!g_hud_used[i]) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+static int find_free_tile() {
+	for (int i = 0; i < PS1_MAX_TILES; i++) {
+		if (!g_tile_used[i]) {
+			return i;
+		}
+	}
+	return -1;
 }
 
 static int instantiate_pack(int pack, int parent) {
@@ -716,22 +808,138 @@ static int instantiate_pack(int pack, int parent) {
 	const int lo = int(g_packs[pack].node_lo);
 	const int hi = int(g_packs[pack].node_hi);
 	const int need = hi - lo;
-	if (need <= 0 || g_nnode + need > PS1_MAX_NODES) {
+	if (need <= 0) {
 		return -1;
 	}
-	const int base = g_nnode;
-	for (int i = 0; i < need; i++) {
-		g_nodes[g_nnode] = g_nodes[lo + i];
-		const int p = int(g_nodes[g_nnode].parent);
-		if (i == 0 || p < lo || p >= hi) {
-			g_nodes[g_nnode].parent = int16_t(parent);
-		} else {
-			g_nodes[g_nnode].parent = int16_t(base + (p - lo));
+	const int hlo = int(g_packs[pack].hud_lo);
+	const int hhi = int(g_packs[pack].hud_hi);
+	const int tlo = int(g_packs[pack].tile_lo);
+	const int thi = int(g_packs[pack].tile_hi);
+	int hneed = hhi > hlo ? hhi - hlo : 0;
+	int tneed = thi > tlo ? thi - tlo : 0;
+	int nfree = 0;
+	int hfree = 0;
+	int tfree = 0;
+	for (int i = 0; i < PS1_MAX_NODES; i++) {
+		if (!g_node_used[i]) {
+			nfree++;
 		}
-		g_nodes[g_nnode].flags = uint8_t(g_nodes[g_nnode].flags | 1);
-		g_nnode++;
+	}
+	for (int i = 0; i < PS1_MAX_HUD; i++) {
+		if (!g_hud_used[i]) {
+			hfree++;
+		}
+	}
+	for (int i = 0; i < PS1_MAX_TILES; i++) {
+		if (!g_tile_used[i]) {
+			tfree++;
+		}
+	}
+	if (nfree < need || hfree < hneed || tfree < tneed) {
+		return -1;
+	}
+	int slots[PS1_MAX_NODES];
+	for (int i = 0; i < need; i++) {
+		slots[i] = find_free_node();
+		if (slots[i] < 0) {
+			return -1;
+		}
+		g_node_used[slots[i]] = 1;
+	}
+	if (g_next_group == 0) {
+		g_next_group = 1;
+	}
+	const uint8_t grp = g_next_group++;
+	const int base = slots[0];
+	for (int i = 0; i < need; i++) {
+		const int dst = slots[i];
+		g_nodes[dst] = g_nodes[lo + i];
+		const int p = int(g_nodes[dst].parent);
+		if (i == 0 || p < lo || p >= hi) {
+			g_nodes[dst].parent = int16_t(parent);
+		} else {
+			g_nodes[dst].parent = int16_t(slots[p - lo]);
+		}
+		g_nodes[dst].flags = uint8_t(g_nodes[dst].flags | 1 | 4);
+		g_inst_group[dst] = grp;
+		g_node_ready[dst] = 0;
+		if (dst + 1 > g_nnode) {
+			g_nnode = dst + 1;
+		}
+	}
+	for (int h = hlo; h < hhi && h < g_nhud; h++) {
+		const int nid = int(g_hud[h].node_id);
+		if (nid < lo || nid >= hi) {
+			continue;
+		}
+		const int dsth = find_free_hud();
+		if (dsth < 0) {
+			break;
+		}
+		g_hud[dsth] = g_hud[h];
+		g_hud[dsth].node_id = uint8_t(slots[nid - lo]);
+		g_hud[dsth].flags = uint8_t(g_hud[dsth].flags | 1);
+		g_hud_used[dsth] = 1;
+		if (dsth + 1 > g_nhud) {
+			g_nhud = dsth + 1;
+		}
+	}
+	for (int t = tlo; t < thi && t < g_ntile; t++) {
+		const int nid = int(g_tiles[t].node_id);
+		if (nid < lo || nid >= hi) {
+			continue;
+		}
+		const int dstt = find_free_tile();
+		if (dstt < 0) {
+			break;
+		}
+		g_tiles[dstt] = g_tiles[t];
+		g_tiles[dstt].node_id = uint8_t(slots[nid - lo]);
+		g_tile_used[dstt] = 1;
+		if (dstt + 1 > g_ntile) {
+			g_ntile = dstt + 1;
+		}
 	}
 	return base;
+}
+
+static void reclaim_instance(int node) {
+	if (!node_ok(node) || !(g_nodes[node].flags & 4)) {
+		if (node_ok(node)) {
+			g_nodes[node].flags = uint8_t(g_nodes[node].flags & ~uint8_t(1));
+		}
+		return;
+	}
+	const uint8_t grp = g_inst_group[node];
+	if (!grp) {
+		g_nodes[node].flags = uint8_t(g_nodes[node].flags & ~uint8_t(1));
+		return;
+	}
+	for (int n = 0; n < g_nnode; n++) {
+		if (!g_node_used[n] || g_inst_group[n] != grp) {
+			continue;
+		}
+		for (int h = 0; h < g_nhud; h++) {
+			if (g_hud_used[h] && int(g_hud[h].node_id) == n) {
+				g_hud_used[h] = 0;
+				g_hud[h].flags = 0;
+			}
+		}
+		for (int t = 0; t < g_ntile; t++) {
+			if (g_tile_used[t] && int(g_tiles[t].node_id) == n) {
+				g_tile_used[t] = 0;
+			}
+		}
+		for (int c = 0; c < PS1_MAX_CONNS; c++) {
+			if (g_conn[c].used && (g_conn[c].src == n || g_conn[c].dest == n)) {
+				g_conn[c].used = 0;
+			}
+		}
+		g_nodes[n].flags = 0;
+		g_node_used[n] = 0;
+		g_node_ready[n] = 0;
+		g_inst_group[n] = 0;
+	}
 }
 
 static void tick_anim(float delta) {
@@ -752,6 +960,9 @@ static void tick_anim(float delta) {
 	}
 	if (g_anim_ms > float(tmax) && tmax > 0) {
 		g_anim_ms = float(tmax);
+		if (g_anim_playing) {
+			g_anim_just_finished = 1;
+		}
 		g_anim_playing = 0;
 	}
 	const float t = g_anim_ms;
@@ -1105,15 +1316,19 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			}
 		}
 		if (id < 0) {
-			id = 0;
+			*ret = gv_nil();
+			return 1;
 		}
 		g_timer_used[id] = 1;
 		g_timer_end[id] = g_ticks_ms + sec * 1000.0f;
-		*ret = gv_int(id);
+		*ret = gv_obj(kTimerBase + id);
 		return 1;
 	}
 	if (name_is(name, "is_timer_done")) {
-		const int id = int(argc > 0 ? as_float(argv[0]) : arg);
+		int id = int(argc > 0 ? as_float(argv[0]) : arg);
+		if (argc > 0 && argv[0].type == V_OBJ && argv[0].i >= kTimerBase) {
+			id = argv[0].i - kTimerBase;
+		}
 		*ret = gv_bool(id >= 0 && id < 8 && g_timer_used[id] && g_ticks_ms >= g_timer_end[id]);
 		return 1;
 	}
@@ -1153,8 +1368,60 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 		return 1;
 	}
 	if (name_is(name, "queue_free")) {
-		if (node_ok(node)) {
-			g_nodes[node].flags = uint8_t(g_nodes[node].flags & ~uint8_t(1));
+		reclaim_instance(node);
+		*ret = gv_nil();
+		return 1;
+	}
+	if (name_is(name, "connect") || name_is(name, "disconnect")) {
+		const char *sig = (argc > 0 && argv[0].type == V_STR) ? argv[0].s : "";
+		uint8_t sid = 0;
+		if (name_is(sig, "timeout")) {
+			sid = SIG_TIMEOUT;
+		} else if (name_is(sig, "pressed")) {
+			sid = SIG_PRESSED;
+		} else if (name_is(sig, "animation_finished")) {
+			sid = SIG_ANIM;
+		}
+		int dest = node;
+		const char *meth = "";
+		if (argc >= 3 && argv[1].type == V_OBJ && argv[2].type == V_STR) {
+			dest = argv[1].i;
+			meth = argv[2].s;
+		} else if (argc >= 2 && argv[1].type == V_STR) {
+			meth = argv[1].s;
+		} else if (argc >= 2 && argv[1].type == V_OBJ) {
+			dest = argv[1].i;
+		}
+		int src = node;
+		if (node >= kTimerBase && node < kTimerBase + 8) {
+			src = node;
+		}
+		if (name_is(name, "disconnect")) {
+			for (int i = 0; i < PS1_MAX_CONNS; i++) {
+				if (g_conn[i].used && g_conn[i].src == src && g_conn[i].sig == sid && g_conn[i].dest == dest) {
+					g_conn[i].used = 0;
+				}
+			}
+			*ret = gv_nil();
+			return 1;
+		}
+		if (!sid || !meth[0]) {
+			*ret = gv_nil();
+			return 1;
+		}
+		int slot = -1;
+		for (int i = 0; i < PS1_MAX_CONNS; i++) {
+			if (!g_conn[i].used) {
+				slot = i;
+				break;
+			}
+		}
+		if (slot >= 0) {
+			g_conn[slot].used = 1;
+			g_conn[slot].src = src;
+			g_conn[slot].sig = sid;
+			g_conn[slot].dest = dest;
+			copy_str(g_conn[slot].method, 24, meth);
 		}
 		*ret = gv_nil();
 		return 1;
@@ -1277,6 +1544,11 @@ static int pad_mask(const char *action) {
 	}
 	if (name_is(action, "ui_focus_next")) {
 		return PAD_R1;
+	}
+	for (int i = 0; i < g_naction; i++) {
+		if (name_is(action, g_actions[i].name)) {
+			return int(g_actions[i].mask);
+		}
 	}
 	return 0;
 }
@@ -1693,11 +1965,11 @@ void script_vm_hud_tick(const ScriptVMHost *host) {
 	}
 }
 
-static int run_official(const uint8_t *blob, size_t size, const char *want, float delta, const ScriptVMHost *host) {
+static int run_official(const uint8_t *blob, size_t size, const char *want, float delta, const ScriptVMHost *host, int self_override, int script_filter) {
 	if (size < 8 || blob[0] != 'G' || blob[1] != 'D' || blob[2] != 'B' || blob[3] != 'C') {
 		return 0;
 	}
-	if (ru16(blob + 4) != 11) {
+	if (ru16(blob + 4) != 12) {
 		return 0;
 	}
 	const uint16_t nscripts = ru16(blob + 6);
@@ -1742,7 +2014,10 @@ static int run_official(const uint8_t *blob, size_t size, const char *want, floa
 		}
 		const uint16_t nfn = ru16(p);
 		p += 2;
-		const int self_id = (owner == 0xffff) ? 0 : int(owner);
+		if (script_filter >= 0 && int(s) != script_filter) {
+			// still walk functions below to keep the cursor aligned — skip exec only
+		}
+		const int self_id = (self_override >= 0) ? self_override : ((owner == 0xffff) ? 0 : int(owner));
 		for (uint16_t f = 0; f < nfn && p < end; f++) {
 			const uint8_t nlen = *p++;
 			if (p + nlen + 3 > end) {
@@ -1849,7 +2124,10 @@ static int run_official(const uint8_t *blob, size_t size, const char *want, floa
 			if (!name_is(fname, want)) {
 				continue;
 			}
-			if (!owner_node_visible(int(owner))) {
+			if (script_filter >= 0 && int(s) != script_filter) {
+				continue;
+			}
+			if (self_override < 0 && !owner_node_visible(int(owner))) {
 				continue;
 			}
 			const int nstack = stack_size > 4 && stack_size < 48 ? int(stack_size) : 16;
@@ -2166,11 +2444,11 @@ static const char *tape_action(char names[][32], int n) {
 	return "";
 }
 
-static int run_tape(const uint8_t *blob, size_t size, const char *want, float delta, const ScriptVMHost *host) {
+static int run_tape(const uint8_t *blob, size_t size, const char *want, float delta, const ScriptVMHost *host, int self_override, int script_filter) {
 	if (size < 8 || blob[0] != 'G' || blob[1] != 'D' || blob[2] != 'B' || blob[3] != 'C') {
 		return 0;
 	}
-	if (ru16(blob + 4) != 11) {
+	if (ru16(blob + 4) != 12) {
 		return 0;
 	}
 	const uint16_t npaths = ru16(blob + 6);
@@ -2250,11 +2528,14 @@ static int run_tape(const uint8_t *blob, size_t size, const char *want, float de
 		if (!name_is(fname, want)) {
 			continue;
 		}
-		const int owner = (f / 2 < nown) ? int(owners[f / 2]) : 0;
-		if (!owner_node_visible(owner)) {
+		if (script_filter >= 0 && int(f / 2) != script_filter) {
 			continue;
 		}
-		const int self = (owner == 0xffff) ? 0 : owner;
+		const int owner = (f / 2 < nown) ? int(owners[f / 2]) : 0;
+		if (self_override < 0 && !owner_node_visible(owner)) {
+			continue;
+		}
+		const int self = (self_override >= 0) ? self_override : ((owner == 0xffff) ? 0 : owner);
 		float stack[8];
 		int sp = 0;
 		size_t ip = 0;
@@ -2286,7 +2567,9 @@ static int run_tape(const uint8_t *blob, size_t size, const char *want, float de
 				const float arg = sp > 0 ? stack[--sp] : 0.0f;
 				const char *nm = (ni < nstore) ? names[ni] : "rotate_y";
 				if (is_input_name(nm)) {
-					(void)pad_pressed(host, tape_action(names, nstore), input_just_mode(nm));
+					if (sp < 8) {
+						stack[sp++] = pad_pressed(host, tape_action(names, nstore), input_just_mode(nm)) ? 1.0f : 0.0f;
+					}
 				} else {
 					apply_method(host, self, nm, arg, nullptr, 0);
 				}
@@ -2295,7 +2578,9 @@ static int run_tape(const uint8_t *blob, size_t size, const char *want, float de
 				const uint8_t ni = code[ip++];
 				const char *nm = (ni < nstore) ? names[ni] : "";
 				if (is_input_name(nm)) {
-					(void)pad_pressed(host, tape_action(names, nstore), input_just_mode(nm));
+					if (sp < 8) {
+						stack[sp++] = pad_pressed(host, tape_action(names, nstore), input_just_mode(nm)) ? 1.0f : 0.0f;
+					}
 				} else {
 					apply_method(host, self, nm, 0.0f, nullptr, 0);
 				}
@@ -2313,6 +2598,25 @@ static int run_tape(const uint8_t *blob, size_t size, const char *want, float de
 	return ran;
 }
 
+static void emit_sig(int src, uint8_t sig, const ScriptVMHost *host, const uint8_t *tape, size_t tape_n) {
+	for (int i = 0; i < PS1_MAX_CONNS; i++) {
+		if (!g_conn[i].used || g_conn[i].sig != sig || g_conn[i].src != src) {
+			continue;
+		}
+		const int dest = g_conn[i].dest;
+		if (!node_ok(dest) || !(g_nodes[dest].flags & 1)) {
+			continue;
+		}
+		const int si = int(g_nodes[dest].script);
+		if (g_gdbc && g_gdbc_size) {
+			run_official(g_gdbc, g_gdbc_size, g_conn[i].method, 0.0f, host, dest, si);
+		}
+		if (tape) {
+			run_tape(tape, tape_n, g_conn[i].method, 0.0f, host, dest, si);
+		}
+	}
+}
+
 int script_vm_process(float delta, const ScriptVMHost *host) {
 	if (!g_ready) {
 		return 0;
@@ -2326,28 +2630,92 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 		tape = g_luau + 6 + official;
 		tape_n = g_luau_size - size_t(tape - g_luau);
 	}
-	if (!g_did_ready) {
+	int dispatched = 0;
+	for (int n = 0; n < g_nnode; n++) {
+		if (!g_node_used[n] || !(g_nodes[n].flags & 1) || g_nodes[n].script < 0) {
+			continue;
+		}
+		dispatched = 1;
+		const int si = int(g_nodes[n].script);
+		if (!g_node_ready[n]) {
+			if (g_gdbc && g_gdbc_size) {
+				run_official(g_gdbc, g_gdbc_size, "_ready", 0.0f, host, n, si);
+			}
+			if (tape) {
+				run_tape(tape, tape_n, "_ready", 0.0f, host, n, si);
+			}
+			g_node_ready[n] = 1;
+		}
 		if (g_gdbc && g_gdbc_size) {
-			run_official(g_gdbc, g_gdbc_size, "_ready", 0.0f, host);
+			ran |= run_official(g_gdbc, g_gdbc_size, "_process", delta, host, n, si);
 		}
 		if (tape) {
-			run_tape(tape, tape_n, "_ready", 0.0f, host);
+			ran |= run_tape(tape, tape_n, "_process", delta, host, n, si);
 		}
-		g_did_ready = 1;
 	}
-	if (g_gdbc && g_gdbc_size) {
-		ran |= run_official(g_gdbc, g_gdbc_size, "_process", delta, host);
-	}
-	if (tape) {
-		ran |= run_tape(tape, tape_n, "_process", delta, host);
+	if (!dispatched) {
+		if (!g_did_ready) {
+			if (g_gdbc && g_gdbc_size) {
+				run_official(g_gdbc, g_gdbc_size, "_ready", 0.0f, host, -1, -1);
+			}
+			if (tape) {
+				run_tape(tape, tape_n, "_ready", 0.0f, host, -1, -1);
+			}
+			g_did_ready = 1;
+		}
+		if (g_gdbc && g_gdbc_size) {
+			ran |= run_official(g_gdbc, g_gdbc_size, "_process", delta, host, -1, -1);
+		}
+		if (tape) {
+			ran |= run_tape(tape, tape_n, "_process", delta, host, -1, -1);
+		}
 	}
 	g_ticks_ms += delta * 1000.0f;
-	tick_anim(delta);
-	if (g_gdbc && g_gdbc_size) {
-		ran |= run_official(g_gdbc, g_gdbc_size, "_physics_process", delta, host);
+	for (int t = 0; t < 8; t++) {
+		if (g_timer_used[t] && g_ticks_ms >= g_timer_end[t]) {
+			emit_sig(kTimerBase + t, SIG_TIMEOUT, host, tape, tape_n);
+			g_timer_used[t] = 0;
+			for (int c = 0; c < PS1_MAX_CONNS; c++) {
+				if (g_conn[c].used && g_conn[c].src == kTimerBase + t && g_conn[c].sig == SIG_TIMEOUT) {
+					g_conn[c].used = 0;
+				}
+			}
+		}
 	}
-	if (tape) {
-		ran |= run_tape(tape, tape_n, "_physics_process", delta, host);
+	for (int h = 0; h < g_nhud; h++) {
+		if (g_hud_used[h] && g_hud[h].pressed) {
+			emit_sig(int(g_hud[h].node_id), SIG_PRESSED, host, tape, tape_n);
+		}
+	}
+	tick_anim(delta);
+	if (g_anim_just_finished) {
+		g_anim_just_finished = 0;
+		for (int n = 0; n < g_nnode; n++) {
+			if (g_node_used[n] && (g_nodes[n].flags & 1) && g_nodes[n].type == 7) {
+				emit_sig(n, SIG_ANIM, host, tape, tape_n);
+			}
+		}
+	}
+	if (dispatched) {
+		for (int n = 0; n < g_nnode; n++) {
+			if (!g_node_used[n] || !(g_nodes[n].flags & 1) || g_nodes[n].script < 0) {
+				continue;
+			}
+			const int si = int(g_nodes[n].script);
+			if (g_gdbc && g_gdbc_size) {
+				ran |= run_official(g_gdbc, g_gdbc_size, "_physics_process", delta, host, n, si);
+			}
+			if (tape) {
+				ran |= run_tape(tape, tape_n, "_physics_process", delta, host, n, si);
+			}
+		}
+	} else {
+		if (g_gdbc && g_gdbc_size) {
+			ran |= run_official(g_gdbc, g_gdbc_size, "_physics_process", delta, host, -1, -1);
+		}
+		if (tape) {
+			ran |= run_tape(tape, tape_n, "_physics_process", delta, host, -1, -1);
+		}
 	}
 	for (int i = 0; i < g_nhud; i++) {
 		g_hud[i].pressed = 0;

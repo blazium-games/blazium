@@ -44,6 +44,11 @@ struct ScriptIR {
 	int16_t cam_rx = 0;
 	int16_t cam_ry = 0;
 	int16_t cam_rz = 0;
+	struct InputAction {
+		String name;
+		uint16_t mask = 0;
+	};
+	Vector<InputAction> input_actions;
 	Vector<String> accepted;
 	Vector<String> rejected;
 	Vector<String> attached;
