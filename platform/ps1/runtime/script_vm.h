@@ -54,7 +54,7 @@
 #define PS1_MAX_PARTICLES 16
 #endif
 #ifndef PS1_COOK_ABI
-#define PS1_COOK_ABI 16
+#define PS1_COOK_ABI 17
 #endif
 
 struct ScriptVMNode {
@@ -109,6 +109,7 @@ struct ScriptVMPack {
 	uint8_t cam_resident;
 	uint8_t audio_resident;
 	uint8_t text_resident;
+	uint8_t music_resident;
 	uint8_t tim_lo, tim_hi;
 };
 
@@ -159,12 +160,14 @@ struct ScriptVMAnimKey {
 struct ScriptVMAnimClip {
 	char name[32];
 	uint8_t nkeys;
+	uint8_t loop;
 	ScriptVMAnimKey keys[PS1_MAX_KEYS];
 };
 
 struct ScriptVMAction {
 	char name[16];
 	uint16_t mask;
+	uint8_t axis;
 };
 
 struct ScriptVMHost {
@@ -194,6 +197,11 @@ struct ScriptVMHost {
 	void (*set_sfx_volume)(const char *name, int vol);
 	void (*set_music_volume)(int vol);
 	void (*set_light)(int index, int dx, int dy, int dz, int r, int g, int b);
+	int (*load_music)(const uint8_t *blob, int size);
+	void (*unload_music)(void);
+	void (*play_fmv_blob)(const uint8_t *blob, int size);
+	int (*play_xa)(const uint8_t *blob, int size);
+	void (*stop_xa)(void);
 };
 
 struct ScriptVMParticle {

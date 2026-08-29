@@ -418,6 +418,7 @@ Error EditorExportPlatformPS1::_try_make_iso(const String &p_exe_path, const ps1
 	add_file("NODE00.bin", p_cooked.node_path);
 	add_file("TXT00.bin", p_cooked.txt_path);
 	add_file("SFX00.bin", p_cooked.sfx_bank_path);
+	add_file("MUSIC00.bin", p_cooked.music_path);
 	HashMap<String, Vector<String>> pack_dirs;
 	for (int i = 0; i < p_cooked.extra_pack_files.size(); i++) {
 		const String src = p_cooked.extra_pack_files[i];

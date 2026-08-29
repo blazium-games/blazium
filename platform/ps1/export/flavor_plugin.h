@@ -364,6 +364,66 @@ public:
 		_fail_ps1();
 		return false;
 	}
+	float get_action_strength(const String &p_action) const {
+		_fail_ps1();
+		return 0.0f;
+	}
+	bool set_stick_deadzone(int p_n) {
+		_fail_ps1();
+		return false;
+	}
+	Vector3 get_velocity() const {
+		_fail_ps1();
+		return Vector3();
+	}
+	Variant world_to_screen(const Vector3 &p_pos) const {
+		_fail_ps1();
+		return Variant();
+	}
+	bool seek_animation(float p_sec) {
+		_fail_ps1();
+		return false;
+	}
+	bool set_animation_speed(float p_s) {
+		_fail_ps1();
+		return false;
+	}
+	String format_int(int p_n, int p_width) const {
+		_fail_ps1();
+		return String();
+	}
+	bool set_hud_text(const Variant &p_hud, const String &p_text) {
+		_fail_ps1();
+		return false;
+	}
+	bool load_music(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool unload_music(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool can_load_music(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool is_music_loaded(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool play_fmv(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool play_xa(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool stop_xa() {
+		_fail_ps1();
+		return false;
+	}
 	bool tile_solid_at(float p_x, float p_y) const {
 		_fail_ps1();
 		return false;

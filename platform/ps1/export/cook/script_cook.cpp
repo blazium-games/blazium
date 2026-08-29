@@ -175,7 +175,13 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "shake_camera" || p_name == "set_paused" || p_name == "is_paused" ||
 			p_name == "get_camera_rotation" || p_name == "set_music_volume" ||
 			p_name == "load_text" || p_name == "unload_text" || p_name == "can_load_text" ||
-			p_name == "is_text_loaded" || p_name == "set_line" || p_name == "set_line_chars";
+			p_name == "is_text_loaded" || p_name == "set_line" || p_name == "set_line_chars" ||
+			p_name == "get_action_strength" || p_name == "set_stick_deadzone" ||
+			p_name == "get_velocity" || p_name == "set_process" || p_name == "set_physics_process" ||
+			p_name == "world_to_screen" || p_name == "seek" || p_name == "seek_animation" ||
+			p_name == "set_animation_speed" || p_name == "format_int" || p_name == "set_hud_text" ||
+			p_name == "load_music" || p_name == "unload_music" || p_name == "can_load_music" ||
+			p_name == "is_music_loaded" || p_name == "play_fmv" || p_name == "play_xa" || p_name == "stop_xa";
 }
 
 static bool member_is_allowlisted(const String &p_name) {
@@ -183,7 +189,7 @@ static bool member_is_allowlisted(const String &p_name) {
 			p_name == "text" || p_name == "disabled" || p_name == "pressed" || p_name == "button_pressed" ||
 			p_name == "value" || p_name == "min_value" || p_name == "max_value" || p_name == "selected" ||
 			p_name == "focus" || p_name == "x" || p_name == "y" || p_name == "z" ||
-			p_name == "frame" || p_name == "flip_h" || p_name == "modulate";
+			p_name == "frame" || p_name == "flip_h" || p_name == "modulate" || p_name == "speed_scale";
 }
 
 static bool action_is_known(const String &p_name) {
@@ -649,7 +655,7 @@ static Vector<uint8_t> pack_official_gdbc(const Vector<String> &p_paths, const V
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 16);
+	append_u16(out, 17);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int s = 0; s < p_paths.size(); s++) {
 		append_str(out, p_paths[s]);
@@ -741,7 +747,7 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 16);
+	append_u16(out, 17);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int i = 0; i < p_paths.size(); i++) {
 		append_str(out, p_paths[i]);
@@ -857,6 +863,9 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 			"is_on_floor", "is_on_wall", "is_on_ceiling", "set_hitbox_layer", "get_hitbox_layer",
 			"shake_camera", "set_paused", "is_paused", "get_camera_rotation", "set_music_volume",
 			"load_text", "unload_text", "can_load_text", "is_text_loaded", "set_line", "set_line_chars",
+			"get_action_strength", "set_stick_deadzone", "get_velocity", "set_process", "set_physics_process",
+			"world_to_screen", "seek", "seek_animation", "set_animation_speed", "format_int", "set_hud_text",
+			"load_music", "unload_music", "can_load_music", "is_music_loaded", "play_fmv", "play_xa", "stop_xa",
 			"grab_focus", "release_focus",
 			"print", "push_warning", "connect", "disconnect"
 		};
@@ -1074,6 +1083,34 @@ static uint16_t mask_from_input_event(const Ref<InputEvent> &p_ev) {
 	return 0;
 }
 
+static uint8_t axis_from_input_event(const Ref<InputEvent> &p_ev) {
+	const Ref<InputEventJoypadMotion> axis = p_ev;
+	if (axis.is_null()) {
+		return 0;
+	}
+	const float v = axis->get_axis_value();
+	const JoyAxis a = axis->get_axis();
+	if (a == JoyAxis::LEFT_X) {
+		return v < 0.0f ? 2 : 1;
+	}
+	if (a == JoyAxis::LEFT_Y) {
+		return v < 0.0f ? 3 : 4;
+	}
+	if (a == JoyAxis::RIGHT_X) {
+		return v < 0.0f ? 6 : 5;
+	}
+	if (a == JoyAxis::RIGHT_Y) {
+		return v < 0.0f ? 7 : 8;
+	}
+	if (a == JoyAxis::TRIGGER_LEFT) {
+		return 9;
+	}
+	if (a == JoyAxis::TRIGGER_RIGHT) {
+		return 10;
+	}
+	return 0;
+}
+
 static void cook_input_map(ScriptIR &r_out) {
 	InputMap *im = InputMap::get_singleton();
 	if (!im) {
@@ -1090,10 +1127,14 @@ static void cook_input_map(ScriptIR &r_out) {
 			continue;
 		}
 		uint16_t mask = 0;
+		uint8_t axis = 0;
 		for (const Ref<InputEvent> &e : *evs) {
 			mask = uint16_t(mask | mask_from_input_event(e));
+			if (!axis) {
+				axis = axis_from_input_event(e);
+			}
 		}
-		if (!mask) {
+		if (!mask && !axis) {
 			continue;
 		}
 		if (r_out.input_actions.size() >= 32) {
@@ -1102,6 +1143,7 @@ static void cook_input_map(ScriptIR &r_out) {
 		ScriptIR::InputAction row;
 		row.name = name;
 		row.mask = mask;
+		row.axis = axis;
 		r_out.input_actions.push_back(row);
 	}
 }
@@ -1128,7 +1170,7 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 		}
 	}
 
-	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 16)\n", r_out.rotate_y);
+	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 17)\n", r_out.rotate_y);
 	for (int i = 0; i < r_out.accepted.size(); i++) {
 		r_out.map_text += "OK " + r_out.accepted[i] + "\n";
 	}
@@ -1292,6 +1334,7 @@ Error write_script_ir(const String &p_export_dir, const ScriptIR &p_ir) {
 				bytes.push_back(uint8_t(utf[c]));
 			}
 			append_u16(bytes, p_ir.input_actions[i].mask);
+			bytes.push_back(p_ir.input_actions[i].axis);
 		}
 	}
 	Ref<FileAccess> ir = FileAccess::open(p_export_dir.path_join("SCRIPT.IR"), FileAccess::WRITE);

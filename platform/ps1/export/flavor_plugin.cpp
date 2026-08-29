@@ -117,6 +117,21 @@ void PS1::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_text_loaded", "path"), &PS1::is_text_loaded);
 	ClassDB::bind_method(D_METHOD("set_line", "hud", "name"), &PS1::set_line);
 	ClassDB::bind_method(D_METHOD("set_line_chars", "hud", "name", "n"), &PS1::set_line_chars);
+	ClassDB::bind_method(D_METHOD("get_action_strength", "action"), &PS1::get_action_strength);
+	ClassDB::bind_method(D_METHOD("set_stick_deadzone", "n"), &PS1::set_stick_deadzone);
+	ClassDB::bind_method(D_METHOD("get_velocity"), &PS1::get_velocity);
+	ClassDB::bind_method(D_METHOD("world_to_screen", "pos"), &PS1::world_to_screen);
+	ClassDB::bind_method(D_METHOD("seek_animation", "sec"), &PS1::seek_animation);
+	ClassDB::bind_method(D_METHOD("set_animation_speed", "s"), &PS1::set_animation_speed);
+	ClassDB::bind_method(D_METHOD("format_int", "n", "width"), &PS1::format_int);
+	ClassDB::bind_method(D_METHOD("set_hud_text", "hud", "text"), &PS1::set_hud_text);
+	ClassDB::bind_method(D_METHOD("load_music", "path"), &PS1::load_music);
+	ClassDB::bind_method(D_METHOD("unload_music", "path"), &PS1::unload_music);
+	ClassDB::bind_method(D_METHOD("can_load_music", "path"), &PS1::can_load_music);
+	ClassDB::bind_method(D_METHOD("is_music_loaded", "path"), &PS1::is_music_loaded);
+	ClassDB::bind_method(D_METHOD("play_fmv", "path"), &PS1::play_fmv);
+	ClassDB::bind_method(D_METHOD("play_xa", "path"), &PS1::play_xa);
+	ClassDB::bind_method(D_METHOD("stop_xa"), &PS1::stop_xa);
 	ClassDB::bind_method(D_METHOD("tile_solid_at", "x", "y"), &PS1::tile_solid_at);
 	ClassDB::bind_method(D_METHOD("tile_at", "x", "y"), &PS1::tile_at);
 	ClassDB::bind_method(D_METHOD("load_audio", "path"), &PS1::load_audio);
@@ -313,7 +328,7 @@ void PS1FlavorEditorPlugin::_refresh() {
 	const int packs = _count_literal_packs();
 	const int est_ram = nodes * 56 + tris * 32 + hud * 80 + tiles * 8;
 	status->set_text(vformat(
-			"nodes %d/%d\ntris %d/%d\nHUD %d/%d\ntiles %d/%d\nSprite2D %d/%d\npacks %d/%d\nest RAM %d/%d\nPS1.* is PS1 export only; use OS.has_feature(\"ps1\").\nABI 16: analog-enter, rumble, layers, floor, TPAK/SFX real, TXT, shake/pause.",
+			"nodes %d/%d\ntris %d/%d\nHUD %d/%d\ntiles %d/%d\nSprite2D %d/%d\npacks %d/%d\nest RAM %d/%d\nPS1.* is PS1 export only; use OS.has_feature(\"ps1\").\nABI 17: saves round-trip, analog strength, anim loop, MUSIC/STR stream.",
 			nodes, ps1_cook::kMaxNodes, tris, ps1_cook::kMaxTris, hud, ps1_cook::kMaxHud, tiles, ps1_cook::kMaxTiles,
 			sprites, ps1_cook::kMaxSprites, packs, ps1_cook::kMaxScenePacks, est_ram, 2 * 1024 * 1024));
 	PackedStringArray reasons;

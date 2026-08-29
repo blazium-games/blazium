@@ -43,7 +43,7 @@
 #include "script_vm.h"
 
 #ifndef BLAZIUM_PS1_COOK_ABI
-#define BLAZIUM_PS1_COOK_ABI 16
+#define BLAZIUM_PS1_COOK_ABI 17
 #endif
 
 #define OT_LEN 2048
@@ -725,6 +725,62 @@ static void host_set_sfx_vol(const char *name, int vol) {
 #endif
 }
 
+static int host_load_music(const uint8_t *blob, int size) {
+	if (!blob || size < 64) {
+		return 0;
+	}
+	SpuInit();
+	SpuSetCommonMasterVolume(0x3fff, 0x3fff);
+	const uint32_t data_size = (uint32_t(blob[12]) << 24) | (uint32_t(blob[13]) << 16) | (uint32_t(blob[14]) << 8) | uint32_t(blob[15]);
+	const uint32_t rate = (uint32_t(blob[16]) << 24) | (uint32_t(blob[17]) << 16) | (uint32_t(blob[18]) << 8) | uint32_t(blob[19]);
+	const uint32_t addr = 0x1010;
+	uint32_t xfer = (data_size + 63) & ~uint32_t(63);
+	if (48 + int(xfer) > size) {
+		xfer = uint32_t(size - 48);
+	}
+	SpuSetTransferMode(SPU_TRANSFER_BY_DMA);
+	SpuSetTransferStartAddr(addr);
+	SpuWrite((const uint32_t *)(blob + 48), xfer);
+	SpuIsTransferCompleted(SPU_TRANSFER_WAIT);
+	SpuSetKey(0, 1 << 0);
+	SpuSetVoiceVolume(0, int16_t(g_music_vol), int16_t(g_music_vol));
+	SpuSetVoicePitch(0, getSPUSampleRate(int(rate ? rate : 22050)));
+	SpuSetVoiceStartAddr(0, addr);
+	SPU_CH_LOOP_ADDR(0) = getSPUAddr(addr);
+	SPU_CH_ADSR1(0) = 0x00ff;
+	SPU_CH_ADSR2(0) = 0x0000;
+	SpuSetKey(1, 1 << 0);
+#ifdef BLAZIUM_PS1_HAS_VAG
+	g_vag_on = 1;
+#endif
+	return 1;
+}
+
+static void host_unload_music() {
+	SpuSetKey(0, 1 << 0);
+	SpuSetVoiceVolume(0, 0, 0);
+#ifdef BLAZIUM_PS1_HAS_VAG
+	g_vag_on = 0;
+	play_cooked_vag();
+#endif
+}
+
+static void host_play_fmv_blob(const uint8_t *blob, int size) {
+	if (!blob || size <= 0) {
+		return;
+	}
+	fmv_play_embedded(blob, size_t(size), SCREEN_W, SCREEN_H, g_pad[0], nullptr, 0);
+}
+
+static int host_play_xa(const uint8_t *blob, int size) {
+	(void)blob;
+	(void)size;
+	return 0;
+}
+
+static void host_stop_xa() {
+}
+
 static void host_set_music_vol(int vol) {
 #ifdef BLAZIUM_PS1_HAS_VAG
 	if (vol < 0) {
@@ -1309,6 +1365,9 @@ int main(int argc, const char **argv) {
 				}
 				a.mask = uint16_t(p[0] | (p[1] << 8));
 				p += 2;
+				if (p < end) {
+					a.axis = *p++;
+				}
 				acts[got++] = a;
 			}
 			script_vm_set_actions(acts, got);
@@ -1537,6 +1596,9 @@ int main(int argc, const char **argv) {
 					key.rz = int16_t(p[14] | (p[15] << 8));
 					p += 16;
 					clip.keys[k] = key;
+					if (key.flags & 2) {
+						clip.loop = 1;
+					}
 				}
 				parsed[got++] = clip;
 			}
@@ -1705,6 +1767,11 @@ int main(int argc, const char **argv) {
 			host.set_sfx_volume = host_set_sfx_vol;
 			host.set_music_volume = host_set_music_vol;
 			host.set_light = host_set_light;
+			host.load_music = host_load_music;
+			host.unload_music = host_unload_music;
+			host.play_fmv_blob = host_play_fmv_blob;
+			host.play_xa = host_play_xa;
+			host.stop_xa = host_stop_xa;
 			pad_poll_motors();
 			if (!script_vm_process(g_region ? 1.0f / 50.0f : 1.0f / 60.0f, &host)) {
 				rot.vy += rot_step;

@@ -18,7 +18,7 @@
 namespace ps1_cook {
 
 // CookABI is the cooked blob layout. Must match blazium-toolchain guest_abi.
-static const int kCookABI = 16;
+static const int kCookABI = 17;
 static const int kMaxScenePacks = 24;
 static const int kMaxAnimClips = 16;
 static const int kMaxAnimKeys = 64;
@@ -63,6 +63,7 @@ struct CookResult {
 	String hit_path;
 	String txt_path;
 	String sfx_bank_path;
+	String music_path;
 	String names_path;
 	String budget_path;
 	String warnings_path;

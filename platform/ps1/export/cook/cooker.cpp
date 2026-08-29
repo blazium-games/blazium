@@ -1192,6 +1192,7 @@ struct AnimKeyCook {
 
 struct AnimClipCook {
 	String name;
+	bool loop = false;
 	Vector<AnimKeyCook> keys;
 };
 
@@ -1245,6 +1246,7 @@ static void cook_anim_clips(SceneGather &p_g, Vector<AnimClipCook> &r_clips, boo
 			}
 			AnimClipCook clip;
 			clip.name = String(E->get());
+			clip.loop = anim->get_loop_mode() != Animation::LOOP_NONE;
 			for (int t = 0; t < anim->get_track_count(); t++) {
 				const Animation::TrackType tt = anim->track_get_type(t);
 				if (tt != Animation::TYPE_POSITION_3D && tt != Animation::TYPE_ROTATION_3D && tt != Animation::TYPE_VALUE) {
@@ -1386,7 +1388,7 @@ static void write_anim_clips(const Vector<AnimClipCook> &p_clips, float p_scale,
 			const AnimKeyCook &key = c.keys[k];
 			u16(key.t_ms);
 			o.push_back(key.node_id);
-			o.push_back(uint8_t(key.flags & 1));
+			o.push_back(uint8_t((key.flags & 1) | (c.loop ? 2 : 0)));
 			i16(clamp_i16(key.pos.x * s));
 			i16(clamp_i16(-key.pos.y * s));
 			i16(clamp_i16(key.pos.z * s));
@@ -1663,20 +1665,20 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	r_out.warnings.push_back("change_scene loads a pack if it fits, then makes it active (camera/_ready). Other residents stay drawn.");
 	r_out.warnings.push_back("extra packs stream from ISO (ps1/make_iso); EXE embed is pack 0 only.");
 	r_out.warnings.push_back("create_timer has 8 slots; poll is_timer_done or connect timeout.");
-	r_out.warnings.push_back("VideoStreamPlayer.play() replays the boot STR (blocking; START skips).");
+	r_out.warnings.push_back("VideoStreamPlayer.play() replays the boot STR (blocking; START skips). PS1.play_fmv streams pack STR then frees; is_playing is true only during play.");
 	r_out.warnings.push_back("loop flag is ADPCM 0x02/0x03 on the single embedded WAV; stop keys off voice 0.");
 	r_out.warnings.push_back("PAL display uses 50 Hz delta; NTSC stays 60.");
 	r_out.warnings.push_back("connect is first-slice (timeout/pressed/animation_finished, 16 slots); other signals are ignored.");
-	r_out.warnings.push_back("InputMap: 32 actions in INP1; Input.is_action_* ORs pad 0+1; analog enter via PAD_CMD_*; DualShock sticks via get_vector/get_joy_axis/PS1.get_stick; rumble motors poll; no L3/R3, no DS2 pressure.");
-	r_out.warnings.push_back("8 cameras; catalog switch plus live attach/look/orbit/set_camera_transform (pos+rot); shake_camera; set_camera_scale is GTE FOV approx; script view disables demo pad-steer.");
-	r_out.warnings.push_back("AABB + ray + move_and_slide + tile solids + one-way; HIT 8-bit layer + query mask; is_on_floor/wall/ceiling; raycast_point; Sphere/Capsule/Circle cook as AABB bounds; no Godot physics.");
-	r_out.warnings.push_back("ANIM/SPRITE/HIT/CAM/SFX/TXT stream; extra-pack TPAK LoadImage on load_scene (fail VRAM → false); instantiate copies hit+sprite, shares anim/mesh.");
-	r_out.warnings.push_back("Memcard is Sony MC/SC (128 KiB, 3-block max, raw .mcd). Payload is a Godot user:// save (store_var first-slice / store_buffer). No ConfigFile/JSON class, no DexDrive.");
+	r_out.warnings.push_back("InputMap: 32 actions in INP1; Input.is_action_* ORs pad 0+1; analog enter via PAD_CMD_*; DualShock sticks via get_vector/get_joy_axis/PS1.get_stick; get_action_strength; set_stick_deadzone; rumble motors poll; no L3/R3, no DS2 pressure.");
+	r_out.warnings.push_back("8 cameras; catalog switch plus live attach/look/orbit/set_camera_transform (pos+rot); shake_camera; world_to_screen; set_camera_scale is GTE FOV approx; script view disables demo pad-steer.");
+	r_out.warnings.push_back("AABB + ray + move_and_slide + tile solids + one-way; HIT 8-bit layer + query mask; ray skips caller AABB; is_on_floor/wall/ceiling; raycast_point; get_velocity; Sphere/Capsule/Circle cook as AABB bounds; no Godot physics.");
+	r_out.warnings.push_back("ANIM/SPRITE/HIT/CAM/SFX/TXT/MUSIC/STR stream; extra-pack TPAK LoadImage on load_scene (fail VRAM → false); instantiate copies hit+sprite, shares anim/mesh.");
+	r_out.warnings.push_back("Memcard is Sony MC/SC wrap of user:// via pcdrv SAVE.MCD; get_var returns the payload. Not CARD BIOS. No ConfigFile/JSON class, no DexDrive.");
 	r_out.warnings.push_back("VM sprites draw frame UV + flip_h; Sprite3D POLY_FT4; 32 sprites; 16 billboard particles; fog/fade; set_light writes GTE.");
-	r_out.warnings.push_back("16 clips / 64 keys; Skeleton3D is bind pose; no AnimationTree.");
-	r_out.warnings.push_back("HUD text 64 chars; TXT bank 32x64; set_paused skips _process.");
-	r_out.warnings.push_back("get_position / get_global_position walks parents; 3D look_at; atan2/length/normalized/dot/cross; OS.has_feature(\"ps1\") allowlisted; PS1.* export only.");
-	r_out.warnings.push_back("SFX bank 16 clips / voices 1-7 + set_music_volume; music is pack-0 VAG.");
+	r_out.warnings.push_back("16 clips / 64 keys; ANIM loop/seek/speed; Skeleton3D is bind pose; no AnimationTree.");
+	r_out.warnings.push_back("HUD text 64 chars; TXT bank 32x64; str(float)/set_hud_text; set_paused skips _process; per-node set_process.");
+	r_out.warnings.push_back("get_position / get_global_position walks parents; 3D look_at + 2D look_at; atan2/length/normalized/dot/cross; OS.has_feature(\"ps1\") allowlisted; PS1.* export only.");
+	r_out.warnings.push_back("SFX bank 16 clips / voices 1-7 + set_music_volume; pack-0 VAG plus streamable MUSIC; mid-game STR play_fmv unloads after play; XA stream if present; official Luau is tape-only.");
 
 	SceneGather gathered;
 	String src_name;
@@ -2163,6 +2165,13 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	Ref<FileAccess> vf = FileAccess::open(r_out.vag_path, FileAccess::WRITE);
 	ERR_FAIL_COND_V(vf.is_null(), ERR_CANT_CREATE);
 	vf->store_buffer(vag.bytes);
+	if (!vag.bytes.is_empty()) {
+		r_out.music_path = p_export_dir.path_join("MUSIC00.bin");
+		Ref<FileAccess> mf = FileAccess::open(r_out.music_path, FileAccess::WRITE);
+		if (mf.is_valid()) {
+			mf->store_buffer(vag.bytes);
+		}
+	}
 	if (!gathered.extra_wavs.is_empty()) {
 		Vector<uint8_t> sfxb;
 		write_sfx_bank(gathered.extra_wavs, gathered.extra_wav_names, kSpuLimit - int(vag.bytes.size()), sfxb);
@@ -2503,6 +2512,15 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			write_sfx_bank(eg.extra_wavs, eg.extra_wav_names, kSpuLimit, sfxb);
 			write_extra_blob("SFX", sfxb);
 		}
+		if (eg.wav.is_valid()) {
+			Vector<int16_t> pcm;
+			int rate = 22050;
+			pcm_from_wav(eg.wav, pcm, rate);
+			VagBlob mv;
+			if (write_vag_pcm(pcm, rate, kSpuLimit, mv, eg.wav->get_loop_mode() != AudioStreamWAV::LOOP_DISABLED) == OK) {
+				write_extra_blob("MUSIC", mv.bytes);
+			}
+		}
 		if (!eg.text_lines.is_empty()) {
 			Vector<uint8_t> txtb;
 			write_text_bank(eg.text_lines, txtb);
@@ -2558,7 +2576,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	}
 	Ref<FileAccess> nf = FileAccess::open(r_out.names_path, FileAccess::WRITE);
 	ERR_FAIL_COND_V(nf.is_null(), ERR_CANT_CREATE);
-	nf->store_line(src_name + " -> TEX00.TIM MESH00.bin SFX00.VAG SPRITE00.bin FMV00.MAP SCRIPT.IR SCRIPT.GD.BC SCRIPT.LU.BC NODE00.bin HUD00.bin TILE00.bin SCENE00.bin ANIM00.bin CAM00.bin HIT00.bin TXT00.bin SFX00.bin");
+	nf->store_line(src_name + " -> TEX00.TIM MESH00.bin SFX00.VAG SPRITE00.bin FMV00.MAP SCRIPT.IR SCRIPT.GD.BC SCRIPT.LU.BC NODE00.bin HUD00.bin TILE00.bin SCENE00.bin ANIM00.bin CAM00.bin HIT00.bin TXT00.bin SFX00.bin MUSIC00.bin");
 
 	r_out.texels = packed.pixel_w * MAX(1, packed.pixel_h);
 	r_out.tris = src_tris.size();

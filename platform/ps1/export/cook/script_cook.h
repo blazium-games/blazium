@@ -47,6 +47,7 @@ struct ScriptIR {
 	struct InputAction {
 		String name;
 		uint16_t mask = 0;
+		uint8_t axis = 0;
 	};
 	Vector<InputAction> input_actions;
 	Vector<String> accepted;
