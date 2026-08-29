@@ -1817,6 +1817,32 @@ static void kit_bind_scene_points(int pack) {
 	}
 }
 
+static void kit_bind_camera(int pack) {
+	if (pack < 0 || pack >= g_npack) {
+		return;
+	}
+	int found = -1;
+	for (int i = 0; i < g_ncam; i++) {
+		if (g_cams[i].dim == 2 && g_cams[i].is_default && int(g_cams[i].pack) == pack) {
+			found = i;
+			break;
+		}
+	}
+	if (found < 0) {
+		return;
+	}
+	const int pl = kit_find_player();
+	if (!node_ok(pl)) {
+		return;
+	}
+	g_cam_cur = found;
+	g_cam_attach = pl;
+	g_script_cam = 1;
+	if (g_host && g_host->script_drives_cam) {
+		*g_host->script_drives_cam = 1;
+	}
+}
+
 static int node_is_2d(int n) {
 	if (!node_ok(n)) {
 		return 0;
@@ -2933,6 +2959,7 @@ static int load_pack_resident(int pack) {
 	g_packs[pack].charged = g_packs[pack].ram_bytes;
 	g_did_ready = 0;
 	kit_bind_scene_points(pack);
+	kit_bind_camera(pack);
 	return 1;
 }
 
@@ -6649,6 +6676,7 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			int ok = load_pack_resident(pack);
 			if (ok) {
 				kit_bind_scene_points(pack);
+				kit_bind_camera(pack);
 				kit_apply_spawn();
 			}
 			*ret = gv_bool(ok);
@@ -8846,6 +8874,7 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 		}
 		activate_pack(pack, host);
 		kit_bind_scene_points(pack);
+		kit_bind_camera(pack);
 		kit_apply_spawn();
 		*ret = gv_int(1);
 		return 1;
@@ -10573,6 +10602,31 @@ static float kit_parse_fade(const char *s) {
 	return any ? v : 0.25f;
 }
 
+static float kit_parse_signed_field(const char **pp) {
+	const char *p = *pp;
+	if (!p || !*p) {
+		return 0.0f;
+	}
+	char buf[16];
+	int n = 0;
+	if (*p == '-' || *p == '+') {
+		buf[n++] = *p++;
+	}
+	while (*p && *p != '|' && n < 15) {
+		buf[n++] = *p++;
+	}
+	buf[n] = 0;
+	if (*p == '|') {
+		p++;
+	}
+	*pp = p;
+	if (buf[0] == '-' || buf[0] == '+') {
+		const float mag = kit_parse_fade(buf + 1);
+		return buf[0] == '-' ? -mag : mag;
+	}
+	return kit_parse_fade(buf);
+}
+
 static void kit_tick_kit_areas(const ScriptVMHost *host) {
 	const int pl = kit_find_player();
 	if (!node_ok(pl)) {
@@ -10592,6 +10646,51 @@ static void kit_tick_kit_areas(const ScriptVMHost *host) {
 				copy_str(sc.s, 32, g_packs[g_active_pack].path);
 				apply_call(host, pl, "set_checkpoint_scene", 0, &sc, 1, &dummy);
 			}
+		}
+	}
+	const int hbit = group_bit_of("hazard");
+	if (hbit >= 0) {
+		const int hz = kit_first_in_group_overlap(pl, hbit, 0);
+		if (hz >= 0) {
+			float dmg = 1, kx = -8, ky = 20, kz = 0;
+			for (int i = 0; i < g_ntxt; i++) {
+				if (g_txt[i].name[0] && name_is(g_txt[i].name, g_nodes[hz].name) && g_txt[i].text[0]) {
+					const char *p = g_txt[i].text;
+					dmg = kit_parse_signed_field(&p);
+					kx = kit_parse_signed_field(&p);
+					ky = kit_parse_signed_field(&p);
+					kz = kit_parse_signed_field(&p);
+					break;
+				}
+			}
+			GVar argv[5];
+			argv[0] = gv_obj(pl);
+			argv[1] = gv_float(dmg);
+			argv[2] = gv_float(kx);
+			argv[3] = gv_float(ky);
+			argv[4] = gv_float(kz);
+			GVar dummy = gv_nil();
+			apply_call(host, pl, "hurt", 0, argv, 5, &dummy);
+		}
+	}
+	const int kbit = group_bit_of("pickup");
+	if (kbit >= 0) {
+		const int pk = kit_first_in_group_overlap(pl, kbit, 1);
+		if (pk >= 0) {
+			apply_visible(pk, 0);
+			if (int(g_node_pack[pk]) > 0) {
+				GVar dummy = gv_nil();
+				GVar args[1];
+				args[0] = gv_obj(pk);
+				apply_call(host, pk, "unload_pack_of", 0, args, 1, &dummy);
+			}
+			GVar sayv[3];
+			sayv[0] = gv_int(0);
+			sayv[1].type = V_STR;
+			copy_str(sayv[1].s, 32, g_nodes[pk].name);
+			sayv[2] = gv_float(24);
+			GVar dummy = gv_nil();
+			apply_call(host, pl, "say", 0, sayv, 3, &dummy);
 		}
 	}
 	const int pbit = group_bit_of("portal");
@@ -10706,6 +10805,7 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 		load_pack_slice(0, "PATH");
 		load_pack_slice(0, "WAY");
 		kit_bind_scene_points(0);
+		kit_bind_camera(0);
 		kit_apply_spawn();
 	}
 	kit_tick_kit_areas(host);
