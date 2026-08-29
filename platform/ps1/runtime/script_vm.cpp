@@ -1444,16 +1444,36 @@ static void write_host_rot(const ScriptVMHost *host, const char *name, float arg
 
 static int pad_pressed(const ScriptVMHost *host, const char *action, int just);
 
+static void apply_visible(int node, int on) {
+	if (node_ok(node)) {
+		if (on) {
+			g_nodes[node].flags = uint8_t(g_nodes[node].flags | uint8_t(1));
+		} else {
+			g_nodes[node].flags = uint8_t(g_nodes[node].flags & ~uint8_t(1));
+		}
+	}
+	for (int i = 0; i < g_nhud; i++) {
+		if (int(g_hud[i].node_id) != node) {
+			continue;
+		}
+		if (on) {
+			g_hud[i].flags = uint8_t(g_hud[i].flags | uint8_t(1));
+		} else {
+			g_hud[i].flags = uint8_t(g_hud[i].flags & ~uint8_t(1));
+		}
+	}
+}
+
 static void apply_method(const ScriptVMHost *host, int node, const char *name, float arg, const GVar *argv, int argc) {
 	if (name_is(name, "print") || name_is(name, "push_warning") || name_is(name, "push_error")) {
 		return;
 	}
 	if (name_is(name, "hide") && node_ok(node)) {
-		g_nodes[node].flags = uint8_t(g_nodes[node].flags & ~uint8_t(1));
+		apply_visible(node, 0);
 		return;
 	}
 	if (name_is(name, "show") && node_ok(node)) {
-		g_nodes[node].flags = uint8_t(g_nodes[node].flags | uint8_t(1));
+		apply_visible(node, 1);
 		return;
 	}
 	if (name_is(name, "set_visible") && node_ok(node)) {
@@ -1461,11 +1481,7 @@ static void apply_method(const ScriptVMHost *host, int node, const char *name, f
 		if (argv && argc > 0) {
 			on = as_truth(argv[0]);
 		}
-		if (on) {
-			g_nodes[node].flags = uint8_t(g_nodes[node].flags | uint8_t(1));
-		} else {
-			g_nodes[node].flags = uint8_t(g_nodes[node].flags & ~uint8_t(1));
-		}
+		apply_visible(node, on);
 		return;
 	}
 	if ((name_is(name, "set_process") || name_is(name, "set_physics_process")) && node_ok(node)) {
@@ -2500,6 +2516,39 @@ static void compact_cams_of(int pack) {
 	g_ncam = w;
 }
 
+static void compact_txt_of(int pack) {
+	int w = 0;
+	for (int i = 0; i < g_ntxt; i++) {
+		if (g_txt_pack[i] == uint8_t(pack) || !g_txt[i].name[0]) {
+			continue;
+		}
+		if (w != i) {
+			g_txt[w] = g_txt[i];
+			g_txt_pack[w] = g_txt_pack[i];
+		}
+		w++;
+	}
+	g_ntxt = w;
+}
+
+static void compact_hits_of(int pack) {
+	int w = 0;
+	for (int i = 0; i < g_nhit; i++) {
+		if (!g_hit_used[i] || g_hits[i].pack == uint8_t(pack)) {
+			continue;
+		}
+		if (w != i) {
+			g_hits[w] = g_hits[i];
+			g_hit_used[w] = 1;
+		}
+		w++;
+	}
+	for (int i = w; i < g_nhit; i++) {
+		g_hit_used[i] = 0;
+	}
+	g_nhit = w;
+}
+
 static int pack_local_node(int pack, int local) {
 	const int lo = int(g_packs[pack].node_lo);
 	const int hi = int(g_packs[pack].node_hi);
@@ -2511,6 +2560,8 @@ static int pack_local_node(int pack, int local) {
 
 static int load_pack_resident(int pack);
 static int unload_pack_resident(int pack);
+static int load_pack_slice(int pack, const char *kind);
+static int unload_pack_slice(int pack, const char *kind);
 static void reclaim_instance(int node);
 
 static int find_free_run(const uint8_t *used, int maxn, int need) {
@@ -2847,6 +2898,27 @@ static int unload_pack_resident(int pack) {
 	reclaim_pack_tim(pack);
 	reclaim_pack_hud(pack);
 	reclaim_pack_tile(pack);
+	if (g_packs[pack].anim_resident) {
+		unload_pack_slice(pack, "ANIM");
+	}
+	if (g_packs[pack].sprite_resident) {
+		unload_pack_slice(pack, "SPRITE");
+	}
+	if (g_packs[pack].hit_resident) {
+		unload_pack_slice(pack, "HIT");
+	}
+	if (g_packs[pack].cam_resident) {
+		unload_pack_slice(pack, "CAM");
+	}
+	if (g_packs[pack].text_resident) {
+		unload_pack_slice(pack, "TXT");
+	}
+	if (g_packs[pack].audio_resident) {
+		unload_pack_slice(pack, "SFX");
+	}
+	if (g_packs[pack].music_resident) {
+		unload_pack_slice(pack, "MUSIC");
+	}
 	for (int n = 0; n < g_nnode; n++) {
 		if (!g_node_used[n] || !(g_nodes[n].flags & 4)) {
 			continue;
@@ -3475,10 +3547,13 @@ static int load_pack_slice(int pack, const char *kind) {
 		return 1;
 	}
 	if (name_is(kind, "TXT")) {
+		if (g_packs[pack].text_resident) {
+			return 1;
+		}
 		if (n >= 8 && g_load_buf[0] == 'T' && g_load_buf[1] == 'X' && g_load_buf[2] == 'T' && g_load_buf[3] == '0' && ru16(g_load_buf + 4) == PS1_COOK_ABI) {
 			const int nc = int(ru16(g_load_buf + 6));
 			const uint8_t *p = g_load_buf + 8;
-			g_ntxt = 0;
+			int added = 0;
 			for (int i = 0; i < nc && g_ntxt < PS1_MAX_TXT && p < g_load_buf + n; i++) {
 				ScriptVMTextLine t{};
 				const uint8_t nl = *p++;
@@ -3500,19 +3575,41 @@ static int load_pack_slice(int pack, const char *kind) {
 				p += tl;
 				g_txt_pack[g_ntxt] = uint8_t(pack);
 				g_txt[g_ntxt++] = t;
+				added++;
 			}
+			if (!added && nc > 0) {
+				return 0;
+			}
+			const int ram = added * int(sizeof(ScriptVMTextLine));
 			g_packs[pack].text_resident = 1;
+			g_packs[pack].text_ram = uint32_t(ram);
+			bump_ram(ram);
+			g_packs[pack].charged += g_packs[pack].text_ram;
 			return 1;
 		}
 		return 0;
 	}
 	if (name_is(kind, "SFX")) {
+		if (g_packs[pack].audio_resident) {
+			return 1;
+		}
 		if (g_host && g_host->load_sfx_bank) {
 			if (!g_host->load_sfx_bank(g_load_buf, n)) {
 				return 0;
 			}
 		}
+		for (int i = 0; i < g_npack; i++) {
+			if (i == pack || !g_packs[i].audio_resident) {
+				continue;
+			}
+			pack_refund(i, g_packs[i].sfx_ram);
+			g_packs[i].sfx_ram = 0;
+			g_packs[i].audio_resident = 0;
+		}
 		g_packs[pack].audio_resident = 1;
+		g_packs[pack].sfx_ram = 4096;
+		bump_ram(4096);
+		g_packs[pack].charged += g_packs[pack].sfx_ram;
 		return 1;
 	}
 	if (name_is(kind, "HIT")) {
@@ -3697,27 +3794,36 @@ static int unload_pack_slice(int pack, const char *kind) {
 		return 1;
 	}
 	if (name_is(kind, "TXT")) {
-		for (int i = 0; i < g_ntxt; i++) {
-			if (g_txt_pack[i] == uint8_t(pack)) {
-				g_txt[i].name[0] = 0;
-			}
+		if (!g_packs[pack].text_resident) {
+			return 0;
 		}
+		compact_txt_of(pack);
+		pack_refund(pack, g_packs[pack].text_ram);
+		g_packs[pack].text_ram = 0;
 		g_packs[pack].text_resident = 0;
 		return 1;
 	}
 	if (name_is(kind, "SFX")) {
-		if (g_host && g_host->unload_sfx_bank) {
-			g_host->unload_sfx_bank();
+		if (!g_packs[pack].audio_resident) {
+			return 0;
 		}
 		g_packs[pack].audio_resident = 0;
+		pack_refund(pack, g_packs[pack].sfx_ram);
+		g_packs[pack].sfx_ram = 0;
+		int any = 0;
+		for (int i = 0; i < g_npack; i++) {
+			if (g_packs[i].audio_resident) {
+				any = 1;
+				break;
+			}
+		}
+		if (!any && g_host && g_host->unload_sfx_bank) {
+			g_host->unload_sfx_bank();
+		}
 		return 1;
 	}
 	if (name_is(kind, "HIT")) {
-		for (int i = 0; i < g_nhit; i++) {
-			if (g_hit_used[i] && g_hits[i].pack == uint8_t(pack)) {
-				g_hit_used[i] = 0;
-			}
-		}
+		compact_hits_of(pack);
 		g_packs[pack].hit_resident = 0;
 		return 1;
 	}
@@ -7399,15 +7505,7 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			return 1;
 		}
 		if (name_is(name, "unload_audio")) {
-			if (pack > 0 && pack < g_npack) {
-				g_packs[pack].audio_resident = 0;
-				if (host && host->unload_sfx_bank) {
-					host->unload_sfx_bank();
-				}
-				*ret = gv_bool(1);
-			} else {
-				*ret = gv_bool(0);
-			}
+			*ret = gv_bool(unload_pack_slice(pack, "SFX"));
 			return 1;
 		}
 		if (name_is(name, "is_audio_loaded")) {
@@ -8042,21 +8140,11 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			return 1;
 		}
 		if (name_is(name, "load_text")) {
-			const int was = pack >= 0 && pack < g_npack && g_packs[pack].text_resident;
-			const int ok = load_pack_slice(pack, "TXT");
-			if (ok && !was) {
-				bump_ram(int(sizeof(ScriptVMTextLine) * PS1_MAX_TXT));
-			}
-			*ret = gv_bool(ok);
+			*ret = gv_bool(load_pack_slice(pack, "TXT"));
 			return 1;
 		}
 		if (name_is(name, "unload_text")) {
-			const int was = pack >= 0 && pack < g_npack && g_packs[pack].text_resident;
-			const int ok = unload_pack_slice(pack, "TXT");
-			if (ok && was) {
-				bump_ram(-int(sizeof(ScriptVMTextLine) * PS1_MAX_TXT));
-			}
-			*ret = gv_bool(ok);
+			*ret = gv_bool(unload_pack_slice(pack, "TXT"));
 			return 1;
 		}
 		if (name_is(name, "can_load_text") || name_is(name, "is_text_loaded")) {
@@ -8064,11 +8152,12 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 				*ret = gv_bool(0);
 				return 1;
 			}
-			if (name_is(name, "is_text_loaded")) {
+			if (name_is(name, "is_text_loaded") || g_packs[pack].text_resident) {
 				*ret = gv_bool(g_packs[pack].text_resident);
 				return 1;
 			}
-			*ret = gv_bool(try_read_pack_blob(pack, "TXT", g_load_buf, 8) > 0 && budgets_fit(0, 0, 0, 0, 0, int(sizeof(ScriptVMTextLine) * PS1_MAX_TXT)));
+			const int room = (PS1_MAX_TXT - g_ntxt) * int(sizeof(ScriptVMTextLine));
+			*ret = gv_bool(room > 0 && try_read_pack_blob(pack, "TXT", g_load_buf, 8) > 0 && budgets_fit(0, 0, 0, 0, 0, room));
 			return 1;
 		}
 		if (name_is(name, "set_line") || name_is(name, "set_line_chars")) {
@@ -8847,7 +8936,14 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 		return 1;
 	}
 	if (name_is(name, "is_visible")) {
-		*ret = gv_bool(node_ok(node) && (g_nodes[node].flags & 1));
+		int vis = node_ok(node) && (g_nodes[node].flags & 1);
+		for (int i = 0; i < g_nhud; i++) {
+			if (int(g_hud[i].node_id) == node) {
+				vis = (g_hud[i].flags & 1) != 0;
+				break;
+			}
+		}
+		*ret = gv_bool(vis);
 		return 1;
 	}
 	if (name_is(name, "has_node") || name_is(name, "get_node_or_null") || name_is(name, "get_node")) {
@@ -9330,6 +9426,14 @@ static void get_prop(int node, const char *n, GVar *d) {
 	} else if (prop_named(n, "modulate")) {
 		const int si = int(g_nodes[node].sprite);
 		*d = gv_int(si >= 0 && si < g_nspr ? int(g_sprs[si].rgb) : 255);
+		if (h) {
+			*d = gv_int(int(h->rgb));
+		}
+	} else if (prop_named(n, "z_index")) {
+		*d = gv_int(node_ok(node) ? int(g_ysort[node]) : 0);
+	} else if (prop_named(n, "collision_layer")) {
+		const int hi = hit_of_node(node);
+		*d = gv_int(hi >= 0 ? int(g_hits[hi].layer) : 0);
 	} else {
 		*d = gv_nil();
 	}
@@ -9542,16 +9646,58 @@ static void set_prop(int node, const char *n, const GVar *s) {
 			g_anim_speed = 1.0f;
 		}
 	} else if (prop_named(n, "modulate")) {
-		const int si = int(g_nodes[node].sprite);
-		if (si >= 0 && si < g_nspr) {
-			int v = int(as_float(*s));
+		int v = 255;
+		if (s->type == V_V3) {
+			int r = int(s->x * 255.0f);
+			int g = int(s->y * 255.0f);
+			int b = int(s->z * 255.0f);
+			if (r < 0) {
+				r = 0;
+			}
+			if (r > 255) {
+				r = 255;
+			}
+			if (g < 0) {
+				g = 0;
+			}
+			if (g > 255) {
+				g = 255;
+			}
+			if (b < 0) {
+				b = 0;
+			}
+			if (b > 255) {
+				b = 255;
+			}
+			v = (r + g + b) / 3;
+		} else {
+			v = int(as_float(*s));
 			if (v < 0) {
 				v = 0;
 			}
 			if (v > 255) {
 				v = 255;
 			}
+		}
+		const int si = int(g_nodes[node].sprite);
+		if (si >= 0 && si < g_nspr) {
 			g_sprs[si].rgb = uint8_t(v);
+		}
+		if (h) {
+			h->rgb = uint8_t(v);
+		}
+	} else if (prop_named(n, "z_index")) {
+		if (node_ok(node)) {
+			g_ysort[node] = uint8_t(as_truth(*s) || as_float(*s) != 0.0f ? 1 : 0);
+		}
+	} else if (prop_named(n, "collision_layer")) {
+		const int hi = hit_of_node(node);
+		if (hi >= 0) {
+			int layer = int(as_float(*s));
+			if (layer <= 0) {
+				layer = 1;
+			}
+			g_hits[hi].layer = uint8_t(layer & 0xFF);
 		}
 	}
 }

@@ -284,7 +284,8 @@ static bool member_is_allowlisted(const String &p_name) {
 			p_name == "get_position" || p_name == "set_position" ||
 			p_name == "get_global_position" || p_name == "set_global_position" ||
 			p_name == "paused" || p_name == "rotation_degrees" || p_name == "global_rotation" ||
-			p_name == "current" || p_name == "time_scale" || p_name == "Engine";
+			p_name == "current" || p_name == "time_scale" || p_name == "Engine" ||
+			p_name == "z_index" || p_name == "collision_layer";
 }
 
 static bool action_is_known(const String &p_name) {
@@ -667,16 +668,16 @@ static Error scan_and_normalize(const String &p_path, GDScript *script, GDScript
 		if (op == Op::OPCODE_CONSTRUCT) {
 			const int iac = (ip + 1 < code.size()) ? code[ip + 1] : 0;
 			const int typ = (ip + 3 + iac < code.size()) ? code[ip + 3 + iac] : -1;
-			if (typ != int(Variant::INT) && typ != int(Variant::FLOAT) && typ != int(Variant::VECTOR2) && typ != int(Variant::VECTOR3)) {
-				r_err = vformat("%s:%s:%d construct type %d is not Int/Float/Vector2/Vector3", p_path, String(fn->get_name()), ip, typ);
+			if (typ != int(Variant::INT) && typ != int(Variant::FLOAT) && typ != int(Variant::VECTOR2) && typ != int(Variant::VECTOR3) && typ != int(Variant::COLOR)) {
+				r_err = vformat("%s:%s:%d construct type %d is not Int/Float/Vector2/Vector3/Color", p_path, String(fn->get_name()), ip, typ);
 				return ERR_UNCONFIGURED;
 			}
 		}
 		if (op == Op::OPCODE_CONSTRUCT_VALIDATED) {
 			const int iac = (ip + 1 < code.size()) ? code[ip + 1] : 0;
 			const int argc = (ip + 2 + iac < code.size()) ? code[ip + 2 + iac] : -1;
-			if (argc != 1 && argc != 2 && argc != 3) {
-				r_err = vformat("%s:%s:%d construct validated argc %d is not Int/Float/Vector2/Vector3", p_path, String(fn->get_name()), ip, argc);
+			if (argc != 1 && argc != 2 && argc != 3 && argc != 4) {
+				r_err = vformat("%s:%s:%d construct validated argc %d is not Int/Float/Vector2/Vector3/Color", p_path, String(fn->get_name()), ip, argc);
 				return ERR_UNCONFIGURED;
 			}
 		}

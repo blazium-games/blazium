@@ -125,6 +125,8 @@ struct ScriptVMPack {
 	uint32_t tim_ram;
 	uint32_t hud_ram;
 	uint32_t tile_ram;
+	uint32_t text_ram;
+	uint32_t sfx_ram;
 	uint32_t charged;
 };
 
