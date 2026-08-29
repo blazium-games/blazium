@@ -564,6 +564,8 @@ public:
 	Variant get_constant(int p_idx) const;
 	StringName get_global_name(int p_idx) const;
 	StringName get_method_bind_name(int p_idx) const;
+	StringName get_setter_name(int p_idx) const;
+	StringName get_getter_name(int p_idx) const;
 	int get_validated_operator_kind(int p_idx) const;
 
 	Variant call(GDScriptInstance *p_instance, const Variant **p_args, int p_argcount, Callable::CallError &r_err, CallState *p_state = nullptr);

@@ -299,6 +299,13 @@ Error EditorExportPlatformPS1::export_project(const Ref<EditorExportPreset> &p_p
 		args.push_back("--xa");
 		args.push_back(cooked.xa_path);
 	}
+	if (!cooked.node_path.is_empty()) {
+		args.push_back("--node");
+		args.push_back(cooked.node_path);
+	}
+	if (int(p_preset->get("ps1/output_kind")) != 0) {
+		add_message(EXPORT_MESSAGE_WARNING, "PS1", "ps1/output_kind is unread; output is PS-X EXE. Use ps1/make_iso for a disc image.");
+	}
 
 	String output;
 	int exitcode = 0;
@@ -381,6 +388,7 @@ Error EditorExportPlatformPS1::_try_make_iso(const String &p_exe_path, const ps1
 	};
 	add_file("FMV00.STR", p_cooked.str_path);
 	add_file("FMV00.XA", p_cooked.xa_path);
+	add_file("NODE00.bin", p_cooked.node_path);
 	xf->store_string(
 			"\t\t</directory_tree>\n"
 									  "\t</track>\n"

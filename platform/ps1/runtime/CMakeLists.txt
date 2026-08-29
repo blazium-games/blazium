@@ -12,7 +12,7 @@ project(
 
 psn00bsdk_add_executable(runtime GPREL main.cpp script_vm.cpp fmv_play.cpp)
 target_compile_options(runtime PRIVATE -fno-exceptions -fno-rtti)
-target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_COOK_ABI=5)
+target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_COOK_ABI=6)
 
 set(BLAZIUM_PS1_TIM "" CACHE FILEPATH "Optional cooked TIM to embed")
 if(BLAZIUM_PS1_TIM)
@@ -75,4 +75,11 @@ if(BLAZIUM_PS1_XA)
 	configure_file("${BLAZIUM_PS1_XA}" "${CMAKE_CURRENT_BINARY_DIR}/FMV00.XA" COPYONLY)
 	psn00bsdk_target_incbin(runtime PRIVATE cooked_xa "${CMAKE_CURRENT_BINARY_DIR}/FMV00.XA")
 	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_XA=1)
+endif()
+
+set(BLAZIUM_PS1_NODE "" CACHE FILEPATH "Optional cooked NODE table")
+if(BLAZIUM_PS1_NODE)
+	configure_file("${BLAZIUM_PS1_NODE}" "${CMAKE_CURRENT_BINARY_DIR}/NODE00.BIN" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_node "${CMAKE_CURRENT_BINARY_DIR}/NODE00.BIN")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_NODE=1)
 endif()

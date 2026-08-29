@@ -72,13 +72,31 @@ struct SceneGather {
 	HashSet<String> uncooked_types;
 	Vector<String> attached_scripts;
 	VideoStreamPlayer *video = nullptr;
+	int extra_wav = 0;
+	int extra_video = 0;
+	bool had_omni_or_spot = false;
+	int node_dropped = 0;
+	struct CookedNode {
+		int parent = -1;
+		String name;
+		uint8_t type = 0;
+		uint8_t flags = 1;
+		Vector3 pos;
+		Vector3 euler;
+		uint16_t tri_lo = 0;
+		uint16_t tri_hi = 0;
+		int16_t sprite_index = -1;
+		int16_t script_index = -1;
+		String script_path;
+	};
+	Vector<CookedNode> nodes;
 };
 
 static const char *kAllowed[] = {
 	"Node", "Node3D", "MeshInstance3D", "Camera3D", "AnimationPlayer",
 	"Sprite2D", "Node2D", "AudioStreamPlayer", "AudioStreamPlayer3D",
 	"DirectionalLight3D", "OmniLight3D", "SpotLight3D", "Light3D",
-	"VideoStreamPlayer", "Control", "CanvasItem"
+	"VideoStreamPlayer"
 };
 
 static bool type_allowed(const String &p_cls) {
@@ -155,17 +173,18 @@ static uint8_t register_image(SceneGather &r_g, const Ref<Image> &p_img, const S
 	return 0;
 }
 
-static void emit_tris(const Transform3D &p_xf, const PackedVector3Array &verts, const PackedVector2Array &uvs, const PackedInt32Array &idx, uint8_t p_tex, Vector<CookTri> &r_tris) {
+static void emit_tris(const PackedVector3Array &verts, const PackedVector2Array &uvs, const PackedInt32Array &idx, uint8_t p_tex, uint8_t p_node, Vector<CookTri> &r_tris) {
 	if (idx.size() >= 3) {
 		for (int i = 0; i + 2 < idx.size(); i += 3) {
 			CookTri t;
 			t.tex_slot = p_tex;
+			t.node_id = p_node;
 			for (int k = 0; k < 3; k++) {
 				const int vi = idx[i + k];
 				if (vi < 0 || vi >= verts.size()) {
 					continue;
 				}
-				t.v[k] = p_xf.xform(verts[vi]);
+				t.v[k] = verts[vi];
 				t.uv[k] = (vi < uvs.size()) ? uvs[vi] : Vector2(0, 0);
 			}
 			r_tris.push_back(t);
@@ -175,9 +194,10 @@ static void emit_tris(const Transform3D &p_xf, const PackedVector3Array &verts, 
 	for (int i = 0; i + 2 < verts.size(); i += 3) {
 		CookTri t;
 		t.tex_slot = p_tex;
-		t.v[0] = p_xf.xform(verts[i]);
-		t.v[1] = p_xf.xform(verts[i + 1]);
-		t.v[2] = p_xf.xform(verts[i + 2]);
+		t.node_id = p_node;
+		t.v[0] = verts[i];
+		t.v[1] = verts[i + 1];
+		t.v[2] = verts[i + 2];
 		t.uv[0] = (i < uvs.size()) ? uvs[i] : Vector2(0, 0);
 		t.uv[1] = (i + 1 < uvs.size()) ? uvs[i + 1] : Vector2(1, 0);
 		t.uv[2] = (i + 2 < uvs.size()) ? uvs[i + 2] : Vector2(0, 1);
@@ -213,6 +233,8 @@ static void try_wav(SceneGather &r_g, const Ref<AudioStream> &p_stream) {
 	if (wav.is_valid() && (wav->get_format() == AudioStreamWAV::FORMAT_8_BITS || wav->get_format() == AudioStreamWAV::FORMAT_16_BITS)) {
 		if (r_g.wav.is_null()) {
 			r_g.wav = wav;
+		} else {
+			r_g.extra_wav++;
 		}
 		return;
 	}
@@ -234,7 +256,7 @@ static void add_light(SceneGather &r_g, const Vector3 &p_dir, const Color &p_col
 	r_g.lights.push_back(l);
 }
 
-static void walk_scene(Node *p_node, SceneGather &r_g) {
+static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 	if (!p_node) {
 		return;
 	}
@@ -242,9 +264,50 @@ static void walk_scene(Node *p_node, SceneGather &r_g) {
 	if (!type_allowed(cls)) {
 		r_g.uncooked_types.insert(cls);
 	}
+	int my = -1;
+	if (r_g.nodes.size() < kMaxNodes) {
+		SceneGather::CookedNode cn;
+		cn.parent = p_parent;
+		cn.name = p_node->get_name();
+		cn.flags = 1;
+		if (Object::cast_to<MeshInstance3D>(p_node)) {
+			cn.type = 2;
+		} else if (Object::cast_to<Sprite2D>(p_node)) {
+			cn.type = 3;
+		} else if (Object::cast_to<Camera3D>(p_node)) {
+			cn.type = 4;
+		} else if (Object::cast_to<Node3D>(p_node)) {
+			cn.type = 1;
+		}
+		if (Node3D *n3 = Object::cast_to<Node3D>(p_node)) {
+			const Transform3D xf = n3->get_transform();
+			cn.pos = xf.origin;
+			cn.euler = xf.basis.get_euler();
+			if (!n3->is_visible()) {
+				cn.flags = 0;
+			}
+		} else if (Node2D *n2 = Object::cast_to<Node2D>(p_node)) {
+			cn.pos = Vector3(n2->get_position().x, n2->get_position().y, 0);
+			if (!n2->is_visible()) {
+				cn.flags = 0;
+			}
+		}
+		if (p_node->get_script()) {
+			const Ref<Script> sc = p_node->get_script();
+			if (sc.is_valid() && !sc->get_path().is_empty()) {
+				cn.script_path = sc->get_path();
+				cn.flags |= 2;
+			}
+		}
+		cn.tri_lo = uint16_t(r_g.tris.size());
+		cn.tri_hi = cn.tri_lo;
+		my = r_g.nodes.size();
+		r_g.nodes.push_back(cn);
+	} else {
+		r_g.node_dropped++;
+	}
 	MeshInstance3D *mi = Object::cast_to<MeshInstance3D>(p_node);
-	if (mi && mi->get_mesh().is_valid()) {
-		const Transform3D xf = world_xform_3d(mi);
+	if (mi && mi->get_mesh().is_valid() && my >= 0) {
 		const Ref<Mesh> mesh = mi->get_mesh();
 		for (int s = 0; s < mesh->get_surface_count(); s++) {
 			Array arr = mesh->surface_get_arrays(s);
@@ -267,8 +330,9 @@ static void walk_scene(Node *p_node, SceneGather &r_g) {
 			String tex_name;
 			const Ref<Image> img = image_from_material(mat, tex_name);
 			const uint8_t slot = register_image(r_g, img, tex_name);
-			emit_tris(xf, verts, uvs, idx, slot, r_g.tris);
+			emit_tris(verts, uvs, idx, slot, uint8_t(my), r_g.tris);
 		}
+		r_g.nodes.write[my].tri_hi = uint16_t(MIN(r_g.tris.size(), 65535));
 	}
 	if (Camera3D *cam = Object::cast_to<Camera3D>(p_node)) {
 		r_g.camera_count++;
@@ -286,11 +350,13 @@ static void walk_scene(Node *p_node, SceneGather &r_g) {
 		c *= float(dl->get_param(Light3D::PARAM_ENERGY));
 		add_light(r_g, dir, c);
 	} else if (OmniLight3D *ol = Object::cast_to<OmniLight3D>(p_node)) {
+		r_g.had_omni_or_spot = true;
 		const Transform3D xf = world_xform_3d(ol);
 		Color c = ol->get_color();
 		c *= float(ol->get_param(Light3D::PARAM_ENERGY));
 		add_light(r_g, xf.origin, c);
 	} else if (SpotLight3D *sl = Object::cast_to<SpotLight3D>(p_node)) {
+		r_g.had_omni_or_spot = true;
 		const Transform3D xf = world_xform_3d(sl);
 		const Vector3 dir = -xf.basis.get_column(Vector3::AXIS_Z);
 		Color c = sl->get_color();
@@ -308,12 +374,17 @@ static void walk_scene(Node *p_node, SceneGather &r_g) {
 	if (Sprite2D *spr = Object::cast_to<Sprite2D>(p_node)) {
 		r_g.sprite_count++;
 		if (r_g.sprites.size() < kMaxSprites) {
+			if (my >= 0) {
+				r_g.nodes.write[my].sprite_index = int16_t(r_g.sprites.size());
+			}
 			r_g.sprites.push_back(spr);
 		}
 	}
 	if (VideoStreamPlayer *vp = Object::cast_to<VideoStreamPlayer>(p_node)) {
 		if (!r_g.video) {
 			r_g.video = vp;
+		} else {
+			r_g.extra_video++;
 		}
 	}
 	if (p_node->get_script()) {
@@ -326,7 +397,7 @@ static void walk_scene(Node *p_node, SceneGather &r_g) {
 		r_g.animation_player_count++;
 	}
 	for (int i = 0; i < p_node->get_child_count(); i++) {
-		walk_scene(p_node->get_child(i), r_g);
+		walk_scene(p_node->get_child(i), r_g, my >= 0 ? my : p_parent);
 	}
 }
 
@@ -383,28 +454,11 @@ static void pcm_from_wav(const Ref<AudioStreamWAV> &p_wav, Vector<int16_t> &r_pc
 	}
 }
 
-static void write_industrial_sprites(Vector<uint8_t> &spr) {
-	auto u16 = [&](uint16_t v) {
-		spr.push_back(uint8_t(v & 0xff));
-		spr.push_back(uint8_t(v >> 8));
-	};
-	auto i16 = [&](int16_t v) { u16(uint16_t(v)); };
-	u16(2);
-	u16(1);
-	i16(8);
-	i16(8);
-	u16(64);
-	u16(8);
+static void write_empty_sprites(Vector<uint8_t> &spr) {
 	spr.push_back(0);
 	spr.push_back(0);
-	u16(0);
-	i16(140);
-	i16(100);
-	u16(16);
-	u16(16);
-	spr.push_back(16);
-	spr.push_back(16);
-	u16(0);
+	spr.push_back(0);
+	spr.push_back(0);
 }
 
 struct SpriteCook {
@@ -437,6 +491,50 @@ static void write_scene_sprites(const Vector<SpriteCook> &p_sprites, Vector<uint
 
 static int16_t clamp_i16(float v) {
 	return int16_t(CLAMP(int(v), -32767, 32767));
+}
+
+static void write_node_table(const Vector<SceneGather::CookedNode> &p_nodes, float p_scale, Vector<uint8_t> &o) {
+	auto u16 = [&](uint16_t v) {
+		o.push_back(uint8_t(v & 0xff));
+		o.push_back(uint8_t(v >> 8));
+	};
+	auto i16 = [&](int16_t v) { u16(uint16_t(v)); };
+	o.push_back('N');
+	o.push_back('O');
+	o.push_back('D');
+	o.push_back('E');
+	u16(6);
+	u16(uint16_t(p_nodes.size()));
+	const float s = p_scale > 0.0f ? p_scale : 1.0f;
+	for (int i = 0; i < p_nodes.size(); i++) {
+		const SceneGather::CookedNode &n = p_nodes[i];
+		i16(int16_t(n.parent));
+		const CharString utf = n.name.utf8();
+		o.push_back(uint8_t(CLAMP(utf.length(), 0, 255)));
+		for (int c = 0; c < utf.length() && c < 255; c++) {
+			o.push_back(uint8_t(utf[c]));
+		}
+		o.push_back(n.type);
+		o.push_back(n.flags);
+		i16(clamp_i16(n.pos.x * s));
+		i16(clamp_i16(-n.pos.y * s));
+		i16(clamp_i16(n.pos.z * s));
+		i16(clamp_i16(n.euler.x * 4096.0f / float(Math::TAU)));
+		i16(clamp_i16(n.euler.y * 4096.0f / float(Math::TAU)));
+		i16(clamp_i16(n.euler.z * 4096.0f / float(Math::TAU)));
+		uint16_t lo = n.tri_lo;
+		uint16_t hi = n.tri_hi;
+		if (lo >= uint16_t(kMaxTris)) {
+			lo = 0;
+			hi = 0;
+		} else if (hi > uint16_t(kMaxTris)) {
+			hi = uint16_t(kMaxTris);
+		}
+		u16(lo);
+		u16(hi);
+		i16(n.sprite_index);
+		i16(n.script_index);
+	}
 }
 
 static void write_warnings_file(const String &p_path, const CookResult &p_out) {
@@ -475,7 +573,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		Ref<PackedScene> ps = ResourceLoader::load(main_scene);
 		if (ps.is_valid()) {
 			root = ps->instantiate();
-			walk_scene(root, gathered);
+			walk_scene(root, gathered, -1);
 			if (!gathered.tris.is_empty()) {
 				src_name = main_scene;
 			}
@@ -516,6 +614,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			src_name = main_scene;
 		}
 	} else if (images.is_empty()) {
+		r_out.warnings.push_back("no albedo on cooked meshes; used Industrial Concrete / orange fallback.");
 		const String png = "res://assets/Industrial_exterior_v2_Concrete.png";
 		Ref<Image> from_png = try_load_png(png);
 		if (from_png.is_valid()) {
@@ -596,6 +695,18 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	}
 	if (gathered.had_non_wav_audio) {
 		r_out.warnings.push_back("OGG/MP3/other audio is not cooked; VAG is WAV-only or a beep.");
+	}
+	if (gathered.node_dropped > 0) {
+		r_out.warnings.push_back(vformat("kept first %d of %d nodes (dropped %d).", kMaxNodes, kMaxNodes + gathered.node_dropped, gathered.node_dropped));
+	}
+	if (gathered.extra_wav > 0) {
+		r_out.warnings.push_back(vformat("kept first AudioStreamWAV; ignored %d extra WAV stream(s).", gathered.extra_wav));
+	}
+	if (gathered.extra_video > 0) {
+		r_out.warnings.push_back(vformat("kept first VideoStreamPlayer; ignored %d extra player(s).", gathered.extra_video));
+	}
+	if (gathered.had_omni_or_spot) {
+		r_out.warnings.push_back("OmniLight3D/SpotLight3D cooked as directional GTE lights.");
 	}
 	const int display_w = p_opts.width > 0 ? p_opts.width : 320;
 	const int display_h = p_opts.region == 1 ? 256 : 240;
@@ -707,7 +818,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		if (!sprite_cooks.is_empty()) {
 			write_scene_sprites(sprite_cooks, spr);
 		} else {
-			write_industrial_sprites(spr);
+			write_empty_sprites(spr);
 		}
 		Ref<FileAccess> sf = FileAccess::open(r_out.sprite_path, FileAccess::WRITE);
 		ERR_FAIL_COND_V(sf.is_null(), ERR_CANT_CREATE);
@@ -769,6 +880,11 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 
 	ScriptIR ir;
 	ir.attached = gathered.attached_scripts;
+	for (int i = 0; i < gathered.nodes.size(); i++) {
+		if (!gathered.nodes[i].script_path.is_empty()) {
+			ir.path_owners[gathered.nodes[i].script_path] = uint16_t(i);
+		}
+	}
 	const Error serr = cook_scripts(p_export_dir, ir);
 	if (serr != OK) {
 		r_out.errors.push_back("Script cook failed.");
@@ -786,11 +902,10 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	}
 
 	if (cam_cook.valid) {
-		const Vector3 rel = cam_cook.pos - mesh.center;
 		const float s = mesh.scale > 0.0f ? mesh.scale : 1.0f;
-		ir.pos_x = clamp_i16(-rel.x * s);
-		ir.pos_y = clamp_i16(rel.y * s);
-		ir.pos_z = clamp_i16(rel.z * s);
+		ir.pos_x = clamp_i16(-cam_cook.pos.x * s);
+		ir.pos_y = clamp_i16(cam_cook.pos.y * s);
+		ir.pos_z = clamp_i16(cam_cook.pos.z * s);
 		if (ir.pos_z <= 0) {
 			ir.pos_z = 512;
 		}
@@ -826,9 +941,31 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	r_out.gdbc_path = ir.gdbc_path;
 	r_out.luau_path = ir.luau_path;
 
+	for (int i = 0; i < gathered.nodes.size(); i++) {
+		gathered.nodes.write[i].script_index = -1;
+		const String &sp = gathered.nodes[i].script_path;
+		if (sp.is_empty()) {
+			continue;
+		}
+		for (int j = 0; j < ir.cooked_gd.size(); j++) {
+			if (ir.cooked_gd[j] == sp) {
+				gathered.nodes.write[i].script_index = int16_t(j);
+				break;
+			}
+		}
+	}
+	{
+		Vector<uint8_t> nodeb;
+		write_node_table(gathered.nodes, mesh.scale, nodeb);
+		r_out.node_path = p_export_dir.path_join("NODE00.bin");
+		Ref<FileAccess> nd = FileAccess::open(r_out.node_path, FileAccess::WRITE);
+		ERR_FAIL_COND_V(nd.is_null(), ERR_CANT_CREATE);
+		nd->store_buffer(nodeb);
+	}
+
 	Ref<FileAccess> nf = FileAccess::open(r_out.names_path, FileAccess::WRITE);
 	ERR_FAIL_COND_V(nf.is_null(), ERR_CANT_CREATE);
-	nf->store_line(src_name + " -> TEX00.TIM MESH00.bin SFX00.VAG SPRITE00.bin FMV00.MAP SCRIPT.IR SCRIPT.GD.BC SCRIPT.LU.BC");
+	nf->store_line(src_name + " -> TEX00.TIM MESH00.bin SFX00.VAG SPRITE00.bin FMV00.MAP SCRIPT.IR SCRIPT.GD.BC SCRIPT.LU.BC NODE00.bin");
 
 	r_out.texels = packed.pixel_w * MAX(1, packed.pixel_h);
 	r_out.tris = src_tris.size();
@@ -847,11 +984,14 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	if (!r_out.xa_path.is_empty() && FileAccess::exists(r_out.xa_path)) {
 		extra_blob += FileAccess::get_file_as_bytes(r_out.xa_path).size();
 	}
+	if (!r_out.node_path.is_empty() && FileAccess::exists(r_out.node_path)) {
+		extra_blob += FileAccess::get_file_as_bytes(r_out.node_path).size();
+	}
 	const int ram_blob = packed.bytes.size() + mesh.bytes.size() + vag.bytes.size() + extra_blob;
 	r_out.over_budget = packed.vram_bytes > kVramLimit || ram_blob > kRamLimit || vag.bytes.size() > kSpuLimit;
 
-	r_out.infos.push_back(vformat("guest_abi=%d src=%s tims=%d tris=%d cooked=%d lights=%d sprites=%d display=%s %dx%d gd=%d luau=%d%s",
-			kCookABI, src_name, tims.size(), src_tris.size(), mesh.tri_count, lights.size(), sprite_cooks.size(),
+	r_out.infos.push_back(vformat("guest_abi=%d nodes=%d src=%s tims=%d tris=%d cooked=%d lights=%d sprites=%d display=%s %dx%d gd=%d luau=%d%s",
+			kCookABI, gathered.nodes.size(), src_name, tims.size(), src_tris.size(), mesh.tri_count, lights.size(), sprite_cooks.size(),
 			p_opts.region == 1 ? "PAL" : "NTSC", display_w, display_h, ir.gd_count, ir.luau_count,
 			used_industrial ? " industrial_fallback" : ""));
 

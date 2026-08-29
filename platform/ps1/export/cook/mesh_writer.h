@@ -23,6 +23,7 @@ struct CookTri {
 	Vector3 v[3];
 	Vector2 uv[3];
 	uint8_t tex_slot = 0;
+	uint8_t node_id = 0;
 };
 
 struct MeshBlob {

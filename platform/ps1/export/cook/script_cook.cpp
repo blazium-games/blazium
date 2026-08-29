@@ -70,7 +70,57 @@ bool method_is_allowlisted(const String &p_name) {
 	return p_name == "rotate_x" || p_name == "rotate_y" || p_name == "rotate_z" ||
 			p_name == "translate" || p_name == "get_node" ||
 			p_name == "is_action_pressed" || p_name == "is_action_just_pressed" ||
-			p_name == "_ready" || p_name == "_process";
+			p_name == "_ready" || p_name == "_process" ||
+			p_name == "hide" || p_name == "show" ||
+			p_name == "set_position" || p_name == "set_rotation" ||
+			p_name == "look_at" || p_name == "print" || p_name == "push_warning";
+}
+
+static bool luau_source_unbound(const String &p_source, String &r_why) {
+	const String src = strip_line_comments(p_source);
+	const char *bad[] = {
+		"queue_free", "instantiate", "change_scene", "get_tree", "call_deferred",
+		"rpc", "create_tween", "duplicate"
+	};
+	for (const char *b : bad) {
+		if (src.contains(String(b) + "(") || src.contains(String(b) + " (")) {
+			r_why = b;
+			return true;
+		}
+	}
+	for (int i = 0; i < src.length(); i++) {
+		const char32_t c = src[i];
+		if ((c != '.' && c != ':') || i + 1 >= src.length()) {
+			continue;
+		}
+		if (!(src[i + 1] >= 'A' && src[i + 1] <= 'Z') && !(src[i + 1] >= 'a' && src[i + 1] <= 'z') && src[i + 1] != '_') {
+			continue;
+		}
+		int j = i + 1;
+		String ident;
+		while (j < src.length()) {
+			const char32_t ch = src[j];
+			if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '_') {
+				ident += ch;
+				j++;
+			} else {
+				break;
+			}
+		}
+		while (j < src.length() && (src[j] == ' ' || src[j] == '\t')) {
+			j++;
+		}
+		if (j >= src.length() || src[j] != '(' || ident.is_empty() || method_is_allowlisted(ident)) {
+			continue;
+		}
+		if (c == ':' || ident == "queue_free" || ident == "instantiate" || ident == "load" ||
+				ident == "preload" || ident == "get_tree" || ident == "change_scene" ||
+				ident == "call_deferred" || ident == "duplicate") {
+			r_why = ident;
+			return true;
+		}
+	}
+	return false;
 }
 
 static bool skip_script_dir(const String &p_name) {
@@ -153,6 +203,16 @@ static int host_opcode_size(const Vector<int> &code, int ip) {
 		case Op::OPCODE_GET_MEMBER:
 		case Op::OPCODE_SET_MEMBER:
 			return 3;
+		case Op::OPCODE_GET_NAMED:
+		case Op::OPCODE_SET_NAMED:
+		case Op::OPCODE_GET_NAMED_VALIDATED:
+		case Op::OPCODE_SET_NAMED_VALIDATED:
+			return 4;
+		case Op::OPCODE_ITERATE_BEGIN:
+		case Op::OPCODE_ITERATE_BEGIN_INT:
+		case Op::OPCODE_ITERATE:
+		case Op::OPCODE_ITERATE_INT:
+			return 5;
 		case Op::OPCODE_ASSERT:
 			return 3;
 		case Op::OPCODE_TYPE_ADJUST_BOOL:
@@ -165,6 +225,9 @@ static int host_opcode_size(const Vector<int> &code, int ip) {
 		case Op::OPCODE_CALL:
 		case Op::OPCODE_CALL_RETURN:
 		case Op::OPCODE_CALL_ASYNC:
+		case Op::OPCODE_CALL_UTILITY:
+		case Op::OPCODE_CALL_UTILITY_VALIDATED:
+		case Op::OPCODE_CALL_GDSCRIPT_UTILITY:
 		case Op::OPCODE_CALL_METHOD_BIND:
 		case Op::OPCODE_CALL_METHOD_BIND_RET:
 		case Op::OPCODE_CALL_METHOD_BIND_VALIDATED_RETURN:
@@ -217,13 +280,19 @@ static bool opcode_allowed(int op) {
 			op == Op::OPCODE_TYPE_ADJUST_VECTOR2 || op == Op::OPCODE_TYPE_ADJUST_VECTOR3 ||
 			op == Op::OPCODE_CONSTRUCT || op == Op::OPCODE_CONSTRUCT_VALIDATED ||
 			op == Op::OPCODE_CALL || op == Op::OPCODE_CALL_RETURN ||
+			op == Op::OPCODE_CALL_UTILITY || op == Op::OPCODE_CALL_UTILITY_VALIDATED ||
+			op == Op::OPCODE_CALL_GDSCRIPT_UTILITY ||
 			op == Op::OPCODE_CALL_METHOD_BIND || op == Op::OPCODE_CALL_METHOD_BIND_RET ||
 			op == Op::OPCODE_CALL_METHOD_BIND_VALIDATED_RETURN ||
 			op == Op::OPCODE_CALL_METHOD_BIND_VALIDATED_NO_RETURN ||
 			op == Op::OPCODE_CALL_NATIVE_STATIC ||
 			op == Op::OPCODE_CALL_NATIVE_STATIC_VALIDATED_RETURN ||
 			op == Op::OPCODE_CALL_NATIVE_STATIC_VALIDATED_NO_RETURN ||
-			op == Op::OPCODE_GET_MEMBER || op == Op::OPCODE_SET_MEMBER;
+			op == Op::OPCODE_GET_MEMBER || op == Op::OPCODE_SET_MEMBER ||
+			op == Op::OPCODE_GET_NAMED || op == Op::OPCODE_SET_NAMED ||
+			op == Op::OPCODE_GET_NAMED_VALIDATED || op == Op::OPCODE_SET_NAMED_VALIDATED ||
+			op == Op::OPCODE_ITERATE_BEGIN || op == Op::OPCODE_ITERATE_BEGIN_INT ||
+			op == Op::OPCODE_ITERATE || op == Op::OPCODE_ITERATE_INT;
 }
 
 static String call_name_at(const GDScriptFunction *fn, const Vector<int> &code, int ip) {
@@ -237,7 +306,8 @@ static String call_name_at(const GDScriptFunction *fn, const Vector<int> &code, 
 	if (name_at >= code.size()) {
 		return String();
 	}
-	if (op == Op::OPCODE_CALL || op == Op::OPCODE_CALL_RETURN) {
+	if (op == Op::OPCODE_CALL || op == Op::OPCODE_CALL_RETURN ||
+			op == Op::OPCODE_CALL_UTILITY || op == Op::OPCODE_CALL_GDSCRIPT_UTILITY) {
 		return String(fn->get_global_name(code[name_at]));
 	}
 	if (op == Op::OPCODE_CALL_METHOD_BIND || op == Op::OPCODE_CALL_METHOD_BIND_RET ||
@@ -272,7 +342,9 @@ static Error scan_and_normalize(const String &p_path, GDScriptFunction *fn, Vect
 			r_err = vformat("%s:%s:%d opcode %d is not in the PS1 first-slice table", p_path, String(fn->get_name()), ip, op);
 			return ERR_UNCONFIGURED;
 		}
-		if (op == Op::OPCODE_CALL || op == Op::OPCODE_CALL_RETURN || op == Op::OPCODE_CALL_METHOD_BIND ||
+		if (op == Op::OPCODE_CALL || op == Op::OPCODE_CALL_RETURN || op == Op::OPCODE_CALL_UTILITY ||
+				op == Op::OPCODE_CALL_UTILITY_VALIDATED || op == Op::OPCODE_CALL_GDSCRIPT_UTILITY ||
+				op == Op::OPCODE_CALL_METHOD_BIND ||
 				op == Op::OPCODE_CALL_METHOD_BIND_RET || op == Op::OPCODE_CALL_METHOD_BIND_VALIDATED_RETURN ||
 				op == Op::OPCODE_CALL_METHOD_BIND_VALIDATED_NO_RETURN || op == Op::OPCODE_CALL_NATIVE_STATIC ||
 				op == Op::OPCODE_CALL_NATIVE_STATIC_VALIDATED_RETURN || op == Op::OPCODE_CALL_NATIVE_STATIC_VALIDATED_NO_RETURN) {
@@ -294,6 +366,19 @@ static Error scan_and_normalize(const String &p_path, GDScriptFunction *fn, Vect
 			r_norm.push_back(code[ip + 2]);
 			r_norm.push_back(code[ip + 3]);
 			r_norm.push_back(fn->get_validated_operator_kind(code[ip + 4]));
+		} else if (op == Op::OPCODE_GET_NAMED_VALIDATED || op == Op::OPCODE_SET_NAMED_VALIDATED) {
+			const String pname = String(op == Op::OPCODE_GET_NAMED_VALIDATED ? fn->get_getter_name(code[ip + 3]) : fn->get_setter_name(code[ip + 3]));
+			int namei = 0;
+			for (int g = 0; g < fn->get_global_names_count(); g++) {
+				if (String(fn->get_global_name(g)) == pname) {
+					namei = g;
+					break;
+				}
+			}
+			r_norm.push_back(op == Op::OPCODE_GET_NAMED_VALIDATED ? int(Op::OPCODE_GET_NAMED) : int(Op::OPCODE_SET_NAMED));
+			r_norm.push_back(code[ip + 1]);
+			r_norm.push_back(code[ip + 2]);
+			r_norm.push_back(namei);
 		} else {
 			for (int i = 0; i < sz && ip + i < code.size(); i++) {
 				r_norm.push_back(code[ip + i]);
@@ -343,10 +428,15 @@ static Vector<uint8_t> pack_official_gdbc(const Vector<String> &p_paths, const V
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 5);
+	append_u16(out, 6);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int s = 0; s < p_paths.size(); s++) {
 		append_str(out, p_paths[s]);
+		uint16_t owner = 0xffff;
+		if (r_ir.path_owners.has(p_paths[s])) {
+			owner = r_ir.path_owners[p_paths[s]];
+		}
+		append_u16(out, owner);
 		const HashMap<StringName, GDScriptFunction *> &fns = p_scripts[s]->get_member_functions();
 		Vector<StringName> names;
 		for (const KeyValue<StringName, GDScriptFunction *> &E : fns) {
@@ -393,6 +483,9 @@ static Vector<uint8_t> pack_official_gdbc(const Vector<String> &p_paths, const V
 	return out;
 }
 
+static const uint8_t kTapeCallGetNode = 6;
+static const uint8_t kTapeCallNamed = 7;
+
 static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vector<String> &p_sources) {
 	Vector<uint8_t> out;
 	out.push_back('G');
@@ -410,32 +503,87 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 		if (p_sources[i].contains("0.4")) {
 			rate = 0.4f;
 		}
+		Vector<String> names;
+		auto add_name = [&](const String &n) -> uint8_t {
+			for (int k = 0; k < names.size(); k++) {
+				if (names[k] == n) {
+					return uint8_t(k);
+				}
+			}
+			names.push_back(n);
+			return uint8_t(names.size() - 1);
+		};
 		Vector<uint8_t> code;
-		if (p_sources[i].contains("rotate_y") && p_sources[i].contains("delta")) {
+		const String &src = p_sources[i];
+		if (src.contains("rotate_y") && src.contains("delta")) {
+			const uint8_t ni = add_name("rotate_y");
 			code.push_back(kTapeLoadArg);
 			code.push_back(0);
 			code.push_back(kTapeLoadConstF);
 			code.push_back(0);
 			code.push_back(kTapeMul);
 			code.push_back(kTapeCallSelf);
-			code.push_back(0);
-			code.push_back(kTapeReturn);
-		} else if (p_sources[i].contains("rotate_y")) {
+			code.push_back(ni);
+		} else if (src.contains("rotate_y")) {
+			const uint8_t ni = add_name("rotate_y");
 			code.push_back(kTapeLoadConstF);
 			code.push_back(0);
 			code.push_back(kTapeCallSelf);
+			code.push_back(ni);
+		} else if (src.contains("rotate_x")) {
+			code.push_back(kTapeLoadConstF);
 			code.push_back(0);
-			code.push_back(kTapeReturn);
-		} else {
-			code.push_back(kTapeReturn);
+			code.push_back(kTapeCallSelf);
+			code.push_back(add_name("rotate_x"));
+		} else if (src.contains("rotate_z")) {
+			code.push_back(kTapeLoadConstF);
+			code.push_back(0);
+			code.push_back(kTapeCallSelf);
+			code.push_back(add_name("rotate_z"));
+		} else if (src.contains("translate")) {
+			code.push_back(kTapeLoadConstF);
+			code.push_back(0);
+			code.push_back(kTapeCallSelf);
+			code.push_back(add_name("translate"));
+		}
+		if (src.contains("hide(") || src.contains("hide (")) {
+			code.push_back(kTapeCallNamed);
+			code.push_back(add_name("hide"));
+		}
+		if (src.contains("show(") || src.contains("show (")) {
+			code.push_back(kTapeCallNamed);
+			code.push_back(add_name("show"));
+		}
+		if (src.contains("is_action_pressed") || src.contains("is_action_just_pressed")) {
+			const String act = src.contains("is_action_just_pressed") ? "is_action_just_pressed" : "is_action_pressed";
+			code.push_back(kTapeCallNamed);
+			code.push_back(add_name(act));
+		}
+		if (src.contains("get_node")) {
+			String node_name = ".";
+			const int q = src.find("get_node(\"");
+			if (q >= 0) {
+				const int e = src.find("\"", q + 10);
+				if (e > q + 10) {
+					node_name = src.substr(q + 10, e - (q + 10));
+				}
+			}
+			code.push_back(kTapeCallGetNode);
+			code.push_back(add_name(node_name));
+		}
+		code.push_back(kTapeReturn);
+		if (names.is_empty()) {
+			add_name("rotate_y");
 		}
 		append_str(out, "_process");
 		out.push_back(1);
 		append_u16(out, 1);
 		append_u16(out, uint16_t(code.size()));
 		append_f32(out, rate);
-		out.push_back(1);
-		append_str(out, "rotate_y");
+		out.push_back(uint8_t(CLAMP(names.size(), 0, 255)));
+		for (int n = 0; n < names.size(); n++) {
+			append_str(out, names[n]);
+		}
 		for (int c = 0; c < code.size(); c++) {
 			out.push_back(code[c]);
 		}
@@ -499,7 +647,7 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 		}
 	}
 
-	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 5)\n", r_out.rotate_y);
+	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 6)\n", r_out.rotate_y);
 	for (int i = 0; i < r_out.accepted.size(); i++) {
 		r_out.map_text += "OK " + r_out.accepted[i] + "\n";
 	}
@@ -526,6 +674,12 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 			gd_paths.push_back(path);
 			gd_scripts.push_back(script);
 		} else if (path.ends_with(".luau")) {
+			String unbound;
+			if (luau_source_unbound(src, unbound)) {
+				r_out.rejected.push_back(path + " : unbound method '" + unbound + "'");
+				r_out.map_text += "REJECT " + path + " : unbound method '" + unbound + "'\n";
+				continue;
+			}
 #ifdef MODULE_LUAU_MODULE_ENABLED
 			const PackedByteArray bc = luau_module::Luau::compile(src);
 			if (bc.is_empty()) {
@@ -540,6 +694,7 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 	}
 	r_out.gd_count = uint16_t(gd_paths.size());
 	r_out.luau_count = uint16_t(lu_paths.size());
+	r_out.cooked_gd = gd_paths;
 
 	if (!gd_paths.is_empty()) {
 		const Vector<uint8_t> gdbc = pack_official_gdbc(gd_paths, gd_scripts, r_out);

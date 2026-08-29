@@ -42,7 +42,7 @@
 #include "script_vm.h"
 
 #ifndef BLAZIUM_PS1_COOK_ABI
-#define BLAZIUM_PS1_COOK_ABI 5
+#define BLAZIUM_PS1_COOK_ABI 6
 #endif
 
 #define OT_LEN 1024
@@ -97,6 +97,11 @@ extern const size_t cooked_str_size;
 #ifdef BLAZIUM_PS1_HAS_XA
 extern const uint8_t cooked_xa[];
 extern const size_t cooked_xa_size;
+#endif
+
+#ifdef BLAZIUM_PS1_HAS_NODE
+extern const uint8_t cooked_node[];
+extern const size_t cooked_node_size;
 #endif
 
 static MATRIX g_color_mtx = {
@@ -343,23 +348,19 @@ typedef struct {
 	SVECTOR v[3];
 	uint8_t u0, v0, u1, v1, u2, v2;
 	uint8_t tex;
-	uint8_t pad;
+	uint8_t node_id;
 } CookedTri;
 
-static int draw_cooked_mesh(const uint16_t *tpages, const uint16_t *cluts) {
-	if (cooked_mesh_size < 4) {
+static int draw_tri_range(const CookedTri *tris, uint16_t tri_n, uint16_t lo, uint16_t hi, const uint16_t *tpages, const uint16_t *cluts) {
+	if (lo >= tri_n || lo >= hi) {
 		return 0;
 	}
-	const uint16_t tri_n = uint16_t(cooked_mesh[0] | (cooked_mesh[1] << 8));
-	const CookedTri *tris = (const CookedTri *)(cooked_mesh + 4);
-	const size_t need = 4 + size_t(tri_n) * sizeof(CookedTri);
-	if (need > cooked_mesh_size) {
-		return 0;
+	if (hi > tri_n) {
+		hi = tri_n;
 	}
-
 	POLY_FT3 *poly = (POLY_FT3 *)g_pri;
 	int drawn = 0;
-	for (uint16_t i = 0; i < tri_n; i++) {
+	for (uint16_t i = lo; i < hi; i++) {
 		if ((uint8_t *)(poly + 1) > g_fb[g_active].packet + PACKET_LEN) {
 			break;
 		}
@@ -420,6 +421,67 @@ static int draw_cooked_mesh(const uint16_t *tpages, const uint16_t *cluts) {
 	}
 	g_pri = (uint8_t *)poly;
 	return drawn;
+}
+
+static void compose_node_mtx(int idx, MATRIX *out) {
+	const ScriptVMNode *nodes = script_vm_nodes();
+	const int n = script_vm_node_count();
+	if (idx < 0 || idx >= n || !nodes) {
+		for (int r = 0; r < 3; r++) {
+			for (int c = 0; c < 3; c++) {
+				out->m[r][c] = (r == c) ? ONE : 0;
+			}
+			out->t[r] = 0;
+		}
+		return;
+	}
+	SVECTOR r = { nodes[idx].rx, nodes[idx].ry, nodes[idx].rz, 0 };
+	VECTOR t = { nodes[idx].px, nodes[idx].py, nodes[idx].pz };
+	MATRIX local;
+	RotMatrix(&r, &local);
+	TransMatrix(&local, &t);
+	if (nodes[idx].parent >= 0 && nodes[idx].parent < n && nodes[idx].parent != idx) {
+		MATRIX parent;
+		compose_node_mtx(nodes[idx].parent, &parent);
+		CompMatrixLV(&parent, &local, out);
+	} else {
+		*out = local;
+	}
+}
+
+static int draw_cooked_mesh(const MATRIX *view, const uint16_t *tpages, const uint16_t *cluts) {
+	if (cooked_mesh_size < 4) {
+		return 0;
+	}
+	const uint16_t tri_n = uint16_t(cooked_mesh[0] | (cooked_mesh[1] << 8));
+	const CookedTri *tris = (const CookedTri *)(cooked_mesh + 4);
+	const size_t need = 4 + size_t(tri_n) * sizeof(CookedTri);
+	if (need > cooked_mesh_size) {
+		return 0;
+	}
+	const int nnode = script_vm_node_count();
+	const ScriptVMNode *nodes = script_vm_nodes();
+	if (nnode > 0 && nodes && view) {
+		int drawn = 0;
+		for (int i = 0; i < nnode; i++) {
+			if (!(nodes[i].flags & 1)) {
+				continue;
+			}
+			MATRIX world, mv;
+			compose_node_mtx(i, &world);
+			CompMatrixLV(const_cast<MATRIX *>(view), &world, &mv);
+			gte_SetRotMatrix(&mv);
+			gte_SetTransMatrix(&mv);
+			{
+				MATRIX lmtx;
+				MulMatrix0(&g_light_mtx, &mv, &lmtx);
+				gte_SetLightMatrix(&lmtx);
+			}
+			drawn += draw_tri_range(tris, tri_n, nodes[i].tri_lo, nodes[i].tri_hi, tpages, cluts);
+		}
+		return drawn;
+	}
+	return draw_tri_range(tris, tri_n, 0, tri_n, tpages, cluts);
 }
 #endif
 
@@ -574,6 +636,48 @@ int main(int argc, const char **argv) {
 #endif
 		script_vm_init(gdbc, gdbc_n, luau, luau_n);
 	}
+#ifdef BLAZIUM_PS1_HAS_NODE
+	if (cooked_node_size >= 8 && cooked_node[0] == 'N' && cooked_node[1] == 'O' && cooked_node[2] == 'D' && cooked_node[3] == 'E') {
+		const uint16_t ver = uint16_t(cooked_node[4] | (cooked_node[5] << 8));
+		const uint16_t nc = uint16_t(cooked_node[6] | (cooked_node[7] << 8));
+		if (ver == 6) {
+			ScriptVMNode parsed[PS1_MAX_NODES];
+			const uint8_t *p = cooked_node + 8;
+			const uint8_t *end = cooked_node + cooked_node_size;
+			int got = 0;
+			for (uint16_t i = 0; i < nc && i < PS1_MAX_NODES && p + 4 <= end; i++) {
+				ScriptVMNode n{};
+				n.parent = int16_t(p[0] | (p[1] << 8));
+				p += 2;
+				const uint8_t nl = *p++;
+				uint8_t cpy = nl < 31 ? nl : 31;
+				for (uint8_t k = 0; k < cpy && p + k < end; k++) {
+					n.name[k] = char(p[k]);
+				}
+				n.name[cpy] = 0;
+				p += nl;
+				if (p + 20 > end) {
+					break;
+				}
+				n.type = *p++;
+				n.flags = *p++;
+				n.px = int16_t(p[0] | (p[1] << 8));
+				n.py = int16_t(p[2] | (p[3] << 8));
+				n.pz = int16_t(p[4] | (p[5] << 8));
+				n.rx = int16_t(p[6] | (p[7] << 8));
+				n.ry = int16_t(p[8] | (p[9] << 8));
+				n.rz = int16_t(p[10] | (p[11] << 8));
+				n.tri_lo = uint16_t(p[12] | (p[13] << 8));
+				n.tri_hi = uint16_t(p[14] | (p[15] << 8));
+				n.sprite = int16_t(p[16] | (p[17] << 8));
+				n.script = int16_t(p[18] | (p[19] << 8));
+				p += 20;
+				parsed[got++] = n;
+			}
+			script_vm_set_nodes(parsed, got);
+		}
+	}
+#endif
 	const int font = FntOpen(8, 16, SCREEN_W - 16, SCREEN_H - 40, 0, 256);
 	uint16_t tpages[4];
 	uint16_t cluts[4];
@@ -633,7 +737,7 @@ int main(int argc, const char **argv) {
 		}
 
 #ifdef BLAZIUM_PS1_HAS_MESH
-		draw_cooked_mesh(tpages, cluts);
+		draw_cooked_mesh(&mtx, tpages, cluts);
 #endif
 #ifdef BLAZIUM_PS1_HAS_SPRITE
 		if (g_spr_flags & 1) {

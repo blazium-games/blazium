@@ -12,6 +12,7 @@
 #pragma once
 
 #include "core/string/ustring.h"
+#include "core/templates/hash_map.h"
 #include "core/templates/vector.h"
 
 #include <cstdint>
@@ -46,6 +47,8 @@ struct ScriptIR {
 	Vector<String> accepted;
 	Vector<String> rejected;
 	Vector<String> attached;
+	HashMap<String, uint16_t> path_owners;
+	Vector<String> cooked_gd;
 	String map_text;
 	String gdbc_path;
 	String luau_path;

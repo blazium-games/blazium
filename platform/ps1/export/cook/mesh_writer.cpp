@@ -54,7 +54,7 @@ Error write_mesh_svector(const Vector<CookTri> &p_tris, int p_max_tris, MeshBlob
 	for (int i = 0; i < out_n; i++) {
 		const CookTri &t = p_tris[i];
 		for (int k = 0; k < 3; k++) {
-			const Vector3 p = (t.v[k] - center) * scale;
+			const Vector3 p = t.v[k] * scale;
 			append_i16(out, int16_t(CLAMP(int(p.x), -32767, 32767)));
 			append_i16(out, int16_t(CLAMP(int(-p.y), -32767, 32767)));
 			append_i16(out, int16_t(CLAMP(int(p.z), -32767, 32767)));
@@ -67,7 +67,7 @@ Error write_mesh_svector(const Vector<CookTri> &p_tris, int p_max_tris, MeshBlob
 			out.push_back(uint8_t(v));
 		}
 		out.push_back(t.tex_slot & 3);
-		out.push_back(0);
+		out.push_back(t.node_id);
 	}
 
 	r_out.bytes = out;
