@@ -104,6 +104,9 @@
 #include "core/object/script_language.h"
 #include "scene/resources/texture.h"
 
+#include <cstdio>
+#include <ctime>
+
 namespace ps1_cook {
 
 static const int kVramLimit = 1024 * 1024;
@@ -523,8 +526,13 @@ static Ref<Image> image_from_material(const Ref<Material> &p_mat, String &r_name
 		if (r_name.is_empty()) {
 			r_name = tex->get_name();
 		}
+		return image_from_texture(tex);
 	}
-	return image_from_texture(tex);
+	const Color c = std->get_albedo();
+	r_name = vformat("albedo_%08x", c.to_rgba32());
+	Ref<Image> solid = Image::create_empty(64, 64, false, Image::FORMAT_RGBA8);
+	solid->fill(c);
+	return solid;
 }
 
 static bool material_has_extra_maps(const Ref<Material> &p_mat) {
@@ -2920,11 +2928,15 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		if (from_png.is_valid()) {
 			images.push_back(from_png);
 			image_names.push_back(png);
+			gathered.images.push_back(from_png);
+			gathered.image_names.push_back(png);
 		} else {
 			Ref<Image> fallback = Image::create_empty(64, 64, false, Image::FORMAT_RGBA8);
 			fallback->fill(Color(0.85f, 0.55f, 0.15f));
 			images.push_back(fallback);
 			image_names.push_back("res://generated/fallback.png");
+			gathered.images.push_back(fallback);
+			gathered.image_names.push_back("res://generated/fallback.png");
 		}
 	}
 
@@ -3054,8 +3066,34 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		extra_sprite_cooks.push_back(esc);
 	}
 	if (!sprite_cooks.is_empty() || !gathered.hud.is_empty() || !gathered.tiles.is_empty()) {
+		// #region agent log
+		{
+			FILE *logf = fopen("D:/projects/ps1_blazium/debug-9aa74d.log", "a");
+			if (logf) {
+				fprintf(logf, "{\"sessionId\":\"9aa74d\",\"runId\":\"cook\",\"hypothesisId\":\"A\",\"location\":\"cooker.cpp:images-reassign-before\",\"message\":\"HUD/sprite path about to copy gathered.images\",\"data\":{\"local_images\":%d,\"gathered_images\":%d,\"hud\":%d,\"sprites\":%d,\"tris\":%d},\"timestamp\":%lld}\n",
+						int(images.size()), int(gathered.images.size()), int(gathered.hud.size()), int(sprite_cooks.size()), int(src_tris.size()), (long long)time(nullptr) * 1000);
+				fclose(logf);
+			}
+		}
+		// #endregion
 		images = gathered.images;
 		image_names = gathered.image_names;
+		if (images.is_empty() && !src_tris.is_empty()) {
+			Ref<Image> fallback = Image::create_empty(64, 64, false, Image::FORMAT_RGBA8);
+			fallback->fill(Color(0.85f, 0.55f, 0.15f));
+			images.push_back(fallback);
+			image_names.push_back("res://generated/fallback.png");
+		}
+		// #region agent log
+		{
+			FILE *logf = fopen("D:/projects/ps1_blazium/debug-9aa74d.log", "a");
+			if (logf) {
+				fprintf(logf, "{\"sessionId\":\"9aa74d\",\"runId\":\"cook\",\"hypothesisId\":\"A\",\"location\":\"cooker.cpp:images-reassign-after\",\"message\":\"images after HUD/sprite copy\",\"data\":{\"local_images\":%d,\"gathered_images\":%d},\"timestamp\":%lld}\n",
+						int(images.size()), int(gathered.images.size()), (long long)time(nullptr) * 1000);
+				fclose(logf);
+			}
+		}
+		// #endregion
 	}
 	Vector<CookLight> lights = gathered.lights;
 	for (int r = 0; r < live_roots.size(); r++) {
@@ -3220,6 +3258,16 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		tims.push_back(one);
 		vram_total += one.vram_bytes;
 	}
+	// #region agent log
+	{
+		FILE *logf = fopen("D:/projects/ps1_blazium/debug-9aa74d.log", "a");
+		if (logf) {
+			fprintf(logf, "{\"sessionId\":\"9aa74d\",\"runId\":\"cook\",\"hypothesisId\":\"A\",\"location\":\"cooker.cpp:tim-pack\",\"message\":\"TIM pack result\",\"data\":{\"images\":%d,\"tims\":%d,\"tris\":%d,\"hud\":%d},\"timestamp\":%lld}\n",
+					int(images.size()), int(tims.size()), int(src_tris.size()), int(gathered.hud.size()), (long long)time(nullptr) * 1000);
+			fclose(logf);
+		}
+	}
+	// #endregion
 	TimBlob packed;
 	if (!tims.is_empty()) {
 		const Error perr = write_tpak(tims, packed);
