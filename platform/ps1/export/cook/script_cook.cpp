@@ -57,7 +57,8 @@ bool source_is_rejected(const String &p_source, String &r_why) {
 	const String src = strip_line_comments(p_source);
 	const char *bad[] = {
 		"eval(", "ClassDB.get_class_list", "ClassDB.", "HTTPClient",
-		"Thread.", "await ", "func lambda", "preload(", "OS.execute", "FileAccess.store",
+		"Thread.", "await ", "func lambda", "preload(", "OS.execute",
+		"ConfigFile", "DirAccess", "JSON.parse", "FileAccessEncrypted",
 		"callv("
 	};
 	for (const char *b : bad) {
@@ -88,6 +89,10 @@ bool source_is_rejected(const String &p_source, String &r_why) {
 			r_why = "load(" + path + ")";
 			return true;
 		}
+	}
+	if (src.contains("FileAccess") && !src.contains("user://")) {
+		r_why = "FileAccess (user:// only)";
+		return true;
 	}
 	return false;
 }
@@ -126,14 +131,38 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "can_load_scene" || p_name == "can_instantiate" ||
 			p_name == "get_node_count" || p_name == "get_node_budget" ||
 			p_name == "get_triangle_count" || p_name == "get_triangle_budget" ||
-			p_name == "get_free_nodes" || p_name == "get_free_hud" || p_name == "get_free_tiles";
+			p_name == "get_free_nodes" || p_name == "get_free_hud" || p_name == "get_free_tiles" ||
+			p_name == "set_camera" || p_name == "set_camera_node" || p_name == "set_default_camera" ||
+			p_name == "get_camera" || p_name == "get_camera_count" || p_name == "get_camera_name" ||
+			p_name == "is_camera_current" || p_name == "next_camera" || p_name == "prev_camera" ||
+			p_name == "overlaps" || p_name == "has_overlapping_areas" ||
+			p_name == "get_overlapping_area_count" || p_name == "get_overlapping_area" ||
+			p_name == "hitbox_kind" || p_name == "set_hitbox_enabled" ||
+			p_name == "load_animations" || p_name == "unload_animations" ||
+			p_name == "can_load_animations" || p_name == "is_animations_loaded" ||
+			p_name == "load_sprites" || p_name == "unload_sprites" ||
+			p_name == "can_load_sprites" || p_name == "is_sprites_loaded" ||
+			p_name == "load_hitboxes" || p_name == "unload_hitboxes" || p_name == "can_load_hitboxes" ||
+			p_name == "load_cameras" || p_name == "unload_cameras" ||
+			p_name == "is_action_pressed_on" || p_name == "is_action_just_pressed_on" ||
+			p_name == "is_action_just_released_on" ||
+			p_name == "memcard_present" || p_name == "memcard_ready" || p_name == "memcard_format" ||
+			p_name == "memcard_exists" || p_name == "memcard_delete" ||
+			p_name == "memcard_save" || p_name == "memcard_load" ||
+			p_name == "memcard_count" || p_name == "memcard_name" ||
+			p_name == "memcard_wrap" || p_name == "memcard_unwrap" ||
+			p_name == "open" || p_name == "file_exists" || p_name == "get_file_as_bytes" ||
+			p_name == "get_buffer" || p_name == "store_buffer" || p_name == "store_string" ||
+			p_name == "store_var" || p_name == "get_var" || p_name == "get_as_text" ||
+			p_name == "get_length" || p_name == "close";
 }
 
 static bool member_is_allowlisted(const String &p_name) {
 	return p_name == "position" || p_name == "rotation" || p_name == "visible" || p_name == "name" ||
 			p_name == "text" || p_name == "disabled" || p_name == "pressed" || p_name == "button_pressed" ||
 			p_name == "value" || p_name == "min_value" || p_name == "max_value" || p_name == "selected" ||
-			p_name == "focus" || p_name == "x" || p_name == "y" || p_name == "z";
+			p_name == "focus" || p_name == "x" || p_name == "y" || p_name == "z" ||
+			p_name == "frame";
 }
 
 static bool action_is_known(const String &p_name) {
@@ -599,7 +628,7 @@ static Vector<uint8_t> pack_official_gdbc(const Vector<String> &p_paths, const V
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 13);
+	append_u16(out, 14);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int s = 0; s < p_paths.size(); s++) {
 		append_str(out, p_paths[s]);
@@ -691,7 +720,7 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 13);
+	append_u16(out, 14);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int i = 0; i < p_paths.size(); i++) {
 		append_str(out, p_paths[i]);
@@ -783,6 +812,19 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 			"get_static_memory_usage", "get_static_memory_peak_usage", "get_ram_budget", "get_free_ram",
 			"can_load_scene", "can_instantiate", "get_node_count", "get_node_budget",
 			"get_triangle_count", "get_triangle_budget", "get_free_nodes", "get_free_hud", "get_free_tiles",
+			"set_camera", "set_camera_node", "set_default_camera", "get_camera", "get_camera_count",
+			"get_camera_name", "is_camera_current", "next_camera", "prev_camera",
+			"overlaps", "has_overlapping_areas", "get_overlapping_area_count", "get_overlapping_area",
+			"hitbox_kind", "set_hitbox_enabled",
+			"load_animations", "unload_animations", "can_load_animations", "is_animations_loaded",
+			"load_sprites", "unload_sprites", "can_load_sprites", "is_sprites_loaded",
+			"load_hitboxes", "unload_hitboxes", "can_load_hitboxes",
+			"load_cameras", "unload_cameras",
+			"is_action_pressed_on", "is_action_just_pressed_on", "is_action_just_released_on",
+			"memcard_present", "memcard_ready", "memcard_format", "memcard_exists", "memcard_delete",
+			"memcard_save", "memcard_load", "memcard_count", "memcard_name", "memcard_wrap", "memcard_unwrap",
+			"open", "file_exists", "get_file_as_bytes", "get_buffer", "store_buffer", "store_string",
+			"store_var", "get_var", "get_as_text", "get_length", "close",
 			"set_position", "set_rotation", "look_at", "grab_focus", "release_focus",
 			"print", "push_warning", "connect", "disconnect"
 		};
@@ -988,6 +1030,15 @@ static uint16_t mask_from_input_event(const Ref<InputEvent> &p_ev) {
 			return 1 << 4;
 		}
 	}
+	const Ref<InputEventJoypadMotion> axis = p_ev;
+	if (axis.is_valid() && Math::abs(axis->get_axis_value()) >= 0.5f) {
+		if (axis->get_axis() == JoyAxis::TRIGGER_LEFT) {
+			return 1 << 8;
+		}
+		if (axis->get_axis() == JoyAxis::TRIGGER_RIGHT) {
+			return 1 << 9;
+		}
+	}
 	return 0;
 }
 
@@ -1013,7 +1064,7 @@ static void cook_input_map(ScriptIR &r_out) {
 		if (!mask) {
 			continue;
 		}
-		if (r_out.input_actions.size() >= 16) {
+		if (r_out.input_actions.size() >= 32) {
 			break;
 		}
 		ScriptIR::InputAction row;
@@ -1045,7 +1096,7 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 		}
 	}
 
-	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 13)\n", r_out.rotate_y);
+	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 14)\n", r_out.rotate_y);
 	for (int i = 0; i < r_out.accepted.size(); i++) {
 		r_out.map_text += "OK " + r_out.accepted[i] + "\n";
 	}

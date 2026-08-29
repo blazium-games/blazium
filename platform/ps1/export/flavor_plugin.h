@@ -100,6 +100,155 @@ public:
 		_fail_ps1();
 		return 0;
 	}
+	bool set_camera(int p_index) {
+		_fail_ps1();
+		return false;
+	}
+	bool set_camera_node(const String &p_name) {
+		_fail_ps1();
+		return false;
+	}
+	bool set_default_camera(const Variant &p_index_or_name) {
+		_fail_ps1();
+		return false;
+	}
+	int get_camera() const {
+		_fail_ps1();
+		return -1;
+	}
+	int get_camera_count() const {
+		_fail_ps1();
+		return 0;
+	}
+	String get_camera_name(int p_index) const {
+		_fail_ps1();
+		return String();
+	}
+	bool is_camera_current(int p_index) const {
+		_fail_ps1();
+		return false;
+	}
+	bool next_camera() {
+		_fail_ps1();
+		return false;
+	}
+	bool prev_camera() {
+		_fail_ps1();
+		return false;
+	}
+	bool overlaps(const Variant &p_a, const Variant &p_b) const {
+		_fail_ps1();
+		return false;
+	}
+	int hitbox_kind(const Variant &p_node) const {
+		_fail_ps1();
+		return 0;
+	}
+	void set_hitbox_enabled(const Variant &p_node, bool p_on) {
+		_fail_ps1();
+	}
+	bool load_animations(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool unload_animations(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool can_load_animations(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool is_animations_loaded(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool load_sprites(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool unload_sprites(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool can_load_sprites(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool is_sprites_loaded(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool load_hitboxes(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool unload_hitboxes(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool can_load_hitboxes(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool load_cameras(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool unload_cameras(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool is_action_pressed_on(int p_device, const String &p_action) const {
+		_fail_ps1();
+		return false;
+	}
+	bool is_action_just_pressed_on(int p_device, const String &p_action) const {
+		_fail_ps1();
+		return false;
+	}
+	bool is_action_just_released_on(int p_device, const String &p_action) const {
+		_fail_ps1();
+		return false;
+	}
+	bool memcard_present(int p_slot) const {
+		_fail_ps1();
+		return false;
+	}
+	bool memcard_ready(int p_slot) const {
+		_fail_ps1();
+		return false;
+	}
+	bool memcard_format(int p_slot) {
+		_fail_ps1();
+		return false;
+	}
+	bool memcard_exists(int p_slot, const String &p_name) const {
+		_fail_ps1();
+		return false;
+	}
+	bool memcard_delete(int p_slot, const String &p_name) {
+		_fail_ps1();
+		return false;
+	}
+	bool memcard_save(int p_slot, const String &p_name, const PackedByteArray &p_bytes) {
+		_fail_ps1();
+		return false;
+	}
+	PackedByteArray memcard_load(int p_slot, const String &p_name) const {
+		_fail_ps1();
+		return PackedByteArray();
+	}
+	int memcard_count(int p_slot) const {
+		_fail_ps1();
+		return 0;
+	}
+	String memcard_name(int p_slot, int p_index) const {
+		_fail_ps1();
+		return String();
+	}
+	PackedByteArray memcard_wrap(const PackedByteArray &p_payload, const String &p_title);
+	PackedByteArray memcard_unwrap(const PackedByteArray &p_framed);
 };
 
 class PS1FlavorEditorPlugin : public EditorPlugin {

@@ -30,16 +30,28 @@
 #define PS1_RAM_BUDGET 2097152
 #endif
 #ifndef PS1_MAX_CLIPS
-#define PS1_MAX_CLIPS 8
+#define PS1_MAX_CLIPS 16
 #endif
 #ifndef PS1_MAX_KEYS
-#define PS1_MAX_KEYS 32
+#define PS1_MAX_KEYS 64
 #endif
 #ifndef PS1_MAX_ACTIONS
-#define PS1_MAX_ACTIONS 16
+#define PS1_MAX_ACTIONS 32
 #endif
 #ifndef PS1_MAX_CONNS
 #define PS1_MAX_CONNS 16
+#endif
+#ifndef PS1_MAX_CAMS
+#define PS1_MAX_CAMS 8
+#endif
+#ifndef PS1_MAX_HITS
+#define PS1_MAX_HITS 32
+#endif
+#ifndef PS1_MAX_SPRITES
+#define PS1_MAX_SPRITES 32
+#endif
+#ifndef PS1_COOK_ABI
+#define PS1_COOK_ABI 14
 #endif
 
 struct ScriptVMNode {
@@ -62,7 +74,7 @@ struct ScriptVMHud {
 	uint8_t node_id;
 	uint8_t flags;
 	int16_t value, vmin, vmax;
-	char text[32];
+	char text[64];
 	uint8_t nitems;
 	char items[8][16];
 	uint8_t pressed;
@@ -87,6 +99,40 @@ struct ScriptVMPack {
 	uint16_t node_count, tri_count, hud_count, tile_count, tim_count;
 	uint32_t ram_bytes;
 	uint8_t resident;
+	uint8_t anim_resident;
+	uint8_t sprite_resident;
+	uint8_t hit_resident;
+	uint8_t cam_resident;
+};
+
+struct ScriptVMCam {
+	int16_t node_id;
+	char name[32];
+	uint8_t is_default;
+	int16_t px, py, pz;
+	int16_t rx, ry, rz;
+	uint8_t pack;
+};
+
+struct ScriptVMHit {
+	int16_t node_id;
+	uint8_t dim;
+	uint8_t kind;
+	uint8_t flags;
+	int16_t min_x, min_y, min_z;
+	int16_t max_x, max_y, max_z;
+	uint8_t pack;
+};
+
+struct ScriptVMSprite {
+	int16_t x, y;
+	uint16_t w, h;
+	uint8_t u, v;
+	uint16_t tex;
+	uint8_t frame;
+	uint8_t nframes;
+	uint8_t fps;
+	uint8_t pack;
 };
 
 struct ScriptVMAnimKey {
@@ -116,6 +162,7 @@ struct ScriptVMHost {
 	int32_t *pos_y;
 	int32_t *pos_z;
 	const uint8_t *pad34;
+	const uint8_t *pad34_1;
 	int hud_focus_blocks_cam;
 	void (*play_vag)(void);
 	void (*stop_vag)(void);
@@ -131,6 +178,8 @@ void script_vm_set_tiles(const ScriptVMTile *tiles, int count);
 void script_vm_set_packs(const ScriptVMPack *packs, int count);
 void script_vm_set_anims(const ScriptVMAnimClip *clips, int count);
 void script_vm_set_actions(const ScriptVMAction *actions, int count);
+void script_vm_set_cams(const ScriptVMCam *cams, int count);
+void script_vm_set_hits(const ScriptVMHit *hits, int count);
 void script_vm_set_mesh(const uint8_t *blob, size_t size);
 int script_vm_tri_count();
 const uint8_t *script_vm_tris();

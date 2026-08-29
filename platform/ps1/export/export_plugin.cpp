@@ -321,6 +321,14 @@ Error EditorExportPlatformPS1::export_project(const Ref<EditorExportPreset> &p_p
 		args.push_back("--anim");
 		args.push_back(cooked.anim_path);
 	}
+	if (!cooked.cam_path.is_empty()) {
+		args.push_back("--cam");
+		args.push_back(cooked.cam_path);
+	}
+	if (!cooked.hit_path.is_empty()) {
+		args.push_back("--hit");
+		args.push_back(cooked.hit_path);
+	}
 	if (int(p_preset->get("ps1/output_kind")) != 0) {
 		add_message(EXPORT_MESSAGE_WARNING, "PS1", "ps1/output_kind is unread; output is PS-X EXE. Use ps1/make_iso for a disc image.");
 	}

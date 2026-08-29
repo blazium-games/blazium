@@ -34,6 +34,7 @@ static void _ps1_flavor_init() {
 void register_ps1_exporter() {
 #if defined(WINDOWS_ENABLED) || defined(LINUXBSD_ENABLED)
 	GLOBAL_DEF(PropertyInfo(Variant::BOOL, "ps1/enabled"), false);
+	GLOBAL_DEF(PropertyInfo(Variant::STRING, "ps1/save_product"), "BESCES-00000");
 
 	EDITOR_DEF("export/ps1/toolchain", "");
 	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::STRING, "export/ps1/toolchain", PROPERTY_HINT_GLOBAL_FILE, "*.exe,*.bin,*"));

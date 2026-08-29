@@ -11,6 +11,8 @@
 
 #include "flavor_plugin.h"
 
+#include <cstring>
+
 #include "cook/cooker.h"
 #include "cook/script_cook.h"
 
@@ -48,6 +50,118 @@ void PS1::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_free_nodes"), &PS1::get_free_nodes);
 	ClassDB::bind_method(D_METHOD("get_free_hud"), &PS1::get_free_hud);
 	ClassDB::bind_method(D_METHOD("get_free_tiles"), &PS1::get_free_tiles);
+	ClassDB::bind_method(D_METHOD("set_camera", "index"), &PS1::set_camera);
+	ClassDB::bind_method(D_METHOD("set_camera_node", "name"), &PS1::set_camera_node);
+	ClassDB::bind_method(D_METHOD("set_default_camera", "index_or_name"), &PS1::set_default_camera);
+	ClassDB::bind_method(D_METHOD("get_camera"), &PS1::get_camera);
+	ClassDB::bind_method(D_METHOD("get_camera_count"), &PS1::get_camera_count);
+	ClassDB::bind_method(D_METHOD("get_camera_name", "index"), &PS1::get_camera_name);
+	ClassDB::bind_method(D_METHOD("is_camera_current", "index"), &PS1::is_camera_current);
+	ClassDB::bind_method(D_METHOD("next_camera"), &PS1::next_camera);
+	ClassDB::bind_method(D_METHOD("prev_camera"), &PS1::prev_camera);
+	ClassDB::bind_method(D_METHOD("overlaps", "a", "b"), &PS1::overlaps);
+	ClassDB::bind_method(D_METHOD("hitbox_kind", "node"), &PS1::hitbox_kind);
+	ClassDB::bind_method(D_METHOD("set_hitbox_enabled", "node", "on"), &PS1::set_hitbox_enabled);
+	ClassDB::bind_method(D_METHOD("load_animations", "path"), &PS1::load_animations);
+	ClassDB::bind_method(D_METHOD("unload_animations", "path"), &PS1::unload_animations);
+	ClassDB::bind_method(D_METHOD("can_load_animations", "path"), &PS1::can_load_animations);
+	ClassDB::bind_method(D_METHOD("is_animations_loaded", "path"), &PS1::is_animations_loaded);
+	ClassDB::bind_method(D_METHOD("load_sprites", "path"), &PS1::load_sprites);
+	ClassDB::bind_method(D_METHOD("unload_sprites", "path"), &PS1::unload_sprites);
+	ClassDB::bind_method(D_METHOD("can_load_sprites", "path"), &PS1::can_load_sprites);
+	ClassDB::bind_method(D_METHOD("is_sprites_loaded", "path"), &PS1::is_sprites_loaded);
+	ClassDB::bind_method(D_METHOD("load_hitboxes", "path"), &PS1::load_hitboxes);
+	ClassDB::bind_method(D_METHOD("unload_hitboxes", "path"), &PS1::unload_hitboxes);
+	ClassDB::bind_method(D_METHOD("can_load_hitboxes", "path"), &PS1::can_load_hitboxes);
+	ClassDB::bind_method(D_METHOD("load_cameras", "path"), &PS1::load_cameras);
+	ClassDB::bind_method(D_METHOD("unload_cameras", "path"), &PS1::unload_cameras);
+	ClassDB::bind_method(D_METHOD("is_action_pressed_on", "device", "action"), &PS1::is_action_pressed_on);
+	ClassDB::bind_method(D_METHOD("is_action_just_pressed_on", "device", "action"), &PS1::is_action_just_pressed_on);
+	ClassDB::bind_method(D_METHOD("is_action_just_released_on", "device", "action"), &PS1::is_action_just_released_on);
+	ClassDB::bind_method(D_METHOD("memcard_present", "slot"), &PS1::memcard_present);
+	ClassDB::bind_method(D_METHOD("memcard_ready", "slot"), &PS1::memcard_ready);
+	ClassDB::bind_method(D_METHOD("memcard_format", "slot"), &PS1::memcard_format);
+	ClassDB::bind_method(D_METHOD("memcard_exists", "slot", "name"), &PS1::memcard_exists);
+	ClassDB::bind_method(D_METHOD("memcard_delete", "slot", "name"), &PS1::memcard_delete);
+	ClassDB::bind_method(D_METHOD("memcard_save", "slot", "name", "bytes"), &PS1::memcard_save);
+	ClassDB::bind_method(D_METHOD("memcard_load", "slot", "name"), &PS1::memcard_load);
+	ClassDB::bind_method(D_METHOD("memcard_count", "slot"), &PS1::memcard_count);
+	ClassDB::bind_method(D_METHOD("memcard_name", "slot", "index"), &PS1::memcard_name);
+	ClassDB::bind_method(D_METHOD("memcard_wrap", "payload", "title"), &PS1::memcard_wrap);
+	ClassDB::bind_method(D_METHOD("memcard_unwrap", "framed"), &PS1::memcard_unwrap);
+}
+
+static PackedByteArray _mc_wrap(const PackedByteArray &p_payload, const String &p_title) {
+	if (p_payload.size() >= 2 && p_payload[0] == 'S' && p_payload[1] == 'C') {
+		return p_payload;
+	}
+	if (p_payload.size() == 128 * 1024 && p_payload.size() >= 2 && p_payload[0] == 'M' && p_payload[1] == 'C') {
+		return p_payload;
+	}
+	const int max_payload = 3 * 8192 - 512;
+	if (p_payload.size() > max_payload) {
+		return PackedByteArray();
+	}
+	const int blocks = 1 + (p_payload.size() + 511) / 8192;
+	PackedByteArray out;
+	out.resize(512 + p_payload.size());
+	uint8_t *w = out.ptrw();
+	memset(w, 0, out.size());
+	w[0] = 'S';
+	w[1] = 'C';
+	w[2] = 0x11;
+	w[3] = uint8_t(CLAMP(blocks, 1, 3));
+	const CharString title = p_title.utf8();
+	const int n = MIN(title.length(), 32);
+	for (int i = 0; i < n; i++) {
+		w[4 + i] = uint8_t(title[i]);
+	}
+	for (int i = 0; i < p_payload.size(); i++) {
+		w[512 + i] = p_payload[i];
+	}
+	return out;
+}
+
+static PackedByteArray _mc_unwrap(const PackedByteArray &p_framed) {
+	if (p_framed.size() == 128 * 1024 && p_framed.size() >= 2 && p_framed[0] == 'M' && p_framed[1] == 'C') {
+		for (int e = 0; e < 15; e++) {
+			const int off = 0x80 + e * 0x80;
+			if (off + 0x80 > p_framed.size()) {
+				break;
+			}
+			if (p_framed[off] == 0x51) {
+				const int first = 1 + e;
+				const int start = first * 8192;
+				if (start + 512 < p_framed.size() && p_framed[start] == 'S' && p_framed[start + 1] == 'C') {
+					PackedByteArray payload;
+					const int avail = p_framed.size() - start - 512;
+					payload.resize(avail);
+					memcpy(payload.ptrw(), p_framed.ptr() + start + 512, avail);
+					return payload;
+				}
+			}
+		}
+		return PackedByteArray();
+	}
+	if (p_framed.size() >= 2 && p_framed[0] == 'S' && p_framed[1] == 'C') {
+		PackedByteArray payload;
+		const int n = p_framed.size() - 512;
+		if (n <= 0) {
+			return PackedByteArray();
+		}
+		payload.resize(n);
+		memcpy(payload.ptrw(), p_framed.ptr() + 512, n);
+		return payload;
+	}
+	return p_framed;
+}
+
+PackedByteArray PS1::memcard_wrap(const PackedByteArray &p_payload, const String &p_title) {
+	return _mc_wrap(p_payload, p_title);
+}
+
+PackedByteArray PS1::memcard_unwrap(const PackedByteArray &p_framed) {
+	return _mc_unwrap(p_framed);
 }
 
 static void _count_scene(Node *p_node, int &r_nodes, int &r_tris, int &r_sprites, int &r_hud, int &r_tiles) {
@@ -158,7 +272,7 @@ void PS1FlavorEditorPlugin::_refresh() {
 	const int packs = _count_literal_packs();
 	const int est_ram = nodes * 56 + tris * 32 + hud * 80 + tiles * 8;
 	status->set_text(vformat(
-			"nodes %d/%d\ntris %d/%d\nHUD %d/%d\ntiles %d/%d\nSprite2D %d/%d\npacks %d/%d\nest RAM %d/%d\nPS1.* is PS1 export only; use OS.has_feature(\"ps1\").\n24 packs; multi-resident load/unload; budgeted instantiate; first-slice VM.",
+			"nodes %d/%d\ntris %d/%d\nHUD %d/%d\ntiles %d/%d\nSprite2D %d/%d\npacks %d/%d\nest RAM %d/%d\nPS1.* is PS1 export only; use OS.has_feature(\"ps1\").\nABI 14: 8 cameras, 2D/3D AABBs, both pads, memcard, streamable anim/sprite.",
 			nodes, ps1_cook::kMaxNodes, tris, ps1_cook::kMaxTris, hud, ps1_cook::kMaxHud, tiles, ps1_cook::kMaxTiles,
 			sprites, ps1_cook::kMaxSprites, packs, ps1_cook::kMaxScenePacks, est_ram, 2 * 1024 * 1024));
 	PackedStringArray reasons;

@@ -10,6 +10,7 @@
 
 #include <psxpad.h>
 #include <psxsn.h>
+#include <string.h>
 
 static const uint8_t *g_gdbc = nullptr;
 static size_t g_gdbc_size = 0;
@@ -25,7 +26,16 @@ static int g_nhud = 0;
 static int g_focus = -1;
 static ScriptVMTile g_tiles[PS1_MAX_TILES];
 static int g_ntile = 0;
-static uint16_t g_prev_btn = 0xffff;
+static uint16_t g_prev_btn[2] = { 0xffff, 0xffff };
+static ScriptVMCam g_cams[PS1_MAX_CAMS];
+static int g_ncam = 0;
+static int g_cam_cur = -1;
+static int g_cam_def = 0;
+static ScriptVMHit g_hits[PS1_MAX_HITS];
+static uint8_t g_hit_used[PS1_MAX_HITS];
+static int g_nhit = 0;
+static ScriptVMSprite g_sprs[PS1_MAX_SPRITES];
+static int g_nspr = 0;
 static float g_ticks_ms = 0.0f;
 static float g_timer_end[8];
 static uint8_t g_timer_used[8];
@@ -64,6 +74,8 @@ struct ScriptVMConn {
 	uint8_t used;
 };
 static ScriptVMConn g_conn[PS1_MAX_CONNS];
+
+static int pad_pressed_on(const ScriptVMHost *host, const char *action, int just, int device);
 
 enum {
 	kTapeReturn = 0,
@@ -175,7 +187,8 @@ void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, 
 	g_ready = 1;
 	g_did_ready = 0;
 	g_err[0] = 0;
-	g_prev_btn = 0xffff;
+	g_prev_btn[0] = 0xffff;
+	g_prev_btn[1] = 0xffff;
 	g_ticks_ms = 0.0f;
 	g_rng = 1;
 	g_anim_playing = 0;
@@ -319,6 +332,38 @@ void script_vm_set_anims(const ScriptVMAnimClip *clips, int count) {
 	g_nclip = count > PS1_MAX_CLIPS ? PS1_MAX_CLIPS : count;
 	for (int i = 0; i < g_nclip; i++) {
 		g_clips[i] = clips[i];
+	}
+}
+
+void script_vm_set_cams(const ScriptVMCam *cams, int count) {
+	g_ncam = 0;
+	g_cam_cur = -1;
+	g_cam_def = 0;
+	if (!cams || count <= 0) {
+		return;
+	}
+	g_ncam = count > PS1_MAX_CAMS ? PS1_MAX_CAMS : count;
+	for (int i = 0; i < g_ncam; i++) {
+		g_cams[i] = cams[i];
+		if (g_cams[i].is_default) {
+			g_cam_def = i;
+		}
+	}
+	g_cam_cur = g_cam_def;
+}
+
+void script_vm_set_hits(const ScriptVMHit *hits, int count) {
+	g_nhit = 0;
+	for (int i = 0; i < PS1_MAX_HITS; i++) {
+		g_hit_used[i] = 0;
+	}
+	if (!hits || count <= 0) {
+		return;
+	}
+	g_nhit = count > PS1_MAX_HITS ? PS1_MAX_HITS : count;
+	for (int i = 0; i < g_nhit; i++) {
+		g_hits[i] = hits[i];
+		g_hit_used[i] = 1;
 	}
 }
 
@@ -875,7 +920,7 @@ static int parse_nodes_into(const uint8_t *blob, int size, ScriptVMNode *out, in
 	if (!blob || size < 8 || blob[0] != 'N' || blob[1] != 'O' || blob[2] != 'D' || blob[3] != 'E') {
 		return -1;
 	}
-	if (ru16(blob + 4) != 13) {
+	if (ru16(blob + 4) != 14) {
 		return -1;
 	}
 	const int nc = int(ru16(blob + 6));
@@ -918,7 +963,7 @@ static int parse_hud_into(const uint8_t *blob, int size, ScriptVMHud *out, int m
 	if (!blob || size < 8 || blob[0] != 'H' || blob[1] != 'U' || blob[2] != 'D' || blob[3] != '0') {
 		return -1;
 	}
-	if (ru16(blob + 4) != 13) {
+	if (ru16(blob + 4) != 14) {
 		return -1;
 	}
 	const int nc = int(ru16(blob + 6));
@@ -942,7 +987,7 @@ static int parse_hud_into(const uint8_t *blob, int size, ScriptVMHud *out, int m
 		h.vmax = int16_t(p[4] | (p[5] << 8));
 		p += 6;
 		const uint8_t tl = *p++;
-		uint8_t cpy = tl < 31 ? tl : 31;
+		uint8_t cpy = tl < 63 ? tl : 63;
 		for (uint8_t k = 0; k < cpy && p + k < end; k++) {
 			h.text[k] = char(p[k]);
 		}
@@ -974,7 +1019,7 @@ static int parse_tiles_into(const uint8_t *blob, int size, ScriptVMTile *out, in
 	if (!blob || size < 10 || blob[0] != 'T' || blob[1] != 'I' || blob[2] != 'L' || blob[3] != 'E') {
 		return -1;
 	}
-	if (ru16(blob + 4) != 13) {
+	if (ru16(blob + 4) != 14) {
 		return -1;
 	}
 	const int nc = int(ru16(blob + 6));
@@ -1103,7 +1148,33 @@ static void activate_pack(int pack, const ScriptVMHost *host) {
 		g_timer_used[t] = 0;
 		g_timer_end[t] = 0.0f;
 	}
-	if (g_packs[pack].has_cam && host) {
+	for (int i = 0; i < g_ncam; i++) {
+		if (g_cams[i].is_default && (g_cams[i].pack == uint8_t(pack) || g_ncam == 1)) {
+			g_cam_cur = i;
+			g_cam_def = i;
+			break;
+		}
+	}
+	if (g_cam_cur >= 0 && g_cam_cur < g_ncam && host) {
+		if (host->pos_x) {
+			*host->pos_x = g_cams[g_cam_cur].px;
+		}
+		if (host->pos_y) {
+			*host->pos_y = g_cams[g_cam_cur].py;
+		}
+		if (host->pos_z) {
+			*host->pos_z = g_cams[g_cam_cur].pz;
+		}
+		if (host->rot_x) {
+			*host->rot_x = g_cams[g_cam_cur].rx;
+		}
+		if (host->rot_y) {
+			*host->rot_y = g_cams[g_cam_cur].ry;
+		}
+		if (host->rot_z) {
+			*host->rot_z = g_cams[g_cam_cur].rz;
+		}
+	} else if (g_packs[pack].has_cam && host) {
 		if (host->pos_x) {
 			*host->pos_x = g_packs[pack].cam_px;
 		}
@@ -1485,6 +1556,31 @@ static int instantiate_pack(int pack, int parent) {
 			g_ntile = dstt + 1;
 		}
 	}
+	for (int h = 0; h < g_nhit; h++) {
+		if (!g_hit_used[h]) {
+			continue;
+		}
+		const int nid = int(g_hits[h].node_id);
+		if (nid < lo || nid >= hi) {
+			continue;
+		}
+		int dst = -1;
+		for (int i = 0; i < PS1_MAX_HITS; i++) {
+			if (!g_hit_used[i]) {
+				dst = i;
+				break;
+			}
+		}
+		if (dst < 0) {
+			break;
+		}
+		g_hits[dst] = g_hits[h];
+		g_hits[dst].node_id = int16_t(slots[nid - lo]);
+		g_hit_used[dst] = 1;
+		if (dst + 1 > g_nhit) {
+			g_nhit = dst + 1;
+		}
+	}
 	bump_ram(copy_r);
 	return base;
 }
@@ -1519,6 +1615,11 @@ static void reclaim_instance(int node) {
 				ft++;
 			}
 		}
+		for (int h = 0; h < PS1_MAX_HITS; h++) {
+			if (g_hit_used[h] && int(g_hits[h].node_id) == n) {
+				g_hit_used[h] = 0;
+			}
+		}
 		for (int c = 0; c < PS1_MAX_CONNS; c++) {
 			if (g_conn[c].used && (g_conn[c].src == n || g_conn[c].dest == n)) {
 				g_conn[c].used = 0;
@@ -1533,6 +1634,220 @@ static void reclaim_instance(int node) {
 	if (fn || fh || ft) {
 		bump_ram(-inst_row_ram(fn, fh, ft));
 	}
+}
+
+static void apply_cam_index(int idx, const ScriptVMHost *host) {
+	if (idx < 0 || idx >= g_ncam || !host) {
+		return;
+	}
+	g_cam_cur = idx;
+	if (host->pos_x) {
+		*host->pos_x = g_cams[idx].px;
+	}
+	if (host->pos_y) {
+		*host->pos_y = g_cams[idx].py;
+	}
+	if (host->pos_z) {
+		*host->pos_z = g_cams[idx].pz;
+	}
+	if (host->rot_x) {
+		*host->rot_x = g_cams[idx].rx;
+	}
+	if (host->rot_y) {
+		*host->rot_y = g_cams[idx].ry;
+	}
+	if (host->rot_z) {
+		*host->rot_z = g_cams[idx].rz;
+	}
+}
+
+static int aabb_overlap(int a, int b) {
+	if (a < 0 || b < 0 || a >= PS1_MAX_HITS || b >= PS1_MAX_HITS) {
+		return 0;
+	}
+	if (!g_hit_used[a] || !g_hit_used[b]) {
+		return 0;
+	}
+	if (!(g_hits[a].flags & 1) || !(g_hits[b].flags & 1)) {
+		return 0;
+	}
+	if (g_hits[a].dim != g_hits[b].dim) {
+		return 0;
+	}
+	if (g_hits[a].max_x < g_hits[b].min_x || g_hits[b].max_x < g_hits[a].min_x) {
+		return 0;
+	}
+	if (g_hits[a].max_y < g_hits[b].min_y || g_hits[b].max_y < g_hits[a].min_y) {
+		return 0;
+	}
+	if (g_hits[a].dim == 3) {
+		if (g_hits[a].max_z < g_hits[b].min_z || g_hits[b].max_z < g_hits[a].min_z) {
+			return 0;
+		}
+	}
+	return 1;
+}
+
+static int hit_of_node(int node) {
+	for (int i = 0; i < g_nhit; i++) {
+		if (g_hit_used[i] && int(g_hits[i].node_id) == node) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+static int load_pack_slice(int pack, const char *kind) {
+	if (pack < 0 || pack >= g_npack) {
+		return 0;
+	}
+	if (pack == 0 && name_is(kind, "ANIM") && g_nclip > 0) {
+		g_packs[0].anim_resident = 1;
+		return 1;
+	}
+	if (pack == 0 && name_is(kind, "CAM") && g_ncam > 0) {
+		g_packs[0].cam_resident = 1;
+		return 1;
+	}
+	if (pack == 0 && name_is(kind, "HIT") && g_nhit > 0) {
+		g_packs[0].hit_resident = 1;
+		return 1;
+	}
+	const int n = try_read_pack_blob(pack, kind, g_load_buf, int(sizeof(g_load_buf)));
+	if (n <= 0) {
+		return 0;
+	}
+	if (name_is(kind, "ANIM")) {
+		if (g_nclip + 1 > PS1_MAX_CLIPS) {
+			return 0;
+		}
+		g_packs[pack].anim_resident = 1;
+		return 1;
+	}
+	if (name_is(kind, "SPRITE")) {
+		g_packs[pack].sprite_resident = 1;
+		return 1;
+	}
+	if (name_is(kind, "HIT")) {
+		if (g_load_buf[0] == 'H' && g_load_buf[1] == 'I' && g_load_buf[2] == 'T' && g_load_buf[3] == '0' && ru16(g_load_buf + 4) == 14) {
+			const int nc = int(ru16(g_load_buf + 6));
+			const uint8_t *p = g_load_buf + 8;
+			for (int i = 0; i < nc && g_nhit < PS1_MAX_HITS && p + 18 <= g_load_buf + n; i++) {
+				ScriptVMHit h{};
+				h.node_id = int16_t(p[0] | (p[1] << 8));
+				h.dim = p[2];
+				h.kind = p[3];
+				h.flags = p[4];
+				h.min_x = int16_t(p[6] | (p[7] << 8));
+				h.min_y = int16_t(p[8] | (p[9] << 8));
+				h.min_z = int16_t(p[10] | (p[11] << 8));
+				h.max_x = int16_t(p[12] | (p[13] << 8));
+				h.max_y = int16_t(p[14] | (p[15] << 8));
+				h.max_z = int16_t(p[16] | (p[17] << 8));
+				h.pack = uint8_t(pack);
+				p += 18;
+				g_hits[g_nhit] = h;
+				g_hit_used[g_nhit] = 1;
+				g_nhit++;
+			}
+			g_packs[pack].hit_resident = 1;
+			return 1;
+		}
+		return 0;
+	}
+	if (name_is(kind, "CAM")) {
+		if (g_load_buf[0] == 'C' && g_load_buf[1] == 'A' && g_load_buf[2] == 'M' && g_load_buf[3] == '0' && ru16(g_load_buf + 4) == 14) {
+			const int nc = int(ru16(g_load_buf + 6));
+			const uint8_t *p = g_load_buf + 8;
+			const uint8_t *end = g_load_buf + n;
+			for (int i = 0; i < nc && g_ncam < PS1_MAX_CAMS && p < end; i++) {
+				ScriptVMCam c{};
+				c.node_id = int16_t(p[0] | (p[1] << 8));
+				p += 2;
+				const uint8_t sl = *p++;
+				uint8_t cpy = sl < 31 ? sl : 31;
+				for (uint8_t k = 0; k < cpy && p + k < end; k++) {
+					c.name[k] = char(p[k]);
+				}
+				c.name[cpy] = 0;
+				p += sl;
+				if (p + 13 > end) {
+					break;
+				}
+				c.is_default = *p++;
+				c.px = int16_t(p[0] | (p[1] << 8));
+				c.py = int16_t(p[2] | (p[3] << 8));
+				c.pz = int16_t(p[4] | (p[5] << 8));
+				c.rx = int16_t(p[6] | (p[7] << 8));
+				c.ry = int16_t(p[8] | (p[9] << 8));
+				c.rz = int16_t(p[10] | (p[11] << 8));
+				p += 12;
+				c.pack = uint8_t(pack);
+				g_cams[g_ncam++] = c;
+			}
+			g_packs[pack].cam_resident = 1;
+			return 1;
+		}
+		return 0;
+	}
+	return 0;
+}
+
+static int unload_pack_slice(int pack, const char *kind) {
+	if (pack <= 0 || pack >= g_npack) {
+		return 0;
+	}
+	if (name_is(kind, "ANIM")) {
+		g_packs[pack].anim_resident = 0;
+		return 1;
+	}
+	if (name_is(kind, "SPRITE")) {
+		g_packs[pack].sprite_resident = 0;
+		return 1;
+	}
+	if (name_is(kind, "HIT")) {
+		for (int i = 0; i < g_nhit; i++) {
+			if (g_hit_used[i] && g_hits[i].pack == uint8_t(pack)) {
+				g_hit_used[i] = 0;
+			}
+		}
+		g_packs[pack].hit_resident = 0;
+		return 1;
+	}
+	if (name_is(kind, "CAM")) {
+		if (g_cam_cur >= 0 && g_cam_cur < g_ncam && g_cams[g_cam_cur].pack == uint8_t(pack)) {
+			return 0;
+		}
+		g_packs[pack].cam_resident = 0;
+		return 1;
+	}
+	return 0;
+}
+
+static uint8_t g_mc_payload[24576];
+static int g_mc_len = 0;
+static char g_mc_title[32] = "BLAZIUM";
+
+static int mc_wrap_ok(const uint8_t *src, int n) {
+	if (!src || n <= 0 || n > int(sizeof(g_mc_payload))) {
+		return 0;
+	}
+	if (n >= 2 && src[0] == 'S' && src[1] == 'C') {
+		const int pay = n - 512;
+		if (pay <= 0 || pay > int(sizeof(g_mc_payload))) {
+			return 0;
+		}
+		for (int i = 0; i < pay; i++) {
+			g_mc_payload[i] = src[512 + i];
+		}
+		g_mc_len = pay;
+		return 1;
+	}
+	for (int i = 0; i < n; i++) {
+		g_mc_payload[i] = src[i];
+	}
+	g_mc_len = n;
+	return 1;
 }
 
 static void tick_anim(float delta) {
@@ -1936,7 +2251,30 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			name_is(name, "get_ram_budget") || name_is(name, "get_free_ram") ||
 			name_is(name, "get_node_count") || name_is(name, "get_node_budget") ||
 			name_is(name, "get_triangle_count") || name_is(name, "get_triangle_budget") ||
-			name_is(name, "get_free_nodes") || name_is(name, "get_free_hud") || name_is(name, "get_free_tiles")) {
+			name_is(name, "get_free_nodes") || name_is(name, "get_free_hud") || name_is(name, "get_free_tiles") ||
+			name_is(name, "set_camera") || name_is(name, "set_camera_node") || name_is(name, "set_default_camera") ||
+			name_is(name, "get_camera") || name_is(name, "get_camera_count") || name_is(name, "get_camera_name") ||
+			name_is(name, "is_camera_current") || name_is(name, "next_camera") || name_is(name, "prev_camera") ||
+			name_is(name, "overlaps") || name_is(name, "has_overlapping_areas") ||
+			name_is(name, "get_overlapping_area_count") || name_is(name, "get_overlapping_area") ||
+			name_is(name, "hitbox_kind") || name_is(name, "set_hitbox_enabled") ||
+			name_is(name, "load_animations") || name_is(name, "unload_animations") ||
+			name_is(name, "can_load_animations") || name_is(name, "is_animations_loaded") ||
+			name_is(name, "load_sprites") || name_is(name, "unload_sprites") ||
+			name_is(name, "can_load_sprites") || name_is(name, "is_sprites_loaded") ||
+			name_is(name, "load_hitboxes") || name_is(name, "unload_hitboxes") || name_is(name, "can_load_hitboxes") ||
+			name_is(name, "load_cameras") || name_is(name, "unload_cameras") ||
+			name_is(name, "is_action_pressed_on") || name_is(name, "is_action_just_pressed_on") ||
+			name_is(name, "is_action_just_released_on") ||
+			name_is(name, "memcard_present") || name_is(name, "memcard_ready") || name_is(name, "memcard_format") ||
+			name_is(name, "memcard_exists") || name_is(name, "memcard_delete") ||
+			name_is(name, "memcard_save") || name_is(name, "memcard_load") ||
+			name_is(name, "memcard_count") || name_is(name, "memcard_name") ||
+			name_is(name, "memcard_wrap") || name_is(name, "memcard_unwrap") ||
+			name_is(name, "open") || name_is(name, "file_exists") || name_is(name, "store_buffer") ||
+			name_is(name, "get_buffer") || name_is(name, "store_string") || name_is(name, "get_as_text") ||
+			name_is(name, "store_var") || name_is(name, "get_var") || name_is(name, "get_length") ||
+			name_is(name, "close") || name_is(name, "get_file_as_bytes")) {
 		int pack = pack_id_of(node);
 		if (argv && argc > 0) {
 			if (argv[0].type == V_STR) {
@@ -2070,6 +2408,291 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 		}
 		if (name_is(name, "get_free_tiles")) {
 			*ret = gv_int(PS1_MAX_TILES - count_used_flags(g_tile_used, PS1_MAX_TILES));
+			return 1;
+		}
+		if (name_is(name, "set_camera")) {
+			const int idx = argv && argc > 0 ? int(as_float(argv[0])) : -1;
+			if (idx < 0 || idx >= g_ncam) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			apply_cam_index(idx, host);
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "set_camera_node")) {
+			const char *nm = argv && argc > 0 && argv[0].type == V_STR ? argv[0].s : "";
+			for (int i = 0; i < g_ncam; i++) {
+				if (name_is(g_cams[i].name, nm)) {
+					apply_cam_index(i, host);
+					*ret = gv_bool(1);
+					return 1;
+				}
+			}
+			*ret = gv_bool(0);
+			return 1;
+		}
+		if (name_is(name, "set_default_camera")) {
+			int idx = g_cam_cur;
+			if (argv && argc > 0) {
+				if (argv[0].type == V_STR) {
+					idx = -1;
+					for (int i = 0; i < g_ncam; i++) {
+						if (name_is(g_cams[i].name, argv[0].s)) {
+							idx = i;
+							break;
+						}
+					}
+				} else {
+					idx = int(as_float(argv[0]));
+				}
+			}
+			if (idx < 0 || idx >= g_ncam) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			for (int i = 0; i < g_ncam; i++) {
+				g_cams[i].is_default = i == idx ? 1 : 0;
+			}
+			g_cam_def = idx;
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "get_camera")) {
+			*ret = gv_int(g_cam_cur);
+			return 1;
+		}
+		if (name_is(name, "get_camera_count")) {
+			*ret = gv_int(g_ncam);
+			return 1;
+		}
+		if (name_is(name, "get_camera_name")) {
+			const int idx = argv && argc > 0 ? int(as_float(argv[0])) : -1;
+			if (idx < 0 || idx >= g_ncam) {
+				*ret = gv_nil();
+				return 1;
+			}
+			GVar s = gv_nil();
+			s.type = V_STR;
+			copy_str(s.s, 32, g_cams[idx].name);
+			*ret = s;
+			return 1;
+		}
+		if (name_is(name, "is_camera_current")) {
+			const int idx = argv && argc > 0 ? int(as_float(argv[0])) : -1;
+			*ret = gv_bool(idx == g_cam_cur);
+			return 1;
+		}
+		if (name_is(name, "next_camera")) {
+			if (g_ncam <= 0) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			apply_cam_index((g_cam_cur + 1 + g_ncam) % g_ncam, host);
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "prev_camera")) {
+			if (g_ncam <= 0) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			apply_cam_index((g_cam_cur - 1 + g_ncam) % g_ncam, host);
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "overlaps")) {
+			int a = node_ok(node) ? hit_of_node(node) : -1;
+			int b = -1;
+			if (argv && argc >= 2) {
+				a = hit_of_node(int(as_float(argv[0])));
+				b = hit_of_node(int(as_float(argv[1])));
+			} else if (argv && argc == 1) {
+				if (argv[0].type == V_OBJ) {
+					b = hit_of_node(argv[0].i);
+				} else {
+					b = hit_of_node(int(as_float(argv[0])));
+				}
+			}
+			*ret = gv_bool(aabb_overlap(a, b));
+			return 1;
+		}
+		if (name_is(name, "has_overlapping_areas") || name_is(name, "get_overlapping_area_count")) {
+			const int self = hit_of_node(node);
+			int n = 0;
+			for (int i = 0; i < g_nhit; i++) {
+				if (i != self && aabb_overlap(self, i)) {
+					n++;
+				}
+			}
+			*ret = name_is(name, "has_overlapping_areas") ? gv_bool(n > 0) : gv_int(n);
+			return 1;
+		}
+		if (name_is(name, "get_overlapping_area")) {
+			const int self = hit_of_node(node);
+			int want = argv && argc > 0 ? int(as_float(argv[0])) : 0;
+			int n = 0;
+			for (int i = 0; i < g_nhit; i++) {
+				if (i != self && aabb_overlap(self, i)) {
+					if (n == want) {
+						*ret = gv_obj(int(g_hits[i].node_id));
+						return 1;
+					}
+					n++;
+				}
+			}
+			*ret = gv_nil();
+			return 1;
+		}
+		if (name_is(name, "hitbox_kind")) {
+			int nid = node;
+			if (argv && argc > 0) {
+				nid = argv[0].type == V_OBJ ? argv[0].i : int(as_float(argv[0]));
+			}
+			const int h = hit_of_node(nid);
+			*ret = gv_int(h >= 0 ? int(g_hits[h].kind) : 0);
+			return 1;
+		}
+		if (name_is(name, "set_hitbox_enabled")) {
+			int nid = node;
+			int on = 1;
+			if (argv && argc >= 2) {
+				nid = argv[0].type == V_OBJ ? argv[0].i : int(as_float(argv[0]));
+				on = int(as_float(argv[1]));
+			} else if (argv && argc == 1) {
+				on = int(as_float(argv[0]));
+			}
+			const int h = hit_of_node(nid);
+			if (h >= 0) {
+				if (on) {
+					g_hits[h].flags = uint8_t(g_hits[h].flags | 1);
+				} else {
+					g_hits[h].flags = uint8_t(g_hits[h].flags & ~uint8_t(1));
+				}
+			}
+			*ret = gv_nil();
+			return 1;
+		}
+		if (name_is(name, "load_animations")) {
+			*ret = gv_bool(load_pack_slice(pack, "ANIM"));
+			return 1;
+		}
+		if (name_is(name, "unload_animations")) {
+			*ret = gv_bool(unload_pack_slice(pack, "ANIM"));
+			return 1;
+		}
+		if (name_is(name, "can_load_animations") || name_is(name, "is_animations_loaded")) {
+			*ret = gv_bool(pack >= 0 && pack < g_npack && (g_packs[pack].anim_resident || (pack == 0 && g_nclip > 0)));
+			return 1;
+		}
+		if (name_is(name, "load_sprites")) {
+			*ret = gv_bool(load_pack_slice(pack, "SPRITE"));
+			return 1;
+		}
+		if (name_is(name, "unload_sprites")) {
+			*ret = gv_bool(unload_pack_slice(pack, "SPRITE"));
+			return 1;
+		}
+		if (name_is(name, "can_load_sprites") || name_is(name, "is_sprites_loaded")) {
+			*ret = gv_bool(pack >= 0 && pack < g_npack && (g_packs[pack].sprite_resident || pack == 0));
+			return 1;
+		}
+		if (name_is(name, "load_hitboxes")) {
+			*ret = gv_bool(load_pack_slice(pack, "HIT"));
+			return 1;
+		}
+		if (name_is(name, "unload_hitboxes")) {
+			*ret = gv_bool(unload_pack_slice(pack, "HIT"));
+			return 1;
+		}
+		if (name_is(name, "can_load_hitboxes")) {
+			*ret = gv_bool(pack >= 0 && pack < g_npack);
+			return 1;
+		}
+		if (name_is(name, "load_cameras")) {
+			*ret = gv_bool(load_pack_slice(pack, "CAM"));
+			return 1;
+		}
+		if (name_is(name, "unload_cameras")) {
+			*ret = gv_bool(unload_pack_slice(pack, "CAM"));
+			return 1;
+		}
+		if (name_is(name, "is_action_pressed_on") || name_is(name, "is_action_just_pressed_on") ||
+				name_is(name, "is_action_just_released_on")) {
+			const int dev = argv && argc > 0 ? int(as_float(argv[0])) : 0;
+			const char *act = argv && argc > 1 && argv[1].type == V_STR ? argv[1].s : "";
+			int just = 0;
+			if (name_is(name, "is_action_just_pressed_on")) {
+				just = 1;
+			} else if (name_is(name, "is_action_just_released_on")) {
+				just = 2;
+			}
+			*ret = gv_bool(dev == 0 || dev == 1 ? pad_pressed_on(host, act, just, dev) : 0);
+			return 1;
+		}
+		if (name_is(name, "memcard_present") || name_is(name, "memcard_ready")) {
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "memcard_format")) {
+			g_mc_len = 0;
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "memcard_exists")) {
+			*ret = gv_bool(g_mc_len > 0);
+			return 1;
+		}
+		if (name_is(name, "memcard_delete")) {
+			g_mc_len = 0;
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "memcard_save")) {
+			if (argv && argc >= 3 && argv[2].type == V_STR) {
+				*ret = gv_bool(mc_wrap_ok((const uint8_t *)argv[2].s, int(strlen(argv[2].s))));
+			} else {
+				*ret = gv_bool(g_mc_len >= 0);
+			}
+			return 1;
+		}
+		if (name_is(name, "memcard_load")) {
+			GVar s = gv_nil();
+			s.type = V_STR;
+			copy_str(s.s, 32, g_mc_len > 0 ? "ok" : "");
+			*ret = s;
+			return 1;
+		}
+		if (name_is(name, "memcard_count")) {
+			*ret = gv_int(g_mc_len > 0 ? 1 : 0);
+			return 1;
+		}
+		if (name_is(name, "memcard_name")) {
+			GVar s = gv_nil();
+			s.type = V_STR;
+			copy_str(s.s, 32, "BESCES-00000SAVE");
+			*ret = s;
+			return 1;
+		}
+		if (name_is(name, "memcard_wrap") || name_is(name, "memcard_unwrap") ||
+				name_is(name, "open") || name_is(name, "close") || name_is(name, "file_exists") ||
+				name_is(name, "store_buffer") || name_is(name, "get_buffer") ||
+				name_is(name, "store_string") || name_is(name, "get_as_text") ||
+				name_is(name, "store_var") || name_is(name, "get_var") ||
+				name_is(name, "get_length") || name_is(name, "get_file_as_bytes")) {
+			if (name_is(name, "file_exists") || name_is(name, "get_length")) {
+				*ret = name_is(name, "get_length") ? gv_int(g_mc_len) : gv_bool(g_mc_len > 0);
+				return 1;
+			}
+			if (name_is(name, "store_buffer") || name_is(name, "store_string") || name_is(name, "store_var")) {
+				if (argv && argc > 0 && argv[0].type == V_STR) {
+					*ret = gv_bool(mc_wrap_ok((const uint8_t *)argv[0].s, int(strlen(argv[0].s))));
+				} else {
+					*ret = gv_bool(1);
+				}
+				return 1;
+			}
+			*ret = gv_bool(1);
 			return 1;
 		}
 	}
@@ -2294,39 +2917,60 @@ static int pad_mask(const char *action) {
 	return 0;
 }
 
-static int pad_down(const ScriptVMHost *host, uint16_t mask) {
-	if (!host || !host->pad34 || !mask) {
+static int pad_port_down(const uint8_t *raw, uint16_t mask) {
+	if (!raw || !mask) {
 		return 0;
 	}
-	const PADTYPE *pad = (const PADTYPE *)host->pad34;
+	const PADTYPE *pad = (const PADTYPE *)raw;
 	if (pad->stat != 0) {
 		return 0;
 	}
 	return !(pad->btn & mask);
 }
 
-static int pad_pressed(const ScriptVMHost *host, const char *action, int just) {
-	const uint16_t mask = uint16_t(pad_mask(action));
-	if (!mask) {
+static int pad_down(const ScriptVMHost *host, uint16_t mask) {
+	if (!host || !mask) {
 		return 0;
 	}
-	const int down = pad_down(host, mask);
+	return pad_port_down(host->pad34, mask) || pad_port_down(host->pad34_1, mask);
+}
+
+static int pad_pressed_on(const ScriptVMHost *host, const char *action, int just, int device) {
+	const uint16_t mask = uint16_t(pad_mask(action));
+	if (!mask || !host) {
+		return 0;
+	}
+	const uint8_t *raw = device == 1 ? host->pad34_1 : host->pad34;
+	const int down = pad_port_down(raw, mask);
+	const uint16_t prev = device == 1 ? g_prev_btn[1] : g_prev_btn[0];
 	if (just == 2) {
-		return !down && !(g_prev_btn & mask);
+		return !down && !(prev & mask);
 	}
 	if (!just) {
 		return down;
 	}
-	return down && (g_prev_btn & mask);
+	return down && (prev & mask);
+}
+
+static int pad_pressed(const ScriptVMHost *host, const char *action, int just) {
+	return pad_pressed_on(host, action, just, 0) || pad_pressed_on(host, action, just, 1);
 }
 
 static void pad_tick(const ScriptVMHost *host) {
-	if (!host || !host->pad34) {
+	if (!host) {
 		return;
 	}
-	const PADTYPE *pad = (const PADTYPE *)host->pad34;
-	if (pad->stat == 0) {
-		g_prev_btn = pad->btn;
+	if (host->pad34) {
+		const PADTYPE *pad = (const PADTYPE *)host->pad34;
+		if (pad->stat == 0) {
+			g_prev_btn[0] = pad->btn;
+		}
+	}
+	if (host->pad34_1) {
+		const PADTYPE *pad = (const PADTYPE *)host->pad34_1;
+		if (pad->stat == 0) {
+			g_prev_btn[1] = pad->btn;
+		}
 	}
 }
 
@@ -2714,7 +3358,7 @@ static int run_official(const uint8_t *blob, size_t size, const char *want, floa
 	if (size < 8 || blob[0] != 'G' || blob[1] != 'D' || blob[2] != 'B' || blob[3] != 'C') {
 		return 0;
 	}
-	if (ru16(blob + 4) != 13) {
+	if (ru16(blob + 4) != 14) {
 		return 0;
 	}
 	const uint16_t nscripts = ru16(blob + 6);
@@ -3193,7 +3837,7 @@ static int run_tape(const uint8_t *blob, size_t size, const char *want, float de
 	if (size < 8 || blob[0] != 'G' || blob[1] != 'D' || blob[2] != 'B' || blob[3] != 'C') {
 		return 0;
 	}
-	if (ru16(blob + 4) != 13) {
+	if (ru16(blob + 4) != 14) {
 		return 0;
 	}
 	const uint16_t npaths = ru16(blob + 6);

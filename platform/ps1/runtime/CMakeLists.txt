@@ -12,7 +12,7 @@ project(
 
 psn00bsdk_add_executable(runtime GPREL main.cpp script_vm.cpp fmv_play.cpp)
 target_compile_options(runtime PRIVATE -fno-exceptions -fno-rtti)
-	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_COOK_ABI=13)
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_COOK_ABI=14)
 
 set(BLAZIUM_PS1_TIM "" CACHE FILEPATH "Optional cooked TIM to embed")
 if(BLAZIUM_PS1_TIM)
@@ -110,4 +110,18 @@ if(BLAZIUM_PS1_ANIM)
 	configure_file("${BLAZIUM_PS1_ANIM}" "${CMAKE_CURRENT_BINARY_DIR}/ANIM00.BIN" COPYONLY)
 	psn00bsdk_target_incbin(runtime PRIVATE cooked_anim "${CMAKE_CURRENT_BINARY_DIR}/ANIM00.BIN")
 	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_ANIM=1)
+endif()
+
+set(BLAZIUM_PS1_CAM "" CACHE FILEPATH "Optional cooked CAM00.bin")
+if(BLAZIUM_PS1_CAM)
+	configure_file("${BLAZIUM_PS1_CAM}" "${CMAKE_CURRENT_BINARY_DIR}/CAM00.BIN" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_cam "${CMAKE_CURRENT_BINARY_DIR}/CAM00.BIN")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_CAM=1)
+endif()
+
+set(BLAZIUM_PS1_HIT "" CACHE FILEPATH "Optional cooked HIT00.bin")
+if(BLAZIUM_PS1_HIT)
+	configure_file("${BLAZIUM_PS1_HIT}" "${CMAKE_CURRENT_BINARY_DIR}/HIT00.BIN" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_hit "${CMAKE_CURRENT_BINARY_DIR}/HIT00.BIN")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_HIT=1)
 endif()
