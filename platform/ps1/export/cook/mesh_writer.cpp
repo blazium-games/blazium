@@ -66,7 +66,7 @@ Error write_mesh_svector(const Vector<CookTri> &p_tris, int p_max_tris, MeshBlob
 			out.push_back(uint8_t(u));
 			out.push_back(uint8_t(v));
 		}
-		out.push_back(t.tex_slot & 3);
+		out.push_back(t.tex_slot & 15);
 		out.push_back(t.node_id);
 	}
 

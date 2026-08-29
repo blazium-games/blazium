@@ -47,6 +47,7 @@ struct ScriptIR {
 	Vector<String> accepted;
 	Vector<String> rejected;
 	Vector<String> attached;
+	Vector<String> warnings;
 	HashMap<String, uint16_t> path_owners;
 	Vector<String> cooked_gd;
 	String map_text;

@@ -71,18 +71,66 @@ bool method_is_allowlisted(const String &p_name) {
 	return p_name == "rotate_x" || p_name == "rotate_y" || p_name == "rotate_z" ||
 			p_name == "translate" || p_name == "get_node" ||
 			p_name == "is_action_pressed" || p_name == "is_action_just_pressed" ||
+			p_name == "is_action_just_released" ||
 			p_name == "_ready" || p_name == "_process" ||
 			p_name == "hide" || p_name == "show" ||
 			p_name == "set_position" || p_name == "set_rotation" ||
 			p_name == "look_at" || p_name == "print" || p_name == "push_warning" ||
-			p_name == "grab_focus" || p_name == "release_focus";
+			p_name == "grab_focus" || p_name == "release_focus" ||
+			p_name == "get_parent" || p_name == "get_child" || p_name == "get_child_count" ||
+			p_name == "has_node" || p_name == "get_node_or_null" ||
+			p_name == "set_visible" || p_name == "is_visible" ||
+			p_name == "abs" || p_name == "clamp" || p_name == "lerp" ||
+			p_name == "min" || p_name == "max" ||
+			p_name == "sin" || p_name == "cos" ||
+			p_name == "floor" || p_name == "ceil" || p_name == "round";
 }
 
 static bool member_is_allowlisted(const String &p_name) {
 	return p_name == "position" || p_name == "rotation" || p_name == "visible" || p_name == "name" ||
 			p_name == "text" || p_name == "disabled" || p_name == "pressed" || p_name == "button_pressed" ||
 			p_name == "value" || p_name == "min_value" || p_name == "max_value" || p_name == "selected" ||
-			p_name == "focus";
+			p_name == "focus" || p_name == "x" || p_name == "y" || p_name == "z";
+}
+
+static bool action_is_known(const String &p_name) {
+	return p_name == "ui_left" || p_name == "ui_right" || p_name == "ui_up" || p_name == "ui_down" ||
+			p_name == "ui_accept" || p_name == "ui_cancel" || p_name == "ui_select" ||
+			p_name == "ui_focus_prev" || p_name == "ui_focus_next";
+}
+
+static void warn_unknown_actions(const String &p_source, ScriptIR &r_out) {
+	int p = 0;
+	while (true) {
+		const int hit = p_source.find("is_action_", p);
+		if (hit < 0) {
+			break;
+		}
+		const int q = p_source.find("\"", hit);
+		p = hit + 10;
+		if (q < 0) {
+			continue;
+		}
+		const int e = p_source.find("\"", q + 1);
+		if (e <= q + 1) {
+			continue;
+		}
+		const String act = p_source.substr(q + 1, e - q - 1);
+		if (action_is_known(act)) {
+			continue;
+		}
+		const String msg = "unknown Input action '" + act + "' is not mapped on PS1 (false at runtime).";
+		bool seen = false;
+		for (int i = 0; i < r_out.warnings.size(); i++) {
+			if (r_out.warnings[i] == msg) {
+				seen = true;
+				break;
+			}
+		}
+		if (!seen) {
+			r_out.warnings.push_back(msg);
+		}
+	}
 }
 
 static bool luau_source_unbound(const String &p_source, String &r_why) {
@@ -212,6 +260,14 @@ static int host_opcode_size(const Vector<int> &code, int ip) {
 		case Op::OPCODE_GET_MEMBER:
 		case Op::OPCODE_SET_MEMBER:
 			return 3;
+		case Op::OPCODE_GET_KEYED:
+		case Op::OPCODE_SET_KEYED:
+			return 4;
+		case Op::OPCODE_GET_KEYED_VALIDATED:
+		case Op::OPCODE_SET_KEYED_VALIDATED:
+		case Op::OPCODE_GET_INDEXED_VALIDATED:
+		case Op::OPCODE_SET_INDEXED_VALIDATED:
+			return 5;
 		case Op::OPCODE_GET_NAMED:
 		case Op::OPCODE_SET_NAMED:
 		case Op::OPCODE_GET_NAMED_VALIDATED:
@@ -300,6 +356,9 @@ static bool opcode_allowed(int op) {
 			op == Op::OPCODE_GET_MEMBER || op == Op::OPCODE_SET_MEMBER ||
 			op == Op::OPCODE_GET_NAMED || op == Op::OPCODE_SET_NAMED ||
 			op == Op::OPCODE_GET_NAMED_VALIDATED || op == Op::OPCODE_SET_NAMED_VALIDATED ||
+			op == Op::OPCODE_GET_KEYED || op == Op::OPCODE_SET_KEYED ||
+			op == Op::OPCODE_GET_KEYED_VALIDATED || op == Op::OPCODE_SET_KEYED_VALIDATED ||
+			op == Op::OPCODE_GET_INDEXED_VALIDATED || op == Op::OPCODE_SET_INDEXED_VALIDATED ||
 			op == Op::OPCODE_ITERATE_BEGIN || op == Op::OPCODE_ITERATE_BEGIN_INT ||
 			op == Op::OPCODE_ITERATE || op == Op::OPCODE_ITERATE_INT;
 }
@@ -368,6 +427,41 @@ static Error scan_and_normalize(const String &p_path, GDScript *script, GDScript
 			const String mem = script ? String(script->debug_get_member_by_index(mi)) : String();
 			if (mem.is_empty() || !member_is_allowlisted(mem)) {
 				r_err = vformat("%s:%s:%d unbound member '%s'", p_path, String(fn->get_name()), ip, mem.is_empty() ? String("?") : mem);
+				return ERR_UNCONFIGURED;
+			}
+		}
+		if (op == Op::OPCODE_GET_NAMED || op == Op::OPCODE_SET_NAMED) {
+			const int ni = (ip + 3 < code.size()) ? code[ip + 3] : -1;
+			const String mem = (ni >= 0) ? String(fn->get_global_name(ni)) : String();
+			if (mem.is_empty() || !member_is_allowlisted(mem)) {
+				r_err = vformat("%s:%s:%d unbound member '%s'", p_path, String(fn->get_name()), ip, mem.is_empty() ? String("?") : mem);
+				return ERR_UNCONFIGURED;
+			}
+		}
+		if (op == Op::OPCODE_GET_NAMED_VALIDATED || op == Op::OPCODE_SET_NAMED_VALIDATED) {
+			if (ip + 3 >= code.size()) {
+				r_err = vformat("%s:%s:%d truncated named-validated opcode", p_path, String(fn->get_name()), ip);
+				return ERR_UNCONFIGURED;
+			}
+			const String pname = String(op == Op::OPCODE_GET_NAMED_VALIDATED ? fn->get_getter_name(code[ip + 3]) : fn->get_setter_name(code[ip + 3]));
+			if (pname.is_empty() || !member_is_allowlisted(pname)) {
+				r_err = vformat("%s:%s:%d unbound member '%s'", p_path, String(fn->get_name()), ip, pname.is_empty() ? String("?") : pname);
+				return ERR_UNCONFIGURED;
+			}
+		}
+		if (op == Op::OPCODE_CONSTRUCT) {
+			const int iac = (ip + 1 < code.size()) ? code[ip + 1] : 0;
+			const int typ = (ip + 3 + iac < code.size()) ? code[ip + 3 + iac] : -1;
+			if (typ != int(Variant::VECTOR2) && typ != int(Variant::VECTOR3)) {
+				r_err = vformat("%s:%s:%d construct type %d is not Vector2/Vector3", p_path, String(fn->get_name()), ip, typ);
+				return ERR_UNCONFIGURED;
+			}
+		}
+		if (op == Op::OPCODE_CONSTRUCT_VALIDATED) {
+			const int iac = (ip + 1 < code.size()) ? code[ip + 1] : 0;
+			const int argc = (ip + 2 + iac < code.size()) ? code[ip + 2 + iac] : -1;
+			if (argc != 2 && argc != 3) {
+				r_err = vformat("%s:%s:%d construct validated argc %d is not Vector2/Vector3", p_path, String(fn->get_name()), ip, argc);
 				return ERR_UNCONFIGURED;
 			}
 		}
@@ -445,7 +539,7 @@ static Vector<uint8_t> pack_official_gdbc(const Vector<String> &p_paths, const V
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 7);
+	append_u16(out, 8);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int s = 0; s < p_paths.size(); s++) {
 		append_str(out, p_paths[s]);
@@ -537,7 +631,7 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 7);
+	append_u16(out, 8);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int i = 0; i < p_paths.size(); i++) {
 		append_str(out, p_paths[i]);
@@ -604,11 +698,27 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 			code.push_back(kTapeCallNamed);
 			code.push_back(add_name("show"));
 		}
-		if (src.contains("is_action_pressed") || src.contains("is_action_just_pressed")) {
-			const String act = src.contains("is_action_just_pressed") ? "is_action_just_pressed" : "is_action_pressed";
+		if (src.contains("is_action_pressed") || src.contains("is_action_just_pressed") || src.contains("is_action_just_released")) {
+			String act = "is_action_pressed";
+			if (src.contains("is_action_just_released")) {
+				act = "is_action_just_released";
+			} else if (src.contains("is_action_just_pressed")) {
+				act = "is_action_just_pressed";
+			}
 			add_name(first_quoted_action(src));
 			code.push_back(kTapeCallNamed);
 			code.push_back(add_name(act));
+		}
+		const char *named[] = {
+			"get_parent", "get_child", "get_child_count", "has_node", "get_node_or_null",
+			"set_visible", "is_visible", "abs", "clamp", "lerp", "min", "max",
+			"sin", "cos", "floor", "ceil", "round"
+		};
+		for (const char *nm : named) {
+			if (src.contains(String(nm) + "(") || src.contains(String(nm) + " (")) {
+				code.push_back(kTapeCallNamed);
+				code.push_back(add_name(nm));
+			}
 		}
 		if (src.contains("get_node")) {
 			String node_name = ".";
@@ -678,6 +788,7 @@ static void walk_scripts(const String &p_dir, ScriptIR &r_out) {
 			r_out.rejected.push_back(path + " : " + why);
 		} else {
 			r_out.accepted.push_back(path);
+			warn_unknown_actions(src, r_out);
 			if (src.contains("0.4") && (src.contains("rotate_y") || src.contains("delta * 0.4"))) {
 				r_out.rotate_y = 0.4f;
 			}
@@ -701,10 +812,11 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 			r_out.rejected.push_back(path + " : " + why);
 		} else if (!r_out.accepted.has(path)) {
 			r_out.accepted.push_back(path);
+			warn_unknown_actions(src, r_out);
 		}
 	}
 
-	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 7)\n", r_out.rotate_y);
+	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 8)\n", r_out.rotate_y);
 	for (int i = 0; i < r_out.accepted.size(); i++) {
 		r_out.map_text += "OK " + r_out.accepted[i] + "\n";
 	}

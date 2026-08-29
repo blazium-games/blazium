@@ -40,6 +40,12 @@ enum {
 // Must match GDScriptFunction::Opcode numeric values.
 enum {
 	OP_OPERATOR = 0,
+	OP_SET_KEYED = 6,
+	OP_SET_KEYED_VALIDATED = 7,
+	OP_SET_INDEXED_VALIDATED = 8,
+	OP_GET_KEYED = 9,
+	OP_GET_KEYED_VALIDATED = 10,
+	OP_GET_INDEXED_VALIDATED = 11,
 	OP_SET_NAMED = 12,
 	OP_GET_NAMED = 14,
 	OP_SET_MEMBER = 16,
@@ -234,6 +240,14 @@ static GVar gv_obj(int id) {
 	return v;
 }
 
+static GVar gv_v2(float x, float y) {
+	GVar v = gv_nil();
+	v.type = V_V2;
+	v.x = x;
+	v.y = y;
+	return v;
+}
+
 static GVar gv_v3(float x, float y, float z) {
 	GVar v = gv_nil();
 	v.type = V_V3;
@@ -376,6 +390,18 @@ static void apply_method(const ScriptVMHost *host, int node, const char *name, f
 		g_nodes[node].flags = uint8_t(g_nodes[node].flags | uint8_t(1));
 		return;
 	}
+	if (name_is(name, "set_visible") && node_ok(node)) {
+		int on = 1;
+		if (argv && argc > 0) {
+			on = as_truth(argv[0]);
+		}
+		if (on) {
+			g_nodes[node].flags = uint8_t(g_nodes[node].flags | uint8_t(1));
+		} else {
+			g_nodes[node].flags = uint8_t(g_nodes[node].flags & ~uint8_t(1));
+		}
+		return;
+	}
 	if (name_is(name, "look_at") && node_ok(node)) {
 		float tx = arg;
 		float tz = 0.0f;
@@ -463,6 +489,234 @@ static void apply_method(const ScriptVMHost *host, int node, const char *name, f
 	write_host_rot(host, name, arg);
 }
 
+static float util_abs(float x) {
+	return x < 0.0f ? -x : x;
+}
+
+static float util_floor(float x) {
+	int i = int(x);
+	if (x < 0.0f && float(i) != x) {
+		i--;
+	}
+	return float(i);
+}
+
+static float util_ceil(float x) {
+	int i = int(x);
+	if (x > 0.0f && float(i) != x) {
+		i++;
+	}
+	return float(i);
+}
+
+static float util_sin(float x) {
+	const float pi = 3.14159265f;
+	const float twopi = 6.2831853f;
+	while (x > pi) {
+		x -= twopi;
+	}
+	while (x < -pi) {
+		x += twopi;
+	}
+	const float x2 = x * x;
+	return x * (1.0f - x2 * (1.0f / 6.0f) * (1.0f - x2 * (1.0f / 20.0f)));
+}
+
+static int child_count_of(int parent) {
+	int n = 0;
+	for (int i = 0; i < g_nnode; i++) {
+		if (g_nodes[i].parent == parent) {
+			n++;
+		}
+	}
+	return n;
+}
+
+static int child_at(int parent, int index) {
+	int n = 0;
+	for (int i = 0; i < g_nnode; i++) {
+		if (g_nodes[i].parent != parent) {
+			continue;
+		}
+		if (n == index) {
+			return i;
+		}
+		n++;
+	}
+	return -1;
+}
+
+static int keyed_index(const GVar *key) {
+	if (!key) {
+		return -1;
+	}
+	if (key->type == V_STR) {
+		if (name_is(key->s, "x")) {
+			return 0;
+		}
+		if (name_is(key->s, "y")) {
+			return 1;
+		}
+		if (name_is(key->s, "z")) {
+			return 2;
+		}
+		return -1;
+	}
+	return int(as_float(*key));
+}
+
+static void get_keyed(const GVar *src, const GVar *key, GVar *dst) {
+	if (!dst || !src) {
+		return;
+	}
+	const int idx = keyed_index(key);
+	if (src->type == V_V2 || src->type == V_V3) {
+		if (idx == 0) {
+			*dst = gv_float(src->x);
+		} else if (idx == 1) {
+			*dst = gv_float(src->y);
+		} else if (idx == 2 && src->type == V_V3) {
+			*dst = gv_float(src->z);
+		} else {
+			*dst = gv_nil();
+		}
+		return;
+	}
+	if (src->type == V_INT || src->type == V_FLOAT) {
+		const int size = int(as_float(*src));
+		if (idx >= 0 && idx < size) {
+			*dst = gv_int(idx);
+		} else {
+			*dst = gv_nil();
+		}
+		return;
+	}
+	*dst = gv_nil();
+}
+
+static void set_keyed(GVar *dst, const GVar *key, const GVar *value) {
+	if (!dst || !value) {
+		return;
+	}
+	const int idx = keyed_index(key);
+	const float f = as_float(*value);
+	if (dst->type == V_V2 || dst->type == V_V3) {
+		if (idx == 0) {
+			dst->x = f;
+		} else if (idx == 1) {
+			dst->y = f;
+		} else if (idx == 2 && dst->type == V_V3) {
+			dst->z = f;
+		}
+	}
+}
+
+static int apply_call(const ScriptVMHost *host, int node, const char *name, float arg, const GVar *argv, int argc, GVar *ret) {
+	if (name_is(name, "abs")) {
+		*ret = gv_float(util_abs(argc > 0 ? as_float(argv[0]) : arg));
+		return 1;
+	}
+	if (name_is(name, "min") && argc >= 2) {
+		const float a = as_float(argv[0]);
+		const float b = as_float(argv[1]);
+		*ret = gv_float(a < b ? a : b);
+		return 1;
+	}
+	if (name_is(name, "max") && argc >= 2) {
+		const float a = as_float(argv[0]);
+		const float b = as_float(argv[1]);
+		*ret = gv_float(a > b ? a : b);
+		return 1;
+	}
+	if (name_is(name, "clamp") && argc >= 3) {
+		float x = as_float(argv[0]);
+		const float lo = as_float(argv[1]);
+		const float hi = as_float(argv[2]);
+		if (x < lo) {
+			x = lo;
+		}
+		if (x > hi) {
+			x = hi;
+		}
+		*ret = gv_float(x);
+		return 1;
+	}
+	if (name_is(name, "lerp") && argc >= 3) {
+		const float a = as_float(argv[0]);
+		const float b = as_float(argv[1]);
+		const float t = as_float(argv[2]);
+		*ret = gv_float(a + (b - a) * t);
+		return 1;
+	}
+	if (name_is(name, "sin")) {
+		*ret = gv_float(util_sin(argc > 0 ? as_float(argv[0]) : arg));
+		return 1;
+	}
+	if (name_is(name, "cos")) {
+		*ret = gv_float(util_sin((argc > 0 ? as_float(argv[0]) : arg) + 1.5707963f));
+		return 1;
+	}
+	if (name_is(name, "floor")) {
+		*ret = gv_float(util_floor(argc > 0 ? as_float(argv[0]) : arg));
+		return 1;
+	}
+	if (name_is(name, "ceil")) {
+		*ret = gv_float(util_ceil(argc > 0 ? as_float(argv[0]) : arg));
+		return 1;
+	}
+	if (name_is(name, "round")) {
+		const float x = argc > 0 ? as_float(argv[0]) : arg;
+		*ret = gv_float(util_floor(x + 0.5f));
+		return 1;
+	}
+	if (name_is(name, "get_parent")) {
+		if (node_ok(node) && g_nodes[node].parent >= 0) {
+			*ret = gv_obj(g_nodes[node].parent);
+		} else {
+			*ret = gv_nil();
+		}
+		return 1;
+	}
+	if (name_is(name, "get_child_count")) {
+		*ret = gv_int(child_count_of(node));
+		return 1;
+	}
+	if (name_is(name, "get_child")) {
+		int idx = int(arg);
+		if (argv && argc > 0) {
+			if (argv[0].type != V_OBJ) {
+				idx = int(as_float(argv[0]));
+			} else if (argc > 1) {
+				idx = int(as_float(argv[1]));
+			}
+		}
+		const int hit = child_at(node, idx);
+		*ret = hit >= 0 ? gv_obj(hit) : gv_nil();
+		return 1;
+	}
+	if (name_is(name, "is_visible")) {
+		*ret = gv_bool(node_ok(node) && (g_nodes[node].flags & 1));
+		return 1;
+	}
+	if (name_is(name, "has_node") || name_is(name, "get_node_or_null")) {
+		const char *path = "";
+		if (argv && argc > 0 && argv[0].type == V_STR) {
+			path = argv[0].s;
+		} else if (argv && argc > 1 && argv[1].type == V_STR) {
+			path = argv[1].s;
+		}
+		const int hit = walk_path(node, path);
+		if (name_is(name, "has_node")) {
+			*ret = gv_bool(hit >= 0);
+		} else {
+			*ret = hit >= 0 ? gv_obj(hit) : gv_nil();
+		}
+		return 1;
+	}
+	apply_method(host, node, name, arg, argv, argc);
+	return 0;
+}
+
 static int pad_mask(const char *action) {
 	if (name_is(action, "ui_left")) {
 		return PAD_LEFT;
@@ -478,6 +732,18 @@ static int pad_mask(const char *action) {
 	}
 	if (name_is(action, "ui_accept")) {
 		return PAD_CROSS;
+	}
+	if (name_is(action, "ui_cancel")) {
+		return PAD_CIRCLE;
+	}
+	if (name_is(action, "ui_select")) {
+		return PAD_START;
+	}
+	if (name_is(action, "ui_focus_prev")) {
+		return PAD_L1;
+	}
+	if (name_is(action, "ui_focus_next")) {
+		return PAD_R1;
 	}
 	return 0;
 }
@@ -495,7 +761,13 @@ static int pad_down(const ScriptVMHost *host, uint16_t mask) {
 
 static int pad_pressed(const ScriptVMHost *host, const char *action, int just) {
 	const uint16_t mask = uint16_t(pad_mask(action));
+	if (!mask) {
+		return 0;
+	}
 	const int down = pad_down(host, mask);
+	if (just == 2) {
+		return !down && !(g_prev_btn & mask);
+	}
 	if (!just) {
 		return down;
 	}
@@ -540,7 +812,18 @@ static int is_bind_call(int op) {
 }
 
 static int is_input_name(const char *nm) {
-	return name_is(nm, "is_action_pressed") || name_is(nm, "is_action_just_pressed");
+	return name_is(nm, "is_action_pressed") || name_is(nm, "is_action_just_pressed") ||
+			name_is(nm, "is_action_just_released");
+}
+
+static int input_just_mode(const char *nm) {
+	if (name_is(nm, "is_action_just_released")) {
+		return 2;
+	}
+	if (name_is(nm, "is_action_just_pressed")) {
+		return 1;
+	}
+	return 0;
 }
 
 static int prop_named(const char *n, const char *w) {
@@ -881,7 +1164,7 @@ static int run_official(const uint8_t *blob, size_t size, const char *want, floa
 	if (size < 8 || blob[0] != 'G' || blob[1] != 'D' || blob[2] != 'B' || blob[3] != 'C') {
 		return 0;
 	}
-	if (ru16(blob + 4) != 7) {
+	if (ru16(blob + 4) != 8) {
 		return 0;
 	}
 	const uint16_t nscripts = ru16(blob + 6);
@@ -1133,18 +1416,53 @@ static int run_official(const uint8_t *blob, size_t size, const char *want, floa
 					const int ni = ri32(codeb + (ip + 3) * 4);
 					const char *pn = (ni >= 0 && ni < nn) ? names[ni] : "";
 					GVar *o = slot(stack, nstack, cvars, nc, a0);
-					int nid = self_id;
-					if (o && o->type == V_OBJ) {
-						nid = o->i;
-					}
-					if (op == OP_GET_NAMED) {
-						GVar *d = slot(stack, nstack, cvars, nc, a1);
-						get_prop(nid, pn, d);
+					if (o && (o->type == V_V2 || o->type == V_V3)) {
+						GVar key = gv_nil();
+						key.type = V_STR;
+						copy_str(key.s, 32, pn);
+						if (op == OP_GET_NAMED) {
+							GVar *d = slot(stack, nstack, cvars, nc, a1);
+							get_keyed(o, &key, d);
+						} else {
+							GVar *sv = slot(stack, nstack, cvars, nc, a1);
+							set_keyed(o, &key, sv);
+						}
 					} else {
-						GVar *sv = slot(stack, nstack, cvars, nc, a1);
-						set_prop(nid, pn, sv);
+						int nid = self_id;
+						if (o && o->type == V_OBJ) {
+							nid = o->i;
+						}
+						if (op == OP_GET_NAMED) {
+							GVar *d = slot(stack, nstack, cvars, nc, a1);
+							get_prop(nid, pn, d);
+						} else {
+							GVar *sv = slot(stack, nstack, cvars, nc, a1);
+							set_prop(nid, pn, sv);
+						}
 					}
 					ip += 4;
+					continue;
+				}
+				if (op == OP_GET_KEYED || op == OP_GET_KEYED_VALIDATED || op == OP_GET_INDEXED_VALIDATED) {
+					const uint32_t a0 = uint32_t(ri32(codeb + (ip + 1) * 4));
+					const uint32_t a1 = uint32_t(ri32(codeb + (ip + 2) * 4));
+					const uint32_t a2 = uint32_t(ri32(codeb + (ip + 3) * 4));
+					GVar *src = slot(stack, nstack, cvars, nc, a0);
+					GVar *key = slot(stack, nstack, cvars, nc, a1);
+					GVar *d = slot(stack, nstack, cvars, nc, a2);
+					get_keyed(src, key, d);
+					ip += (op == OP_GET_KEYED) ? 4 : 5;
+					continue;
+				}
+				if (op == OP_SET_KEYED || op == OP_SET_KEYED_VALIDATED || op == OP_SET_INDEXED_VALIDATED) {
+					const uint32_t a0 = uint32_t(ri32(codeb + (ip + 1) * 4));
+					const uint32_t a1 = uint32_t(ri32(codeb + (ip + 2) * 4));
+					const uint32_t a2 = uint32_t(ri32(codeb + (ip + 3) * 4));
+					GVar *d = slot(stack, nstack, cvars, nc, a0);
+					GVar *key = slot(stack, nstack, cvars, nc, a1);
+					GVar *sv = slot(stack, nstack, cvars, nc, a2);
+					set_keyed(d, key, sv);
+					ip += (op == OP_SET_KEYED) ? 4 : 5;
 					continue;
 				}
 				if (op == OP_GET_MEMBER || op == OP_SET_MEMBER) {
@@ -1194,21 +1512,24 @@ static int run_official(const uint8_t *blob, size_t size, const char *want, floa
 						}
 					}
 					float arg = 0.0f;
-					GVar argv[2];
+					GVar argv[4];
 					int argvn = 0;
-					if (argc > 0) {
-						const uint32_t aa = uint32_t(ri32(codeb + (ip + 2) * 4));
+					for (int a = 0; a < argc && a < 4; a++) {
+						const uint32_t aa = uint32_t(ri32(codeb + (ip + 2 + a) * 4));
 						GVar *sv = slot(stack, nstack, cvars, nc, aa);
 						if (sv) {
-							if (sv->type == V_STR) {
-								arg = float(pad_pressed(host, sv->s, name_is(meth, "is_action_just_pressed")));
-							} else {
-								arg = as_float(*sv);
+							argv[argvn++] = *sv;
+							if (a == 0) {
+								if (sv->type == V_STR) {
+									arg = float(pad_pressed(host, sv->s, input_just_mode(meth)));
+								} else {
+									arg = as_float(*sv);
+								}
 							}
-							argv[0] = *sv;
-							argvn = 1;
 						}
 					}
+					const uint32_t ra = uint32_t(ri32(codeb + (ip + 3 + argc) * 4));
+					GVar *dest = slot(stack, nstack, cvars, nc, ra);
 					if (name_is(meth, "get_node")) {
 						const char *path = (argvn && argv[0].type == V_STR) ? argv[0].s : "";
 						const int hit = walk_path(self_id, path);
@@ -1216,33 +1537,49 @@ static int run_official(const uint8_t *blob, size_t size, const char *want, floa
 							set_vm_err();
 							return ran;
 						}
-						const uint32_t ra = uint32_t(ri32(codeb + (ip + 3 + argc) * 4));
-						GVar *d = slot(stack, nstack, cvars, nc, ra);
-						if (d) {
-							*d = gv_obj(hit);
+						if (dest) {
+							*dest = gv_obj(hit);
 						}
 					} else if (is_input_name(meth)) {
-						const uint32_t ra = uint32_t(ri32(codeb + (ip + 3 + argc) * 4));
-						GVar *d = slot(stack, nstack, cvars, nc, ra);
-						if (d) {
-							*d = gv_bool(int(arg));
+						if (dest) {
+							*dest = gv_bool(int(arg));
 						}
 					} else {
-						apply_method(host, target, meth, arg, argvn ? argv : nullptr, argvn);
+						GVar retv = gv_nil();
+						if (apply_call(host, target, meth, arg, argvn ? argv : nullptr, argvn, &retv) && dest) {
+							*dest = retv;
+						}
 					}
 					(void)first;
 					ran = 1;
 					ip += 4 + iac;
 					continue;
 				}
+				if (op == OP_CONSTRUCT || op == OP_CONSTRUCT_VALIDATED) {
+					const int iac = ri32(codeb + (ip + 1) * 4);
+					const int argc = ri32(codeb + (ip + 2 + iac) * 4);
+					const uint32_t da = uint32_t(ri32(codeb + (ip + 2 + argc) * 4));
+					GVar *d = slot(stack, nstack, cvars, nc, da);
+					if (d && argc >= 2) {
+						const uint32_t a0 = uint32_t(ri32(codeb + (ip + 2) * 4));
+						const uint32_t a1 = uint32_t(ri32(codeb + (ip + 3) * 4));
+						GVar *x = slot(stack, nstack, cvars, nc, a0);
+						GVar *y = slot(stack, nstack, cvars, nc, a1);
+						if (argc >= 3) {
+							const uint32_t a2 = uint32_t(ri32(codeb + (ip + 4) * 4));
+							GVar *z = slot(stack, nstack, cvars, nc, a2);
+							*d = gv_v3(x ? as_float(*x) : 0.0f, y ? as_float(*y) : 0.0f, z ? as_float(*z) : 0.0f);
+						} else {
+							*d = gv_v2(x ? as_float(*x) : 0.0f, y ? as_float(*y) : 0.0f);
+						}
+					}
+					ip += 4 + iac;
+					continue;
+				}
 				if (op == OP_TYPE_ADJUST_BOOL || op == OP_TYPE_ADJUST_INT || op == OP_TYPE_ADJUST_FLOAT ||
 						op == OP_TYPE_ADJUST_STRING || op == OP_TYPE_ADJUST_VECTOR2 || op == OP_TYPE_ADJUST_VECTOR3 ||
-						op == OP_ASSERT || op == OP_CONSTRUCT || op == OP_CONSTRUCT_VALIDATED ||
-						op == OP_JUMP_TO_DEF_ARGUMENT) {
-					if (op == OP_CONSTRUCT || op == OP_CONSTRUCT_VALIDATED) {
-						const int iac = ri32(codeb + (ip + 1) * 4);
-						ip += 4 + iac;
-					} else if (op == OP_ASSERT) {
+						op == OP_ASSERT || op == OP_JUMP_TO_DEF_ARGUMENT) {
+					if (op == OP_ASSERT) {
 						ip += 3;
 					} else if (op == OP_JUMP_TO_DEF_ARGUMENT) {
 						ip += 1;
@@ -1265,14 +1602,14 @@ static const char *tape_action(char names[][32], int n) {
 			return names[i];
 		}
 	}
-	return "ui_accept";
+	return "";
 }
 
 static int run_tape(const uint8_t *blob, size_t size, const char *want, float delta, const ScriptVMHost *host) {
 	if (size < 8 || blob[0] != 'G' || blob[1] != 'D' || blob[2] != 'B' || blob[3] != 'C') {
 		return 0;
 	}
-	if (ru16(blob + 4) != 7) {
+	if (ru16(blob + 4) != 8) {
 		return 0;
 	}
 	const uint16_t npaths = ru16(blob + 6);
@@ -1385,7 +1722,7 @@ static int run_tape(const uint8_t *blob, size_t size, const char *want, float de
 				const float arg = sp > 0 ? stack[--sp] : 0.0f;
 				const char *nm = (ni < nstore) ? names[ni] : "rotate_y";
 				if (is_input_name(nm)) {
-					(void)pad_pressed(host, tape_action(names, nstore), name_is(nm, "is_action_just_pressed"));
+					(void)pad_pressed(host, tape_action(names, nstore), input_just_mode(nm));
 				} else {
 					apply_method(host, self, nm, arg, nullptr, 0);
 				}
@@ -1394,7 +1731,7 @@ static int run_tape(const uint8_t *blob, size_t size, const char *want, float de
 				const uint8_t ni = code[ip++];
 				const char *nm = (ni < nstore) ? names[ni] : "";
 				if (is_input_name(nm)) {
-					(void)pad_pressed(host, tape_action(names, nstore), name_is(nm, "is_action_just_pressed"));
+					(void)pad_pressed(host, tape_action(names, nstore), input_just_mode(nm));
 				} else {
 					apply_method(host, self, nm, 0.0f, nullptr, 0);
 				}

@@ -779,7 +779,7 @@ static void write_scene_sprites(const Vector<SpriteCook> &p_sprites, Vector<uint
 		u16(uint16_t(h));
 		spr.push_back(uint8_t(CLAMP(int(p_sprites[i].uv.x), 0, 255)));
 		spr.push_back(uint8_t(CLAMP(int(p_sprites[i].uv.y), 0, 255)));
-		u16(uint16_t(p_sprites[i].tex_slot & 3));
+		u16(uint16_t(p_sprites[i].tex_slot & 15));
 	}
 }
 
@@ -797,7 +797,7 @@ static void write_node_table(const Vector<SceneGather::CookedNode> &p_nodes, flo
 	o.push_back('O');
 	o.push_back('D');
 	o.push_back('E');
-	u16(7);
+	u16(8);
 	u16(uint16_t(p_nodes.size()));
 	const float s = p_scale > 0.0f ? p_scale : 1.0f;
 	for (int i = 0; i < p_nodes.size(); i++) {
@@ -841,7 +841,7 @@ static void write_hud_table(const Vector<SceneGather::HudRow> &p_hud, Vector<uin
 	o.push_back('U');
 	o.push_back('D');
 	o.push_back('0');
-	u16(7);
+	u16(8);
 	u16(uint16_t(p_hud.size()));
 	for (int i = 0; i < p_hud.size(); i++) {
 		const SceneGather::HudRow &h = p_hud[i];
@@ -886,7 +886,7 @@ static void write_tile_table(const SceneGather &p_g, Vector<uint8_t> &o) {
 	o.push_back('I');
 	o.push_back('L');
 	o.push_back('E');
-	u16(7);
+	u16(8);
 	u16(uint16_t(p_g.tiles.size()));
 	o.push_back(p_g.tile_w);
 	o.push_back(p_g.tile_h);
@@ -1037,7 +1037,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		r_out.warnings.push_back(vformat("kept first %d of %d triangles (dropped %d). Reduce mesh density.", kMaxTris, src_tris.size(), src_tris.size() - kMaxTris));
 	}
 	if (!gathered.ignored_textures.is_empty()) {
-		r_out.warnings.push_back("used first 4 albedo textures, ignored: " + String(", ").join(gathered.ignored_textures));
+		r_out.warnings.push_back(vformat("used first %d albedo textures, ignored: ", kMaxTims) + String(", ").join(gathered.ignored_textures));
 	}
 	if (gathered.sprite_count > kMaxSprites) {
 		r_out.warnings.push_back(vformat("kept first %d of %d Sprite2D nodes.", kMaxSprites, gathered.sprite_count));
@@ -1080,6 +1080,9 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		r_out.warnings.push_back("Control signals are not cooked; poll pressed/button_pressed/value in _process.");
 		r_out.warnings.push_back("Control theme/StyleBox/mouse are not cooked; pad-focus only.");
 	}
+	if (gathered.canvas_layer_count > 0) {
+		r_out.warnings.push_back("CanvasLayer offset is not cooked.");
+	}
 	if (gathered.hud_dropped > 0) {
 		r_out.warnings.push_back(vformat("kept first %d of %d HUD widgets.", kMaxHud, kMaxHud + gathered.hud_dropped));
 	}
@@ -1117,17 +1120,10 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	const int clut_x = (p_opts.region == 1 || display_w >= 640) ? 640 : 0;
 	for (int i = 0; i < images.size() && i < kMaxTims; i++) {
 		TimBlob one;
-		int dest_x = 640 + 64 * i;
-		int dest_y = 0;
-		if (display_w >= 640) {
-			const int below = ((display_h * 2) + 63) & ~63;
-			dest_x = 0;
-			dest_y = below + 64 * i;
-			if (dest_y + 64 > 512) {
-				dest_x = 640 + 64 * i;
-				dest_y = 0;
-			}
-		}
+		const int col = i % 4;
+		const int row = i / 4;
+		int dest_x = 640 + 64 * col;
+		int dest_y = 64 * row;
 		if (dest_x < display_w && dest_y < display_h * 2) {
 			r_out.errors.push_back(vformat("VRAM clash: TIM %d dest (%d,%d) overlaps %dx%d double-buffer.", i, dest_x, dest_y, display_w, display_h));
 			r_out.report = r_out.errors[r_out.errors.size() - 1];
@@ -1285,6 +1281,12 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	if (serr != OK) {
 		r_out.errors.push_back("Script cook failed.");
 		return serr;
+	}
+	for (int i = 0; i < ir.warnings.size(); i++) {
+		r_out.warnings.push_back(ir.warnings[i]);
+	}
+	if (ir.luau_count > 0) {
+		r_out.warnings.push_back("official Luau bytecode is not interpreted; first-slice tape only.");
 	}
 	for (int i = 0; i < ir.accepted.size(); i++) {
 		const String src = FileAccess::get_file_as_string(ir.accepted[i]);

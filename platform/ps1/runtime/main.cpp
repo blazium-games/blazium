@@ -42,11 +42,12 @@
 #include "script_vm.h"
 
 #ifndef BLAZIUM_PS1_COOK_ABI
-#define BLAZIUM_PS1_COOK_ABI 7
+#define BLAZIUM_PS1_COOK_ABI 8
 #endif
 
-#define OT_LEN 1024
-#define PACKET_LEN 98304
+#define OT_LEN 2048
+#define PACKET_LEN 368640
+#define TIM_SLOTS 16
 #define SCREEN_W g_screen_w
 #define SCREEN_H g_screen_h
 
@@ -145,13 +146,21 @@ static int g_active;
 static uint8_t *g_pri;
 
 #ifdef BLAZIUM_PS1_HAS_TIM
-static int16_t g_tp_x[4] = { 640, 704, 768, 832 };
-static int16_t g_tp_y[4] = { 0, 0, 0, 0 };
-static int16_t g_cl_x[4] = { 0, 0, 0, 0 };
-static int16_t g_cl_y[4] = { 480, 479, 478, 477 };
+static int16_t g_tp_x[TIM_SLOTS] = {
+	640, 704, 768, 832, 640, 704, 768, 832, 640, 704, 768, 832, 640, 704, 768, 832
+};
+static int16_t g_tp_y[TIM_SLOTS] = {
+	0, 0, 0, 0, 64, 64, 64, 64, 128, 128, 128, 128, 192, 192, 192, 192
+};
+static int16_t g_cl_x[TIM_SLOTS] = {
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+static int16_t g_cl_y[TIM_SLOTS] = {
+	480, 479, 478, 477, 476, 475, 474, 473, 472, 471, 470, 469, 468, 467, 466, 465
+};
 
 static void record_tim_dest(int slot, const uint8_t *tim, size_t remain) {
-	if (slot < 0 || slot >= 4 || remain < 20 || tim[0] != 0x10) {
+	if (slot < 0 || slot >= TIM_SLOTS || remain < 20 || tim[0] != 0x10) {
 		return;
 	}
 	const uint8_t *p = tim + 8;
@@ -389,7 +398,7 @@ static void draw_cooked_tiles(uint16_t *tpages, uint16_t *cluts) {
 		setXY0(p, tiles[i].x, tiles[i].y);
 		setWH(p, tw, th);
 		setUV0(p, tiles[i].u, tiles[i].v);
-		const int slot = tiles[i].tex & 3;
+		const int slot = tiles[i].tex & 15;
 		p->clut = cluts[slot];
 		addPrim(&g_fb[g_active].ot[1], p);
 		g_pri = (uint8_t *)(p + 1);
@@ -433,7 +442,7 @@ static void draw_cooked_hud(uint16_t *cluts) {
 			setXY0(p, hud[i].x, hud[i].y);
 			setWH(p, hud[i].w, hud[i].h);
 			setUV0(p, 0, 0);
-			p->clut = cluts[hud[i].tex & 3];
+			p->clut = cluts[hud[i].tex & 15];
 			addPrim(&g_fb[g_active].ot[1], p);
 			g_pri = (uint8_t *)(p + 1);
 		} else {
@@ -541,7 +550,7 @@ static int draw_tri_range(const CookedTri *tris, uint16_t tri_n, uint16_t lo, ui
 		gte_stsxy2(&poly->x2);
 		setUV3(poly, tris[i].u0, tris[i].v0, tris[i].u1, tris[i].v1, tris[i].u2, tris[i].v2);
 		{
-			const uint8_t slot = uint8_t(tris[i].tex & 3);
+			const uint8_t slot = uint8_t(tris[i].tex & 15);
 			poly->tpage = tpages[slot];
 			poly->clut = cluts[slot];
 		}
@@ -770,7 +779,7 @@ int main(int argc, const char **argv) {
 	if (cooked_node_size >= 8 && cooked_node[0] == 'N' && cooked_node[1] == 'O' && cooked_node[2] == 'D' && cooked_node[3] == 'E') {
 		const uint16_t ver = uint16_t(cooked_node[4] | (cooked_node[5] << 8));
 		const uint16_t nc = uint16_t(cooked_node[6] | (cooked_node[7] << 8));
-		if (ver == 7) {
+		if (ver == 8) {
 			ScriptVMNode parsed[PS1_MAX_NODES];
 			const uint8_t *p = cooked_node + 8;
 			const uint8_t *end = cooked_node + cooked_node_size;
@@ -812,7 +821,7 @@ int main(int argc, const char **argv) {
 	if (cooked_hud_size >= 8 && cooked_hud[0] == 'H' && cooked_hud[1] == 'U' && cooked_hud[2] == 'D' && cooked_hud[3] == '0') {
 		const uint16_t ver = uint16_t(cooked_hud[4] | (cooked_hud[5] << 8));
 		const uint16_t nc = uint16_t(cooked_hud[6] | (cooked_hud[7] << 8));
-		if (ver == 7) {
+		if (ver == 8) {
 			ScriptVMHud parsed[PS1_MAX_HUD];
 			const uint8_t *p = cooked_hud + 8;
 			const uint8_t *end = cooked_hud + cooked_hud_size;
@@ -871,7 +880,7 @@ int main(int argc, const char **argv) {
 		const uint16_t nc = uint16_t(cooked_tile[6] | (cooked_tile[7] << 8));
 		g_tile_w = cooked_tile[8];
 		g_tile_h = cooked_tile[9];
-		if (ver == 7) {
+		if (ver == 8) {
 			ScriptVMTile parsed[PS1_MAX_TILES];
 			const uint8_t *p = cooked_tile + 10;
 			const uint8_t *end = cooked_tile + cooked_tile_size;
@@ -892,14 +901,14 @@ int main(int argc, const char **argv) {
 	}
 #endif
 	const int font = FntOpen(8, 16, SCREEN_W - 16, SCREEN_H - 40, 0, 256);
-	uint16_t tpages[4];
-	uint16_t cluts[4];
-	for (int i = 0; i < 4; i++) {
+	uint16_t tpages[TIM_SLOTS];
+	uint16_t cluts[TIM_SLOTS];
+	for (int i = 0; i < TIM_SLOTS; i++) {
 #ifdef BLAZIUM_PS1_HAS_TIM
 		tpages[i] = getTPage(0, 0, g_tp_x[i], g_tp_y[i]);
 		cluts[i] = getClut(g_cl_x[i], g_cl_y[i]);
 #else
-		tpages[i] = getTPage(0, 0, 640 + 64 * i, 0);
+		tpages[i] = getTPage(0, 0, 640 + 64 * (i % 4), 64 * (i / 4));
 		cluts[i] = getClut(0, 480 - i);
 #endif
 	}
@@ -962,7 +971,7 @@ int main(int argc, const char **argv) {
 		draw_cooked_sprites(clut);
 #endif
 		{
-			uint16_t dummy_tp[4] = { 0, 0, 0, 0 };
+			uint16_t dummy_tp[TIM_SLOTS] = {};
 			draw_cooked_tiles(dummy_tp, cluts);
 			draw_cooked_hud(cluts);
 		}
