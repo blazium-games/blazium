@@ -23,7 +23,7 @@ struct XaBlob {
 	int sample_rate = 37800;
 };
 
-// MIT XA-style ADPCM (filter-0), sector-padded. Do not paste GPL encoders.
+// MIT CD-ROM XA Form 2 ADPCM sectors (filter-0). Do not paste GPL encoders.
 Error write_xa_pcm(const Vector<int16_t> &p_pcm, int p_sample_rate, XaBlob &r_out);
 
 } // namespace ps1_cook

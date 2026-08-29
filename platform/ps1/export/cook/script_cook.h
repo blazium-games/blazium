@@ -52,6 +52,7 @@ struct ScriptIR {
 };
 
 bool source_is_rejected(const String &p_source, String &r_why);
+bool method_is_allowlisted(const String &p_name);
 Error cook_scripts(const String &p_export_dir, ScriptIR &r_out);
 Error write_script_ir(const String &p_export_dir, const ScriptIR &p_ir);
 

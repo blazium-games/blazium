@@ -42,7 +42,7 @@
 #include "script_vm.h"
 
 #ifndef BLAZIUM_PS1_COOK_ABI
-#define BLAZIUM_PS1_COOK_ABI 4
+#define BLAZIUM_PS1_COOK_ABI 5
 #endif
 
 #define OT_LEN 1024
@@ -92,6 +92,11 @@ extern const size_t cooked_luau_size;
 #ifdef BLAZIUM_PS1_HAS_STR
 extern const uint8_t cooked_str[];
 extern const size_t cooked_str_size;
+#endif
+
+#ifdef BLAZIUM_PS1_HAS_XA
+extern const uint8_t cooked_xa[];
+extern const size_t cooked_xa_size;
 #endif
 
 static MATRIX g_color_mtx = {
@@ -544,7 +549,15 @@ int main(int argc, const char **argv) {
 	StartPAD();
 	ChangeClearPAD(0);
 #ifdef BLAZIUM_PS1_HAS_STR
-	fmv_play_embedded(cooked_str, cooked_str_size, SCREEN_W, SCREEN_H, g_pad[0]);
+	{
+		const uint8_t *xa = nullptr;
+		size_t xa_n = 0;
+#ifdef BLAZIUM_PS1_HAS_XA
+		xa = cooked_xa;
+		xa_n = cooked_xa_size;
+#endif
+		fmv_play_embedded(cooked_str, cooked_str_size, SCREEN_W, SCREEN_H, g_pad[0], xa, xa_n);
+	}
 #endif
 	{
 		const uint8_t *gdbc = nullptr;
@@ -596,6 +609,7 @@ int main(int argc, const char **argv) {
 			host.pos_x = &pos.vx;
 			host.pos_y = &pos.vy;
 			host.pos_z = &pos.vz;
+			host.pad34 = g_pad[0];
 			if (!script_vm_process(1.0f / 60.0f, &host)) {
 				rot.vy += rot_step;
 			}
@@ -627,7 +641,10 @@ int main(int argc, const char **argv) {
 		}
 		draw_cooked_sprites(clut);
 #endif
-		g_pri = (uint8_t *)FntSort(&g_fb[g_active].ot[1], g_pri, 8, 200, "HUD SPRT AABB L3 FOG MDEC");
+		{
+			const char *err = script_vm_last_error();
+			g_pri = (uint8_t *)FntSort(&g_fb[g_active].ot[1], g_pri, 8, 200, (err && err[0]) ? err : "HUD SPRT AABB L3 FOG MDEC");
+		}
 		(void)font;
 		(void)frames;
 		flip_frame();

@@ -5,15 +5,14 @@
 /*                               BLAZIUM                                  */
 /*                        https://blazium.app                             */
 /**************************************************************************/
-/* Copyright (c) 2024-present Blazium Engine contributors.                */
-/* SPDX-License-Identifier: MIT                                           */
-/**************************************************************************/
 
 #include "script_cook.h"
 
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
+#include "core/variant/variant.h"
 #include "modules/gdscript/gdscript.h"
+#include "modules/gdscript/gdscript_function.h"
 
 #ifdef MODULE_LUAU_MODULE_ENABLED
 #include "modules/luau_module/luau.h"
@@ -21,12 +20,12 @@
 
 namespace ps1_cook {
 
-static const uint8_t kOpReturn = 0;
-static const uint8_t kOpLoadConstF = 1;
-static const uint8_t kOpLoadArg = 2;
-static const uint8_t kOpMul = 3;
-static const uint8_t kOpAdd = 4;
-static const uint8_t kOpCallSelf = 5;
+static const uint8_t kTapeReturn = 0;
+static const uint8_t kTapeLoadConstF = 1;
+static const uint8_t kTapeLoadArg = 2;
+static const uint8_t kTapeMul = 3;
+static const uint8_t kTapeAdd = 4;
+static const uint8_t kTapeCallSelf = 5;
 
 static String strip_line_comments(const String &p_source) {
 	PackedStringArray lines = p_source.split("\n");
@@ -67,6 +66,13 @@ bool source_is_rejected(const String &p_source, String &r_why) {
 	return false;
 }
 
+bool method_is_allowlisted(const String &p_name) {
+	return p_name == "rotate_x" || p_name == "rotate_y" || p_name == "rotate_z" ||
+			p_name == "translate" || p_name == "get_node" ||
+			p_name == "is_action_pressed" || p_name == "is_action_just_pressed" ||
+			p_name == "_ready" || p_name == "_process";
+}
+
 static bool skip_script_dir(const String &p_name) {
 	return p_name == ".godot" || p_name == "export" || p_name == "tests" || p_name == "tools";
 }
@@ -76,16 +82,22 @@ static void append_u16(Vector<uint8_t> &o, uint16_t v) {
 	o.push_back(uint8_t(v >> 8));
 }
 
+static void append_u32(Vector<uint8_t> &o, uint32_t v) {
+	append_u16(o, uint16_t(v & 0xffff));
+	append_u16(o, uint16_t(v >> 16));
+}
+
+static void append_i32(Vector<uint8_t> &o, int32_t v) {
+	append_u32(o, uint32_t(v));
+}
+
 static void append_f32(Vector<uint8_t> &o, float v) {
 	union {
 		float f;
 		uint32_t u;
 	} x;
 	x.f = v;
-	o.push_back(uint8_t(x.u & 0xff));
-	o.push_back(uint8_t((x.u >> 8) & 0xff));
-	o.push_back(uint8_t((x.u >> 16) & 0xff));
-	o.push_back(uint8_t((x.u >> 24) & 0xff));
+	append_u32(o, x.u);
 }
 
 static void append_str(Vector<uint8_t> &o, const String &s) {
@@ -96,35 +108,292 @@ static void append_str(Vector<uint8_t> &o, const String &s) {
 	}
 }
 
-static Vector<uint8_t> lower_process(const String &p_path, const String &p_src, float &r_rate) {
-	Vector<uint8_t> code;
-	r_rate = 0.4f;
-	if (p_src.contains("rotate_y") && p_src.contains("delta")) {
-		code.push_back(kOpLoadArg);
-		code.push_back(0);
-		code.push_back(kOpLoadConstF);
-		code.push_back(0);
-		code.push_back(kOpMul);
-		code.push_back(kOpCallSelf);
-		code.push_back(0);
-		code.push_back(kOpReturn);
-		if (p_src.contains("0.4")) {
-			r_rate = 0.4f;
-		}
-	} else if (p_src.contains("rotate_y")) {
-		code.push_back(kOpLoadConstF);
-		code.push_back(0);
-		code.push_back(kOpCallSelf);
-		code.push_back(0);
-		code.push_back(kOpReturn);
-	} else {
-		code.push_back(kOpReturn);
-	}
-	(void)p_path;
-	return code;
+static int host_ptr_words() {
+	return int(sizeof(void *) / sizeof(int));
 }
 
-static Vector<uint8_t> pack_gdbc(const Vector<String> &p_paths, const Vector<String> &p_sources) {
+// Host instruction length (words). Returns 0 on unknown.
+static int host_opcode_size(const Vector<int> &code, int ip) {
+	using Op = GDScriptFunction::Opcode;
+	if (ip < 0 || ip >= code.size()) {
+		return 0;
+	}
+	const int op = code[ip];
+	const int ptrw = host_ptr_words();
+	switch (op) {
+		case Op::OPCODE_OPERATOR:
+			return 7 + ptrw;
+		case Op::OPCODE_OPERATOR_VALIDATED:
+			return 5;
+		case Op::OPCODE_ASSIGN:
+			return 3;
+		case Op::OPCODE_ASSIGN_NULL:
+		case Op::OPCODE_ASSIGN_TRUE:
+		case Op::OPCODE_ASSIGN_FALSE:
+			return 2;
+		case Op::OPCODE_ASSIGN_TYPED_BUILTIN:
+			return 4;
+		case Op::OPCODE_JUMP:
+			return 2;
+		case Op::OPCODE_JUMP_IF:
+		case Op::OPCODE_JUMP_IF_NOT:
+		case Op::OPCODE_JUMP_IF_SHARED:
+			return 3;
+		case Op::OPCODE_JUMP_TO_DEF_ARGUMENT:
+			return 1;
+		case Op::OPCODE_RETURN:
+			return 2;
+		case Op::OPCODE_RETURN_TYPED_BUILTIN:
+			return 3;
+		case Op::OPCODE_END:
+		case Op::OPCODE_BREAKPOINT:
+			return 1;
+		case Op::OPCODE_LINE:
+			return 2;
+		case Op::OPCODE_GET_MEMBER:
+		case Op::OPCODE_SET_MEMBER:
+			return 3;
+		case Op::OPCODE_ASSERT:
+			return 3;
+		case Op::OPCODE_TYPE_ADJUST_BOOL:
+		case Op::OPCODE_TYPE_ADJUST_INT:
+		case Op::OPCODE_TYPE_ADJUST_FLOAT:
+		case Op::OPCODE_TYPE_ADJUST_STRING:
+		case Op::OPCODE_TYPE_ADJUST_VECTOR2:
+		case Op::OPCODE_TYPE_ADJUST_VECTOR3:
+			return 2;
+		case Op::OPCODE_CALL:
+		case Op::OPCODE_CALL_RETURN:
+		case Op::OPCODE_CALL_ASYNC:
+		case Op::OPCODE_CALL_METHOD_BIND:
+		case Op::OPCODE_CALL_METHOD_BIND_RET:
+		case Op::OPCODE_CALL_METHOD_BIND_VALIDATED_RETURN:
+		case Op::OPCODE_CALL_METHOD_BIND_VALIDATED_NO_RETURN:
+		case Op::OPCODE_CALL_NATIVE_STATIC:
+		case Op::OPCODE_CALL_NATIVE_STATIC_VALIDATED_RETURN:
+		case Op::OPCODE_CALL_NATIVE_STATIC_VALIDATED_NO_RETURN: {
+			if (ip + 1 >= code.size()) {
+				return 0;
+			}
+			const int iac = code[ip + 1];
+			return 4 + iac;
+		}
+		case Op::OPCODE_CONSTRUCT:
+		case Op::OPCODE_CONSTRUCT_VALIDATED: {
+			if (ip + 1 >= code.size()) {
+				return 0;
+			}
+			const int iac = code[ip + 1];
+			return 4 + iac;
+		}
+		default:
+			return 0;
+	}
+}
+
+static bool opcode_forbidden(int op) {
+	using Op = GDScriptFunction::Opcode;
+	return op == Op::OPCODE_AWAIT || op == Op::OPCODE_AWAIT_RESUME ||
+			op == Op::OPCODE_CREATE_LAMBDA || op == Op::OPCODE_CREATE_SELF_LAMBDA ||
+			op == Op::OPCODE_CALL_ASYNC || op == Op::OPCODE_STORE_GLOBAL ||
+			op == Op::OPCODE_STORE_NAMED_GLOBAL;
+}
+
+static bool opcode_allowed(int op) {
+	using Op = GDScriptFunction::Opcode;
+	if (opcode_forbidden(op)) {
+		return false;
+	}
+	return op == Op::OPCODE_ASSIGN || op == Op::OPCODE_ASSIGN_NULL || op == Op::OPCODE_ASSIGN_TRUE ||
+			op == Op::OPCODE_ASSIGN_FALSE || op == Op::OPCODE_ASSIGN_TYPED_BUILTIN ||
+			op == Op::OPCODE_OPERATOR || op == Op::OPCODE_OPERATOR_VALIDATED ||
+			op == Op::OPCODE_JUMP || op == Op::OPCODE_JUMP_IF || op == Op::OPCODE_JUMP_IF_NOT ||
+			op == Op::OPCODE_JUMP_TO_DEF_ARGUMENT || op == Op::OPCODE_JUMP_IF_SHARED ||
+			op == Op::OPCODE_RETURN || op == Op::OPCODE_RETURN_TYPED_BUILTIN ||
+			op == Op::OPCODE_END || op == Op::OPCODE_LINE || op == Op::OPCODE_BREAKPOINT ||
+			op == Op::OPCODE_ASSERT ||
+			op == Op::OPCODE_TYPE_ADJUST_BOOL || op == Op::OPCODE_TYPE_ADJUST_INT ||
+			op == Op::OPCODE_TYPE_ADJUST_FLOAT || op == Op::OPCODE_TYPE_ADJUST_STRING ||
+			op == Op::OPCODE_TYPE_ADJUST_VECTOR2 || op == Op::OPCODE_TYPE_ADJUST_VECTOR3 ||
+			op == Op::OPCODE_CONSTRUCT || op == Op::OPCODE_CONSTRUCT_VALIDATED ||
+			op == Op::OPCODE_CALL || op == Op::OPCODE_CALL_RETURN ||
+			op == Op::OPCODE_CALL_METHOD_BIND || op == Op::OPCODE_CALL_METHOD_BIND_RET ||
+			op == Op::OPCODE_CALL_METHOD_BIND_VALIDATED_RETURN ||
+			op == Op::OPCODE_CALL_METHOD_BIND_VALIDATED_NO_RETURN ||
+			op == Op::OPCODE_CALL_NATIVE_STATIC ||
+			op == Op::OPCODE_CALL_NATIVE_STATIC_VALIDATED_RETURN ||
+			op == Op::OPCODE_CALL_NATIVE_STATIC_VALIDATED_NO_RETURN ||
+			op == Op::OPCODE_GET_MEMBER || op == Op::OPCODE_SET_MEMBER;
+}
+
+static String call_name_at(const GDScriptFunction *fn, const Vector<int> &code, int ip) {
+	using Op = GDScriptFunction::Opcode;
+	const int op = code[ip];
+	if (ip + 1 >= code.size()) {
+		return String();
+	}
+	const int iac = code[ip + 1];
+	const int name_at = ip + 3 + iac;
+	if (name_at >= code.size()) {
+		return String();
+	}
+	if (op == Op::OPCODE_CALL || op == Op::OPCODE_CALL_RETURN) {
+		return String(fn->get_global_name(code[name_at]));
+	}
+	if (op == Op::OPCODE_CALL_METHOD_BIND || op == Op::OPCODE_CALL_METHOD_BIND_RET ||
+			op == Op::OPCODE_CALL_METHOD_BIND_VALIDATED_RETURN ||
+			op == Op::OPCODE_CALL_METHOD_BIND_VALIDATED_NO_RETURN) {
+		return String(fn->get_method_bind_name(code[name_at]));
+	}
+	if (op == Op::OPCODE_CALL_NATIVE_STATIC ||
+			op == Op::OPCODE_CALL_NATIVE_STATIC_VALIDATED_RETURN ||
+			op == Op::OPCODE_CALL_NATIVE_STATIC_VALIDATED_NO_RETURN) {
+		const int meth_at = ip + 2 + iac;
+		if (meth_at >= code.size()) {
+			return String();
+		}
+		return String(fn->get_method_bind_name(code[meth_at]));
+	}
+	return String();
+}
+
+static Error scan_and_normalize(const String &p_path, GDScriptFunction *fn, Vector<int> &r_norm, String &r_err) {
+	using Op = GDScriptFunction::Opcode;
+	const Vector<int> &code = fn->get_code();
+	const int n = fn->get_code_size() > 0 ? fn->get_code_size() : code.size();
+	for (int ip = 0; ip < n;) {
+		const int op = code[ip];
+		const int sz = host_opcode_size(code, ip);
+		if (sz <= 0) {
+			r_err = vformat("%s:%s:%d unknown opcode %d", p_path, String(fn->get_name()), ip, op);
+			return ERR_UNCONFIGURED;
+		}
+		if (!opcode_allowed(op)) {
+			r_err = vformat("%s:%s:%d opcode %d is not in the PS1 first-slice table", p_path, String(fn->get_name()), ip, op);
+			return ERR_UNCONFIGURED;
+		}
+		if (op == Op::OPCODE_CALL || op == Op::OPCODE_CALL_RETURN || op == Op::OPCODE_CALL_METHOD_BIND ||
+				op == Op::OPCODE_CALL_METHOD_BIND_RET || op == Op::OPCODE_CALL_METHOD_BIND_VALIDATED_RETURN ||
+				op == Op::OPCODE_CALL_METHOD_BIND_VALIDATED_NO_RETURN || op == Op::OPCODE_CALL_NATIVE_STATIC ||
+				op == Op::OPCODE_CALL_NATIVE_STATIC_VALIDATED_RETURN || op == Op::OPCODE_CALL_NATIVE_STATIC_VALIDATED_NO_RETURN) {
+			const String meth = call_name_at(fn, code, ip);
+			if (!meth.is_empty() && !method_is_allowlisted(meth)) {
+				r_err = vformat("%s:%s:%d unbound method '%s'", p_path, String(fn->get_name()), ip, meth);
+				return ERR_UNCONFIGURED;
+			}
+		}
+		if (op == Op::OPCODE_OPERATOR) {
+			r_norm.push_back(Op::OPCODE_OPERATOR);
+			r_norm.push_back(code[ip + 1]);
+			r_norm.push_back(code[ip + 2]);
+			r_norm.push_back(code[ip + 3]);
+			r_norm.push_back(code[ip + 4]);
+		} else if (op == Op::OPCODE_OPERATOR_VALIDATED) {
+			r_norm.push_back(Op::OPCODE_OPERATOR);
+			r_norm.push_back(code[ip + 1]);
+			r_norm.push_back(code[ip + 2]);
+			r_norm.push_back(code[ip + 3]);
+			r_norm.push_back(fn->get_validated_operator_kind(code[ip + 4]));
+		} else {
+			for (int i = 0; i < sz && ip + i < code.size(); i++) {
+				r_norm.push_back(code[ip + i]);
+			}
+		}
+		ip += sz;
+	}
+	return OK;
+}
+
+static void append_variant(Vector<uint8_t> &o, const Variant &v) {
+	const int t = int(v.get_type());
+	o.push_back(uint8_t(t));
+	switch (v.get_type()) {
+		case Variant::BOOL:
+			o.push_back(bool(v) ? 1 : 0);
+			break;
+		case Variant::INT:
+			append_i32(o, int32_t(int64_t(v)));
+			break;
+		case Variant::FLOAT:
+			append_f32(o, float(v));
+			break;
+		case Variant::STRING:
+		case Variant::STRING_NAME:
+			append_str(o, String(v));
+			break;
+		case Variant::VECTOR2: {
+			const Vector2 p = v;
+			append_f32(o, p.x);
+			append_f32(o, p.y);
+		} break;
+		case Variant::VECTOR3: {
+			const Vector3 p = v;
+			append_f32(o, p.x);
+			append_f32(o, p.y);
+			append_f32(o, p.z);
+		} break;
+		default:
+			break;
+	}
+}
+
+static Vector<uint8_t> pack_official_gdbc(const Vector<String> &p_paths, const Vector<Ref<GDScript>> &p_scripts, ScriptIR &r_ir) {
+	Vector<uint8_t> out;
+	out.push_back('G');
+	out.push_back('D');
+	out.push_back('B');
+	out.push_back('C');
+	append_u16(out, 5);
+	append_u16(out, uint16_t(p_paths.size()));
+	for (int s = 0; s < p_paths.size(); s++) {
+		append_str(out, p_paths[s]);
+		const HashMap<StringName, GDScriptFunction *> &fns = p_scripts[s]->get_member_functions();
+		Vector<StringName> names;
+		for (const KeyValue<StringName, GDScriptFunction *> &E : fns) {
+			names.push_back(E.key);
+		}
+		append_u16(out, uint16_t(names.size()));
+		for (int i = 0; i < names.size(); i++) {
+			GDScriptFunction *fn = fns[names[i]];
+			append_str(out, String(names[i]));
+			out.push_back(uint8_t(fn->get_argument_count()));
+			append_u16(out, uint16_t(fn->get_max_stack_size()));
+			Vector<int> norm;
+			String err;
+			if (scan_and_normalize(p_paths[s], fn, norm, err) != OK) {
+				r_ir.rejected.push_back(err);
+				r_ir.map_text += "REJECT " + err + "\n";
+				append_u16(out, 0);
+				append_u16(out, 0);
+				append_u16(out, 0);
+				append_u16(out, 0);
+				continue;
+			}
+			append_u16(out, uint16_t(norm.size()));
+			for (int c = 0; c < norm.size(); c++) {
+				append_i32(out, norm[c]);
+			}
+			const int kc = fn->get_constant_count();
+			append_u16(out, uint16_t(kc));
+			for (int c = 0; c < kc; c++) {
+				append_variant(out, fn->get_constant(c));
+			}
+			const int gn = fn->get_global_names_count();
+			append_u16(out, uint16_t(gn));
+			for (int g = 0; g < gn; g++) {
+				append_str(out, String(fn->get_global_name(g)));
+			}
+			const int mc = fn->get_method_bind_count();
+			append_u16(out, uint16_t(mc));
+			for (int m = 0; m < mc; m++) {
+				append_str(out, String(fn->get_method_bind_name(m)));
+			}
+		}
+	}
+	return out;
+}
+
+static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vector<String> &p_sources) {
 	Vector<uint8_t> out;
 	out.push_back('G');
 	out.push_back('D');
@@ -138,9 +407,30 @@ static Vector<uint8_t> pack_gdbc(const Vector<String> &p_paths, const Vector<Str
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int i = 0; i < p_paths.size(); i++) {
 		float rate = 0.4f;
-		const Vector<uint8_t> code = lower_process(p_paths[i], p_sources[i], rate);
+		if (p_sources[i].contains("0.4")) {
+			rate = 0.4f;
+		}
+		Vector<uint8_t> code;
+		if (p_sources[i].contains("rotate_y") && p_sources[i].contains("delta")) {
+			code.push_back(kTapeLoadArg);
+			code.push_back(0);
+			code.push_back(kTapeLoadConstF);
+			code.push_back(0);
+			code.push_back(kTapeMul);
+			code.push_back(kTapeCallSelf);
+			code.push_back(0);
+			code.push_back(kTapeReturn);
+		} else if (p_sources[i].contains("rotate_y")) {
+			code.push_back(kTapeLoadConstF);
+			code.push_back(0);
+			code.push_back(kTapeCallSelf);
+			code.push_back(0);
+			code.push_back(kTapeReturn);
+		} else {
+			code.push_back(kTapeReturn);
+		}
 		append_str(out, "_process");
-		out.push_back(1); // nargs
+		out.push_back(1);
 		append_u16(out, 1);
 		append_u16(out, uint16_t(code.size()));
 		append_f32(out, rate);
@@ -192,7 +482,24 @@ static void walk_scripts(const String &p_dir, ScriptIR &r_out) {
 
 Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 	walk_scripts("res://", r_out);
-	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 4)\n", r_out.rotate_y);
+	for (int i = 0; i < r_out.attached.size(); i++) {
+		const String path = r_out.attached[i];
+		if (r_out.accepted.has(path) || r_out.rejected.find(path) >= 0) {
+			continue;
+		}
+		if (!FileAccess::exists(path)) {
+			continue;
+		}
+		const String src = FileAccess::get_file_as_string(path);
+		String why;
+		if (source_is_rejected(src, why)) {
+			r_out.rejected.push_back(path + " : " + why);
+		} else if (!r_out.accepted.has(path)) {
+			r_out.accepted.push_back(path);
+		}
+	}
+
+	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 5)\n", r_out.rotate_y);
 	for (int i = 0; i < r_out.accepted.size(); i++) {
 		r_out.map_text += "OK " + r_out.accepted[i] + "\n";
 	}
@@ -201,7 +508,7 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 	}
 
 	Vector<String> gd_paths;
-	Vector<String> gd_src;
+	Vector<Ref<GDScript>> gd_scripts;
 	Vector<String> lu_paths;
 	Vector<String> lu_src;
 	for (int i = 0; i < r_out.accepted.size(); i++) {
@@ -217,7 +524,7 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 				continue;
 			}
 			gd_paths.push_back(path);
-			gd_src.push_back(src);
+			gd_scripts.push_back(script);
 		} else if (path.ends_with(".luau")) {
 #ifdef MODULE_LUAU_MODULE_ENABLED
 			const PackedByteArray bc = luau_module::Luau::compile(src);
@@ -235,7 +542,7 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 	r_out.luau_count = uint16_t(lu_paths.size());
 
 	if (!gd_paths.is_empty()) {
-		const Vector<uint8_t> gdbc = pack_gdbc(gd_paths, gd_src);
+		const Vector<uint8_t> gdbc = pack_official_gdbc(gd_paths, gd_scripts, r_out);
 		r_out.gdbc_path = p_export_dir.path_join("SCRIPT.GD.BC");
 		Ref<FileAccess> gf = FileAccess::open(r_out.gdbc_path, FileAccess::WRITE);
 		ERR_FAIL_COND_V(gf.is_null(), ERR_CANT_CREATE);
@@ -256,9 +563,9 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 #else
 		append_u16(lubc, 0);
 #endif
-		const Vector<uint8_t> lowered = pack_gdbc(lu_paths, lu_src);
-		for (int i = 0; i < lowered.size(); i++) {
-			lubc.push_back(lowered[i]);
+		const Vector<uint8_t> tape = pack_luau_tape(lu_paths, lu_src);
+		for (int i = 0; i < tape.size(); i++) {
+			lubc.push_back(tape[i]);
 		}
 		r_out.luau_path = p_export_dir.path_join("SCRIPT.LU.BC");
 		Ref<FileAccess> lf = FileAccess::open(r_out.luau_path, FileAccess::WRITE);

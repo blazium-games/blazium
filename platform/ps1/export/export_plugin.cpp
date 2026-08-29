@@ -210,7 +210,7 @@ bool EditorExportPlatformPS1::has_valid_project_configuration(const Ref<EditorEx
 		return false;
 	}
 	r_error += "Note: audio is WAV-only (else a beep). Display is NTSC/PAL at 256/320/512/640.\n";
-	r_error += "Note: cook keeps first 2048 triangles and first 4 albedo TIMs. Guest VM first-slice: _process + rotate_y/Input.\n";
+	r_error += "Note: cook keeps first 2048 triangles and first 4 albedo TIMs. Guest VM: official GDScript opcodes (_ready/_process) + Luau tape.\n";
 	return true;
 }
 

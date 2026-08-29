@@ -353,40 +353,6 @@ static Ref<Image> try_load_png(const String &p_path) {
 	return Ref<Image>();
 }
 
-static Ref<Image> load_industrial_image(Vector<CookTri> &r_tris, Vector<Ref<Image>> &r_images, Vector<String> &r_names, String &r_src_name) {
-	const String glb = "res://assets/Industrial_exterior_v2.glb";
-	if (ResourceLoader::exists(glb)) {
-		Ref<PackedScene> ps = ResourceLoader::load(glb);
-		if (ps.is_valid()) {
-			Node *root = ps->instantiate();
-			SceneGather g;
-			walk_scene(root, g);
-			r_tris = g.tris;
-			r_images = g.images;
-			r_names = g.image_names;
-			memdelete(root);
-			if (!r_images.is_empty()) {
-				r_src_name = glb;
-				return r_images[0];
-			}
-		}
-	}
-	const String png = "res://assets/Industrial_exterior_v2_Concrete.png";
-	Ref<Image> from_png = try_load_png(png);
-	if (from_png.is_valid()) {
-		r_src_name = png;
-		r_images.push_back(from_png);
-		r_names.push_back(png);
-		return from_png;
-	}
-	Ref<Image> fallback = Image::create_empty(64, 64, false, Image::FORMAT_RGBA8);
-	fallback->fill(Color(0.85f, 0.55f, 0.15f));
-	r_src_name = "res://generated/fallback.png";
-	r_images.push_back(fallback);
-	r_names.push_back(r_src_name);
-	return fallback;
-}
-
 static void pcm_from_wav(const Ref<AudioStreamWAV> &p_wav, Vector<int16_t> &r_pcm, int &r_rate) {
 	r_rate = p_wav->get_mix_rate() > 0 ? p_wav->get_mix_rate() : 22050;
 	const Vector<uint8_t> data = p_wav->get_data();
@@ -523,12 +489,32 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	Vector<CookTri> src_tris = gathered.tris;
 	Vector<Ref<Image>> images = gathered.images;
 	Vector<String> image_names = gathered.image_names;
+	bool have_fmv = false;
+	{
+		Ref<DirAccess> fmv_peek = DirAccess::open("res://fmv");
+		if (fmv_peek.is_valid()) {
+			fmv_peek->list_dir_begin();
+			for (String n = fmv_peek->get_next(); !n.is_empty(); n = fmv_peek->get_next()) {
+				if (n.ends_with(".png") || n.ends_with(".jpg")) {
+					have_fmv = true;
+					break;
+				}
+			}
+		}
+	}
 	if (src_tris.is_empty()) {
-		images.clear();
-		image_names.clear();
-		load_industrial_image(src_tris, images, image_names, src_name);
-		used_industrial = true;
-		r_out.warnings.push_back("main_scene has no MeshInstance3D; used Industrial GLB/PNG fallback.");
+		if (gathered.sprites.is_empty() && !gathered.video && !have_fmv) {
+			r_out.errors.push_back("main_scene has no MeshInstance3D, Sprite2D, or FMV; not substituting Industrial.");
+			r_out.report = r_out.errors[0];
+			if (root) {
+				memdelete(root);
+			}
+			return ERR_UNCONFIGURED;
+		}
+		r_out.infos.push_back("main_scene has no MeshInstance3D; guest is sprite/FMV-only.");
+		if (src_name.is_empty()) {
+			src_name = main_scene;
+		}
 	} else if (images.is_empty()) {
 		const String png = "res://assets/Industrial_exterior_v2_Concrete.png";
 		Ref<Image> from_png = try_load_png(png);
@@ -782,6 +768,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	}
 
 	ScriptIR ir;
+	ir.attached = gathered.attached_scripts;
 	const Error serr = cook_scripts(p_export_dir, ir);
 	if (serr != OK) {
 		r_out.errors.push_back("Script cook failed.");

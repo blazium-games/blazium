@@ -24,7 +24,7 @@ struct StrBlob {
 	int height = 0;
 };
 
-// MIT STR container: 'FSTR' + frames of 16×16 RGB555 tiles (MDEC-sized). Guest blits + DecDCTReset.
+// MIT STR sectors (0x0160) + MDEC RLE. Guest DecDCTin. No psxpress encode.
 Error write_str_frames(const Vector<Ref<Image>> &p_frames, StrBlob &r_out);
 
 } // namespace ps1_cook
