@@ -78,8 +78,23 @@ void PS1::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("load_hitboxes", "path"), &PS1::load_hitboxes);
 	ClassDB::bind_method(D_METHOD("unload_hitboxes", "path"), &PS1::unload_hitboxes);
 	ClassDB::bind_method(D_METHOD("can_load_hitboxes", "path"), &PS1::can_load_hitboxes);
+	ClassDB::bind_method(D_METHOD("is_hitboxes_loaded", "path"), &PS1::is_hitboxes_loaded);
 	ClassDB::bind_method(D_METHOD("load_cameras", "path"), &PS1::load_cameras);
 	ClassDB::bind_method(D_METHOD("unload_cameras", "path"), &PS1::unload_cameras);
+	ClassDB::bind_method(D_METHOD("is_cameras_loaded", "path"), &PS1::is_cameras_loaded);
+	ClassDB::bind_method(D_METHOD("can_load_cameras", "path"), &PS1::can_load_cameras);
+	ClassDB::bind_method(D_METHOD("add_to_group", "node", "name"), &PS1::add_to_group);
+	ClassDB::bind_method(D_METHOD("remove_from_group", "node", "name"), &PS1::remove_from_group);
+	ClassDB::bind_method(D_METHOD("is_in_group", "node", "name"), &PS1::is_in_group);
+	ClassDB::bind_method(D_METHOD("count_in_group", "name"), &PS1::count_in_group);
+	ClassDB::bind_method(D_METHOD("get_in_group", "name", "index"), &PS1::get_in_group);
+	ClassDB::bind_method(D_METHOD("get_first_in_group", "name"), &PS1::get_first_in_group);
+	ClassDB::bind_method(D_METHOD("find_nearest", "from", "group"), &PS1::find_nearest);
+	ClassDB::bind_method(D_METHOD("set_billboard", "node", "on"), &PS1::set_billboard);
+	ClassDB::bind_method(D_METHOD("get_billboard", "node"), &PS1::get_billboard);
+	ClassDB::bind_method(D_METHOD("get_floor_node"), &PS1::get_floor_node);
+	ClassDB::bind_method(D_METHOD("get_floor_normal"), &PS1::get_floor_normal);
+	ClassDB::bind_method(D_METHOD("make_current", "node"), &PS1::make_current);
 	ClassDB::bind_method(D_METHOD("is_action_pressed_on", "device", "action"), &PS1::is_action_pressed_on);
 	ClassDB::bind_method(D_METHOD("is_action_just_pressed_on", "device", "action"), &PS1::is_action_just_pressed_on);
 	ClassDB::bind_method(D_METHOD("is_action_just_released_on", "device", "action"), &PS1::is_action_just_released_on);
@@ -354,7 +369,7 @@ void PS1FlavorEditorPlugin::_refresh() {
 	const int packs = _count_literal_packs();
 	const int est_ram = nodes * 56 + tris * 32 + hud * 80 + tiles * 8;
 	status->set_text(vformat(
-			"nodes %d/%d\ntris %d/%d\nHUD %d/%d\ntiles %d/%d\nSprite2D %d/%d\npacks %d/%d\nest RAM %d/%d\nPS1.* is PS1 export only; use OS.has_feature(\"ps1\").\nABI 18: save bytes, Camera2D, drive, particle modes (billboard/flipbook/trail/point/vertex), CD XA stream.",
+			"nodes %d/%d\ntris %d/%d\nHUD %d/%d\ntiles %d/%d\nSprite2D %d/%d\npacks %d/%d\nest RAM %d/%d\nPS1.* is PS1 export only; use OS.has_feature(\"ps1\").\nABI 19: 2D/3D scene cook, node methods (cam.make_current / PS1.set_camera), groups, platform carry, nearest, billboard, face/shoulder aliases.",
 			nodes, ps1_cook::kMaxNodes, tris, ps1_cook::kMaxTris, hud, ps1_cook::kMaxHud, tiles, ps1_cook::kMaxTiles,
 			sprites, ps1_cook::kMaxSprites, packs, ps1_cook::kMaxScenePacks, est_ram, 2 * 1024 * 1024));
 	PackedStringArray reasons;

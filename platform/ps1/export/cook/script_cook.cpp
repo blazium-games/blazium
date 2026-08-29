@@ -192,7 +192,14 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "set_particle_mode" || p_name == "set_particle_flipbook" ||
 			p_name == "set_particle_gravity" || p_name == "set_particle_color" || p_name == "emit_mesh" ||
 			p_name == "overlaps_entered" || p_name == "has_overlapping_areas" ||
-			p_name == "get_overlapping_area_count" || p_name == "get_overlapping_area";
+			p_name == "get_overlapping_area_count" || p_name == "get_overlapping_area" ||
+			p_name == "is_hitboxes_loaded" || p_name == "is_cameras_loaded" || p_name == "can_load_cameras" ||
+			p_name == "add_to_group" || p_name == "remove_from_group" || p_name == "is_in_group" ||
+			p_name == "count_in_group" || p_name == "get_in_group" || p_name == "get_first_in_group" ||
+			p_name == "find_nearest" || p_name == "set_billboard" || p_name == "get_billboard" ||
+			p_name == "get_floor_node" || p_name == "get_floor_normal" || p_name == "make_current" ||
+			p_name == "attach" || p_name == "look" || p_name == "orbit" || p_name == "shake" ||
+			p_name == "set_limits" || p_name == "set_drag";
 }
 
 static bool member_is_allowlisted(const String &p_name) {
@@ -200,13 +207,15 @@ static bool member_is_allowlisted(const String &p_name) {
 			p_name == "text" || p_name == "disabled" || p_name == "pressed" || p_name == "button_pressed" ||
 			p_name == "value" || p_name == "min_value" || p_name == "max_value" || p_name == "selected" ||
 			p_name == "focus" || p_name == "x" || p_name == "y" || p_name == "z" ||
-			p_name == "frame" || p_name == "flip_h" || p_name == "flip_v" || p_name == "modulate" || p_name == "speed_scale";
+			p_name == "frame" || p_name == "flip_h" || p_name == "flip_v" || p_name == "modulate" || p_name == "speed_scale" ||
+			p_name == "velocity" || p_name == "billboard";
 }
 
 static bool action_is_known(const String &p_name) {
 	return p_name == "ui_left" || p_name == "ui_right" || p_name == "ui_up" || p_name == "ui_down" ||
 			p_name == "ui_accept" || p_name == "ui_cancel" || p_name == "ui_select" ||
-			p_name == "ui_focus_prev" || p_name == "ui_focus_next";
+			p_name == "ui_focus_prev" || p_name == "ui_focus_next" ||
+			p_name == "ui_square" || p_name == "ui_triangle" || p_name == "ui_l2" || p_name == "ui_r2" || p_name == "ui_back";
 }
 
 static void warn_unknown_actions(const String &p_source, ScriptIR &r_out) {
@@ -856,8 +865,11 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 			"hitbox_kind", "set_hitbox_enabled",
 			"load_animations", "unload_animations", "can_load_animations", "is_animations_loaded",
 			"load_sprites", "unload_sprites", "can_load_sprites", "is_sprites_loaded",
-			"load_hitboxes", "unload_hitboxes", "can_load_hitboxes",
-			"load_cameras", "unload_cameras",
+			"load_hitboxes", "unload_hitboxes", "can_load_hitboxes", "is_hitboxes_loaded",
+			"load_cameras", "unload_cameras", "is_cameras_loaded", "can_load_cameras",
+			"add_to_group", "remove_from_group", "is_in_group", "count_in_group", "get_in_group", "get_first_in_group",
+			"find_nearest", "set_billboard", "get_billboard", "get_floor_node", "get_floor_normal", "make_current",
+			"attach", "look", "orbit", "shake", "set_limits", "set_drag",
 			"is_action_pressed_on", "is_action_just_pressed_on", "is_action_just_released_on",
 			"memcard_present", "memcard_ready", "memcard_format", "memcard_exists", "memcard_delete",
 			"memcard_save", "memcard_load", "memcard_count", "memcard_name", "memcard_wrap", "memcard_unwrap",
@@ -1186,7 +1198,7 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 		}
 	}
 
-	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 18)\n", r_out.rotate_y);
+	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 19)\n", r_out.rotate_y);
 	for (int i = 0; i < r_out.accepted.size(); i++) {
 		r_out.map_text += "OK " + r_out.accepted[i] + "\n";
 	}

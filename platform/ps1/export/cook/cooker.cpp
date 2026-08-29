@@ -27,12 +27,23 @@
 #include "core/templates/hash_set.h"
 #include "core/typedefs.h"
 #include "scene/2d/animated_sprite_2d.h"
+#include "scene/2d/audio_stream_player_2d.h"
 #include "scene/2d/camera_2d.h"
 #include "scene/2d/cpu_particles_2d.h"
 #include "scene/2d/gpu_particles_2d.h"
+#include "scene/2d/light_2d.h"
+#include "scene/2d/line_2d.h"
+#include "scene/2d/marker_2d.h"
+#include "scene/2d/mesh_instance_2d.h"
+#include "scene/2d/multimesh_instance_2d.h"
 #include "scene/2d/node_2d.h"
+#include "scene/2d/parallax_2d.h"
+#include "scene/2d/parallax_background.h"
+#include "scene/2d/parallax_layer.h"
 #include "scene/2d/physics/area_2d.h"
+#include "scene/2d/physics/collision_polygon_2d.h"
 #include "scene/2d/physics/collision_shape_2d.h"
+#include "scene/2d/polygon_2d.h"
 #include "scene/2d/sprite_2d.h"
 #include "scene/3d/sprite_3d.h"
 #include "scene/2d/tile_map.h"
@@ -41,10 +52,19 @@
 #include "scene/3d/camera_3d.h"
 #include "scene/3d/cpu_particles_3d.h"
 #include "scene/3d/gpu_particles_3d.h"
+#include "scene/3d/importer_mesh_instance_3d.h"
+#include "scene/3d/label_3d.h"
 #include "scene/3d/light_3d.h"
+#include "scene/3d/marker_3d.h"
+#include "scene/3d/multimesh_instance_3d.h"
 #include "scene/3d/physics/area_3d.h"
+#include "scene/3d/physics/collision_polygon_3d.h"
 #include "scene/3d/physics/collision_shape_3d.h"
 #include "scene/3d/physics/vehicle_body_3d.h"
+#include "scene/3d/world_environment.h"
+#include "scene/resources/3d/importer_mesh.h"
+#include "scene/resources/environment.h"
+#include "scene/resources/multimesh.h"
 #include "scene/gui/button.h"
 #include "scene/gui/check_box.h"
 #include "scene/gui/check_button.h"
@@ -69,6 +89,7 @@
 #include "scene/3d/skeleton_3d.h"
 #include "scene/resources/animation.h"
 #include "scene/audio/audio_stream_player.h"
+#include "scene/resources/2d/capsule_shape_2d.h"
 #include "scene/resources/2d/circle_shape_2d.h"
 #include "scene/resources/2d/rectangle_shape_2d.h"
 #include "scene/resources/2d/tile_set.h"
@@ -154,6 +175,22 @@ struct SceneGather {
 	int extra_video = 0;
 	bool had_omni_or_spot = false;
 	bool had_generic_light = false;
+	Vector<String> *shared_groups = nullptr;
+	Vector<String> group_names;
+	int groups_dropped = 0;
+	int slope_tiles = 0;
+	bool had_body = false;
+	bool had_csg = false;
+	bool had_gridmap = false;
+	bool had_multimesh = false;
+	bool had_draw2d = false;
+	bool had_label3d = false;
+	bool had_world_env = false;
+	bool fog_from_env = false;
+	uint8_t fog_on = 0;
+	int fog_start = 0;
+	int fog_end = 2048;
+	uint8_t fog_r = 32, fog_g = 0, fog_b = 48;
 	int stream_count = 0;
 	int stream_dropped = 0;
 	int node_dropped = 0;
@@ -198,18 +235,32 @@ struct SceneGather {
 		uint16_t tri_hi = 0;
 		int16_t sprite_index = -1;
 		int16_t script_index = -1;
+		uint8_t group = 0;
+		uint8_t scroll = 0;
 		String script_path;
 	};
 	Vector<CookedNode> nodes;
 };
 
 static const char *kAllowed[] = {
-	"Node", "Node3D", "MeshInstance3D", "Camera3D", "Camera2D", "AnimationPlayer", "Skeleton3D",
+	"Node", "Node3D", "MeshInstance3D", "ImporterMeshInstance3D", "Camera3D", "Camera2D", "AnimationPlayer", "Skeleton3D",
 	"Sprite2D", "AnimatedSprite2D", "Sprite3D", "Node2D", "Area2D", "Area3D",
-	"CollisionShape2D", "CollisionShape3D", "VehicleBody3D", "VehicleBody2D",
+	"CollisionShape2D", "CollisionShape3D", "CollisionPolygon2D", "CollisionPolygon3D",
+	"VehicleBody3D", "VehicleBody2D",
+	"CharacterBody2D", "CharacterBody3D", "StaticBody2D", "StaticBody3D",
+	"AnimatableBody2D", "AnimatableBody3D", "RigidBody2D", "RigidBody3D",
+	"PhysicalBone2D", "PhysicalBone3D",
 	"GPUParticles3D", "GPUParticles2D", "CPUParticles3D", "CPUParticles2D",
-	"AudioStreamPlayer", "AudioStreamPlayer3D",
+	"AudioStreamPlayer", "AudioStreamPlayer3D", "AudioStreamPlayer2D",
 	"DirectionalLight3D", "OmniLight3D", "SpotLight3D", "Light3D",
+	"Light2D", "PointLight2D", "DirectionalLight2D",
+	"MeshInstance2D", "Polygon2D", "Line2D", "Label3D",
+	"MultiMeshInstance3D", "MultiMeshInstance2D",
+	"CSGShape3D", "CSGCombiner3D", "CSGBox3D", "CSGSphere3D", "CSGCylinder3D", "CSGMesh3D", "CSGPolygon3D", "CSGTorus3D",
+	"GridMap", "Marker2D", "Marker3D", "PathFollow2D", "PathFollow3D",
+	"BoneAttachment3D", "SpringArm3D",
+	"Parallax2D", "ParallaxLayer", "ParallaxBackground",
+	"WorldEnvironment",
 	"VideoStreamPlayer", "Control", "CanvasLayer", "Label", "Button",
 	"TextureButton", "CheckBox", "CheckButton", "OptionButton", "LinkButton",
 	"TextureRect", "ColorRect", "Panel", "PanelContainer", "ProgressBar",
@@ -223,6 +274,77 @@ static bool type_allowed(const String &p_cls) {
 		}
 	}
 	return false;
+}
+
+static bool type_refused(const String &p_cls) {
+	return p_cls.begins_with("SubViewport") || p_cls.begins_with("Navigation") ||
+			p_cls.begins_with("VehicleWheel") || p_cls.begins_with("SoftBody") ||
+			p_cls.begins_with("GPUParticlesCollision") || p_cls == "Decal" ||
+			p_cls == "ReflectionProbe" || p_cls == "FogVolume" || p_cls == "VoxelGI" ||
+			p_cls.begins_with("VisibleOnScreenNotifier");
+}
+
+static bool node_cookable(Node *p_node) {
+	if (!p_node) {
+		return false;
+	}
+	if (type_allowed(p_node->get_class())) {
+		return true;
+	}
+	return p_node->is_class("CSGShape3D") || p_node->is_class("GridMap") ||
+			p_node->is_class("MultiMeshInstance3D") || p_node->is_class("MultiMeshInstance2D") ||
+			p_node->is_class("ImporterMeshInstance3D") || p_node->is_class("Light2D") ||
+			p_node->is_class("CollisionObject2D") || p_node->is_class("CollisionObject3D");
+}
+
+static bool is_physics_body(Node *p_node) {
+	if (!p_node) {
+		return false;
+	}
+	return p_node->is_class("CharacterBody2D") || p_node->is_class("CharacterBody3D") ||
+			p_node->is_class("StaticBody2D") || p_node->is_class("StaticBody3D") ||
+			p_node->is_class("AnimatableBody2D") || p_node->is_class("AnimatableBody3D") ||
+			p_node->is_class("RigidBody2D") || p_node->is_class("RigidBody3D") ||
+			p_node->is_class("PhysicalBone2D") || p_node->is_class("PhysicalBone3D") ||
+			p_node->is_class("VehicleBody2D") || p_node->is_class("VehicleBody3D");
+}
+
+static Vector<String> &group_table(SceneGather &r_g) {
+	return r_g.shared_groups ? *r_g.shared_groups : r_g.group_names;
+}
+
+static uint8_t cook_group_bits(Node *p_node, SceneGather &r_g) {
+	if (!p_node) {
+		return 0;
+	}
+	List<Node::GroupInfo> groups;
+	p_node->get_groups(&groups);
+	Vector<String> &names = group_table(r_g);
+	uint8_t bits = 0;
+	for (const List<Node::GroupInfo>::Element *E = groups.front(); E; E = E->next()) {
+		const String name = E->get().name;
+		if (name.is_empty()) {
+			continue;
+		}
+		int bit = -1;
+		for (int k = 0; k < names.size(); k++) {
+			if (names[k] == name) {
+				bit = k;
+				break;
+			}
+		}
+		if (bit < 0) {
+			if (names.size() < 8) {
+				bit = names.size();
+				names.push_back(name);
+			} else {
+				r_g.groups_dropped++;
+				continue;
+			}
+		}
+		bits |= uint8_t(1u << bit);
+	}
+	return bits;
 }
 
 static Ref<Image> image_from_texture(const Ref<Texture2D> &p_tex) {
@@ -333,6 +455,58 @@ static void emit_tris(const PackedVector3Array &verts, const PackedVector2Array 
 	}
 }
 
+static void emit_mesh_resource(SceneGather &r_g, const Ref<Mesh> &p_mesh, const Transform3D &p_xf, int p_my, Node *p_owner) {
+	if (p_mesh.is_null() || p_my < 0) {
+		return;
+	}
+	for (int s = 0; s < p_mesh->get_surface_count(); s++) {
+		Array arr = p_mesh->surface_get_arrays(s);
+		PackedVector3Array verts;
+		PackedVector2Array uvs;
+		PackedInt32Array idx;
+		if (arr.size() > Mesh::ARRAY_VERTEX) {
+			verts = arr[Mesh::ARRAY_VERTEX];
+		}
+		if (arr.size() > Mesh::ARRAY_TEX_UV && arr[Mesh::ARRAY_TEX_UV].get_type() == Variant::PACKED_VECTOR2_ARRAY) {
+			uvs = arr[Mesh::ARRAY_TEX_UV];
+		}
+		if (arr.size() > Mesh::ARRAY_INDEX && arr[Mesh::ARRAY_INDEX].get_type() == Variant::PACKED_INT32_ARRAY) {
+			idx = arr[Mesh::ARRAY_INDEX];
+		}
+		if (p_xf != Transform3D()) {
+			for (int i = 0; i < verts.size(); i++) {
+				verts.write[i] = p_xf.xform(verts[i]);
+			}
+		}
+		Ref<Material> mat;
+		if (MeshInstance3D *mi = Object::cast_to<MeshInstance3D>(p_owner)) {
+			mat = mi->get_active_material(s);
+		}
+		if (mat.is_null()) {
+			mat = p_mesh->surface_get_material(s);
+		}
+		if (material_has_extra_maps(mat)) {
+			r_g.extra_pbr++;
+		}
+		String tex_name;
+		const Ref<Image> img = image_from_material(mat, tex_name);
+		if (img.is_null() && !r_g.images.is_empty()) {
+			r_g.no_albedo_surfaces++;
+		}
+		const uint8_t slot = register_image(r_g, img, tex_name);
+		emit_tris(verts, uvs, idx, slot, uint8_t(p_my), r_g.tris);
+	}
+	r_g.nodes.write[p_my].tri_hi = uint16_t(MIN(r_g.tris.size(), 65535));
+}
+
+static void emit_importer_mesh(SceneGather &r_g, const Ref<ImporterMesh> &p_im, const Transform3D &p_xf, int p_my) {
+	if (p_im.is_null()) {
+		return;
+	}
+	const Ref<ArrayMesh> mesh = p_im->get_mesh();
+	emit_mesh_resource(r_g, mesh, p_xf, p_my, nullptr);
+}
+
 static Transform3D world_xform_3d(Node3D *p_node) {
 	Transform3D xf;
 	for (Node *n = p_node; n; n = n->get_parent()) {
@@ -375,30 +549,60 @@ static void emit_hit_3d(SceneGather &r_g, Area3D *p_area, int p_node_id) {
 			break;
 		}
 	}
+	CollisionPolygon3D *cp = nullptr;
 	if (!cs) {
+		for (int i = 0; i < p_area->get_child_count(); i++) {
+			if (CollisionPolygon3D *c = Object::cast_to<CollisionPolygon3D>(p_area->get_child(i))) {
+				cp = c;
+				break;
+			}
+		}
+	}
+	if (!cs && !cp) {
 		r_g.uncooked_types.insert("Area3D(no CollisionShape3D)");
 		return;
 	}
-	const Ref<Shape3D> shape = cs->get_shape();
 	Vector3 half;
-	if (const Ref<BoxShape3D> box = shape; box.is_valid()) {
-		half = box->get_size() * 0.5f;
-	} else if (const Ref<SphereShape3D> sph = shape; sph.is_valid()) {
-		const float r = sph->get_radius();
-		half = Vector3(r, r, r);
-	} else if (const Ref<CapsuleShape3D> cap = shape; cap.is_valid()) {
-		const float r = cap->get_radius();
-		const float h = cap->get_height() * 0.5f;
-		half = Vector3(r, MAX(h, r), r);
+	Transform3D xf;
+	if (cs) {
+		const Ref<Shape3D> shape = cs->get_shape();
+		if (const Ref<BoxShape3D> box = shape; box.is_valid()) {
+			half = box->get_size() * 0.5f;
+		} else if (const Ref<SphereShape3D> sph = shape; sph.is_valid()) {
+			const float r = sph->get_radius();
+			half = Vector3(r, r, r);
+		} else if (const Ref<CapsuleShape3D> cap = shape; cap.is_valid()) {
+			const float r = cap->get_radius();
+			const float h = cap->get_height() * 0.5f;
+			half = Vector3(r, MAX(h, r), r);
+		} else {
+			r_g.uncooked_types.insert(shape.is_valid() ? shape->get_class() : "Area3D(empty shape)");
+			return;
+		}
+		xf = world_xform_3d(cs);
 	} else {
-		r_g.uncooked_types.insert(shape.is_valid() ? shape->get_class() : "Area3D(empty shape)");
-		return;
+		const Vector<Vector2> poly = cp->get_polygon();
+		if (poly.is_empty()) {
+			r_g.uncooked_types.insert("Area3D(empty polygon)");
+			return;
+		}
+		Vector2 mn = poly[0];
+		Vector2 mx = poly[0];
+		for (int i = 1; i < poly.size(); i++) {
+			mn.x = MIN(mn.x, poly[i].x);
+			mn.y = MIN(mn.y, poly[i].y);
+			mx.x = MAX(mx.x, poly[i].x);
+			mx.y = MAX(mx.y, poly[i].y);
+		}
+		const float depth = MAX(cp->get_depth() * 0.5f, 1.0f);
+		half = Vector3((mx.x - mn.x) * 0.5f, (mx.y - mn.y) * 0.5f, depth);
+		xf = world_xform_3d(cp);
+		xf.origin += xf.basis.xform(Vector3((mn.x + mx.x) * 0.5f, (mn.y + mx.y) * 0.5f, 0));
 	}
 	if (r_g.hits.size() >= kMaxAABBs) {
 		r_g.aabb_dropped++;
 		return;
 	}
-	const Transform3D xf = world_xform_3d(cs);
 	const Vector3 c = xf.origin;
 	const Vector3 ext = xf.basis.xform(half).abs();
 	SceneGather::HitRow h;
@@ -426,27 +630,59 @@ static void emit_hit_2d(SceneGather &r_g, Area2D *p_area, int p_node_id) {
 			break;
 		}
 	}
+	CollisionPolygon2D *cp = nullptr;
 	if (!cs) {
+		for (int i = 0; i < p_area->get_child_count(); i++) {
+			if (CollisionPolygon2D *c = Object::cast_to<CollisionPolygon2D>(p_area->get_child(i))) {
+				cp = c;
+				break;
+			}
+		}
+	}
+	if (!cs && !cp) {
 		r_g.uncooked_types.insert("Area2D(no CollisionShape2D)");
 		return;
 	}
-	const Ref<Shape2D> shape = cs->get_shape();
 	Vector2 half;
-	if (const Ref<RectangleShape2D> rect = shape; rect.is_valid()) {
-		half = rect->get_size() * 0.5f;
-	} else if (const Ref<CircleShape2D> cir = shape; cir.is_valid()) {
-		const float r = cir->get_radius();
-		half = Vector2(r, r);
+	Vector2 c;
+	if (cs) {
+		const Ref<Shape2D> shape = cs->get_shape();
+		if (const Ref<RectangleShape2D> rect = shape; rect.is_valid()) {
+			half = rect->get_size() * 0.5f;
+		} else if (const Ref<CircleShape2D> cir = shape; cir.is_valid()) {
+			const float r = cir->get_radius();
+			half = Vector2(r, r);
+		} else if (const Ref<CapsuleShape2D> cap = shape; cap.is_valid()) {
+			const float r = cap->get_radius();
+			const float h = cap->get_height() * 0.5f;
+			half = Vector2(r, MAX(h, r));
+		} else {
+			r_g.uncooked_types.insert(shape.is_valid() ? shape->get_class() : "Area2D(empty shape)");
+			return;
+		}
+		const Transform2D xf = world_xform_2d(cs);
+		c = xf.get_origin();
 	} else {
-		r_g.uncooked_types.insert(shape.is_valid() ? shape->get_class() : "Area2D(empty shape)");
-		return;
+		const Vector<Vector2> poly = cp->get_polygon();
+		if (poly.is_empty()) {
+			r_g.uncooked_types.insert("Area2D(empty polygon)");
+			return;
+		}
+		Vector2 mn = poly[0];
+		Vector2 mx = poly[0];
+		for (int i = 1; i < poly.size(); i++) {
+			mn.x = MIN(mn.x, poly[i].x);
+			mn.y = MIN(mn.y, poly[i].y);
+			mx.x = MAX(mx.x, poly[i].x);
+			mx.y = MAX(mx.y, poly[i].y);
+		}
+		half = (mx - mn) * 0.5f;
+		c = world_xform_2d(cp).get_origin() + (mn + mx) * 0.5f;
 	}
 	if (r_g.hits.size() >= kMaxAABBs) {
 		r_g.aabb_dropped++;
 		return;
 	}
-	const Transform2D xf = world_xform_2d(cs);
-	const Vector2 c = xf.get_origin();
 	SceneGather::HitRow h;
 	h.node_id = p_node_id;
 	h.dim = 2;
@@ -459,6 +695,127 @@ static void emit_hit_2d(SceneGather &r_g, Area2D *p_area, int p_node_id) {
 	h.mn = Vector3(c.x - half.x, c.y - half.y, 0);
 	h.mx = Vector3(c.x + half.x, c.y + half.y, 0);
 	r_g.hits.push_back(h);
+}
+
+static void emit_body_aabb(SceneGather &r_g, Node *p_body, int p_node_id) {
+	if (!p_body || p_node_id < 0) {
+		return;
+	}
+	if (Area3D *a3 = Object::cast_to<Area3D>(p_body)) {
+		emit_hit_3d(r_g, a3, p_node_id);
+		return;
+	}
+	if (Area2D *a2 = Object::cast_to<Area2D>(p_body)) {
+		emit_hit_2d(r_g, a2, p_node_id);
+		return;
+	}
+	CollisionShape3D *cs3 = nullptr;
+	CollisionPolygon3D *cp3 = nullptr;
+	CollisionShape2D *cs2 = nullptr;
+	CollisionPolygon2D *cp2 = nullptr;
+	for (int i = 0; i < p_body->get_child_count(); i++) {
+		Node *ch = p_body->get_child(i);
+		if (!cs3) {
+			cs3 = Object::cast_to<CollisionShape3D>(ch);
+		}
+		if (!cp3) {
+			cp3 = Object::cast_to<CollisionPolygon3D>(ch);
+		}
+		if (!cs2) {
+			cs2 = Object::cast_to<CollisionShape2D>(ch);
+		}
+		if (!cp2) {
+			cp2 = Object::cast_to<CollisionPolygon2D>(ch);
+		}
+	}
+	if (r_g.hits.size() >= kMaxAABBs) {
+		r_g.aabb_dropped++;
+		return;
+	}
+	SceneGather::HitRow h;
+	h.node_id = p_node_id;
+	h.kind = 1;
+	h.flags = 1;
+	h.layer = 1;
+	if (cs3 || cp3) {
+		Vector3 half(8, 8, 8);
+		Transform3D xf;
+		if (cs3) {
+			const Ref<Shape3D> shape = cs3->get_shape();
+			if (const Ref<BoxShape3D> box = shape; box.is_valid()) {
+				half = box->get_size() * 0.5f;
+			} else if (const Ref<SphereShape3D> sph = shape; sph.is_valid()) {
+				const float r = sph->get_radius();
+				half = Vector3(r, r, r);
+			} else if (const Ref<CapsuleShape3D> cap = shape; cap.is_valid()) {
+				const float r = cap->get_radius();
+				const float ht = cap->get_height() * 0.5f;
+				half = Vector3(r, MAX(ht, r), r);
+			}
+			xf = world_xform_3d(cs3);
+		} else {
+			const Vector<Vector2> poly = cp3->get_polygon();
+			if (!poly.is_empty()) {
+				Vector2 mn = poly[0];
+				Vector2 mx = poly[0];
+				for (int i = 1; i < poly.size(); i++) {
+					mn.x = MIN(mn.x, poly[i].x);
+					mn.y = MIN(mn.y, poly[i].y);
+					mx.x = MAX(mx.x, poly[i].x);
+					mx.y = MAX(mx.y, poly[i].y);
+				}
+				half = Vector3((mx.x - mn.x) * 0.5f, (mx.y - mn.y) * 0.5f, MAX(cp3->get_depth() * 0.5f, 1.0f));
+			}
+			xf = world_xform_3d(cp3);
+		}
+		const Vector3 ext = xf.basis.xform(half).abs();
+		h.dim = 3;
+		h.mn = xf.origin - ext;
+		h.mx = xf.origin + ext;
+		r_g.hits.push_back(h);
+		r_g.had_body = true;
+		return;
+	}
+	if (cs2 || cp2) {
+		Vector2 half(8, 8);
+		Vector2 c;
+		if (cs2) {
+			const Ref<Shape2D> shape = cs2->get_shape();
+			if (const Ref<RectangleShape2D> rect = shape; rect.is_valid()) {
+				half = rect->get_size() * 0.5f;
+			} else if (const Ref<CircleShape2D> cir = shape; cir.is_valid()) {
+				const float r = cir->get_radius();
+				half = Vector2(r, r);
+			} else if (const Ref<CapsuleShape2D> cap = shape; cap.is_valid()) {
+				const float r = cap->get_radius();
+				half = Vector2(r, MAX(cap->get_height() * 0.5f, r));
+			}
+			c = world_xform_2d(cs2).get_origin();
+		} else {
+			const Vector<Vector2> poly = cp2->get_polygon();
+			if (!poly.is_empty()) {
+				Vector2 mn = poly[0];
+				Vector2 mx = poly[0];
+				for (int i = 1; i < poly.size(); i++) {
+					mn.x = MIN(mn.x, poly[i].x);
+					mn.y = MIN(mn.y, poly[i].y);
+					mx.x = MAX(mx.x, poly[i].x);
+					mx.y = MAX(mx.y, poly[i].y);
+				}
+				half = (mx - mn) * 0.5f;
+				c = world_xform_2d(cp2).get_origin() + (mn + mx) * 0.5f;
+			} else {
+				c = world_xform_2d(cp2).get_origin();
+			}
+		}
+		h.dim = 2;
+		h.mn = Vector3(c.x - half.x, c.y - half.y, 0);
+		h.mx = Vector3(c.x + half.x, c.y + half.y, 0);
+		r_g.hits.push_back(h);
+		r_g.had_body = true;
+		return;
+	}
+	r_g.uncooked_types.insert(p_body->get_class() + String("(no CollisionShape)"));
 }
 
 static Rect2 control_screen_rect(Control *p_c) {
@@ -679,6 +1036,14 @@ static uint8_t tile_data_solid(TileData *p_td, const Ref<TileSet> &p_ts) {
 	if (p_td->has_custom_data("one_way") && bool(p_td->get_custom_data("one_way"))) {
 		flags |= 2;
 	}
+	if (p_td->has_custom_data("slope")) {
+		const int sl = int(p_td->get_custom_data("slope"));
+		if (sl < 0) {
+			flags |= 4;
+		} else if (sl > 0) {
+			flags |= 8;
+		}
+	}
 	if (p_ts.is_valid()) {
 		const int n = p_ts->get_physics_layers_count();
 		for (int i = 0; i < n; i++) {
@@ -709,6 +1074,9 @@ static void emit_tile_cell(SceneGather &r_g, const Vector2 &p_pos, const Vector2
 	t.tex = p_tex;
 	t.node_id = uint8_t(CLAMP(p_node_id, 0, 255));
 	t.flags = p_flags;
+	if (p_flags & 12) {
+		r_g.slope_tiles++;
+	}
 	r_g.tiles.push_back(t);
 }
 
@@ -717,7 +1085,7 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 		return;
 	}
 	const String cls = p_node->get_class();
-	if (!type_allowed(cls)) {
+	if (!node_cookable(p_node) || type_refused(cls)) {
 		r_g.uncooked_types.insert(cls);
 	}
 	int my = -1;
@@ -734,14 +1102,15 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 			cn.type = 10;
 		} else if (Object::cast_to<Camera3D>(p_node) || Object::cast_to<Camera2D>(p_node)) {
 			cn.type = 4;
-		} else if (Object::cast_to<VehicleBody3D>(p_node) || p_node->get_class() == "VehicleBody2D") {
+		} else if (is_physics_body(p_node)) {
 			cn.type = 11;
 		} else if (Object::cast_to<GPUParticles3D>(p_node) || Object::cast_to<GPUParticles2D>(p_node) ||
 				Object::cast_to<CPUParticles3D>(p_node) || Object::cast_to<CPUParticles2D>(p_node)) {
 			cn.type = 12;
 		} else if (Object::cast_to<AnimationPlayer>(p_node)) {
 			cn.type = 7;
-		} else if (Object::cast_to<AudioStreamPlayer>(p_node) || Object::cast_to<AudioStreamPlayer3D>(p_node)) {
+		} else if (Object::cast_to<AudioStreamPlayer>(p_node) || Object::cast_to<AudioStreamPlayer3D>(p_node) ||
+				Object::cast_to<AudioStreamPlayer2D>(p_node)) {
 			cn.type = 8;
 		} else if (Object::cast_to<VideoStreamPlayer>(p_node)) {
 			cn.type = 9;
@@ -749,7 +1118,7 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 			cn.type = 5;
 		} else if (Object::cast_to<TileMap>(p_node) || Object::cast_to<TileMapLayer>(p_node)) {
 			cn.type = 6;
-		} else if (Object::cast_to<Node3D>(p_node)) {
+		} else if (Object::cast_to<Node2D>(p_node) || Object::cast_to<Node3D>(p_node)) {
 			cn.type = 1;
 		}
 		if (Node3D *n3 = Object::cast_to<Node3D>(p_node)) {
@@ -777,6 +1146,14 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 				cn.flags |= 2;
 			}
 		}
+		cn.group = cook_group_bits(p_node, r_g);
+		if (ParallaxLayer *pl = Object::cast_to<ParallaxLayer>(p_node)) {
+			const Vector2 sc = pl->get_motion_scale();
+			cn.scroll = uint8_t(CLAMP(int(sc.x * 128.0f), 1, 255));
+		} else if (Parallax2D *p2 = Object::cast_to<Parallax2D>(p_node)) {
+			const Vector2 sc = p2->get_scroll_scale();
+			cn.scroll = uint8_t(CLAMP(int(sc.x * 128.0f), 1, 255));
+		}
 		cn.tri_lo = uint16_t(r_g.tris.size());
 		cn.tri_hi = cn.tri_lo;
 		my = r_g.nodes.size();
@@ -790,37 +1167,55 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 		if (my < 0) {
 			r_g.mesh_on_dropped++;
 		} else {
-			const Ref<Mesh> mesh = mi->get_mesh();
-			for (int s = 0; s < mesh->get_surface_count(); s++) {
-				Array arr = mesh->surface_get_arrays(s);
-				PackedVector3Array verts;
-				PackedVector2Array uvs;
-				PackedInt32Array idx;
-				if (arr.size() > Mesh::ARRAY_VERTEX) {
-					verts = arr[Mesh::ARRAY_VERTEX];
-				}
-				if (arr.size() > Mesh::ARRAY_TEX_UV && arr[Mesh::ARRAY_TEX_UV].get_type() == Variant::PACKED_VECTOR2_ARRAY) {
-					uvs = arr[Mesh::ARRAY_TEX_UV];
-				}
-				if (arr.size() > Mesh::ARRAY_INDEX && arr[Mesh::ARRAY_INDEX].get_type() == Variant::PACKED_INT32_ARRAY) {
-					idx = arr[Mesh::ARRAY_INDEX];
-				}
-				Ref<Material> mat = mi->get_active_material(s);
-				if (mat.is_null()) {
-					mat = mesh->surface_get_material(s);
-				}
-				if (material_has_extra_maps(mat)) {
-					r_g.extra_pbr++;
-				}
-				String tex_name;
-				const Ref<Image> img = image_from_material(mat, tex_name);
-				if (img.is_null() && !r_g.images.is_empty()) {
-					r_g.no_albedo_surfaces++;
-				}
-				const uint8_t slot = register_image(r_g, img, tex_name);
-				emit_tris(verts, uvs, idx, slot, uint8_t(my), r_g.tris);
+			emit_mesh_resource(r_g, mi->get_mesh(), Transform3D(), my, mi);
+		}
+	}
+	if (ImporterMeshInstance3D *imi = Object::cast_to<ImporterMeshInstance3D>(p_node)) {
+		if (my < 0) {
+			r_g.mesh_on_dropped++;
+		} else {
+			emit_importer_mesh(r_g, imi->get_mesh(), Transform3D(), my);
+			if (my >= 0) {
+				r_g.nodes.write[my].type = 2;
 			}
-			r_g.nodes.write[my].tri_hi = uint16_t(MIN(r_g.tris.size(), 65535));
+		}
+	}
+	if (p_node->is_class("CSGShape3D")) {
+		r_g.had_csg = true;
+		if (my >= 0) {
+			const Variant meshes_v = p_node->call("get_meshes");
+			if (meshes_v.get_type() == Variant::ARRAY) {
+				const Array meshes = meshes_v;
+				for (int i = 0; i + 1 < meshes.size(); i += 2) {
+					const Transform3D xf = meshes[i];
+					const Ref<Mesh> mesh = meshes[i + 1];
+					emit_mesh_resource(r_g, mesh, xf, my, nullptr);
+				}
+			}
+			r_g.nodes.write[my].type = 2;
+		}
+	}
+	if (p_node->is_class("GridMap")) {
+		r_g.had_gridmap = true;
+		if (my >= 0) {
+			const Variant cells_v = p_node->call("get_used_cells");
+			const Variant lib_v = p_node->get("mesh_library");
+			if (cells_v.get_type() == Variant::ARRAY && lib_v.get_type() == Variant::OBJECT) {
+				const Array cells = cells_v;
+				Object *lib = lib_v;
+				const Vector3 cs = p_node->get("cell_size");
+				for (int i = 0; i < cells.size(); i++) {
+					const Vector3i cell = cells[i];
+					const int item = int(p_node->call("get_cell_item", cell));
+					if (item < 0 || !lib) {
+						continue;
+					}
+					const Ref<Mesh> mesh = lib->call("get_item_mesh", item);
+					Transform3D xf;
+					xf.origin = Vector3((cell.x + 0.5f) * cs.x, (cell.y + 0.5f) * cs.y, (cell.z + 0.5f) * cs.z);
+					emit_mesh_resource(r_g, mesh, xf, my, nullptr);
+				}
+			}
 		}
 	}
 	if (Camera3D *cam = Object::cast_to<Camera3D>(p_node)) {
@@ -866,40 +1261,8 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 			r_g.cam_dropped++;
 		}
 	}
-	if (VehicleBody3D *vb = Object::cast_to<VehicleBody3D>(p_node)) {
-		CollisionShape3D *cs = nullptr;
-		for (int i = 0; i < vb->get_child_count(); i++) {
-			if (CollisionShape3D *c = Object::cast_to<CollisionShape3D>(vb->get_child(i))) {
-				cs = c;
-				break;
-			}
-		}
-		if (cs && my >= 0 && r_g.hits.size() < kMaxAABBs) {
-			const Ref<Shape3D> shape = cs->get_shape();
-			Vector3 half(8, 8, 8);
-			if (const Ref<BoxShape3D> box = shape; box.is_valid()) {
-				half = box->get_size() * 0.5f;
-			} else if (const Ref<SphereShape3D> sph = shape; sph.is_valid()) {
-				const float r = sph->get_radius();
-				half = Vector3(r, r, r);
-			}
-			const Transform3D xf = world_xform_3d(cs);
-			const Vector3 c = xf.origin;
-			const Vector3 ext = xf.basis.xform(half).abs();
-			SceneGather::HitRow h;
-			h.node_id = my;
-			h.dim = 3;
-			h.kind = 1;
-			h.flags = 1;
-			h.layer = 1;
-			h.mn = c - ext;
-			h.mx = c + ext;
-			r_g.hits.push_back(h);
-		} else if (!cs) {
-			r_g.uncooked_types.insert("VehicleBody3D(no CollisionShape3D)");
-		} else if (r_g.hits.size() >= kMaxAABBs) {
-			r_g.aabb_dropped++;
-		}
+	if (is_physics_body(p_node)) {
+		emit_body_aabb(r_g, p_node, my);
 	}
 	if (Object::cast_to<GPUParticles3D>(p_node) || Object::cast_to<GPUParticles2D>(p_node) ||
 			Object::cast_to<CPUParticles3D>(p_node) || Object::cast_to<CPUParticles2D>(p_node)) {
@@ -947,6 +1310,138 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 	}
 	if (AudioStreamPlayer3D *ap3 = Object::cast_to<AudioStreamPlayer3D>(p_node)) {
 		try_wav(r_g, ap3->get_stream(), ap3->get_name());
+	}
+	if (AudioStreamPlayer2D *ap2 = Object::cast_to<AudioStreamPlayer2D>(p_node)) {
+		try_wav(r_g, ap2->get_stream(), ap2->get_name());
+	}
+	if (Light2D *l2 = Object::cast_to<Light2D>(p_node)) {
+		Color c = l2->get_color();
+		c *= float(l2->get_energy());
+		Vector3 dir(0, -1, -1);
+		if (Node2D *n2 = Object::cast_to<Node2D>(p_node)) {
+			const Vector2 p = n2->get_position();
+			dir = Vector3(p.x, -p.y, -1);
+		}
+		add_light(r_g, dir, c);
+	}
+	if (WorldEnvironment *we = Object::cast_to<WorldEnvironment>(p_node)) {
+		r_g.had_world_env = true;
+		const Ref<Environment> env = we->get_environment();
+		if (env.is_valid() && env->is_fog_enabled()) {
+			r_g.fog_from_env = true;
+			r_g.fog_on = 1;
+			r_g.fog_start = 0;
+			r_g.fog_end = 2048;
+			const Color fc = env->get_fog_light_color();
+			r_g.fog_r = uint8_t(CLAMP(int(fc.r * 255.0f), 0, 255));
+			r_g.fog_g = uint8_t(CLAMP(int(fc.g * 255.0f), 0, 255));
+			r_g.fog_b = uint8_t(CLAMP(int(fc.b * 255.0f), 0, 255));
+		}
+	}
+	if (MeshInstance2D *mi2 = Object::cast_to<MeshInstance2D>(p_node)) {
+		r_g.had_draw2d = true;
+		if (my >= 0 && mi2->get_mesh().is_valid()) {
+			emit_mesh_resource(r_g, mi2->get_mesh(), Transform3D(), my, nullptr);
+		}
+	}
+	if (Polygon2D *poly = Object::cast_to<Polygon2D>(p_node)) {
+		r_g.had_draw2d = true;
+		if (my >= 0) {
+			const Vector<Vector2> pts = poly->get_polygon();
+			const Vector<Vector2> uvs = poly->get_uv();
+			if (pts.size() >= 3) {
+				PackedVector3Array verts;
+				PackedVector2Array uv3;
+				PackedInt32Array idx;
+				for (int i = 0; i < pts.size(); i++) {
+					verts.push_back(Vector3(pts[i].x, pts[i].y, 0));
+					uv3.push_back(i < uvs.size() ? uvs[i] : Vector2(float(i & 1), float((i >> 1) & 1)));
+				}
+				for (int i = 1; i + 1 < pts.size(); i++) {
+					idx.push_back(0);
+					idx.push_back(i);
+					idx.push_back(i + 1);
+				}
+				String tex_name;
+				const Ref<Image> img = image_from_texture(poly->get_texture());
+				const uint8_t slot = register_image(r_g, img, tex_name);
+				emit_tris(verts, uv3, idx, slot, uint8_t(my), r_g.tris);
+				r_g.nodes.write[my].tri_hi = uint16_t(MIN(r_g.tris.size(), 65535));
+			}
+		}
+	}
+	if (Line2D *line = Object::cast_to<Line2D>(p_node)) {
+		r_g.had_draw2d = true;
+		if (my >= 0) {
+			const Vector<Vector2> pts = line->get_points();
+			const float w = MAX(line->get_width() * 0.5f, 1.0f);
+			if (pts.size() >= 2) {
+				PackedVector3Array verts;
+				PackedVector2Array uvs;
+				PackedInt32Array idx;
+				for (int i = 0; i + 1 < pts.size(); i++) {
+					const Vector2 a = pts[i];
+					const Vector2 b = pts[i + 1];
+					Vector2 d = b - a;
+					if (d.length_squared() < 0.0001f) {
+						continue;
+					}
+					Vector2 n = d.orthogonal().normalized() * w;
+					const int base = verts.size();
+					verts.push_back(Vector3(a.x - n.x, a.y - n.y, 0));
+					verts.push_back(Vector3(a.x + n.x, a.y + n.y, 0));
+					verts.push_back(Vector3(b.x + n.x, b.y + n.y, 0));
+					verts.push_back(Vector3(b.x - n.x, b.y - n.y, 0));
+					uvs.push_back(Vector2(0, 0));
+					uvs.push_back(Vector2(1, 0));
+					uvs.push_back(Vector2(1, 1));
+					uvs.push_back(Vector2(0, 1));
+					idx.push_back(base);
+					idx.push_back(base + 1);
+					idx.push_back(base + 2);
+					idx.push_back(base);
+					idx.push_back(base + 2);
+					idx.push_back(base + 3);
+				}
+				String tex_name;
+				const uint8_t slot = register_image(r_g, image_from_texture(line->get_texture()), tex_name);
+				emit_tris(verts, uvs, idx, slot, uint8_t(my), r_g.tris);
+				r_g.nodes.write[my].tri_hi = uint16_t(MIN(r_g.tris.size(), 65535));
+			}
+		}
+	}
+	if (Label3D *lb = Object::cast_to<Label3D>(p_node)) {
+		r_g.had_label3d = true;
+		if (my >= 0) {
+			r_g.uncooked_types.insert("Label3D(no texture; type-1 node)");
+			(void)lb;
+		}
+	}
+	if (MultiMeshInstance3D *mmi = Object::cast_to<MultiMeshInstance3D>(p_node)) {
+		r_g.had_multimesh = true;
+		const Ref<MultiMesh> mm = mmi->get_multimesh();
+		if (my >= 0 && mm.is_valid() && mm->get_mesh().is_valid()) {
+			const int n = mm->get_instance_count();
+			for (int i = 0; i < n; i++) {
+				if (r_g.tris.size() >= kMaxTris) {
+					break;
+				}
+				emit_mesh_resource(r_g, mm->get_mesh(), mm->get_instance_transform(i), my, nullptr);
+			}
+		}
+	}
+	if (MultiMeshInstance2D *mmi2 = Object::cast_to<MultiMeshInstance2D>(p_node)) {
+		r_g.had_multimesh = true;
+		const Ref<MultiMesh> mm = mmi2->get_multimesh();
+		if (my >= 0 && mm.is_valid() && mm->get_mesh().is_valid()) {
+			const int n = mm->get_instance_count();
+			for (int i = 0; i < n; i++) {
+				if (r_g.tris.size() >= kMaxTris) {
+					break;
+				}
+				emit_mesh_resource(r_g, mm->get_mesh(), mm->get_instance_transform(i), my, nullptr);
+			}
+		}
 	}
 	if (Sprite2D *spr = Object::cast_to<Sprite2D>(p_node)) {
 		r_g.sprite_count++;
@@ -1141,7 +1636,7 @@ static int16_t clamp_i16(float v) {
 	return int16_t(CLAMP(int(v), -32767, 32767));
 }
 
-static void write_node_table(const Vector<SceneGather::CookedNode> &p_nodes, float p_scale, Vector<uint8_t> &o) {
+static void write_node_table(const SceneGather &p_g, float p_scale, Vector<uint8_t> &o) {
 	auto u16 = [&](uint16_t v) {
 		o.push_back(uint8_t(v & 0xff));
 		o.push_back(uint8_t(v >> 8));
@@ -1152,10 +1647,10 @@ static void write_node_table(const Vector<SceneGather::CookedNode> &p_nodes, flo
 	o.push_back('D');
 	o.push_back('E');
 	u16(uint16_t(kCookABI));
-	u16(uint16_t(p_nodes.size()));
+	u16(uint16_t(p_g.nodes.size()));
 	const float s = p_scale > 0.0f ? p_scale : 1.0f;
-	for (int i = 0; i < p_nodes.size(); i++) {
-		const SceneGather::CookedNode &n = p_nodes[i];
+	for (int i = 0; i < p_g.nodes.size(); i++) {
+		const SceneGather::CookedNode &n = p_g.nodes[i];
 		i16(int16_t(n.parent));
 		const CharString utf = n.name.utf8();
 		o.push_back(uint8_t(CLAMP(utf.length(), 0, 255)));
@@ -1182,7 +1677,29 @@ static void write_node_table(const Vector<SceneGather::CookedNode> &p_nodes, flo
 		u16(hi);
 		i16(n.sprite_index);
 		i16(n.script_index);
+		o.push_back(n.group);
 	}
+	const Vector<String> &names = p_g.shared_groups ? *p_g.shared_groups : p_g.group_names;
+	for (int g = 0; g < 8; g++) {
+		CharString utf;
+		if (g < names.size()) {
+			utf = names[g].utf8();
+		}
+		for (int c = 0; c < 16; c++) {
+			o.push_back(c < utf.length() ? uint8_t(utf[c]) : 0);
+		}
+	}
+	for (int i = 0; i < 128; i++) {
+		o.push_back(i < p_g.nodes.size() ? p_g.nodes[i].scroll : 0);
+	}
+	o.push_back(p_g.fog_on);
+	o.push_back(0);
+	u16(uint16_t(CLAMP(p_g.fog_start, 0, 65535)));
+	u16(uint16_t(CLAMP(p_g.fog_end, 0, 65535)));
+	o.push_back(p_g.fog_r);
+	o.push_back(p_g.fog_g);
+	o.push_back(p_g.fog_b);
+	o.push_back(0);
 }
 
 static void write_hud_table(const Vector<SceneGather::HudRow> &p_hud, Vector<uint8_t> &o) {
@@ -1767,7 +2284,14 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	r_out.warnings.push_back("8 cameras; Camera2D in the catalog (XY follow, drag, limits); not a 9th camera. attach/look/orbit/set_camera_transform; shake_camera; world_to_screen; set_camera_scale is GTE FOV approx.");
 	r_out.warnings.push_back("AABB + ray + move_and_slide + move_and_drive + tile solids + one-way; HIT 8-bit layer + query mask; ray skips caller AABB; is_on_floor/wall/ceiling; raycast_point; per-node get_velocity; AABB drive, not VehicleWheel / Godot physics.");
 	r_out.warnings.push_back("ANIM/SPRITE/HIT/CAM/SFX/TXT/MUSIC/STR stream; extra-pack TPAK LoadImage on load_scene (fail VRAM → false); instantiate copies hit+sprite, shares anim/mesh.");
-	r_out.warnings.push_back("24 KiB poke/peek + wrap/unwrap persist; not CARD BIOS. Memcard is Sony MC/SC wrap of user:// via pcdrv SAVE.MCD. No ConfigFile/JSON class, no DexDrive.");
+	r_out.warnings.push_back("get_node walks the cooked tree; FileAccess user:// is the 24 KiB payload; not CARD BIOS. Memcard is Sony MC/SC wrap of user:// via pcdrv SAVE.MCD.");
+	r_out.warnings.push_back("can_load_* is a real budget/slice check; missing slice → false. is_*_loaded is the resident flag.");
+	r_out.warnings.push_back("2D/3D Godot scenes cook to AABB/mesh/sprite/HUD/cam/light while they fit 2 MiB; CharacterBody velocity + argless move_and_slide; AABB slide, not Jolt / Viewport / Navigation / skin.");
+	r_out.warnings.push_back("Camera / body / area / particles / light / audio / sprite methods live on those nodes; PS1.* is an alias. Instantiate a template to spawn; not a hidden global pool.");
+	r_out.warnings.push_back("8 group bits + get_in_group(i); not get_nodes_in_group Array.");
+	r_out.warnings.push_back("Slide inherits floor AABB velocity; get_floor_node / get_floor_normal; optional 45° tile slope.");
+	r_out.warnings.push_back("find_nearest; runtime billboard; ui_square/ui_triangle/ui_l2/ui_r2/ui_back (Select). ui_select stays Start.");
+	r_out.warnings.push_back("24 KiB poke/peek + wrap/unwrap persist; not CARD BIOS. No ConfigFile/JSON class, no DexDrive.");
 	r_out.warnings.push_back("VM sprites draw frame UV + flip_h + flip_v; Sprite3D POLY_FT4; 32 sprites; 16 unlit particles (billboard/flipbook/one-segment trail/point/vertex); 4 streams; not GPUParticles / tube; fog/fade; set_light writes GTE.");
 	r_out.warnings.push_back("16 clips / 64 keys; ANIM loop/seek/speed; Skeleton3D is bind pose; no AnimationTree.");
 	r_out.warnings.push_back("HUD text 64 chars; TXT bank 32x64; str(float)/set_hud_text; set_paused skips _process; per-node set_process.");
@@ -1775,6 +2299,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	r_out.warnings.push_back("SFX bank 16 clips / voices 1-7 + set_music_volume; pack-0 VAG plus streamable MUSIC; CD-ROM XA/STR stream via CdSearchFile + CdlReadS when a disc is present; no disc → play_xa false, MUSIC VAG; official Luau is tape-only.");
 
 	SceneGather gathered;
+	gathered.shared_groups = &gathered.group_names;
 	String src_name;
 	Vector<Node *> live_roots;
 	Vector<ScenePackCook> packs;
@@ -1844,6 +2369,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		Node *er = extra->instantiate();
 		live_roots.push_back(er);
 		SceneGather extra_g;
+		extra_g.shared_groups = &gathered.group_names;
 		walk_scene(er, extra_g, -1);
 		ScenePackCook pack;
 		pack.path = path;
@@ -1876,6 +2402,15 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		if (extra_g.aabb_dropped > 0) {
 			r_out.warnings.push_back(vformat("kept first %d AABBs in %s.", kMaxAABBs, path));
 		}
+		gathered.groups_dropped += extra_g.groups_dropped;
+		gathered.slope_tiles += extra_g.slope_tiles;
+		gathered.had_body = gathered.had_body || extra_g.had_body;
+		gathered.had_csg = gathered.had_csg || extra_g.had_csg;
+		gathered.had_gridmap = gathered.had_gridmap || extra_g.had_gridmap;
+		gathered.had_multimesh = gathered.had_multimesh || extra_g.had_multimesh;
+		gathered.had_draw2d = gathered.had_draw2d || extra_g.had_draw2d;
+		gathered.had_label3d = gathered.had_label3d || extra_g.had_label3d;
+		gathered.had_world_env = gathered.had_world_env || extra_g.had_world_env;
 		extra_gathers.push_back(extra_g);
 		packs.push_back(pack);
 	}
@@ -2164,6 +2699,30 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	}
 	if (gathered.had_omni_or_spot) {
 		r_out.warnings.push_back("OmniLight3D/SpotLight3D cooked as directional GTE lights.");
+	}
+	if (gathered.groups_dropped > 0) {
+		r_out.warnings.push_back("kept first 8 group names; extra groups are cook warnings.");
+	}
+	if (gathered.slope_tiles > 0) {
+		r_out.warnings.push_back("tile custom_data slope cooks 45° flags 4/8; axis-aligned slide, not Godot slope meshes.");
+	}
+	if (gathered.had_body) {
+		r_out.warnings.push_back("CharacterBody/Static/Rigid/Animatable cook as AABB + move_and_slide; not Jolt / RigidBody integrate.");
+	}
+	if (gathered.had_csg || gathered.had_gridmap) {
+		r_out.warnings.push_back("CSG/GridMap bake into the mesh catalog while they fit 8192 tris.");
+	}
+	if (gathered.had_multimesh) {
+		r_out.warnings.push_back("MultiMesh instances emit until 8192 tris, then drop.");
+	}
+	if (gathered.had_draw2d) {
+		r_out.warnings.push_back("MeshInstance2D/Polygon2D/Line2D cook as catalog tris; long lines drop.");
+	}
+	if (gathered.had_label3d) {
+		r_out.warnings.push_back("Label3D is a type-1 node unless a texture exists.");
+	}
+	if (gathered.had_world_env) {
+		r_out.warnings.push_back("WorldEnvironment fog seeds set_fog; no sky cubemap.");
 	}
 	const int display_w = p_opts.width > 0 ? p_opts.width : 320;
 	const int display_h = p_opts.region == 1 ? 256 : 240;
@@ -2477,7 +3036,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	}
 	{
 		Vector<uint8_t> nodeb;
-		write_node_table(gathered.nodes, mesh.scale, nodeb);
+		write_node_table(gathered, mesh.scale, nodeb);
 		r_out.node_path = p_export_dir.path_join("NODE00.bin");
 		Ref<FileAccess> nd = FileAccess::open(r_out.node_path, FileAccess::WRITE);
 		ERR_FAIL_COND_V(nd.is_null(), ERR_CANT_CREATE);
@@ -2522,7 +3081,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		Ref<DirAccess> pda = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
 		pda->make_dir_recursive(pdir);
 		Vector<uint8_t> nodeb;
-		write_node_table(eg.nodes, mesh.scale, nodeb);
+		write_node_table(eg, mesh.scale, nodeb);
 		const String nodep = pdir.path_join("NODE" + nn + ".bin");
 		Ref<FileAccess> nf = FileAccess::open(nodep, FileAccess::WRITE);
 		ERR_FAIL_COND_V(nf.is_null(), ERR_CANT_CREATE);

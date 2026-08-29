@@ -44,7 +44,7 @@
 #include "script_vm.h"
 
 #ifndef BLAZIUM_PS1_COOK_ABI
-#define BLAZIUM_PS1_COOK_ABI 18
+#define BLAZIUM_PS1_COOK_ABI 19
 #endif
 
 #define OT_LEN 2048
@@ -1439,6 +1439,11 @@ int main(int argc, const char **argv) {
 		const uint16_t nc = uint16_t(cooked_node[6] | (cooked_node[7] << 8));
 		if (ver == BLAZIUM_PS1_COOK_ABI) {
 			ScriptVMNode parsed[PS1_MAX_NODES];
+			uint8_t bits[PS1_MAX_NODES];
+			char names[8][16];
+			for (int g = 0; g < 8; g++) {
+				names[g][0] = 0;
+			}
 			const uint8_t *p = cooked_node + 8;
 			const uint8_t *end = cooked_node + cooked_node_size;
 			int got = 0;
@@ -1453,7 +1458,7 @@ int main(int argc, const char **argv) {
 				}
 				n.name[cpy] = 0;
 				p += nl;
-				if (p + 20 > end) {
+				if (p + 21 > end) {
 					break;
 				}
 				n.type = *p++;
@@ -1469,9 +1474,37 @@ int main(int argc, const char **argv) {
 				n.sprite = int16_t(p[16] | (p[17] << 8));
 				n.script = int16_t(p[18] | (p[19] << 8));
 				p += 20;
+				bits[got] = *p++;
 				parsed[got++] = n;
 			}
+			if (p + 128 <= end) {
+				for (int g = 0; g < 8; g++) {
+					int k = 0;
+					while (k < 15 && p[g * 16 + k]) {
+						names[g][k] = char(p[g * 16 + k]);
+						k++;
+					}
+					names[g][k] = 0;
+				}
+				p += 128;
+			}
+			uint8_t scroll[PS1_MAX_NODES];
+			for (int i = 0; i < PS1_MAX_NODES; i++) {
+				scroll[i] = 0;
+			}
+			if (p + 128 <= end) {
+				for (int i = 0; i < 128 && i < PS1_MAX_NODES; i++) {
+					scroll[i] = p[i];
+				}
+				p += 128;
+			}
 			script_vm_set_nodes(parsed, got);
+			script_vm_set_group_bits(bits, got);
+			script_vm_set_group_names(names);
+			script_vm_set_scroll(scroll, got);
+			if (p + 10 <= end) {
+				script_vm_set_fog(p[0], int(p[2] | (p[3] << 8)), int(p[4] | (p[5] << 8)), p[6], p[7], p[8]);
+			}
 		}
 	}
 #endif

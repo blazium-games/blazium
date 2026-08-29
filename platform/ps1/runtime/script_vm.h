@@ -54,7 +54,7 @@
 #define PS1_MAX_PARTICLES 16
 #endif
 #ifndef PS1_COOK_ABI
-#define PS1_COOK_ABI 18
+#define PS1_COOK_ABI 19
 #endif
 #ifndef PS1_MAX_STREAMS
 #define PS1_MAX_STREAMS 4
@@ -238,6 +238,10 @@ int script_vm_sprite_count();
 
 void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, size_t luau_size);
 void script_vm_set_nodes(const ScriptVMNode *nodes, int count);
+void script_vm_set_group_bits(const uint8_t *bits, int count);
+void script_vm_set_group_names(const char names[8][16]);
+void script_vm_set_scroll(const uint8_t *scroll, int count);
+void script_vm_set_fog(int on, int start, int end, uint8_t r, uint8_t g, uint8_t b);
 void script_vm_set_hud(const ScriptVMHud *hud, int count);
 void script_vm_set_tiles(const ScriptVMTile *tiles, int count);
 void script_vm_set_packs(const ScriptVMPack *packs, int count);

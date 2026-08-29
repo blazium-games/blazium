@@ -214,11 +214,71 @@ public:
 		_fail_ps1();
 		return false;
 	}
+	bool is_hitboxes_loaded(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
 	bool load_cameras(const String &p_path) {
 		_fail_ps1();
 		return false;
 	}
 	bool unload_cameras(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool is_cameras_loaded(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool can_load_cameras(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool add_to_group(const Variant &p_node, const String &p_name) {
+		_fail_ps1();
+		return false;
+	}
+	bool remove_from_group(const Variant &p_node, const String &p_name) {
+		_fail_ps1();
+		return false;
+	}
+	bool is_in_group(const Variant &p_node, const String &p_name) const {
+		_fail_ps1();
+		return false;
+	}
+	int count_in_group(const String &p_name) const {
+		_fail_ps1();
+		return 0;
+	}
+	Variant get_in_group(const String &p_name, int p_index) const {
+		_fail_ps1();
+		return Variant();
+	}
+	Variant get_first_in_group(const String &p_name) const {
+		_fail_ps1();
+		return Variant();
+	}
+	Variant find_nearest(const Variant &p_from, const String &p_group) const {
+		_fail_ps1();
+		return Variant();
+	}
+	bool set_billboard(const Variant &p_node, bool p_on) {
+		_fail_ps1();
+		return false;
+	}
+	bool get_billboard(const Variant &p_node) const {
+		_fail_ps1();
+		return false;
+	}
+	Variant get_floor_node() const {
+		_fail_ps1();
+		return Variant();
+	}
+	Vector3 get_floor_normal() const {
+		_fail_ps1();
+		return Vector3();
+	}
+	bool make_current(const Variant &p_node) {
 		_fail_ps1();
 		return false;
 	}
