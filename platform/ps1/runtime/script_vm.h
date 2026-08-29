@@ -116,7 +116,12 @@ struct ScriptVMPack {
 	uint8_t nav_resident;
 	uint8_t path_resident;
 	uint8_t way_resident;
+	uint8_t mesh_resident;
+	uint8_t tim_resident;
 	uint8_t tim_lo, tim_hi;
+	uint32_t mesh_ram;
+	uint32_t tim_ram;
+	uint32_t charged;
 };
 
 struct ScriptVMCam {

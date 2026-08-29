@@ -86,6 +86,14 @@ void PS1::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("unload_cameras", "path"), &PS1::unload_cameras);
 	ClassDB::bind_method(D_METHOD("is_cameras_loaded", "path"), &PS1::is_cameras_loaded);
 	ClassDB::bind_method(D_METHOD("can_load_cameras", "path"), &PS1::can_load_cameras);
+	ClassDB::bind_method(D_METHOD("load_meshes", "path"), &PS1::load_meshes);
+	ClassDB::bind_method(D_METHOD("unload_meshes", "path"), &PS1::unload_meshes);
+	ClassDB::bind_method(D_METHOD("can_load_meshes", "path"), &PS1::can_load_meshes);
+	ClassDB::bind_method(D_METHOD("is_meshes_loaded", "path"), &PS1::is_meshes_loaded);
+	ClassDB::bind_method(D_METHOD("load_textures", "path"), &PS1::load_textures);
+	ClassDB::bind_method(D_METHOD("unload_textures", "path"), &PS1::unload_textures);
+	ClassDB::bind_method(D_METHOD("can_load_textures", "path"), &PS1::can_load_textures);
+	ClassDB::bind_method(D_METHOD("is_textures_loaded", "path"), &PS1::is_textures_loaded);
 	ClassDB::bind_method(D_METHOD("add_to_group", "node", "name"), &PS1::add_to_group);
 	ClassDB::bind_method(D_METHOD("remove_from_group", "node", "name"), &PS1::remove_from_group);
 	ClassDB::bind_method(D_METHOD("is_in_group", "node", "name"), &PS1::is_in_group);

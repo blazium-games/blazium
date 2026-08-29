@@ -805,6 +805,15 @@ void script_vm_set_packs(const ScriptVMPack *packs, int count) {
 		g_ram_used = g_packs[0].ram_bytes;
 		g_ram_peak = g_ram_used;
 		g_ntim_used = int(g_packs[0].tim_count);
+		g_packs[0].mesh_resident = (g_packs[0].tri_count > 0 || g_packs[0].tri_hi > g_packs[0].tri_lo) ? 1 : 0;
+		g_packs[0].tim_resident = g_packs[0].tim_count > 0 ? 1 : 0;
+		g_packs[0].charged = g_packs[0].ram_bytes;
+		g_packs[0].mesh_ram = uint32_t(g_packs[0].tri_count) * 32u;
+		g_packs[0].tim_ram = 0;
+		if (g_packs[0].tim_count > 0 && g_packs[0].tim_hi <= g_packs[0].tim_lo) {
+			g_packs[0].tim_lo = 0;
+			g_packs[0].tim_hi = uint8_t(g_packs[0].tim_count > 16 ? 16 : g_packs[0].tim_count);
+		}
 	}
 }
 
@@ -2199,8 +2208,8 @@ static int pack_copy_cost(int pack, int *nodes, int *hud, int *tiles, int *tris,
 	*nodes = int(p->node_count);
 	*hud = int(p->hud_count);
 	*tiles = int(p->tile_count);
-	*tris = include_load && !p->resident ? int(p->tri_count) : 0;
-	*tims = include_load && !p->resident ? int(p->tim_count) : 0;
+	*tris = include_load && !p->mesh_resident ? int(p->tri_count) : 0;
+	*tims = include_load && !p->tim_resident ? int(p->tim_count) : 0;
 	*ram = inst_row_ram(*nodes, *hud, *tiles);
 	if (include_load && !p->resident) {
 		*ram += int(p->ram_bytes);
@@ -2227,6 +2236,129 @@ static int budgets_fit(int nodes, int hud, int tiles, int tris, int tims, int ra
 	if (g_ram_used + uint32_t(ram) > uint32_t(PS1_RAM_BUDGET)) {
 		return 0;
 	}
+	return 1;
+}
+
+static int pack_owns_node(int pack, int n) {
+	return n >= 0 && n < g_nnode && g_node_used[n] && int(g_node_pack[n]) == pack;
+}
+
+static void pack_nodes_to_local(int pack) {
+	const int base = int(g_packs[pack].tri_lo);
+	if (g_packs[pack].tri_hi <= g_packs[pack].tri_lo) {
+		return;
+	}
+	for (int n = 0; n < g_nnode; n++) {
+		if (!pack_owns_node(pack, n) || g_nodes[n].tri_hi <= g_nodes[n].tri_lo) {
+			continue;
+		}
+		int lo = int(g_nodes[n].tri_lo) - base;
+		int hi = int(g_nodes[n].tri_hi) - base;
+		if (lo < 0) {
+			lo = 0;
+		}
+		if (hi < 0) {
+			hi = 0;
+		}
+		g_nodes[n].tri_lo = uint16_t(lo);
+		g_nodes[n].tri_hi = uint16_t(hi);
+	}
+}
+
+static void pack_nodes_add_base(int pack, int base) {
+	if (base <= 0) {
+		return;
+	}
+	for (int n = 0; n < g_nnode; n++) {
+		if (!pack_owns_node(pack, n) || g_nodes[n].tri_hi <= g_nodes[n].tri_lo) {
+			continue;
+		}
+		g_nodes[n].tri_lo = uint16_t(int(g_nodes[n].tri_lo) + base);
+		g_nodes[n].tri_hi = uint16_t(int(g_nodes[n].tri_hi) + base);
+	}
+}
+
+static void compact_mesh_range(int lo, int hi) {
+	const int drop = hi - lo;
+	if (drop <= 0 || lo < 0 || hi > g_ntri) {
+		return;
+	}
+	if (hi < g_ntri) {
+		const int tail = g_ntri - hi;
+		uint8_t *dst = g_mesh + 4 + lo * 32;
+		const uint8_t *src = g_mesh + 4 + hi * 32;
+		for (int i = 0; i < tail * 32; i++) {
+			dst[i] = src[i];
+		}
+		for (int n = 0; n < g_nnode; n++) {
+			if (!g_node_used[n] || g_nodes[n].tri_hi <= g_nodes[n].tri_lo) {
+				continue;
+			}
+			const int nlo = int(g_nodes[n].tri_lo);
+			const int nhi = int(g_nodes[n].tri_hi);
+			if (nlo >= hi) {
+				g_nodes[n].tri_lo = uint16_t(nlo - drop);
+				g_nodes[n].tri_hi = uint16_t(nhi - drop);
+			}
+		}
+		for (int p = 0; p < g_npack; p++) {
+			if (g_packs[p].tri_hi > g_packs[p].tri_lo && int(g_packs[p].tri_lo) >= hi) {
+				g_packs[p].tri_lo = uint16_t(int(g_packs[p].tri_lo) - drop);
+				g_packs[p].tri_hi = uint16_t(int(g_packs[p].tri_hi) - drop);
+			}
+		}
+	}
+	g_ntri -= drop;
+	g_mesh[0] = uint8_t(g_ntri & 0xff);
+	g_mesh[1] = uint8_t(g_ntri >> 8);
+}
+
+static void pack_refund(int pack, uint32_t amt) {
+	if (amt == 0) {
+		return;
+	}
+	bump_ram(-int(amt));
+	if (g_packs[pack].charged > amt) {
+		g_packs[pack].charged -= amt;
+	} else {
+		g_packs[pack].charged = 0;
+	}
+}
+
+static int reclaim_pack_mesh(int pack) {
+	if (pack < 0 || pack >= g_npack || !g_packs[pack].mesh_resident) {
+		return 0;
+	}
+	const int lo = int(g_packs[pack].tri_lo);
+	const int hi = int(g_packs[pack].tri_hi);
+	pack_nodes_to_local(pack);
+	if (hi > lo) {
+		compact_mesh_range(lo, hi);
+	}
+	pack_refund(pack, g_packs[pack].mesh_ram);
+	g_packs[pack].mesh_ram = 0;
+	g_packs[pack].mesh_resident = 0;
+	g_packs[pack].tri_lo = 0;
+	g_packs[pack].tri_hi = 0;
+	return 1;
+}
+
+static int reclaim_pack_tim(int pack) {
+	if (pack < 0 || pack >= g_npack || !g_packs[pack].tim_resident) {
+		return 0;
+	}
+	if (g_host && g_host->evict_tpak && g_packs[pack].tim_hi > g_packs[pack].tim_lo) {
+		g_host->evict_tpak(int(g_packs[pack].tim_lo), int(g_packs[pack].tim_hi));
+	}
+	g_ntim_used -= int(g_packs[pack].tim_count);
+	if (g_ntim_used < 0) {
+		g_ntim_used = 0;
+	}
+	pack_refund(pack, g_packs[pack].tim_ram);
+	g_packs[pack].tim_ram = 0;
+	g_packs[pack].tim_resident = 0;
+	g_packs[pack].tim_lo = 0;
+	g_packs[pack].tim_hi = 0;
 	return 1;
 }
 
@@ -2526,11 +2658,20 @@ static int load_pack_resident(int pack) {
 			}
 			g_packs[pack].tim_lo = uint8_t(lo);
 			g_packs[pack].tim_hi = uint8_t(hi);
+			g_packs[pack].tim_resident = 1;
+			g_packs[pack].tim_ram = uint32_t(tbk > 0 ? tbk : 0);
 		}
+	}
+	if (mesh_added > 0) {
+		g_packs[pack].tri_lo = uint16_t(tri_base);
+		g_packs[pack].tri_hi = uint16_t(g_ntri);
+		g_packs[pack].mesh_resident = 1;
+		g_packs[pack].mesh_ram = uint32_t(mesh_added) * 32u;
 	}
 	g_packs[pack].resident = 1;
 	g_ntim_used += tims;
 	bump_ram(int(g_packs[pack].ram_bytes));
+	g_packs[pack].charged = g_packs[pack].ram_bytes;
 	g_did_ready = 0;
 	return 1;
 }
@@ -2547,9 +2688,8 @@ static int unload_pack_resident(int pack) {
 	if (g_cam_attach >= lo && g_cam_attach < hi) {
 		return 0;
 	}
-	if (g_host && g_host->evict_tpak && g_packs[pack].tim_hi > g_packs[pack].tim_lo) {
-		g_host->evict_tpak(int(g_packs[pack].tim_lo), int(g_packs[pack].tim_hi));
-	}
+	reclaim_pack_mesh(pack);
+	reclaim_pack_tim(pack);
 	for (int n = 0; n < g_nnode; n++) {
 		if (!g_node_used[n] || !(g_nodes[n].flags & 4)) {
 			continue;
@@ -2579,11 +2719,10 @@ static int unload_pack_resident(int pack) {
 		g_node_ready[n] = 0;
 		g_inst_group[n] = 0;
 	}
-	g_ntim_used -= int(g_packs[pack].tim_count);
-	if (g_ntim_used < 0) {
-		g_ntim_used = 0;
+	if (g_packs[pack].charged) {
+		bump_ram(-int(g_packs[pack].charged));
+		g_packs[pack].charged = 0;
 	}
-	bump_ram(-int(g_packs[pack].ram_bytes));
 	g_packs[pack].resident = 0;
 	g_packs[pack].node_lo = 0;
 	g_packs[pack].node_hi = 0;
@@ -2916,6 +3055,63 @@ static int load_pack_slice(int pack, const char *kind) {
 	if (pack < 0 || pack >= g_npack) {
 		return 0;
 	}
+	if (name_is(kind, "MESH")) {
+		if (g_packs[pack].mesh_resident) {
+			return 1;
+		}
+		const int n = try_read_pack_blob(pack, "MESH", g_load_buf, int(sizeof(g_load_buf)));
+		if (n <= 0) {
+			return 0;
+		}
+		const int want = int(g_packs[pack].tri_count);
+		const int ram = want * 32;
+		if (!budgets_fit(0, 0, 0, want, 0, ram)) {
+			return 0;
+		}
+		const int mesh_added = append_mesh_blob(g_load_buf, n);
+		if (mesh_added < 0) {
+			return 0;
+		}
+		if (mesh_added == 0 && want > 0) {
+			return 0;
+		}
+		const int tri_base = g_ntri - (mesh_added > 0 ? mesh_added : 0);
+		g_packs[pack].tri_lo = uint16_t(tri_base);
+		g_packs[pack].tri_hi = uint16_t(g_ntri);
+		pack_nodes_add_base(pack, tri_base);
+		g_packs[pack].mesh_resident = 1;
+		g_packs[pack].mesh_ram = uint32_t(mesh_added) * 32u;
+		bump_ram(int(g_packs[pack].mesh_ram));
+		g_packs[pack].charged += g_packs[pack].mesh_ram;
+		return 1;
+	}
+	if (name_is(kind, "TPAK")) {
+		if (g_packs[pack].tim_resident) {
+			return 1;
+		}
+		const int n = try_read_pack_blob(pack, "TPAK", g_load_buf, int(sizeof(g_load_buf)));
+		if (n <= 0) {
+			return 0;
+		}
+		const int want = int(g_packs[pack].tim_count);
+		if (!budgets_fit(0, 0, 0, 0, want, n)) {
+			return 0;
+		}
+		if (want > 0 && g_host && g_host->upload_tpak) {
+			int lo = 0, hi = 0;
+			if (!g_host->upload_tpak(g_load_buf, n, &lo, &hi)) {
+				return 0;
+			}
+			g_packs[pack].tim_lo = uint8_t(lo);
+			g_packs[pack].tim_hi = uint8_t(hi);
+			g_ntim_used += want;
+		}
+		g_packs[pack].tim_resident = 1;
+		g_packs[pack].tim_ram = uint32_t(n);
+		bump_ram(n);
+		g_packs[pack].charged += g_packs[pack].tim_ram;
+		return 1;
+	}
 	if (pack == 0 && name_is(kind, "ANIM") && g_nclip > 0) {
 		g_packs[0].anim_resident = 1;
 		return 1;
@@ -3227,8 +3423,15 @@ static int unload_pack_slice(int pack, const char *kind) {
 	if (pack < 0 || pack >= g_npack) {
 		return 0;
 	}
-	if (pack == 0 && !name_is(kind, "TXT") && !name_is(kind, "SFX") && !name_is(kind, "MUSIC")) {
+	if (pack == 0 && !name_is(kind, "TXT") && !name_is(kind, "SFX") && !name_is(kind, "MUSIC") &&
+			!name_is(kind, "MESH") && !name_is(kind, "TPAK")) {
 		return 0;
+	}
+	if (name_is(kind, "MESH")) {
+		return reclaim_pack_mesh(pack);
+	}
+	if (name_is(kind, "TPAK")) {
+		return reclaim_pack_tim(pack);
 	}
 	if (name_is(kind, "ANIM")) {
 		g_packs[pack].anim_resident = 0;
@@ -5890,6 +6093,12 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			name_is(name, "is_hitboxes_loaded") ||
 			name_is(name, "load_cameras") || name_is(name, "unload_cameras") ||
 			name_is(name, "is_cameras_loaded") || name_is(name, "can_load_cameras") ||
+			name_is(name, "load_meshes") || name_is(name, "unload_meshes") ||
+			name_is(name, "can_load_meshes") || name_is(name, "is_meshes_loaded") ||
+			name_is(name, "load_mesh") || name_is(name, "unload_mesh") ||
+			name_is(name, "load_textures") || name_is(name, "unload_textures") ||
+			name_is(name, "can_load_textures") || name_is(name, "is_textures_loaded") ||
+			name_is(name, "load_tim") || name_is(name, "unload_tim") ||
 			name_is(name, "is_action_pressed_on") || name_is(name, "is_action_just_pressed_on") ||
 			name_is(name, "is_action_just_released_on") ||
 			name_is(name, "memcard_present") || name_is(name, "memcard_ready") || name_is(name, "memcard_format") ||
@@ -7867,6 +8076,56 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 				return 1;
 			}
 			*ret = gv_bool(try_read_pack_blob(pack, "CAM", g_load_buf, 8) > 0);
+			return 1;
+		}
+		if (name_is(name, "load_meshes") || name_is(name, "load_mesh")) {
+			*ret = gv_bool(load_pack_slice(pack, "MESH"));
+			return 1;
+		}
+		if (name_is(name, "unload_meshes") || name_is(name, "unload_mesh")) {
+			*ret = gv_bool(unload_pack_slice(pack, "MESH"));
+			return 1;
+		}
+		if (name_is(name, "is_meshes_loaded")) {
+			*ret = gv_bool(pack >= 0 && pack < g_npack && (g_packs[pack].mesh_resident || (pack == 0 && g_ntri > 0 && g_packs[0].mesh_resident)));
+			return 1;
+		}
+		if (name_is(name, "can_load_meshes")) {
+			if (pack < 0 || pack >= g_npack) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			if (g_packs[pack].mesh_resident) {
+				*ret = gv_bool(1);
+				return 1;
+			}
+			const int want = int(g_packs[pack].tri_count);
+			*ret = gv_bool(try_read_pack_blob(pack, "MESH", g_load_buf, 8) > 0 && budgets_fit(0, 0, 0, want, 0, want * 32));
+			return 1;
+		}
+		if (name_is(name, "load_textures") || name_is(name, "load_tim")) {
+			*ret = gv_bool(load_pack_slice(pack, "TPAK"));
+			return 1;
+		}
+		if (name_is(name, "unload_textures") || name_is(name, "unload_tim")) {
+			*ret = gv_bool(unload_pack_slice(pack, "TPAK"));
+			return 1;
+		}
+		if (name_is(name, "is_textures_loaded")) {
+			*ret = gv_bool(pack >= 0 && pack < g_npack && g_packs[pack].tim_resident);
+			return 1;
+		}
+		if (name_is(name, "can_load_textures")) {
+			if (pack < 0 || pack >= g_npack) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			if (g_packs[pack].tim_resident) {
+				*ret = gv_bool(1);
+				return 1;
+			}
+			const int want = int(g_packs[pack].tim_count);
+			*ret = gv_bool(try_read_pack_blob(pack, "TPAK", g_load_buf, 8) > 0 && budgets_fit(0, 0, 0, 0, want, 0));
 			return 1;
 		}
 		if (name_is(name, "is_action_pressed_on") || name_is(name, "is_action_just_pressed_on") ||

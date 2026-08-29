@@ -172,6 +172,12 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "can_load_sprites" || p_name == "is_sprites_loaded" ||
 			p_name == "load_hitboxes" || p_name == "unload_hitboxes" || p_name == "can_load_hitboxes" ||
 			p_name == "load_cameras" || p_name == "unload_cameras" ||
+			p_name == "load_meshes" || p_name == "unload_meshes" ||
+			p_name == "can_load_meshes" || p_name == "is_meshes_loaded" ||
+			p_name == "load_mesh" || p_name == "unload_mesh" ||
+			p_name == "load_textures" || p_name == "unload_textures" ||
+			p_name == "can_load_textures" || p_name == "is_textures_loaded" ||
+			p_name == "load_tim" || p_name == "unload_tim" ||
 			p_name == "is_action_pressed_on" || p_name == "is_action_just_pressed_on" ||
 			p_name == "is_action_just_released_on" ||
 			p_name == "memcard_present" || p_name == "memcard_ready" || p_name == "memcard_format" ||
@@ -221,6 +227,10 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "overlaps_entered" || p_name == "has_overlapping_areas" ||
 			p_name == "get_overlapping_area_count" || p_name == "get_overlapping_area" ||
 			p_name == "is_hitboxes_loaded" || p_name == "is_cameras_loaded" || p_name == "can_load_cameras" ||
+			p_name == "load_meshes" || p_name == "unload_meshes" || p_name == "can_load_meshes" || p_name == "is_meshes_loaded" ||
+			p_name == "load_mesh" || p_name == "unload_mesh" ||
+			p_name == "load_textures" || p_name == "unload_textures" || p_name == "can_load_textures" || p_name == "is_textures_loaded" ||
+			p_name == "load_tim" || p_name == "unload_tim" ||
 			p_name == "add_to_group" || p_name == "remove_from_group" || p_name == "is_in_group" ||
 			p_name == "count_in_group" || p_name == "get_in_group" || p_name == "get_first_in_group" ||
 			p_name == "find_nearest" || p_name == "set_billboard" || p_name == "get_billboard" ||
@@ -946,6 +956,10 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 			"load_sprites", "unload_sprites", "can_load_sprites", "is_sprites_loaded",
 			"load_hitboxes", "unload_hitboxes", "can_load_hitboxes", "is_hitboxes_loaded",
 			"load_cameras", "unload_cameras", "is_cameras_loaded", "can_load_cameras",
+			"load_meshes", "unload_meshes", "can_load_meshes", "is_meshes_loaded",
+			"load_mesh", "unload_mesh",
+			"load_textures", "unload_textures", "can_load_textures", "is_textures_loaded",
+			"load_tim", "unload_tim",
 			"add_to_group", "remove_from_group", "is_in_group", "count_in_group", "get_in_group", "get_first_in_group",
 			"find_nearest", "set_billboard", "get_billboard", "get_floor_node", "get_floor_normal", "make_current",
 			"attach", "look", "orbit", "shake", "set_limits", "set_drag",

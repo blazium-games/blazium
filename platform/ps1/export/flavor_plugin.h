@@ -234,6 +234,38 @@ public:
 		_fail_ps1();
 		return false;
 	}
+	bool load_meshes(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool unload_meshes(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool can_load_meshes(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool is_meshes_loaded(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool load_textures(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool unload_textures(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool can_load_textures(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool is_textures_loaded(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
 	bool add_to_group(const Variant &p_node, const String &p_name) {
 		_fail_ps1();
 		return false;
