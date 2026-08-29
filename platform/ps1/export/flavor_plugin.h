@@ -945,6 +945,18 @@ public:
 		_fail_ps1();
 		return false;
 	}
+	bool set_spawn(const Variant &p_node, float p_x, float p_y, float p_z) {
+		_fail_ps1();
+		return false;
+	}
+	int unload_extras() {
+		_fail_ps1();
+		return 0;
+	}
+	bool set_global_position(const Variant &p_node, const Vector3 &p_pos) {
+		_fail_ps1();
+		return false;
+	}
 	bool set_path_progress(const Variant &p_node, float p_t) {
 		_fail_ps1();
 		return false;

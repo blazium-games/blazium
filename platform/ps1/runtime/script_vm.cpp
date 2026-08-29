@@ -189,6 +189,10 @@ static float g_music_fade_left = 0;
 static float g_music_fade_dur = 0;
 static int g_last_shot_nid = -1;
 static int16_t g_hp_max[PS1_MAX_NODES];
+static int g_spawn_nid = -1;
+static float g_spawn_x = 0, g_spawn_y = 0, g_spawn_z = 0;
+static uint8_t g_spawn_set = 0;
+static int g_active_pack = 0;
 static int16_t g_hud_ox = 0, g_hud_oy = 0;
 static ScriptVMShot g_shot[32];
 static int g_nshot = 32;
@@ -468,6 +472,10 @@ void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, 
 	g_last_shot_nid = -1;
 	g_cp_scene[0] = 0;
 	g_cp_scene_set = 0;
+	g_spawn_nid = -1;
+	g_spawn_x = g_spawn_y = g_spawn_z = 0;
+	g_spawn_set = 0;
+	g_active_pack = 0;
 	g_say_hud = -1;
 	g_say_text[0] = 0;
 	g_say_len = 0;
@@ -1086,6 +1094,35 @@ static void kit_set_hp_cap(int nid, int n) {
 	}
 }
 
+static void kit_apply_spawn() {
+	if (!g_spawn_set || !node_ok(g_spawn_nid)) {
+		return;
+	}
+	g_nodes[g_spawn_nid].px = int16_t(g_spawn_x);
+	g_nodes[g_spawn_nid].py = int16_t(-g_spawn_y);
+	g_nodes[g_spawn_nid].pz = int16_t(g_spawn_z);
+}
+
+static void kit_set_global_pos(int nid, float x, float y, float z) {
+	if (!node_ok(nid)) {
+		return;
+	}
+	float wx = x;
+	float wy = -y;
+	float wz = z;
+	int p = int(g_nodes[nid].parent);
+	int guard = 0;
+	while (p >= 0 && p < g_nnode && g_node_used[p] && guard++ < 16) {
+		wx -= float(g_nodes[p].px);
+		wy -= float(g_nodes[p].py);
+		wz -= float(g_nodes[p].pz);
+		p = int(g_nodes[p].parent);
+	}
+	g_nodes[nid].px = int16_t(wx);
+	g_nodes[nid].py = int16_t(wy);
+	g_nodes[nid].pz = int16_t(wz);
+}
+
 static int kit_shot_hit_first() {
 	for (int i = 0; i < 32; i++) {
 		if (g_shot[i].hit < 0 || kit_invuln(int(g_shot[i].hit))) {
@@ -1343,6 +1380,12 @@ static void apply_method(const ScriptVMHost *host, int node, const char *name, f
 			g_nodes[node].pz = int16_t(argv[0].z);
 		} else {
 			g_nodes[node].pz += int16_t(arg);
+		}
+		return;
+	}
+	if (name_is(name, "set_global_position") && node_ok(node)) {
+		if (argv && argc > 0 && argv[0].type == V_V3) {
+			kit_set_global_pos(node, argv[0].x, argv[0].y, argv[0].z);
 		}
 		return;
 	}
@@ -2121,6 +2164,7 @@ static void activate_pack(int pack, const ScriptVMHost *host) {
 		}
 	}
 	g_did_ready = 0;
+	g_active_pack = pack;
 }
 
 static int find_free_node() {
@@ -3462,6 +3506,28 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 	if (name_is(name, "has_feature")) {
 		const char *f = argv && argc > 0 && argv[0].type == V_STR ? argv[0].s : "";
 		*ret = gv_bool(name_is(f, "ps1"));
+		return 1;
+	}
+	if (name_is(name, "set_global_position")) {
+		int nid = node;
+		int ai = 0;
+		if (argv && argc > 0 && argv[0].type == V_OBJ) {
+			nid = argv[0].i;
+			ai = 1;
+		}
+		if (!node_ok(nid)) {
+			*ret = gv_bool(0);
+			return 1;
+		}
+		if (argv && argc > ai && argv[ai].type == V_V3) {
+			kit_set_global_pos(nid, argv[ai].x, argv[ai].y, argv[ai].z);
+		} else if (argv && argc > ai + 2) {
+			kit_set_global_pos(nid, as_float(argv[ai]), as_float(argv[ai + 1]), as_float(argv[ai + 2]));
+		} else {
+			*ret = gv_bool(0);
+			return 1;
+		}
+		*ret = gv_bool(1);
 		return 1;
 	}
 	if ((name_is(name, "get_position") || name_is(name, "get_global_position") || name_is(name, "get_global_rotation") || name_is(name, "get_rotation")) && node_ok(node)) {
@@ -5466,6 +5532,7 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			name_is(name, "set_hp") || name_is(name, "get_hp") || name_is(name, "hurt") ||
 			name_is(name, "portal") || name_is(name, "nav_follow") || name_is(name, "move_planar") ||
 			name_is(name, "save_slot") || name_is(name, "load_slot") ||
+			name_is(name, "set_spawn") || name_is(name, "unload_extras") || name_is(name, "set_global_position") ||
 			name_is(name, "stop_music") || name_is(name, "set_music_fade") ||
 			name_is(name, "say") || name_is(name, "say_done") ||
 			name_is(name, "swap_pack") || name_is(name, "set_checkpoint_scene") ||
@@ -5549,6 +5616,46 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			*ret = gv_bool(1);
 			return 1;
 		}
+		if (name_is(name, "set_spawn")) {
+			int nid = node;
+			int ai = 0;
+			if (argv && argc > 0 && argv[0].type == V_OBJ) {
+				nid = argv[0].i;
+				ai = 1;
+			}
+			if (!node_ok(nid)) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			if (argv && argc > ai && argv[ai].type == V_V3) {
+				g_spawn_x = argv[ai].x;
+				g_spawn_y = argv[ai].y;
+				g_spawn_z = argv[ai].z;
+			} else if (argv && argc > ai + 2) {
+				g_spawn_x = as_float(argv[ai]);
+				g_spawn_y = as_float(argv[ai + 1]);
+				g_spawn_z = as_float(argv[ai + 2]);
+			} else {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			g_spawn_nid = nid;
+			g_spawn_set = 1;
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "unload_extras")) {
+			int n = 0;
+			for (int i = 1; i < g_npack; i++) {
+				if (g_packs[i].resident && i != g_active_pack) {
+					if (unload_pack_resident(i)) {
+						n++;
+					}
+				}
+			}
+			*ret = gv_int(n);
+			return 1;
+		}
 		if (name_is(name, "set_checkpoint_scene")) {
 			const char *path = argv && argc > 0 && argv[0].type == V_STR ? argv[0].s : "";
 			copy_str(g_cp_scene, 64, path);
@@ -5557,7 +5664,11 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			return 1;
 		}
 		if (name_is(name, "load_scene")) {
-			*ret = gv_bool(load_pack_resident(pack));
+			int ok = load_pack_resident(pack);
+			if (ok) {
+				kit_apply_spawn();
+			}
+			*ret = gv_bool(ok);
 			return 1;
 		}
 		if (name_is(name, "unload_scene")) {
@@ -7606,6 +7717,7 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			return 1;
 		}
 		activate_pack(pack, host);
+		kit_apply_spawn();
 		*ret = gv_int(1);
 		return 1;
 	}

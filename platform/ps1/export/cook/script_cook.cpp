@@ -143,6 +143,7 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "set_hp" || p_name == "get_hp" || p_name == "hurt" ||
 			p_name == "portal" || p_name == "nav_follow" || p_name == "move_planar" ||
 			p_name == "save_slot" || p_name == "load_slot" ||
+			p_name == "set_spawn" || p_name == "unload_extras" || p_name == "set_global_position" ||
 			p_name == "set_frame" || p_name == "set_flip" ||
 			p_name == "get_frame" || p_name == "get_flip_h" || p_name == "set_flip_h" ||
 			p_name == "get_x" || p_name == "get_y" || p_name == "get_z" ||
@@ -915,6 +916,7 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 			"say", "say_done", "swap_pack", "set_checkpoint_scene",
 			"shot_hit_any", "last_shot_hit", "set_hp", "get_hp", "hurt",
 			"portal", "nav_follow", "move_planar", "save_slot", "load_slot",
+			"set_spawn", "unload_extras", "set_global_position",
 			"get_frame", "get_flip_h", "set_flip_h",
 			"get_forward", "get_right", "get_up", "translate_local", "move_and_fly",
 			"apply_gravity", "add_velocity", "spawn_shot", "shot_hit", "get_ray_node",

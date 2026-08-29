@@ -265,6 +265,9 @@ void PS1::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("move_planar", "node", "ax", "ay", "speed"), &PS1::move_planar);
 	ClassDB::bind_method(D_METHOD("save_slot", "slot"), &PS1::save_slot);
 	ClassDB::bind_method(D_METHOD("load_slot", "slot"), &PS1::load_slot);
+	ClassDB::bind_method(D_METHOD("set_spawn", "node", "x", "y", "z"), &PS1::set_spawn);
+	ClassDB::bind_method(D_METHOD("unload_extras"), &PS1::unload_extras);
+	ClassDB::bind_method(D_METHOD("set_global_position", "node", "pos"), &PS1::set_global_position);
 	ClassDB::bind_method(D_METHOD("set_path_progress", "node", "t"), &PS1::set_path_progress);
 	ClassDB::bind_method(D_METHOD("get_path_progress", "node"), &PS1::get_path_progress);
 	ClassDB::bind_method(D_METHOD("get_path_point", "path", "i"), &PS1::get_path_point);
