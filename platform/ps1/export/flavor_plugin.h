@@ -818,6 +818,30 @@ public:
 		_fail_ps1();
 		return false;
 	}
+	bool change_scene(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool set_path_progress(const Variant &p_node, float p_t) {
+		_fail_ps1();
+		return false;
+	}
+	float get_path_progress(const Variant &p_node) const {
+		_fail_ps1();
+		return 0.0f;
+	}
+	Variant get_path_point(int p_path, int p_i) const {
+		_fail_ps1();
+		return Variant();
+	}
+	int count_path_points(int p_path) const {
+		_fail_ps1();
+		return 0;
+	}
+	Variant nav_next_node(const Variant &p_from, const Variant &p_to) const {
+		_fail_ps1();
+		return Variant();
+	}
 };
 
 class PS1FlavorEditorPlugin : public EditorPlugin {

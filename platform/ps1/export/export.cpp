@@ -14,6 +14,7 @@
 #include "export_plugin.h"
 #include "flavor_plugin.h"
 
+#include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "editor/editor_node.h"
 #include "editor/editor_settings.h"
@@ -44,6 +45,9 @@ void register_ps1_exporter() {
 	Ref<EditorExportPlatformPS1> platform;
 	platform.instantiate();
 	EditorExport::get_singleton()->add_export_platform(platform);
+	if (Engine::get_singleton() && !Engine::get_singleton()->has_singleton("PS1")) {
+		Engine::get_singleton()->add_singleton(Engine::Singleton("PS1", memnew(PS1)));
+	}
 	EditorNode::add_init_callback(_ps1_flavor_init);
 #endif
 }

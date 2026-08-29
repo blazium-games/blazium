@@ -229,7 +229,10 @@ static bool member_is_allowlisted(const String &p_name) {
 			p_name == "value" || p_name == "min_value" || p_name == "max_value" || p_name == "selected" ||
 			p_name == "focus" || p_name == "x" || p_name == "y" || p_name == "z" ||
 			p_name == "frame" || p_name == "flip_h" || p_name == "flip_v" || p_name == "modulate" || p_name == "speed_scale" ||
-			p_name == "velocity" || p_name == "billboard";
+			p_name == "velocity" || p_name == "billboard" ||
+			p_name == "get_velocity" || p_name == "set_velocity" ||
+			p_name == "get_position" || p_name == "set_position" ||
+			p_name == "get_global_position" || p_name == "set_global_position";
 }
 
 static bool action_is_known(const String &p_name) {
@@ -433,6 +436,8 @@ static int host_opcode_size(const Vector<int> &code, int ip) {
 		case Op::OPCODE_TYPE_ADJUST_STRING:
 		case Op::OPCODE_TYPE_ADJUST_VECTOR2:
 		case Op::OPCODE_TYPE_ADJUST_VECTOR3:
+		case Op::OPCODE_TYPE_ADJUST_OBJECT:
+		case Op::OPCODE_TYPE_ADJUST_NODE_PATH:
 			return 2;
 		case Op::OPCODE_CALL:
 		case Op::OPCODE_CALL_RETURN:
@@ -492,6 +497,7 @@ static bool opcode_allowed(int op) {
 			op == Op::OPCODE_TYPE_ADJUST_BOOL || op == Op::OPCODE_TYPE_ADJUST_INT ||
 			op == Op::OPCODE_TYPE_ADJUST_FLOAT || op == Op::OPCODE_TYPE_ADJUST_STRING ||
 			op == Op::OPCODE_TYPE_ADJUST_VECTOR2 || op == Op::OPCODE_TYPE_ADJUST_VECTOR3 ||
+			op == Op::OPCODE_TYPE_ADJUST_OBJECT || op == Op::OPCODE_TYPE_ADJUST_NODE_PATH ||
 			op == Op::OPCODE_CONSTRUCT || op == Op::OPCODE_CONSTRUCT_VALIDATED ||
 			op == Op::OPCODE_CALL || op == Op::OPCODE_CALL_RETURN ||
 			op == Op::OPCODE_CALL_UTILITY || op == Op::OPCODE_CALL_UTILITY_VALIDATED ||
@@ -594,7 +600,7 @@ static Error scan_and_normalize(const String &p_path, GDScript *script, GDScript
 				return ERR_UNCONFIGURED;
 			}
 			const String pname = String(op == Op::OPCODE_GET_NAMED_VALIDATED ? fn->get_getter_name(code[ip + 3]) : fn->get_setter_name(code[ip + 3]));
-			if (pname.is_empty() || !member_is_allowlisted(pname)) {
+			if (pname.is_empty() || !(member_is_allowlisted(pname) || method_is_allowlisted(pname))) {
 				r_err = vformat("%s:%s:%d unbound member '%s'", p_path, String(fn->get_name()), ip, pname.is_empty() ? String("?") : pname);
 				return ERR_UNCONFIGURED;
 			}

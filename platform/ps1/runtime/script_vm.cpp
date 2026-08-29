@@ -271,6 +271,8 @@ enum {
 	OP_TYPE_ADJUST_STRING = 113,
 	OP_TYPE_ADJUST_VECTOR2 = 114,
 	OP_TYPE_ADJUST_VECTOR3 = 118,
+	OP_TYPE_ADJUST_NODE_PATH = 131,
+	OP_TYPE_ADJUST_OBJECT = 133,
 	OP_ASSERT = 148,
 	OP_BREAKPOINT = 149,
 	OP_LINE = 150,
@@ -8135,6 +8137,7 @@ static int run_official(const uint8_t *blob, size_t size, const char *want, floa
 				}
 				if (op == OP_TYPE_ADJUST_BOOL || op == OP_TYPE_ADJUST_INT || op == OP_TYPE_ADJUST_FLOAT ||
 						op == OP_TYPE_ADJUST_STRING || op == OP_TYPE_ADJUST_VECTOR2 || op == OP_TYPE_ADJUST_VECTOR3 ||
+						op == OP_TYPE_ADJUST_NODE_PATH || op == OP_TYPE_ADJUST_OBJECT ||
 						op == OP_ASSERT || op == OP_JUMP_TO_DEF_ARGUMENT) {
 					if (op == OP_ASSERT) {
 						ip += 3;

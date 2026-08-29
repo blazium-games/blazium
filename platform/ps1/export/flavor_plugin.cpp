@@ -31,6 +31,9 @@
 #include "scene/resources/mesh.h"
 #include "servers/display_server.h"
 
+#include <cstdio>
+#include <ctime>
+
 void PS1::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("load_scene", "path"), &PS1::load_scene);
 	ClassDB::bind_method(D_METHOD("unload_scene", "path"), &PS1::unload_scene);
@@ -229,6 +232,12 @@ void PS1::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("can_load_waypoints", "path"), &PS1::can_load_waypoints);
 	ClassDB::bind_method(D_METHOD("is_waypoints_loaded", "path"), &PS1::is_waypoints_loaded);
 	ClassDB::bind_method(D_METHOD("unload_pack", "path"), &PS1::unload_pack);
+	ClassDB::bind_method(D_METHOD("change_scene", "path"), &PS1::change_scene);
+	ClassDB::bind_method(D_METHOD("set_path_progress", "node", "t"), &PS1::set_path_progress);
+	ClassDB::bind_method(D_METHOD("get_path_progress", "node"), &PS1::get_path_progress);
+	ClassDB::bind_method(D_METHOD("get_path_point", "path", "i"), &PS1::get_path_point);
+	ClassDB::bind_method(D_METHOD("count_path_points", "path"), &PS1::count_path_points);
+	ClassDB::bind_method(D_METHOD("nav_next_node", "from", "to"), &PS1::nav_next_node);
 }
 
 static PackedByteArray _mc_wrap(const PackedByteArray &p_payload, const String &p_title) {
@@ -389,9 +398,23 @@ void PS1FlavorEditorPlugin::_sync_singleton(bool p_enabled) {
 		if (!eng->has_singleton("PS1")) {
 			eng->add_singleton(Engine::Singleton("PS1", ps1_stub));
 		}
-	} else if (eng->has_singleton("PS1")) {
-		eng->remove_singleton("PS1");
+	} else {
+		// Keep the process-lifetime stub. GDScript only treats PS1.* as
+		// callable when Engine::has_singleton("PS1") is true at analyze time.
 	}
+	// #region agent log
+	{
+		FILE *df = fopen("D:/projects/ps1_blazium/debug-9aa74d.log", "a");
+		if (df) {
+			fprintf(df,
+					"{\"sessionId\":\"9aa74d\",\"runId\":\"post-fix\",\"hypothesisId\":\"H2\",\"location\":\"flavor_plugin.cpp:_sync_singleton\",\"message\":\"PS1 singleton sync\",\"data\":{\"want\":%s,\"has\":%s},\"timestamp\":%lld}\n",
+					p_enabled ? "true" : "false",
+					eng->has_singleton("PS1") ? "true" : "false",
+					(long long)time(nullptr) * 1000);
+			fclose(df);
+		}
+	}
+	// #endregion
 }
 
 void PS1FlavorEditorPlugin::_refresh() {
@@ -399,7 +422,7 @@ void PS1FlavorEditorPlugin::_refresh() {
 		return;
 	}
 	const bool enabled = ProjectSettings::get_singleton() && bool(ProjectSettings::get_singleton()->get("ps1/enabled"));
-	_sync_singleton(enabled);
+	_sync_singleton(true);
 	last_enabled = enabled;
 	if (!enabled) {
 		status->set_text("Turn on Project Settings → ps1/enabled for live PS1 budget warnings.\nPS1.* is PS1 export only; use OS.has_feature(\"ps1\").");
@@ -466,28 +489,28 @@ void PS1FlavorEditorPlugin::_notification(int p_what) {
 
 PS1FlavorEditorPlugin::PS1FlavorEditorPlugin() {
 	const bool headless = DisplayServer::get_singleton() && String(DisplayServer::get_singleton()->get_name()) == "headless";
-	if (headless) {
-		return;
+	if (!headless) {
+		dock = memnew(VBoxContainer);
+		status = memnew(Label);
+		status->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
+		dock->add_child(status);
+		warn = memnew(Label);
+		warn->add_theme_color_override("font_color", Color(1, 0.35f, 0.35f));
+		warn->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
+		dock->add_child(warn);
+		add_control_to_dock(DOCK_SLOT_RIGHT_UL, dock);
+		set_process(true);
 	}
-	dock = memnew(VBoxContainer);
-	status = memnew(Label);
-	status->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
-	dock->add_child(status);
-	warn = memnew(Label);
-	warn->add_theme_color_override("font_color", Color(1, 0.35f, 0.35f));
-	warn->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
-	dock->add_child(warn);
-	add_control_to_dock(DOCK_SLOT_RIGHT_UL, dock);
-	set_process(true);
-	_refresh();
+	_sync_singleton(true);
+	if (!headless) {
+		_refresh();
+	}
 }
 
 PS1FlavorEditorPlugin::~PS1FlavorEditorPlugin() {
-	_sync_singleton(false);
-	if (ps1_stub) {
-		memdelete(ps1_stub);
-		ps1_stub = nullptr;
-	}
+	// Do not drop the Engine singleton or delete a stub the Engine still owns.
+	// Headless --export-release tears the plugin down before script cook.
+	ps1_stub = nullptr;
 	if (dock) {
 		remove_control_from_docks(dock);
 		dock = nullptr;
