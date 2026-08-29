@@ -247,7 +247,9 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "unload_pack" || p_name == "is_colliding" || p_name == "get_collider" ||
 			p_name == "get_collision_point" || p_name == "set_enabled" || p_name == "is_on_screen" ||
 			p_name == "is_navigation_finished" || p_name == "get_next_path_position" ||
-			p_name == "set_target_position" || p_name == "start" || p_name == "is_stopped";
+			p_name == "set_target_position" || p_name == "start" || p_name == "is_stopped" ||
+			p_name == "to_global" || p_name == "to_local" ||
+			p_name == "set_cell" || p_name == "erase_cell" || p_name == "get_cell_atlas_coords";
 }
 
 static bool member_is_allowlisted(const String &p_name) {
@@ -262,7 +264,9 @@ static bool member_is_allowlisted(const String &p_name) {
 			p_name == "velocity" || p_name == "billboard" ||
 			p_name == "get_velocity" || p_name == "set_velocity" ||
 			p_name == "get_position" || p_name == "set_position" ||
-			p_name == "get_global_position" || p_name == "set_global_position";
+			p_name == "get_global_position" || p_name == "set_global_position" ||
+			p_name == "paused" || p_name == "rotation_degrees" || p_name == "global_rotation" ||
+			p_name == "current" || p_name == "time_scale" || p_name == "Engine";
 }
 
 static bool action_is_known(const String &p_name) {
@@ -970,7 +974,17 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 			"set_particle_mode", "set_particle_flipbook", "set_particle_gravity", "set_particle_color", "emit_mesh",
 			"overlaps_entered",
 			"grab_focus", "release_focus",
-			"print", "push_warning", "connect", "disconnect"
+			"print", "push_warning", "connect", "disconnect",
+			"to_global", "to_local", "set_cell", "erase_cell", "get_cell_atlas_coords",
+			"set_gravity", "clear_shots", "get_shot_count", "get_free_shots", "get_ray_point",
+			"nav_nearest", "count_waypoints", "get_waypoint", "get_waypoint_pos",
+			"get_path_point", "count_path_points", "nav_next_node",
+			"load_nav", "unload_nav", "can_load_nav", "is_nav_loaded",
+			"load_paths", "unload_paths", "can_load_paths", "is_paths_loaded",
+			"load_waypoints", "unload_waypoints", "can_load_waypoints", "is_waypoints_loaded",
+			"unload_pack",
+			"is_colliding", "get_collider", "get_collision_point", "set_enabled", "is_on_screen",
+			"set_target_position", "get_next_path_position", "is_navigation_finished", "start", "is_stopped"
 		};
 		for (const char *nm : named) {
 			if (src.contains(String(nm) + "(") || src.contains(String(nm) + " (")) {
