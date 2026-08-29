@@ -154,7 +154,18 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "open" || p_name == "file_exists" || p_name == "get_file_as_bytes" ||
 			p_name == "get_buffer" || p_name == "store_buffer" || p_name == "store_string" ||
 			p_name == "store_var" || p_name == "get_var" || p_name == "get_as_text" ||
-			p_name == "get_length" || p_name == "close";
+			p_name == "get_length" || p_name == "close" ||
+			p_name == "has_feature" || p_name == "get_position" || p_name == "get_global_position" ||
+			p_name == "get_rotation" || p_name == "get_joy_axis" ||
+			p_name == "get_stick" || p_name == "set_rumble" || p_name == "stop_rumble" ||
+			p_name == "set_camera_transform" || p_name == "get_camera_transform" ||
+			p_name == "attach_camera" || p_name == "look_camera" || p_name == "orbit_camera" ||
+			p_name == "set_camera_scale" || p_name == "raycast" || p_name == "intersects_ray" ||
+			p_name == "move_and_slide" || p_name == "tile_solid_at" || p_name == "tile_at" ||
+			p_name == "load_audio" || p_name == "unload_audio" || p_name == "can_load_audio" ||
+			p_name == "is_audio_loaded" || p_name == "play_sfx" || p_name == "stop_sfx" ||
+			p_name == "set_sfx_volume" || p_name == "emit" || p_name == "set_fog" ||
+			p_name == "set_fade" || p_name == "set_light";
 }
 
 static bool member_is_allowlisted(const String &p_name) {
@@ -628,7 +639,7 @@ static Vector<uint8_t> pack_official_gdbc(const Vector<String> &p_paths, const V
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 14);
+	append_u16(out, 15);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int s = 0; s < p_paths.size(); s++) {
 		append_str(out, p_paths[s]);
@@ -720,7 +731,7 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 14);
+	append_u16(out, 15);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int i = 0; i < p_paths.size(); i++) {
 		append_str(out, p_paths[i]);
@@ -825,7 +836,13 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 			"memcard_save", "memcard_load", "memcard_count", "memcard_name", "memcard_wrap", "memcard_unwrap",
 			"open", "file_exists", "get_file_as_bytes", "get_buffer", "store_buffer", "store_string",
 			"store_var", "get_var", "get_as_text", "get_length", "close",
-			"set_position", "set_rotation", "look_at", "grab_focus", "release_focus",
+			"set_position", "set_rotation", "look_at", "get_position", "get_global_position", "get_rotation",
+			"get_joy_axis", "get_stick", "set_rumble", "stop_rumble",
+			"set_camera_transform", "get_camera_transform", "attach_camera", "look_camera", "orbit_camera", "set_camera_scale",
+			"raycast", "intersects_ray", "move_and_slide", "tile_solid_at", "tile_at",
+			"load_audio", "unload_audio", "can_load_audio", "is_audio_loaded", "play_sfx", "stop_sfx", "set_sfx_volume",
+			"emit", "set_fog", "set_fade", "set_light", "has_feature",
+			"grab_focus", "release_focus",
 			"print", "push_warning", "connect", "disconnect"
 		};
 		for (const char *nm : named) {
@@ -1096,7 +1113,7 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 		}
 	}
 
-	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 14)\n", r_out.rotate_y);
+	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 15)\n", r_out.rotate_y);
 	for (int i = 0; i < r_out.accepted.size(); i++) {
 		r_out.map_text += "OK " + r_out.accepted[i] + "\n";
 	}
@@ -1251,8 +1268,8 @@ Error write_script_ir(const String &p_export_dir, const ScriptIR &p_ir) {
 		bytes.push_back('N');
 		bytes.push_back('P');
 		bytes.push_back('1');
-		bytes.push_back(uint8_t(MIN(p_ir.input_actions.size(), 16)));
-		for (int i = 0; i < p_ir.input_actions.size() && i < 16; i++) {
+		bytes.push_back(uint8_t(MIN(p_ir.input_actions.size(), 32)));
+		for (int i = 0; i < p_ir.input_actions.size() && i < 32; i++) {
 			const CharString utf = p_ir.input_actions[i].name.utf8();
 			const int n = MIN(utf.length(), 15);
 			bytes.push_back(uint8_t(n));

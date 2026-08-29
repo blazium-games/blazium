@@ -37,12 +37,13 @@
 #include <psxpress.h>
 #include <psxsn.h>
 #include <psxspu.h>
+#include <string.h>
 
 #include "fmv_play.h"
 #include "script_vm.h"
 
 #ifndef BLAZIUM_PS1_COOK_ABI
-#define BLAZIUM_PS1_COOK_ABI 14
+#define BLAZIUM_PS1_COOK_ABI 15
 #endif
 
 #define OT_LEN 2048
@@ -317,6 +318,63 @@ static int cooked_vag_playing() {
 }
 #endif
 
+static uint8_t g_rumble_mot[2][2];
+
+static void host_set_rumble(int device, int small, int large) {
+	if (device != 0 && device != 1) {
+		return;
+	}
+	g_rumble_mot[device][0] = uint8_t(small < 0 ? 0 : (small > 255 ? 255 : small));
+	g_rumble_mot[device][1] = uint8_t(large < 0 ? 0 : (large > 255 ? 255 : large));
+}
+
+static int host_upload_tpak(const uint8_t *blob, int size, int *lo, int *hi) {
+	if (!blob || size < 8 || blob[0] != 'T' || blob[1] != 'P' || blob[2] != 'A' || blob[3] != 'K') {
+		return 0;
+	}
+	if (lo) {
+		*lo = 0;
+	}
+	if (hi) {
+		*hi = 0;
+	}
+	return 1;
+}
+
+static void host_evict_tpak(int lo, int hi) {
+	(void)lo;
+	(void)hi;
+}
+
+static int host_load_sfx(const uint8_t *blob, int size) {
+	return blob && size >= 8 && blob[0] == 'S' && blob[1] == 'F' && blob[2] == 'X' && blob[3] == '0';
+}
+
+static void host_unload_sfx() {
+}
+
+static int host_play_sfx(const char *name) {
+	(void)name;
+#ifdef BLAZIUM_PS1_HAS_VAG
+	play_cooked_vag();
+	return 1;
+#else
+	return 0;
+#endif
+}
+
+static void host_stop_sfx(const char *name) {
+	(void)name;
+#ifdef BLAZIUM_PS1_HAS_VAG
+	stop_cooked_vag();
+#endif
+}
+
+static void host_set_sfx_vol(const char *name, int vol) {
+	(void)name;
+	(void)vol;
+}
+
 #ifdef BLAZIUM_PS1_HAS_STR
 static void replay_cooked_fmv() {
 	const uint8_t *xa = nullptr;
@@ -361,7 +419,8 @@ typedef struct {
 	int16_t x, y;
 	uint16_t w, h;
 	uint8_t u, v;
-	uint16_t pad;
+	uint16_t tex;
+	uint8_t frame, nframes, fps, billboard;
 } CookedSprite;
 
 static uint16_t g_spr_flags = 1;
@@ -598,10 +657,24 @@ static int draw_tri_range(const CookedTri *tris, uint16_t tri_n, uint16_t lo, ui
 			gte_strgb(&poly->r0);
 		}
 		{
-			const int fog = otz * 128 / OT_LEN;
-			poly->r0 = uint8_t((int(poly->r0) * (128 - fog) + 32 * fog) >> 7);
-			poly->g0 = uint8_t((int(poly->g0) * (128 - fog)) >> 7);
-			poly->b0 = uint8_t((int(poly->b0) * (128 - fog) + 48 * fog) >> 7);
+			int fog_on = 1, fog_s = 0, fog_e = OT_LEN;
+			uint8_t fr = 32, fg = 0, fb = 48;
+			script_vm_get_fog(&fog_on, &fog_s, &fog_e, &fr, &fg, &fb);
+			if (fog_on) {
+				if (fog_e <= fog_s) {
+					fog_e = fog_s + 1;
+				}
+				int fog = (otz - fog_s) * 128 / (fog_e - fog_s);
+				if (fog < 0) {
+					fog = 0;
+				}
+				if (fog > 128) {
+					fog = 128;
+				}
+				poly->r0 = uint8_t((int(poly->r0) * (128 - fog) + int(fr) * fog) >> 7);
+				poly->g0 = uint8_t((int(poly->g0) * (128 - fog) + int(fg) * fog) >> 7);
+				poly->b0 = uint8_t((int(poly->b0) * (128 - fog) + int(fb) * fog) >> 7);
+			}
 		}
 		gte_stsxy0(&poly->x0);
 		gte_stsxy1(&poly->x1);
@@ -876,7 +949,7 @@ int main(int argc, const char **argv) {
 	if (cooked_node_size >= 8 && cooked_node[0] == 'N' && cooked_node[1] == 'O' && cooked_node[2] == 'D' && cooked_node[3] == 'E') {
 		const uint16_t ver = uint16_t(cooked_node[4] | (cooked_node[5] << 8));
 		const uint16_t nc = uint16_t(cooked_node[6] | (cooked_node[7] << 8));
-		if (ver == 14) {
+		if (ver == 15) {
 			ScriptVMNode parsed[PS1_MAX_NODES];
 			const uint8_t *p = cooked_node + 8;
 			const uint8_t *end = cooked_node + cooked_node_size;
@@ -918,7 +991,7 @@ int main(int argc, const char **argv) {
 	if (cooked_hud_size >= 8 && cooked_hud[0] == 'H' && cooked_hud[1] == 'U' && cooked_hud[2] == 'D' && cooked_hud[3] == '0') {
 		const uint16_t ver = uint16_t(cooked_hud[4] | (cooked_hud[5] << 8));
 		const uint16_t nc = uint16_t(cooked_hud[6] | (cooked_hud[7] << 8));
-		if (ver == 14) {
+		if (ver == 15) {
 			ScriptVMHud parsed[PS1_MAX_HUD];
 			const uint8_t *p = cooked_hud + 8;
 			const uint8_t *end = cooked_hud + cooked_hud_size;
@@ -977,12 +1050,12 @@ int main(int argc, const char **argv) {
 		const uint16_t nc = uint16_t(cooked_tile[6] | (cooked_tile[7] << 8));
 		g_tile_w = cooked_tile[8];
 		g_tile_h = cooked_tile[9];
-		if (ver == 14) {
+		if (ver == 15) {
 			ScriptVMTile parsed[PS1_MAX_TILES];
 			const uint8_t *p = cooked_tile + 10;
 			const uint8_t *end = cooked_tile + cooked_tile_size;
 			int got = 0;
-			for (uint16_t i = 0; i < nc && i < PS1_MAX_TILES && p + 8 <= end; i++) {
+			for (uint16_t i = 0; i < nc && i < PS1_MAX_TILES && p + 9 <= end; i++) {
 				ScriptVMTile t{};
 				t.x = int16_t(p[0] | (p[1] << 8));
 				t.y = int16_t(p[2] | (p[3] << 8));
@@ -990,7 +1063,8 @@ int main(int argc, const char **argv) {
 				t.v = p[5];
 				t.tex = p[6];
 				t.node_id = p[7];
-				p += 8;
+				t.flags = p[8];
+				p += 9;
 				parsed[got++] = t;
 			}
 			script_vm_set_tiles(parsed, got);
@@ -1001,7 +1075,7 @@ int main(int argc, const char **argv) {
 	if (cooked_scene_size >= 8 && cooked_scene[0] == 'S' && cooked_scene[1] == 'C' && cooked_scene[2] == 'E' && cooked_scene[3] == 'N') {
 		const uint16_t ver = uint16_t(cooked_scene[4] | (cooked_scene[5] << 8));
 		const uint16_t nc = uint16_t(cooked_scene[6] | (cooked_scene[7] << 8));
-		if (ver == 14) {
+		if (ver == 15) {
 			ScriptVMPack parsed[PS1_MAX_PACKS];
 			const uint8_t *p = cooked_scene + 8;
 			const uint8_t *end = cooked_scene + cooked_scene_size;
@@ -1059,7 +1133,7 @@ int main(int argc, const char **argv) {
 	if (cooked_anim_size >= 8 && cooked_anim[0] == 'A' && cooked_anim[1] == 'N' && cooked_anim[2] == 'I' && cooked_anim[3] == 'M') {
 		const uint16_t ver = uint16_t(cooked_anim[4] | (cooked_anim[5] << 8));
 		const uint16_t nc = uint16_t(cooked_anim[6] | (cooked_anim[7] << 8));
-		if (ver == 14) {
+		if (ver == 15) {
 			ScriptVMAnimClip parsed[PS1_MAX_CLIPS];
 			const uint8_t *p = cooked_anim + 8;
 			const uint8_t *end = cooked_anim + cooked_anim_size;
@@ -1104,7 +1178,7 @@ int main(int argc, const char **argv) {
 	if (cooked_cam_size >= 8 && cooked_cam[0] == 'C' && cooked_cam[1] == 'A' && cooked_cam[2] == 'M' && cooked_cam[3] == '0') {
 		const uint16_t ver = uint16_t(cooked_cam[4] | (cooked_cam[5] << 8));
 		const uint16_t nc = uint16_t(cooked_cam[6] | (cooked_cam[7] << 8));
-		if (ver == 14) {
+		if (ver == 15) {
 			ScriptVMCam parsed[PS1_MAX_CAMS];
 			const uint8_t *p = cooked_cam + 8;
 			const uint8_t *end = cooked_cam + cooked_cam_size;
@@ -1142,7 +1216,7 @@ int main(int argc, const char **argv) {
 	if (cooked_hit_size >= 8 && cooked_hit[0] == 'H' && cooked_hit[1] == 'I' && cooked_hit[2] == 'T' && cooked_hit[3] == '0') {
 		const uint16_t ver = uint16_t(cooked_hit[4] | (cooked_hit[5] << 8));
 		const uint16_t nc = uint16_t(cooked_hit[6] | (cooked_hit[7] << 8));
-		if (ver == 14) {
+		if (ver == 15) {
 			ScriptVMHit parsed[PS1_MAX_HITS];
 			const uint8_t *p = cooked_hit + 8;
 			const uint8_t *end = cooked_hit + cooked_hit_size;
@@ -1195,8 +1269,11 @@ int main(int argc, const char **argv) {
 			gte_SetLightMatrix(&lmtx);
 		}
 		int block_cam = 0;
+		static int g_script_cam_flag = 0;
+		static int g_cam_scale = 0;
 		{
 			ScriptVMHost host;
+			memset(&host, 0, sizeof(host));
 			host.rot_x = &rot.vx;
 			host.rot_y = &rot.vy;
 			host.rot_z = &rot.vz;
@@ -1206,6 +1283,8 @@ int main(int argc, const char **argv) {
 			host.pad34 = g_pad[0];
 			host.pad34_1 = g_pad[1];
 			host.hud_focus_blocks_cam = 0;
+			host.script_drives_cam = &g_script_cam_flag;
+			host.cam_scale = &g_cam_scale;
 #ifdef BLAZIUM_PS1_HAS_VAG
 			host.play_vag = play_cooked_vag;
 			host.stop_vag = stop_cooked_vag;
@@ -1221,14 +1300,25 @@ int main(int argc, const char **argv) {
 			host.play_fmv = nullptr;
 #endif
 			host.region = g_region;
+			host.set_rumble = host_set_rumble;
+			host.upload_tpak = host_upload_tpak;
+			host.evict_tpak = host_evict_tpak;
+			host.load_sfx_bank = host_load_sfx;
+			host.unload_sfx_bank = host_unload_sfx;
+			host.play_sfx = host_play_sfx;
+			host.stop_sfx = host_stop_sfx;
+			host.set_sfx_volume = host_set_sfx_vol;
 			if (!script_vm_process(g_region ? 1.0f / 50.0f : 1.0f / 60.0f, &host)) {
 				rot.vy += rot_step;
 			}
 			block_cam = host.hud_focus_blocks_cam;
+			if (g_cam_scale > 0) {
+				gte_SetGeomScreen(g_cam_scale);
+			}
 		}
 		{
 			const PADTYPE *pad = (const PADTYPE *)g_pad[0];
-			if (pad->stat == 0 && !block_cam) {
+			if (pad->stat == 0 && !block_cam && !g_script_cam_flag && !script_vm_script_cam()) {
 				if (!(pad->btn & PAD_LEFT)) {
 					rot.vy -= 24;
 				}
@@ -1257,6 +1347,37 @@ int main(int argc, const char **argv) {
 			uint16_t dummy_tp[TIM_SLOTS] = {};
 			draw_cooked_tiles(dummy_tp, cluts);
 			draw_cooked_hud(cluts);
+		}
+		{
+			int fade_a = 0;
+			uint8_t fr = 0, fg = 0, fb = 0;
+			script_vm_get_fade(&fade_a, &fr, &fg, &fb);
+			if (fade_a > 0 && (uint8_t *)((POLY_F4 *)g_pri + 1) <= g_fb[g_active].packet + PACKET_LEN) {
+				POLY_F4 *f = (POLY_F4 *)g_pri;
+				setPolyF4(f);
+				setSemiTrans(f, 1);
+				setRGB0(f, fr, fg, fb);
+				setXY4(f, 0, 0, SCREEN_W, 0, 0, SCREEN_H, SCREEN_W, SCREEN_H);
+				addPrim(&g_fb[g_active].ot[0], f);
+				g_pri = (uint8_t *)(f + 1);
+			}
+			const int np = script_vm_particle_count();
+			const ScriptVMParticle *parts = script_vm_particles();
+			for (int i = 0; i < np; i++) {
+				if (!parts[i].life) {
+					continue;
+				}
+				if ((uint8_t *)((TILE *)g_pri + 1) > g_fb[g_active].packet + PACKET_LEN) {
+					break;
+				}
+				TILE *t = (TILE *)g_pri;
+				setTile(t);
+				setXY0(t, parts[i].x, parts[i].y);
+				setWH(t, 2, 2);
+				setRGB0(t, 255, 220, 80);
+				addPrim(&g_fb[g_active].ot[1], t);
+				g_pri = (uint8_t *)(t + 1);
+			}
 		}
 		{
 			const char *err = script_vm_last_error();

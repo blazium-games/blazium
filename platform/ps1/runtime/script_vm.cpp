@@ -74,6 +74,17 @@ struct ScriptVMConn {
 	uint8_t used;
 };
 static ScriptVMConn g_conn[PS1_MAX_CONNS];
+static int g_script_cam = 0;
+static int g_cam_attach = -1;
+static int16_t g_cam_offx = 0, g_cam_offy = 0, g_cam_offz = 0;
+static int g_cam_scale = 0;
+static int g_fog_on = 1, g_fog_start = 0, g_fog_end = 2048;
+static uint8_t g_fog_r = 32, g_fog_g = 0, g_fog_b = 48;
+static int g_fade_a = 0;
+static uint8_t g_fade_r = 0, g_fade_g = 0, g_fade_b = 0;
+static ScriptVMParticle g_parts[PS1_MAX_PARTICLES];
+static int g_npart = 0;
+static const ScriptVMHost *g_host = nullptr;
 
 static int pad_pressed_on(const ScriptVMHost *host, const char *action, int just, int device);
 
@@ -622,19 +633,20 @@ static void apply_method(const ScriptVMHost *host, int node, const char *name, f
 	}
 	if (name_is(name, "look_at") && node_ok(node)) {
 		float tx = arg;
+		float ty = float(-g_nodes[node].py);
 		float tz = 0.0f;
 		if (argv && argc > 0 && argv[0].type == V_V3) {
 			tx = argv[0].x;
+			ty = argv[0].y;
 			tz = argv[0].z;
 		}
 		const float dx = tx - float(g_nodes[node].px);
+		const float dy = ty - float(-g_nodes[node].py);
 		const float dz = tz - float(g_nodes[node].pz);
-		float ang = 0.0f;
+		float yaw = 0.0f;
 		if (dx != 0.0f || dz != 0.0f) {
-			ang = 0.0f;
-			// yaw-only: atan2(dx, dz) approximated via ratio
 			if (dz == 0.0f) {
-				ang = dx > 0.0f ? 1.5707963f : -1.5707963f;
+				yaw = dx > 0.0f ? 1.5707963f : -1.5707963f;
 			} else {
 				const float t = dx / dz;
 				float a = t;
@@ -646,10 +658,32 @@ static void apply_method(const ScriptVMHost *host, int node, const char *name, f
 				if (dz < 0.0f) {
 					a += (dx >= 0.0f) ? 3.14159265f : -3.14159265f;
 				}
-				ang = a;
+				yaw = a;
 			}
 		}
-		g_nodes[node].ry = int16_t(rad_to_ps1(ang));
+		float pitch = 0.0f;
+		const float horiz = dx * dx + dz * dz;
+		if (horiz > 0.0001f || dy != 0.0f) {
+			float h = horiz;
+			if (h < 0.0001f) {
+				h = 0.0001f;
+			}
+			// sqrt approx
+			float s = h;
+			for (int i = 0; i < 4; i++) {
+				s = 0.5f * (s + h / s);
+			}
+			const float t = dy / s;
+			float a = t;
+			if (t > 1.0f) {
+				a = 1.5707963f - 1.0f / t;
+			} else if (t < -1.0f) {
+				a = -1.5707963f - 1.0f / t;
+			}
+			pitch = a;
+		}
+		g_nodes[node].ry = int16_t(rad_to_ps1(yaw));
+		g_nodes[node].rx = int16_t(rad_to_ps1(pitch));
 		return;
 	}
 	if (name_is(name, "set_position") && node_ok(node)) {
@@ -920,7 +954,7 @@ static int parse_nodes_into(const uint8_t *blob, int size, ScriptVMNode *out, in
 	if (!blob || size < 8 || blob[0] != 'N' || blob[1] != 'O' || blob[2] != 'D' || blob[3] != 'E') {
 		return -1;
 	}
-	if (ru16(blob + 4) != 14) {
+	if (ru16(blob + 4) != 15) {
 		return -1;
 	}
 	const int nc = int(ru16(blob + 6));
@@ -963,7 +997,7 @@ static int parse_hud_into(const uint8_t *blob, int size, ScriptVMHud *out, int m
 	if (!blob || size < 8 || blob[0] != 'H' || blob[1] != 'U' || blob[2] != 'D' || blob[3] != '0') {
 		return -1;
 	}
-	if (ru16(blob + 4) != 14) {
+	if (ru16(blob + 4) != 15) {
 		return -1;
 	}
 	const int nc = int(ru16(blob + 6));
@@ -1019,14 +1053,14 @@ static int parse_tiles_into(const uint8_t *blob, int size, ScriptVMTile *out, in
 	if (!blob || size < 10 || blob[0] != 'T' || blob[1] != 'I' || blob[2] != 'L' || blob[3] != 'E') {
 		return -1;
 	}
-	if (ru16(blob + 4) != 14) {
+	if (ru16(blob + 4) != 15) {
 		return -1;
 	}
 	const int nc = int(ru16(blob + 6));
 	const uint8_t *p = blob + 10;
 	const uint8_t *end = blob + size;
 	int got = 0;
-	for (int i = 0; i < nc && got < maxn && p + 8 <= end; i++) {
+	for (int i = 0; i < nc && got < maxn && p + 9 <= end; i++) {
 		ScriptVMTile t{};
 		t.x = int16_t(p[0] | (p[1] << 8));
 		t.y = int16_t(p[2] | (p[3] << 8));
@@ -1034,7 +1068,8 @@ static int parse_tiles_into(const uint8_t *blob, int size, ScriptVMTile *out, in
 		t.v = p[5];
 		t.tex = p[6];
 		t.node_id = p[7];
-		p += 8;
+		t.flags = p[8];
+		p += 9;
 		out[got++] = t;
 	}
 	return got;
@@ -1372,6 +1407,31 @@ static int load_pack_resident(int pack) {
 	g_packs[pack].hud_hi = uint16_t(hgot > 0 ? hbase + hgot : 0);
 	g_packs[pack].tile_lo = uint16_t(tgot > 0 ? tbase : 0);
 	g_packs[pack].tile_hi = uint16_t(tgot > 0 ? tbase + tgot : 0);
+	if (tims > 0 && g_host && g_host->upload_tpak) {
+		const int tbk = try_read_pack_blob(pack, "TPAK", g_load_buf, int(sizeof(g_load_buf)));
+		if (tbk > 0) {
+			int lo = 0, hi = 0;
+			if (!g_host->upload_tpak(g_load_buf, tbk, &lo, &hi)) {
+				for (int i = 0; i < ngot; i++) {
+					g_node_used[slots[i]] = 0;
+				}
+				for (int h = 0; h < hgot; h++) {
+					g_hud_used[hbase + h] = 0;
+				}
+				for (int t = 0; t < tgot; t++) {
+					g_tile_used[tbase + t] = 0;
+				}
+				if (mesh_added > 0) {
+					g_ntri -= mesh_added;
+					g_mesh[0] = uint8_t(g_ntri & 0xff);
+					g_mesh[1] = uint8_t(g_ntri >> 8);
+				}
+				return 0;
+			}
+			g_packs[pack].tim_lo = uint8_t(lo);
+			g_packs[pack].tim_hi = uint8_t(hi);
+		}
+	}
 	g_packs[pack].resident = 1;
 	g_ntim_used += tims;
 	bump_ram(int(g_packs[pack].ram_bytes));
@@ -1385,6 +1445,12 @@ static int unload_pack_resident(int pack) {
 	}
 	const int lo = int(g_packs[pack].node_lo);
 	const int hi = int(g_packs[pack].node_hi);
+	if (g_cam_attach >= lo && g_cam_attach < hi) {
+		return 0;
+	}
+	if (g_host && g_host->evict_tpak && g_packs[pack].tim_hi > g_packs[pack].tim_lo) {
+		g_host->evict_tpak(int(g_packs[pack].tim_lo), int(g_packs[pack].tim_hi));
+	}
 	for (int n = 0; n < g_nnode; n++) {
 		if (!g_node_used[n] || !(g_nodes[n].flags & 4)) {
 			continue;
@@ -1728,8 +1794,17 @@ static int load_pack_slice(int pack, const char *kind) {
 		g_packs[pack].sprite_resident = 1;
 		return 1;
 	}
+	if (name_is(kind, "SFX")) {
+		if (g_host && g_host->load_sfx_bank) {
+			if (!g_host->load_sfx_bank(g_load_buf, n)) {
+				return 0;
+			}
+		}
+		g_packs[pack].audio_resident = 1;
+		return 1;
+	}
 	if (name_is(kind, "HIT")) {
-		if (g_load_buf[0] == 'H' && g_load_buf[1] == 'I' && g_load_buf[2] == 'T' && g_load_buf[3] == '0' && ru16(g_load_buf + 4) == 14) {
+		if (g_load_buf[0] == 'H' && g_load_buf[1] == 'I' && g_load_buf[2] == 'T' && g_load_buf[3] == '0' && ru16(g_load_buf + 4) == 15) {
 			const int nc = int(ru16(g_load_buf + 6));
 			const uint8_t *p = g_load_buf + 8;
 			for (int i = 0; i < nc && g_nhit < PS1_MAX_HITS && p + 18 <= g_load_buf + n; i++) {
@@ -1756,7 +1831,7 @@ static int load_pack_slice(int pack, const char *kind) {
 		return 0;
 	}
 	if (name_is(kind, "CAM")) {
-		if (g_load_buf[0] == 'C' && g_load_buf[1] == 'A' && g_load_buf[2] == 'M' && g_load_buf[3] == '0' && ru16(g_load_buf + 4) == 14) {
+		if (g_load_buf[0] == 'C' && g_load_buf[1] == 'A' && g_load_buf[2] == 'M' && g_load_buf[3] == '0' && ru16(g_load_buf + 4) == 15) {
 			const int nc = int(ru16(g_load_buf + 6));
 			const uint8_t *p = g_load_buf + 8;
 			const uint8_t *end = g_load_buf + n;
@@ -2009,6 +2084,20 @@ static void set_keyed(GVar *dst, const GVar *key, const GVar *value) {
 }
 
 static int apply_call(const ScriptVMHost *host, int node, const char *name, float arg, const GVar *argv, int argc, GVar *ret) {
+	if (name_is(name, "has_feature")) {
+		const char *f = argv && argc > 0 && argv[0].type == V_STR ? argv[0].s : "";
+		*ret = gv_bool(name_is(f, "ps1"));
+		return 1;
+	}
+	if ((name_is(name, "get_position") || name_is(name, "get_global_position")) && node_ok(node)) {
+		*ret = gv_v3(float(g_nodes[node].px), float(-g_nodes[node].py), float(g_nodes[node].pz));
+		return 1;
+	}
+	if (name_is(name, "get_rotation") && node_ok(node)) {
+		const float s = (2.0f * 3.14159265f) / 4096.0f;
+		*ret = gv_v3(float(g_nodes[node].rx) * s, float(g_nodes[node].ry) * s, float(g_nodes[node].rz) * s);
+		return 1;
+	}
 	if (name_is(name, "abs")) {
 		*ret = gv_float(util_abs(argc > 0 ? as_float(argv[0]) : arg));
 		return 1;
@@ -2199,7 +2288,74 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 		if (pad_pressed(host, ny, 0)) {
 			y -= 1.0f;
 		}
+		if (host) {
+			const uint8_t *raws[2] = { host->pad34, host->pad34_1 };
+			for (int d = 0; d < 2; d++) {
+				if (!raws[d]) {
+					continue;
+				}
+				const PADTYPE *pad = (const PADTYPE *)raws[d];
+				if (pad->stat != 0 || (pad->type != PAD_ID_ANALOG && pad->type != PAD_ID_ANALOG_STICK)) {
+					continue;
+				}
+				int sx = int(pad->ls_x) - 128;
+				int sy = int(pad->ls_y) - 128;
+				if (sx > -16 && sx < 16) {
+					sx = 0;
+				}
+				if (sy > -16 && sy < 16) {
+					sy = 0;
+				}
+				const float ax = float(sx) / 128.0f;
+				const float ay = -float(sy) / 128.0f;
+				if (ax < 0 && ax < x) {
+					x = ax;
+				}
+				if (ax > 0 && ax > x) {
+					x = ax;
+				}
+				if (ay < 0 && ay < y) {
+					y = ay;
+				}
+				if (ay > 0 && ay > y) {
+					y = ay;
+				}
+			}
+		}
 		*ret = gv_v2(x, y);
+		return 1;
+	}
+	if (name_is(name, "get_joy_axis")) {
+		int device = argv && argc > 0 ? int(as_float(argv[0])) : 0;
+		int axis = argv && argc > 1 ? int(as_float(argv[1])) : 0;
+		float v = 0.0f;
+		if (host && (device == 0 || device == 1)) {
+			const uint8_t *raw = device == 1 ? host->pad34_1 : host->pad34;
+			if (raw) {
+				const PADTYPE *pad = (const PADTYPE *)raw;
+				if (pad->stat == 0 && (pad->type == PAD_ID_ANALOG || pad->type == PAD_ID_ANALOG_STICK)) {
+					int a = 128;
+					if (axis == 0) {
+						a = int(pad->ls_x);
+					} else if (axis == 1) {
+						a = int(pad->ls_y);
+					} else if (axis == 2) {
+						a = int(pad->rs_x);
+					} else if (axis == 3) {
+						a = int(pad->rs_y);
+					}
+					int dlt = a - 128;
+					if (dlt > -16 && dlt < 16) {
+						dlt = 0;
+					}
+					v = float(dlt) / 128.0f;
+					if (axis == 1 || axis == 3) {
+						v = -v;
+					}
+				}
+			}
+		}
+		*ret = gv_float(v);
 		return 1;
 	}
 	if (name_is(name, "push_error")) {
@@ -2255,6 +2411,15 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			name_is(name, "set_camera") || name_is(name, "set_camera_node") || name_is(name, "set_default_camera") ||
 			name_is(name, "get_camera") || name_is(name, "get_camera_count") || name_is(name, "get_camera_name") ||
 			name_is(name, "is_camera_current") || name_is(name, "next_camera") || name_is(name, "prev_camera") ||
+			name_is(name, "get_stick") || name_is(name, "set_rumble") || name_is(name, "stop_rumble") ||
+			name_is(name, "set_camera_transform") || name_is(name, "get_camera_transform") ||
+			name_is(name, "attach_camera") || name_is(name, "look_camera") || name_is(name, "orbit_camera") ||
+			name_is(name, "set_camera_scale") || name_is(name, "raycast") || name_is(name, "intersects_ray") ||
+			name_is(name, "move_and_slide") || name_is(name, "tile_solid_at") || name_is(name, "tile_at") ||
+			name_is(name, "load_audio") || name_is(name, "unload_audio") || name_is(name, "can_load_audio") ||
+			name_is(name, "is_audio_loaded") || name_is(name, "play_sfx") || name_is(name, "stop_sfx") ||
+			name_is(name, "set_sfx_volume") || name_is(name, "emit") || name_is(name, "set_fog") ||
+			name_is(name, "set_fade") || name_is(name, "set_light") ||
 			name_is(name, "overlaps") || name_is(name, "has_overlapping_areas") ||
 			name_is(name, "get_overlapping_area_count") || name_is(name, "get_overlapping_area") ||
 			name_is(name, "hitbox_kind") || name_is(name, "set_hitbox_enabled") ||
@@ -2498,6 +2663,504 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 				return 1;
 			}
 			apply_cam_index((g_cam_cur - 1 + g_ncam) % g_ncam, host);
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "get_stick")) {
+			int device = argv && argc > 0 ? int(as_float(argv[0])) : 0;
+			int stick = argv && argc > 1 ? int(as_float(argv[1])) : 0;
+			float x = 0, y = 0;
+			if (host && (device == 0 || device == 1)) {
+				const uint8_t *raw = device == 1 ? host->pad34_1 : host->pad34;
+				if (raw) {
+					const PADTYPE *pad = (const PADTYPE *)raw;
+					if (pad->stat == 0 && (pad->type == PAD_ID_ANALOG || pad->type == PAD_ID_ANALOG_STICK)) {
+						int sx = int(stick ? pad->rs_x : pad->ls_x) - 128;
+						int sy = int(stick ? pad->rs_y : pad->ls_y) - 128;
+						if (sx > -16 && sx < 16) {
+							sx = 0;
+						}
+						if (sy > -16 && sy < 16) {
+							sy = 0;
+						}
+						x = float(sx) / 128.0f;
+						y = -float(sy) / 128.0f;
+					}
+				}
+			}
+			*ret = gv_v2(x, y);
+			return 1;
+		}
+		if (name_is(name, "set_rumble")) {
+			const int device = argv && argc > 0 ? int(as_float(argv[0])) : 0;
+			const int sm = argv && argc > 1 ? int(as_float(argv[1])) : 0;
+			const int lg = argv && argc > 2 ? int(as_float(argv[2])) : 0;
+			if (device != 0 && device != 1) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			if (host && host->set_rumble) {
+				host->set_rumble(device, sm, lg);
+			}
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "stop_rumble")) {
+			const int device = argv && argc > 0 ? int(as_float(argv[0])) : 0;
+			if (device != 0 && device != 1) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			if (host && host->set_rumble) {
+				host->set_rumble(device, 0, 0);
+			}
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "set_camera_transform")) {
+			if (host && argv && argc >= 2 && argv[0].type == V_V3 && argv[1].type == V_V3) {
+				if (host->pos_x) {
+					*host->pos_x = int32_t(argv[0].x);
+				}
+				if (host->pos_y) {
+					*host->pos_y = int32_t(-argv[0].y);
+				}
+				if (host->pos_z) {
+					*host->pos_z = int32_t(argv[0].z);
+				}
+				if (host->rot_x) {
+					*host->rot_x = int16_t(rad_to_ps1(argv[1].x));
+				}
+				if (host->rot_y) {
+					*host->rot_y = int16_t(rad_to_ps1(argv[1].y));
+				}
+				if (host->rot_z) {
+					*host->rot_z = int16_t(rad_to_ps1(argv[1].z));
+				}
+				g_script_cam = 1;
+				if (host->script_drives_cam) {
+					*host->script_drives_cam = 1;
+				}
+				*ret = gv_bool(1);
+				return 1;
+			}
+			*ret = gv_bool(0);
+			return 1;
+		}
+		if (name_is(name, "get_camera_transform")) {
+			float px = 0, py = 0, pz = 0;
+			if (host && host->pos_x) {
+				px = float(*host->pos_x);
+			}
+			if (host && host->pos_y) {
+				py = -float(*host->pos_y);
+			}
+			if (host && host->pos_z) {
+				pz = float(*host->pos_z);
+			}
+			*ret = gv_v3(px, py, pz);
+			return 1;
+		}
+		if (name_is(name, "attach_camera")) {
+			int nid = -1;
+			if (argv && argc > 0) {
+				if (argv[0].type == V_OBJ) {
+					nid = argv[0].i;
+				} else if (argv[0].type == V_STR && argv[0].s[0] == 0) {
+					nid = -1;
+				} else {
+					nid = int(as_float(argv[0]));
+				}
+			}
+			g_cam_attach = node_ok(nid) ? nid : -1;
+			g_cam_offx = 0;
+			g_cam_offy = 0;
+			g_cam_offz = 0;
+			if (argv && argc > 1 && argv[1].type == V_V3) {
+				g_cam_offx = int16_t(argv[1].x);
+				g_cam_offy = int16_t(-argv[1].y);
+				g_cam_offz = int16_t(argv[1].z);
+			}
+			g_script_cam = g_cam_attach >= 0 ? 1 : 0;
+			if (host && host->script_drives_cam) {
+				*host->script_drives_cam = g_script_cam;
+			}
+			*ret = gv_bool(g_cam_attach >= 0);
+			return 1;
+		}
+		if (name_is(name, "look_camera")) {
+			const float yaw = argv && argc > 0 ? as_float(argv[0]) : 0;
+			float pitch = argv && argc > 1 ? as_float(argv[1]) : 0;
+			if (pitch > 1.2f) {
+				pitch = 1.2f;
+			}
+			if (pitch < -1.2f) {
+				pitch = -1.2f;
+			}
+			if (host && host->rot_y) {
+				*host->rot_y = int16_t(rad_to_ps1(yaw));
+			}
+			if (host && host->rot_x) {
+				*host->rot_x = int16_t(rad_to_ps1(pitch));
+			}
+			g_script_cam = 1;
+			if (host && host->script_drives_cam) {
+				*host->script_drives_cam = 1;
+			}
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "orbit_camera")) {
+			float tx = 0, ty = 0, tz = 0;
+			if (argv && argc > 0) {
+				if (argv[0].type == V_V3) {
+					tx = argv[0].x;
+					ty = argv[0].y;
+					tz = argv[0].z;
+				} else {
+					const int nid = argv[0].type == V_OBJ ? argv[0].i : int(as_float(argv[0]));
+					if (node_ok(nid)) {
+						tx = float(g_nodes[nid].px);
+						ty = float(-g_nodes[nid].py);
+						tz = float(g_nodes[nid].pz);
+					}
+				}
+			}
+			const float yaw = argv && argc > 1 ? as_float(argv[1]) : 0;
+			float pitch = argv && argc > 2 ? as_float(argv[2]) : 0.4f;
+			float dist = argv && argc > 3 ? as_float(argv[3]) : 80;
+			if (pitch > 1.2f) {
+				pitch = 1.2f;
+			}
+			if (pitch < -0.1f) {
+				pitch = -0.1f;
+			}
+			if (dist < 8) {
+				dist = 8;
+			}
+			const float cy = util_sin(yaw + 1.5707963f);
+			const float sy = util_sin(yaw);
+			const float cp = util_sin(pitch + 1.5707963f);
+			const float sp = util_sin(pitch);
+			if (host && host->pos_x) {
+				*host->pos_x = int32_t(tx + sy * cp * dist);
+			}
+			if (host && host->pos_y) {
+				*host->pos_y = int32_t(-(ty + sp * dist));
+			}
+			if (host && host->pos_z) {
+				*host->pos_z = int32_t(tz + cy * cp * dist);
+			}
+			if (host && host->rot_y) {
+				*host->rot_y = int16_t(rad_to_ps1(yaw));
+			}
+			if (host && host->rot_x) {
+				*host->rot_x = int16_t(rad_to_ps1(pitch));
+			}
+			g_script_cam = 1;
+			if (host && host->script_drives_cam) {
+				*host->script_drives_cam = 1;
+			}
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "set_camera_scale")) {
+			const int h = argv && argc > 0 ? int(as_float(argv[0])) : 0;
+			g_cam_scale = h;
+			if (host && host->cam_scale) {
+				*host->cam_scale = h;
+			}
+			*ret = gv_bool(h > 0);
+			return 1;
+		}
+		if (name_is(name, "raycast") || name_is(name, "intersects_ray")) {
+			float ox = 0, oy = 0, oz = 0, dx = 0, dy = 0, dz = 1, dist = 64;
+			int dim = 3;
+			if (name_is(name, "intersects_ray") && node_ok(node)) {
+				const int hi = hit_of_node(node);
+				if (hi >= 0) {
+					dim = int(g_hits[hi].dim);
+				}
+			}
+			if (argv && argc > 0 && argv[0].type == V_V3) {
+				ox = argv[0].x;
+				oy = argv[0].y;
+				oz = argv[0].z;
+			}
+			if (argv && argc > 1 && argv[1].type == V_V3) {
+				dx = argv[1].x;
+				dy = argv[1].y;
+				dz = argv[1].z;
+			}
+			if (argv && argc > 2) {
+				dist = as_float(argv[2]);
+			}
+			int hitn = -1;
+			float best = dist;
+			for (int i = 0; i < g_nhit; i++) {
+				if (!g_hit_used[i] || !(g_hits[i].flags & 1)) {
+					continue;
+				}
+				if (int(g_hits[i].dim) != dim) {
+					continue;
+				}
+				const float minx = float(g_hits[i].min_x);
+				const float maxx = float(g_hits[i].max_x);
+				const float miny = float(-g_hits[i].max_y);
+				const float maxy = float(-g_hits[i].min_y);
+				const float minz = dim == 2 ? -1 : float(g_hits[i].min_z);
+				const float maxz = dim == 2 ? 1 : float(g_hits[i].max_z);
+				float tmin = 0, tmax = dist;
+				const float bmin[3] = { minx, miny, minz };
+				const float bmax[3] = { maxx, maxy, maxz };
+				const float o[3] = { ox, oy, oz };
+				const float d[3] = { dx, dy, dz };
+				int miss = 0;
+				for (int a = 0; a < 3; a++) {
+					if (d[a] == 0.0f) {
+						if (o[a] < bmin[a] || o[a] > bmax[a]) {
+							miss = 1;
+						}
+						continue;
+					}
+					float inv = 1.0f / d[a];
+					float t0 = (bmin[a] - o[a]) * inv;
+					float t1 = (bmax[a] - o[a]) * inv;
+					if (t0 > t1) {
+						const float tmp = t0;
+						t0 = t1;
+						t1 = tmp;
+					}
+					if (t0 > tmin) {
+						tmin = t0;
+					}
+					if (t1 < tmax) {
+						tmax = t1;
+					}
+					if (tmin > tmax) {
+						miss = 1;
+					}
+				}
+				if (!miss && tmin >= 0 && tmin < best) {
+					best = tmin;
+					hitn = int(g_hits[i].node_id);
+				}
+			}
+			*ret = hitn >= 0 ? gv_obj(hitn) : gv_nil();
+			return 1;
+		}
+		if (name_is(name, "move_and_slide")) {
+			int nid = node;
+			float vx = 0, vy = 0, vz = 0;
+			if (argv && argc >= 2 && argv[1].type == V_V3) {
+				if (argv[0].type == V_OBJ) {
+					nid = argv[0].i;
+				} else {
+					nid = int(as_float(argv[0]));
+				}
+				vx = argv[1].x;
+				vy = argv[1].y;
+				vz = argv[1].z;
+			} else if (argv && argc >= 1 && argv[0].type == V_V3) {
+				vx = argv[0].x;
+				vy = argv[0].y;
+				vz = argv[0].z;
+			}
+			if (!node_ok(nid)) {
+				*ret = gv_v3(0, 0, 0);
+				return 1;
+			}
+			const int hi = hit_of_node(nid);
+			auto overlap_at = [&](int16_t px, int16_t py, int16_t pz) -> int {
+				if (hi >= 0) {
+					const int16_t dx = int16_t(px - g_nodes[nid].px);
+					const int16_t dy = int16_t(py - g_nodes[nid].py);
+					const int16_t dz = int16_t(pz - g_nodes[nid].pz);
+					ScriptVMHit tmp = g_hits[hi];
+					tmp.min_x = int16_t(tmp.min_x + dx);
+					tmp.max_x = int16_t(tmp.max_x + dx);
+					tmp.min_y = int16_t(tmp.min_y + dy);
+					tmp.max_y = int16_t(tmp.max_y + dy);
+					tmp.min_z = int16_t(tmp.min_z + dz);
+					tmp.max_z = int16_t(tmp.max_z + dz);
+					for (int i = 0; i < g_nhit; i++) {
+						if (!g_hit_used[i] || i == hi || !(g_hits[i].flags & 1) || g_hits[i].dim != tmp.dim) {
+							continue;
+						}
+						const int sep = tmp.max_x < g_hits[i].min_x || tmp.min_x > g_hits[i].max_x ||
+								tmp.max_y < g_hits[i].min_y || tmp.min_y > g_hits[i].max_y ||
+								(tmp.dim == 3 && (tmp.max_z < g_hits[i].min_z || tmp.min_z > g_hits[i].max_z));
+						if (!sep) {
+							return 1;
+						}
+					}
+				}
+				if (hi < 0 || g_hits[hi].dim == 2) {
+					for (int t = 0; t < g_ntile; t++) {
+						if (!g_tile_used[t] || !(g_tiles[t].flags & 1)) {
+							continue;
+						}
+						const int16_t x = g_tiles[t].x;
+						const int16_t y = g_tiles[t].y;
+						if (px >= x && px < int16_t(x + 16) && (-py) >= y && (-py) < int16_t(y + 16)) {
+							return 1;
+						}
+					}
+				}
+				return 0;
+			};
+			int16_t nx = int16_t(g_nodes[nid].px + vx);
+			int16_t ny = g_nodes[nid].py;
+			int16_t nz = g_nodes[nid].pz;
+			if (overlap_at(nx, ny, nz)) {
+				nx = g_nodes[nid].px;
+				vx = 0;
+			}
+			ny = int16_t(g_nodes[nid].py - vy);
+			if (overlap_at(nx, ny, nz)) {
+				ny = int16_t(g_nodes[nid].py);
+				vy = 0;
+			}
+			nz = int16_t(g_nodes[nid].pz + vz);
+			if (overlap_at(nx, ny, nz)) {
+				nz = g_nodes[nid].pz;
+				vz = 0;
+			}
+			g_nodes[nid].px = nx;
+			g_nodes[nid].py = ny;
+			g_nodes[nid].pz = nz;
+			*ret = gv_v3(vx, vy, vz);
+			return 1;
+		}
+		if (name_is(name, "tile_solid_at") || name_is(name, "tile_at")) {
+			const float x = argv && argc > 0 ? as_float(argv[0]) : 0;
+			const float y = argv && argc > 1 ? as_float(argv[1]) : 0;
+			int found = -1;
+			int solid = 0;
+			for (int t = 0; t < g_ntile; t++) {
+				if (!g_tile_used[t]) {
+					continue;
+				}
+				if (x >= float(g_tiles[t].x) && x < float(g_tiles[t].x + 16) && y >= float(g_tiles[t].y) && y < float(g_tiles[t].y + 16)) {
+					found = t;
+					solid = g_tiles[t].flags & 1;
+					break;
+				}
+			}
+			if (name_is(name, "tile_solid_at")) {
+				*ret = gv_bool(solid);
+			} else {
+				*ret = found >= 0 ? gv_int(found) : gv_int(-1);
+			}
+			return 1;
+		}
+		if (name_is(name, "load_audio")) {
+			*ret = gv_bool(load_pack_slice(pack, "SFX"));
+			return 1;
+		}
+		if (name_is(name, "unload_audio")) {
+			if (pack > 0 && pack < g_npack) {
+				g_packs[pack].audio_resident = 0;
+				if (host && host->unload_sfx_bank) {
+					host->unload_sfx_bank();
+				}
+				*ret = gv_bool(1);
+			} else {
+				*ret = gv_bool(0);
+			}
+			return 1;
+		}
+		if (name_is(name, "can_load_audio") || name_is(name, "is_audio_loaded")) {
+			*ret = gv_bool(pack >= 0 && pack < g_npack && (name_is(name, "is_audio_loaded") ? g_packs[pack].audio_resident : 1));
+			return 1;
+		}
+		if (name_is(name, "play_sfx")) {
+			const char *nm = argv && argc > 0 && argv[0].type == V_STR ? argv[0].s : "";
+			*ret = gv_bool(host && host->play_sfx ? host->play_sfx(nm) : 0);
+			return 1;
+		}
+		if (name_is(name, "stop_sfx")) {
+			const char *nm = argv && argc > 0 && argv[0].type == V_STR ? argv[0].s : "";
+			if (host && host->stop_sfx) {
+				host->stop_sfx(nm);
+			}
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "set_sfx_volume")) {
+			const char *nm = argv && argc > 0 && argv[0].type == V_STR ? argv[0].s : "";
+			const int vol = argv && argc > 1 ? int(as_float(argv[1]) * 0x3fff) : 0x3fff;
+			if (host && host->set_sfx_volume) {
+				host->set_sfx_volume(nm, vol);
+			}
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "emit")) {
+			float px = 0, py = 0, pz = 0;
+			int count = 1;
+			int tex = 0;
+			if (argv && argc > 0 && argv[0].type == V_V3) {
+				px = argv[0].x;
+				py = argv[0].y;
+				pz = argv[0].z;
+			}
+			if (argv && argc > 1) {
+				count = int(as_float(argv[1]));
+			}
+			if (argv && argc > 2) {
+				tex = int(as_float(argv[2]));
+			}
+			if (count < 1) {
+				count = 1;
+			}
+			if (count > PS1_MAX_PARTICLES) {
+				count = PS1_MAX_PARTICLES;
+			}
+			for (int i = 0; i < count; i++) {
+				g_parts[i].x = int16_t(px);
+				g_parts[i].y = int16_t(-py);
+				g_parts[i].z = int16_t(pz);
+				g_parts[i].life = 20;
+				g_parts[i].tex = uint8_t(tex & 15);
+			}
+			g_npart = count;
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "set_fog")) {
+			g_fog_on = argv && argc > 0 ? as_truth(argv[0]) : 1;
+			if (argv && argc > 1) {
+				g_fog_start = int(as_float(argv[1]));
+			}
+			if (argv && argc > 2) {
+				g_fog_end = int(as_float(argv[2]));
+			}
+			if (argv && argc > 3 && argv[3].type == V_V3) {
+				g_fog_r = uint8_t(argv[3].x);
+				g_fog_g = uint8_t(argv[3].y);
+				g_fog_b = uint8_t(argv[3].z);
+			}
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "set_fade")) {
+			g_fade_a = argv && argc > 0 ? int(as_float(argv[0]) * 255.0f) : 0;
+			if (g_fade_a < 0) {
+				g_fade_a = 0;
+			}
+			if (g_fade_a > 255) {
+				g_fade_a = 255;
+			}
+			if (argv && argc > 1 && argv[1].type == V_V3) {
+				g_fade_r = uint8_t(argv[1].x);
+				g_fade_g = uint8_t(argv[1].y);
+				g_fade_b = uint8_t(argv[1].z);
+			}
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "set_light")) {
 			*ret = gv_bool(1);
 			return 1;
 		}
@@ -2812,6 +3475,18 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			*ret = name_is(name, "is_playing") ? gv_bool(0) : gv_nil();
 			return 1;
 		}
+		if (typ == 3) {
+			const int si = int(g_nodes[node].sprite);
+			if (si >= 0 && si < g_nspr) {
+				if (name_is(name, "play")) {
+					g_sprs[si].playing = 1;
+				} else if (name_is(name, "stop")) {
+					g_sprs[si].playing = 0;
+				}
+				*ret = name_is(name, "is_playing") ? gv_bool(g_sprs[si].playing) : gv_nil();
+				return 1;
+			}
+		}
 		if (typ == 7 || name_is(name, "play") || name_is(name, "stop") || name_is(name, "is_playing")) {
 			if (name_is(name, "play")) {
 				const char *clip = "";
@@ -3107,6 +3782,13 @@ static void get_prop(int node, const char *n, GVar *d) {
 	} else if (prop_named(n, "rotation")) {
 		const float s = (2.0f * 3.14159265f) / 4096.0f;
 		*d = gv_v3(float(g_nodes[node].rx) * s, float(g_nodes[node].ry) * s, float(g_nodes[node].rz) * s);
+	} else if (prop_named(n, "frame")) {
+		const int si = int(g_nodes[node].sprite);
+		if (si >= 0 && si < g_nspr) {
+			*d = gv_int(g_sprs[si].frame);
+		} else {
+			*d = gv_int(0);
+		}
 	} else {
 		*d = gv_nil();
 	}
@@ -3204,6 +3886,18 @@ static void set_prop(int node, const char *n, const GVar *s) {
 		}
 	} else if (prop_named(n, "name") && s->type == V_STR) {
 		copy_str(g_nodes[node].name, 32, s->s);
+	} else if (prop_named(n, "frame")) {
+		const int si = int(g_nodes[node].sprite);
+		if (si >= 0 && si < g_nspr) {
+			int f = int(as_float(*s));
+			if (f < 0) {
+				f = 0;
+			}
+			if (g_sprs[si].nframes && f >= int(g_sprs[si].nframes)) {
+				f = int(g_sprs[si].nframes) - 1;
+			}
+			g_sprs[si].frame = uint8_t(f);
+		}
 	}
 }
 
@@ -3358,7 +4052,7 @@ static int run_official(const uint8_t *blob, size_t size, const char *want, floa
 	if (size < 8 || blob[0] != 'G' || blob[1] != 'D' || blob[2] != 'B' || blob[3] != 'C') {
 		return 0;
 	}
-	if (ru16(blob + 4) != 14) {
+	if (ru16(blob + 4) != 15) {
 		return 0;
 	}
 	const uint16_t nscripts = ru16(blob + 6);
@@ -3837,7 +4531,7 @@ static int run_tape(const uint8_t *blob, size_t size, const char *want, float de
 	if (size < 8 || blob[0] != 'G' || blob[1] != 'D' || blob[2] != 'B' || blob[3] != 'C') {
 		return 0;
 	}
-	if (ru16(blob + 4) != 14) {
+	if (ru16(blob + 4) != 15) {
 		return 0;
 	}
 	const uint16_t npaths = ru16(blob + 6);
@@ -4010,6 +4704,7 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 	if (!g_ready) {
 		return 0;
 	}
+	g_host = host;
 	script_vm_hud_tick(host);
 	int ran = 0;
 	const uint8_t *tape = nullptr;
@@ -4077,6 +4772,37 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 		}
 	}
 	tick_anim(delta);
+	g_host = host;
+	for (int s = 0; s < g_nspr; s++) {
+		if (!g_sprs[s].playing || g_sprs[s].nframes <= 1 || g_sprs[s].fps == 0) {
+			continue;
+		}
+		g_sprs[s].accum += delta * float(g_sprs[s].fps);
+		while (g_sprs[s].accum >= 1.0f) {
+			g_sprs[s].accum -= 1.0f;
+			g_sprs[s].frame = uint8_t((int(g_sprs[s].frame) + 1) % int(g_sprs[s].nframes));
+		}
+	}
+	for (int p = 0; p < g_npart; p++) {
+		if (g_parts[p].life) {
+			g_parts[p].life--;
+		}
+	}
+	if (g_cam_attach >= 0 && node_ok(g_cam_attach) && host) {
+		if (host->pos_x) {
+			*host->pos_x = int32_t(g_nodes[g_cam_attach].px + g_cam_offx);
+		}
+		if (host->pos_y) {
+			*host->pos_y = int32_t(g_nodes[g_cam_attach].py + g_cam_offy);
+		}
+		if (host->pos_z) {
+			*host->pos_z = int32_t(g_nodes[g_cam_attach].pz + g_cam_offz);
+		}
+		g_script_cam = 1;
+		if (host->script_drives_cam) {
+			*host->script_drives_cam = 1;
+		}
+	}
 	if (g_anim_just_finished) {
 		g_anim_just_finished = 0;
 		for (int n = 0; n < g_nnode; n++) {
@@ -4111,4 +4837,60 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 	}
 	pad_tick(host);
 	return ran;
+}
+
+int script_vm_script_cam() {
+	return g_script_cam;
+}
+
+void script_vm_get_fog(int *on, int *start, int *end, uint8_t *r, uint8_t *g, uint8_t *b) {
+	if (on) {
+		*on = g_fog_on;
+	}
+	if (start) {
+		*start = g_fog_start;
+	}
+	if (end) {
+		*end = g_fog_end;
+	}
+	if (r) {
+		*r = g_fog_r;
+	}
+	if (g) {
+		*g = g_fog_g;
+	}
+	if (b) {
+		*b = g_fog_b;
+	}
+}
+
+void script_vm_get_fade(int *a, uint8_t *r, uint8_t *g, uint8_t *b) {
+	if (a) {
+		*a = g_fade_a;
+	}
+	if (r) {
+		*r = g_fade_r;
+	}
+	if (g) {
+		*g = g_fade_g;
+	}
+	if (b) {
+		*b = g_fade_b;
+	}
+}
+
+int script_vm_particle_count() {
+	return g_npart;
+}
+
+const ScriptVMParticle *script_vm_particles() {
+	return g_parts;
+}
+
+const ScriptVMSprite *script_vm_sprites() {
+	return g_sprs;
+}
+
+int script_vm_sprite_count() {
+	return g_nspr;
 }

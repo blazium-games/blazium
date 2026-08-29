@@ -50,8 +50,11 @@
 #ifndef PS1_MAX_SPRITES
 #define PS1_MAX_SPRITES 32
 #endif
+#ifndef PS1_MAX_PARTICLES
+#define PS1_MAX_PARTICLES 16
+#endif
 #ifndef PS1_COOK_ABI
-#define PS1_COOK_ABI 14
+#define PS1_COOK_ABI 15
 #endif
 
 struct ScriptVMNode {
@@ -85,6 +88,7 @@ struct ScriptVMTile {
 	uint8_t u, v;
 	uint8_t tex;
 	uint8_t node_id;
+	uint8_t flags;
 };
 
 struct ScriptVMPack {
@@ -103,6 +107,8 @@ struct ScriptVMPack {
 	uint8_t sprite_resident;
 	uint8_t hit_resident;
 	uint8_t cam_resident;
+	uint8_t audio_resident;
+	uint8_t tim_lo, tim_hi;
 };
 
 struct ScriptVMCam {
@@ -133,6 +139,9 @@ struct ScriptVMSprite {
 	uint8_t nframes;
 	uint8_t fps;
 	uint8_t pack;
+	uint8_t billboard;
+	uint8_t playing;
+	float accum;
 };
 
 struct ScriptVMAnimKey {
@@ -169,7 +178,31 @@ struct ScriptVMHost {
 	int (*vag_playing)(void);
 	void (*play_fmv)(void);
 	int region;
+	int *script_drives_cam;
+	int *cam_scale;
+	void (*set_rumble)(int device, int small, int large);
+	int (*upload_tpak)(const uint8_t *blob, int size, int *lo, int *hi);
+	void (*evict_tpak)(int lo, int hi);
+	int (*load_sfx_bank)(const uint8_t *blob, int size);
+	void (*unload_sfx_bank)(void);
+	int (*play_sfx)(const char *name);
+	void (*stop_sfx)(const char *name);
+	void (*set_sfx_volume)(const char *name, int vol);
 };
+
+struct ScriptVMParticle {
+	int16_t x, y, z;
+	uint8_t life;
+	uint8_t tex;
+};
+
+int script_vm_script_cam();
+void script_vm_get_fog(int *on, int *start, int *end, uint8_t *r, uint8_t *g, uint8_t *b);
+void script_vm_get_fade(int *a, uint8_t *r, uint8_t *g, uint8_t *b);
+int script_vm_particle_count();
+const ScriptVMParticle *script_vm_particles();
+const ScriptVMSprite *script_vm_sprites();
+int script_vm_sprite_count();
 
 void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, size_t luau_size);
 void script_vm_set_nodes(const ScriptVMNode *nodes, int count);

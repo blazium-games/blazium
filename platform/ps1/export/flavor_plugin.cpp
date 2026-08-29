@@ -89,6 +89,30 @@ void PS1::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("memcard_name", "slot", "index"), &PS1::memcard_name);
 	ClassDB::bind_method(D_METHOD("memcard_wrap", "payload", "title"), &PS1::memcard_wrap);
 	ClassDB::bind_method(D_METHOD("memcard_unwrap", "framed"), &PS1::memcard_unwrap);
+	ClassDB::bind_method(D_METHOD("get_stick", "device", "stick"), &PS1::get_stick);
+	ClassDB::bind_method(D_METHOD("set_rumble", "device", "small", "large"), &PS1::set_rumble);
+	ClassDB::bind_method(D_METHOD("stop_rumble", "device"), &PS1::stop_rumble);
+	ClassDB::bind_method(D_METHOD("set_camera_transform", "pos", "rot"), &PS1::set_camera_transform);
+	ClassDB::bind_method(D_METHOD("get_camera_transform"), &PS1::get_camera_transform);
+	ClassDB::bind_method(D_METHOD("attach_camera", "node", "offset"), &PS1::attach_camera, DEFVAL(Vector3()));
+	ClassDB::bind_method(D_METHOD("look_camera", "yaw", "pitch"), &PS1::look_camera);
+	ClassDB::bind_method(D_METHOD("orbit_camera", "target", "yaw", "pitch", "dist"), &PS1::orbit_camera);
+	ClassDB::bind_method(D_METHOD("set_camera_scale", "h"), &PS1::set_camera_scale);
+	ClassDB::bind_method(D_METHOD("raycast", "from", "dir", "dist"), &PS1::raycast);
+	ClassDB::bind_method(D_METHOD("move_and_slide", "node", "velocity"), &PS1::move_and_slide);
+	ClassDB::bind_method(D_METHOD("tile_solid_at", "x", "y"), &PS1::tile_solid_at);
+	ClassDB::bind_method(D_METHOD("tile_at", "x", "y"), &PS1::tile_at);
+	ClassDB::bind_method(D_METHOD("load_audio", "path"), &PS1::load_audio);
+	ClassDB::bind_method(D_METHOD("unload_audio", "path"), &PS1::unload_audio);
+	ClassDB::bind_method(D_METHOD("can_load_audio", "path"), &PS1::can_load_audio);
+	ClassDB::bind_method(D_METHOD("is_audio_loaded", "path"), &PS1::is_audio_loaded);
+	ClassDB::bind_method(D_METHOD("play_sfx", "name"), &PS1::play_sfx);
+	ClassDB::bind_method(D_METHOD("stop_sfx", "name"), &PS1::stop_sfx);
+	ClassDB::bind_method(D_METHOD("set_sfx_volume", "name", "vol"), &PS1::set_sfx_volume);
+	ClassDB::bind_method(D_METHOD("emit", "pos", "count", "sprite_or_tim"), &PS1::emit);
+	ClassDB::bind_method(D_METHOD("set_fog", "on", "start", "end", "color"), &PS1::set_fog);
+	ClassDB::bind_method(D_METHOD("set_fade", "alpha", "color"), &PS1::set_fade);
+	ClassDB::bind_method(D_METHOD("set_light", "index", "dir", "color"), &PS1::set_light);
 }
 
 static PackedByteArray _mc_wrap(const PackedByteArray &p_payload, const String &p_title) {
@@ -272,7 +296,7 @@ void PS1FlavorEditorPlugin::_refresh() {
 	const int packs = _count_literal_packs();
 	const int est_ram = nodes * 56 + tris * 32 + hud * 80 + tiles * 8;
 	status->set_text(vformat(
-			"nodes %d/%d\ntris %d/%d\nHUD %d/%d\ntiles %d/%d\nSprite2D %d/%d\npacks %d/%d\nest RAM %d/%d\nPS1.* is PS1 export only; use OS.has_feature(\"ps1\").\nABI 14: 8 cameras, 2D/3D AABBs, both pads, memcard, streamable anim/sprite.",
+			"nodes %d/%d\ntris %d/%d\nHUD %d/%d\ntiles %d/%d\nSprite2D %d/%d\npacks %d/%d\nest RAM %d/%d\nPS1.* is PS1 export only; use OS.has_feature(\"ps1\").\nABI 15: analog+rumble, live cam, ray/slide, SFX, TPAK, billboard/fog/fade.",
 			nodes, ps1_cook::kMaxNodes, tris, ps1_cook::kMaxTris, hud, ps1_cook::kMaxHud, tiles, ps1_cook::kMaxTiles,
 			sprites, ps1_cook::kMaxSprites, packs, ps1_cook::kMaxScenePacks, est_ram, 2 * 1024 * 1024));
 	PackedStringArray reasons;

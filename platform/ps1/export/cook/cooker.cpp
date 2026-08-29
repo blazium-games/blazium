@@ -31,6 +31,7 @@
 #include "scene/2d/physics/area_2d.h"
 #include "scene/2d/physics/collision_shape_2d.h"
 #include "scene/2d/sprite_2d.h"
+#include "scene/3d/sprite_3d.h"
 #include "scene/2d/tile_map.h"
 #include "scene/2d/tile_map_layer.h"
 #include "scene/3d/audio_stream_player_3d.h"
@@ -62,9 +63,12 @@
 #include "scene/3d/skeleton_3d.h"
 #include "scene/resources/animation.h"
 #include "scene/audio/audio_stream_player.h"
+#include "scene/resources/2d/circle_shape_2d.h"
 #include "scene/resources/2d/rectangle_shape_2d.h"
 #include "scene/resources/2d/tile_set.h"
 #include "scene/resources/3d/box_shape_3d.h"
+#include "scene/resources/3d/capsule_shape_3d.h"
+#include "scene/resources/3d/sphere_shape_3d.h"
 #include "scene/resources/sprite_frames.h"
 #include "scene/resources/audio_stream_wav.h"
 #include "scene/resources/material.h"
@@ -96,6 +100,9 @@ struct SceneGather {
 	bool had_non_wav_audio = false;
 	Vector<Sprite2D *> sprites;
 	Vector<AnimatedSprite2D *> anim_sprites;
+	Vector<Sprite3D *> sprites3d;
+	Vector<Ref<AudioStreamWAV>> extra_wavs;
+	Vector<String> extra_wav_names;
 	int sprite_count = 0;
 	int aabb_dropped = 0;
 	int cam_dropped = 0;
@@ -157,6 +164,7 @@ struct SceneGather {
 		uint8_t u = 0, v = 0;
 		uint8_t tex = 0;
 		uint8_t node_id = 0;
+		uint8_t flags = 0;
 	};
 	Vector<TileRow> tiles;
 	uint8_t tile_w = 16;
@@ -179,7 +187,7 @@ struct SceneGather {
 
 static const char *kAllowed[] = {
 	"Node", "Node3D", "MeshInstance3D", "Camera3D", "AnimationPlayer", "Skeleton3D",
-	"Sprite2D", "AnimatedSprite2D", "Node2D", "Area2D", "Area3D",
+	"Sprite2D", "AnimatedSprite2D", "Sprite3D", "Node2D", "Area2D", "Area3D",
 	"CollisionShape2D", "CollisionShape3D",
 	"AudioStreamPlayer", "AudioStreamPlayer3D",
 	"DirectionalLight3D", "OmniLight3D", "SpotLight3D", "Light3D",
@@ -349,12 +357,22 @@ static void emit_hit_3d(SceneGather &r_g, Area3D *p_area, int p_node_id) {
 		}
 	}
 	if (!cs) {
-		r_g.uncooked_types.insert("Area3D(no BoxShape3D)");
+		r_g.uncooked_types.insert("Area3D(no CollisionShape3D)");
 		return;
 	}
-	const Ref<BoxShape3D> box = cs->get_shape();
-	if (box.is_null()) {
-		r_g.uncooked_types.insert(cs->get_shape().is_valid() ? cs->get_shape()->get_class() : "Area3D(empty shape)");
+	const Ref<Shape3D> shape = cs->get_shape();
+	Vector3 half;
+	if (const Ref<BoxShape3D> box = shape; box.is_valid()) {
+		half = box->get_size() * 0.5f;
+	} else if (const Ref<SphereShape3D> sph = shape; sph.is_valid()) {
+		const float r = sph->get_radius();
+		half = Vector3(r, r, r);
+	} else if (const Ref<CapsuleShape3D> cap = shape; cap.is_valid()) {
+		const float r = cap->get_radius();
+		const float h = cap->get_height() * 0.5f;
+		half = Vector3(r, MAX(h, r), r);
+	} else {
+		r_g.uncooked_types.insert(shape.is_valid() ? shape->get_class() : "Area3D(empty shape)");
 		return;
 	}
 	if (r_g.hits.size() >= kMaxAABBs) {
@@ -362,7 +380,6 @@ static void emit_hit_3d(SceneGather &r_g, Area3D *p_area, int p_node_id) {
 		return;
 	}
 	const Transform3D xf = world_xform_3d(cs);
-	const Vector3 half = box->get_size() * 0.5f;
 	const Vector3 c = xf.origin;
 	const Vector3 ext = xf.basis.xform(half).abs();
 	SceneGather::HitRow h;
@@ -387,12 +404,18 @@ static void emit_hit_2d(SceneGather &r_g, Area2D *p_area, int p_node_id) {
 		}
 	}
 	if (!cs) {
-		r_g.uncooked_types.insert("Area2D(no RectangleShape2D)");
+		r_g.uncooked_types.insert("Area2D(no CollisionShape2D)");
 		return;
 	}
-	const Ref<RectangleShape2D> rect = cs->get_shape();
-	if (rect.is_null()) {
-		r_g.uncooked_types.insert(cs->get_shape().is_valid() ? cs->get_shape()->get_class() : "Area2D(empty shape)");
+	const Ref<Shape2D> shape = cs->get_shape();
+	Vector2 half;
+	if (const Ref<RectangleShape2D> rect = shape; rect.is_valid()) {
+		half = rect->get_size() * 0.5f;
+	} else if (const Ref<CircleShape2D> cir = shape; cir.is_valid()) {
+		const float r = cir->get_radius();
+		half = Vector2(r, r);
+	} else {
+		r_g.uncooked_types.insert(shape.is_valid() ? shape->get_class() : "Area2D(empty shape)");
 		return;
 	}
 	if (r_g.hits.size() >= kMaxAABBs) {
@@ -400,7 +423,6 @@ static void emit_hit_2d(SceneGather &r_g, Area2D *p_area, int p_node_id) {
 		return;
 	}
 	const Transform2D xf = world_xform_2d(cs);
-	const Vector2 half = rect->get_size() * 0.5f;
 	const Vector2 c = xf.get_origin();
 	SceneGather::HitRow h;
 	h.node_id = p_node_id;
@@ -430,7 +452,7 @@ static Rect2 control_screen_rect(Control *p_c) {
 	return r;
 }
 
-static void try_wav(SceneGather &r_g, const Ref<AudioStream> &p_stream) {
+static void try_wav(SceneGather &r_g, const Ref<AudioStream> &p_stream, const String &p_name = String()) {
 	if (p_stream.is_null()) {
 		return;
 	}
@@ -438,6 +460,10 @@ static void try_wav(SceneGather &r_g, const Ref<AudioStream> &p_stream) {
 	if (wav.is_valid() && (wav->get_format() == AudioStreamWAV::FORMAT_8_BITS || wav->get_format() == AudioStreamWAV::FORMAT_16_BITS)) {
 		if (r_g.wav.is_null()) {
 			r_g.wav = wav;
+		} else if (r_g.extra_wavs.size() < kMaxVagClips - 1) {
+			r_g.extra_wavs.push_back(wav);
+			r_g.extra_wav_names.push_back(p_name.is_empty() ? vformat("sfx%d", r_g.extra_wavs.size()) : p_name);
+			r_g.extra_wav++;
 		} else {
 			r_g.extra_wav++;
 		}
@@ -606,7 +632,25 @@ static uint8_t register_tileset_atlas(SceneGather &r_g, const Ref<TileSet> &p_ts
 	return 0;
 }
 
-static void emit_tile_cell(SceneGather &r_g, const Vector2 &p_pos, const Vector2i &p_atlas, const Size2i &p_tsz, uint8_t p_tex, int p_node_id) {
+static uint8_t tile_data_solid(TileData *p_td, const Ref<TileSet> &p_ts) {
+	if (!p_td) {
+		return 0;
+	}
+	if (p_td->has_custom_data("solid") && bool(p_td->get_custom_data("solid"))) {
+		return 1;
+	}
+	if (p_ts.is_valid()) {
+		const int n = p_ts->get_physics_layers_count();
+		for (int i = 0; i < n; i++) {
+			if (p_td->get_collision_polygons_count(i) > 0) {
+				return 1;
+			}
+		}
+	}
+	return 0;
+}
+
+static void emit_tile_cell(SceneGather &r_g, const Vector2 &p_pos, const Vector2i &p_atlas, const Size2i &p_tsz, uint8_t p_tex, int p_node_id, uint8_t p_flags = 0) {
 	if (r_g.tiles.size() >= kMaxTiles) {
 		r_g.tile_dropped++;
 		return;
@@ -618,6 +662,7 @@ static void emit_tile_cell(SceneGather &r_g, const Vector2 &p_pos, const Vector2
 	t.v = uint8_t(CLAMP(p_atlas.y * p_tsz.y, 0, 255));
 	t.tex = p_tex;
 	t.node_id = uint8_t(CLAMP(p_node_id, 0, 255));
+	t.flags = p_flags;
 	r_g.tiles.push_back(t);
 }
 
@@ -778,27 +823,37 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 		r_g.had_generic_light = true;
 	}
 	if (AudioStreamPlayer *ap = Object::cast_to<AudioStreamPlayer>(p_node)) {
-		try_wav(r_g, ap->get_stream());
+		try_wav(r_g, ap->get_stream(), ap->get_name());
 	}
 	if (AudioStreamPlayer3D *ap3 = Object::cast_to<AudioStreamPlayer3D>(p_node)) {
-		try_wav(r_g, ap3->get_stream());
+		try_wav(r_g, ap3->get_stream(), ap3->get_name());
 	}
 	if (Sprite2D *spr = Object::cast_to<Sprite2D>(p_node)) {
 		r_g.sprite_count++;
-		if (r_g.sprites.size() + r_g.anim_sprites.size() < kMaxSprites) {
+		if (r_g.sprites.size() + r_g.anim_sprites.size() + r_g.sprites3d.size() < kMaxSprites) {
 			if (my >= 0) {
-				r_g.nodes.write[my].sprite_index = int16_t(r_g.sprites.size() + r_g.anim_sprites.size());
+				r_g.nodes.write[my].sprite_index = int16_t(r_g.sprites.size() + r_g.anim_sprites.size() + r_g.sprites3d.size());
 			}
 			r_g.sprites.push_back(spr);
 		}
 	}
 	if (AnimatedSprite2D *as = Object::cast_to<AnimatedSprite2D>(p_node)) {
 		r_g.sprite_count++;
-		if (r_g.sprites.size() + r_g.anim_sprites.size() < kMaxSprites) {
+		if (r_g.sprites.size() + r_g.anim_sprites.size() + r_g.sprites3d.size() < kMaxSprites) {
 			if (my >= 0) {
-				r_g.nodes.write[my].sprite_index = int16_t(r_g.sprites.size() + r_g.anim_sprites.size());
+				r_g.nodes.write[my].sprite_index = int16_t(r_g.sprites.size() + r_g.anim_sprites.size() + r_g.sprites3d.size());
 			}
 			r_g.anim_sprites.push_back(as);
+		}
+	}
+	if (Sprite3D *s3 = Object::cast_to<Sprite3D>(p_node)) {
+		r_g.sprite_count++;
+		if (r_g.sprites.size() + r_g.anim_sprites.size() + r_g.sprites3d.size() < kMaxSprites) {
+			if (my >= 0) {
+				r_g.nodes.write[my].sprite_index = int16_t(r_g.sprites.size() + r_g.anim_sprites.size() + r_g.sprites3d.size());
+				r_g.nodes.write[my].type = 3;
+			}
+			r_g.sprites3d.push_back(s3);
 		}
 	}
 	if (VideoStreamPlayer *vp = Object::cast_to<VideoStreamPlayer>(p_node)) {
@@ -845,7 +900,7 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 		const TypedArray<Vector2i> cells = layer->get_used_cells();
 		for (int i = 0; i < cells.size(); i++) {
 			const Vector2i cell = cells[i];
-			emit_tile_cell(r_g, xf.xform(Vector2(cell.x * tsz.x, cell.y * tsz.y)), layer->get_cell_atlas_coords(cell), tsz, tex, my >= 0 ? my : 0);
+			emit_tile_cell(r_g, xf.xform(Vector2(cell.x * tsz.x, cell.y * tsz.y)), layer->get_cell_atlas_coords(cell), tsz, tex, my >= 0 ? my : 0, tile_data_solid(layer->get_cell_tile_data(cell), ts));
 		}
 	} else if (TileMap *tm = Object::cast_to<TileMap>(p_node)) {
 		r_g.tilemap_count++;
@@ -857,7 +912,7 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 			const TypedArray<Vector2i> cells = tm->get_used_cells(layer);
 			for (int i = 0; i < cells.size(); i++) {
 				const Vector2i cell = cells[i];
-				emit_tile_cell(r_g, xf.xform(Vector2(cell.x * tsz.x, cell.y * tsz.y)), tm->get_cell_atlas_coords(layer, cell), tsz, tex, my >= 0 ? my : 0);
+				emit_tile_cell(r_g, xf.xform(Vector2(cell.x * tsz.x, cell.y * tsz.y)), tm->get_cell_atlas_coords(layer, cell), tsz, tex, my >= 0 ? my : 0, tile_data_solid(tm->get_cell_tile_data(layer, cell), ts));
 			}
 		}
 	}
@@ -934,6 +989,7 @@ struct SpriteCook {
 	uint8_t frame = 0;
 	uint8_t nframes = 1;
 	uint8_t fps = 0;
+	uint8_t billboard = 0;
 };
 
 static void write_scene_sprites(const Vector<SpriteCook> &p_sprites, Vector<uint8_t> &spr) {
@@ -943,7 +999,7 @@ static void write_scene_sprites(const Vector<SpriteCook> &p_sprites, Vector<uint
 	};
 	auto i16 = [&](int16_t v) { u16(uint16_t(v)); };
 	u16(uint16_t(p_sprites.size()));
-	u16(14);
+	u16(uint16_t(kCookABI));
 	for (int i = 0; i < p_sprites.size(); i++) {
 		i16(int16_t(CLAMP(int(p_sprites[i].pos.x), -1024, 1024)));
 		i16(int16_t(CLAMP(int(p_sprites[i].pos.y), -1024, 1024)));
@@ -957,7 +1013,7 @@ static void write_scene_sprites(const Vector<SpriteCook> &p_sprites, Vector<uint
 		spr.push_back(p_sprites[i].frame);
 		spr.push_back(MAX(uint8_t(1), p_sprites[i].nframes));
 		spr.push_back(p_sprites[i].fps);
-		spr.push_back(0);
+		spr.push_back(p_sprites[i].billboard);
 	}
 }
 
@@ -975,7 +1031,7 @@ static void write_node_table(const Vector<SceneGather::CookedNode> &p_nodes, flo
 	o.push_back('O');
 	o.push_back('D');
 	o.push_back('E');
-	u16(14);
+	u16(uint16_t(kCookABI));
 	u16(uint16_t(p_nodes.size()));
 	const float s = p_scale > 0.0f ? p_scale : 1.0f;
 	for (int i = 0; i < p_nodes.size(); i++) {
@@ -1019,7 +1075,7 @@ static void write_hud_table(const Vector<SceneGather::HudRow> &p_hud, Vector<uin
 	o.push_back('U');
 	o.push_back('D');
 	o.push_back('0');
-	u16(14);
+	u16(uint16_t(kCookABI));
 	u16(uint16_t(p_hud.size()));
 	for (int i = 0; i < p_hud.size(); i++) {
 		const SceneGather::HudRow &h = p_hud[i];
@@ -1064,7 +1120,7 @@ static void write_tile_table(const SceneGather &p_g, Vector<uint8_t> &o) {
 	o.push_back('I');
 	o.push_back('L');
 	o.push_back('E');
-	u16(14);
+	u16(uint16_t(kCookABI));
 	u16(uint16_t(p_g.tiles.size()));
 	o.push_back(p_g.tile_w);
 	o.push_back(p_g.tile_h);
@@ -1076,6 +1132,7 @@ static void write_tile_table(const SceneGather &p_g, Vector<uint8_t> &o) {
 		o.push_back(t.v);
 		o.push_back(t.tex);
 		o.push_back(t.node_id);
+		o.push_back(t.flags);
 	}
 }
 
@@ -1236,7 +1293,7 @@ static void write_scene_packs(const Vector<ScenePackCook> &p_packs, float p_scal
 	o.push_back('C');
 	o.push_back('E');
 	o.push_back('N');
-	u16(14);
+	u16(uint16_t(kCookABI));
 	u16(uint16_t(p_packs.size()));
 	const float s = p_scale > 0.0f ? p_scale : 1.0f;
 	for (int i = 0; i < p_packs.size(); i++) {
@@ -1280,7 +1337,7 @@ static void write_anim_clips(const Vector<AnimClipCook> &p_clips, float p_scale,
 	o.push_back('N');
 	o.push_back('I');
 	o.push_back('M');
-	u16(14);
+	u16(uint16_t(kCookABI));
 	u16(uint16_t(p_clips.size()));
 	const float s = p_scale > 0.0f ? p_scale : 1.0f;
 	for (int i = 0; i < p_clips.size(); i++) {
@@ -1330,7 +1387,7 @@ static void write_cam_table(const Vector<SceneGather::CamRow> &p_cams, float p_s
 	o.push_back('A');
 	o.push_back('M');
 	o.push_back('0');
-	u16(14);
+	u16(uint16_t(kCookABI));
 	u16(uint16_t(p_cams.size()));
 	const float s = p_scale > 0.0f ? p_scale : 1.0f;
 	for (int i = 0; i < p_cams.size(); i++) {
@@ -1361,7 +1418,7 @@ static void write_hit_table(const Vector<SceneGather::HitRow> &p_hits, float p_s
 	o.push_back('I');
 	o.push_back('T');
 	o.push_back('0');
-	u16(14);
+	u16(uint16_t(kCookABI));
 	u16(uint16_t(p_hits.size()));
 	const float s = p_scale > 0.0f ? p_scale : 1.0f;
 	for (int i = 0; i < p_hits.size(); i++) {
@@ -1458,15 +1515,16 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	r_out.warnings.push_back("loop flag is ADPCM 0x02/0x03 on the single embedded WAV; stop keys off voice 0.");
 	r_out.warnings.push_back("PAL display uses 50 Hz delta; NTSC stays 60.");
 	r_out.warnings.push_back("connect is first-slice (timeout/pressed/animation_finished, 16 slots); other signals are ignored.");
-	r_out.warnings.push_back("InputMap: 32 actions; Input.is_action_* ORs pad 0+1; PS1.is_action_*_on(device); L2/R2 digital; no analog, no rumble.");
-	r_out.warnings.push_back("8 cameras per pack; PS1.set_camera / set_default_camera / next_camera; boot uses default.");
-	r_out.warnings.push_back("2D Rect + 3D Box AABBs (trigger/hurt/hit); overlaps only; no physics.");
-	r_out.warnings.push_back("ANIM/SPRITE/HIT/CAM stream like packs; load/unload/can_load; instantiate copies hit+sprite, shares anim/mesh.");
+	r_out.warnings.push_back("InputMap: 32 actions in INP1; Input.is_action_* ORs pad 0+1; analog DualShock sticks via get_vector/get_joy_axis/PS1.get_stick; rumble PS1.set_rumble; no L3/R3, no DS2 pressure.");
+	r_out.warnings.push_back("8 cameras; catalog switch plus live attach/look/orbit/set_camera_transform; set_camera_scale is GTE FOV approx; script view disables demo pad-steer.");
+	r_out.warnings.push_back("AABB + ray + move_and_slide + tile solids; Sphere/Capsule/Circle cook as AABB bounds; no Godot physics.");
+	r_out.warnings.push_back("ANIM/SPRITE/HIT/CAM/SFX stream; extra-pack TPAK uploads on load_scene; instantiate copies hit+sprite, shares anim/mesh.");
 	r_out.warnings.push_back("Memcard is Sony MC/SC (128 KiB, 3-block max, raw .mcd). Payload is a Godot user:// save (store_var first-slice / store_buffer). No ConfigFile/JSON class, no DexDrive.");
-	r_out.warnings.push_back("AnimatedSprite2D frames; 32 sprites; JRPG maps stream as packs (256 tiles each).");
+	r_out.warnings.push_back("AnimatedSprite2D frame tick; Sprite3D billboard; 32 sprites; 16 particles; fog/fade/3 lights.");
 	r_out.warnings.push_back("16 clips / 64 keys; Skeleton3D is bind pose; no AnimationTree.");
 	r_out.warnings.push_back("HUD text 64 chars.");
-	r_out.warnings.push_back("AABB only (Box/Rect); no Godot physics.");
+	r_out.warnings.push_back("get_position / 3D look_at; OS.has_feature(\"ps1\") allowlisted; PS1.* export only.");
+	r_out.warnings.push_back("SFX bank 16 clips / 8 voices; music is pack-0 VAG.");
 
 	SceneGather gathered;
 	String src_name;
@@ -1684,6 +1742,20 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		}
 		sprite_cooks.push_back(sc);
 	}
+	for (int i = 0; i < gathered.sprites3d.size(); i++) {
+		Sprite3D *s3 = gathered.sprites3d[i];
+		SpriteCook sc;
+		const Vector3 p = world_xform_3d(s3).origin;
+		sc.pos = Vector2(p.x, -p.y);
+		sc.size = Vector2(16, 16);
+		sc.billboard = 1;
+		sc.nframes = 1;
+		if (s3->get_texture().is_valid()) {
+			sc.size = s3->get_texture()->get_size();
+			sc.tex_slot = register_image(gathered, image_from_texture(s3->get_texture()), s3->get_texture()->get_path());
+		}
+		sprite_cooks.push_back(sc);
+	}
 	Vector<Vector<SpriteCook>> extra_sprite_cooks;
 	for (int e = 0; e < extra_gathers.size(); e++) {
 		Vector<SpriteCook> esc;
@@ -1719,6 +1791,20 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 						sc.tex_slot = register_image(eg, image_from_texture(tex), tex->get_path());
 					}
 				}
+			}
+			esc.push_back(sc);
+		}
+		for (int i = 0; i < eg.sprites3d.size(); i++) {
+			Sprite3D *s3 = eg.sprites3d[i];
+			SpriteCook sc;
+			const Vector3 p = world_xform_3d(s3).origin;
+			sc.pos = Vector2(p.x, -p.y);
+			sc.size = Vector2(16, 16);
+			sc.billboard = 1;
+			sc.nframes = 1;
+			if (s3->get_texture().is_valid()) {
+				sc.size = s3->get_texture()->get_size();
+				sc.tex_slot = register_image(eg, image_from_texture(s3->get_texture()), s3->get_texture()->get_path());
 			}
 			esc.push_back(sc);
 		}
@@ -1813,7 +1899,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		}
 	}
 	if (gathered.tilemap_count > 0) {
-		r_out.warnings.push_back("TileMap collision/navigation/terrain/animated tiles are not cooked.");
+		r_out.warnings.push_back("TileMap navigation/terrain/animated tiles are not cooked; physics-layer or custom_data solid is a TILE flag.");
 	}
 	if (gathered.tile_dropped > 0) {
 		r_out.warnings.push_back(vformat("kept first %d of %d tiles.", kMaxTiles, kMaxTiles + gathered.tile_dropped));
@@ -1924,6 +2010,61 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	Ref<FileAccess> vf = FileAccess::open(r_out.vag_path, FileAccess::WRITE);
 	ERR_FAIL_COND_V(vf.is_null(), ERR_CANT_CREATE);
 	vf->store_buffer(vag.bytes);
+	if (!gathered.extra_wavs.is_empty()) {
+		Vector<uint8_t> sfxb;
+		sfxb.push_back('S');
+		sfxb.push_back('F');
+		sfxb.push_back('X');
+		sfxb.push_back('0');
+		sfxb.push_back(uint8_t(kCookABI & 0xff));
+		sfxb.push_back(uint8_t(kCookABI >> 8));
+		sfxb.push_back(uint8_t(gathered.extra_wavs.size() & 0xff));
+		sfxb.push_back(uint8_t(gathered.extra_wavs.size() >> 8));
+		Vector<VagBlob> clips;
+		int budget = kSpuLimit - int(vag.bytes.size());
+		for (int i = 0; i < gathered.extra_wavs.size(); i++) {
+			Vector<int16_t> pcm;
+			int rate = 22050;
+			pcm_from_wav(gathered.extra_wavs[i], pcm, rate);
+			VagBlob one;
+			const bool loop = gathered.extra_wavs[i]->get_loop_mode() != AudioStreamWAV::LOOP_DISABLED;
+			if (write_vag_pcm(pcm, rate, MAX(64, budget), one, loop) == OK) {
+				clips.push_back(one);
+				budget -= int(one.bytes.size());
+			} else {
+				clips.push_back(VagBlob());
+			}
+		}
+		uint32_t off = uint32_t(8 + clips.size() * 28);
+		for (int i = 0; i < clips.size(); i++) {
+			const CharString nm = gathered.extra_wav_names[i].utf8();
+			for (int c = 0; c < 16; c++) {
+				sfxb.push_back(c < nm.length() ? uint8_t(nm[c]) : 0);
+			}
+			const uint32_t sz = uint32_t(clips[i].bytes.size());
+			sfxb.push_back(uint8_t(off & 0xff));
+			sfxb.push_back(uint8_t((off >> 8) & 0xff));
+			sfxb.push_back(uint8_t((off >> 16) & 0xff));
+			sfxb.push_back(uint8_t((off >> 24) & 0xff));
+			sfxb.push_back(uint8_t(sz & 0xff));
+			sfxb.push_back(uint8_t((sz >> 8) & 0xff));
+			sfxb.push_back(uint8_t((sz >> 16) & 0xff));
+			sfxb.push_back(uint8_t((sz >> 24) & 0xff));
+			sfxb.push_back(uint8_t(clips[i].sample_rate & 0xff));
+			sfxb.push_back(uint8_t((clips[i].sample_rate >> 8) & 0xff));
+			sfxb.push_back(0);
+			sfxb.push_back(0);
+			off += sz;
+		}
+		for (int i = 0; i < clips.size(); i++) {
+			sfxb.append_array(clips[i].bytes);
+		}
+		const String sfxp = p_export_dir.path_join("SFX00.bin");
+		Ref<FileAccess> sf = FileAccess::open(sfxp, FileAccess::WRITE);
+		if (sf.is_valid()) {
+			sf->store_buffer(sfxb);
+		}
+	}
 
 	r_out.sprite_path = p_export_dir.path_join("SPRITE00.bin");
 	{
@@ -2249,6 +2390,18 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			Vector<uint8_t> camb;
 			write_cam_table(eg.cameras, mesh.scale, camb);
 			write_extra_blob("CAM", camb);
+		}
+		if (!eg.extra_wavs.is_empty()) {
+			Vector<uint8_t> sfxb;
+			sfxb.push_back('S');
+			sfxb.push_back('F');
+			sfxb.push_back('X');
+			sfxb.push_back('0');
+			sfxb.push_back(uint8_t(kCookABI & 0xff));
+			sfxb.push_back(uint8_t(kCookABI >> 8));
+			sfxb.push_back(uint8_t(eg.extra_wavs.size() & 0xff));
+			sfxb.push_back(uint8_t(eg.extra_wavs.size() >> 8));
+			write_extra_blob("SFX", sfxb);
 		}
 		packs.write[pack_i].node_bytes = uint32_t(nodeb.size());
 		packs.write[pack_i].hud_bytes = uint32_t(hudb.size());
