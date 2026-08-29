@@ -119,9 +119,15 @@ struct SceneGather {
 		uint8_t dim = 3;
 		uint8_t kind = 0;
 		uint8_t flags = 1;
+		uint8_t layer = 1;
 		Vector3 mn;
 		Vector3 mx;
 	};
+	struct TextLine {
+		String name;
+		String text;
+	};
+	Vector<TextLine> text_lines;
 	Vector<HitRow> hits;
 	Vector<CookLight> lights;
 	int light_count = 0;
@@ -387,6 +393,10 @@ static void emit_hit_3d(SceneGather &r_g, Area3D *p_area, int p_node_id) {
 	h.dim = 3;
 	h.kind = hit_kind_from_name(p_area->get_name(), p_area->is_monitoring());
 	h.flags = p_area->is_monitoring() ? 1 : 0;
+	{
+		const uint32_t layer = p_area->get_collision_layer() & 0xFFu;
+		h.layer = uint8_t(layer ? layer : 1);
+	}
 	h.mn = c - ext;
 	h.mx = c + ext;
 	r_g.hits.push_back(h);
@@ -429,6 +439,10 @@ static void emit_hit_2d(SceneGather &r_g, Area2D *p_area, int p_node_id) {
 	h.dim = 2;
 	h.kind = hit_kind_from_name(p_area->get_name(), p_area->is_monitoring());
 	h.flags = p_area->is_monitoring() ? 1 : 0;
+	{
+		const uint32_t layer = p_area->get_collision_layer() & 0xFFu;
+		h.layer = uint8_t(layer ? layer : 1);
+	}
 	h.mn = Vector3(c.x - half.x, c.y - half.y, 0);
 	h.mx = Vector3(c.x + half.x, c.y + half.y, 0);
 	r_g.hits.push_back(h);
@@ -581,6 +595,15 @@ static void emit_hud(Control *p_c, SceneGather &r_g, int p_node_id) {
 	}
 	if (Label *lb = Object::cast_to<Label>(p_c)) {
 		row.text = lb->get_text();
+		if (p_c->has_meta("ps1_line") && r_g.text_lines.size() < kMaxTextLines) {
+			SceneGather::TextLine tl;
+			tl.name = String(p_c->get_meta("ps1_line"));
+			if (tl.name.is_empty()) {
+				tl.name = p_c->get_name();
+			}
+			tl.text = lb->get_text();
+			r_g.text_lines.push_back(tl);
+		}
 	} else if (Button *bt = Object::cast_to<Button>(p_c)) {
 		row.text = bt->get_text();
 	} else if (LinkButton *lk = Object::cast_to<LinkButton>(p_c)) {
@@ -636,18 +659,28 @@ static uint8_t tile_data_solid(TileData *p_td, const Ref<TileSet> &p_ts) {
 	if (!p_td) {
 		return 0;
 	}
+	uint8_t flags = 0;
 	if (p_td->has_custom_data("solid") && bool(p_td->get_custom_data("solid"))) {
-		return 1;
+		flags |= 1;
+	}
+	if (p_td->has_custom_data("one_way") && bool(p_td->get_custom_data("one_way"))) {
+		flags |= 2;
 	}
 	if (p_ts.is_valid()) {
 		const int n = p_ts->get_physics_layers_count();
 		for (int i = 0; i < n; i++) {
-			if (p_td->get_collision_polygons_count(i) > 0) {
-				return 1;
+			const int pc = p_td->get_collision_polygons_count(i);
+			if (pc > 0) {
+				flags |= 1;
+			}
+			for (int p = 0; p < pc; p++) {
+				if (p_td->is_collision_polygon_one_way(i, p)) {
+					flags |= 2;
+				}
 			}
 		}
 	}
-	return 0;
+	return flags;
 }
 
 static void emit_tile_cell(SceneGather &r_g, const Vector2 &p_pos, const Vector2i &p_atlas, const Size2i &p_tsz, uint8_t p_tex, int p_node_id, uint8_t p_flags = 0) {
@@ -1408,6 +1441,125 @@ static void write_cam_table(const Vector<SceneGather::CamRow> &p_cams, float p_s
 	}
 }
 
+static void write_text_bank(const Vector<SceneGather::TextLine> &p_lines, Vector<uint8_t> &o) {
+	auto u16 = [&](uint16_t v) {
+		o.push_back(uint8_t(v & 0xff));
+		o.push_back(uint8_t(v >> 8));
+	};
+	o.push_back('T');
+	o.push_back('X');
+	o.push_back('T');
+	o.push_back('0');
+	u16(uint16_t(kCookABI));
+	const int n = MIN(p_lines.size(), kMaxTextLines);
+	u16(uint16_t(n));
+	for (int i = 0; i < n; i++) {
+		const CharString nm = p_lines[i].name.utf8();
+		const CharString tx = p_lines[i].text.utf8();
+		const int nl = CLAMP(nm.length(), 0, 31);
+		const int tl = CLAMP(tx.length(), 0, 63);
+		o.push_back(uint8_t(nl));
+		for (int c = 0; c < nl; c++) {
+			o.push_back(uint8_t(nm[c]));
+		}
+		o.push_back(uint8_t(tl));
+		for (int c = 0; c < tl; c++) {
+			o.push_back(uint8_t(tx[c]));
+		}
+	}
+}
+
+static void ingest_text_file(SceneGather &r_g, const String &p_path) {
+	if (r_g.text_lines.size() >= kMaxTextLines) {
+		return;
+	}
+	const String src = FileAccess::get_file_as_string(p_path);
+	const Vector<String> rows = src.split("\n");
+	for (int i = 0; i < rows.size() && r_g.text_lines.size() < kMaxTextLines; i++) {
+		const String row = rows[i].strip_edges();
+		if (row.is_empty() || row.begins_with("#")) {
+			continue;
+		}
+		const int eq = row.find("=");
+		if (eq <= 0) {
+			continue;
+		}
+		SceneGather::TextLine tl;
+		tl.name = row.substr(0, eq).strip_edges();
+		tl.text = row.substr(eq + 1);
+		if (!tl.name.is_empty()) {
+			r_g.text_lines.push_back(tl);
+		}
+	}
+}
+
+static void scan_text_files(SceneGather &r_g) {
+	if (FileAccess::exists("res://ps1_text.txt")) {
+		ingest_text_file(r_g, "res://ps1_text.txt");
+	}
+	Ref<DirAccess> da = DirAccess::open("res://text");
+	if (da.is_null()) {
+		return;
+	}
+	da->list_dir_begin();
+	for (String n = da->get_next(); !n.is_empty(); n = da->get_next()) {
+		if (!n.ends_with(".txt")) {
+			continue;
+		}
+		ingest_text_file(r_g, String("res://text").path_join(n));
+	}
+}
+
+static void write_sfx_bank(const Vector<Ref<AudioStreamWAV>> &p_wavs, const Vector<String> &p_names, int p_budget, Vector<uint8_t> &r_out) {
+	r_out.push_back('S');
+	r_out.push_back('F');
+	r_out.push_back('X');
+	r_out.push_back('0');
+	r_out.push_back(uint8_t(kCookABI & 0xff));
+	r_out.push_back(uint8_t(kCookABI >> 8));
+	r_out.push_back(uint8_t(p_wavs.size() & 0xff));
+	r_out.push_back(uint8_t(p_wavs.size() >> 8));
+	Vector<VagBlob> clips;
+	int budget = p_budget;
+	for (int i = 0; i < p_wavs.size(); i++) {
+		Vector<int16_t> pcm;
+		int rate = 22050;
+		pcm_from_wav(p_wavs[i], pcm, rate);
+		VagBlob one;
+		const bool loop = p_wavs[i].is_valid() && p_wavs[i]->get_loop_mode() != AudioStreamWAV::LOOP_DISABLED;
+		if (write_vag_pcm(pcm, rate, MAX(64, budget), one, loop) == OK) {
+			clips.push_back(one);
+			budget -= int(one.bytes.size());
+		} else {
+			clips.push_back(VagBlob());
+		}
+	}
+	uint32_t off = uint32_t(8 + clips.size() * 28);
+	for (int i = 0; i < clips.size(); i++) {
+		const CharString nm = (i < p_names.size() ? p_names[i] : String()).utf8();
+		for (int c = 0; c < 16; c++) {
+			r_out.push_back(c < nm.length() ? uint8_t(nm[c]) : 0);
+		}
+		const uint32_t sz = uint32_t(clips[i].bytes.size());
+		r_out.push_back(uint8_t(off & 0xff));
+		r_out.push_back(uint8_t((off >> 8) & 0xff));
+		r_out.push_back(uint8_t((off >> 16) & 0xff));
+		r_out.push_back(uint8_t((off >> 24) & 0xff));
+		r_out.push_back(uint8_t(sz & 0xff));
+		r_out.push_back(uint8_t((sz >> 8) & 0xff));
+		r_out.push_back(uint8_t((sz >> 16) & 0xff));
+		r_out.push_back(uint8_t((sz >> 24) & 0xff));
+		r_out.push_back(uint8_t(clips[i].sample_rate & 0xff));
+		r_out.push_back(uint8_t((clips[i].sample_rate >> 8) & 0xff));
+		r_out.push_back(0);
+		r_out.push_back(0);
+		off += sz;
+	}
+	for (int i = 0; i < clips.size(); i++) {
+		r_out.append_array(clips[i].bytes);
+	}
+}
+
 static void write_hit_table(const Vector<SceneGather::HitRow> &p_hits, float p_scale, Vector<uint8_t> &o) {
 	auto u16 = [&](uint16_t v) {
 		o.push_back(uint8_t(v & 0xff));
@@ -1427,7 +1579,7 @@ static void write_hit_table(const Vector<SceneGather::HitRow> &p_hits, float p_s
 		o.push_back(h.dim);
 		o.push_back(h.kind);
 		o.push_back(h.flags);
-		o.push_back(0);
+		o.push_back(h.layer ? h.layer : 1);
 		i16(clamp_i16(h.mn.x * s));
 		i16(clamp_i16(-h.mx.y * s));
 		i16(clamp_i16(h.mn.z * s));
@@ -1515,16 +1667,16 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	r_out.warnings.push_back("loop flag is ADPCM 0x02/0x03 on the single embedded WAV; stop keys off voice 0.");
 	r_out.warnings.push_back("PAL display uses 50 Hz delta; NTSC stays 60.");
 	r_out.warnings.push_back("connect is first-slice (timeout/pressed/animation_finished, 16 slots); other signals are ignored.");
-	r_out.warnings.push_back("InputMap: 32 actions in INP1; Input.is_action_* ORs pad 0+1; analog DualShock sticks via get_vector/get_joy_axis/PS1.get_stick; rumble PS1.set_rumble; no L3/R3, no DS2 pressure.");
-	r_out.warnings.push_back("8 cameras; catalog switch plus live attach/look/orbit/set_camera_transform; set_camera_scale is GTE FOV approx; script view disables demo pad-steer.");
-	r_out.warnings.push_back("AABB + ray + move_and_slide + tile solids; Sphere/Capsule/Circle cook as AABB bounds; no Godot physics.");
-	r_out.warnings.push_back("ANIM/SPRITE/HIT/CAM/SFX stream; extra-pack TPAK uploads on load_scene; instantiate copies hit+sprite, shares anim/mesh.");
+	r_out.warnings.push_back("InputMap: 32 actions in INP1; Input.is_action_* ORs pad 0+1; analog enter via PAD_CMD_*; DualShock sticks via get_vector/get_joy_axis/PS1.get_stick; rumble motors poll; no L3/R3, no DS2 pressure.");
+	r_out.warnings.push_back("8 cameras; catalog switch plus live attach/look/orbit/set_camera_transform (pos+rot); shake_camera; set_camera_scale is GTE FOV approx; script view disables demo pad-steer.");
+	r_out.warnings.push_back("AABB + ray + move_and_slide + tile solids + one-way; HIT 8-bit layer + query mask; is_on_floor/wall/ceiling; raycast_point; Sphere/Capsule/Circle cook as AABB bounds; no Godot physics.");
+	r_out.warnings.push_back("ANIM/SPRITE/HIT/CAM/SFX/TXT stream; extra-pack TPAK LoadImage on load_scene (fail VRAM → false); instantiate copies hit+sprite, shares anim/mesh.");
 	r_out.warnings.push_back("Memcard is Sony MC/SC (128 KiB, 3-block max, raw .mcd). Payload is a Godot user:// save (store_var first-slice / store_buffer). No ConfigFile/JSON class, no DexDrive.");
-	r_out.warnings.push_back("AnimatedSprite2D frame tick; Sprite3D billboard; 32 sprites; 16 particles; fog/fade/3 lights.");
+	r_out.warnings.push_back("VM sprites draw frame UV + flip_h; Sprite3D POLY_FT4; 32 sprites; 16 billboard particles; fog/fade; set_light writes GTE.");
 	r_out.warnings.push_back("16 clips / 64 keys; Skeleton3D is bind pose; no AnimationTree.");
-	r_out.warnings.push_back("HUD text 64 chars.");
-	r_out.warnings.push_back("get_position / 3D look_at; OS.has_feature(\"ps1\") allowlisted; PS1.* export only.");
-	r_out.warnings.push_back("SFX bank 16 clips / 8 voices; music is pack-0 VAG.");
+	r_out.warnings.push_back("HUD text 64 chars; TXT bank 32x64; set_paused skips _process.");
+	r_out.warnings.push_back("get_position / get_global_position walks parents; 3D look_at; atan2/length/normalized/dot/cross; OS.has_feature(\"ps1\") allowlisted; PS1.* export only.");
+	r_out.warnings.push_back("SFX bank 16 clips / voices 1-7 + set_music_volume; music is pack-0 VAG.");
 
 	SceneGather gathered;
 	String src_name;
@@ -1536,6 +1688,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			Node *root = ps->instantiate();
 			live_roots.push_back(root);
 			walk_scene(root, gathered, -1);
+			scan_text_files(gathered);
 			if (!gathered.tris.is_empty()) {
 				src_name = main_scene;
 			}
@@ -1899,7 +2052,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		}
 	}
 	if (gathered.tilemap_count > 0) {
-		r_out.warnings.push_back("TileMap navigation/terrain/animated tiles are not cooked; physics-layer or custom_data solid is a TILE flag.");
+		r_out.warnings.push_back("TileMap navigation/terrain/animated tiles are not cooked; physics-layer or custom_data solid/one_way is a TILE flag.");
 	}
 	if (gathered.tile_dropped > 0) {
 		r_out.warnings.push_back(vformat("kept first %d of %d tiles.", kMaxTiles, kMaxTiles + gathered.tile_dropped));
@@ -2012,55 +2165,9 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	vf->store_buffer(vag.bytes);
 	if (!gathered.extra_wavs.is_empty()) {
 		Vector<uint8_t> sfxb;
-		sfxb.push_back('S');
-		sfxb.push_back('F');
-		sfxb.push_back('X');
-		sfxb.push_back('0');
-		sfxb.push_back(uint8_t(kCookABI & 0xff));
-		sfxb.push_back(uint8_t(kCookABI >> 8));
-		sfxb.push_back(uint8_t(gathered.extra_wavs.size() & 0xff));
-		sfxb.push_back(uint8_t(gathered.extra_wavs.size() >> 8));
-		Vector<VagBlob> clips;
-		int budget = kSpuLimit - int(vag.bytes.size());
-		for (int i = 0; i < gathered.extra_wavs.size(); i++) {
-			Vector<int16_t> pcm;
-			int rate = 22050;
-			pcm_from_wav(gathered.extra_wavs[i], pcm, rate);
-			VagBlob one;
-			const bool loop = gathered.extra_wavs[i]->get_loop_mode() != AudioStreamWAV::LOOP_DISABLED;
-			if (write_vag_pcm(pcm, rate, MAX(64, budget), one, loop) == OK) {
-				clips.push_back(one);
-				budget -= int(one.bytes.size());
-			} else {
-				clips.push_back(VagBlob());
-			}
-		}
-		uint32_t off = uint32_t(8 + clips.size() * 28);
-		for (int i = 0; i < clips.size(); i++) {
-			const CharString nm = gathered.extra_wav_names[i].utf8();
-			for (int c = 0; c < 16; c++) {
-				sfxb.push_back(c < nm.length() ? uint8_t(nm[c]) : 0);
-			}
-			const uint32_t sz = uint32_t(clips[i].bytes.size());
-			sfxb.push_back(uint8_t(off & 0xff));
-			sfxb.push_back(uint8_t((off >> 8) & 0xff));
-			sfxb.push_back(uint8_t((off >> 16) & 0xff));
-			sfxb.push_back(uint8_t((off >> 24) & 0xff));
-			sfxb.push_back(uint8_t(sz & 0xff));
-			sfxb.push_back(uint8_t((sz >> 8) & 0xff));
-			sfxb.push_back(uint8_t((sz >> 16) & 0xff));
-			sfxb.push_back(uint8_t((sz >> 24) & 0xff));
-			sfxb.push_back(uint8_t(clips[i].sample_rate & 0xff));
-			sfxb.push_back(uint8_t((clips[i].sample_rate >> 8) & 0xff));
-			sfxb.push_back(0);
-			sfxb.push_back(0);
-			off += sz;
-		}
-		for (int i = 0; i < clips.size(); i++) {
-			sfxb.append_array(clips[i].bytes);
-		}
-		const String sfxp = p_export_dir.path_join("SFX00.bin");
-		Ref<FileAccess> sf = FileAccess::open(sfxp, FileAccess::WRITE);
+		write_sfx_bank(gathered.extra_wavs, gathered.extra_wav_names, kSpuLimit - int(vag.bytes.size()), sfxb);
+		r_out.sfx_bank_path = p_export_dir.path_join("SFX00.bin");
+		Ref<FileAccess> sf = FileAccess::open(r_out.sfx_bank_path, FileAccess::WRITE);
 		if (sf.is_valid()) {
 			sf->store_buffer(sfxb);
 		}
@@ -2393,15 +2500,13 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		}
 		if (!eg.extra_wavs.is_empty()) {
 			Vector<uint8_t> sfxb;
-			sfxb.push_back('S');
-			sfxb.push_back('F');
-			sfxb.push_back('X');
-			sfxb.push_back('0');
-			sfxb.push_back(uint8_t(kCookABI & 0xff));
-			sfxb.push_back(uint8_t(kCookABI >> 8));
-			sfxb.push_back(uint8_t(eg.extra_wavs.size() & 0xff));
-			sfxb.push_back(uint8_t(eg.extra_wavs.size() >> 8));
+			write_sfx_bank(eg.extra_wavs, eg.extra_wav_names, kSpuLimit, sfxb);
 			write_extra_blob("SFX", sfxb);
+		}
+		if (!eg.text_lines.is_empty()) {
+			Vector<uint8_t> txtb;
+			write_text_bank(eg.text_lines, txtb);
+			write_extra_blob("TXT", txtb);
 		}
 		packs.write[pack_i].node_bytes = uint32_t(nodeb.size());
 		packs.write[pack_i].hud_bytes = uint32_t(hudb.size());
@@ -2442,10 +2547,18 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		ERR_FAIL_COND_V(hf.is_null(), ERR_CANT_CREATE);
 		hf->store_buffer(hitb);
 	}
-
+	if (!gathered.text_lines.is_empty()) {
+		Vector<uint8_t> txtb;
+		write_text_bank(gathered.text_lines, txtb);
+		r_out.txt_path = p_export_dir.path_join("TXT00.bin");
+		Ref<FileAccess> xf = FileAccess::open(r_out.txt_path, FileAccess::WRITE);
+		if (xf.is_valid()) {
+			xf->store_buffer(txtb);
+		}
+	}
 	Ref<FileAccess> nf = FileAccess::open(r_out.names_path, FileAccess::WRITE);
 	ERR_FAIL_COND_V(nf.is_null(), ERR_CANT_CREATE);
-	nf->store_line(src_name + " -> TEX00.TIM MESH00.bin SFX00.VAG SPRITE00.bin FMV00.MAP SCRIPT.IR SCRIPT.GD.BC SCRIPT.LU.BC NODE00.bin HUD00.bin TILE00.bin SCENE00.bin ANIM00.bin CAM00.bin HIT00.bin");
+	nf->store_line(src_name + " -> TEX00.TIM MESH00.bin SFX00.VAG SPRITE00.bin FMV00.MAP SCRIPT.IR SCRIPT.GD.BC SCRIPT.LU.BC NODE00.bin HUD00.bin TILE00.bin SCENE00.bin ANIM00.bin CAM00.bin HIT00.bin TXT00.bin SFX00.bin");
 
 	r_out.texels = packed.pixel_w * MAX(1, packed.pixel_h);
 	r_out.tris = src_tris.size();

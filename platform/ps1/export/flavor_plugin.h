@@ -272,6 +272,10 @@ public:
 		_fail_ps1();
 		return Vector3();
 	}
+	Vector3 get_camera_rotation() const {
+		_fail_ps1();
+		return Vector3();
+	}
 	bool attach_camera(const Variant &p_node, const Vector3 &p_offset = Vector3()) {
 		_fail_ps1();
 		return false;
@@ -288,13 +292,77 @@ public:
 		_fail_ps1();
 		return false;
 	}
-	Variant raycast(const Vector3 &p_from, const Vector3 &p_dir, float p_dist) const {
+	Variant raycast(const Vector3 &p_from, const Vector3 &p_dir, float p_dist, int p_mask = 255) const {
 		_fail_ps1();
 		return Variant();
 	}
-	Vector3 move_and_slide(const Variant &p_node, const Vector3 &p_velocity) {
+	Variant raycast_point(const Vector3 &p_from, const Vector3 &p_dir, float p_dist, int p_mask = 255) const {
+		_fail_ps1();
+		return Variant();
+	}
+	Vector3 move_and_slide(const Variant &p_node, const Vector3 &p_velocity, int p_mask = 255) {
 		_fail_ps1();
 		return Vector3();
+	}
+	bool is_on_floor() const {
+		_fail_ps1();
+		return false;
+	}
+	bool is_on_wall() const {
+		_fail_ps1();
+		return false;
+	}
+	bool is_on_ceiling() const {
+		_fail_ps1();
+		return false;
+	}
+	bool set_hitbox_layer(const Variant &p_node, int p_layer) {
+		_fail_ps1();
+		return false;
+	}
+	int get_hitbox_layer(const Variant &p_node) const {
+		_fail_ps1();
+		return 0;
+	}
+	bool shake_camera(float p_amp, float p_ms) {
+		_fail_ps1();
+		return false;
+	}
+	bool set_paused(bool p_on) {
+		_fail_ps1();
+		return false;
+	}
+	bool is_paused() const {
+		_fail_ps1();
+		return false;
+	}
+	bool set_music_volume(float p_vol) {
+		_fail_ps1();
+		return false;
+	}
+	bool load_text(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool unload_text(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool can_load_text(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool is_text_loaded(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool set_line(const Variant &p_hud, const String &p_name) {
+		_fail_ps1();
+		return false;
+	}
+	bool set_line_chars(const Variant &p_hud, const String &p_name, int p_n) {
+		_fail_ps1();
+		return false;
 	}
 	bool tile_solid_at(float p_x, float p_y) const {
 		_fail_ps1();

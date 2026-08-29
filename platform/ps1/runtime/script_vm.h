@@ -54,7 +54,7 @@
 #define PS1_MAX_PARTICLES 16
 #endif
 #ifndef PS1_COOK_ABI
-#define PS1_COOK_ABI 15
+#define PS1_COOK_ABI 16
 #endif
 
 struct ScriptVMNode {
@@ -108,6 +108,7 @@ struct ScriptVMPack {
 	uint8_t hit_resident;
 	uint8_t cam_resident;
 	uint8_t audio_resident;
+	uint8_t text_resident;
 	uint8_t tim_lo, tim_hi;
 };
 
@@ -125,6 +126,7 @@ struct ScriptVMHit {
 	uint8_t dim;
 	uint8_t kind;
 	uint8_t flags;
+	uint8_t layer;
 	int16_t min_x, min_y, min_z;
 	int16_t max_x, max_y, max_z;
 	uint8_t pack;
@@ -141,6 +143,8 @@ struct ScriptVMSprite {
 	uint8_t pack;
 	uint8_t billboard;
 	uint8_t playing;
+	uint8_t flip_h;
+	uint8_t rgb;
 	float accum;
 };
 
@@ -188,6 +192,8 @@ struct ScriptVMHost {
 	int (*play_sfx)(const char *name);
 	void (*stop_sfx)(const char *name);
 	void (*set_sfx_volume)(const char *name, int vol);
+	void (*set_music_volume)(int vol);
+	void (*set_light)(int index, int dx, int dy, int dz, int r, int g, int b);
 };
 
 struct ScriptVMParticle {
@@ -213,6 +219,7 @@ void script_vm_set_anims(const ScriptVMAnimClip *clips, int count);
 void script_vm_set_actions(const ScriptVMAction *actions, int count);
 void script_vm_set_cams(const ScriptVMCam *cams, int count);
 void script_vm_set_hits(const ScriptVMHit *hits, int count);
+void script_vm_set_sprites(const ScriptVMSprite *sprites, int count);
 void script_vm_set_mesh(const uint8_t *blob, size_t size);
 int script_vm_tri_count();
 const uint8_t *script_vm_tris();

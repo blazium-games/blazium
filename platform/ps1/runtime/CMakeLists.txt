@@ -12,7 +12,7 @@ project(
 
 psn00bsdk_add_executable(runtime GPREL main.cpp script_vm.cpp fmv_play.cpp)
 target_compile_options(runtime PRIVATE -fno-exceptions -fno-rtti)
-	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_COOK_ABI=15)
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_COOK_ABI=16)
 
 set(BLAZIUM_PS1_TIM "" CACHE FILEPATH "Optional cooked TIM to embed")
 if(BLAZIUM_PS1_TIM)

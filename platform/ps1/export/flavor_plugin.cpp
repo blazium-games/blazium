@@ -94,12 +94,29 @@ void PS1::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("stop_rumble", "device"), &PS1::stop_rumble);
 	ClassDB::bind_method(D_METHOD("set_camera_transform", "pos", "rot"), &PS1::set_camera_transform);
 	ClassDB::bind_method(D_METHOD("get_camera_transform"), &PS1::get_camera_transform);
+	ClassDB::bind_method(D_METHOD("get_camera_rotation"), &PS1::get_camera_rotation);
 	ClassDB::bind_method(D_METHOD("attach_camera", "node", "offset"), &PS1::attach_camera, DEFVAL(Vector3()));
 	ClassDB::bind_method(D_METHOD("look_camera", "yaw", "pitch"), &PS1::look_camera);
 	ClassDB::bind_method(D_METHOD("orbit_camera", "target", "yaw", "pitch", "dist"), &PS1::orbit_camera);
 	ClassDB::bind_method(D_METHOD("set_camera_scale", "h"), &PS1::set_camera_scale);
-	ClassDB::bind_method(D_METHOD("raycast", "from", "dir", "dist"), &PS1::raycast);
-	ClassDB::bind_method(D_METHOD("move_and_slide", "node", "velocity"), &PS1::move_and_slide);
+	ClassDB::bind_method(D_METHOD("raycast", "from", "dir", "dist", "mask"), &PS1::raycast, DEFVAL(255));
+	ClassDB::bind_method(D_METHOD("raycast_point", "from", "dir", "dist", "mask"), &PS1::raycast_point, DEFVAL(255));
+	ClassDB::bind_method(D_METHOD("move_and_slide", "node", "velocity", "mask"), &PS1::move_and_slide, DEFVAL(255));
+	ClassDB::bind_method(D_METHOD("is_on_floor"), &PS1::is_on_floor);
+	ClassDB::bind_method(D_METHOD("is_on_wall"), &PS1::is_on_wall);
+	ClassDB::bind_method(D_METHOD("is_on_ceiling"), &PS1::is_on_ceiling);
+	ClassDB::bind_method(D_METHOD("set_hitbox_layer", "node", "layer"), &PS1::set_hitbox_layer);
+	ClassDB::bind_method(D_METHOD("get_hitbox_layer", "node"), &PS1::get_hitbox_layer);
+	ClassDB::bind_method(D_METHOD("shake_camera", "amp", "ms"), &PS1::shake_camera);
+	ClassDB::bind_method(D_METHOD("set_paused", "on"), &PS1::set_paused);
+	ClassDB::bind_method(D_METHOD("is_paused"), &PS1::is_paused);
+	ClassDB::bind_method(D_METHOD("set_music_volume", "vol"), &PS1::set_music_volume);
+	ClassDB::bind_method(D_METHOD("load_text", "path"), &PS1::load_text);
+	ClassDB::bind_method(D_METHOD("unload_text", "path"), &PS1::unload_text);
+	ClassDB::bind_method(D_METHOD("can_load_text", "path"), &PS1::can_load_text);
+	ClassDB::bind_method(D_METHOD("is_text_loaded", "path"), &PS1::is_text_loaded);
+	ClassDB::bind_method(D_METHOD("set_line", "hud", "name"), &PS1::set_line);
+	ClassDB::bind_method(D_METHOD("set_line_chars", "hud", "name", "n"), &PS1::set_line_chars);
 	ClassDB::bind_method(D_METHOD("tile_solid_at", "x", "y"), &PS1::tile_solid_at);
 	ClassDB::bind_method(D_METHOD("tile_at", "x", "y"), &PS1::tile_at);
 	ClassDB::bind_method(D_METHOD("load_audio", "path"), &PS1::load_audio);
@@ -296,7 +313,7 @@ void PS1FlavorEditorPlugin::_refresh() {
 	const int packs = _count_literal_packs();
 	const int est_ram = nodes * 56 + tris * 32 + hud * 80 + tiles * 8;
 	status->set_text(vformat(
-			"nodes %d/%d\ntris %d/%d\nHUD %d/%d\ntiles %d/%d\nSprite2D %d/%d\npacks %d/%d\nest RAM %d/%d\nPS1.* is PS1 export only; use OS.has_feature(\"ps1\").\nABI 15: analog+rumble, live cam, ray/slide, SFX, TPAK, billboard/fog/fade.",
+			"nodes %d/%d\ntris %d/%d\nHUD %d/%d\ntiles %d/%d\nSprite2D %d/%d\npacks %d/%d\nest RAM %d/%d\nPS1.* is PS1 export only; use OS.has_feature(\"ps1\").\nABI 16: analog-enter, rumble, layers, floor, TPAK/SFX real, TXT, shake/pause.",
 			nodes, ps1_cook::kMaxNodes, tris, ps1_cook::kMaxTris, hud, ps1_cook::kMaxHud, tiles, ps1_cook::kMaxTiles,
 			sprites, ps1_cook::kMaxSprites, packs, ps1_cook::kMaxScenePacks, est_ram, 2 * 1024 * 1024));
 	PackedStringArray reasons;

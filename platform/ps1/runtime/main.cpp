@@ -43,7 +43,7 @@
 #include "script_vm.h"
 
 #ifndef BLAZIUM_PS1_COOK_ABI
-#define BLAZIUM_PS1_COOK_ABI 15
+#define BLAZIUM_PS1_COOK_ABI 16
 #endif
 
 #define OT_LEN 2048
@@ -146,10 +146,6 @@ static MATRIX g_light_mtx = {
 	2048, -1024, 0,
 	0, 2048, -1024
 };
-static int16_t g_spr_x = 140;
-static int16_t g_spr_y = 100;
-static int16_t g_spr_vx = 2;
-static int16_t g_spr_vy = 1;
 static uint8_t g_tile_w = 16;
 static uint8_t g_tile_h = 16;
 
@@ -166,6 +162,7 @@ static FrameBuf g_fb[2];
 static int g_active;
 static uint8_t *g_pri;
 
+static uint8_t g_tim_used[TIM_SLOTS];
 #ifdef BLAZIUM_PS1_HAS_TIM
 static int16_t g_tp_x[TIM_SLOTS] = {
 	640, 704, 768, 832, 640, 704, 768, 832, 640, 704, 768, 832, 640, 704, 768, 832
@@ -255,12 +252,16 @@ static void upload_cooked_tim() {
 			}
 			record_tim_dest(int(i), p, sz);
 			upload_one_tim(p, sz);
+			if (i < TIM_SLOTS) {
+				g_tim_used[i] = 1;
+			}
 			p += sz;
 			left -= sz;
 		}
 		return;
 	}
 	upload_one_tim(cooked_tim, cooked_tim_size);
+	g_tim_used[0] = 1;
 }
 #endif
 
@@ -319,6 +320,109 @@ static int cooked_vag_playing() {
 #endif
 
 static uint8_t g_rumble_mot[2][2];
+static int g_pad_sio = 0;
+#define JOY_TXRX (*(volatile uint8_t *)0x1F801040)
+#define JOY_STAT (*(volatile uint16_t *)0x1F801044)
+#define JOY_MODE (*(volatile uint16_t *)0x1F801048)
+#define JOY_CTRL (*(volatile uint16_t *)0x1F80104A)
+#define JOY_BAUD (*(volatile uint16_t *)0x1F80104E)
+
+static int joy_spin(uint16_t mask, int want, int n) {
+	while (n--) {
+		if (((JOY_STAT & mask) != 0) == want) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+static uint8_t joy_xfer(uint8_t tx) {
+	joy_spin(1, 1, 4000);
+	JOY_TXRX = tx;
+	joy_spin(2, 1, 4000);
+	return JOY_TXRX;
+}
+
+static int pad_exchange(int port, const uint8_t *tx, int txn, uint8_t *rx, int rxn) {
+	JOY_CTRL = 0x40;
+	for (int i = 0; i < 20; i++) {
+		(void)JOY_STAT;
+	}
+	JOY_BAUD = 0x88;
+	JOY_MODE = 0x000D;
+	JOY_CTRL = uint16_t(0x1003 | (port ? 0x2000 : 0));
+	if (!joy_spin(2, 0, 2000)) {
+		JOY_CTRL = 0;
+		return 0;
+	}
+	int ok = 1;
+	for (int i = 0; i < txn || i < rxn; i++) {
+		const uint8_t out = (i < txn) ? tx[i] : 0x00;
+		const uint8_t in = joy_xfer(out);
+		if (i < rxn && rx) {
+			rx[i] = in;
+		}
+		if (i + 1 < txn || i + 1 < rxn) {
+			if (!joy_spin(0x80, 1, 2000)) {
+				ok = 0;
+				break;
+			}
+			JOY_CTRL |= 0x10;
+		}
+	}
+	JOY_CTRL = 0;
+	return ok;
+}
+
+static int analog_enter_port(int port) {
+	uint8_t rx[9];
+	const uint8_t enter[] = { 0x01, uint8_t(PAD_CMD_CONFIG_MODE), 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00 };
+	const uint8_t analog[] = { 0x01, uint8_t(PAD_CMD_SET_ANALOG), 0x00, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00 };
+	const uint8_t motors[] = { 0x01, uint8_t(PAD_CMD_REQUEST_CONFIG), 0x00, 0x00, 0x01, 0xFF, 0xFF, 0xFF, 0xFF };
+	const uint8_t leave[] = { 0x01, uint8_t(PAD_CMD_CONFIG_MODE), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+	if (!pad_exchange(port, enter, 9, rx, 9)) {
+		return 0;
+	}
+	pad_exchange(port, analog, 9, rx, 9);
+	pad_exchange(port, motors, 9, rx, 9);
+	pad_exchange(port, leave, 9, rx, 9);
+	return 1;
+}
+
+static void pad_poll_motors() {
+	if (!g_pad_sio) {
+		return;
+	}
+	for (int port = 0; port < 2; port++) {
+		uint8_t tx[9] = { uint8_t(port ? 0x02 : 0x01), uint8_t(PAD_CMD_READ), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+		tx[3] = g_rumble_mot[port][0] ? 0xFF : 0x00;
+		tx[4] = g_rumble_mot[port][1];
+		uint8_t rx[9];
+		if (pad_exchange(port, tx, 9, rx, 9) && rx[1] != 0xFF) {
+			g_pad[port][0] = 0;
+			g_pad[port][1] = rx[1];
+			for (int i = 2; i < 9 && i < 34; i++) {
+				g_pad[port][i] = rx[i];
+			}
+		}
+	}
+}
+
+static void try_analog_enter() {
+	StopPAD();
+	ChangeClearPAD(0);
+	int ok = analog_enter_port(0);
+	analog_enter_port(1);
+	if (ok) {
+		g_pad_sio = 1;
+		pad_poll_motors();
+	} else {
+		g_pad_sio = 0;
+		InitPAD(g_pad[0], 34, g_pad[1], 34);
+		StartPAD();
+		ChangeClearPAD(0);
+	}
+}
 
 static void host_set_rumble(int device, int small, int large) {
 	if (device != 0 && device != 1) {
@@ -328,51 +432,325 @@ static void host_set_rumble(int device, int small, int large) {
 	g_rumble_mot[device][1] = uint8_t(large < 0 ? 0 : (large > 255 ? 255 : large));
 }
 
+#ifdef BLAZIUM_PS1_HAS_TIM
 static int host_upload_tpak(const uint8_t *blob, int size, int *lo, int *hi) {
 	if (!blob || size < 8 || blob[0] != 'T' || blob[1] != 'P' || blob[2] != 'A' || blob[3] != 'K') {
 		return 0;
 	}
+	const uint16_t n = uint16_t(blob[4] | (blob[5] << 8));
+	int free_n = 0;
+	int slots[TIM_SLOTS];
+	int ns = 0;
+	for (int i = 0; i < TIM_SLOTS; i++) {
+		if (!g_tim_used[i]) {
+			if (ns < TIM_SLOTS) {
+				slots[ns++] = i;
+			}
+			free_n++;
+		}
+	}
+	if (int(n) > free_n || int(n) > ns) {
+		return 0;
+	}
+	const uint8_t *p = blob + 8;
+	size_t left = size_t(size - 8);
+	const uint8_t *ents[TIM_SLOTS];
+	for (uint16_t i = 0; i < n; i++) {
+		const size_t sz = tim_blob_size(p, left);
+		if (sz == 0) {
+			return 0;
+		}
+		ents[i] = p;
+		p += sz;
+		left -= sz;
+	}
+	int first = -1, last = -1;
+	for (uint16_t i = 0; i < n; i++) {
+		const int slot = slots[i];
+		const uint8_t *tim = ents[i];
+		RECT ir{ g_tp_x[slot], g_tp_y[slot], 64, 64 };
+		const uint8_t *tp = tim + 8;
+		if (tim[4] & 8) {
+			const uint32_t csz = uint32_t(tp[0] | (tp[1] << 8) | (tp[2] << 16) | (tp[3] << 24));
+			RECT cr{ g_cl_x[slot], g_cl_y[slot], short(tp[8] | (tp[9] << 8)), short(tp[10] | (tp[11] << 8)) };
+			LoadImage(&cr, (const uint32_t *)(tp + 12));
+			DrawSync(0);
+			tp += csz;
+		}
+		ir.w = short(tp[8] | (tp[9] << 8));
+		ir.h = short(tp[10] | (tp[11] << 8));
+		LoadImage(&ir, (const uint32_t *)(tp + 12));
+		DrawSync(0);
+		g_tim_used[slot] = 1;
+		if (first < 0) {
+			first = slot;
+		}
+		last = slot;
+	}
+	if (lo) {
+		*lo = first < 0 ? 0 : first;
+	}
+	if (hi) {
+		*hi = last < 0 ? 0 : last + 1;
+	}
+	return 1;
+}
+
+static void host_evict_tpak(int lo, int hi) {
+	if (lo < 0) {
+		lo = 0;
+	}
+	if (hi > TIM_SLOTS) {
+		hi = TIM_SLOTS;
+	}
+	for (int i = lo; i < hi; i++) {
+		g_tim_used[i] = 0;
+	}
+}
+#else
+static int host_upload_tpak(const uint8_t *blob, int size, int *lo, int *hi) {
+	(void)blob;
+	(void)size;
 	if (lo) {
 		*lo = 0;
 	}
 	if (hi) {
 		*hi = 0;
 	}
-	return 1;
+	return 0;
 }
-
 static void host_evict_tpak(int lo, int hi) {
 	(void)lo;
 	(void)hi;
 }
+#endif
+
+struct SfxClip {
+	char name[16];
+	uint32_t addr;
+	uint32_t size;
+	uint32_t rate;
+	int voice;
+	uint32_t age;
+	int vol;
+};
+static SfxClip g_sfx[16];
+static int g_nsfx = 0;
+static uint32_t g_sfx_tick = 1;
+static int g_music_vol = 0x3fff;
 
 static int host_load_sfx(const uint8_t *blob, int size) {
-	return blob && size >= 8 && blob[0] == 'S' && blob[1] == 'F' && blob[2] == 'X' && blob[3] == '0';
+	if (!blob || size < 8 || blob[0] != 'S' || blob[1] != 'F' || blob[2] != 'X' || blob[3] != '0') {
+		return 0;
+	}
+#ifdef BLAZIUM_PS1_HAS_VAG
+	const int nc = int(blob[6] | (blob[7] << 8));
+	if (nc <= 0 || nc > 16) {
+		return 0;
+	}
+	SfxClip parsed[16];
+	uint32_t xfers[16];
+	uint32_t cursor = 0x1010 + 0x8000;
+	for (int i = 0; i < nc; i++) {
+		const uint8_t *row = blob + 8 + i * 28;
+		SfxClip c{};
+		for (int k = 0; k < 16; k++) {
+			c.name[k] = char(row[k]);
+		}
+		c.name[15] = 0;
+		const uint32_t off = uint32_t(row[16] | (row[17] << 8) | (row[18] << 16) | (row[19] << 24));
+		c.size = uint32_t(row[20] | (row[21] << 8) | (row[22] << 16) | (row[23] << 24));
+		c.rate = uint32_t(row[24] | (row[25] << 8));
+		if (!c.rate) {
+			c.rate = 22050;
+		}
+		if (off + c.size > uint32_t(size) || c.size < 48) {
+			return 0;
+		}
+		uint32_t xfer = (c.size + 63) & ~uint32_t(63);
+		if (off + xfer > uint32_t(size)) {
+			xfer = c.size;
+		}
+		c.addr = cursor;
+		c.voice = -1;
+		c.vol = 0x3fff;
+		parsed[i] = c;
+		xfers[i] = xfer;
+		cursor += xfer;
+	}
+	g_nsfx = 0;
+	SpuInit();
+	for (int i = 0; i < nc; i++) {
+		const uint8_t *row = blob + 8 + i * 28;
+		const uint32_t off = uint32_t(row[16] | (row[17] << 8) | (row[18] << 16) | (row[19] << 24));
+		SpuSetTransferMode(SPU_TRANSFER_BY_DMA);
+		SpuSetTransferStartAddr(parsed[i].addr);
+		SpuWrite((const uint32_t *)(blob + off), xfers[i]);
+		SpuIsTransferCompleted(SPU_TRANSFER_WAIT);
+		g_sfx[g_nsfx++] = parsed[i];
+	}
+	return 1;
+#else
+	(void)size;
+	return 0;
+#endif
 }
 
 static void host_unload_sfx() {
+#ifdef BLAZIUM_PS1_HAS_VAG
+	for (int i = 0; i < g_nsfx; i++) {
+		if (g_sfx[i].voice >= 1) {
+			SpuSetKey(0, 1 << g_sfx[i].voice);
+		}
+	}
+#endif
+	g_nsfx = 0;
 }
 
 static int host_play_sfx(const char *name) {
-	(void)name;
 #ifdef BLAZIUM_PS1_HAS_VAG
-	play_cooked_vag();
+	if (!name || !name[0] || !g_nsfx) {
+		return 0;
+	}
+	int clip = -1;
+	for (int i = 0; i < g_nsfx; i++) {
+		int same = 1;
+		for (int k = 0; k < 16 && (name[k] || g_sfx[i].name[k]); k++) {
+			if (name[k] != g_sfx[i].name[k]) {
+				same = 0;
+				break;
+			}
+		}
+		if (same) {
+			clip = i;
+			break;
+		}
+	}
+	if (clip < 0) {
+		return 0;
+	}
+	int voice = -1;
+	uint32_t oldest = 0xFFFFFFFFu;
+	int oldv = 1;
+	for (int v = 1; v < 8; v++) {
+		int used = 0;
+		for (int i = 0; i < g_nsfx; i++) {
+			if (g_sfx[i].voice == v) {
+				used = 1;
+				if (g_sfx[i].age < oldest) {
+					oldest = g_sfx[i].age;
+					oldv = v;
+				}
+			}
+		}
+		if (!used) {
+			voice = v;
+			break;
+		}
+	}
+	if (voice < 0) {
+		voice = oldv;
+		for (int i = 0; i < g_nsfx; i++) {
+			if (g_sfx[i].voice == voice) {
+				g_sfx[i].voice = -1;
+			}
+		}
+	}
+	SpuSetKey(0, 1 << voice);
+	SpuSetVoiceVolume(voice, int16_t(g_sfx[clip].vol), int16_t(g_sfx[clip].vol));
+	SpuSetVoicePitch(voice, getSPUSampleRate(int(g_sfx[clip].rate)));
+	SpuSetVoiceStartAddr(voice, g_sfx[clip].addr);
+	SPU_CH_ADSR1(voice) = 0x00ff;
+	SPU_CH_ADSR2(voice) = 0x0000;
+	SpuSetKey(1, 1 << voice);
+	g_sfx[clip].voice = voice;
+	g_sfx[clip].age = g_sfx_tick++;
 	return 1;
 #else
+	(void)name;
 	return 0;
 #endif
 }
 
 static void host_stop_sfx(const char *name) {
-	(void)name;
 #ifdef BLAZIUM_PS1_HAS_VAG
-	stop_cooked_vag();
+	for (int i = 0; i < g_nsfx; i++) {
+		int same = 1;
+		if (name) {
+			for (int k = 0; k < 16 && (name[k] || g_sfx[i].name[k]); k++) {
+				if (name[k] != g_sfx[i].name[k]) {
+					same = 0;
+					break;
+				}
+			}
+		}
+		if (same && g_sfx[i].voice >= 1) {
+			SpuSetKey(0, 1 << g_sfx[i].voice);
+			g_sfx[i].voice = -1;
+		}
+	}
+#else
+	(void)name;
 #endif
 }
 
 static void host_set_sfx_vol(const char *name, int vol) {
+#ifdef BLAZIUM_PS1_HAS_VAG
+	if (vol < 0) {
+		vol = 0;
+	}
+	if (vol > 0x3fff) {
+		vol = 0x3fff;
+	}
+	for (int i = 0; i < g_nsfx; i++) {
+		int same = 1;
+		if (name) {
+			for (int k = 0; k < 16 && (name[k] || g_sfx[i].name[k]); k++) {
+				if (name[k] != g_sfx[i].name[k]) {
+					same = 0;
+					break;
+				}
+			}
+		}
+		if (same) {
+			g_sfx[i].vol = vol;
+			if (g_sfx[i].voice >= 1) {
+				SpuSetVoiceVolume(g_sfx[i].voice, int16_t(vol), int16_t(vol));
+			}
+		}
+	}
+#else
 	(void)name;
 	(void)vol;
+#endif
+}
+
+static void host_set_music_vol(int vol) {
+#ifdef BLAZIUM_PS1_HAS_VAG
+	if (vol < 0) {
+		vol = 0;
+	}
+	if (vol > 0x3fff) {
+		vol = 0x3fff;
+	}
+	g_music_vol = vol;
+	SpuSetVoiceVolume(0, int16_t(vol), int16_t(vol));
+#else
+	(void)vol;
+#endif
+}
+
+static void host_set_light(int index, int dx, int dy, int dz, int r, int g, int b) {
+	if (index < 0 || index > 2) {
+		return;
+	}
+	g_light_mtx.m[0][index] = int16_t(dx);
+	g_light_mtx.m[1][index] = int16_t(dy);
+	g_light_mtx.m[2][index] = int16_t(dz);
+	g_color_mtx.m[0][index] = int16_t((4096 * (r < 0 ? 0 : (r > 255 ? 255 : r))) / 255);
+	g_color_mtx.m[1][index] = int16_t((4096 * (g < 0 ? 0 : (g > 255 ? 255 : g))) / 255);
+	g_color_mtx.m[2][index] = int16_t((4096 * (b < 0 ? 0 : (b > 255 ? 255 : b))) / 255);
+	gte_SetColorMatrix(&g_color_mtx);
 }
 
 #ifdef BLAZIUM_PS1_HAS_STR
@@ -415,63 +793,54 @@ static void try_pcdrv_tim() {
 }
 
 #ifdef BLAZIUM_PS1_HAS_SPRITE
-typedef struct {
-	int16_t x, y;
-	uint16_t w, h;
-	uint8_t u, v;
-	uint16_t tex;
-	uint8_t frame, nframes, fps, billboard;
-} CookedSprite;
-
-static uint16_t g_spr_flags = 1;
-
-static void aabb_step() {
-	g_spr_x += g_spr_vx;
-	g_spr_y += g_spr_vy;
-	if (g_spr_x < 0 || g_spr_x > SCREEN_W - 16) {
-		g_spr_vx = int16_t(-g_spr_vx);
-		g_spr_x += g_spr_vx;
-	}
-	if (g_spr_y < 24 || g_spr_y > SCREEN_H - 16) {
-		g_spr_vy = int16_t(-g_spr_vy);
-		g_spr_y += g_spr_vy;
-	}
-}
-
-static void draw_cooked_sprites(uint16_t clut) {
-	if (cooked_sprite_size < 4) {
-		return;
-	}
-	const uint16_t n = uint16_t(cooked_sprite[0] | (cooked_sprite[1] << 8));
-	g_spr_flags = uint16_t(cooked_sprite[2] | (cooked_sprite[3] << 8));
-	const CookedSprite *spr = (const CookedSprite *)(cooked_sprite + 4);
+static void draw_cooked_sprites(uint16_t *tpages, uint16_t *cluts) {
+	const ScriptVMSprite *spr = script_vm_sprites();
+	const int nspr = script_vm_sprite_count();
 	const ScriptVMNode *nodes = script_vm_nodes();
 	const int nn = script_vm_node_count();
-	SPRT *p = (SPRT *)g_pri;
 	for (int ni = 0; ni < nn; ni++) {
 		const int si = int(nodes[ni].sprite);
-		if (si < 0 || si >= int(n) || !(nodes[ni].flags & 1)) {
+		if (si < 0 || si >= nspr || !(nodes[ni].flags & 1)) {
 			continue;
 		}
-		if ((uint8_t *)(p + 1) > g_fb[g_active].packet + PACKET_LEN) {
-			break;
+		const uint8_t rgb = spr[si].rgb ? spr[si].rgb : 255;
+		const uint8_t u = uint8_t(spr[si].u + spr[si].frame * spr[si].w);
+		const uint8_t u1 = spr[si].flip_h ? u : uint8_t(u + spr[si].w);
+		const uint8_t u0 = spr[si].flip_h ? uint8_t(u + spr[si].w) : u;
+		const int16_t x = spr[si].x ? spr[si].x : nodes[ni].px;
+		const int16_t y = spr[si].y ? spr[si].y : int16_t(-nodes[ni].py);
+		const uint8_t tex = uint8_t(spr[si].tex & 15);
+		if (spr[si].billboard) {
+			if ((uint8_t *)((POLY_FT4 *)g_pri + 1) > g_fb[g_active].packet + PACKET_LEN) {
+				break;
+			}
+			POLY_FT4 *q = (POLY_FT4 *)g_pri;
+			setPolyFT4(q);
+			setRGB0(q, rgb, rgb, rgb);
+			const int16_t hw = int16_t(spr[si].w / 2);
+			const int16_t hh = int16_t(spr[si].h / 2);
+			setXY4(q, int16_t(x - hw), int16_t(y - hh), int16_t(x + hw), int16_t(y - hh), int16_t(x - hw), int16_t(y + hh), int16_t(x + hw), int16_t(y + hh));
+			setUV4(q, u0, spr[si].v, u1, spr[si].v, u0, uint8_t(spr[si].v + spr[si].h), u1, uint8_t(spr[si].v + spr[si].h));
+			q->tpage = tpages[tex];
+			q->clut = cluts[tex];
+			addPrim(&g_fb[g_active].ot[1], q);
+			g_pri = (uint8_t *)(q + 1);
+		} else {
+			if ((uint8_t *)((SPRT *)g_pri + 1) > g_fb[g_active].packet + PACKET_LEN) {
+				break;
+			}
+			SPRT *p = (SPRT *)g_pri;
+			setSprt(p);
+			setRGB0(p, rgb, rgb, rgb);
+			setXY0(p, x, y);
+			setWH(p, spr[si].w, spr[si].h);
+			setUV0(p, u0, spr[si].v);
+			p->clut = cluts[tex];
+			addPrim(&g_fb[g_active].ot[1], p);
+			g_pri = (uint8_t *)(p + 1);
 		}
-		setSprt(p);
-		setRGB0(p, 255, 255, 255);
-		int16_t x = spr[si].x;
-		int16_t y = spr[si].y;
-		if (si == 1 && (g_spr_flags & 1)) {
-			x = g_spr_x;
-			y = g_spr_y;
-		}
-		setXY0(p, x, y);
-		setWH(p, spr[si].w, spr[si].h);
-		setUV0(p, spr[si].u, spr[si].v);
-		p->clut = clut;
-		addPrim(&g_fb[g_active].ot[1], p);
-		p++;
 	}
-	g_pri = (uint8_t *)p;
+	(void)tpages;
 }
 #endif
 
@@ -891,6 +1260,7 @@ int main(int argc, const char **argv) {
 	InitPAD(g_pad[0], 34, g_pad[1], 34);
 	StartPAD();
 	ChangeClearPAD(0);
+	try_analog_enter();
 #ifdef BLAZIUM_PS1_HAS_STR
 	{
 		const uint8_t *xa = nullptr;
@@ -949,7 +1319,7 @@ int main(int argc, const char **argv) {
 	if (cooked_node_size >= 8 && cooked_node[0] == 'N' && cooked_node[1] == 'O' && cooked_node[2] == 'D' && cooked_node[3] == 'E') {
 		const uint16_t ver = uint16_t(cooked_node[4] | (cooked_node[5] << 8));
 		const uint16_t nc = uint16_t(cooked_node[6] | (cooked_node[7] << 8));
-		if (ver == 15) {
+		if (ver == BLAZIUM_PS1_COOK_ABI) {
 			ScriptVMNode parsed[PS1_MAX_NODES];
 			const uint8_t *p = cooked_node + 8;
 			const uint8_t *end = cooked_node + cooked_node_size;
@@ -991,7 +1361,7 @@ int main(int argc, const char **argv) {
 	if (cooked_hud_size >= 8 && cooked_hud[0] == 'H' && cooked_hud[1] == 'U' && cooked_hud[2] == 'D' && cooked_hud[3] == '0') {
 		const uint16_t ver = uint16_t(cooked_hud[4] | (cooked_hud[5] << 8));
 		const uint16_t nc = uint16_t(cooked_hud[6] | (cooked_hud[7] << 8));
-		if (ver == 15) {
+		if (ver == BLAZIUM_PS1_COOK_ABI) {
 			ScriptVMHud parsed[PS1_MAX_HUD];
 			const uint8_t *p = cooked_hud + 8;
 			const uint8_t *end = cooked_hud + cooked_hud_size;
@@ -1050,7 +1420,7 @@ int main(int argc, const char **argv) {
 		const uint16_t nc = uint16_t(cooked_tile[6] | (cooked_tile[7] << 8));
 		g_tile_w = cooked_tile[8];
 		g_tile_h = cooked_tile[9];
-		if (ver == 15) {
+		if (ver == BLAZIUM_PS1_COOK_ABI) {
 			ScriptVMTile parsed[PS1_MAX_TILES];
 			const uint8_t *p = cooked_tile + 10;
 			const uint8_t *end = cooked_tile + cooked_tile_size;
@@ -1075,7 +1445,7 @@ int main(int argc, const char **argv) {
 	if (cooked_scene_size >= 8 && cooked_scene[0] == 'S' && cooked_scene[1] == 'C' && cooked_scene[2] == 'E' && cooked_scene[3] == 'N') {
 		const uint16_t ver = uint16_t(cooked_scene[4] | (cooked_scene[5] << 8));
 		const uint16_t nc = uint16_t(cooked_scene[6] | (cooked_scene[7] << 8));
-		if (ver == 15) {
+		if (ver == BLAZIUM_PS1_COOK_ABI) {
 			ScriptVMPack parsed[PS1_MAX_PACKS];
 			const uint8_t *p = cooked_scene + 8;
 			const uint8_t *end = cooked_scene + cooked_scene_size;
@@ -1133,7 +1503,7 @@ int main(int argc, const char **argv) {
 	if (cooked_anim_size >= 8 && cooked_anim[0] == 'A' && cooked_anim[1] == 'N' && cooked_anim[2] == 'I' && cooked_anim[3] == 'M') {
 		const uint16_t ver = uint16_t(cooked_anim[4] | (cooked_anim[5] << 8));
 		const uint16_t nc = uint16_t(cooked_anim[6] | (cooked_anim[7] << 8));
-		if (ver == 15) {
+		if (ver == BLAZIUM_PS1_COOK_ABI) {
 			ScriptVMAnimClip parsed[PS1_MAX_CLIPS];
 			const uint8_t *p = cooked_anim + 8;
 			const uint8_t *end = cooked_anim + cooked_anim_size;
@@ -1178,7 +1548,7 @@ int main(int argc, const char **argv) {
 	if (cooked_cam_size >= 8 && cooked_cam[0] == 'C' && cooked_cam[1] == 'A' && cooked_cam[2] == 'M' && cooked_cam[3] == '0') {
 		const uint16_t ver = uint16_t(cooked_cam[4] | (cooked_cam[5] << 8));
 		const uint16_t nc = uint16_t(cooked_cam[6] | (cooked_cam[7] << 8));
-		if (ver == 15) {
+		if (ver == BLAZIUM_PS1_COOK_ABI) {
 			ScriptVMCam parsed[PS1_MAX_CAMS];
 			const uint8_t *p = cooked_cam + 8;
 			const uint8_t *end = cooked_cam + cooked_cam_size;
@@ -1216,7 +1586,7 @@ int main(int argc, const char **argv) {
 	if (cooked_hit_size >= 8 && cooked_hit[0] == 'H' && cooked_hit[1] == 'I' && cooked_hit[2] == 'T' && cooked_hit[3] == '0') {
 		const uint16_t ver = uint16_t(cooked_hit[4] | (cooked_hit[5] << 8));
 		const uint16_t nc = uint16_t(cooked_hit[6] | (cooked_hit[7] << 8));
-		if (ver == 15) {
+		if (ver == BLAZIUM_PS1_COOK_ABI) {
 			ScriptVMHit parsed[PS1_MAX_HITS];
 			const uint8_t *p = cooked_hit + 8;
 			const uint8_t *end = cooked_hit + cooked_hit_size;
@@ -1227,6 +1597,7 @@ int main(int argc, const char **argv) {
 				h.dim = p[2];
 				h.kind = p[3];
 				h.flags = p[4];
+				h.layer = p[5] ? p[5] : 1;
 				h.min_x = int16_t(p[6] | (p[7] << 8));
 				h.min_y = int16_t(p[8] | (p[9] << 8));
 				h.min_z = int16_t(p[10] | (p[11] << 8));
@@ -1241,6 +1612,32 @@ int main(int argc, const char **argv) {
 		}
 	}
 #endif
+#ifdef BLAZIUM_PS1_HAS_SPRITE
+	if (cooked_sprite_size >= 4) {
+		const uint16_t n = uint16_t(cooked_sprite[0] | (cooked_sprite[1] << 8));
+		const uint8_t *p = cooked_sprite + 4;
+		ScriptVMSprite parsed[PS1_MAX_SPRITES];
+		int got = 0;
+		for (uint16_t i = 0; i < n && got < PS1_MAX_SPRITES && p + 16 <= cooked_sprite + cooked_sprite_size; i++) {
+			ScriptVMSprite s{};
+			s.x = int16_t(p[0] | (p[1] << 8));
+			s.y = int16_t(p[2] | (p[3] << 8));
+			s.w = uint16_t(p[4] | (p[5] << 8));
+			s.h = uint16_t(p[6] | (p[7] << 8));
+			s.u = p[8];
+			s.v = p[9];
+			s.tex = uint16_t(p[10] | (p[11] << 8));
+			s.frame = p[12];
+			s.nframes = p[13] ? p[13] : 1;
+			s.fps = p[14];
+			s.billboard = p[15];
+			s.rgb = 255;
+			p += 16;
+			parsed[got++] = s;
+		}
+		script_vm_set_sprites(parsed, got);
+	}
+#endif
 	const int font = FntOpen(8, 16, SCREEN_W - 16, SCREEN_H - 40, 0, 256);
 	uint16_t tpages[TIM_SLOTS];
 	uint16_t cluts[TIM_SLOTS];
@@ -1253,8 +1650,6 @@ int main(int argc, const char **argv) {
 		cluts[i] = getClut(0, 480 - i);
 #endif
 	}
-	const uint16_t clut = cluts[0];
-
 	int frames = 0;
 
 	for (;;) {
@@ -1308,6 +1703,9 @@ int main(int argc, const char **argv) {
 			host.play_sfx = host_play_sfx;
 			host.stop_sfx = host_stop_sfx;
 			host.set_sfx_volume = host_set_sfx_vol;
+			host.set_music_volume = host_set_music_vol;
+			host.set_light = host_set_light;
+			pad_poll_motors();
 			if (!script_vm_process(g_region ? 1.0f / 50.0f : 1.0f / 60.0f, &host)) {
 				rot.vy += rot_step;
 			}
@@ -1338,10 +1736,7 @@ int main(int argc, const char **argv) {
 		draw_cooked_mesh(&mtx, tpages, cluts);
 #endif
 #ifdef BLAZIUM_PS1_HAS_SPRITE
-		if (g_spr_flags & 1) {
-			aabb_step();
-		}
-		draw_cooked_sprites(clut);
+		draw_cooked_sprites(tpages, cluts);
 #endif
 		{
 			uint16_t dummy_tp[TIM_SLOTS] = {};
@@ -1367,16 +1762,20 @@ int main(int argc, const char **argv) {
 				if (!parts[i].life) {
 					continue;
 				}
-				if ((uint8_t *)((TILE *)g_pri + 1) > g_fb[g_active].packet + PACKET_LEN) {
+				if ((uint8_t *)((POLY_FT4 *)g_pri + 1) > g_fb[g_active].packet + PACKET_LEN) {
 					break;
 				}
-				TILE *t = (TILE *)g_pri;
-				setTile(t);
-				setXY0(t, parts[i].x, parts[i].y);
-				setWH(t, 2, 2);
-				setRGB0(t, 255, 220, 80);
-				addPrim(&g_fb[g_active].ot[1], t);
-				g_pri = (uint8_t *)(t + 1);
+				POLY_FT4 *q = (POLY_FT4 *)g_pri;
+				setPolyFT4(q);
+				setRGB0(q, 255, 220, 80);
+				const int16_t x = parts[i].x;
+				const int16_t y = parts[i].y;
+				setXY4(q, int16_t(x - 4), int16_t(y - 4), int16_t(x + 4), int16_t(y - 4), int16_t(x - 4), int16_t(y + 4), int16_t(x + 4), int16_t(y + 4));
+				setUV4(q, 0, 0, 8, 0, 0, 8, 8, 8);
+				q->tpage = tpages[parts[i].tex & 15];
+				q->clut = cluts[parts[i].tex & 15];
+				addPrim(&g_fb[g_active].ot[1], q);
+				g_pri = (uint8_t *)(q + 1);
 			}
 		}
 		{

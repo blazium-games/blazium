@@ -164,8 +164,18 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "move_and_slide" || p_name == "tile_solid_at" || p_name == "tile_at" ||
 			p_name == "load_audio" || p_name == "unload_audio" || p_name == "can_load_audio" ||
 			p_name == "is_audio_loaded" || p_name == "play_sfx" || p_name == "stop_sfx" ||
-			p_name == "set_sfx_volume" || p_name == "emit" || p_name == "set_fog" ||
-			p_name == "set_fade" || p_name == "set_light";
+			p_name == "set_sfx_volume" || 			p_name == "emit" || p_name == "set_fog" ||
+			p_name == "set_fade" || p_name == "set_light" ||
+			p_name == "atan2" || p_name == "length" || p_name == "length_squared" ||
+			p_name == "normalized" || p_name == "distance_to" || p_name == "dot" ||
+			p_name == "cross" || p_name == "wrapf" || p_name == "fmod" || p_name == "inverse_lerp" ||
+			p_name == "get_global_rotation" || p_name == "raycast_point" ||
+			p_name == "is_on_floor" || p_name == "is_on_wall" || p_name == "is_on_ceiling" ||
+			p_name == "set_hitbox_layer" || p_name == "get_hitbox_layer" ||
+			p_name == "shake_camera" || p_name == "set_paused" || p_name == "is_paused" ||
+			p_name == "get_camera_rotation" || p_name == "set_music_volume" ||
+			p_name == "load_text" || p_name == "unload_text" || p_name == "can_load_text" ||
+			p_name == "is_text_loaded" || p_name == "set_line" || p_name == "set_line_chars";
 }
 
 static bool member_is_allowlisted(const String &p_name) {
@@ -173,7 +183,7 @@ static bool member_is_allowlisted(const String &p_name) {
 			p_name == "text" || p_name == "disabled" || p_name == "pressed" || p_name == "button_pressed" ||
 			p_name == "value" || p_name == "min_value" || p_name == "max_value" || p_name == "selected" ||
 			p_name == "focus" || p_name == "x" || p_name == "y" || p_name == "z" ||
-			p_name == "frame";
+			p_name == "frame" || p_name == "flip_h" || p_name == "modulate";
 }
 
 static bool action_is_known(const String &p_name) {
@@ -639,7 +649,7 @@ static Vector<uint8_t> pack_official_gdbc(const Vector<String> &p_paths, const V
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 15);
+	append_u16(out, 16);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int s = 0; s < p_paths.size(); s++) {
 		append_str(out, p_paths[s]);
@@ -731,7 +741,7 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 15);
+	append_u16(out, 16);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int i = 0; i < p_paths.size(); i++) {
 		append_str(out, p_paths[i]);
@@ -842,6 +852,11 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 			"raycast", "intersects_ray", "move_and_slide", "tile_solid_at", "tile_at",
 			"load_audio", "unload_audio", "can_load_audio", "is_audio_loaded", "play_sfx", "stop_sfx", "set_sfx_volume",
 			"emit", "set_fog", "set_fade", "set_light", "has_feature",
+			"atan2", "length", "length_squared", "normalized", "distance_to", "dot", "cross",
+			"wrapf", "fmod", "inverse_lerp", "get_global_rotation", "raycast_point",
+			"is_on_floor", "is_on_wall", "is_on_ceiling", "set_hitbox_layer", "get_hitbox_layer",
+			"shake_camera", "set_paused", "is_paused", "get_camera_rotation", "set_music_volume",
+			"load_text", "unload_text", "can_load_text", "is_text_loaded", "set_line", "set_line_chars",
 			"grab_focus", "release_focus",
 			"print", "push_warning", "connect", "disconnect"
 		};
@@ -1113,7 +1128,7 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 		}
 	}
 
-	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 15)\n", r_out.rotate_y);
+	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 16)\n", r_out.rotate_y);
 	for (int i = 0; i < r_out.accepted.size(); i++) {
 		r_out.map_text += "OK " + r_out.accepted[i] + "\n";
 	}
