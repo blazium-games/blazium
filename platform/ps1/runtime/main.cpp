@@ -31,6 +31,7 @@
 #include <cstdint>
 #include <inline_c.h>
 #include <psxapi.h>
+#include <psxcd.h>
 #include <psxgpu.h>
 #include <psxgte.h>
 #include <psxpad.h>
@@ -43,7 +44,7 @@
 #include "script_vm.h"
 
 #ifndef BLAZIUM_PS1_COOK_ABI
-#define BLAZIUM_PS1_COOK_ABI 17
+#define BLAZIUM_PS1_COOK_ABI 18
 #endif
 
 #define OT_LEN 2048
@@ -772,13 +773,69 @@ static void host_play_fmv_blob(const uint8_t *blob, int size) {
 	fmv_play_embedded(blob, size_t(size), SCREEN_W, SCREEN_H, g_pad[0], nullptr, 0);
 }
 
-static int host_play_xa(const uint8_t *blob, int size) {
-	(void)blob;
-	(void)size;
+static int g_cd_ok = 0;
+
+static int cd_ready() {
+	if (g_cd_ok) {
+		return 1;
+	}
+	if (CdInit()) {
+		g_cd_ok = 1;
+		return 1;
+	}
 	return 0;
 }
 
+static void cd_make_path(char *dst, const char *iso_name) {
+	dst[0] = '\\';
+	int i = 0;
+	while (iso_name && iso_name[i] && i < 20) {
+		dst[1 + i] = iso_name[i];
+		i++;
+	}
+	dst[1 + i] = ';';
+	dst[2 + i] = '1';
+	dst[3 + i] = 0;
+}
+
+static int host_play_xa(const char *iso_name, int file, int chan) {
+	if (!iso_name || !iso_name[0] || !cd_ready()) {
+		return 0;
+	}
+	char path[32];
+	cd_make_path(path, iso_name);
+	CdlFILE fp;
+	if (!CdSearchFile(&fp, path)) {
+		return 0;
+	}
+	CdlFILTER filt;
+	filt.file = uint8_t(file > 0 ? file : 1);
+	filt.chan = uint8_t(chan < 0 ? 0 : chan);
+	filt.pad = 0;
+	CdControl(CdlSetfilter, (uint8_t *)&filt, 0);
+	uint8_t mode = uint8_t(CdlModeRT | CdlModeSF | CdlModeSpeed);
+	CdControl(CdlSetmode, &mode, 0);
+	CdControl(CdlReadS, (uint8_t *)&fp.pos, 0);
+	return 1;
+}
+
 static void host_stop_xa() {
+	if (g_cd_ok) {
+		CdControl(CdlPause, 0, 0);
+	}
+}
+
+static int host_play_fmv_cd(const char *iso_name) {
+	if (!iso_name || !cd_ready()) {
+		return 0;
+	}
+	char path[32];
+	cd_make_path(path, iso_name);
+	CdlFILE fp;
+	if (!CdSearchFile(&fp, path)) {
+		return 0;
+	}
+	return fmv_play_cd(iso_name, SCREEN_W, SCREEN_H, g_pad[0]);
 }
 
 static void host_set_music_vol(int vol) {
@@ -860,9 +917,11 @@ static void draw_cooked_sprites(uint16_t *tpages, uint16_t *cluts) {
 			continue;
 		}
 		const uint8_t rgb = spr[si].rgb ? spr[si].rgb : 255;
-		const uint8_t u = uint8_t(spr[si].u + spr[si].frame * spr[si].w);
-		const uint8_t u1 = spr[si].flip_h ? u : uint8_t(u + spr[si].w);
-		const uint8_t u0 = spr[si].flip_h ? uint8_t(u + spr[si].w) : u;
+			const uint8_t u = uint8_t(spr[si].u + spr[si].frame * spr[si].w);
+			const uint8_t u1 = spr[si].flip_h ? u : uint8_t(u + spr[si].w);
+			const uint8_t u0 = spr[si].flip_h ? uint8_t(u + spr[si].w) : u;
+			const uint8_t v0 = spr[si].flip_v ? uint8_t(spr[si].v + spr[si].h) : spr[si].v;
+			const uint8_t v1 = spr[si].flip_v ? spr[si].v : uint8_t(spr[si].v + spr[si].h);
 		const int16_t x = spr[si].x ? spr[si].x : nodes[ni].px;
 		const int16_t y = spr[si].y ? spr[si].y : int16_t(-nodes[ni].py);
 		const uint8_t tex = uint8_t(spr[si].tex & 15);
@@ -876,7 +935,7 @@ static void draw_cooked_sprites(uint16_t *tpages, uint16_t *cluts) {
 			const int16_t hw = int16_t(spr[si].w / 2);
 			const int16_t hh = int16_t(spr[si].h / 2);
 			setXY4(q, int16_t(x - hw), int16_t(y - hh), int16_t(x + hw), int16_t(y - hh), int16_t(x - hw), int16_t(y + hh), int16_t(x + hw), int16_t(y + hh));
-			setUV4(q, u0, spr[si].v, u1, spr[si].v, u0, uint8_t(spr[si].v + spr[si].h), u1, uint8_t(spr[si].v + spr[si].h));
+			setUV4(q, u0, v0, u1, v0, u0, v1, u1, v1);
 			q->tpage = tpages[tex];
 			q->clut = cluts[tex];
 			addPrim(&g_fb[g_active].ot[1], q);
@@ -890,7 +949,7 @@ static void draw_cooked_sprites(uint16_t *tpages, uint16_t *cluts) {
 			setRGB0(p, rgb, rgb, rgb);
 			setXY0(p, x, y);
 			setWH(p, spr[si].w, spr[si].h);
-			setUV0(p, u0, spr[si].v);
+			setUV0(p, u0, v0);
 			p->clut = cluts[tex];
 			addPrim(&g_fb[g_active].ot[1], p);
 			g_pri = (uint8_t *)(p + 1);
@@ -1626,7 +1685,7 @@ int main(int argc, const char **argv) {
 				}
 				c.name[cpy] = 0;
 				p += sl;
-				if (p + 13 > end) {
+				if (p + 24 > end) {
 					break;
 				}
 				c.is_default = *p++;
@@ -1637,6 +1696,14 @@ int main(int argc, const char **argv) {
 				c.ry = int16_t(p[8] | (p[9] << 8));
 				c.rz = int16_t(p[10] | (p[11] << 8));
 				p += 12;
+				c.dim = *p++;
+				c.drag = *p++;
+				c.dead = *p++;
+				c.lim_l = int16_t(p[0] | (p[1] << 8));
+				c.lim_t = int16_t(p[2] | (p[3] << 8));
+				c.lim_r = int16_t(p[4] | (p[5] << 8));
+				c.lim_b = int16_t(p[6] | (p[7] << 8));
+				p += 8;
 				c.pack = 0;
 				parsed[got++] = c;
 			}
@@ -1729,7 +1796,7 @@ int main(int argc, const char **argv) {
 		static int g_script_cam_flag = 0;
 		static int g_cam_scale = 0;
 		{
-			ScriptVMHost host;
+			ScriptVMHost host{};
 			memset(&host, 0, sizeof(host));
 			host.rot_x = &rot.vx;
 			host.rot_y = &rot.vy;
@@ -1772,6 +1839,7 @@ int main(int argc, const char **argv) {
 			host.play_fmv_blob = host_play_fmv_blob;
 			host.play_xa = host_play_xa;
 			host.stop_xa = host_stop_xa;
+			host.play_fmv_cd = host_play_fmv_cd;
 			pad_poll_motors();
 			if (!script_vm_process(g_region ? 1.0f / 50.0f : 1.0f / 60.0f, &host)) {
 				rot.vy += rot_step;
@@ -1829,16 +1897,71 @@ int main(int argc, const char **argv) {
 				if (!parts[i].life) {
 					continue;
 				}
+				const int dx = int(parts[i].x) - int(pos.vx);
+				const int dy = int(parts[i].y) - int(pos.vy);
+				const int dz = int(parts[i].z) - int(pos.vz);
+				const int cy = icos(rot.vy);
+				const int ysin = isin(rot.vy);
+				const int lx = (dx * cy - dz * ysin) >> 12;
+				const int lz = (dx * ysin + dz * cy) >> 12;
+				const int cp = icos(rot.vx);
+				const int sp = isin(rot.vx);
+				const int ly = (dy * cp - lz * sp) >> 12;
+				const int lz2 = (dy * sp + lz * cp) >> 12;
+				if (lz2 <= 1) {
+					continue;
+				}
+				const int fov = g_cam_scale > 0 ? g_cam_scale : 160;
+				const int16_t sx = int16_t(SCREEN_W / 2 + lx * fov / lz2);
+				const int16_t sy = int16_t(SCREEN_H / 2 - ly * fov / lz2);
+				const uint8_t pr = parts[i].r ? parts[i].r : 255;
+				const uint8_t pg = parts[i].g ? parts[i].g : 220;
+				const uint8_t pb = parts[i].b ? parts[i].b : 80;
+				const int sz = parts[i].size ? int(parts[i].size) : 4;
+				const uint8_t mode = parts[i].mode;
+				if (mode == 2) {
+					if ((uint8_t *)((POLY_F4 *)g_pri + 1) > g_fb[g_active].packet + PACKET_LEN) {
+						break;
+					}
+					const int pdx = int(parts[i].px) - int(pos.vx);
+					const int pdy = int(parts[i].py) - int(pos.vy);
+					const int pdz = int(parts[i].pz) - int(pos.vz);
+					const int plx = (pdx * cy - pdz * ysin) >> 12;
+					const int plz = (pdx * ysin + pdz * cy) >> 12;
+					const int ply = (pdy * cp - plz * sp) >> 12;
+					const int plz2 = (pdy * sp + plz * cp) >> 12;
+					if (plz2 <= 1) {
+						continue;
+					}
+					const int16_t ox = int16_t(SCREEN_W / 2 + plx * fov / plz2);
+					const int16_t oy = int16_t(SCREEN_H / 2 - ply * fov / plz2);
+					POLY_F4 *q = (POLY_F4 *)g_pri;
+					setPolyF4(q);
+					setRGB0(q, pr, pg, pb);
+					setXY4(q, ox, int16_t(oy - sz), sx, int16_t(sy - sz), ox, int16_t(oy + sz), sx, int16_t(sy + sz));
+					addPrim(&g_fb[g_active].ot[1], q);
+					g_pri = (uint8_t *)(q + 1);
+					continue;
+				}
+				if (mode == 3 || mode == 4) {
+					const int tw = sz > 1 ? 2 : 1;
+					draw_tile_rect(sx, sy, int16_t(tw), int16_t(tw), pr, pg, pb);
+					continue;
+				}
 				if ((uint8_t *)((POLY_FT4 *)g_pri + 1) > g_fb[g_active].packet + PACKET_LEN) {
 					break;
 				}
 				POLY_FT4 *q = (POLY_FT4 *)g_pri;
 				setPolyFT4(q);
-				setRGB0(q, 255, 220, 80);
-				const int16_t x = parts[i].x;
-				const int16_t y = parts[i].y;
-				setXY4(q, int16_t(x - 4), int16_t(y - 4), int16_t(x + 4), int16_t(y - 4), int16_t(x - 4), int16_t(y + 4), int16_t(x + 4), int16_t(y + 4));
-				setUV4(q, 0, 0, 8, 0, 0, 8, 8, 8);
+				setRGB0(q, pr, pg, pb);
+				setXY4(q, int16_t(sx - sz), int16_t(sy - sz), int16_t(sx + sz), int16_t(sy - sz), int16_t(sx - sz), int16_t(sy + sz), int16_t(sx + sz), int16_t(sy + sz));
+				uint8_t u0 = 0, u1 = 8;
+				if (mode == 1 && parts[i].nframes > 1) {
+					const uint8_t fw = uint8_t(256 / parts[i].nframes);
+					u0 = uint8_t(parts[i].frame * fw);
+					u1 = uint8_t(u0 + fw);
+				}
+				setUV4(q, u0, 0, u1, 0, u0, 8, u1, 8);
 				q->tpage = tpages[parts[i].tex & 15];
 				q->clut = cluts[parts[i].tex & 15];
 				addPrim(&g_fb[g_active].ot[1], q);

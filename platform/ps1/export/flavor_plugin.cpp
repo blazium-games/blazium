@@ -60,6 +60,11 @@ void PS1::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("next_camera"), &PS1::next_camera);
 	ClassDB::bind_method(D_METHOD("prev_camera"), &PS1::prev_camera);
 	ClassDB::bind_method(D_METHOD("overlaps", "a", "b"), &PS1::overlaps);
+	ClassDB::bind_method(D_METHOD("overlaps_entered", "a", "b"), &PS1::overlaps_entered);
+	ClassDB::bind_method(D_METHOD("has_overlapping_areas"), &PS1::has_overlapping_areas);
+	ClassDB::bind_method(D_METHOD("get_overlapping_area_count"), &PS1::get_overlapping_area_count);
+	ClassDB::bind_method(D_METHOD("get_overlapping_area", "index"), &PS1::get_overlapping_area);
+	ClassDB::bind_method(D_METHOD("intersects_ray", "from", "dir"), &PS1::intersects_ray);
 	ClassDB::bind_method(D_METHOD("hitbox_kind", "node"), &PS1::hitbox_kind);
 	ClassDB::bind_method(D_METHOD("set_hitbox_enabled", "node", "on"), &PS1::set_hitbox_enabled);
 	ClassDB::bind_method(D_METHOD("load_animations", "path"), &PS1::load_animations);
@@ -119,7 +124,28 @@ void PS1::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_line_chars", "hud", "name", "n"), &PS1::set_line_chars);
 	ClassDB::bind_method(D_METHOD("get_action_strength", "action"), &PS1::get_action_strength);
 	ClassDB::bind_method(D_METHOD("set_stick_deadzone", "n"), &PS1::set_stick_deadzone);
-	ClassDB::bind_method(D_METHOD("get_velocity"), &PS1::get_velocity);
+	ClassDB::bind_method(D_METHOD("get_velocity", "node"), &PS1::get_velocity, DEFVAL(Variant()));
+	ClassDB::bind_method(D_METHOD("poke", "off", "n"), &PS1::poke);
+	ClassDB::bind_method(D_METHOD("peek", "off"), &PS1::peek);
+	ClassDB::bind_method(D_METHOD("set_node_meta", "node", "n"), &PS1::set_node_meta);
+	ClassDB::bind_method(D_METHOD("get_node_meta", "node"), &PS1::get_node_meta);
+	ClassDB::bind_method(D_METHOD("set_angular_velocity", "node", "v"), &PS1::set_angular_velocity);
+	ClassDB::bind_method(D_METHOD("get_angular_velocity", "node"), &PS1::get_angular_velocity);
+	ClassDB::bind_method(D_METHOD("set_camera_limits", "l", "t", "r", "b"), &PS1::set_camera_limits);
+	ClassDB::bind_method(D_METHOD("set_camera_drag", "n"), &PS1::set_camera_drag);
+	ClassDB::bind_method(D_METHOD("move_and_drive", "node", "throttle", "steer"), &PS1::move_and_drive);
+	ClassDB::bind_method(D_METHOD("get_speed", "node"), &PS1::get_speed);
+	ClassDB::bind_method(D_METHOD("set_drive_friction", "node", "f"), &PS1::set_drive_friction);
+	ClassDB::bind_method(D_METHOD("start_stream", "node", "rate", "tex"), &PS1::start_stream);
+	ClassDB::bind_method(D_METHOD("stop_stream", "node"), &PS1::stop_stream);
+	ClassDB::bind_method(D_METHOD("set_stream_vel", "node", "v"), &PS1::set_stream_vel);
+	ClassDB::bind_method(D_METHOD("set_stream_spread", "node", "n"), &PS1::set_stream_spread);
+	ClassDB::bind_method(D_METHOD("set_stream_mode", "node", "m"), &PS1::set_stream_mode);
+	ClassDB::bind_method(D_METHOD("set_particle_mode", "m"), &PS1::set_particle_mode);
+	ClassDB::bind_method(D_METHOD("set_particle_flipbook", "tex", "frames", "fps"), &PS1::set_particle_flipbook);
+	ClassDB::bind_method(D_METHOD("set_particle_gravity", "g"), &PS1::set_particle_gravity);
+	ClassDB::bind_method(D_METHOD("set_particle_color", "c"), &PS1::set_particle_color);
+	ClassDB::bind_method(D_METHOD("emit_mesh", "node", "n", "tex"), &PS1::emit_mesh);
 	ClassDB::bind_method(D_METHOD("world_to_screen", "pos"), &PS1::world_to_screen);
 	ClassDB::bind_method(D_METHOD("seek_animation", "sec"), &PS1::seek_animation);
 	ClassDB::bind_method(D_METHOD("set_animation_speed", "s"), &PS1::set_animation_speed);
@@ -328,7 +354,7 @@ void PS1FlavorEditorPlugin::_refresh() {
 	const int packs = _count_literal_packs();
 	const int est_ram = nodes * 56 + tris * 32 + hud * 80 + tiles * 8;
 	status->set_text(vformat(
-			"nodes %d/%d\ntris %d/%d\nHUD %d/%d\ntiles %d/%d\nSprite2D %d/%d\npacks %d/%d\nest RAM %d/%d\nPS1.* is PS1 export only; use OS.has_feature(\"ps1\").\nABI 17: saves round-trip, analog strength, anim loop, MUSIC/STR stream.",
+			"nodes %d/%d\ntris %d/%d\nHUD %d/%d\ntiles %d/%d\nSprite2D %d/%d\npacks %d/%d\nest RAM %d/%d\nPS1.* is PS1 export only; use OS.has_feature(\"ps1\").\nABI 18: save bytes, Camera2D, drive, particle modes (billboard/flipbook/trail/point/vertex), CD XA stream.",
 			nodes, ps1_cook::kMaxNodes, tris, ps1_cook::kMaxTris, hud, ps1_cook::kMaxHud, tiles, ps1_cook::kMaxTiles,
 			sprites, ps1_cook::kMaxSprites, packs, ps1_cook::kMaxScenePacks, est_ram, 2 * 1024 * 1024));
 	PackedStringArray reasons;

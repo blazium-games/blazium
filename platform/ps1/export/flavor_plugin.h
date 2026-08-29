@@ -143,6 +143,26 @@ public:
 		_fail_ps1();
 		return false;
 	}
+	bool overlaps_entered(const Variant &p_a, const Variant &p_b) const {
+		_fail_ps1();
+		return false;
+	}
+	bool has_overlapping_areas() const {
+		_fail_ps1();
+		return false;
+	}
+	int get_overlapping_area_count() const {
+		_fail_ps1();
+		return 0;
+	}
+	Variant get_overlapping_area(int p_index) const {
+		_fail_ps1();
+		return Variant();
+	}
+	Variant intersects_ray(const Vector3 &p_from, const Vector3 &p_dir) const {
+		_fail_ps1();
+		return Variant();
+	}
 	int hitbox_kind(const Variant &p_node) const {
 		_fail_ps1();
 		return 0;
@@ -372,9 +392,94 @@ public:
 		_fail_ps1();
 		return false;
 	}
-	Vector3 get_velocity() const {
+	Vector3 get_velocity(const Variant &p_node = Variant()) const {
+		(void)p_node;
 		_fail_ps1();
 		return Vector3();
+	}
+	bool poke(int p_off, int p_n) {
+		_fail_ps1();
+		return false;
+	}
+	int peek(int p_off) const {
+		_fail_ps1();
+		return 0;
+	}
+	bool set_node_meta(const Variant &p_node, int p_n) {
+		_fail_ps1();
+		return false;
+	}
+	int get_node_meta(const Variant &p_node) const {
+		_fail_ps1();
+		return 0;
+	}
+	bool set_angular_velocity(const Variant &p_node, const Vector3 &p_v) {
+		_fail_ps1();
+		return false;
+	}
+	Vector3 get_angular_velocity(const Variant &p_node) const {
+		_fail_ps1();
+		return Vector3();
+	}
+	bool set_camera_limits(int p_l, int p_t, int p_r, int p_b) {
+		_fail_ps1();
+		return false;
+	}
+	bool set_camera_drag(int p_n) {
+		_fail_ps1();
+		return false;
+	}
+	bool move_and_drive(const Variant &p_node, float p_throttle, float p_steer) {
+		_fail_ps1();
+		return false;
+	}
+	float get_speed(const Variant &p_node) const {
+		_fail_ps1();
+		return 0.0f;
+	}
+	bool set_drive_friction(const Variant &p_node, float p_f) {
+		_fail_ps1();
+		return false;
+	}
+	bool start_stream(const Variant &p_node, int p_rate, int p_tex) {
+		_fail_ps1();
+		return false;
+	}
+	bool stop_stream(const Variant &p_node) {
+		_fail_ps1();
+		return false;
+	}
+	bool set_stream_vel(const Variant &p_node, const Vector3 &p_v) {
+		_fail_ps1();
+		return false;
+	}
+	bool set_stream_spread(const Variant &p_node, int p_n) {
+		_fail_ps1();
+		return false;
+	}
+	bool set_stream_mode(const Variant &p_node, int p_m) {
+		_fail_ps1();
+		return false;
+	}
+	bool set_particle_mode(int p_m) {
+		_fail_ps1();
+		return false;
+	}
+	bool set_particle_flipbook(int p_tex, int p_frames, int p_fps) {
+		_fail_ps1();
+		return false;
+	}
+	bool set_particle_gravity(const Vector3 &p_g) {
+		_fail_ps1();
+		return false;
+	}
+	bool set_particle_color(const Vector3 &p_c) {
+		_fail_ps1();
+		return false;
+	}
+	bool emit_mesh(const Variant &p_node, int p_n, int p_tex) {
+		_fail_ps1();
+		return false;
 	}
 	Variant world_to_screen(const Vector3 &p_pos) const {
 		_fail_ps1();

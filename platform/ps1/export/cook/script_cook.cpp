@@ -7,6 +7,7 @@
 /**************************************************************************/
 
 #include "script_cook.h"
+#include "cooker.h"
 
 #include "core/input/input_event.h"
 #include "core/input/input_map.h"
@@ -135,7 +136,7 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "set_camera" || p_name == "set_camera_node" || p_name == "set_default_camera" ||
 			p_name == "get_camera" || p_name == "get_camera_count" || p_name == "get_camera_name" ||
 			p_name == "is_camera_current" || p_name == "next_camera" || p_name == "prev_camera" ||
-			p_name == "overlaps" || p_name == "has_overlapping_areas" ||
+			p_name == "overlaps" || p_name == "overlaps_entered" || p_name == "has_overlapping_areas" ||
 			p_name == "get_overlapping_area_count" || p_name == "get_overlapping_area" ||
 			p_name == "hitbox_kind" || p_name == "set_hitbox_enabled" ||
 			p_name == "load_animations" || p_name == "unload_animations" ||
@@ -161,7 +162,7 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "set_camera_transform" || p_name == "get_camera_transform" ||
 			p_name == "attach_camera" || p_name == "look_camera" || p_name == "orbit_camera" ||
 			p_name == "set_camera_scale" || p_name == "raycast" || p_name == "intersects_ray" ||
-			p_name == "move_and_slide" || p_name == "tile_solid_at" || p_name == "tile_at" ||
+			p_name == "move_and_slide" || p_name == "move_and_drive" || p_name == "tile_solid_at" || p_name == "tile_at" ||
 			p_name == "load_audio" || p_name == "unload_audio" || p_name == "can_load_audio" ||
 			p_name == "is_audio_loaded" || p_name == "play_sfx" || p_name == "stop_sfx" ||
 			p_name == "set_sfx_volume" || 			p_name == "emit" || p_name == "set_fog" ||
@@ -181,7 +182,17 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "world_to_screen" || p_name == "seek" || p_name == "seek_animation" ||
 			p_name == "set_animation_speed" || p_name == "format_int" || p_name == "set_hud_text" ||
 			p_name == "load_music" || p_name == "unload_music" || p_name == "can_load_music" ||
-			p_name == "is_music_loaded" || p_name == "play_fmv" || p_name == "play_xa" || p_name == "stop_xa";
+			p_name == "is_music_loaded" || p_name == "play_fmv" || p_name == "play_xa" || p_name == "stop_xa" ||
+			p_name == "poke" || p_name == "peek" || p_name == "set_node_meta" || p_name == "get_node_meta" || p_name == "set_meta" || p_name == "get_meta" ||
+			p_name == "set_angular_velocity" || p_name == "get_angular_velocity" ||
+			p_name == "set_camera_limits" || p_name == "set_camera_drag" ||
+			p_name == "get_speed" || p_name == "set_drive_friction" ||
+			p_name == "start_stream" || p_name == "stop_stream" || p_name == "set_stream_vel" ||
+			p_name == "set_stream_spread" || p_name == "set_stream_mode" ||
+			p_name == "set_particle_mode" || p_name == "set_particle_flipbook" ||
+			p_name == "set_particle_gravity" || p_name == "set_particle_color" || p_name == "emit_mesh" ||
+			p_name == "overlaps_entered" || p_name == "has_overlapping_areas" ||
+			p_name == "get_overlapping_area_count" || p_name == "get_overlapping_area";
 }
 
 static bool member_is_allowlisted(const String &p_name) {
@@ -189,7 +200,7 @@ static bool member_is_allowlisted(const String &p_name) {
 			p_name == "text" || p_name == "disabled" || p_name == "pressed" || p_name == "button_pressed" ||
 			p_name == "value" || p_name == "min_value" || p_name == "max_value" || p_name == "selected" ||
 			p_name == "focus" || p_name == "x" || p_name == "y" || p_name == "z" ||
-			p_name == "frame" || p_name == "flip_h" || p_name == "modulate" || p_name == "speed_scale";
+			p_name == "frame" || p_name == "flip_h" || p_name == "flip_v" || p_name == "modulate" || p_name == "speed_scale";
 }
 
 static bool action_is_known(const String &p_name) {
@@ -655,7 +666,7 @@ static Vector<uint8_t> pack_official_gdbc(const Vector<String> &p_paths, const V
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 17);
+	append_u16(out, uint16_t(kCookABI));
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int s = 0; s < p_paths.size(); s++) {
 		append_str(out, p_paths[s]);
@@ -747,7 +758,7 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 17);
+	append_u16(out, uint16_t(kCookABI));
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int i = 0; i < p_paths.size(); i++) {
 		append_str(out, p_paths[i]);
@@ -855,7 +866,7 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 			"set_position", "set_rotation", "look_at", "get_position", "get_global_position", "get_rotation",
 			"get_joy_axis", "get_stick", "set_rumble", "stop_rumble",
 			"set_camera_transform", "get_camera_transform", "attach_camera", "look_camera", "orbit_camera", "set_camera_scale",
-			"raycast", "intersects_ray", "move_and_slide", "tile_solid_at", "tile_at",
+			"raycast", "intersects_ray", "move_and_slide", "move_and_drive", "tile_solid_at", "tile_at",
 			"load_audio", "unload_audio", "can_load_audio", "is_audio_loaded", "play_sfx", "stop_sfx", "set_sfx_volume",
 			"emit", "set_fog", "set_fade", "set_light", "has_feature",
 			"atan2", "length", "length_squared", "normalized", "distance_to", "dot", "cross",
@@ -866,6 +877,11 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 			"get_action_strength", "set_stick_deadzone", "get_velocity", "set_process", "set_physics_process",
 			"world_to_screen", "seek", "seek_animation", "set_animation_speed", "format_int", "set_hud_text",
 			"load_music", "unload_music", "can_load_music", "is_music_loaded", "play_fmv", "play_xa", "stop_xa",
+			"poke", "peek", "set_node_meta", "get_node_meta", "set_meta", "get_meta", "set_angular_velocity", "get_angular_velocity",
+			"set_camera_limits", "set_camera_drag", "get_speed", "set_drive_friction",
+			"start_stream", "stop_stream", "set_stream_vel", "set_stream_spread", "set_stream_mode",
+			"set_particle_mode", "set_particle_flipbook", "set_particle_gravity", "set_particle_color", "emit_mesh",
+			"overlaps_entered",
 			"grab_focus", "release_focus",
 			"print", "push_warning", "connect", "disconnect"
 		};
@@ -1170,7 +1186,7 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 		}
 	}
 
-	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 17)\n", r_out.rotate_y);
+	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 18)\n", r_out.rotate_y);
 	for (int i = 0; i < r_out.accepted.size(); i++) {
 		r_out.map_text += "OK " + r_out.accepted[i] + "\n";
 	}

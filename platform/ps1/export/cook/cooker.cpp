@@ -27,6 +27,9 @@
 #include "core/templates/hash_set.h"
 #include "core/typedefs.h"
 #include "scene/2d/animated_sprite_2d.h"
+#include "scene/2d/camera_2d.h"
+#include "scene/2d/cpu_particles_2d.h"
+#include "scene/2d/gpu_particles_2d.h"
 #include "scene/2d/node_2d.h"
 #include "scene/2d/physics/area_2d.h"
 #include "scene/2d/physics/collision_shape_2d.h"
@@ -36,9 +39,12 @@
 #include "scene/2d/tile_map_layer.h"
 #include "scene/3d/audio_stream_player_3d.h"
 #include "scene/3d/camera_3d.h"
+#include "scene/3d/cpu_particles_3d.h"
+#include "scene/3d/gpu_particles_3d.h"
 #include "scene/3d/light_3d.h"
 #include "scene/3d/physics/area_3d.h"
 #include "scene/3d/physics/collision_shape_3d.h"
+#include "scene/3d/physics/vehicle_body_3d.h"
 #include "scene/gui/button.h"
 #include "scene/gui/check_box.h"
 #include "scene/gui/check_button.h"
@@ -112,6 +118,10 @@ struct SceneGather {
 		bool is_default = false;
 		Vector3 pos;
 		Vector3 euler;
+		uint8_t dim = 3;
+		uint8_t drag = 255;
+		uint8_t dead = 0;
+		int16_t lim_l = 0, lim_t = 0, lim_r = 0, lim_b = 0;
 	};
 	Vector<CamRow> cameras;
 	struct HitRow {
@@ -144,6 +154,8 @@ struct SceneGather {
 	int extra_video = 0;
 	bool had_omni_or_spot = false;
 	bool had_generic_light = false;
+	int stream_count = 0;
+	int stream_dropped = 0;
 	int node_dropped = 0;
 	int mesh_on_dropped = 0;
 	int no_albedo_surfaces = 0;
@@ -192,9 +204,10 @@ struct SceneGather {
 };
 
 static const char *kAllowed[] = {
-	"Node", "Node3D", "MeshInstance3D", "Camera3D", "AnimationPlayer", "Skeleton3D",
+	"Node", "Node3D", "MeshInstance3D", "Camera3D", "Camera2D", "AnimationPlayer", "Skeleton3D",
 	"Sprite2D", "AnimatedSprite2D", "Sprite3D", "Node2D", "Area2D", "Area3D",
-	"CollisionShape2D", "CollisionShape3D",
+	"CollisionShape2D", "CollisionShape3D", "VehicleBody3D", "VehicleBody2D",
+	"GPUParticles3D", "GPUParticles2D", "CPUParticles3D", "CPUParticles2D",
 	"AudioStreamPlayer", "AudioStreamPlayer3D",
 	"DirectionalLight3D", "OmniLight3D", "SpotLight3D", "Light3D",
 	"VideoStreamPlayer", "Control", "CanvasLayer", "Label", "Button",
@@ -719,8 +732,13 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 			cn.type = 3;
 		} else if (Object::cast_to<Area3D>(p_node) || Object::cast_to<Area2D>(p_node)) {
 			cn.type = 10;
-		} else if (Object::cast_to<Camera3D>(p_node)) {
+		} else if (Object::cast_to<Camera3D>(p_node) || Object::cast_to<Camera2D>(p_node)) {
 			cn.type = 4;
+		} else if (Object::cast_to<VehicleBody3D>(p_node) || p_node->get_class() == "VehicleBody2D") {
+			cn.type = 11;
+		} else if (Object::cast_to<GPUParticles3D>(p_node) || Object::cast_to<GPUParticles2D>(p_node) ||
+				Object::cast_to<CPUParticles3D>(p_node) || Object::cast_to<CPUParticles2D>(p_node)) {
+			cn.type = 12;
 		} else if (Object::cast_to<AnimationPlayer>(p_node)) {
 			cn.type = 7;
 		} else if (Object::cast_to<AudioStreamPlayer>(p_node) || Object::cast_to<AudioStreamPlayer3D>(p_node)) {
@@ -826,6 +844,70 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 			r_g.cam_dropped++;
 		}
 	}
+	if (Camera2D *c2 = Object::cast_to<Camera2D>(p_node)) {
+		r_g.camera_count++;
+		if (r_g.cameras.size() < kMaxCameras) {
+			SceneGather::CamRow row;
+			row.node_id = my;
+			row.name = c2->get_name();
+			row.pos = Vector3(c2->get_position().x, c2->get_position().y, 0);
+			row.euler = Vector3();
+			row.is_default = c2->is_current();
+			row.dim = 2;
+			const int drag = c2->is_position_smoothing_enabled() ? int(c2->get_position_smoothing_speed()) : 255;
+			row.drag = uint8_t(CLAMP(drag, 1, 255));
+			row.dead = 0;
+			row.lim_l = int16_t(CLAMP(c2->get_limit(SIDE_LEFT), -32768, 32767));
+			row.lim_t = int16_t(CLAMP(c2->get_limit(SIDE_TOP), -32768, 32767));
+			row.lim_r = int16_t(CLAMP(c2->get_limit(SIDE_RIGHT), -32768, 32767));
+			row.lim_b = int16_t(CLAMP(c2->get_limit(SIDE_BOTTOM), -32768, 32767));
+			r_g.cameras.push_back(row);
+		} else {
+			r_g.cam_dropped++;
+		}
+	}
+	if (VehicleBody3D *vb = Object::cast_to<VehicleBody3D>(p_node)) {
+		CollisionShape3D *cs = nullptr;
+		for (int i = 0; i < vb->get_child_count(); i++) {
+			if (CollisionShape3D *c = Object::cast_to<CollisionShape3D>(vb->get_child(i))) {
+				cs = c;
+				break;
+			}
+		}
+		if (cs && my >= 0 && r_g.hits.size() < kMaxAABBs) {
+			const Ref<Shape3D> shape = cs->get_shape();
+			Vector3 half(8, 8, 8);
+			if (const Ref<BoxShape3D> box = shape; box.is_valid()) {
+				half = box->get_size() * 0.5f;
+			} else if (const Ref<SphereShape3D> sph = shape; sph.is_valid()) {
+				const float r = sph->get_radius();
+				half = Vector3(r, r, r);
+			}
+			const Transform3D xf = world_xform_3d(cs);
+			const Vector3 c = xf.origin;
+			const Vector3 ext = xf.basis.xform(half).abs();
+			SceneGather::HitRow h;
+			h.node_id = my;
+			h.dim = 3;
+			h.kind = 1;
+			h.flags = 1;
+			h.layer = 1;
+			h.mn = c - ext;
+			h.mx = c + ext;
+			r_g.hits.push_back(h);
+		} else if (!cs) {
+			r_g.uncooked_types.insert("VehicleBody3D(no CollisionShape3D)");
+		} else if (r_g.hits.size() >= kMaxAABBs) {
+			r_g.aabb_dropped++;
+		}
+	}
+	if (Object::cast_to<GPUParticles3D>(p_node) || Object::cast_to<GPUParticles2D>(p_node) ||
+			Object::cast_to<CPUParticles3D>(p_node) || Object::cast_to<CPUParticles2D>(p_node)) {
+		r_g.stream_count++;
+		if (r_g.stream_count > 4) {
+			r_g.stream_dropped++;
+		}
+	}
 	if (Area3D *a3 = Object::cast_to<Area3D>(p_node)) {
 		emit_hit_3d(r_g, a3, my);
 	}
@@ -851,9 +933,14 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 		Color c = sl->get_color();
 		c *= float(sl->get_param(Light3D::PARAM_ENERGY));
 		add_light(r_g, dir, c);
-	} else if (Object::cast_to<Light3D>(p_node)) {
+	} else if (Light3D *gl = Object::cast_to<Light3D>(p_node)) {
 		r_g.light_count++;
 		r_g.had_generic_light = true;
+		const Transform3D xf = world_xform_3d(gl);
+		const Vector3 dir = -xf.basis.get_column(Vector3::AXIS_Z);
+		Color c = gl->get_color();
+		c *= float(gl->get_param(Light3D::PARAM_ENERGY));
+		add_light(r_g, dir, c);
 	}
 	if (AudioStreamPlayer *ap = Object::cast_to<AudioStreamPlayer>(p_node)) {
 		try_wav(r_g, ap->get_stream(), ap->get_name());
@@ -1440,6 +1527,13 @@ static void write_cam_table(const Vector<SceneGather::CamRow> &p_cams, float p_s
 		i16(clamp_i16(c.euler.x * 4096.0f / float(Math::TAU)));
 		i16(clamp_i16(c.euler.y * 4096.0f / float(Math::TAU)));
 		i16(clamp_i16(c.euler.z * 4096.0f / float(Math::TAU)));
+		o.push_back(c.dim);
+		o.push_back(c.drag);
+		o.push_back(c.dead);
+		i16(c.lim_l);
+		i16(c.lim_t);
+		i16(c.lim_r);
+		i16(c.lim_b);
 	}
 }
 
@@ -1670,15 +1764,15 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	r_out.warnings.push_back("PAL display uses 50 Hz delta; NTSC stays 60.");
 	r_out.warnings.push_back("connect is first-slice (timeout/pressed/animation_finished, 16 slots); other signals are ignored.");
 	r_out.warnings.push_back("InputMap: 32 actions in INP1; Input.is_action_* ORs pad 0+1; analog enter via PAD_CMD_*; DualShock sticks via get_vector/get_joy_axis/PS1.get_stick; get_action_strength; set_stick_deadzone; rumble motors poll; no L3/R3, no DS2 pressure.");
-	r_out.warnings.push_back("8 cameras; catalog switch plus live attach/look/orbit/set_camera_transform (pos+rot); shake_camera; world_to_screen; set_camera_scale is GTE FOV approx; script view disables demo pad-steer.");
-	r_out.warnings.push_back("AABB + ray + move_and_slide + tile solids + one-way; HIT 8-bit layer + query mask; ray skips caller AABB; is_on_floor/wall/ceiling; raycast_point; get_velocity; Sphere/Capsule/Circle cook as AABB bounds; no Godot physics.");
+	r_out.warnings.push_back("8 cameras; Camera2D in the catalog (XY follow, drag, limits); not a 9th camera. attach/look/orbit/set_camera_transform; shake_camera; world_to_screen; set_camera_scale is GTE FOV approx.");
+	r_out.warnings.push_back("AABB + ray + move_and_slide + move_and_drive + tile solids + one-way; HIT 8-bit layer + query mask; ray skips caller AABB; is_on_floor/wall/ceiling; raycast_point; per-node get_velocity; AABB drive, not VehicleWheel / Godot physics.");
 	r_out.warnings.push_back("ANIM/SPRITE/HIT/CAM/SFX/TXT/MUSIC/STR stream; extra-pack TPAK LoadImage on load_scene (fail VRAM → false); instantiate copies hit+sprite, shares anim/mesh.");
-	r_out.warnings.push_back("Memcard is Sony MC/SC wrap of user:// via pcdrv SAVE.MCD; get_var returns the payload. Not CARD BIOS. No ConfigFile/JSON class, no DexDrive.");
-	r_out.warnings.push_back("VM sprites draw frame UV + flip_h; Sprite3D POLY_FT4; 32 sprites; 16 billboard particles; fog/fade; set_light writes GTE.");
+	r_out.warnings.push_back("24 KiB poke/peek + wrap/unwrap persist; not CARD BIOS. Memcard is Sony MC/SC wrap of user:// via pcdrv SAVE.MCD. No ConfigFile/JSON class, no DexDrive.");
+	r_out.warnings.push_back("VM sprites draw frame UV + flip_h + flip_v; Sprite3D POLY_FT4; 32 sprites; 16 unlit particles (billboard/flipbook/one-segment trail/point/vertex); 4 streams; not GPUParticles / tube; fog/fade; set_light writes GTE.");
 	r_out.warnings.push_back("16 clips / 64 keys; ANIM loop/seek/speed; Skeleton3D is bind pose; no AnimationTree.");
 	r_out.warnings.push_back("HUD text 64 chars; TXT bank 32x64; str(float)/set_hud_text; set_paused skips _process; per-node set_process.");
 	r_out.warnings.push_back("get_position / get_global_position walks parents; 3D look_at + 2D look_at; atan2/length/normalized/dot/cross; OS.has_feature(\"ps1\") allowlisted; PS1.* export only.");
-	r_out.warnings.push_back("SFX bank 16 clips / voices 1-7 + set_music_volume; pack-0 VAG plus streamable MUSIC; mid-game STR play_fmv unloads after play; XA stream if present; official Luau is tape-only.");
+	r_out.warnings.push_back("SFX bank 16 clips / voices 1-7 + set_music_volume; pack-0 VAG plus streamable MUSIC; CD-ROM XA/STR stream via CdSearchFile + CdlReadS when a disc is present; no disc → play_xa false, MUSIC VAG; official Luau is tape-only.");
 
 	SceneGather gathered;
 	String src_name;
@@ -2035,7 +2129,10 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		r_out.warnings.push_back("only albedo is cooked; ignored metallic/roughness/normal/emission maps.");
 	}
 	if (gathered.had_generic_light) {
-		r_out.warnings.push_back("Light3D counted but not cooked");
+		r_out.warnings.push_back("generic Light3D cooked as a directional GTE light.");
+	}
+	if (gathered.stream_dropped > 0) {
+		r_out.warnings.push_back(vformat("kept first 4 particle streams (dropped %d).", gathered.stream_dropped));
 	}
 	if (gathered.had_control) {
 		r_out.warnings.push_back("Control signals are not cooked; poll pressed/button_pressed/value in _process.");

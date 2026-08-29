@@ -54,7 +54,10 @@
 #define PS1_MAX_PARTICLES 16
 #endif
 #ifndef PS1_COOK_ABI
-#define PS1_COOK_ABI 17
+#define PS1_COOK_ABI 18
+#endif
+#ifndef PS1_MAX_STREAMS
+#define PS1_MAX_STREAMS 4
 #endif
 
 struct ScriptVMNode {
@@ -120,6 +123,10 @@ struct ScriptVMCam {
 	int16_t px, py, pz;
 	int16_t rx, ry, rz;
 	uint8_t pack;
+	uint8_t dim;
+	uint8_t drag;
+	uint8_t dead;
+	int16_t lim_l, lim_t, lim_r, lim_b;
 };
 
 struct ScriptVMHit {
@@ -145,6 +152,7 @@ struct ScriptVMSprite {
 	uint8_t billboard;
 	uint8_t playing;
 	uint8_t flip_h;
+	uint8_t flip_v;
 	uint8_t rgb;
 	float accum;
 };
@@ -200,14 +208,24 @@ struct ScriptVMHost {
 	int (*load_music)(const uint8_t *blob, int size);
 	void (*unload_music)(void);
 	void (*play_fmv_blob)(const uint8_t *blob, int size);
-	int (*play_xa)(const uint8_t *blob, int size);
+	int (*play_xa)(const char *iso_name, int file, int chan);
 	void (*stop_xa)(void);
+	int (*play_fmv_cd)(const char *iso_name);
 };
 
 struct ScriptVMParticle {
 	int16_t x, y, z;
+	int16_t vx, vy, vz;
+	int16_t px, py, pz;
 	uint8_t life;
 	uint8_t tex;
+	uint8_t r, g, b;
+	uint8_t size;
+	uint8_t mode;
+	uint8_t frame;
+	uint8_t nframes;
+	uint8_t ftick;
+	uint8_t fps;
 };
 
 int script_vm_script_cam();

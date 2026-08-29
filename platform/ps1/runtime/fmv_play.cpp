@@ -8,6 +8,7 @@
 
 #include "fmv_play.h"
 
+#include <psxcd.h>
 #include <psxgpu.h>
 #include <psxpad.h>
 #include <psxpress.h>
@@ -125,4 +126,96 @@ void fmv_play_embedded(const uint8_t *str, size_t str_size, int screen_w, int sc
 			}
 		}
 	}
+}
+
+int fmv_play_cd(const char *iso_name, int screen_w, int screen_h, const uint8_t *pad34) {
+	if (!iso_name || !iso_name[0]) {
+		return 0;
+	}
+	if (!CdInit()) {
+		return 0;
+	}
+	char path[32];
+	path[0] = '\\';
+	int i = 0;
+	while (iso_name[i] && i < 20) {
+		path[1 + i] = iso_name[i];
+		i++;
+	}
+	path[1 + i] = ';';
+	path[2 + i] = '1';
+	path[3 + i] = 0;
+	CdlFILE fp;
+	if (!CdSearchFile(&fp, path)) {
+		return 0;
+	}
+	DecDCTReset(0);
+	static uint8_t frame_bytes[32768];
+	static uint32_t pixels[160 * 128 / 2];
+	uint8_t sector[2048];
+	size_t assembled = 0;
+	int fw = 160;
+	int fh = 128;
+	uint32_t left = fp.size;
+	CdControl(CdlSetloc, (uint8_t *)&fp.pos, 0);
+	while (left >= 2048) {
+		if (CdRead(1, (uint32_t *)sector, CdlModeSpeed) <= 0) {
+			break;
+		}
+		if (CdReadSync(0, 0) < 0) {
+			break;
+		}
+		left -= 2048;
+		if (ru16(sector) != 0x0160) {
+			break;
+		}
+		const uint16_t chunk = ru16(sector + 2);
+		const uint16_t chunks = ru16(sector + 4);
+		fw = int(ru16(sector + 8));
+		fh = int(ru16(sector + 10));
+		if (fw <= 0 || fh <= 0) {
+			fw = 160;
+			fh = 128;
+		}
+		if (chunk == 0) {
+			assembled = 0;
+		}
+		const int n = 2032;
+		if (assembled + size_t(n) > sizeof(frame_bytes)) {
+			break;
+		}
+		for (int k = 0; k < n; k++) {
+			frame_bytes[assembled + k] = sector[16 + k];
+		}
+		assembled += size_t(n);
+		if (chunk + 1 < chunks) {
+			continue;
+		}
+		DecDCTReset(0);
+		DecDCTin((const uint32_t *)frame_bytes, DECDCT_MODE_16BPP);
+		const int words = (fw * fh) / 2;
+		if (words > int(sizeof(pixels) / sizeof(pixels[0]))) {
+			break;
+		}
+		DecDCTout(pixels, size_t(words));
+		DecDCToutSync(0);
+		RECT dst{ short((screen_w - fw) / 2), short((screen_h - fh) / 2), short(fw), short(fh) };
+		if (dst.x < 0) {
+			dst.x = 0;
+		}
+		if (dst.y < 0) {
+			dst.y = 0;
+		}
+		LoadImage(&dst, pixels);
+		DrawSync(0);
+		VSync(0);
+		if (pad34) {
+			const PADTYPE *pad = (const PADTYPE *)pad34;
+			if (pad->stat == 0 && !(pad->btn & PAD_START)) {
+				break;
+			}
+		}
+	}
+	CdControl(CdlPause, 0, 0);
+	return 1;
 }

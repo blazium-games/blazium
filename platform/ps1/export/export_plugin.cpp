@@ -415,6 +415,14 @@ Error EditorExportPlatformPS1::_try_make_iso(const String &p_exe_path, const ps1
 	};
 	add_file("FMV00.STR", p_cooked.str_path);
 	add_file("FMV00.XA", p_cooked.xa_path);
+	for (int i = 0; i < p_cooked.extra_pack_files.size(); i++) {
+		const String src = p_cooked.extra_pack_files[i];
+		const String base = src.get_file().to_upper();
+		if (base.ends_with(".XA") || base.begins_with("XA")) {
+			const String nn = src.get_base_dir().get_file();
+			add_file("XA" + nn + ".XA", src);
+		}
+	}
 	add_file("NODE00.bin", p_cooked.node_path);
 	add_file("TXT00.bin", p_cooked.txt_path);
 	add_file("SFX00.bin", p_cooked.sfx_bank_path);
