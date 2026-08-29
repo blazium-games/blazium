@@ -28,14 +28,34 @@
 #include "core/typedefs.h"
 #include "scene/2d/node_2d.h"
 #include "scene/2d/sprite_2d.h"
+#include "scene/2d/tile_map.h"
+#include "scene/2d/tile_map_layer.h"
 #include "scene/3d/audio_stream_player_3d.h"
 #include "scene/3d/camera_3d.h"
 #include "scene/3d/light_3d.h"
+#include "scene/gui/button.h"
+#include "scene/gui/check_box.h"
+#include "scene/gui/check_button.h"
+#include "scene/gui/color_rect.h"
+#include "scene/gui/control.h"
+#include "scene/gui/label.h"
+#include "scene/gui/link_button.h"
+#include "scene/gui/option_button.h"
+#include "scene/gui/panel.h"
+#include "scene/gui/panel_container.h"
+#include "scene/gui/base_button.h"
+#include "scene/gui/progress_bar.h"
+#include "scene/gui/range.h"
+#include "scene/gui/slider.h"
+#include "scene/gui/texture_button.h"
+#include "scene/gui/texture_rect.h"
 #include "scene/gui/video_stream_player.h"
 #include "scene/3d/mesh_instance_3d.h"
 #include "scene/3d/node_3d.h"
+#include "scene/main/canvas_layer.h"
 #include "scene/animation/animation_player.h"
 #include "scene/audio/audio_stream_player.h"
+#include "scene/resources/2d/tile_set.h"
 #include "scene/resources/audio_stream_wav.h"
 #include "scene/resources/material.h"
 #include "scene/resources/mesh.h"
@@ -75,7 +95,37 @@ struct SceneGather {
 	int extra_wav = 0;
 	int extra_video = 0;
 	bool had_omni_or_spot = false;
+	bool had_generic_light = false;
 	int node_dropped = 0;
+	int mesh_on_dropped = 0;
+	int no_albedo_surfaces = 0;
+	int extra_pbr = 0;
+	int hud_dropped = 0;
+	int tile_dropped = 0;
+	int tilemap_count = 0;
+	int canvas_layer_count = 0;
+	bool had_control = false;
+	struct HudRow {
+		int16_t x = 0, y = 0, w = 16, h = 16;
+		uint8_t kind = 0;
+		uint8_t tex = 0xff;
+		uint8_t rgb = uint8_t((3 << 5) | (3 << 2) | 1);
+		uint8_t node_id = 0;
+		uint8_t flags = 1;
+		int16_t value = 0, vmin = 0, vmax = 100;
+		String text;
+		Vector<String> items;
+	};
+	Vector<HudRow> hud;
+	struct TileRow {
+		int16_t x = 0, y = 0;
+		uint8_t u = 0, v = 0;
+		uint8_t tex = 0;
+		uint8_t node_id = 0;
+	};
+	Vector<TileRow> tiles;
+	uint8_t tile_w = 16;
+	uint8_t tile_h = 16;
 	struct CookedNode {
 		int parent = -1;
 		String name;
@@ -96,7 +146,10 @@ static const char *kAllowed[] = {
 	"Node", "Node3D", "MeshInstance3D", "Camera3D", "AnimationPlayer",
 	"Sprite2D", "Node2D", "AudioStreamPlayer", "AudioStreamPlayer3D",
 	"DirectionalLight3D", "OmniLight3D", "SpotLight3D", "Light3D",
-	"VideoStreamPlayer"
+	"VideoStreamPlayer", "Control", "CanvasLayer", "Label", "Button",
+	"TextureButton", "CheckBox", "CheckButton", "OptionButton", "LinkButton",
+	"TextureRect", "ColorRect", "Panel", "PanelContainer", "ProgressBar",
+	"HSlider", "VSlider", "TileMap", "TileMapLayer"
 };
 
 static bool type_allowed(const String &p_cls) {
@@ -140,6 +193,17 @@ static Ref<Image> image_from_material(const Ref<Material> &p_mat, String &r_name
 		}
 	}
 	return image_from_texture(tex);
+}
+
+static bool material_has_extra_maps(const Ref<Material> &p_mat) {
+	const Ref<BaseMaterial3D> std = p_mat;
+	if (std.is_null()) {
+		return false;
+	}
+	return std->get_texture(BaseMaterial3D::TEXTURE_NORMAL).is_valid() ||
+			std->get_texture(BaseMaterial3D::TEXTURE_METALLIC).is_valid() ||
+			std->get_texture(BaseMaterial3D::TEXTURE_EMISSION).is_valid() ||
+			std->get_texture(BaseMaterial3D::TEXTURE_ROUGHNESS).is_valid();
 }
 
 static uint8_t register_image(SceneGather &r_g, const Ref<Image> &p_img, const String &p_name) {
@@ -225,6 +289,24 @@ static Transform2D world_xform_2d(Node2D *p_node) {
 	return xf;
 }
 
+static Rect2 control_screen_rect(Control *p_c) {
+	Rect2 r(p_c->get_position(), p_c->get_size());
+	for (Node *n = p_c->get_parent(); n; n = n->get_parent()) {
+		if (Control *pc = Object::cast_to<Control>(n)) {
+			r.position += pc->get_position();
+		} else if (Node2D *n2 = Object::cast_to<Node2D>(n)) {
+			r.position += n2->get_position();
+		}
+	}
+	if (r.size.x < 1) {
+		r.size.x = 16;
+	}
+	if (r.size.y < 1) {
+		r.size.y = 16;
+	}
+	return r;
+}
+
 static void try_wav(SceneGather &r_g, const Ref<AudioStream> &p_stream) {
 	if (p_stream.is_null()) {
 		return;
@@ -256,6 +338,166 @@ static void add_light(SceneGather &r_g, const Vector3 &p_dir, const Color &p_col
 	r_g.lights.push_back(l);
 }
 
+static uint8_t pack_rgb(const Color &c) {
+	const int r = CLAMP(int(c.r * 7.0f), 0, 7);
+	const int g = CLAMP(int(c.g * 7.0f), 0, 7);
+	const int b = CLAMP(int(c.b * 3.0f), 0, 3);
+	return uint8_t((r << 5) | (g << 2) | b);
+}
+
+static bool hud_kind_for(Node *p_node, uint8_t &r_kind) {
+	if (Object::cast_to<ColorRect>(p_node)) {
+		r_kind = 0;
+		return true;
+	}
+	if (Object::cast_to<TextureRect>(p_node)) {
+		r_kind = 1;
+		return true;
+	}
+	if (Object::cast_to<Label>(p_node)) {
+		r_kind = 2;
+		return true;
+	}
+	if (Object::cast_to<TextureButton>(p_node)) {
+		r_kind = 4;
+		return true;
+	}
+	if (Object::cast_to<CheckBox>(p_node)) {
+		r_kind = 5;
+		return true;
+	}
+	if (Object::cast_to<CheckButton>(p_node)) {
+		r_kind = 6;
+		return true;
+	}
+	if (Object::cast_to<OptionButton>(p_node)) {
+		r_kind = 7;
+		return true;
+	}
+	if (Object::cast_to<LinkButton>(p_node)) {
+		r_kind = 8;
+		return true;
+	}
+	if (Object::cast_to<Button>(p_node)) {
+		r_kind = 3;
+		return true;
+	}
+	if (Object::cast_to<ProgressBar>(p_node)) {
+		r_kind = 10;
+		return true;
+	}
+	if (Object::cast_to<HSlider>(p_node)) {
+		r_kind = 11;
+		return true;
+	}
+	if (Object::cast_to<VSlider>(p_node)) {
+		r_kind = 12;
+		return true;
+	}
+	if (Object::cast_to<Panel>(p_node) || Object::cast_to<PanelContainer>(p_node)) {
+		r_kind = 9;
+		return true;
+	}
+	return false;
+}
+
+static void emit_hud(Control *p_c, SceneGather &r_g, int p_node_id) {
+	uint8_t kind = 0;
+	if (!hud_kind_for(p_c, kind)) {
+		return;
+	}
+	if (r_g.hud.size() >= kMaxHud) {
+		r_g.hud_dropped++;
+		return;
+	}
+	SceneGather::HudRow row;
+	const Rect2 r = control_screen_rect(p_c);
+	row.x = int16_t(CLAMP(int(r.position.x), -2048, 2047));
+	row.y = int16_t(CLAMP(int(r.position.y), -2048, 2047));
+	row.w = int16_t(CLAMP(int(r.size.x), 1, 1024));
+	row.h = int16_t(CLAMP(int(r.size.y), 1, 1024));
+	row.kind = kind;
+	row.node_id = uint8_t(CLAMP(p_node_id, 0, 255));
+	row.flags = p_c->is_visible() ? 1 : 0;
+	if (BaseButton *bb = Object::cast_to<BaseButton>(p_c)) {
+		if (bb->is_disabled()) {
+			row.flags |= 2;
+		}
+		if (bb->is_toggle_mode() || Object::cast_to<CheckBox>(p_c) || Object::cast_to<CheckButton>(p_c)) {
+			row.flags |= 4;
+		}
+		if (bb->is_pressed()) {
+			row.flags |= 8;
+		}
+	}
+	if (Label *lb = Object::cast_to<Label>(p_c)) {
+		row.text = lb->get_text();
+	} else if (Button *bt = Object::cast_to<Button>(p_c)) {
+		row.text = bt->get_text();
+	} else if (LinkButton *lk = Object::cast_to<LinkButton>(p_c)) {
+		row.text = lk->get_text();
+	}
+	if (ColorRect *cr = Object::cast_to<ColorRect>(p_c)) {
+		row.rgb = pack_rgb(cr->get_color());
+	}
+	if (TextureRect *tr = Object::cast_to<TextureRect>(p_c)) {
+		String tn;
+		row.tex = register_image(r_g, image_from_texture(tr->get_texture()), tr->get_texture().is_valid() ? tr->get_texture()->get_path() : tn);
+	}
+	if (TextureButton *tb = Object::cast_to<TextureButton>(p_c)) {
+		const Ref<Texture2D> tex = tb->get_texture_normal();
+		row.tex = register_image(r_g, image_from_texture(tex), tex.is_valid() ? tex->get_path() : String());
+	}
+	if (Range *rg = Object::cast_to<Range>(p_c)) {
+		row.value = int16_t(CLAMP(int(rg->get_value()), -32767, 32767));
+		row.vmin = int16_t(CLAMP(int(rg->get_min()), -32767, 32767));
+		row.vmax = int16_t(CLAMP(int(rg->get_max()), -32767, 32767));
+	}
+	if (OptionButton *ob = Object::cast_to<OptionButton>(p_c)) {
+		row.value = int16_t(ob->get_selected());
+		const int n = MIN(ob->get_item_count(), 8);
+		for (int i = 0; i < n; i++) {
+			row.items.push_back(ob->get_item_text(i));
+		}
+		if (row.text.is_empty() && row.value >= 0 && row.value < row.items.size()) {
+			row.text = row.items[row.value];
+		}
+	}
+	r_g.hud.push_back(row);
+}
+
+static uint8_t register_tileset_atlas(SceneGather &r_g, const Ref<TileSet> &p_ts) {
+	if (p_ts.is_null()) {
+		return 0;
+	}
+	const Size2i tsz = p_ts->get_tile_size();
+	r_g.tile_w = uint8_t(CLAMP(tsz.x, 1, 255));
+	r_g.tile_h = uint8_t(CLAMP(tsz.y, 1, 255));
+	for (int i = 0; i < p_ts->get_source_count(); i++) {
+		const Ref<TileSetSource> src = p_ts->get_source(p_ts->get_source_id(i));
+		const Ref<TileSetAtlasSource> atlas = src;
+		if (atlas.is_valid() && atlas->get_texture().is_valid()) {
+			return register_image(r_g, image_from_texture(atlas->get_texture()), atlas->get_texture()->get_path());
+		}
+	}
+	return 0;
+}
+
+static void emit_tile_cell(SceneGather &r_g, const Vector2 &p_pos, const Vector2i &p_atlas, const Size2i &p_tsz, uint8_t p_tex, int p_node_id) {
+	if (r_g.tiles.size() >= kMaxTiles) {
+		r_g.tile_dropped++;
+		return;
+	}
+	SceneGather::TileRow t;
+	t.x = int16_t(CLAMP(int(p_pos.x), -2048, 2047));
+	t.y = int16_t(CLAMP(int(p_pos.y), -2048, 2047));
+	t.u = uint8_t(CLAMP(p_atlas.x * p_tsz.x, 0, 255));
+	t.v = uint8_t(CLAMP(p_atlas.y * p_tsz.y, 0, 255));
+	t.tex = p_tex;
+	t.node_id = uint8_t(CLAMP(p_node_id, 0, 255));
+	r_g.tiles.push_back(t);
+}
+
 static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 	if (!p_node) {
 		return;
@@ -276,6 +518,10 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 			cn.type = 3;
 		} else if (Object::cast_to<Camera3D>(p_node)) {
 			cn.type = 4;
+		} else if (Object::cast_to<Control>(p_node)) {
+			cn.type = 5;
+		} else if (Object::cast_to<TileMap>(p_node) || Object::cast_to<TileMapLayer>(p_node)) {
+			cn.type = 6;
 		} else if (Object::cast_to<Node3D>(p_node)) {
 			cn.type = 1;
 		}
@@ -289,6 +535,11 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 		} else if (Node2D *n2 = Object::cast_to<Node2D>(p_node)) {
 			cn.pos = Vector3(n2->get_position().x, n2->get_position().y, 0);
 			if (!n2->is_visible()) {
+				cn.flags = 0;
+			}
+		} else if (Control *ctl = Object::cast_to<Control>(p_node)) {
+			cn.pos = Vector3(ctl->get_position().x, ctl->get_position().y, 0);
+			if (!ctl->is_visible()) {
 				cn.flags = 0;
 			}
 		}
@@ -307,32 +558,42 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 		r_g.node_dropped++;
 	}
 	MeshInstance3D *mi = Object::cast_to<MeshInstance3D>(p_node);
-	if (mi && mi->get_mesh().is_valid() && my >= 0) {
-		const Ref<Mesh> mesh = mi->get_mesh();
-		for (int s = 0; s < mesh->get_surface_count(); s++) {
-			Array arr = mesh->surface_get_arrays(s);
-			PackedVector3Array verts;
-			PackedVector2Array uvs;
-			PackedInt32Array idx;
-			if (arr.size() > Mesh::ARRAY_VERTEX) {
-				verts = arr[Mesh::ARRAY_VERTEX];
+	if (mi && mi->get_mesh().is_valid()) {
+		if (my < 0) {
+			r_g.mesh_on_dropped++;
+		} else {
+			const Ref<Mesh> mesh = mi->get_mesh();
+			for (int s = 0; s < mesh->get_surface_count(); s++) {
+				Array arr = mesh->surface_get_arrays(s);
+				PackedVector3Array verts;
+				PackedVector2Array uvs;
+				PackedInt32Array idx;
+				if (arr.size() > Mesh::ARRAY_VERTEX) {
+					verts = arr[Mesh::ARRAY_VERTEX];
+				}
+				if (arr.size() > Mesh::ARRAY_TEX_UV && arr[Mesh::ARRAY_TEX_UV].get_type() == Variant::PACKED_VECTOR2_ARRAY) {
+					uvs = arr[Mesh::ARRAY_TEX_UV];
+				}
+				if (arr.size() > Mesh::ARRAY_INDEX && arr[Mesh::ARRAY_INDEX].get_type() == Variant::PACKED_INT32_ARRAY) {
+					idx = arr[Mesh::ARRAY_INDEX];
+				}
+				Ref<Material> mat = mi->get_active_material(s);
+				if (mat.is_null()) {
+					mat = mesh->surface_get_material(s);
+				}
+				if (material_has_extra_maps(mat)) {
+					r_g.extra_pbr++;
+				}
+				String tex_name;
+				const Ref<Image> img = image_from_material(mat, tex_name);
+				if (img.is_null() && !r_g.images.is_empty()) {
+					r_g.no_albedo_surfaces++;
+				}
+				const uint8_t slot = register_image(r_g, img, tex_name);
+				emit_tris(verts, uvs, idx, slot, uint8_t(my), r_g.tris);
 			}
-			if (arr.size() > Mesh::ARRAY_TEX_UV && arr[Mesh::ARRAY_TEX_UV].get_type() == Variant::PACKED_VECTOR2_ARRAY) {
-				uvs = arr[Mesh::ARRAY_TEX_UV];
-			}
-			if (arr.size() > Mesh::ARRAY_INDEX && arr[Mesh::ARRAY_INDEX].get_type() == Variant::PACKED_INT32_ARRAY) {
-				idx = arr[Mesh::ARRAY_INDEX];
-			}
-			Ref<Material> mat = mi->get_active_material(s);
-			if (mat.is_null()) {
-				mat = mesh->surface_get_material(s);
-			}
-			String tex_name;
-			const Ref<Image> img = image_from_material(mat, tex_name);
-			const uint8_t slot = register_image(r_g, img, tex_name);
-			emit_tris(verts, uvs, idx, slot, uint8_t(my), r_g.tris);
+			r_g.nodes.write[my].tri_hi = uint16_t(MIN(r_g.tris.size(), 65535));
 		}
-		r_g.nodes.write[my].tri_hi = uint16_t(MIN(r_g.tris.size(), 65535));
 	}
 	if (Camera3D *cam = Object::cast_to<Camera3D>(p_node)) {
 		r_g.camera_count++;
@@ -364,6 +625,7 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 		add_light(r_g, dir, c);
 	} else if (Object::cast_to<Light3D>(p_node)) {
 		r_g.light_count++;
+		r_g.had_generic_light = true;
 	}
 	if (AudioStreamPlayer *ap = Object::cast_to<AudioStreamPlayer>(p_node)) {
 		try_wav(r_g, ap->get_stream());
@@ -395,6 +657,38 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 	}
 	if (Object::cast_to<AnimationPlayer>(p_node)) {
 		r_g.animation_player_count++;
+	}
+	if (Object::cast_to<CanvasLayer>(p_node)) {
+		r_g.canvas_layer_count++;
+	}
+	if (Control *ctl = Object::cast_to<Control>(p_node)) {
+		r_g.had_control = true;
+		emit_hud(ctl, r_g, my >= 0 ? my : 0);
+	}
+	if (TileMapLayer *layer = Object::cast_to<TileMapLayer>(p_node)) {
+		r_g.tilemap_count++;
+		const Ref<TileSet> ts = layer->get_tile_set();
+		const uint8_t tex = register_tileset_atlas(r_g, ts);
+		const Transform2D xf = world_xform_2d(layer);
+		const Size2i tsz = ts.is_valid() ? ts->get_tile_size() : Size2i(16, 16);
+		const TypedArray<Vector2i> cells = layer->get_used_cells();
+		for (int i = 0; i < cells.size(); i++) {
+			const Vector2i cell = cells[i];
+			emit_tile_cell(r_g, xf.xform(Vector2(cell.x * tsz.x, cell.y * tsz.y)), layer->get_cell_atlas_coords(cell), tsz, tex, my >= 0 ? my : 0);
+		}
+	} else if (TileMap *tm = Object::cast_to<TileMap>(p_node)) {
+		r_g.tilemap_count++;
+		const Ref<TileSet> ts = tm->get_tileset();
+		const uint8_t tex = register_tileset_atlas(r_g, ts);
+		const Transform2D xf = world_xform_2d(tm);
+		const Size2i tsz = ts.is_valid() ? ts->get_tile_size() : Size2i(16, 16);
+		for (int layer = 0; layer < tm->get_layers_count(); layer++) {
+			const TypedArray<Vector2i> cells = tm->get_used_cells(layer);
+			for (int i = 0; i < cells.size(); i++) {
+				const Vector2i cell = cells[i];
+				emit_tile_cell(r_g, xf.xform(Vector2(cell.x * tsz.x, cell.y * tsz.y)), tm->get_cell_atlas_coords(layer, cell), tsz, tex, my >= 0 ? my : 0);
+			}
+		}
 	}
 	for (int i = 0; i < p_node->get_child_count(); i++) {
 		walk_scene(p_node->get_child(i), r_g, my >= 0 ? my : p_parent);
@@ -503,7 +797,7 @@ static void write_node_table(const Vector<SceneGather::CookedNode> &p_nodes, flo
 	o.push_back('O');
 	o.push_back('D');
 	o.push_back('E');
-	u16(6);
+	u16(7);
 	u16(uint16_t(p_nodes.size()));
 	const float s = p_scale > 0.0f ? p_scale : 1.0f;
 	for (int i = 0; i < p_nodes.size(); i++) {
@@ -537,6 +831,76 @@ static void write_node_table(const Vector<SceneGather::CookedNode> &p_nodes, flo
 	}
 }
 
+static void write_hud_table(const Vector<SceneGather::HudRow> &p_hud, Vector<uint8_t> &o) {
+	auto u16 = [&](uint16_t v) {
+		o.push_back(uint8_t(v & 0xff));
+		o.push_back(uint8_t(v >> 8));
+	};
+	auto i16 = [&](int16_t v) { u16(uint16_t(v)); };
+	o.push_back('H');
+	o.push_back('U');
+	o.push_back('D');
+	o.push_back('0');
+	u16(7);
+	u16(uint16_t(p_hud.size()));
+	for (int i = 0; i < p_hud.size(); i++) {
+		const SceneGather::HudRow &h = p_hud[i];
+		i16(h.x);
+		i16(h.y);
+		i16(h.w);
+		i16(h.h);
+		o.push_back(h.kind);
+		o.push_back(h.tex);
+		o.push_back(h.rgb);
+		o.push_back(h.node_id);
+		o.push_back(h.flags);
+		i16(h.value);
+		i16(h.vmin);
+		i16(h.vmax);
+		const CharString utf = h.text.utf8();
+		const int n = MIN(utf.length(), 32);
+		o.push_back(uint8_t(n));
+		for (int c = 0; c < n; c++) {
+			o.push_back(uint8_t(utf[c]));
+		}
+		const int ni = MIN(h.items.size(), 8);
+		o.push_back(uint8_t(ni));
+		for (int it = 0; it < ni; it++) {
+			const CharString is = h.items[it].utf8();
+			const int il = MIN(is.length(), 16);
+			o.push_back(uint8_t(il));
+			for (int c = 0; c < il; c++) {
+				o.push_back(uint8_t(is[c]));
+			}
+		}
+	}
+}
+
+static void write_tile_table(const SceneGather &p_g, Vector<uint8_t> &o) {
+	auto u16 = [&](uint16_t v) {
+		o.push_back(uint8_t(v & 0xff));
+		o.push_back(uint8_t(v >> 8));
+	};
+	auto i16 = [&](int16_t v) { u16(uint16_t(v)); };
+	o.push_back('T');
+	o.push_back('I');
+	o.push_back('L');
+	o.push_back('E');
+	u16(7);
+	u16(uint16_t(p_g.tiles.size()));
+	o.push_back(p_g.tile_w);
+	o.push_back(p_g.tile_h);
+	for (int i = 0; i < p_g.tiles.size(); i++) {
+		const SceneGather::TileRow &t = p_g.tiles[i];
+		i16(t.x);
+		i16(t.y);
+		o.push_back(t.u);
+		o.push_back(t.v);
+		o.push_back(t.tex);
+		o.push_back(t.node_id);
+	}
+}
+
 static void write_warnings_file(const String &p_path, const CookResult &p_out) {
 	Ref<FileAccess> f = FileAccess::open(p_path, FileAccess::WRITE);
 	if (f.is_null()) {
@@ -565,10 +929,11 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		return FAILED;
 	}
 
+	r_out.warnings.push_back("only application/run/main_scene is cooked; other PackedScenes are not scanned.");
+
 	SceneGather gathered;
 	String src_name;
 	Node *root = nullptr;
-	bool used_industrial = false;
 	if (ResourceLoader::exists(main_scene)) {
 		Ref<PackedScene> ps = ResourceLoader::load(main_scene);
 		if (ps.is_valid()) {
@@ -601,15 +966,15 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		}
 	}
 	if (src_tris.is_empty()) {
-		if (gathered.sprites.is_empty() && !gathered.video && !have_fmv) {
-			r_out.errors.push_back("main_scene has no MeshInstance3D, Sprite2D, or FMV; not substituting Industrial.");
+		if (gathered.sprites.is_empty() && !gathered.video && !have_fmv && gathered.hud.is_empty() && gathered.tiles.is_empty()) {
+			r_out.errors.push_back("main_scene has no MeshInstance3D, Sprite2D, FMV, HUD, or tiles; not substituting Industrial.");
 			r_out.report = r_out.errors[0];
 			if (root) {
 				memdelete(root);
 			}
 			return ERR_UNCONFIGURED;
 		}
-		r_out.infos.push_back("main_scene has no MeshInstance3D; guest is sprite/FMV-only.");
+		r_out.infos.push_back("main_scene has no MeshInstance3D; guest is sprite/FMV/HUD/tile-only.");
 		if (src_name.is_empty()) {
 			src_name = main_scene;
 		}
@@ -658,7 +1023,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		sc.tex_slot = register_image(gathered, simg, s->get_texture().is_valid() ? s->get_texture()->get_path() : tex_name);
 		sprite_cooks.push_back(sc);
 	}
-	if (!sprite_cooks.is_empty() && !used_industrial) {
+	if (!sprite_cooks.is_empty() || !gathered.hud.is_empty() || !gathered.tiles.is_empty()) {
 		images = gathered.images;
 		image_names = gathered.image_names;
 	}
@@ -698,6 +1063,37 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	}
 	if (gathered.node_dropped > 0) {
 		r_out.warnings.push_back(vformat("kept first %d of %d nodes (dropped %d).", kMaxNodes, kMaxNodes + gathered.node_dropped, gathered.node_dropped));
+	}
+	if (gathered.mesh_on_dropped > 0) {
+		r_out.warnings.push_back("MeshInstance3D on dropped node (kept first 128).");
+	}
+	if (gathered.no_albedo_surfaces > 0) {
+		r_out.warnings.push_back("no albedo on node/surface; using TIM slot 0");
+	}
+	if (gathered.extra_pbr > 0) {
+		r_out.warnings.push_back("only albedo is cooked; ignored metallic/roughness/normal/emission maps.");
+	}
+	if (gathered.had_generic_light) {
+		r_out.warnings.push_back("Light3D counted but not cooked");
+	}
+	if (gathered.had_control) {
+		r_out.warnings.push_back("Control signals are not cooked; poll pressed/button_pressed/value in _process.");
+		r_out.warnings.push_back("Control theme/StyleBox/mouse are not cooked; pad-focus only.");
+	}
+	if (gathered.hud_dropped > 0) {
+		r_out.warnings.push_back(vformat("kept first %d of %d HUD widgets.", kMaxHud, kMaxHud + gathered.hud_dropped));
+	}
+	for (int i = 0; i < gathered.hud.size(); i++) {
+		if (gathered.hud[i].text.length() > 32) {
+			r_out.warnings.push_back("HUD text truncated to 32 characters.");
+			break;
+		}
+	}
+	if (gathered.tilemap_count > 0) {
+		r_out.warnings.push_back("TileMap collision/navigation/terrain/animated tiles are not cooked.");
+	}
+	if (gathered.tile_dropped > 0) {
+		r_out.warnings.push_back(vformat("kept first %d of %d tiles.", kMaxTiles, kMaxTiles + gathered.tile_dropped));
 	}
 	if (gathered.extra_wav > 0) {
 		r_out.warnings.push_back(vformat("kept first AudioStreamWAV; ignored %d extra WAV stream(s).", gathered.extra_wav));
@@ -890,6 +1286,13 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		r_out.errors.push_back("Script cook failed.");
 		return serr;
 	}
+	for (int i = 0; i < ir.accepted.size(); i++) {
+		const String src = FileAccess::get_file_as_string(ir.accepted[i]);
+		if (src.contains(".connect(")) {
+			r_out.warnings.push_back("Control signals are not cooked; .connect( is ignored — poll pressed/button_pressed/value in _process.");
+			break;
+		}
+	}
 	for (int i = 0; i < ir.rejected.size(); i++) {
 		const String &rej = ir.rejected[i];
 		const bool fixture = rej.contains("illegal_") || rej.contains("/tests/") || rej.contains("test_") || rej.contains("run_tests.gd");
@@ -962,10 +1365,26 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		ERR_FAIL_COND_V(nd.is_null(), ERR_CANT_CREATE);
 		nd->store_buffer(nodeb);
 	}
+	{
+		Vector<uint8_t> hudb;
+		write_hud_table(gathered.hud, hudb);
+		r_out.hud_path = p_export_dir.path_join("HUD00.bin");
+		Ref<FileAccess> hf = FileAccess::open(r_out.hud_path, FileAccess::WRITE);
+		ERR_FAIL_COND_V(hf.is_null(), ERR_CANT_CREATE);
+		hf->store_buffer(hudb);
+	}
+	{
+		Vector<uint8_t> tileb;
+		write_tile_table(gathered, tileb);
+		r_out.tile_path = p_export_dir.path_join("TILE00.bin");
+		Ref<FileAccess> tf = FileAccess::open(r_out.tile_path, FileAccess::WRITE);
+		ERR_FAIL_COND_V(tf.is_null(), ERR_CANT_CREATE);
+		tf->store_buffer(tileb);
+	}
 
 	Ref<FileAccess> nf = FileAccess::open(r_out.names_path, FileAccess::WRITE);
 	ERR_FAIL_COND_V(nf.is_null(), ERR_CANT_CREATE);
-	nf->store_line(src_name + " -> TEX00.TIM MESH00.bin SFX00.VAG SPRITE00.bin FMV00.MAP SCRIPT.IR SCRIPT.GD.BC SCRIPT.LU.BC NODE00.bin");
+	nf->store_line(src_name + " -> TEX00.TIM MESH00.bin SFX00.VAG SPRITE00.bin FMV00.MAP SCRIPT.IR SCRIPT.GD.BC SCRIPT.LU.BC NODE00.bin HUD00.bin TILE00.bin");
 
 	r_out.texels = packed.pixel_w * MAX(1, packed.pixel_h);
 	r_out.tris = src_tris.size();
@@ -987,13 +1406,18 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	if (!r_out.node_path.is_empty() && FileAccess::exists(r_out.node_path)) {
 		extra_blob += FileAccess::get_file_as_bytes(r_out.node_path).size();
 	}
+	if (!r_out.hud_path.is_empty() && FileAccess::exists(r_out.hud_path)) {
+		extra_blob += FileAccess::get_file_as_bytes(r_out.hud_path).size();
+	}
+	if (!r_out.tile_path.is_empty() && FileAccess::exists(r_out.tile_path)) {
+		extra_blob += FileAccess::get_file_as_bytes(r_out.tile_path).size();
+	}
 	const int ram_blob = packed.bytes.size() + mesh.bytes.size() + vag.bytes.size() + extra_blob;
 	r_out.over_budget = packed.vram_bytes > kVramLimit || ram_blob > kRamLimit || vag.bytes.size() > kSpuLimit;
 
-	r_out.infos.push_back(vformat("guest_abi=%d nodes=%d src=%s tims=%d tris=%d cooked=%d lights=%d sprites=%d display=%s %dx%d gd=%d luau=%d%s",
-			kCookABI, gathered.nodes.size(), src_name, tims.size(), src_tris.size(), mesh.tri_count, lights.size(), sprite_cooks.size(),
-			p_opts.region == 1 ? "PAL" : "NTSC", display_w, display_h, ir.gd_count, ir.luau_count,
-			used_industrial ? " industrial_fallback" : ""));
+	r_out.infos.push_back(vformat("guest_abi=%d nodes=%d hud=%d tiles=%d src=%s tims=%d tris=%d cooked=%d lights=%d sprites=%d display=%s %dx%d gd=%d luau=%d",
+			kCookABI, gathered.nodes.size(), gathered.hud.size(), gathered.tiles.size(), src_name, tims.size(), src_tris.size(), mesh.tri_count, lights.size(), sprite_cooks.size(),
+			p_opts.region == 1 ? "PAL" : "NTSC", display_w, display_h, ir.gd_count, ir.luau_count));
 
 	r_out.report = vformat("PS1 cook budget: TPAK %d TIM(s) (%d bytes) tris=%d cooked=%d VRAM=%d/%d RAM_blob=%d/%d SPU=%d/%d src=%s%s",
 			tims.size(), packed.bytes.size(), src_tris.size(), mesh.tri_count, packed.vram_bytes, kVramLimit, ram_blob, kRamLimit, vag.bytes.size(), kSpuLimit,

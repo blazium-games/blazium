@@ -19,6 +19,11 @@ static int g_did_ready = 0;
 static char g_err[8] = "";
 static ScriptVMNode g_nodes[PS1_MAX_NODES];
 static int g_nnode = 0;
+static ScriptVMHud g_hud[PS1_MAX_HUD];
+static int g_nhud = 0;
+static int g_focus = -1;
+static ScriptVMTile g_tiles[PS1_MAX_TILES];
+static int g_ntile = 0;
 static uint16_t g_prev_btn = 0xffff;
 
 enum {
@@ -130,12 +135,55 @@ void script_vm_set_nodes(const ScriptVMNode *nodes, int count) {
 	}
 }
 
+void script_vm_set_hud(const ScriptVMHud *hud, int count) {
+	g_nhud = 0;
+	g_focus = -1;
+	if (!hud || count <= 0) {
+		return;
+	}
+	g_nhud = count > PS1_MAX_HUD ? PS1_MAX_HUD : count;
+	for (int i = 0; i < g_nhud; i++) {
+		g_hud[i] = hud[i];
+	}
+}
+
+void script_vm_set_tiles(const ScriptVMTile *tiles, int count) {
+	g_ntile = 0;
+	if (!tiles || count <= 0) {
+		return;
+	}
+	g_ntile = count > PS1_MAX_TILES ? PS1_MAX_TILES : count;
+	for (int i = 0; i < g_ntile; i++) {
+		g_tiles[i] = tiles[i];
+	}
+}
+
 int script_vm_node_count() {
 	return g_nnode;
 }
 
 const ScriptVMNode *script_vm_nodes() {
 	return g_nodes;
+}
+
+int script_vm_hud_count() {
+	return g_nhud;
+}
+
+ScriptVMHud *script_vm_hud() {
+	return g_hud;
+}
+
+int script_vm_hud_focus() {
+	return g_focus;
+}
+
+int script_vm_tile_count() {
+	return g_ntile;
+}
+
+const ScriptVMTile *script_vm_tiles() {
+	return g_tiles;
 }
 
 const char *script_vm_last_error() {
@@ -308,12 +356,6 @@ static void write_host_rot(const ScriptVMHost *host, const char *name, float arg
 	} else if (name_is(name, "rotate_z") && host && host->rot_z) {
 		*host->rot_z += int16_t(step);
 	} else if (name_is(name, "translate")) {
-		if (host && host->pos_x) {
-			*host->pos_x += int32_t(arg);
-		}
-		if (host && host->pos_y) {
-			*host->pos_y += int32_t(arg);
-		}
 		if (host && host->pos_z) {
 			*host->pos_z += int32_t(arg);
 		}
@@ -376,6 +418,21 @@ static void apply_method(const ScriptVMHost *host, int node, const char *name, f
 		}
 		return;
 	}
+	if (name_is(name, "grab_focus")) {
+		for (int i = 0; i < g_nhud; i++) {
+			if (int(g_hud[i].node_id) == node) {
+				g_focus = i;
+				return;
+			}
+		}
+		return;
+	}
+	if (name_is(name, "release_focus")) {
+		if (g_focus >= 0 && g_focus < g_nhud && int(g_hud[g_focus].node_id) == node) {
+			g_focus = -1;
+		}
+		return;
+	}
 	if (name_is(name, "set_rotation") && node_ok(node)) {
 		if (argv && argc > 0 && argv[0].type == V_V3) {
 			g_nodes[node].rx = int16_t(rad_to_ps1(argv[0].x));
@@ -396,8 +453,6 @@ static void apply_method(const ScriptVMHost *host, int node, const char *name, f
 				g_nodes[node].py = int16_t(g_nodes[node].py + int(-argv[0].y));
 				g_nodes[node].pz = int16_t(g_nodes[node].pz + int(argv[0].z));
 			} else {
-				g_nodes[node].px = int16_t(g_nodes[node].px + int(arg));
-				g_nodes[node].py = int16_t(g_nodes[node].py + int(arg));
 				g_nodes[node].pz = int16_t(g_nodes[node].pz + int(arg));
 			}
 		} else {
@@ -492,9 +547,71 @@ static int prop_named(const char *n, const char *w) {
 	return name_is(n, w);
 }
 
+static ScriptVMHud *hud_for_node(int node) {
+	for (int i = 0; i < g_nhud; i++) {
+		if (int(g_hud[i].node_id) == node) {
+			return &g_hud[i];
+		}
+	}
+	return nullptr;
+}
+
+static int hud_index_for_node(int node) {
+	for (int i = 0; i < g_nhud; i++) {
+		if (int(g_hud[i].node_id) == node) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+static void copy_str(char *dst, int cap, const char *src) {
+	int k = 0;
+	for (; k < cap - 1 && src[k]; k++) {
+		dst[k] = src[k];
+	}
+	dst[k] = 0;
+}
+
 static void get_prop(int node, const char *n, GVar *d) {
 	if (!d) {
 		return;
+	}
+	ScriptVMHud *h = hud_for_node(node);
+	if (h) {
+		if (prop_named(n, "text")) {
+			d->type = V_STR;
+			copy_str(d->s, 32, h->text);
+			return;
+		}
+		if (prop_named(n, "disabled")) {
+			*d = gv_bool(h->flags & 2);
+			return;
+		}
+		if (prop_named(n, "pressed")) {
+			*d = gv_bool(h->pressed);
+			return;
+		}
+		if (prop_named(n, "button_pressed")) {
+			*d = gv_bool(h->flags & 8);
+			return;
+		}
+		if (prop_named(n, "value") || prop_named(n, "selected")) {
+			*d = gv_int(h->value);
+			return;
+		}
+		if (prop_named(n, "min_value")) {
+			*d = gv_int(h->vmin);
+			return;
+		}
+		if (prop_named(n, "max_value")) {
+			*d = gv_int(h->vmax);
+			return;
+		}
+		if (prop_named(n, "focus")) {
+			*d = gv_bool(g_focus == hud_index_for_node(node));
+			return;
+		}
 	}
 	if (!node_ok(node)) {
 		*d = gv_nil();
@@ -502,13 +619,12 @@ static void get_prop(int node, const char *n, GVar *d) {
 	}
 	if (prop_named(n, "visible")) {
 		*d = gv_bool(g_nodes[node].flags & 1);
+		if (h) {
+			*d = gv_bool(h->flags & 1);
+		}
 	} else if (prop_named(n, "name")) {
 		d->type = V_STR;
-		int k = 0;
-		for (; k < 31 && g_nodes[node].name[k]; k++) {
-			d->s[k] = g_nodes[node].name[k];
-		}
-		d->s[k] = 0;
+		copy_str(d->s, 32, g_nodes[node].name);
 	} else if (prop_named(n, "position")) {
 		*d = gv_v3(float(g_nodes[node].px), float(-g_nodes[node].py), float(g_nodes[node].pz));
 	} else if (prop_named(n, "rotation")) {
@@ -520,7 +636,75 @@ static void get_prop(int node, const char *n, GVar *d) {
 }
 
 static void set_prop(int node, const char *n, const GVar *s) {
-	if (!s || !node_ok(node)) {
+	if (!s) {
+		return;
+	}
+	ScriptVMHud *h = hud_for_node(node);
+	if (h) {
+		if (prop_named(n, "text") && s->type == V_STR) {
+			copy_str(h->text, 32, s->s);
+			return;
+		}
+		if (prop_named(n, "disabled")) {
+			if (as_truth(*s)) {
+				h->flags = uint8_t(h->flags | 2);
+			} else {
+				h->flags = uint8_t(h->flags & ~uint8_t(2));
+			}
+			return;
+		}
+		if (prop_named(n, "pressed")) {
+			h->pressed = as_truth(*s) ? 1 : 0;
+			return;
+		}
+		if (prop_named(n, "button_pressed")) {
+			if (as_truth(*s)) {
+				h->flags = uint8_t(h->flags | 8);
+			} else {
+				h->flags = uint8_t(h->flags & ~uint8_t(8));
+			}
+			return;
+		}
+		if (prop_named(n, "value") || prop_named(n, "selected")) {
+			h->value = int16_t(as_float(*s));
+			if (h->kind == 7 && h->nitems) {
+				int sel = int(h->value);
+				if (sel < 0) {
+					sel = 0;
+				}
+				if (sel >= int(h->nitems)) {
+					sel = int(h->nitems) - 1;
+				}
+				h->value = int16_t(sel);
+				copy_str(h->text, 32, h->items[sel]);
+			}
+			return;
+		}
+		if (prop_named(n, "min_value")) {
+			h->vmin = int16_t(as_float(*s));
+			return;
+		}
+		if (prop_named(n, "max_value")) {
+			h->vmax = int16_t(as_float(*s));
+			return;
+		}
+		if (prop_named(n, "focus")) {
+			if (as_truth(*s)) {
+				g_focus = hud_index_for_node(node);
+			} else if (g_focus == hud_index_for_node(node)) {
+				g_focus = -1;
+			}
+			return;
+		}
+		if (prop_named(n, "visible")) {
+			if (as_truth(*s)) {
+				h->flags = uint8_t(h->flags | 1);
+			} else {
+				h->flags = uint8_t(h->flags & ~uint8_t(1));
+			}
+		}
+	}
+	if (!node_ok(node)) {
 		return;
 	}
 	if (prop_named(n, "visible")) {
@@ -541,6 +725,8 @@ static void set_prop(int node, const char *n, const GVar *s) {
 			g_nodes[node].ry = int16_t(rad_to_ps1(s->y));
 			g_nodes[node].rz = int16_t(rad_to_ps1(s->z));
 		}
+	} else if (prop_named(n, "name") && s->type == V_STR) {
+		copy_str(g_nodes[node].name, 32, s->s);
 	}
 }
 
@@ -574,11 +760,128 @@ static int run_iterate(int op, const uint8_t *codeb, int ip, GVar *stack, int ns
 	return jumpto;
 }
 
+static int hud_focusable(const ScriptVMHud *h) {
+	if (!h || !(h->flags & 1) || (h->flags & 2)) {
+		return 0;
+	}
+	return h->kind == 3 || h->kind == 4 || h->kind == 5 || h->kind == 6 || h->kind == 7 || h->kind == 8 || h->kind == 11 || h->kind == 12;
+}
+
+static int hud_next_focus(int dir) {
+	int start = g_focus;
+	if (start < 0) {
+		start = dir > 0 ? -1 : g_nhud;
+	}
+	for (int step = 1; step <= g_nhud; step++) {
+		int i = start + dir * step;
+		if (i < 0) {
+			i += g_nhud;
+		}
+		if (i >= g_nhud) {
+			i -= g_nhud;
+		}
+		if (hud_focusable(&g_hud[i])) {
+			return i;
+		}
+	}
+	return g_focus;
+}
+
+void script_vm_hud_tick(const ScriptVMHost *host) {
+	int any = 0;
+	for (int i = 0; i < g_nhud; i++) {
+		if (hud_focusable(&g_hud[i])) {
+			any = 1;
+			break;
+		}
+	}
+	if (host) {
+		((ScriptVMHost *)host)->hud_focus_blocks_cam = any;
+	}
+	if (!any) {
+		g_focus = -1;
+		return;
+	}
+	if (g_focus < 0 || !hud_focusable(&g_hud[g_focus])) {
+		g_focus = hud_next_focus(1);
+		if (g_focus < 0) {
+			for (int i = 0; i < g_nhud; i++) {
+				if (hud_focusable(&g_hud[i])) {
+					g_focus = i;
+					break;
+				}
+			}
+		}
+	}
+	const int up = pad_pressed(host, "ui_up", 1);
+	const int down = pad_pressed(host, "ui_down", 1);
+	const int left = pad_pressed(host, "ui_left", 1);
+	const int right = pad_pressed(host, "ui_right", 1);
+	const int accept = pad_pressed(host, "ui_accept", 1);
+	if (g_focus >= 0 && g_focus < g_nhud) {
+		ScriptVMHud *h = &g_hud[g_focus];
+		if (h->kind == 11) {
+			const int step = 1;
+			if (left) {
+				h->value = int16_t(h->value - step);
+			}
+			if (right) {
+				h->value = int16_t(h->value + step);
+			}
+			if (h->value < h->vmin) {
+				h->value = h->vmin;
+			}
+			if (h->value > h->vmax) {
+				h->value = h->vmax;
+			}
+		} else if (h->kind == 12) {
+			const int step = 1;
+			if (up) {
+				h->value = int16_t(h->value + step);
+			}
+			if (down) {
+				h->value = int16_t(h->value - step);
+			}
+			if (h->value < h->vmin) {
+				h->value = h->vmin;
+			}
+			if (h->value > h->vmax) {
+				h->value = h->vmax;
+			}
+		} else {
+			if (down || right) {
+				g_focus = hud_next_focus(1);
+			} else if (up || left) {
+				g_focus = hud_next_focus(-1);
+			}
+		}
+	}
+	if (accept && g_focus >= 0 && g_focus < g_nhud) {
+		ScriptVMHud *h = &g_hud[g_focus];
+		if (h->kind == 3 || h->kind == 4 || h->kind == 8) {
+			if (h->flags & 4) {
+				h->flags = uint8_t(h->flags ^ 8);
+			} else {
+				h->pressed = 1;
+			}
+		} else if (h->kind == 5 || h->kind == 6) {
+			h->flags = uint8_t(h->flags ^ 8);
+		} else if (h->kind == 7 && h->nitems) {
+			int sel = int(h->value) + 1;
+			if (sel >= int(h->nitems)) {
+				sel = 0;
+			}
+			h->value = int16_t(sel);
+			copy_str(h->text, 32, h->items[sel]);
+		}
+	}
+}
+
 static int run_official(const uint8_t *blob, size_t size, const char *want, float delta, const ScriptVMHost *host) {
 	if (size < 8 || blob[0] != 'G' || blob[1] != 'D' || blob[2] != 'B' || blob[3] != 'C') {
 		return 0;
 	}
-	if (ru16(blob + 4) != 6) {
+	if (ru16(blob + 4) != 7) {
 		return 0;
 	}
 	const uint16_t nscripts = ru16(blob + 6);
@@ -599,6 +902,28 @@ static int run_official(const uint8_t *blob, size_t size, const char *want, floa
 		}
 		const uint16_t owner = ru16(p);
 		p += 2;
+		char members[16][32];
+		int nmem = 0;
+		if (p + 2 > end) {
+			break;
+		}
+		const uint16_t nmem_u = ru16(p);
+		p += 2;
+		for (uint16_t m = 0; m < nmem_u && p < end; m++) {
+			const uint8_t sl = *p++;
+			if (nmem < 16) {
+				uint8_t n = sl < 31 ? sl : 31;
+				for (uint8_t k = 0; k < n && p + k < end; k++) {
+					members[nmem][k] = char(p[k]);
+				}
+				members[nmem][n] = 0;
+				nmem++;
+			}
+			p += sl;
+		}
+		if (p + 2 > end) {
+			break;
+		}
 		const uint16_t nfn = ru16(p);
 		p += 2;
 		const int self_id = (owner == 0xffff) ? 0 : int(owner);
@@ -823,6 +1148,16 @@ static int run_official(const uint8_t *blob, size_t size, const char *want, floa
 					continue;
 				}
 				if (op == OP_GET_MEMBER || op == OP_SET_MEMBER) {
+					const uint32_t a0 = uint32_t(ri32(codeb + (ip + 1) * 4));
+					const int mi = ri32(codeb + (ip + 2) * 4);
+					const char *pn = (mi >= 0 && mi < nmem) ? members[mi] : "";
+					if (op == OP_GET_MEMBER) {
+						GVar *d = slot(stack, nstack, cvars, nc, a0);
+						get_prop(self_id, pn, d);
+					} else {
+						GVar *sv = slot(stack, nstack, cvars, nc, a0);
+						set_prop(self_id, pn, sv);
+					}
 					ip += 3;
 					continue;
 				}
@@ -924,22 +1259,41 @@ static int run_official(const uint8_t *blob, size_t size, const char *want, floa
 	return ran;
 }
 
-static int run_tape(const uint8_t *blob, size_t size, float delta, const ScriptVMHost *host) {
+static const char *tape_action(char names[][32], int n) {
+	for (int i = 0; i < n; i++) {
+		if (pad_mask(names[i])) {
+			return names[i];
+		}
+	}
+	return "ui_accept";
+}
+
+static int run_tape(const uint8_t *blob, size_t size, const char *want, float delta, const ScriptVMHost *host) {
 	if (size < 8 || blob[0] != 'G' || blob[1] != 'D' || blob[2] != 'B' || blob[3] != 'C') {
 		return 0;
 	}
-	if (ru16(blob + 4) != 4) {
+	if (ru16(blob + 4) != 7) {
 		return 0;
 	}
 	const uint16_t npaths = ru16(blob + 6);
 	const uint8_t *p = blob + 8;
 	const uint8_t *end = blob + size;
+	uint16_t owners[16];
+	int nown = 0;
 	for (uint16_t i = 0; i < npaths; i++) {
 		if (p >= end) {
 			return 0;
 		}
 		const uint8_t nlen = *p++;
 		p += nlen;
+		if (p + 2 > end) {
+			return 0;
+		}
+		const uint16_t owner = ru16(p);
+		p += 2;
+		if (nown < 16) {
+			owners[nown++] = owner;
+		}
 	}
 	if (p + 2 > end) {
 		return 0;
@@ -952,6 +1306,12 @@ static int run_tape(const uint8_t *blob, size_t size, float delta, const ScriptV
 			break;
 		}
 		const uint8_t nlen = *p++;
+		char fname[40];
+		uint8_t cpy = nlen < 39 ? nlen : 39;
+		for (uint8_t k = 0; k < cpy && p + k < end; k++) {
+			fname[k] = char(p[k]);
+		}
+		fname[cpy] = 0;
 		p += nlen;
 		if (p + 5 > end) {
 			break;
@@ -989,6 +1349,11 @@ static int run_tape(const uint8_t *blob, size_t size, float delta, const ScriptV
 		}
 		const uint8_t *code = p;
 		p += ncode;
+		if (!name_is(fname, want)) {
+			continue;
+		}
+		const int owner = (f / 2 < nown) ? int(owners[f / 2]) : 0;
+		const int self = (owner == 0xffff) ? 0 : owner;
 		float stack[8];
 		int sp = 0;
 		size_t ip = 0;
@@ -1020,24 +1385,24 @@ static int run_tape(const uint8_t *blob, size_t size, float delta, const ScriptV
 				const float arg = sp > 0 ? stack[--sp] : 0.0f;
 				const char *nm = (ni < nstore) ? names[ni] : "rotate_y";
 				if (is_input_name(nm)) {
-					(void)pad_pressed(host, "ui_accept", name_is(nm, "is_action_just_pressed"));
+					(void)pad_pressed(host, tape_action(names, nstore), name_is(nm, "is_action_just_pressed"));
 				} else {
-					apply_method(host, 0, nm, arg, nullptr, 0);
+					apply_method(host, self, nm, arg, nullptr, 0);
 				}
 				ran = 1;
 			} else if (op == kTapeCallNamed && ip < ncode) {
 				const uint8_t ni = code[ip++];
 				const char *nm = (ni < nstore) ? names[ni] : "";
 				if (is_input_name(nm)) {
-					(void)pad_pressed(host, "ui_accept", name_is(nm, "is_action_just_pressed"));
+					(void)pad_pressed(host, tape_action(names, nstore), name_is(nm, "is_action_just_pressed"));
 				} else {
-					apply_method(host, 0, nm, 0.0f, nullptr, 0);
+					apply_method(host, self, nm, 0.0f, nullptr, 0);
 				}
 				ran = 1;
 			} else if (op == kTapeCallGetNode && ip < ncode) {
 				const uint8_t ni = code[ip++];
 				const char *path = (ni < nstore) ? names[ni] : "";
-				if (walk_path(0, path) < 0) {
+				if (walk_path(self, path) < 0) {
 					set_vm_err();
 				}
 				ran = 1;
@@ -1051,22 +1416,32 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 	if (!g_ready) {
 		return 0;
 	}
+	script_vm_hud_tick(host);
 	int ran = 0;
-	if (g_gdbc && g_gdbc_size) {
-		if (!g_did_ready) {
+	const uint8_t *tape = nullptr;
+	size_t tape_n = 0;
+	if (g_luau && g_luau_size > 8 && g_luau[0] == 'L' && g_luau[1] == 'U' && g_luau[2] == 'B' && g_luau[3] == 'C') {
+		const uint16_t official = ru16(g_luau + 4);
+		tape = g_luau + 6 + official;
+		tape_n = g_luau_size - size_t(tape - g_luau);
+	}
+	if (!g_did_ready) {
+		if (g_gdbc && g_gdbc_size) {
 			run_official(g_gdbc, g_gdbc_size, "_ready", 0.0f, host);
-			g_did_ready = 1;
 		}
+		if (tape) {
+			run_tape(tape, tape_n, "_ready", 0.0f, host);
+		}
+		g_did_ready = 1;
+	}
+	if (g_gdbc && g_gdbc_size) {
 		ran |= run_official(g_gdbc, g_gdbc_size, "_process", delta, host);
 	}
-	if (!ran && g_luau && g_luau_size > 8) {
-		const uint8_t *p = g_luau;
-		if (p[0] == 'L' && p[1] == 'U' && p[2] == 'B' && p[3] == 'C') {
-			const uint16_t official = ru16(p + 4);
-			const uint8_t *tape = p + 6 + official;
-			const size_t left = g_luau_size - size_t(tape - p);
-			ran |= run_tape(tape, left, delta, host);
-		}
+	if (tape) {
+		ran |= run_tape(tape, tape_n, "_process", delta, host);
+	}
+	for (int i = 0; i < g_nhud; i++) {
+		g_hud[i].pressed = 0;
 	}
 	pad_tick(host);
 	return ran;

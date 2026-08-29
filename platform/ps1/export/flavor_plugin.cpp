@@ -23,8 +23,9 @@ PS1FlavorEditorPlugin::PS1FlavorEditorPlugin() {
 	dock = memnew(VBoxContainer);
 	const char *lines[] = {
 		"Blazium PS1 flavor (same exporter)",
-		"Slots: 4 TIM, 2048 tris, 3 lights, 16 Sprite2D",
-		"VM first-slice: _process + rotate_y (GDScript/Luau)",
+		"Slots: 4 TIM, 2048 tris, 3 lights, 16 Sprite2D, 128 nodes",
+		"32 HUD widgets (pad-focus; poll pressed/value, no signals)",
+		"256 TileMap tiles; VM: _ready/_process + members",
 		"FMV: in-editor MIT STR/XA (not psxpress)",
 		"Not DuckStation / Sony BIOS / hardware",
 	};

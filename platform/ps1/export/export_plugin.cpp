@@ -303,6 +303,14 @@ Error EditorExportPlatformPS1::export_project(const Ref<EditorExportPreset> &p_p
 		args.push_back("--node");
 		args.push_back(cooked.node_path);
 	}
+	if (!cooked.hud_path.is_empty()) {
+		args.push_back("--hud");
+		args.push_back(cooked.hud_path);
+	}
+	if (!cooked.tile_path.is_empty()) {
+		args.push_back("--tile");
+		args.push_back(cooked.tile_path);
+	}
 	if (int(p_preset->get("ps1/output_kind")) != 0) {
 		add_message(EXPORT_MESSAGE_WARNING, "PS1", "ps1/output_kind is unread; output is PS-X EXE. Use ps1/make_iso for a disc image.");
 	}
@@ -330,6 +338,7 @@ Error EditorExportPlatformPS1::export_project(const Ref<EditorExportPreset> &p_p
 	add_message(EXPORT_MESSAGE_INFO, "PS1", "Wrote PS-X EXE " + p_path);
 
 	if (bool(p_preset->get("ps1/make_iso"))) {
+		add_message(EXPORT_MESSAGE_WARNING, "PS1", "ISO is SYSTEM.CNF + GAME.EXE + optional FMV/XA; TEX/MESH/SCRIPT/VAG/SPRITE/HUD/TILE are embedded in the EXE.");
 		String iso_warn;
 		if (_try_make_iso(p_path, cooked, iso_warn) != OK) {
 			add_message(EXPORT_MESSAGE_WARNING, "PS1", iso_warn.is_empty() ? String("ISO skipped because mkpsxiso is missing.") : iso_warn);

@@ -12,7 +12,7 @@ project(
 
 psn00bsdk_add_executable(runtime GPREL main.cpp script_vm.cpp fmv_play.cpp)
 target_compile_options(runtime PRIVATE -fno-exceptions -fno-rtti)
-target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_COOK_ABI=6)
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_COOK_ABI=7)
 
 set(BLAZIUM_PS1_TIM "" CACHE FILEPATH "Optional cooked TIM to embed")
 if(BLAZIUM_PS1_TIM)
@@ -82,4 +82,18 @@ if(BLAZIUM_PS1_NODE)
 	configure_file("${BLAZIUM_PS1_NODE}" "${CMAKE_CURRENT_BINARY_DIR}/NODE00.BIN" COPYONLY)
 	psn00bsdk_target_incbin(runtime PRIVATE cooked_node "${CMAKE_CURRENT_BINARY_DIR}/NODE00.BIN")
 	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_NODE=1)
+endif()
+
+set(BLAZIUM_PS1_HUD "" CACHE FILEPATH "Optional cooked HUD00.bin")
+if(BLAZIUM_PS1_HUD)
+	configure_file("${BLAZIUM_PS1_HUD}" "${CMAKE_CURRENT_BINARY_DIR}/HUD00.BIN" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_hud "${CMAKE_CURRENT_BINARY_DIR}/HUD00.BIN")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_HUD=1)
+endif()
+
+set(BLAZIUM_PS1_TILE "" CACHE FILEPATH "Optional cooked TILE00.bin")
+if(BLAZIUM_PS1_TILE)
+	configure_file("${BLAZIUM_PS1_TILE}" "${CMAKE_CURRENT_BINARY_DIR}/TILE00.BIN" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_tile "${CMAKE_CURRENT_BINARY_DIR}/TILE00.BIN")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_TILE=1)
 endif()

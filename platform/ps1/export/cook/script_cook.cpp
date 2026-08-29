@@ -10,6 +10,7 @@
 
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
+#include "core/templates/hash_map.h"
 #include "core/variant/variant.h"
 #include "modules/gdscript/gdscript.h"
 #include "modules/gdscript/gdscript_function.h"
@@ -73,7 +74,15 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "_ready" || p_name == "_process" ||
 			p_name == "hide" || p_name == "show" ||
 			p_name == "set_position" || p_name == "set_rotation" ||
-			p_name == "look_at" || p_name == "print" || p_name == "push_warning";
+			p_name == "look_at" || p_name == "print" || p_name == "push_warning" ||
+			p_name == "grab_focus" || p_name == "release_focus";
+}
+
+static bool member_is_allowlisted(const String &p_name) {
+	return p_name == "position" || p_name == "rotation" || p_name == "visible" || p_name == "name" ||
+			p_name == "text" || p_name == "disabled" || p_name == "pressed" || p_name == "button_pressed" ||
+			p_name == "value" || p_name == "min_value" || p_name == "max_value" || p_name == "selected" ||
+			p_name == "focus";
 }
 
 static bool luau_source_unbound(const String &p_source, String &r_why) {
@@ -327,7 +336,7 @@ static String call_name_at(const GDScriptFunction *fn, const Vector<int> &code, 
 	return String();
 }
 
-static Error scan_and_normalize(const String &p_path, GDScriptFunction *fn, Vector<int> &r_norm, String &r_err) {
+static Error scan_and_normalize(const String &p_path, GDScript *script, GDScriptFunction *fn, Vector<int> &r_norm, String &r_err) {
 	using Op = GDScriptFunction::Opcode;
 	const Vector<int> &code = fn->get_code();
 	const int n = fn->get_code_size() > 0 ? fn->get_code_size() : code.size();
@@ -351,6 +360,14 @@ static Error scan_and_normalize(const String &p_path, GDScriptFunction *fn, Vect
 			const String meth = call_name_at(fn, code, ip);
 			if (!meth.is_empty() && !method_is_allowlisted(meth)) {
 				r_err = vformat("%s:%s:%d unbound method '%s'", p_path, String(fn->get_name()), ip, meth);
+				return ERR_UNCONFIGURED;
+			}
+		}
+		if (op == Op::OPCODE_GET_MEMBER || op == Op::OPCODE_SET_MEMBER) {
+			const int mi = (ip + 2 < code.size()) ? code[ip + 2] : -1;
+			const String mem = script ? String(script->debug_get_member_by_index(mi)) : String();
+			if (mem.is_empty() || !member_is_allowlisted(mem)) {
+				r_err = vformat("%s:%s:%d unbound member '%s'", p_path, String(fn->get_name()), ip, mem.is_empty() ? String("?") : mem);
 				return ERR_UNCONFIGURED;
 			}
 		}
@@ -428,7 +445,7 @@ static Vector<uint8_t> pack_official_gdbc(const Vector<String> &p_paths, const V
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 6);
+	append_u16(out, 7);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int s = 0; s < p_paths.size(); s++) {
 		append_str(out, p_paths[s]);
@@ -437,6 +454,18 @@ static Vector<uint8_t> pack_official_gdbc(const Vector<String> &p_paths, const V
 			owner = r_ir.path_owners[p_paths[s]];
 		}
 		append_u16(out, owner);
+		Vector<String> mem_names;
+		for (int mi = 0; mi < 64; mi++) {
+			const StringName n = p_scripts[s]->debug_get_member_by_index(mi);
+			if (String(n).is_empty()) {
+				break;
+			}
+			mem_names.push_back(String(n));
+		}
+		append_u16(out, uint16_t(mem_names.size()));
+		for (int m = 0; m < mem_names.size(); m++) {
+			append_str(out, mem_names[m]);
+		}
 		const HashMap<StringName, GDScriptFunction *> &fns = p_scripts[s]->get_member_functions();
 		Vector<StringName> names;
 		for (const KeyValue<StringName, GDScriptFunction *> &E : fns) {
@@ -450,7 +479,7 @@ static Vector<uint8_t> pack_official_gdbc(const Vector<String> &p_paths, const V
 			append_u16(out, uint16_t(fn->get_max_stack_size()));
 			Vector<int> norm;
 			String err;
-			if (scan_and_normalize(p_paths[s], fn, norm, err) != OK) {
+			if (scan_and_normalize(p_paths[s], p_scripts[s].ptr(), fn, norm, err) != OK) {
 				r_ir.rejected.push_back(err);
 				r_ir.map_text += "REJECT " + err + "\n";
 				append_u16(out, 0);
@@ -486,18 +515,39 @@ static Vector<uint8_t> pack_official_gdbc(const Vector<String> &p_paths, const V
 static const uint8_t kTapeCallGetNode = 6;
 static const uint8_t kTapeCallNamed = 7;
 
-static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vector<String> &p_sources) {
+static String first_quoted_action(const String &src) {
+	int p = src.find("is_action_");
+	if (p < 0) {
+		return "ui_accept";
+	}
+	const int q = src.find("\"", p);
+	if (q < 0) {
+		return "ui_accept";
+	}
+	const int e = src.find("\"", q + 1);
+	if (e <= q + 1) {
+		return "ui_accept";
+	}
+	return src.substr(q + 1, e - q - 1);
+}
+
+static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vector<String> &p_sources, const ScriptIR &r_ir) {
 	Vector<uint8_t> out;
 	out.push_back('G');
 	out.push_back('D');
 	out.push_back('B');
 	out.push_back('C');
-	append_u16(out, 4);
+	append_u16(out, 7);
 	append_u16(out, uint16_t(p_paths.size()));
 	for (int i = 0; i < p_paths.size(); i++) {
 		append_str(out, p_paths[i]);
+		uint16_t owner = 0xffff;
+		if (r_ir.path_owners.has(p_paths[i])) {
+			owner = r_ir.path_owners[p_paths[i]];
+		}
+		append_u16(out, owner);
 	}
-	append_u16(out, uint16_t(p_paths.size()));
+	append_u16(out, uint16_t(p_paths.size() * 2));
 	for (int i = 0; i < p_paths.size(); i++) {
 		float rate = 0.4f;
 		if (p_sources[i].contains("0.4")) {
@@ -556,6 +606,7 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 		}
 		if (src.contains("is_action_pressed") || src.contains("is_action_just_pressed")) {
 			const String act = src.contains("is_action_just_pressed") ? "is_action_just_pressed" : "is_action_pressed";
+			add_name(first_quoted_action(src));
 			code.push_back(kTapeCallNamed);
 			code.push_back(add_name(act));
 		}
@@ -575,18 +626,24 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 		if (names.is_empty()) {
 			add_name("rotate_y");
 		}
-		append_str(out, "_process");
-		out.push_back(1);
-		append_u16(out, 1);
-		append_u16(out, uint16_t(code.size()));
-		append_f32(out, rate);
-		out.push_back(uint8_t(CLAMP(names.size(), 0, 255)));
-		for (int n = 0; n < names.size(); n++) {
-			append_str(out, names[n]);
-		}
-		for (int c = 0; c < code.size(); c++) {
-			out.push_back(code[c]);
-		}
+		Vector<uint8_t> ready_code;
+		ready_code.push_back(kTapeReturn);
+		auto emit_fn = [&](const String &fname, const Vector<uint8_t> &body) {
+			append_str(out, fname);
+			out.push_back(1);
+			append_u16(out, 1);
+			append_u16(out, uint16_t(body.size()));
+			append_f32(out, rate);
+			out.push_back(uint8_t(CLAMP(names.size(), 0, 255)));
+			for (int n = 0; n < names.size(); n++) {
+				append_str(out, names[n]);
+			}
+			for (int c = 0; c < body.size(); c++) {
+				out.push_back(body[c]);
+			}
+		};
+		emit_fn("_ready", ready_code);
+		emit_fn("_process", code);
 	}
 	return out;
 }
@@ -647,7 +704,7 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 		}
 	}
 
-	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 6)\n", r_out.rotate_y);
+	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 7)\n", r_out.rotate_y);
 	for (int i = 0; i < r_out.accepted.size(); i++) {
 		r_out.map_text += "OK " + r_out.accepted[i] + "\n";
 	}
@@ -718,7 +775,7 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 #else
 		append_u16(lubc, 0);
 #endif
-		const Vector<uint8_t> tape = pack_luau_tape(lu_paths, lu_src);
+		const Vector<uint8_t> tape = pack_luau_tape(lu_paths, lu_src, r_out);
 		for (int i = 0; i < tape.size(); i++) {
 			lubc.push_back(tape[i]);
 		}

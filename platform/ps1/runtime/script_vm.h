@@ -12,7 +12,13 @@
 #include <cstdint>
 
 #ifndef PS1_MAX_NODES
-#define PS1_MAX_NODES 32
+#define PS1_MAX_NODES 128
+#endif
+#ifndef PS1_MAX_HUD
+#define PS1_MAX_HUD 32
+#endif
+#ifndef PS1_MAX_TILES
+#define PS1_MAX_TILES 256
 #endif
 
 struct ScriptVMNode {
@@ -27,6 +33,27 @@ struct ScriptVMNode {
 	int16_t script;
 };
 
+struct ScriptVMHud {
+	int16_t x, y, w, h;
+	uint8_t kind;
+	uint8_t tex;
+	uint8_t rgb;
+	uint8_t node_id;
+	uint8_t flags;
+	int16_t value, vmin, vmax;
+	char text[32];
+	uint8_t nitems;
+	char items[8][16];
+	uint8_t pressed;
+};
+
+struct ScriptVMTile {
+	int16_t x, y;
+	uint8_t u, v;
+	uint8_t tex;
+	uint8_t node_id;
+};
+
 struct ScriptVMHost {
 	int16_t *rot_x;
 	int16_t *rot_y;
@@ -35,11 +62,20 @@ struct ScriptVMHost {
 	int32_t *pos_y;
 	int32_t *pos_z;
 	const uint8_t *pad34;
+	int hud_focus_blocks_cam;
 };
 
 void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, size_t luau_size);
 void script_vm_set_nodes(const ScriptVMNode *nodes, int count);
+void script_vm_set_hud(const ScriptVMHud *hud, int count);
+void script_vm_set_tiles(const ScriptVMTile *tiles, int count);
 int script_vm_node_count();
 const ScriptVMNode *script_vm_nodes();
+int script_vm_hud_count();
+ScriptVMHud *script_vm_hud();
+int script_vm_hud_focus();
+int script_vm_tile_count();
+const ScriptVMTile *script_vm_tiles();
+void script_vm_hud_tick(const ScriptVMHost *host);
 int script_vm_process(float delta, const ScriptVMHost *host);
 const char *script_vm_last_error();

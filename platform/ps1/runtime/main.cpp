@@ -42,7 +42,7 @@
 #include "script_vm.h"
 
 #ifndef BLAZIUM_PS1_COOK_ABI
-#define BLAZIUM_PS1_COOK_ABI 6
+#define BLAZIUM_PS1_COOK_ABI 7
 #endif
 
 #define OT_LEN 1024
@@ -104,6 +104,16 @@ extern const uint8_t cooked_node[];
 extern const size_t cooked_node_size;
 #endif
 
+#ifdef BLAZIUM_PS1_HAS_HUD
+extern const uint8_t cooked_hud[];
+extern const size_t cooked_hud_size;
+#endif
+
+#ifdef BLAZIUM_PS1_HAS_TILE
+extern const uint8_t cooked_tile[];
+extern const size_t cooked_tile_size;
+#endif
+
 static MATRIX g_color_mtx = {
 	ONE * 3 / 4, ONE / 2, ONE / 4,
 	ONE * 3 / 4, ONE / 2, ONE / 4,
@@ -118,6 +128,8 @@ static int16_t g_spr_x = 140;
 static int16_t g_spr_y = 100;
 static int16_t g_spr_vx = 2;
 static int16_t g_spr_vy = 1;
+static uint8_t g_tile_w = 16;
+static uint8_t g_tile_h = 16;
 
 static uint8_t g_pad[2][34];
 
@@ -342,6 +354,124 @@ static void draw_cooked_sprites(uint16_t clut) {
 	g_pri = (uint8_t *)p;
 }
 #endif
+
+static void unpack_rgb(uint8_t packed, uint8_t *r, uint8_t *g, uint8_t *b) {
+	*r = uint8_t(((packed >> 5) & 7) * 36);
+	*g = uint8_t(((packed >> 2) & 7) * 36);
+	*b = uint8_t((packed & 3) * 85);
+}
+
+static void draw_tile_rect(int16_t x, int16_t y, int16_t w, int16_t h, uint8_t r, uint8_t g, uint8_t b) {
+	if ((uint8_t *)((TILE *)g_pri + 1) > g_fb[g_active].packet + PACKET_LEN) {
+		return;
+	}
+	TILE *t = (TILE *)g_pri;
+	setTile(t);
+	setXY0(t, x, y);
+	setWH(t, w, h);
+	setRGB0(t, r, g, b);
+	addPrim(&g_fb[g_active].ot[1], t);
+	g_pri = (uint8_t *)(t + 1);
+}
+
+static void draw_cooked_tiles(uint16_t *tpages, uint16_t *cluts) {
+	const int n = script_vm_tile_count();
+	const ScriptVMTile *tiles = script_vm_tiles();
+	const uint8_t tw = g_tile_w ? g_tile_w : 16;
+	const uint8_t th = g_tile_h ? g_tile_h : 16;
+	for (int i = 0; i < n; i++) {
+		if ((uint8_t *)((SPRT *)g_pri + 1) > g_fb[g_active].packet + PACKET_LEN) {
+			break;
+		}
+		SPRT *p = (SPRT *)g_pri;
+		setSprt(p);
+		setRGB0(p, 255, 255, 255);
+		setXY0(p, tiles[i].x, tiles[i].y);
+		setWH(p, tw, th);
+		setUV0(p, tiles[i].u, tiles[i].v);
+		const int slot = tiles[i].tex & 3;
+		p->clut = cluts[slot];
+		addPrim(&g_fb[g_active].ot[1], p);
+		g_pri = (uint8_t *)(p + 1);
+	}
+	(void)tpages;
+}
+
+static void draw_cooked_hud(uint16_t *cluts) {
+	const int n = script_vm_hud_count();
+	ScriptVMHud *hud = script_vm_hud();
+	const int focus = script_vm_hud_focus();
+	for (int i = 0; i < n; i++) {
+		if (!(hud[i].flags & 1)) {
+			continue;
+		}
+		uint8_t r, g, b;
+		unpack_rgb(hud[i].rgb, &r, &g, &b);
+		if (hud[i].rgb == 128 && r == 0) {
+			r = 128;
+			g = 128;
+			b = 128;
+		}
+		if (hud[i].flags & 2) {
+			r = uint8_t(r / 2);
+			g = uint8_t(g / 2);
+			b = uint8_t(b / 2);
+		}
+		if (i == focus) {
+			r = uint8_t(r > 200 ? 255 : r + 55);
+			g = uint8_t(g > 200 ? 255 : g + 55);
+			b = uint8_t(b > 200 ? 255 : b + 55);
+			draw_tile_rect(int16_t(hud[i].x - 1), int16_t(hud[i].y - 1), int16_t(hud[i].w + 2), int16_t(hud[i].h + 2), 255, 255, 80);
+		}
+		if (hud[i].tex != 0xff) {
+			if ((uint8_t *)((SPRT *)g_pri + 1) > g_fb[g_active].packet + PACKET_LEN) {
+				break;
+			}
+			SPRT *p = (SPRT *)g_pri;
+			setSprt(p);
+			setRGB0(p, r, g, b);
+			setXY0(p, hud[i].x, hud[i].y);
+			setWH(p, hud[i].w, hud[i].h);
+			setUV0(p, 0, 0);
+			p->clut = cluts[hud[i].tex & 3];
+			addPrim(&g_fb[g_active].ot[1], p);
+			g_pri = (uint8_t *)(p + 1);
+		} else {
+			draw_tile_rect(hud[i].x, hud[i].y, hud[i].w, hud[i].h, r, g, b);
+		}
+		if (hud[i].kind == 10 || hud[i].kind == 11 || hud[i].kind == 12) {
+			int span = int(hud[i].vmax) - int(hud[i].vmin);
+			if (span < 1) {
+				span = 1;
+			}
+			int fill = (int(hud[i].value) - int(hud[i].vmin)) * int(hud[i].w) / span;
+			if (fill < 0) {
+				fill = 0;
+			}
+			if (fill > hud[i].w) {
+				fill = hud[i].w;
+			}
+			if (fill > 0) {
+				draw_tile_rect(hud[i].x, hud[i].y, int16_t(fill), hud[i].h, 80, 200, 80);
+			}
+		}
+		char line[40];
+		int nch = 0;
+		if (hud[i].kind == 5 || hud[i].kind == 6) {
+			line[nch++] = '[';
+			line[nch++] = (hud[i].flags & 8) ? 'x' : ' ';
+			line[nch++] = ']';
+			line[nch++] = ' ';
+		}
+		for (int k = 0; hud[i].text[k] && nch < 38; k++) {
+			line[nch++] = hud[i].text[k];
+		}
+		line[nch] = 0;
+		if (nch) {
+			g_pri = (uint8_t *)FntSort(&g_fb[g_active].ot[1], g_pri, hud[i].x + 2, hud[i].y + 2, line);
+		}
+	}
+}
 
 #ifdef BLAZIUM_PS1_HAS_MESH
 typedef struct {
@@ -640,7 +770,7 @@ int main(int argc, const char **argv) {
 	if (cooked_node_size >= 8 && cooked_node[0] == 'N' && cooked_node[1] == 'O' && cooked_node[2] == 'D' && cooked_node[3] == 'E') {
 		const uint16_t ver = uint16_t(cooked_node[4] | (cooked_node[5] << 8));
 		const uint16_t nc = uint16_t(cooked_node[6] | (cooked_node[7] << 8));
-		if (ver == 6) {
+		if (ver == 7) {
 			ScriptVMNode parsed[PS1_MAX_NODES];
 			const uint8_t *p = cooked_node + 8;
 			const uint8_t *end = cooked_node + cooked_node_size;
@@ -678,6 +808,89 @@ int main(int argc, const char **argv) {
 		}
 	}
 #endif
+#ifdef BLAZIUM_PS1_HAS_HUD
+	if (cooked_hud_size >= 8 && cooked_hud[0] == 'H' && cooked_hud[1] == 'U' && cooked_hud[2] == 'D' && cooked_hud[3] == '0') {
+		const uint16_t ver = uint16_t(cooked_hud[4] | (cooked_hud[5] << 8));
+		const uint16_t nc = uint16_t(cooked_hud[6] | (cooked_hud[7] << 8));
+		if (ver == 7) {
+			ScriptVMHud parsed[PS1_MAX_HUD];
+			const uint8_t *p = cooked_hud + 8;
+			const uint8_t *end = cooked_hud + cooked_hud_size;
+			int got = 0;
+			for (uint16_t i = 0; i < nc && i < PS1_MAX_HUD && p + 17 <= end; i++) {
+				ScriptVMHud h{};
+				h.x = int16_t(p[0] | (p[1] << 8));
+				h.y = int16_t(p[2] | (p[3] << 8));
+				h.w = int16_t(p[4] | (p[5] << 8));
+				h.h = int16_t(p[6] | (p[7] << 8));
+				p += 8;
+				h.kind = *p++;
+				h.tex = *p++;
+				h.rgb = *p++;
+				h.node_id = *p++;
+				h.flags = *p++;
+				h.value = int16_t(p[0] | (p[1] << 8));
+				h.vmin = int16_t(p[2] | (p[3] << 8));
+				h.vmax = int16_t(p[4] | (p[5] << 8));
+				p += 6;
+				if (p >= end) {
+					break;
+				}
+				const uint8_t tl = *p++;
+				uint8_t cpy = tl < 31 ? tl : 31;
+				for (uint8_t k = 0; k < cpy && p + k < end; k++) {
+					h.text[k] = char(p[k]);
+				}
+				h.text[cpy] = 0;
+				p += tl;
+				if (p >= end) {
+					break;
+				}
+				h.nitems = *p++;
+				if (h.nitems > 8) {
+					h.nitems = 8;
+				}
+				for (uint8_t it = 0; it < h.nitems && p < end; it++) {
+					const uint8_t il = *p++;
+					uint8_t ic = il < 15 ? il : 15;
+					for (uint8_t k = 0; k < ic && p + k < end; k++) {
+						h.items[it][k] = char(p[k]);
+					}
+					h.items[it][ic] = 0;
+					p += il;
+				}
+				parsed[got++] = h;
+			}
+			script_vm_set_hud(parsed, got);
+		}
+	}
+#endif
+#ifdef BLAZIUM_PS1_HAS_TILE
+	if (cooked_tile_size >= 10 && cooked_tile[0] == 'T' && cooked_tile[1] == 'I' && cooked_tile[2] == 'L' && cooked_tile[3] == 'E') {
+		const uint16_t ver = uint16_t(cooked_tile[4] | (cooked_tile[5] << 8));
+		const uint16_t nc = uint16_t(cooked_tile[6] | (cooked_tile[7] << 8));
+		g_tile_w = cooked_tile[8];
+		g_tile_h = cooked_tile[9];
+		if (ver == 7) {
+			ScriptVMTile parsed[PS1_MAX_TILES];
+			const uint8_t *p = cooked_tile + 10;
+			const uint8_t *end = cooked_tile + cooked_tile_size;
+			int got = 0;
+			for (uint16_t i = 0; i < nc && i < PS1_MAX_TILES && p + 8 <= end; i++) {
+				ScriptVMTile t{};
+				t.x = int16_t(p[0] | (p[1] << 8));
+				t.y = int16_t(p[2] | (p[3] << 8));
+				t.u = p[4];
+				t.v = p[5];
+				t.tex = p[6];
+				t.node_id = p[7];
+				p += 8;
+				parsed[got++] = t;
+			}
+			script_vm_set_tiles(parsed, got);
+		}
+	}
+#endif
 	const int font = FntOpen(8, 16, SCREEN_W - 16, SCREEN_H - 40, 0, 256);
 	uint16_t tpages[4];
 	uint16_t cluts[4];
@@ -705,6 +918,7 @@ int main(int argc, const char **argv) {
 			MulMatrix0(&g_light_mtx, &mtx, &lmtx);
 			gte_SetLightMatrix(&lmtx);
 		}
+		int block_cam = 0;
 		{
 			ScriptVMHost host;
 			host.rot_x = &rot.vx;
@@ -714,13 +928,15 @@ int main(int argc, const char **argv) {
 			host.pos_y = &pos.vy;
 			host.pos_z = &pos.vz;
 			host.pad34 = g_pad[0];
+			host.hud_focus_blocks_cam = 0;
 			if (!script_vm_process(1.0f / 60.0f, &host)) {
 				rot.vy += rot_step;
 			}
+			block_cam = host.hud_focus_blocks_cam;
 		}
 		{
 			const PADTYPE *pad = (const PADTYPE *)g_pad[0];
-			if (pad->stat == 0) {
+			if (pad->stat == 0 && !block_cam) {
 				if (!(pad->btn & PAD_LEFT)) {
 					rot.vy -= 24;
 				}
@@ -745,6 +961,11 @@ int main(int argc, const char **argv) {
 		}
 		draw_cooked_sprites(clut);
 #endif
+		{
+			uint16_t dummy_tp[4] = { 0, 0, 0, 0 };
+			draw_cooked_tiles(dummy_tp, cluts);
+			draw_cooked_hud(cluts);
+		}
 		{
 			const char *err = script_vm_last_error();
 			g_pri = (uint8_t *)FntSort(&g_fb[g_active].ot[1], g_pri, 8, 200, (err && err[0]) ? err : "HUD SPRT AABB L3 FOG MDEC");
