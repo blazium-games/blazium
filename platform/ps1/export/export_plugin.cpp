@@ -329,6 +329,18 @@ Error EditorExportPlatformPS1::export_project(const Ref<EditorExportPreset> &p_p
 		args.push_back("--hit");
 		args.push_back(cooked.hit_path);
 	}
+	if (!cooked.nav_path.is_empty()) {
+		args.push_back("--nav");
+		args.push_back(cooked.nav_path);
+	}
+	if (!cooked.path_path.is_empty()) {
+		args.push_back("--path");
+		args.push_back(cooked.path_path);
+	}
+	if (!cooked.way_path.is_empty()) {
+		args.push_back("--way");
+		args.push_back(cooked.way_path);
+	}
 	if (int(p_preset->get("ps1/output_kind")) != 0) {
 		add_message(EXPORT_MESSAGE_WARNING, "PS1", "ps1/output_kind is unread; output is PS-X EXE. Use ps1/make_iso for a disc image.");
 	}
@@ -427,6 +439,9 @@ Error EditorExportPlatformPS1::_try_make_iso(const String &p_exe_path, const ps1
 	add_file("TXT00.bin", p_cooked.txt_path);
 	add_file("SFX00.bin", p_cooked.sfx_bank_path);
 	add_file("MUSIC00.bin", p_cooked.music_path);
+	add_file("NAV00.bin", p_cooked.nav_path);
+	add_file("PATH00.bin", p_cooked.path_path);
+	add_file("WAY00.bin", p_cooked.way_path);
 	HashMap<String, Vector<String>> pack_dirs;
 	for (int i = 0; i < p_cooked.extra_pack_files.size(); i++) {
 		const String src = p_cooked.extra_pack_files[i];

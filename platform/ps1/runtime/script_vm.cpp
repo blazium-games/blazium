@@ -65,6 +65,7 @@ static const int kTreeId = -2;
 static const int kPS1Id = -3;
 static const int kPackBase = 1000;
 static const int kTimerBase = 2000;
+static const int kTweenBase = 3000;
 enum { SIG_TIMEOUT = 1, SIG_PRESSED = 2, SIG_ANIM = 3 };
 struct ScriptVMConn {
 	int src;
@@ -90,6 +91,7 @@ static int g_on_floor = 0, g_on_wall = 0, g_on_ceiling = 0;
 static float g_shake_amp = 0, g_shake_ms = 0;
 static float g_ray_hx = 0, g_ray_hy = 0, g_ray_hz = 0;
 static int g_ray_hit = 0;
+static int g_ray_node = -1;
 static int g_deadzone = 16;
 static float g_vel_x = 0, g_vel_y = 0, g_vel_z = 0;
 static float g_nvel[PS1_MAX_NODES][3];
@@ -141,7 +143,67 @@ struct ScriptVMTextLine {
 static ScriptVMTextLine g_txt[PS1_MAX_TXT];
 static int g_ntxt = 0;
 static uint8_t g_txt_pack[PS1_MAX_TXT];
+static uint8_t g_floor_n[PS1_MAX_NODES];
+static uint8_t g_wall_n[PS1_MAX_NODES];
+static uint8_t g_ceil_n[PS1_MAX_NODES];
+static uint8_t g_ysort[PS1_MAX_NODES];
+static uint8_t g_kind[PS1_MAX_NODES];
+static uint8_t g_path_id[PS1_MAX_NODES];
+static uint8_t g_parse_ysort[PS1_MAX_NODES];
+static uint8_t g_parse_kind[PS1_MAX_NODES];
+static uint8_t g_parse_path[PS1_MAX_NODES];
+static uint8_t g_node_cull[PS1_MAX_NODES];
+static float g_cull_dist = 0;
+static int g_orbit_clip = 1;
+static float g_body_gx = 0, g_body_gy = -60, g_body_gz = 0;
+static int16_t g_hud_ox = 0, g_hud_oy = 0;
+static ScriptVMShot g_shot[32];
+static int g_nshot = 32;
+enum { NK_NONE = 0, NK_PATH = 1, NK_RAY = 2, NK_SHAPE = 3, NK_NOTE = 4, NK_ENAB = 5, NK_REMOTE = 6, NK_TIMER = 7, NK_AGENT = 8, NK_ARM = 9, NK_LOOK = 10 };
+struct TweenSlot {
+	uint8_t used;
+	int16_t node;
+	uint8_t prop;
+	float from[3];
+	float to[3];
+	float t;
+	float dur;
+	uint8_t loop;
+};
+static TweenSlot g_tween[8];
+static float g_path_prog[PS1_MAX_NODES];
+static float g_path_spd[PS1_MAX_NODES];
+static int16_t g_remote_tgt[PS1_MAX_NODES];
+static int16_t g_look_tgt[PS1_MAX_NODES];
+static float g_agent_tx[PS1_MAX_NODES];
+static float g_agent_ty[PS1_MAX_NODES];
+static float g_agent_tz[PS1_MAX_NODES];
+static float g_agent_spd[PS1_MAX_NODES];
+static uint8_t g_cast_on[PS1_MAX_NODES];
+static int16_t g_cast_hit[PS1_MAX_NODES];
+static uint8_t g_on_screen[PS1_MAX_NODES];
+static uint8_t g_timer_node[8];
+#define PS1_MAX_NAV_V 32
+#define PS1_MAX_NAV_E 48
+#define PS1_MAX_PATHS 8
+#define PS1_MAX_PPTS 16
+#define PS1_MAX_WAYS 32
+static int16_t g_nav_x[PS1_MAX_NAV_V], g_nav_y[PS1_MAX_NAV_V], g_nav_z[PS1_MAX_NAV_V];
+static int16_t g_nav_node[PS1_MAX_NAV_V];
+static uint8_t g_nav_a[PS1_MAX_NAV_E], g_nav_b[PS1_MAX_NAV_E];
+static int g_nvert = 0, g_nedge = 0, g_nav_loaded = 0;
+static int16_t g_ppx[PS1_MAX_PATHS][PS1_MAX_PPTS];
+static int16_t g_ppy[PS1_MAX_PATHS][PS1_MAX_PPTS];
+static int16_t g_ppz[PS1_MAX_PATHS][PS1_MAX_PPTS];
+static uint8_t g_pnpt[PS1_MAX_PATHS];
+static uint8_t g_pclosed[PS1_MAX_PATHS];
+static int g_npath = 0, g_path_loaded = 0;
+static uint8_t g_way_n[PS1_MAX_WAYS];
+static uint8_t g_way_p[PS1_MAX_WAYS];
+static int g_nway = 0, g_way_loaded = 0;
+static int g_boot_slices = 0;
 
+static int node_ok(int id);
 static int pad_pressed_on(const ScriptVMHost *host, const char *action, int just, int device);
 static int hud_index_for_node(int node);
 static int read_host_file(const char *path, uint8_t *dst, int max);
@@ -321,6 +383,46 @@ void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, 
 		g_scroll[i] = 0;
 		g_parse_groups[i] = 0;
 		g_parse_scroll[i] = 0;
+		g_parse_ysort[i] = 0;
+		g_parse_kind[i] = 0;
+		g_parse_path[i] = 0;
+		g_floor_n[i] = 0;
+		g_wall_n[i] = 0;
+		g_ceil_n[i] = 0;
+		g_ysort[i] = 0;
+		g_kind[i] = 0;
+		g_path_id[i] = 0;
+		g_node_cull[i] = 0;
+		g_path_prog[i] = 0;
+		g_path_spd[i] = 0;
+		g_remote_tgt[i] = -1;
+		g_look_tgt[i] = -1;
+		g_agent_tx[i] = 0;
+		g_agent_ty[i] = 0;
+		g_agent_tz[i] = 0;
+		g_agent_spd[i] = 4;
+		g_cast_on[i] = 1;
+		g_cast_hit[i] = -1;
+		g_on_screen[i] = 1;
+	}
+	g_cull_dist = 0;
+	g_orbit_clip = 1;
+	g_body_gx = 0;
+	g_body_gy = -60;
+	g_body_gz = 0;
+	g_hud_ox = 0;
+	g_hud_oy = 0;
+	g_nvert = g_nedge = g_nav_loaded = 0;
+	g_npath = g_path_loaded = 0;
+	g_nway = g_way_loaded = 0;
+	g_boot_slices = 0;
+	for (int i = 0; i < 8; i++) {
+		g_tween[i].used = 0;
+		g_timer_node[i] = 0xff;
+	}
+	for (int i = 0; i < 32; i++) {
+		g_shot[i].used = 0;
+		g_shot[i].hit = -1;
 	}
 	for (int i = 0; i < PS1_MAX_HITS; i++) {
 		g_hit_prev[i] = 0;
@@ -339,7 +441,7 @@ void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, 
 	{
 		uint8_t hdr[64];
 		const int n = read_host_file("SAVE.MCD", hdr, int(sizeof(hdr)));
-		if (n >= 8 && hdr[0] == 'M' && hdr[1] == 'C' && hdr[2] == '1' && (hdr[3] == '8' || hdr[3] == '9')) {
+		if (n >= 8 && hdr[0] == 'M' && hdr[1] == 'C' && ((hdr[2] == '1' && hdr[3] == '9') || (hdr[2] == '2' && hdr[3] == '0'))) {
 			g_mc_var.type = hdr[4];
 			g_mc_len = int(hdr[5] | (hdr[6] << 8));
 			if (g_mc_len > int(sizeof(g_mc_payload))) {
@@ -392,6 +494,22 @@ void script_vm_set_nodes(const ScriptVMNode *nodes, int count) {
 		g_node_used[i] = 1;
 		g_group[i] = g_parse_groups[i];
 		g_scroll[i] = g_parse_scroll[i];
+		g_ysort[i] = g_parse_ysort[i];
+		g_kind[i] = g_parse_kind[i];
+		g_path_id[i] = g_parse_path[i];
+		if (g_kind[i] == NK_REMOTE || g_kind[i] == NK_LOOK) {
+			g_remote_tgt[i] = int16_t(g_path_id[i]);
+			g_look_tgt[i] = int16_t(g_path_id[i]);
+		}
+		if (g_kind[i] == NK_PATH) {
+			g_path_spd[i] = 0.25f;
+		}
+		if (g_kind[i] == NK_TIMER) {
+			const int slot = int(g_path_id[i]);
+			if (slot >= 0 && slot < 8) {
+				g_timer_node[slot] = uint8_t(i);
+			}
+		}
 	}
 }
 
@@ -429,6 +547,137 @@ void script_vm_set_fog(int on, int start, int end, uint8_t r, uint8_t g, uint8_t
 	g_fog_r = r;
 	g_fog_g = g;
 	g_fog_b = b;
+}
+
+void script_vm_set_ysort(const uint8_t *ysort, int count) {
+	for (int i = 0; i < PS1_MAX_NODES; i++) {
+		g_ysort[i] = (ysort && i < count) ? ysort[i] : 0;
+	}
+}
+
+void script_vm_set_kinds(const uint8_t *kinds, int count) {
+	for (int i = 0; i < PS1_MAX_NODES; i++) {
+		g_kind[i] = (kinds && i < count) ? kinds[i] : 0;
+	}
+}
+
+void script_vm_set_path_ids(const uint8_t *ids, int count) {
+	for (int i = 0; i < PS1_MAX_NODES; i++) {
+		g_path_id[i] = (ids && i < count) ? ids[i] : 0;
+	}
+}
+
+int script_vm_apply_nav_blob(const uint8_t *blob, int size) {
+	if (!blob || size < 8 || blob[0] != 'N' || blob[1] != 'A' || blob[2] != 'V' || blob[3] != '0' || ru16(blob + 4) != PS1_COOK_ABI) {
+		return 0;
+	}
+	g_nvert = int(blob[6]);
+	g_nedge = int(blob[7]);
+	if (g_nvert > PS1_MAX_NAV_V) {
+		g_nvert = PS1_MAX_NAV_V;
+	}
+	if (g_nedge > PS1_MAX_NAV_E) {
+		g_nedge = PS1_MAX_NAV_E;
+	}
+	const uint8_t *p = blob + 8;
+	for (int i = 0; i < g_nvert && p + 8 <= blob + size; i++) {
+		g_nav_x[i] = int16_t(p[0] | (p[1] << 8));
+		g_nav_y[i] = int16_t(p[2] | (p[3] << 8));
+		g_nav_z[i] = int16_t(p[4] | (p[5] << 8));
+		g_nav_node[i] = int16_t(p[6] | (p[7] << 8));
+		p += 8;
+	}
+	for (int i = 0; i < g_nedge && p + 2 <= blob + size; i++) {
+		g_nav_a[i] = p[0];
+		g_nav_b[i] = p[1];
+		p += 2;
+	}
+	g_nav_loaded = 1;
+	if (g_npack > 0) {
+		g_packs[0].nav_resident = 1;
+	}
+	return 1;
+}
+
+int script_vm_apply_path_blob(const uint8_t *blob, int size) {
+	if (!blob || size < 8 || blob[0] != 'P' || blob[1] != 'A' || blob[2] != 'T' || blob[3] != 'H' || ru16(blob + 4) != PS1_COOK_ABI) {
+		return 0;
+	}
+	g_npath = int(blob[6]);
+	if (g_npath > PS1_MAX_PATHS) {
+		g_npath = PS1_MAX_PATHS;
+	}
+	const uint8_t *p = blob + 8;
+	for (int i = 0; i < g_npath && p + 4 <= blob + size; i++) {
+		g_pnpt[i] = p[1];
+		g_pclosed[i] = p[2];
+		if (g_pnpt[i] > PS1_MAX_PPTS) {
+			g_pnpt[i] = PS1_MAX_PPTS;
+		}
+		p += 4;
+		for (int k = 0; k < PS1_MAX_PPTS && p + 6 <= blob + size; k++) {
+			g_ppx[i][k] = int16_t(p[0] | (p[1] << 8));
+			g_ppy[i][k] = int16_t(p[2] | (p[3] << 8));
+			g_ppz[i][k] = int16_t(p[4] | (p[5] << 8));
+			p += 6;
+		}
+	}
+	g_path_loaded = 1;
+	if (g_npack > 0) {
+		g_packs[0].path_resident = 1;
+	}
+	return 1;
+}
+
+int script_vm_apply_way_blob(const uint8_t *blob, int size) {
+	if (!blob || size < 8 || blob[0] != 'W' || blob[1] != 'A' || blob[2] != 'Y' || blob[3] != '0' || ru16(blob + 4) != PS1_COOK_ABI) {
+		return 0;
+	}
+	g_nway = int(blob[6]);
+	if (g_nway > PS1_MAX_WAYS) {
+		g_nway = PS1_MAX_WAYS;
+	}
+	const uint8_t *p = blob + 8;
+	for (int i = 0; i < g_nway && p + 4 <= blob + size; i++) {
+		g_way_n[i] = p[0];
+		g_way_p[i] = p[1];
+		p += 4;
+	}
+	g_way_loaded = 1;
+	if (g_npack > 0) {
+		g_packs[0].way_resident = 1;
+	}
+	return 1;
+}
+
+int script_vm_shot_count() {
+	return g_nshot;
+}
+
+const ScriptVMShot *script_vm_shots() {
+	return g_shot;
+}
+
+int script_vm_node_culled(int node) {
+	return node_ok(node) ? int(g_node_cull[node]) : 0;
+}
+
+int script_vm_node_ysort(int node) {
+	return node_ok(node) ? int(g_ysort[node]) : 0;
+}
+
+void script_vm_set_hud_offset(int x, int y) {
+	g_hud_ox = int16_t(x);
+	g_hud_oy = int16_t(y);
+}
+
+void script_vm_get_hud_offset(int *x, int *y) {
+	if (x) {
+		*x = int(g_hud_ox);
+	}
+	if (y) {
+		*y = int(g_hud_oy);
+	}
 }
 
 void script_vm_set_hud(const ScriptVMHud *hud, int count) {
@@ -1097,6 +1346,124 @@ static void node_world(int n, float *px, float *py, float *pz, float *rx, float 
 	}
 }
 
+static int node_is_2d(int n) {
+	if (!node_ok(n)) {
+		return 0;
+	}
+	const uint8_t t = g_nodes[n].type;
+	return t == 1 || t == 3 || t == 5 || t == 6 || t == 11;
+}
+
+static void node_basis(int n, float *fx, float *fy, float *fz, float *rx, float *ry, float *rz, float *ux, float *uy, float *uz) {
+	float px, py, pz, erx, ery, erz;
+	if (node_ok(n)) {
+		node_world(n, &px, &py, &pz, &erx, &ery, &erz);
+	} else {
+		erx = ery = erz = 0;
+	}
+	const float s = (2.0f * 3.14159265f) / 4096.0f;
+	const float pitch = erx * s;
+	const float yaw = ery * s;
+	const float roll = erz * s;
+	if (node_is_2d(n)) {
+		*fx = util_sin(roll + 1.5707963f);
+		*fy = util_sin(roll);
+		*fz = 0;
+		*rx = -*fy;
+		*ry = *fx;
+		*rz = 0;
+		*ux = 0;
+		*uy = 0;
+		*uz = 1;
+		return;
+	}
+	const float cp = util_sin(pitch + 1.5707963f);
+	const float sp = util_sin(pitch);
+	*fx = util_sin(yaw + 1.5707963f) * cp;
+	*fy = sp;
+	*fz = util_sin(yaw) * cp;
+	*rx = util_sin(yaw);
+	*ry = 0;
+	*rz = -util_sin(yaw + 1.5707963f);
+	*ux = -*fx * sp;
+	*uy = cp;
+	*uz = -*fz * sp;
+}
+
+static int do_raycast(float ox, float oy, float oz, float dx, float dy, float dz, float dist, int dim, int mask, int skip, int group_bit) {
+	int hitn = -1;
+	float best = dist;
+	g_ray_hit = 0;
+	g_ray_node = -1;
+	for (int i = 0; i < g_nhit; i++) {
+		if (!g_hit_used[i] || !(g_hits[i].flags & 1)) {
+			continue;
+		}
+		if (skip >= 0 && int(g_hits[i].node_id) == skip) {
+			continue;
+		}
+		if (!(int(g_hits[i].layer) & mask)) {
+			continue;
+		}
+		if (int(g_hits[i].dim) != dim) {
+			continue;
+		}
+		if (group_bit >= 0) {
+			const int nid = int(g_hits[i].node_id);
+			if (!node_ok(nid) || !(g_group[nid] & uint8_t(1 << group_bit))) {
+				continue;
+			}
+		}
+		const float minx = float(g_hits[i].min_x);
+		const float maxx = float(g_hits[i].max_x);
+		const float miny = float(-g_hits[i].max_y);
+		const float maxy = float(-g_hits[i].min_y);
+		const float minz = dim == 2 ? -1 : float(g_hits[i].min_z);
+		const float maxz = dim == 2 ? 1 : float(g_hits[i].max_z);
+		float tmin = 0, tmax = dist;
+		const float bmin[3] = { minx, miny, minz };
+		const float bmax[3] = { maxx, maxy, maxz };
+		const float o[3] = { ox, oy, oz };
+		const float d[3] = { dx, dy, dz };
+		int miss = 0;
+		for (int a = 0; a < 3; a++) {
+			if (d[a] == 0.0f) {
+				if (o[a] < bmin[a] || o[a] > bmax[a]) {
+					miss = 1;
+				}
+				continue;
+			}
+			float inv = 1.0f / d[a];
+			float t0 = (bmin[a] - o[a]) * inv;
+			float t1 = (bmax[a] - o[a]) * inv;
+			if (t0 > t1) {
+				const float tmp = t0;
+				t0 = t1;
+				t1 = tmp;
+			}
+			if (t0 > tmin) {
+				tmin = t0;
+			}
+			if (t1 < tmax) {
+				tmax = t1;
+			}
+			if (tmin > tmax) {
+				miss = 1;
+			}
+		}
+		if (!miss && tmin >= 0 && tmin < best) {
+			best = tmin;
+			hitn = int(g_hits[i].node_id);
+			g_ray_hx = ox + dx * tmin;
+			g_ray_hy = oy + dy * tmin;
+			g_ray_hz = oz + dz * tmin;
+			g_ray_hit = 1;
+			g_ray_node = hitn;
+		}
+	}
+	return hitn;
+}
+
 static int pack_id_of(int node) {
 	if (node >= kPackBase && node < kPackBase + g_npack) {
 		return node - kPackBase;
@@ -1306,6 +1673,29 @@ static int parse_nodes_into(const uint8_t *blob, int size, ScriptVMNode *out, in
 		g_fog_r = p[6];
 		g_fog_g = p[7];
 		g_fog_b = p[8];
+		p += 10;
+	}
+	if (p + 128 <= end) {
+		for (int i = 0; i < PS1_MAX_NODES; i++) {
+			g_parse_ysort[i] = i < 128 ? p[i] : 0;
+		}
+		p += 128;
+	}
+	if (p + 128 <= end) {
+		for (int i = 0; i < PS1_MAX_NODES; i++) {
+			g_parse_kind[i] = i < 128 ? p[i] : 0;
+		}
+		p += 128;
+	}
+	if (p + 128 <= end) {
+		for (int i = 0; i < PS1_MAX_NODES; i++) {
+			g_parse_path[i] = i < 128 ? p[i] : 0;
+		}
+		p += 128;
+	}
+	if (p + 8 <= end) {
+		g_hud_ox = int16_t(p[0] | (p[1] << 8));
+		g_hud_oy = int16_t(p[2] | (p[3] << 8));
 	}
 	return got;
 }
@@ -2146,6 +2536,18 @@ static int load_pack_slice(int pack, const char *kind) {
 		g_packs[0].hit_resident = 1;
 		return 1;
 	}
+	if (pack == 0 && name_is(kind, "NAV") && g_nav_loaded) {
+		g_packs[0].nav_resident = 1;
+		return 1;
+	}
+	if (pack == 0 && name_is(kind, "PATH") && g_path_loaded) {
+		g_packs[0].path_resident = 1;
+		return 1;
+	}
+	if (pack == 0 && name_is(kind, "WAY") && g_way_loaded) {
+		g_packs[0].way_resident = 1;
+		return 1;
+	}
 	const int n = try_read_pack_blob(pack, kind, g_load_buf, int(sizeof(g_load_buf)));
 	if (n <= 0) {
 		return 0;
@@ -2352,6 +2754,80 @@ static int load_pack_slice(int pack, const char *kind) {
 		}
 		return 0;
 	}
+	if (name_is(kind, "NAV")) {
+		if (n < 8 || g_load_buf[0] != 'N' || g_load_buf[1] != 'A' || g_load_buf[2] != 'V' || g_load_buf[3] != '0' || ru16(g_load_buf + 4) != PS1_COOK_ABI) {
+			return 0;
+		}
+		g_nvert = int(g_load_buf[6]);
+		g_nedge = int(g_load_buf[7]);
+		if (g_nvert > PS1_MAX_NAV_V) {
+			g_nvert = PS1_MAX_NAV_V;
+		}
+		if (g_nedge > PS1_MAX_NAV_E) {
+			g_nedge = PS1_MAX_NAV_E;
+		}
+		const uint8_t *p = g_load_buf + 8;
+		for (int i = 0; i < g_nvert && p + 8 <= g_load_buf + n; i++) {
+			g_nav_x[i] = int16_t(p[0] | (p[1] << 8));
+			g_nav_y[i] = int16_t(p[2] | (p[3] << 8));
+			g_nav_z[i] = int16_t(p[4] | (p[5] << 8));
+			g_nav_node[i] = int16_t(p[6] | (p[7] << 8));
+			p += 8;
+		}
+		for (int i = 0; i < g_nedge && p + 2 <= g_load_buf + n; i++) {
+			g_nav_a[i] = p[0];
+			g_nav_b[i] = p[1];
+			p += 2;
+		}
+		g_nav_loaded = 1;
+		g_packs[pack].nav_resident = 1;
+		return 1;
+	}
+	if (name_is(kind, "PATH")) {
+		if (n < 8 || g_load_buf[0] != 'P' || g_load_buf[1] != 'A' || g_load_buf[2] != 'T' || g_load_buf[3] != 'H' || ru16(g_load_buf + 4) != PS1_COOK_ABI) {
+			return 0;
+		}
+		g_npath = int(g_load_buf[6]);
+		if (g_npath > PS1_MAX_PATHS) {
+			g_npath = PS1_MAX_PATHS;
+		}
+		const uint8_t *p = g_load_buf + 8;
+		for (int i = 0; i < g_npath && p + 4 <= g_load_buf + n; i++) {
+			g_pnpt[i] = p[1];
+			g_pclosed[i] = p[2];
+			if (g_pnpt[i] > PS1_MAX_PPTS) {
+				g_pnpt[i] = PS1_MAX_PPTS;
+			}
+			p += 4;
+			for (int k = 0; k < PS1_MAX_PPTS && p + 6 <= g_load_buf + n; k++) {
+				g_ppx[i][k] = int16_t(p[0] | (p[1] << 8));
+				g_ppy[i][k] = int16_t(p[2] | (p[3] << 8));
+				g_ppz[i][k] = int16_t(p[4] | (p[5] << 8));
+				p += 6;
+			}
+		}
+		g_path_loaded = 1;
+		g_packs[pack].path_resident = 1;
+		return 1;
+	}
+	if (name_is(kind, "WAY")) {
+		if (n < 8 || g_load_buf[0] != 'W' || g_load_buf[1] != 'A' || g_load_buf[2] != 'Y' || g_load_buf[3] != '0' || ru16(g_load_buf + 4) != PS1_COOK_ABI) {
+			return 0;
+		}
+		g_nway = int(g_load_buf[6]);
+		if (g_nway > PS1_MAX_WAYS) {
+			g_nway = PS1_MAX_WAYS;
+		}
+		const uint8_t *p = g_load_buf + 8;
+		for (int i = 0; i < g_nway && p + 4 <= g_load_buf + n; i++) {
+			g_way_n[i] = p[0];
+			g_way_p[i] = p[1];
+			p += 4;
+		}
+		g_way_loaded = 1;
+		g_packs[pack].way_resident = 1;
+		return 1;
+	}
 	return 0;
 }
 
@@ -2400,6 +2876,25 @@ static int unload_pack_slice(int pack, const char *kind) {
 			return 0;
 		}
 		g_packs[pack].cam_resident = 0;
+		return 1;
+	}
+	if (name_is(kind, "NAV")) {
+		g_nav_loaded = 0;
+		g_nvert = 0;
+		g_nedge = 0;
+		g_packs[pack].nav_resident = 0;
+		return 1;
+	}
+	if (name_is(kind, "PATH")) {
+		g_path_loaded = 0;
+		g_npath = 0;
+		g_packs[pack].path_resident = 0;
+		return 1;
+	}
+	if (name_is(kind, "WAY")) {
+		g_way_loaded = 0;
+		g_nway = 0;
+		g_packs[pack].way_resident = 0;
 		return 1;
 	}
 	if (name_is(kind, "MUSIC")) {
@@ -2493,8 +2988,8 @@ static void mc_persist() {
 	uint8_t hdr[8];
 	hdr[0] = 'M';
 	hdr[1] = 'C';
-	hdr[2] = '1';
-	hdr[3] = '9';
+	hdr[2] = '2';
+	hdr[3] = '0';
 	hdr[4] = g_mc_var.type;
 	hdr[5] = uint8_t(g_mc_len & 0xff);
 	hdr[6] = uint8_t((g_mc_len >> 8) & 0xff);
@@ -3764,11 +4259,11 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			*ret = gv_bool(0);
 			return 1;
 		}
-		if (name_is(name, "is_music_loaded") || g_packs[pack].music_resident) {
+		if (name_is(name, "is_music_loaded")) {
 			*ret = gv_bool(g_packs[pack].music_resident);
 			return 1;
 		}
-		*ret = gv_bool(budgets_fit(0, 0, 0, 0, 0, 32768));
+		*ret = gv_bool(try_read_pack_blob(pack, "MUSIC", g_load_buf, 8) > 0 && budgets_fit(0, 0, 0, 0, 0, 32768));
 		return 1;
 	}
 	if (name_is(name, "play_fmv")) {
@@ -3925,6 +4420,768 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 	}
 	if (name_is(name, "get_tree")) {
 		*ret = gv_obj(kTreeId);
+		return 1;
+	}
+	if (node >= kTweenBase && node < kTweenBase + 8) {
+		const int tid = node - kTweenBase;
+		if (name_is(name, "tween_property")) {
+			int nid = -1;
+			const char *prop = "";
+			float tx = 0, ty = 0, tz = 0;
+			float sec = 1;
+			int ai = 0;
+			if (argv && argc > 0 && argv[0].type == V_OBJ) {
+				nid = argv[0].i;
+				ai = 1;
+			} else if (node_ok(node)) {
+				nid = node;
+			}
+			if (argv && argc > ai && argv[ai].type == V_STR) {
+				prop = argv[ai].s;
+				ai++;
+			}
+			if (argv && argc > ai && argv[ai].type == V_V3) {
+				tx = argv[ai].x;
+				ty = argv[ai].y;
+				tz = argv[ai].z;
+				ai++;
+			} else if (argv && argc > ai) {
+				tx = as_float(argv[ai]);
+				ai++;
+			}
+			if (argv && argc > ai) {
+				sec = as_float(argv[ai]);
+			}
+			if (sec < 0.016f) {
+				sec = 0.016f;
+			}
+			g_tween[tid].used = 1;
+			g_tween[tid].node = int16_t(nid);
+			g_tween[tid].prop = name_is(prop, "rotation") ? 1 : (name_is(prop, "modulate") ? 2 : (name_is(prop, "velocity") ? 3 : 0));
+			if (node_ok(nid)) {
+				if (g_tween[tid].prop == 1) {
+					g_tween[tid].from[0] = float(g_nodes[nid].rx);
+					g_tween[tid].from[1] = float(g_nodes[nid].ry);
+					g_tween[tid].from[2] = float(g_nodes[nid].rz);
+				} else if (g_tween[tid].prop == 3) {
+					g_tween[tid].from[0] = g_nvel[nid][0];
+					g_tween[tid].from[1] = g_nvel[nid][1];
+					g_tween[tid].from[2] = g_nvel[nid][2];
+				} else {
+					g_tween[tid].from[0] = float(g_nodes[nid].px);
+					g_tween[tid].from[1] = float(-g_nodes[nid].py);
+					g_tween[tid].from[2] = float(g_nodes[nid].pz);
+				}
+			}
+			g_tween[tid].to[0] = tx;
+			g_tween[tid].to[1] = ty;
+			g_tween[tid].to[2] = tz;
+			g_tween[tid].t = 0;
+			g_tween[tid].dur = sec;
+			*ret = gv_obj(kTweenBase + tid);
+			return 1;
+		}
+		if (name_is(name, "stop") || name_is(name, "kill")) {
+			g_tween[tid].used = 0;
+			*ret = gv_bool(1);
+			return 1;
+		}
+	}
+	if (name_is(name, "create_tween")) {
+		int id = -1;
+		for (int i = 0; i < 8; i++) {
+			if (!g_tween[i].used) {
+				id = i;
+				break;
+			}
+		}
+		if (id < 0) {
+			*ret = gv_nil();
+			return 1;
+		}
+		g_tween[id].used = 1;
+		g_tween[id].node = -1;
+		g_tween[id].t = 0;
+		g_tween[id].dur = 1;
+		*ret = gv_obj(kTweenBase + id);
+		return 1;
+	}
+	if (name_is(name, "tween_property")) {
+		return apply_call(host, (argv && argc > 0 && argv[0].type == V_OBJ && argv[0].i >= kTweenBase) ? argv[0].i : kTweenBase, "tween_property", arg, argv, argc, ret);
+	}
+	if (name_is(name, "kill_tweens")) {
+		int nid = node_ok(node) ? node : (argv && argc > 0 && argv[0].type == V_OBJ ? argv[0].i : -1);
+		for (int i = 0; i < 8; i++) {
+			if (g_tween[i].used && (nid < 0 || int(g_tween[i].node) == nid)) {
+				g_tween[i].used = 0;
+			}
+		}
+		*ret = gv_bool(1);
+		return 1;
+	}
+	if (name_is(name, "tween_count")) {
+		int n = 0;
+		for (int i = 0; i < 8; i++) {
+			if (g_tween[i].used) {
+				n++;
+			}
+		}
+		*ret = gv_int(n);
+		return 1;
+	}
+	if (name_is(name, "get_forward") || name_is(name, "get_right") || name_is(name, "get_up")) {
+		int nid = node_ok(node) ? node : (argv && argc > 0 && argv[0].type == V_OBJ ? argv[0].i : node);
+		float fx, fy, fz, rx, ry, rz, ux, uy, uz;
+		node_basis(nid, &fx, &fy, &fz, &rx, &ry, &rz, &ux, &uy, &uz);
+		if (name_is(name, "get_right")) {
+			*ret = gv_v3(rx, ry, rz);
+		} else if (name_is(name, "get_up")) {
+			*ret = gv_v3(ux, uy, uz);
+		} else {
+			*ret = gv_v3(fx, fy, fz);
+		}
+		return 1;
+	}
+	if (name_is(name, "translate_local")) {
+		int nid = node;
+		int ai = 0;
+		if (argv && argc > 0 && argv[0].type == V_OBJ) {
+			nid = argv[0].i;
+			ai = 1;
+		}
+		float vx = 0, vy = 0, vz = 0;
+		if (argv && argc > ai && argv[ai].type == V_V3) {
+			vx = argv[ai].x;
+			vy = argv[ai].y;
+			vz = argv[ai].z;
+		}
+		if (!node_ok(nid)) {
+			*ret = gv_bool(0);
+			return 1;
+		}
+		float fx, fy, fz, rx, ry, rz, ux, uy, uz;
+		node_basis(nid, &fx, &fy, &fz, &rx, &ry, &rz, &ux, &uy, &uz);
+		g_nodes[nid].px = int16_t(g_nodes[nid].px + rx * vx + ux * vy + fx * vz);
+		g_nodes[nid].py = int16_t(g_nodes[nid].py - (ry * vx + uy * vy + fy * vz));
+		g_nodes[nid].pz = int16_t(g_nodes[nid].pz + rz * vx + uz * vy + fz * vz);
+		*ret = gv_bool(1);
+		return 1;
+	}
+	if (name_is(name, "move_and_fly")) {
+		int nid = node;
+		int ai = 0;
+		if (argv && argc > 0 && argv[0].type == V_OBJ) {
+			nid = argv[0].i;
+			ai = 1;
+		}
+		const float throttle = argv && argc > ai ? as_float(argv[ai]) : 0;
+		const float yaw = argv && argc > ai + 1 ? as_float(argv[ai + 1]) : 0;
+		const float pitch = argv && argc > ai + 2 ? as_float(argv[ai + 2]) : 0;
+		const float roll = argv && argc > ai + 3 ? as_float(argv[ai + 3]) : 0;
+		if (!node_ok(nid)) {
+			*ret = gv_v3(0, 0, 0);
+			return 1;
+		}
+		g_nodes[nid].ry = int16_t(g_nodes[nid].ry + int16_t(rad_to_ps1(yaw)));
+		g_nodes[nid].rx = int16_t(g_nodes[nid].rx + int16_t(rad_to_ps1(pitch)));
+		g_nodes[nid].rz = int16_t(g_nodes[nid].rz + int16_t(rad_to_ps1(roll)));
+		float fx, fy, fz, rx, ry, rz, ux, uy, uz;
+		node_basis(nid, &fx, &fy, &fz, &rx, &ry, &rz, &ux, &uy, &uz);
+		g_nvel[nid][0] = fx * throttle * 8.0f;
+		g_nvel[nid][1] = fy * throttle * 8.0f;
+		g_nvel[nid][2] = fz * throttle * 8.0f;
+		return apply_call(host, nid, "move_and_slide", 0, nullptr, 0, ret);
+	}
+	if (name_is(name, "apply_gravity")) {
+		int nid = node_ok(node) ? node : (argv && argc > 0 && argv[0].type == V_OBJ ? argv[0].i : node);
+		if (node_ok(nid)) {
+			g_nvel[nid][0] += g_body_gx;
+			g_nvel[nid][1] += g_body_gy;
+			g_nvel[nid][2] += g_body_gz;
+		}
+		*ret = gv_bool(node_ok(nid));
+		return 1;
+	}
+	if (name_is(name, "set_gravity")) {
+		if (argv && argc > 0 && argv[0].type == V_V3) {
+			g_body_gx = argv[0].x;
+			g_body_gy = argv[0].y;
+			g_body_gz = argv[0].z;
+		}
+		*ret = gv_bool(1);
+		return 1;
+	}
+	if (name_is(name, "add_velocity")) {
+		int nid = node;
+		int ai = 0;
+		if (argv && argc > 0 && argv[0].type == V_OBJ) {
+			nid = argv[0].i;
+			ai = 1;
+		}
+		if (node_ok(nid) && argv && argc > ai && argv[ai].type == V_V3) {
+			g_nvel[nid][0] += argv[ai].x;
+			g_nvel[nid][1] += argv[ai].y;
+			g_nvel[nid][2] += argv[ai].z;
+		}
+		*ret = gv_bool(node_ok(nid));
+		return 1;
+	}
+	if (name_is(name, "follow_node")) {
+		int self = node;
+		int tgt = -1;
+		float spd = 4;
+		float tpx = 0, tpy = 0, tpz = 0;
+		int have = 0;
+		if (argv && argc >= 2 && argv[0].type == V_OBJ && argv[1].type == V_OBJ) {
+			self = argv[0].i;
+			tgt = argv[1].i;
+			if (argc > 2) {
+				spd = as_float(argv[2]);
+			}
+		} else if (argv && argc >= 2 && argv[0].type == V_OBJ && argv[1].type == V_V3) {
+			self = argv[0].i;
+			tpx = argv[1].x;
+			tpy = argv[1].y;
+			tpz = argv[1].z;
+			have = 1;
+			if (argc > 2) {
+				spd = as_float(argv[2]);
+			}
+		} else if (argv && argc >= 1) {
+			if (argv[0].type == V_V3) {
+				tpx = argv[0].x;
+				tpy = argv[0].y;
+				tpz = argv[0].z;
+				have = 1;
+			} else {
+				tgt = argv[0].type == V_OBJ ? argv[0].i : int(as_float(argv[0]));
+			}
+			if (argc > 1) {
+				spd = as_float(argv[1]);
+			}
+		}
+		if (!node_ok(self) || (!have && !node_ok(tgt))) {
+			*ret = gv_bool(0);
+			return 1;
+		}
+		if (!have) {
+			tpx = float(g_nodes[tgt].px);
+			tpy = float(-g_nodes[tgt].py);
+			tpz = float(g_nodes[tgt].pz);
+		}
+		float dx = tpx - float(g_nodes[self].px);
+		float dy = tpy - float(-g_nodes[self].py);
+		float dz = tpz - float(g_nodes[self].pz);
+		const float len = util_sqrt(dx * dx + dy * dy + dz * dz);
+		if (len > 0.001f && len > spd) {
+			dx = dx * spd / len;
+			dy = dy * spd / len;
+			dz = dz * spd / len;
+		}
+		g_nodes[self].px = int16_t(g_nodes[self].px + dx);
+		g_nodes[self].py = int16_t(g_nodes[self].py - dy);
+		g_nodes[self].pz = int16_t(g_nodes[self].pz + dz);
+		*ret = gv_bool(1);
+		return 1;
+	}
+	if (name_is(name, "raycast_group")) {
+		float ox = 0, oy = 0, oz = 0, dx = 0, dy = 0, dz = 1, dist = 64;
+		int bit = -1;
+		if (argv && argc > 0 && argv[0].type == V_V3) {
+			ox = argv[0].x;
+			oy = argv[0].y;
+			oz = argv[0].z;
+		}
+		if (argv && argc > 1 && argv[1].type == V_V3) {
+			dx = argv[1].x;
+			dy = argv[1].y;
+			dz = argv[1].z;
+		}
+		if (argv && argc > 2) {
+			dist = as_float(argv[2]);
+		}
+		if (argv && argc > 3) {
+			bit = group_bit_arg(argv, argc, 3);
+		}
+		const int hitn = do_raycast(ox, oy, oz, dx, dy, dz, dist, 3, 0xFF, node_ok(node) ? node : -1, bit);
+		*ret = hitn >= 0 ? gv_obj(hitn) : gv_nil();
+		return 1;
+	}
+	if (name_is(name, "get_ray_point")) {
+		*ret = g_ray_hit ? gv_v3(g_ray_hx, g_ray_hy, g_ray_hz) : gv_nil();
+		return 1;
+	}
+	if (name_is(name, "get_ray_node")) {
+		*ret = g_ray_node >= 0 ? gv_obj(g_ray_node) : gv_nil();
+		return 1;
+	}
+	if (name_is(name, "spawn_shot")) {
+		float ox = 0, oy = 0, oz = 0, vx = 0, vy = 0, vz = 0;
+		float life = 30;
+		int tex = 0;
+		int owner = node_ok(node) ? node : -1;
+		if (argv && argc > 0 && argv[0].type == V_V3) {
+			ox = argv[0].x;
+			oy = argv[0].y;
+			oz = argv[0].z;
+		}
+		if (argv && argc > 1 && argv[1].type == V_V3) {
+			vx = argv[1].x;
+			vy = argv[1].y;
+			vz = argv[1].z;
+		}
+		if (argv && argc > 2) {
+			life = as_float(argv[2]);
+		}
+		if (argv && argc > 3) {
+			tex = int(as_float(argv[3]));
+		}
+		int slot = -1;
+		for (int i = 0; i < 32; i++) {
+			if (!g_shot[i].used) {
+				slot = i;
+				break;
+			}
+		}
+		if (slot < 0) {
+			*ret = gv_int(-1);
+			return 1;
+		}
+		g_shot[slot].used = 1;
+		g_shot[slot].x = int16_t(ox);
+		g_shot[slot].y = int16_t(-oy);
+		g_shot[slot].z = int16_t(oz);
+		g_shot[slot].vx = int16_t(vx);
+		g_shot[slot].vy = int16_t(-vy);
+		g_shot[slot].vz = int16_t(vz);
+		g_shot[slot].life = uint8_t(life > 0 && life < 256 ? life : 30);
+		g_shot[slot].tex = uint8_t(tex & 15);
+		g_shot[slot].owner = int16_t(owner);
+		g_shot[slot].hit = -1;
+		*ret = gv_int(slot);
+		return 1;
+	}
+	if (name_is(name, "clear_shots")) {
+		for (int i = 0; i < 32; i++) {
+			g_shot[i].used = 0;
+			g_shot[i].hit = -1;
+		}
+		*ret = gv_bool(1);
+		return 1;
+	}
+	if (name_is(name, "get_shot_count")) {
+		int n = 0;
+		for (int i = 0; i < 32; i++) {
+			if (g_shot[i].used) {
+				n++;
+			}
+		}
+		*ret = gv_int(n);
+		return 1;
+	}
+	if (name_is(name, "get_free_shots")) {
+		int n = 0;
+		for (int i = 0; i < 32; i++) {
+			if (!g_shot[i].used) {
+				n++;
+			}
+		}
+		*ret = gv_int(n);
+		return 1;
+	}
+	if (name_is(name, "shot_hit")) {
+		const int i = argv && argc > 0 ? int(as_float(argv[0])) : -1;
+		if (i < 0 || i >= 32 || g_shot[i].hit < 0) {
+			*ret = gv_nil();
+		} else {
+			*ret = gv_obj(int(g_shot[i].hit));
+		}
+		return 1;
+	}
+	if (name_is(name, "clip_orbit")) {
+		g_orbit_clip = argv && argc > 0 ? as_truth(argv[0]) : 1;
+		*ret = gv_bool(g_orbit_clip);
+		return 1;
+	}
+	if (name_is(name, "set_y_sort")) {
+		int nid = node;
+		int on = 1;
+		if (argv && argc >= 2) {
+			nid = argv[0].type == V_OBJ ? argv[0].i : int(as_float(argv[0]));
+			on = as_truth(argv[1]);
+		} else if (argv && argc == 1) {
+			on = as_truth(argv[0]);
+		}
+		if (node_ok(nid)) {
+			g_ysort[nid] = uint8_t(on ? 1 : 0);
+		}
+		*ret = gv_bool(node_ok(nid));
+		return 1;
+	}
+	if (name_is(name, "wrap_position")) {
+		int nid = node;
+		int ai = 0;
+		if (argv && argc > 0 && argv[0].type == V_OBJ) {
+			nid = argv[0].i;
+			ai = 1;
+		}
+		if (!node_ok(nid) || argc < ai + 2) {
+			*ret = gv_bool(0);
+			return 1;
+		}
+		float mnx = 0, mny = 0, mnz = 0, mxx = 0, mxy = 0, mxz = 0;
+		if (argv[ai].type == V_V3) {
+			mnx = argv[ai].x;
+			mny = argv[ai].y;
+			mnz = argv[ai].z;
+		} else if (argv[ai].type == V_V2) {
+			mnx = argv[ai].x;
+			mny = argv[ai].y;
+		}
+		if (argv[ai + 1].type == V_V3) {
+			mxx = argv[ai + 1].x;
+			mxy = argv[ai + 1].y;
+			mxz = argv[ai + 1].z;
+		} else if (argv[ai + 1].type == V_V2) {
+			mxx = argv[ai + 1].x;
+			mxy = argv[ai + 1].y;
+		}
+		float px = float(g_nodes[nid].px);
+		float py = float(-g_nodes[nid].py);
+		float pz = float(g_nodes[nid].pz);
+		const float wx = mxx - mnx;
+		const float wy = mxy - mny;
+		const float wz = mxz - mnz;
+		if (wx != 0) {
+			while (px < mnx) {
+				px += wx;
+			}
+			while (px > mxx) {
+				px -= wx;
+			}
+		}
+		if (wy != 0) {
+			while (py < mny) {
+				py += wy;
+			}
+			while (py > mxy) {
+				py -= wy;
+			}
+		}
+		if (wz != 0) {
+			while (pz < mnz) {
+				pz += wz;
+			}
+			while (pz > mxz) {
+				pz -= wz;
+			}
+		}
+		g_nodes[nid].px = int16_t(px);
+		g_nodes[nid].py = int16_t(-py);
+		g_nodes[nid].pz = int16_t(pz);
+		*ret = gv_bool(1);
+		return 1;
+	}
+	if (name_is(name, "set_cull_dist")) {
+		g_cull_dist = argv && argc > 0 ? as_float(argv[0]) : 0;
+		*ret = gv_bool(1);
+		return 1;
+	}
+	if (name_is(name, "count_waypoints")) {
+		int path = -1;
+		if (argv && argc > 0) {
+			path = int(as_float(argv[0]));
+		}
+		int n = 0;
+		for (int i = 0; i < g_nway; i++) {
+			if (path < 0 || int(g_way_p[i]) == path) {
+				n++;
+			}
+		}
+		*ret = gv_int(g_way_loaded ? n : 0);
+		return 1;
+	}
+	if (name_is(name, "get_waypoint")) {
+		int path = -1;
+		int idx = 0;
+		if (argv && argc >= 2) {
+			path = int(as_float(argv[0]));
+			idx = int(as_float(argv[1]));
+		} else if (argv && argc == 1) {
+			idx = int(as_float(argv[0]));
+		}
+		int n = 0;
+		for (int i = 0; i < g_nway; i++) {
+			if (path >= 0 && int(g_way_p[i]) != path) {
+				continue;
+			}
+			if (n == idx) {
+				*ret = gv_obj(int(g_way_n[i]));
+				return 1;
+			}
+			n++;
+		}
+		*ret = gv_nil();
+		return 1;
+	}
+	if (name_is(name, "get_waypoint_pos")) {
+		const int idx = argv && argc > 0 ? int(as_float(argv[0])) : 0;
+		if (idx < 0 || idx >= g_nway || !node_ok(int(g_way_n[idx]))) {
+			*ret = gv_nil();
+			return 1;
+		}
+		const int nid = int(g_way_n[idx]);
+		*ret = gv_v3(float(g_nodes[nid].px), float(-g_nodes[nid].py), float(g_nodes[nid].pz));
+		return 1;
+	}
+	if (name_is(name, "set_path_progress") || name_is(name, "get_path_progress")) {
+		int nid = node;
+		int ai = 0;
+		if (argv && argc > 0 && argv[0].type == V_OBJ) {
+			nid = argv[0].i;
+			ai = 1;
+		}
+		if (name_is(name, "set_path_progress") && node_ok(nid) && argv && argc > ai) {
+			g_path_prog[nid] = as_float(argv[ai]);
+			if (g_path_prog[nid] < 0) {
+				g_path_prog[nid] = 0;
+			}
+			if (g_path_prog[nid] > 1) {
+				g_path_prog[nid] = 1;
+			}
+		}
+		*ret = node_ok(nid) ? gv_float(g_path_prog[nid]) : gv_float(0);
+		return 1;
+	}
+	if (name_is(name, "get_path_point")) {
+		int path = argv && argc > 0 ? int(as_float(argv[0])) : 0;
+		int i = argv && argc > 1 ? int(as_float(argv[1])) : 0;
+		if (path < 0 || path >= g_npath || i < 0 || i >= int(g_pnpt[path]) || !g_path_loaded) {
+			*ret = gv_nil();
+			return 1;
+		}
+		*ret = gv_v3(float(g_ppx[path][i]), float(g_ppy[path][i]), float(g_ppz[path][i]));
+		return 1;
+	}
+	if (name_is(name, "count_path_points")) {
+		const int path = argv && argc > 0 ? int(as_float(argv[0])) : 0;
+		*ret = gv_int(g_path_loaded && path >= 0 && path < g_npath ? int(g_pnpt[path]) : 0);
+		return 1;
+	}
+	if (name_is(name, "nav_nearest") || name_is(name, "nav_next") || name_is(name, "nav_next_node")) {
+		if (!g_nav_loaded || g_nvert <= 0) {
+			*ret = gv_nil();
+			return 1;
+		}
+		float fx = 0, fy = 0, fz = 0, tx = 0, ty = 0, tz = 0;
+		if (argv && argc > 0 && argv[0].type == V_V3) {
+			fx = argv[0].x;
+			fy = argv[0].y;
+			fz = argv[0].z;
+		} else if (argv && argc > 0 && argv[0].type == V_OBJ && node_ok(argv[0].i)) {
+			fx = float(g_nodes[argv[0].i].px);
+			fy = float(-g_nodes[argv[0].i].py);
+			fz = float(g_nodes[argv[0].i].pz);
+		}
+		if (argv && argc > 1 && argv[1].type == V_V3) {
+			tx = argv[1].x;
+			ty = argv[1].y;
+			tz = argv[1].z;
+		} else if (argv && argc > 1 && argv[1].type == V_OBJ && node_ok(argv[1].i)) {
+			tx = float(g_nodes[argv[1].i].px);
+			ty = float(-g_nodes[argv[1].i].py);
+			tz = float(g_nodes[argv[1].i].pz);
+		}
+		int best = 0;
+		float bd = 1e12f;
+		for (int i = 0; i < g_nvert; i++) {
+			const float dx = float(g_nav_x[i]) - fx;
+			const float dy = float(g_nav_y[i]) - fy;
+			const float dz = float(g_nav_z[i]) - fz;
+			const float d = dx * dx + dy * dy + dz * dz;
+			if (d < bd) {
+				bd = d;
+				best = i;
+			}
+		}
+		if (name_is(name, "nav_nearest")) {
+			*ret = gv_v3(float(g_nav_x[best]), float(g_nav_y[best]), float(g_nav_z[best]));
+			return 1;
+		}
+		int goal = 0;
+		float gd = 1e12f;
+		for (int i = 0; i < g_nvert; i++) {
+			const float dx = float(g_nav_x[i]) - tx;
+			const float dy = float(g_nav_y[i]) - ty;
+			const float dz = float(g_nav_z[i]) - tz;
+			const float d = dx * dx + dy * dy + dz * dz;
+			if (d < gd) {
+				gd = d;
+				goal = i;
+			}
+		}
+		int nxt = goal;
+		float nd = 1e12f;
+		for (int e = 0; e < g_nedge; e++) {
+			int oth = -1;
+			if (int(g_nav_a[e]) == best) {
+				oth = int(g_nav_b[e]);
+			} else if (int(g_nav_b[e]) == best) {
+				oth = int(g_nav_a[e]);
+			}
+			if (oth < 0 || oth >= g_nvert) {
+				continue;
+			}
+			const float dx = float(g_nav_x[oth]) - tx;
+			const float dy = float(g_nav_y[oth]) - ty;
+			const float dz = float(g_nav_z[oth]) - tz;
+			const float d = dx * dx + dy * dy + dz * dz;
+			if (d < nd) {
+				nd = d;
+				nxt = oth;
+			}
+		}
+		if (name_is(name, "nav_next_node")) {
+			const int wn = int(g_nav_node[nxt]);
+			*ret = (wn >= 0 && node_ok(wn)) ? gv_obj(wn) : gv_nil();
+			return 1;
+		}
+		*ret = gv_v3(float(g_nav_x[nxt]), float(g_nav_y[nxt]), float(g_nav_z[nxt]));
+		return 1;
+	}
+	if (name_is(name, "load_nav") || name_is(name, "unload_nav") || name_is(name, "can_load_nav") || name_is(name, "is_nav_loaded") ||
+			name_is(name, "load_paths") || name_is(name, "unload_paths") || name_is(name, "can_load_paths") || name_is(name, "is_paths_loaded") ||
+			name_is(name, "load_waypoints") || name_is(name, "unload_waypoints") || name_is(name, "can_load_waypoints") || name_is(name, "is_waypoints_loaded")) {
+		int pack = 0;
+		if (argv && argc > 0) {
+			if (argv[0].type == V_STR) {
+				pack = find_pack_path(argv[0].s);
+			} else {
+				pack = int(as_float(argv[0]));
+			}
+		}
+		const char *kind = name_is(name, "load_nav") || name_is(name, "unload_nav") || name_is(name, "can_load_nav") || name_is(name, "is_nav_loaded") ? "NAV" : (name_is(name, "load_paths") || name_is(name, "unload_paths") || name_is(name, "can_load_paths") || name_is(name, "is_paths_loaded") ? "PATH" : "WAY");
+		if (name_is(name, "load_nav") || name_is(name, "load_paths") || name_is(name, "load_waypoints")) {
+			*ret = gv_bool(load_pack_slice(pack, kind));
+			return 1;
+		}
+		if (name_is(name, "unload_nav") || name_is(name, "unload_paths") || name_is(name, "unload_waypoints")) {
+			*ret = gv_bool(unload_pack_slice(pack, kind));
+			return 1;
+		}
+		const int loaded = name_is(kind, "NAV") ? g_nav_loaded : (name_is(kind, "PATH") ? g_path_loaded : g_way_loaded);
+		if (name_is(name, "is_nav_loaded") || name_is(name, "is_paths_loaded") || name_is(name, "is_waypoints_loaded")) {
+			*ret = gv_bool(loaded);
+			return 1;
+		}
+		*ret = gv_bool(try_read_pack_blob(pack, kind, g_load_buf, 8) > 0);
+		return 1;
+	}
+	if (name_is(name, "unload_pack")) {
+		return apply_call(host, node, "unload_scene", arg, argv, argc, ret);
+	}
+	if (name_is(name, "is_colliding") || name_is(name, "get_collider") || name_is(name, "get_collision_point") || name_is(name, "set_enabled")) {
+		int nid = node_ok(node) ? node : (argv && argc > 0 && argv[0].type == V_OBJ ? argv[0].i : node);
+		if (name_is(name, "set_enabled") && node_ok(nid)) {
+			g_cast_on[nid] = argv && argc > 0 ? uint8_t(as_truth(argv[argc > 1 ? 1 : 0])) : 1;
+			if (argv && argc == 1 && argv[0].type != V_OBJ) {
+				g_cast_on[nid] = uint8_t(as_truth(argv[0]));
+			}
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "is_colliding")) {
+			*ret = gv_bool(node_ok(nid) && g_cast_hit[nid] >= 0);
+			return 1;
+		}
+		if (name_is(name, "get_collider")) {
+			*ret = (node_ok(nid) && g_cast_hit[nid] >= 0) ? gv_obj(int(g_cast_hit[nid])) : gv_nil();
+			return 1;
+		}
+		*ret = g_ray_hit ? gv_v3(g_ray_hx, g_ray_hy, g_ray_hz) : gv_nil();
+		return 1;
+	}
+	if (name_is(name, "is_on_screen")) {
+		int nid = node_ok(node) ? node : (argv && argc > 0 && argv[0].type == V_OBJ ? argv[0].i : node);
+		*ret = gv_bool(node_ok(nid) && g_on_screen[nid]);
+		return 1;
+	}
+	if (name_is(name, "set_target_position")) {
+		int nid = node;
+		int ai = 0;
+		if (argv && argc > 0 && argv[0].type == V_OBJ && argc > 1) {
+			nid = argv[0].i;
+			ai = 1;
+		}
+		if (node_ok(nid) && argv && argc > ai && argv[ai].type == V_V3) {
+			g_agent_tx[nid] = argv[ai].x;
+			g_agent_ty[nid] = argv[ai].y;
+			g_agent_tz[nid] = argv[ai].z;
+		}
+		*ret = gv_bool(node_ok(nid));
+		return 1;
+	}
+	if (name_is(name, "get_next_path_position")) {
+		int nid = node_ok(node) ? node : (argv && argc > 0 && argv[0].type == V_OBJ ? argv[0].i : node);
+		if (!node_ok(nid) || !g_nav_loaded) {
+			*ret = gv_nil();
+			return 1;
+		}
+		GVar a[2];
+		a[0] = gv_v3(float(g_nodes[nid].px), float(-g_nodes[nid].py), float(g_nodes[nid].pz));
+		a[1] = gv_v3(g_agent_tx[nid], g_agent_ty[nid], g_agent_tz[nid]);
+		return apply_call(host, nid, "nav_next", 0, a, 2, ret);
+	}
+	if (name_is(name, "is_navigation_finished")) {
+		int nid = node_ok(node) ? node : (argv && argc > 0 && argv[0].type == V_OBJ ? argv[0].i : node);
+		if (!node_ok(nid)) {
+			*ret = gv_bool(1);
+			return 1;
+		}
+		const float dx = float(g_nodes[nid].px) - g_agent_tx[nid];
+		const float dy = float(-g_nodes[nid].py) - g_agent_ty[nid];
+		const float dz = float(g_nodes[nid].pz) - g_agent_tz[nid];
+		*ret = gv_bool(dx * dx + dy * dy + dz * dz < 16);
+		return 1;
+	}
+	if ((name_is(name, "start") || name_is(name, "stop") || name_is(name, "is_stopped")) && (node_ok(node) || (node >= kTimerBase && node < kTimerBase + 8))) {
+		int tid = -1;
+		if (node >= kTimerBase && node < kTimerBase + 8) {
+			tid = node - kTimerBase;
+		} else if (node_ok(node)) {
+			for (int i = 0; i < 8; i++) {
+				if (g_timer_node[i] == uint8_t(node)) {
+					tid = i;
+					break;
+				}
+			}
+			if (tid < 0 && g_kind[node] == NK_TIMER) {
+				for (int i = 0; i < 8; i++) {
+					if (!g_timer_used[i] || g_timer_node[i] == 0xff) {
+						tid = i;
+						g_timer_node[i] = uint8_t(node);
+						break;
+					}
+				}
+			}
+		}
+		if (tid < 0) {
+			*ret = gv_bool(name_is(name, "is_stopped") ? 1 : 0);
+			return 1;
+		}
+		if (name_is(name, "start")) {
+			const float sec = argv && argc > 0 ? as_float(argv[0]) : 1;
+			g_timer_used[tid] = 1;
+			g_timer_end[tid] = g_ticks_ms + sec * 1000.0f;
+			*ret = gv_obj(kTimerBase + tid);
+			return 1;
+		}
+		if (name_is(name, "stop")) {
+			g_timer_used[tid] = 0;
+			*ret = gv_bool(1);
+			return 1;
+		}
+		*ret = gv_bool(!g_timer_used[tid] || g_ticks_ms >= g_timer_end[tid]);
 		return 1;
 	}
 	if (name_is(name, "load_scene") || name_is(name, "unload_scene") || name_is(name, "is_scene_loaded") ||
@@ -4383,6 +5640,9 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			if (host && host->rot_x) {
 				*host->rot_x = int16_t(rad_to_ps1(pitch));
 			}
+			if (argv && argc > 2 && host && host->rot_z) {
+				*host->rot_z = int16_t(rad_to_ps1(as_float(argv[2])));
+			}
 			g_script_cam = 1;
 			if (host && host->script_drives_cam) {
 				*host->script_drives_cam = 1;
@@ -4422,14 +5682,32 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			const float sy = util_sin(yaw);
 			const float cp = util_sin(pitch + 1.5707963f);
 			const float sp = util_sin(pitch);
+			float cx = tx + sy * cp * dist;
+			float cyw = ty + sp * dist;
+			float cz = tz + cy * cp * dist;
+			int clip = g_orbit_clip;
+			if (argv && argc > 4) {
+				clip = as_truth(argv[4]);
+			}
+			if (clip) {
+				const float rdx = cx - tx;
+				const float rdy = cyw - ty;
+				const float rdz = cz - tz;
+				const int hitn = do_raycast(tx, ty, tz, rdx, rdy, rdz, dist, 3, 0xFF, -1, -1);
+				if (hitn >= 0 && g_ray_hit) {
+					cx = g_ray_hx;
+					cyw = g_ray_hy;
+					cz = g_ray_hz;
+				}
+			}
 			if (host && host->pos_x) {
-				*host->pos_x = int32_t(tx + sy * cp * dist);
+				*host->pos_x = int32_t(cx);
 			}
 			if (host && host->pos_y) {
-				*host->pos_y = int32_t(-(ty + sp * dist));
+				*host->pos_y = int32_t(-cyw);
 			}
 			if (host && host->pos_z) {
-				*host->pos_z = int32_t(tz + cy * cp * dist);
+				*host->pos_z = int32_t(cz);
 			}
 			if (host && host->rot_y) {
 				*host->rot_y = int16_t(rad_to_ps1(yaw));
@@ -4711,6 +5989,9 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			g_nvel[nid][0] = vx;
 			g_nvel[nid][1] = vy;
 			g_nvel[nid][2] = vz;
+			g_floor_n[nid] = uint8_t(g_on_floor);
+			g_wall_n[nid] = uint8_t(g_on_wall);
+			g_ceil_n[nid] = uint8_t(g_on_ceiling);
 			*ret = gv_v3(vx, vy, vz);
 			return 1;
 		}
@@ -4954,15 +6235,15 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			return 1;
 		}
 		if (name_is(name, "is_on_floor")) {
-			*ret = gv_bool(g_on_floor);
+			*ret = gv_bool(node_ok(node) ? g_floor_n[node] : g_on_floor);
 			return 1;
 		}
 		if (name_is(name, "is_on_wall")) {
-			*ret = gv_bool(g_on_wall);
+			*ret = gv_bool(node_ok(node) ? g_wall_n[node] : g_on_wall);
 			return 1;
 		}
 		if (name_is(name, "is_on_ceiling")) {
-			*ret = gv_bool(g_on_ceiling);
+			*ret = gv_bool(node_ok(node) ? g_ceil_n[node] : g_on_ceiling);
 			return 1;
 		}
 		if (name_is(name, "set_hitbox_layer") || name_is(name, "get_hitbox_layer")) {
@@ -5028,11 +6309,11 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 				*ret = gv_bool(0);
 				return 1;
 			}
-			if (name_is(name, "is_text_loaded") || g_packs[pack].text_resident) {
+			if (name_is(name, "is_text_loaded")) {
 				*ret = gv_bool(g_packs[pack].text_resident);
 				return 1;
 			}
-			*ret = gv_bool(budgets_fit(0, 0, 0, 0, 0, int(sizeof(ScriptVMTextLine) * PS1_MAX_TXT)));
+			*ret = gv_bool(try_read_pack_blob(pack, "TXT", g_load_buf, 8) > 0 && budgets_fit(0, 0, 0, 0, 0, int(sizeof(ScriptVMTextLine) * PS1_MAX_TXT)));
 			return 1;
 		}
 		if (name_is(name, "set_line") || name_is(name, "set_line_chars")) {
@@ -7059,6 +8340,12 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 		return 0;
 	}
 	g_host = host;
+	if (!g_boot_slices && g_npack > 0) {
+		g_boot_slices = 1;
+		load_pack_slice(0, "NAV");
+		load_pack_slice(0, "PATH");
+		load_pack_slice(0, "WAY");
+	}
 	script_vm_hud_tick(host);
 	int ran = 0;
 	const uint8_t *tape = nullptr;
@@ -7155,6 +8442,181 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 				const int f = int(g_scroll[n]);
 				g_nodes[n].px = int16_t((*host->pos_x * f) / 256);
 				g_nodes[n].py = int16_t((*host->pos_y * f) / 256);
+			}
+			if (g_kind[n] == NK_PATH && g_path_loaded) {
+				const int pid = int(g_path_id[n]);
+				if (pid >= 0 && pid < g_npath && g_pnpt[pid] >= 2) {
+					g_path_prog[n] += g_path_spd[n] * delta;
+					if (g_pclosed[pid]) {
+						while (g_path_prog[n] > 1) {
+							g_path_prog[n] -= 1;
+						}
+					} else if (g_path_prog[n] > 1) {
+						g_path_prog[n] = 1;
+					}
+					const int last = int(g_pnpt[pid]) - 1;
+					const float t = g_path_prog[n] * float(last);
+					int i0 = int(t);
+					if (i0 >= last) {
+						i0 = last - 1;
+					}
+					if (i0 < 0) {
+						i0 = 0;
+					}
+					const float u = t - float(i0);
+					g_nodes[n].px = int16_t(float(g_ppx[pid][i0]) + (float(g_ppx[pid][i0 + 1]) - float(g_ppx[pid][i0])) * u);
+					g_nodes[n].py = int16_t(-(float(g_ppy[pid][i0]) + (float(g_ppy[pid][i0 + 1]) - float(g_ppy[pid][i0])) * u));
+					g_nodes[n].pz = int16_t(float(g_ppz[pid][i0]) + (float(g_ppz[pid][i0 + 1]) - float(g_ppz[pid][i0])) * u);
+				}
+			}
+			if ((g_kind[n] == NK_RAY || g_kind[n] == NK_SHAPE) && g_cast_on[n]) {
+				float fx, fy, fz, rx, ry, rz, ux, uy, uz;
+				node_basis(n, &fx, &fy, &fz, &rx, &ry, &rz, &ux, &uy, &uz);
+				g_cast_hit[n] = int16_t(do_raycast(float(g_nodes[n].px), float(-g_nodes[n].py), float(g_nodes[n].pz), fx, fy, fz, 64, 3, 0xFF, n, -1));
+			}
+			if (g_kind[n] == NK_REMOTE && node_ok(int(g_remote_tgt[n]))) {
+				const int t = int(g_remote_tgt[n]);
+				g_nodes[n].px = g_nodes[t].px;
+				g_nodes[n].py = g_nodes[t].py;
+				g_nodes[n].pz = g_nodes[t].pz;
+				g_nodes[n].rx = g_nodes[t].rx;
+				g_nodes[n].ry = g_nodes[t].ry;
+				g_nodes[n].rz = g_nodes[t].rz;
+			}
+			if (g_kind[n] == NK_ARM) {
+				const int par = int(g_nodes[n].parent);
+				float ox = float(g_nodes[n].px);
+				float oy = float(-g_nodes[n].py);
+				float oz = float(g_nodes[n].pz);
+				if (node_ok(par)) {
+					ox = float(g_nodes[par].px);
+					oy = float(-g_nodes[par].py);
+					oz = float(g_nodes[par].pz);
+				}
+				float fx, fy, fz, rx, ry, rz, ux, uy, uz;
+				node_basis(node_ok(par) ? par : n, &fx, &fy, &fz, &rx, &ry, &rz, &ux, &uy, &uz);
+				const float len = float(g_path_id[n] ? g_path_id[n] * 4 : 64);
+				const int hit = do_raycast(ox, oy, oz, -fx, -fy, -fz, len, 3, 0xFF, n, -1);
+				if (hit >= 0 && g_ray_hit) {
+					g_nodes[n].px = int16_t(g_ray_hx);
+					g_nodes[n].py = int16_t(-g_ray_hy);
+					g_nodes[n].pz = int16_t(g_ray_hz);
+				} else {
+					g_nodes[n].px = int16_t(ox - fx * len);
+					g_nodes[n].py = int16_t(-(oy - fy * len));
+					g_nodes[n].pz = int16_t(oz - fz * len);
+				}
+			}
+			if (g_kind[n] == NK_LOOK && node_ok(int(g_look_tgt[n]))) {
+				GVar a = gv_v3(float(g_nodes[g_look_tgt[n]].px), float(-g_nodes[g_look_tgt[n]].py), float(g_nodes[g_look_tgt[n]].pz));
+				GVar dummy;
+				apply_call(host, n, "look_at", 0, &a, 1, &dummy);
+			}
+			if (g_kind[n] == NK_AGENT && g_nav_loaded) {
+				GVar a[2];
+				a[0] = gv_v3(float(g_nodes[n].px), float(-g_nodes[n].py), float(g_nodes[n].pz));
+				a[1] = gv_v3(g_agent_tx[n], g_agent_ty[n], g_agent_tz[n]);
+				GVar hop;
+				apply_call(host, n, "nav_next", 0, a, 2, &hop);
+				if (hop.type == V_V3) {
+					GVar args[3];
+					args[0] = gv_obj(n);
+					args[1] = hop;
+					args[2] = gv_float(g_agent_spd[n]);
+					GVar dummy;
+					apply_call(host, n, "follow_node", 0, args, 3, &dummy);
+				}
+			}
+			if (g_kind[n] == NK_NOTE || g_kind[n] == NK_ENAB) {
+				int on = 1;
+				if (host && host->pos_x && host->pos_y && host->pos_z) {
+					const int dx = int(g_nodes[n].px) - int(*host->pos_x);
+					const int dy = int(-g_nodes[n].py) - int(-*host->pos_y);
+					const int dz = int(g_nodes[n].pz) - int(*host->pos_z);
+					on = (dx * dx + dy * dy + dz * dz) < (220 * 220);
+				}
+				g_on_screen[n] = uint8_t(on);
+				if (g_kind[n] == NK_ENAB) {
+					if (on) {
+						g_nodes[n].flags = uint8_t(g_nodes[n].flags & ~uint8_t(2));
+					} else {
+						g_nodes[n].flags = uint8_t(g_nodes[n].flags | 2);
+					}
+				}
+			}
+			if (g_cull_dist > 0 && host && host->pos_x) {
+				const float dx = float(g_nodes[n].px) - float(*host->pos_x);
+				const float dy = float(-g_nodes[n].py) - float(-*host->pos_y);
+				const float dz = float(g_nodes[n].pz) - float(*host->pos_z);
+				g_node_cull[n] = uint8_t((dx * dx + dy * dy + dz * dz) > (g_cull_dist * g_cull_dist));
+			} else {
+				g_node_cull[n] = 0;
+			}
+		}
+		for (int i = 0; i < 8; i++) {
+			if (!g_tween[i].used || g_tween[i].dur <= 0) {
+				continue;
+			}
+			g_tween[i].t += delta;
+			float u = g_tween[i].t / g_tween[i].dur;
+			if (u > 1) {
+				u = 1;
+			}
+			const int tn = int(g_tween[i].node);
+			if (node_ok(tn)) {
+				const float x = g_tween[i].from[0] + (g_tween[i].to[0] - g_tween[i].from[0]) * u;
+				const float y = g_tween[i].from[1] + (g_tween[i].to[1] - g_tween[i].from[1]) * u;
+				const float z = g_tween[i].from[2] + (g_tween[i].to[2] - g_tween[i].from[2]) * u;
+				if (g_tween[i].prop == 1) {
+					g_nodes[tn].rx = int16_t(x);
+					g_nodes[tn].ry = int16_t(y);
+					g_nodes[tn].rz = int16_t(z);
+				} else if (g_tween[i].prop == 3) {
+					g_nvel[tn][0] = x;
+					g_nvel[tn][1] = y;
+					g_nvel[tn][2] = z;
+				} else {
+					g_nodes[tn].px = int16_t(x);
+					g_nodes[tn].py = int16_t(-y);
+					g_nodes[tn].pz = int16_t(z);
+				}
+			}
+			if (u >= 1) {
+				if (g_tween[i].loop) {
+					g_tween[i].t = 0;
+				} else {
+					g_tween[i].used = 0;
+				}
+			}
+		}
+		for (int s = 0; s < 32; s++) {
+			if (!g_shot[s].used) {
+				continue;
+			}
+			g_shot[s].x = int16_t(g_shot[s].x + g_shot[s].vx);
+			g_shot[s].y = int16_t(g_shot[s].y + g_shot[s].vy);
+			g_shot[s].z = int16_t(g_shot[s].z + g_shot[s].vz);
+			if (g_shot[s].life) {
+				g_shot[s].life--;
+			}
+			g_shot[s].hit = -1;
+			for (int h = 0; h < g_nhit; h++) {
+				if (!g_hit_used[h] || !(g_hits[h].flags & 1)) {
+					continue;
+				}
+				if (g_shot[s].owner >= 0 && int(g_hits[h].node_id) == int(g_shot[s].owner)) {
+					continue;
+				}
+				if (g_shot[s].x >= g_hits[h].min_x && g_shot[s].x <= g_hits[h].max_x &&
+						g_shot[s].y >= g_hits[h].min_y && g_shot[s].y <= g_hits[h].max_y &&
+						g_shot[s].z >= g_hits[h].min_z && g_shot[s].z <= g_hits[h].max_z) {
+					g_shot[s].hit = g_hits[h].node_id;
+					g_shot[s].used = 0;
+					break;
+				}
+			}
+			if (!g_shot[s].life) {
+				g_shot[s].used = 0;
 			}
 		}
 		for (int s = 0; s < PS1_MAX_STREAMS; s++) {

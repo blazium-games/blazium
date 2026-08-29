@@ -54,7 +54,7 @@
 #define PS1_MAX_PARTICLES 16
 #endif
 #ifndef PS1_COOK_ABI
-#define PS1_COOK_ABI 19
+#define PS1_COOK_ABI 20
 #endif
 #ifndef PS1_MAX_STREAMS
 #define PS1_MAX_STREAMS 4
@@ -113,6 +113,9 @@ struct ScriptVMPack {
 	uint8_t audio_resident;
 	uint8_t text_resident;
 	uint8_t music_resident;
+	uint8_t nav_resident;
+	uint8_t path_resident;
+	uint8_t way_resident;
 	uint8_t tim_lo, tim_hi;
 };
 
@@ -213,6 +216,16 @@ struct ScriptVMHost {
 	int (*play_fmv_cd)(const char *iso_name);
 };
 
+struct ScriptVMShot {
+	int16_t x, y, z;
+	int16_t vx, vy, vz;
+	uint8_t used;
+	uint8_t life;
+	uint8_t tex;
+	int16_t owner;
+	int16_t hit;
+};
+
 struct ScriptVMParticle {
 	int16_t x, y, z;
 	int16_t vx, vy, vz;
@@ -233,8 +246,17 @@ void script_vm_get_fog(int *on, int *start, int *end, uint8_t *r, uint8_t *g, ui
 void script_vm_get_fade(int *a, uint8_t *r, uint8_t *g, uint8_t *b);
 int script_vm_particle_count();
 const ScriptVMParticle *script_vm_particles();
+int script_vm_shot_count();
+const ScriptVMShot *script_vm_shots();
+int script_vm_node_culled(int node);
+int script_vm_node_ysort(int node);
+void script_vm_get_hud_offset(int *x, int *y);
+void script_vm_set_hud_offset(int x, int y);
 const ScriptVMSprite *script_vm_sprites();
 int script_vm_sprite_count();
+void script_vm_set_ysort(const uint8_t *ysort, int count);
+void script_vm_set_kinds(const uint8_t *kinds, int count);
+void script_vm_set_path_ids(const uint8_t *ids, int count);
 
 void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, size_t luau_size);
 void script_vm_set_nodes(const ScriptVMNode *nodes, int count);
@@ -249,6 +271,9 @@ void script_vm_set_anims(const ScriptVMAnimClip *clips, int count);
 void script_vm_set_actions(const ScriptVMAction *actions, int count);
 void script_vm_set_cams(const ScriptVMCam *cams, int count);
 void script_vm_set_hits(const ScriptVMHit *hits, int count);
+int script_vm_apply_nav_blob(const uint8_t *blob, int size);
+int script_vm_apply_path_blob(const uint8_t *blob, int size);
+int script_vm_apply_way_blob(const uint8_t *blob, int size);
 void script_vm_set_sprites(const ScriptVMSprite *sprites, int count);
 void script_vm_set_mesh(const uint8_t *blob, size_t size);
 int script_vm_tri_count();

@@ -360,11 +360,13 @@ public:
 		_fail_ps1();
 		return false;
 	}
-	bool look_camera(float p_yaw, float p_pitch) {
+	bool look_camera(float p_yaw, float p_pitch, float p_roll = 0.0f) {
+		(void)p_roll;
 		_fail_ps1();
 		return false;
 	}
-	bool orbit_camera(const Variant &p_target, float p_yaw, float p_pitch, float p_dist) {
+	bool orbit_camera(const Variant &p_target, float p_yaw, float p_pitch, float p_dist, int p_clip = 0) {
+		(void)p_clip;
 		_fail_ps1();
 		return false;
 	}
@@ -638,6 +640,181 @@ public:
 		return false;
 	}
 	bool set_light(int p_index, const Vector3 &p_dir, const Color &p_color) {
+		_fail_ps1();
+		return false;
+	}
+	Vector3 get_forward(const Variant &p_node = Variant()) const {
+		(void)p_node;
+		_fail_ps1();
+		return Vector3();
+	}
+	Vector3 get_right(const Variant &p_node = Variant()) const {
+		(void)p_node;
+		_fail_ps1();
+		return Vector3();
+	}
+	Vector3 get_up(const Variant &p_node = Variant()) const {
+		(void)p_node;
+		_fail_ps1();
+		return Vector3();
+	}
+	bool translate_local(const Variant &p_node, const Vector3 &p_v) {
+		_fail_ps1();
+		return false;
+	}
+	Vector3 move_and_fly(const Variant &p_node, float p_throttle, float p_yaw, float p_pitch, float p_roll) {
+		_fail_ps1();
+		return Vector3();
+	}
+	bool apply_gravity(const Variant &p_node) {
+		_fail_ps1();
+		return false;
+	}
+	bool set_gravity(const Vector3 &p_g) {
+		_fail_ps1();
+		return false;
+	}
+	bool add_velocity(const Variant &p_node, const Vector3 &p_v) {
+		_fail_ps1();
+		return false;
+	}
+	bool follow_node(const Variant &p_self, const Variant &p_target, float p_speed) {
+		_fail_ps1();
+		return false;
+	}
+	Variant raycast_group(const Vector3 &p_from, const Vector3 &p_dir, float p_dist, const String &p_group) const {
+		_fail_ps1();
+		return Variant();
+	}
+	Variant get_ray_point() const {
+		_fail_ps1();
+		return Variant();
+	}
+	Variant get_ray_node() const {
+		_fail_ps1();
+		return Variant();
+	}
+	int spawn_shot(const Vector3 &p_from, const Vector3 &p_vel, float p_life, int p_tex) {
+		_fail_ps1();
+		return -1;
+	}
+	bool clear_shots() {
+		_fail_ps1();
+		return false;
+	}
+	int get_shot_count() const {
+		_fail_ps1();
+		return 0;
+	}
+	int get_free_shots() const {
+		_fail_ps1();
+		return 0;
+	}
+	Variant shot_hit(int p_i) const {
+		_fail_ps1();
+		return Variant();
+	}
+	bool clip_orbit(bool p_on) {
+		_fail_ps1();
+		return false;
+	}
+	bool set_y_sort(const Variant &p_node, bool p_on) {
+		_fail_ps1();
+		return false;
+	}
+	bool wrap_position(const Variant &p_node, const Variant &p_min, const Variant &p_max) {
+		_fail_ps1();
+		return false;
+	}
+	bool set_cull_dist(float p_d) {
+		_fail_ps1();
+		return false;
+	}
+	Variant create_tween() {
+		_fail_ps1();
+		return Variant();
+	}
+	bool tween_property(const Variant &p_tween, const Variant &p_node, const String &p_prop, const Variant &p_to, float p_sec) {
+		_fail_ps1();
+		return false;
+	}
+	bool kill_tweens(const Variant &p_node) {
+		_fail_ps1();
+		return false;
+	}
+	int tween_count() const {
+		_fail_ps1();
+		return 0;
+	}
+	int count_waypoints(int p_path = -1) const {
+		_fail_ps1();
+		return 0;
+	}
+	Variant get_waypoint(int p_i) const {
+		_fail_ps1();
+		return Variant();
+	}
+	Variant get_waypoint_pos(int p_i) const {
+		_fail_ps1();
+		return Variant();
+	}
+	Variant nav_nearest(const Vector3 &p_from) const {
+		_fail_ps1();
+		return Variant();
+	}
+	Variant nav_next(const Vector3 &p_from, const Vector3 &p_to) const {
+		_fail_ps1();
+		return Variant();
+	}
+	bool load_nav(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool unload_nav(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool can_load_nav(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool is_nav_loaded(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool load_paths(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool unload_paths(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool can_load_paths(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool is_paths_loaded(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool load_waypoints(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool unload_waypoints(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	bool can_load_waypoints(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool is_waypoints_loaded(const String &p_path) const {
+		_fail_ps1();
+		return false;
+	}
+	bool unload_pack(const String &p_path) {
 		_fail_ps1();
 		return false;
 	}

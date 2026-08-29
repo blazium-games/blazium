@@ -116,8 +116,8 @@ void PS1::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_camera_transform"), &PS1::get_camera_transform);
 	ClassDB::bind_method(D_METHOD("get_camera_rotation"), &PS1::get_camera_rotation);
 	ClassDB::bind_method(D_METHOD("attach_camera", "node", "offset"), &PS1::attach_camera, DEFVAL(Vector3()));
-	ClassDB::bind_method(D_METHOD("look_camera", "yaw", "pitch"), &PS1::look_camera);
-	ClassDB::bind_method(D_METHOD("orbit_camera", "target", "yaw", "pitch", "dist"), &PS1::orbit_camera);
+	ClassDB::bind_method(D_METHOD("look_camera", "yaw", "pitch", "roll"), &PS1::look_camera, DEFVAL(0.0f));
+	ClassDB::bind_method(D_METHOD("orbit_camera", "target", "yaw", "pitch", "dist", "clip"), &PS1::orbit_camera, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("set_camera_scale", "h"), &PS1::set_camera_scale);
 	ClassDB::bind_method(D_METHOD("raycast", "from", "dir", "dist", "mask"), &PS1::raycast, DEFVAL(255));
 	ClassDB::bind_method(D_METHOD("raycast_point", "from", "dir", "dist", "mask"), &PS1::raycast_point, DEFVAL(255));
@@ -186,6 +186,49 @@ void PS1::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_fog", "on", "start", "end", "color"), &PS1::set_fog);
 	ClassDB::bind_method(D_METHOD("set_fade", "alpha", "color"), &PS1::set_fade);
 	ClassDB::bind_method(D_METHOD("set_light", "index", "dir", "color"), &PS1::set_light);
+	ClassDB::bind_method(D_METHOD("get_forward", "node"), &PS1::get_forward, DEFVAL(Variant()));
+	ClassDB::bind_method(D_METHOD("get_right", "node"), &PS1::get_right, DEFVAL(Variant()));
+	ClassDB::bind_method(D_METHOD("get_up", "node"), &PS1::get_up, DEFVAL(Variant()));
+	ClassDB::bind_method(D_METHOD("translate_local", "node", "v"), &PS1::translate_local);
+	ClassDB::bind_method(D_METHOD("move_and_fly", "node", "throttle", "yaw", "pitch", "roll"), &PS1::move_and_fly);
+	ClassDB::bind_method(D_METHOD("apply_gravity", "node"), &PS1::apply_gravity);
+	ClassDB::bind_method(D_METHOD("set_gravity", "g"), &PS1::set_gravity);
+	ClassDB::bind_method(D_METHOD("add_velocity", "node", "v"), &PS1::add_velocity);
+	ClassDB::bind_method(D_METHOD("follow_node", "self", "target", "speed"), &PS1::follow_node);
+	ClassDB::bind_method(D_METHOD("raycast_group", "from", "dir", "dist", "group"), &PS1::raycast_group);
+	ClassDB::bind_method(D_METHOD("get_ray_point"), &PS1::get_ray_point);
+	ClassDB::bind_method(D_METHOD("get_ray_node"), &PS1::get_ray_node);
+	ClassDB::bind_method(D_METHOD("spawn_shot", "from", "vel", "life", "tex"), &PS1::spawn_shot);
+	ClassDB::bind_method(D_METHOD("clear_shots"), &PS1::clear_shots);
+	ClassDB::bind_method(D_METHOD("get_shot_count"), &PS1::get_shot_count);
+	ClassDB::bind_method(D_METHOD("get_free_shots"), &PS1::get_free_shots);
+	ClassDB::bind_method(D_METHOD("shot_hit", "i"), &PS1::shot_hit);
+	ClassDB::bind_method(D_METHOD("clip_orbit", "on"), &PS1::clip_orbit);
+	ClassDB::bind_method(D_METHOD("set_y_sort", "node", "on"), &PS1::set_y_sort);
+	ClassDB::bind_method(D_METHOD("wrap_position", "node", "min", "max"), &PS1::wrap_position);
+	ClassDB::bind_method(D_METHOD("set_cull_dist", "d"), &PS1::set_cull_dist);
+	ClassDB::bind_method(D_METHOD("create_tween"), &PS1::create_tween);
+	ClassDB::bind_method(D_METHOD("tween_property", "tween", "node", "prop", "to", "sec"), &PS1::tween_property);
+	ClassDB::bind_method(D_METHOD("kill_tweens", "node"), &PS1::kill_tweens);
+	ClassDB::bind_method(D_METHOD("tween_count"), &PS1::tween_count);
+	ClassDB::bind_method(D_METHOD("count_waypoints", "path"), &PS1::count_waypoints, DEFVAL(-1));
+	ClassDB::bind_method(D_METHOD("get_waypoint", "i"), &PS1::get_waypoint);
+	ClassDB::bind_method(D_METHOD("get_waypoint_pos", "i"), &PS1::get_waypoint_pos);
+	ClassDB::bind_method(D_METHOD("nav_nearest", "from"), &PS1::nav_nearest);
+	ClassDB::bind_method(D_METHOD("nav_next", "from", "to"), &PS1::nav_next);
+	ClassDB::bind_method(D_METHOD("load_nav", "path"), &PS1::load_nav);
+	ClassDB::bind_method(D_METHOD("unload_nav", "path"), &PS1::unload_nav);
+	ClassDB::bind_method(D_METHOD("can_load_nav", "path"), &PS1::can_load_nav);
+	ClassDB::bind_method(D_METHOD("is_nav_loaded", "path"), &PS1::is_nav_loaded);
+	ClassDB::bind_method(D_METHOD("load_paths", "path"), &PS1::load_paths);
+	ClassDB::bind_method(D_METHOD("unload_paths", "path"), &PS1::unload_paths);
+	ClassDB::bind_method(D_METHOD("can_load_paths", "path"), &PS1::can_load_paths);
+	ClassDB::bind_method(D_METHOD("is_paths_loaded", "path"), &PS1::is_paths_loaded);
+	ClassDB::bind_method(D_METHOD("load_waypoints", "path"), &PS1::load_waypoints);
+	ClassDB::bind_method(D_METHOD("unload_waypoints", "path"), &PS1::unload_waypoints);
+	ClassDB::bind_method(D_METHOD("can_load_waypoints", "path"), &PS1::can_load_waypoints);
+	ClassDB::bind_method(D_METHOD("is_waypoints_loaded", "path"), &PS1::is_waypoints_loaded);
+	ClassDB::bind_method(D_METHOD("unload_pack", "path"), &PS1::unload_pack);
 }
 
 static PackedByteArray _mc_wrap(const PackedByteArray &p_payload, const String &p_title) {
@@ -369,7 +412,7 @@ void PS1FlavorEditorPlugin::_refresh() {
 	const int packs = _count_literal_packs();
 	const int est_ram = nodes * 56 + tris * 32 + hud * 80 + tiles * 8;
 	status->set_text(vformat(
-			"nodes %d/%d\ntris %d/%d\nHUD %d/%d\ntiles %d/%d\nSprite2D %d/%d\npacks %d/%d\nest RAM %d/%d\nPS1.* is PS1 export only; use OS.has_feature(\"ps1\").\nABI 19: 2D/3D scene cook, node methods (cam.make_current / PS1.set_camera), groups, platform carry, nearest, billboard, face/shoulder aliases.",
+			"nodes %d/%d\ntris %d/%d\nHUD %d/%d\ntiles %d/%d\nSprite2D %d/%d\npacks %d/%d\nest RAM %d/%d\nPS1.* is PS1 export only; use OS.has_feature(\"ps1\").\nABI 20: 6DoF/fly, per-node floor, shot pool, orbit clip, y-sort/wrap/cull, RayCast, NAV/PATH/WAY, 8 tweens, Timer/RemoteTransform/notifiers.",
 			nodes, ps1_cook::kMaxNodes, tris, ps1_cook::kMaxTris, hud, ps1_cook::kMaxHud, tiles, ps1_cook::kMaxTiles,
 			sprites, ps1_cook::kMaxSprites, packs, ps1_cook::kMaxScenePacks, est_ram, 2 * 1024 * 1024));
 	PackedStringArray reasons;

@@ -237,9 +237,48 @@ struct SceneGather {
 		int16_t script_index = -1;
 		uint8_t group = 0;
 		uint8_t scroll = 0;
+		uint8_t ysort = 0;
+		uint8_t kind = 0;
+		uint8_t path_id = 0;
 		String script_path;
 	};
 	Vector<CookedNode> nodes;
+	struct WayRow {
+		uint8_t node = 0;
+		uint8_t path_id = 0;
+	};
+	Vector<WayRow> ways;
+	int ways_dropped = 0;
+	struct PathRow {
+		uint8_t id = 0;
+		uint8_t npts = 0;
+		uint8_t closed = 0;
+		Vector3 pts[16];
+	};
+	Vector<PathRow> paths;
+	int paths_dropped = 0;
+	struct NavVert {
+		Vector3 pos;
+		int node = -1;
+	};
+	Vector<NavVert> nav_verts;
+	struct NavEdge {
+		uint8_t a = 0;
+		uint8_t b = 0;
+	};
+	Vector<NavEdge> nav_edges;
+	int nav_dropped = 0;
+	struct NavObs {
+		Vector3 pos;
+		float radius = 1.0f;
+	};
+	Vector<NavObs> nav_obs;
+	int16_t canvas_ox = 0, canvas_oy = 0;
+	int timer_count = 0;
+	int ray_count = 0;
+	bool had_nav = false;
+	bool had_path = false;
+	bool had_tween_note = false;
 };
 
 static const char *kAllowed[] = {
@@ -258,6 +297,17 @@ static const char *kAllowed[] = {
 	"MultiMeshInstance3D", "MultiMeshInstance2D",
 	"CSGShape3D", "CSGCombiner3D", "CSGBox3D", "CSGSphere3D", "CSGCylinder3D", "CSGMesh3D", "CSGPolygon3D", "CSGTorus3D",
 	"GridMap", "Marker2D", "Marker3D", "PathFollow2D", "PathFollow3D",
+	"Path2D", "Path3D",
+	"NavigationRegion2D", "NavigationRegion3D", "NavigationAgent2D", "NavigationAgent3D",
+	"NavigationLink2D", "NavigationLink3D", "NavigationObstacle2D", "NavigationObstacle3D",
+	"RayCast2D", "RayCast3D", "ShapeCast2D", "ShapeCast3D",
+	"VisibleOnScreenNotifier2D", "VisibleOnScreenNotifier3D",
+	"VisibleOnScreenEnabler2D", "VisibleOnScreenEnabler3D",
+	"RemoteTransform2D", "RemoteTransform3D", "Timer", "LookAtModifier3D",
+	"CanvasModulate", "AudioListener2D", "AudioListener3D", "YSort",
+	"NinePatchRect", "RichTextLabel",
+	"HBoxContainer", "VBoxContainer", "BoxContainer", "MarginContainer",
+	"CenterContainer", "GridContainer", "AspectRatioContainer",
 	"BoneAttachment3D", "SpringArm3D",
 	"Parallax2D", "ParallaxLayer", "ParallaxBackground",
 	"WorldEnvironment",
@@ -277,11 +327,107 @@ static bool type_allowed(const String &p_cls) {
 }
 
 static bool type_refused(const String &p_cls) {
-	return p_cls.begins_with("SubViewport") || p_cls.begins_with("Navigation") ||
+	return p_cls.begins_with("SubViewport") ||
 			p_cls.begins_with("VehicleWheel") || p_cls.begins_with("SoftBody") ||
 			p_cls.begins_with("GPUParticlesCollision") || p_cls == "Decal" ||
-			p_cls == "ReflectionProbe" || p_cls == "FogVolume" || p_cls == "VoxelGI" ||
-			p_cls.begins_with("VisibleOnScreenNotifier");
+			p_cls == "ReflectionProbe" || p_cls == "FogVolume" || p_cls == "VoxelGI";
+}
+
+static bool is_catalog_only(Node *p_node) {
+	if (!p_node) {
+		return false;
+	}
+	return p_node->is_class("Path2D") || p_node->is_class("Path3D") ||
+			p_node->is_class("NavigationRegion2D") || p_node->is_class("NavigationRegion3D") ||
+			p_node->is_class("NavigationLink2D") || p_node->is_class("NavigationLink3D") ||
+			p_node->is_class("NavigationObstacle2D") || p_node->is_class("NavigationObstacle3D") ||
+			p_node->is_class("CanvasModulate") || p_node->is_class("AudioListener2D") || p_node->is_class("AudioListener3D") ||
+			p_node->is_class("CanvasLayer");
+}
+
+static int find_node_ptr(const SceneGather &p_g, Node *p_node) {
+	for (int i = 0; i < p_g.node_ptrs.size(); i++) {
+		if (p_g.node_ptrs[i] == p_node) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+static void cook_polyline(SceneGather &r_g, Node *p_node) {
+	if (!p_node) {
+		return;
+	}
+	SceneGather::PathRow row;
+	row.id = uint8_t(r_g.paths.size());
+	row.closed = 0;
+	const Variant cv = p_node->get("curve");
+	Object *curve = cv.get_type() == Variant::OBJECT ? cv.get_validated_object() : nullptr;
+	Vector<Vector3> pts;
+	if (curve) {
+		if (curve->has_method("get_baked_points")) {
+			const Variant baked = curve->call("get_baked_points");
+			if (baked.get_type() == Variant::PACKED_VECTOR3_ARRAY) {
+				const PackedVector3Array a = baked;
+				for (int i = 0; i < a.size(); i++) {
+					pts.push_back(a[i]);
+				}
+			} else if (baked.get_type() == Variant::PACKED_VECTOR2_ARRAY) {
+				const PackedVector2Array a = baked;
+				for (int i = 0; i < a.size(); i++) {
+					pts.push_back(Vector3(a[i].x, a[i].y, 0));
+				}
+			}
+		}
+	}
+	if (pts.size() > 16) {
+		r_g.paths_dropped++;
+		Vector<Vector3> sampled;
+		sampled.push_back(pts[0]);
+		for (int i = 1; i < 15; i++) {
+			sampled.push_back(pts[i * (pts.size() - 1) / 15]);
+		}
+		sampled.push_back(pts[pts.size() - 1]);
+		pts = sampled;
+	}
+	row.npts = uint8_t(MIN(pts.size(), 16));
+	for (int i = 0; i < row.npts; i++) {
+		row.pts[i] = pts[i];
+	}
+	if (row.npts >= 2 && r_g.paths.size() < 8) {
+		r_g.paths.push_back(row);
+		r_g.had_path = true;
+	} else if (row.npts >= 2) {
+		r_g.paths_dropped++;
+	}
+}
+
+static void cook_nav_verts(SceneGather &r_g, const Vector<Vector3> &p_pts, int p_node) {
+	const int start = r_g.nav_verts.size();
+	for (int i = 0; i < p_pts.size(); i++) {
+		if (r_g.nav_verts.size() >= 32) {
+			r_g.nav_dropped++;
+			break;
+		}
+		SceneGather::NavVert v;
+		v.pos = p_pts[i];
+		v.node = p_node;
+		r_g.nav_verts.push_back(v);
+	}
+	const int end = r_g.nav_verts.size();
+	for (int i = start; i + 1 < end && r_g.nav_edges.size() < 48; i++) {
+		SceneGather::NavEdge e;
+		e.a = uint8_t(i);
+		e.b = uint8_t(i + 1);
+		r_g.nav_edges.push_back(e);
+	}
+	if (end - start >= 3 && r_g.nav_edges.size() < 48) {
+		SceneGather::NavEdge e;
+		e.a = uint8_t(end - 1);
+		e.b = uint8_t(start);
+		r_g.nav_edges.push_back(e);
+	}
+	r_g.had_nav = r_g.had_nav || (end > start);
 }
 
 static bool node_cookable(Node *p_node) {
@@ -883,11 +1029,11 @@ static bool hud_kind_for(Node *p_node, uint8_t &r_kind) {
 		r_kind = 0;
 		return true;
 	}
-	if (Object::cast_to<TextureRect>(p_node)) {
+	if (Object::cast_to<TextureRect>(p_node) || p_node->is_class("NinePatchRect")) {
 		r_kind = 1;
 		return true;
 	}
-	if (Object::cast_to<Label>(p_node)) {
+	if (Object::cast_to<Label>(p_node) || p_node->is_class("RichTextLabel")) {
 		r_kind = 2;
 		return true;
 	}
@@ -1088,6 +1234,82 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 	if (!node_cookable(p_node) || type_refused(cls)) {
 		r_g.uncooked_types.insert(cls);
 	}
+	if (is_catalog_only(p_node)) {
+		if (p_node->is_class("Path2D") || p_node->is_class("Path3D")) {
+			cook_polyline(r_g, p_node);
+		} else if (p_node->is_class("NavigationRegion2D") || p_node->is_class("NavigationRegion3D")) {
+			Vector<Vector3> pts;
+			const Variant nm = p_node->get("navigation_mesh");
+			Object *mesh = nm.get_type() == Variant::OBJECT ? nm.get_validated_object() : nullptr;
+			if (!mesh) {
+				const Variant np = p_node->get("navigation_polygon");
+				mesh = np.get_type() == Variant::OBJECT ? np.get_validated_object() : nullptr;
+			}
+			if (mesh && mesh->has_method("get_vertices")) {
+				const Variant v = mesh->call("get_vertices");
+				if (v.get_type() == Variant::PACKED_VECTOR3_ARRAY) {
+					const PackedVector3Array a = v;
+					for (int i = 0; i < a.size(); i++) {
+						pts.push_back(a[i]);
+					}
+				} else if (v.get_type() == Variant::PACKED_VECTOR2_ARRAY) {
+					const PackedVector2Array a = v;
+					for (int i = 0; i < a.size(); i++) {
+						pts.push_back(Vector3(a[i].x, a[i].y, 0));
+					}
+				}
+			}
+			cook_nav_verts(r_g, pts, -1);
+		} else if (p_node->is_class("NavigationLink2D") || p_node->is_class("NavigationLink3D")) {
+			Vector3 origin;
+			if (Node3D *n3 = Object::cast_to<Node3D>(p_node)) {
+				origin = n3->get_global_position();
+			} else if (Node2D *n2 = Object::cast_to<Node2D>(p_node)) {
+				origin = Vector3(n2->get_global_position().x, n2->get_global_position().y, 0);
+			}
+			Vector3 sa = origin;
+			Vector3 sb = origin;
+			const Variant a = p_node->get("start_position");
+			const Variant b = p_node->get("end_position");
+			if (a.get_type() == Variant::VECTOR3) {
+				sa = origin + Vector3(a);
+			} else if (a.get_type() == Variant::VECTOR2) {
+				const Vector2 v = a;
+				sa = origin + Vector3(v.x, v.y, 0);
+			}
+			if (b.get_type() == Variant::VECTOR3) {
+				sb = origin + Vector3(b);
+			} else if (b.get_type() == Variant::VECTOR2) {
+				const Vector2 v = b;
+				sb = origin + Vector3(v.x, v.y, 0);
+			}
+			Vector<Vector3> pts;
+			pts.push_back(sa);
+			pts.push_back(sb);
+			cook_nav_verts(r_g, pts, -1);
+		} else if (p_node->is_class("NavigationObstacle2D") || p_node->is_class("NavigationObstacle3D")) {
+			SceneGather::NavObs o;
+			if (Node3D *n3 = Object::cast_to<Node3D>(p_node)) {
+				o.pos = n3->get_global_position();
+			} else if (Node2D *n2 = Object::cast_to<Node2D>(p_node)) {
+				o.pos = Vector3(n2->get_global_position().x, n2->get_global_position().y, 0);
+			}
+			o.radius = MAX(1.0f, float(p_node->get("radius")));
+			r_g.nav_obs.push_back(o);
+		} else if (p_node->is_class("CanvasLayer")) {
+			r_g.canvas_layer_count++;
+			const Variant off = p_node->get("offset");
+			if (off.get_type() == Variant::VECTOR2) {
+				const Vector2 o = off;
+				r_g.canvas_ox = int16_t(CLAMP(int(o.x), -32768, 32767));
+				r_g.canvas_oy = int16_t(CLAMP(int(o.y), -32768, 32767));
+			}
+		}
+		for (int i = 0; i < p_node->get_child_count(); i++) {
+			walk_scene(p_node->get_child(i), r_g, p_parent);
+		}
+		return;
+	}
 	int my = -1;
 	if (r_g.nodes.size() < kMaxNodes) {
 		SceneGather::CookedNode cn;
@@ -1153,6 +1375,55 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 		} else if (Parallax2D *p2 = Object::cast_to<Parallax2D>(p_node)) {
 			const Vector2 sc = p2->get_scroll_scale();
 			cn.scroll = uint8_t(CLAMP(int(sc.x * 128.0f), 1, 255));
+		}
+		if (p_node->is_class("Node2D") && bool(p_node->get("y_sort_enabled"))) {
+			cn.ysort = 1;
+		}
+		if (p_node->is_class("YSort")) {
+			cn.ysort = 1;
+		}
+		if (p_node->is_class("PathFollow2D") || p_node->is_class("PathFollow3D")) {
+			cn.kind = 1;
+			cn.path_id = uint8_t(r_g.paths.is_empty() ? 0 : r_g.paths.size() - 1);
+			r_g.had_path = true;
+		} else if (p_node->is_class("RayCast2D") || p_node->is_class("RayCast3D")) {
+			cn.kind = 2;
+			if (r_g.ray_count < 8) {
+				r_g.ray_count++;
+			}
+		} else if (p_node->is_class("ShapeCast2D") || p_node->is_class("ShapeCast3D")) {
+			cn.kind = 3;
+			if (r_g.ray_count < 8) {
+				r_g.ray_count++;
+			}
+		} else if (p_node->is_class("VisibleOnScreenEnabler2D") || p_node->is_class("VisibleOnScreenEnabler3D")) {
+			cn.kind = 5;
+		} else if (p_node->is_class("VisibleOnScreenNotifier2D") || p_node->is_class("VisibleOnScreenNotifier3D")) {
+			cn.kind = 4;
+		} else if (p_node->is_class("RemoteTransform2D") || p_node->is_class("RemoteTransform3D")) {
+			cn.kind = 6;
+			const Variant rp = p_node->get("remote_path");
+			if (rp.get_type() == Variant::NODE_PATH) {
+				Node *tgt = p_node->get_node_or_null(rp);
+				const int ti = find_node_ptr(r_g, tgt);
+				cn.path_id = uint8_t(ti >= 0 ? ti : 0);
+			}
+		} else if (p_node->is_class("Timer")) {
+			cn.kind = 7;
+			if (r_g.timer_count < 8) {
+				cn.path_id = uint8_t(r_g.timer_count);
+				r_g.timer_count++;
+			} else {
+				r_g.uncooked_types.insert("Timer(9th dropped)");
+			}
+		} else if (p_node->is_class("NavigationAgent2D") || p_node->is_class("NavigationAgent3D")) {
+			cn.kind = 8;
+		} else if (p_node->is_class("SpringArm3D")) {
+			cn.kind = 9;
+			const float sl = float(p_node->get("spring_length"));
+			cn.path_id = uint8_t(CLAMP(int(sl / 4.0f), 1, 255));
+		} else if (p_node->is_class("LookAtModifier3D")) {
+			cn.kind = 10;
 		}
 		cn.tri_lo = uint16_t(r_g.tris.size());
 		cn.tri_hi = cn.tri_lo;
@@ -1501,6 +1772,27 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 	}
 	if (Object::cast_to<CanvasLayer>(p_node)) {
 		r_g.canvas_layer_count++;
+		const Variant off = p_node->get("offset");
+		if (off.get_type() == Variant::VECTOR2) {
+			const Vector2 o = off;
+			r_g.canvas_ox = int16_t(CLAMP(int(o.x), -32768, 32767));
+			r_g.canvas_oy = int16_t(CLAMP(int(o.y), -32768, 32767));
+		}
+	}
+	if ((Object::cast_to<Marker2D>(p_node) || Object::cast_to<Marker3D>(p_node) || p_node->is_in_group("waypoint") || p_node->is_in_group("waypoints")) && my >= 0) {
+		if (r_g.ways.size() < 32) {
+			SceneGather::WayRow w;
+			w.node = uint8_t(my);
+			w.path_id = 0;
+			r_g.ways.push_back(w);
+		} else {
+			r_g.ways_dropped++;
+		}
+	}
+	if ((p_node->is_in_group("nav") || p_node->is_in_group("navmesh")) && my >= 0) {
+		Vector<Vector3> pts;
+		pts.push_back(r_g.nodes[my].pos);
+		cook_nav_verts(r_g, pts, my);
 	}
 	if (Control *ctl = Object::cast_to<Control>(p_node)) {
 		r_g.had_control = true;
@@ -1699,6 +1991,21 @@ static void write_node_table(const SceneGather &p_g, float p_scale, Vector<uint8
 	o.push_back(p_g.fog_r);
 	o.push_back(p_g.fog_g);
 	o.push_back(p_g.fog_b);
+	o.push_back(0);
+	for (int i = 0; i < 128; i++) {
+		o.push_back(i < p_g.nodes.size() ? p_g.nodes[i].ysort : 0);
+	}
+	for (int i = 0; i < 128; i++) {
+		o.push_back(i < p_g.nodes.size() ? p_g.nodes[i].kind : 0);
+	}
+	for (int i = 0; i < 128; i++) {
+		o.push_back(i < p_g.nodes.size() ? p_g.nodes[i].path_id : 0);
+	}
+	i16(p_g.canvas_ox);
+	i16(p_g.canvas_oy);
+	o.push_back(0);
+	o.push_back(0);
+	o.push_back(0);
 	o.push_back(0);
 }
 
@@ -2202,6 +2509,151 @@ static void write_hit_table(const Vector<SceneGather::HitRow> &p_hits, float p_s
 	}
 }
 
+static void fill_nav_from_hits(SceneGather &r_g) {
+	if (r_g.nav_verts.is_empty()) {
+	for (int i = 0; i < r_g.hits.size() && r_g.nav_verts.size() < 32; i++) {
+		if (!(r_g.hits[i].flags & 1)) {
+			continue;
+		}
+		SceneGather::NavVert v;
+		v.pos = (r_g.hits[i].mn + r_g.hits[i].mx) * 0.5f;
+		v.node = r_g.hits[i].node_id;
+		r_g.nav_verts.push_back(v);
+	}
+	for (int i = 0; i + 1 < r_g.nav_verts.size() && r_g.nav_edges.size() < 48; i++) {
+		SceneGather::NavEdge e;
+		e.a = uint8_t(i);
+		e.b = uint8_t(i + 1);
+		r_g.nav_edges.push_back(e);
+	}
+	}
+	if (!r_g.nav_obs.is_empty() && !r_g.nav_verts.is_empty()) {
+		Vector<SceneGather::NavVert> kept;
+		Vector<int> map;
+		map.resize(r_g.nav_verts.size());
+		for (int i = 0; i < r_g.nav_verts.size(); i++) {
+			map.write[i] = -1;
+			bool drop = false;
+			for (int o = 0; o < r_g.nav_obs.size(); o++) {
+				if (r_g.nav_verts[i].pos.distance_to(r_g.nav_obs[o].pos) <= r_g.nav_obs[o].radius) {
+					drop = true;
+					break;
+				}
+			}
+			if (!drop) {
+				map.write[i] = kept.size();
+				kept.push_back(r_g.nav_verts[i]);
+			}
+		}
+		Vector<SceneGather::NavEdge> ek;
+		for (int i = 0; i < r_g.nav_edges.size(); i++) {
+			const int a = r_g.nav_edges[i].a < map.size() ? map[r_g.nav_edges[i].a] : -1;
+			const int b = r_g.nav_edges[i].b < map.size() ? map[r_g.nav_edges[i].b] : -1;
+			if (a >= 0 && b >= 0) {
+				SceneGather::NavEdge e;
+				e.a = uint8_t(a);
+				e.b = uint8_t(b);
+				ek.push_back(e);
+			}
+		}
+		r_g.nav_verts = kept;
+		r_g.nav_edges = ek;
+	}
+	if (!r_g.nav_verts.is_empty()) {
+		r_g.had_nav = true;
+	}
+}
+
+static void write_nav_table(const SceneGather &p_g, float p_scale, Vector<uint8_t> &o) {
+	auto u16 = [&](uint16_t v) {
+		o.push_back(uint8_t(v & 0xff));
+		o.push_back(uint8_t(v >> 8));
+	};
+	auto i16 = [&](int16_t v) { u16(uint16_t(v)); };
+	o.push_back('N');
+	o.push_back('A');
+	o.push_back('V');
+	o.push_back('0');
+	u16(uint16_t(kCookABI));
+	const int nv = MIN(p_g.nav_verts.size(), 32);
+	const int ne = MIN(p_g.nav_edges.size(), 48);
+	o.push_back(uint8_t(nv));
+	o.push_back(uint8_t(ne));
+	const float s = p_scale > 0.0f ? p_scale : 1.0f;
+	for (int i = 0; i < nv; i++) {
+		i16(clamp_i16(p_g.nav_verts[i].pos.x * s));
+		i16(clamp_i16(-p_g.nav_verts[i].pos.y * s));
+		i16(clamp_i16(p_g.nav_verts[i].pos.z * s));
+		i16(int16_t(p_g.nav_verts[i].node));
+	}
+	for (int i = 0; i < ne; i++) {
+		o.push_back(p_g.nav_edges[i].a);
+		o.push_back(p_g.nav_edges[i].b);
+	}
+}
+
+static void write_path_table(const SceneGather &p_g, float p_scale, Vector<uint8_t> &o) {
+	auto u16 = [&](uint16_t v) {
+		o.push_back(uint8_t(v & 0xff));
+		o.push_back(uint8_t(v >> 8));
+	};
+	auto i16 = [&](int16_t v) { u16(uint16_t(v)); };
+	o.push_back('P');
+	o.push_back('A');
+	o.push_back('T');
+	o.push_back('H');
+	u16(uint16_t(kCookABI));
+	o.push_back(uint8_t(MIN(p_g.paths.size(), 8)));
+	o.push_back(0);
+	const float s = p_scale > 0.0f ? p_scale : 1.0f;
+	const int n = MIN(p_g.paths.size(), 8);
+	for (int i = 0; i < n; i++) {
+		const SceneGather::PathRow &p = p_g.paths[i];
+		o.push_back(p.id);
+		o.push_back(p.npts);
+		o.push_back(p.closed);
+		o.push_back(0);
+		for (int k = 0; k < 16; k++) {
+			if (k < p.npts) {
+				i16(clamp_i16(p.pts[k].x * s));
+				i16(clamp_i16(-p.pts[k].y * s));
+				i16(clamp_i16(p.pts[k].z * s));
+			} else {
+				i16(0);
+				i16(0);
+				i16(0);
+			}
+		}
+	}
+}
+
+static void write_way_table(const SceneGather &p_g, Vector<uint8_t> &o) {
+	auto u16 = [&](uint16_t v) {
+		o.push_back(uint8_t(v & 0xff));
+		o.push_back(uint8_t(v >> 8));
+	};
+	o.push_back('W');
+	o.push_back('A');
+	o.push_back('Y');
+	o.push_back('0');
+	u16(uint16_t(kCookABI));
+	o.push_back(uint8_t(MIN(p_g.ways.size(), 32)));
+	o.push_back(0);
+	for (int i = 0; i < 32; i++) {
+		if (i < p_g.ways.size()) {
+			o.push_back(p_g.ways[i].node);
+			o.push_back(p_g.ways[i].path_id);
+			o.push_back(0);
+			o.push_back(0);
+		} else {
+			o.push_back(0);
+			o.push_back(0);
+			o.push_back(0);
+			o.push_back(0);
+		}
+	}
+}
+
 static void scan_script_scenes(Vector<String> &r_paths) {
 	Vector<String> stack;
 	stack.push_back("res://");
@@ -2286,7 +2738,14 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	r_out.warnings.push_back("ANIM/SPRITE/HIT/CAM/SFX/TXT/MUSIC/STR stream; extra-pack TPAK LoadImage on load_scene (fail VRAM → false); instantiate copies hit+sprite, shares anim/mesh.");
 	r_out.warnings.push_back("get_node walks the cooked tree; FileAccess user:// is the 24 KiB payload; not CARD BIOS. Memcard is Sony MC/SC wrap of user:// via pcdrv SAVE.MCD.");
 	r_out.warnings.push_back("can_load_* is a real budget/slice check; missing slice → false. is_*_loaded is the resident flag.");
-	r_out.warnings.push_back("2D/3D Godot scenes cook to AABB/mesh/sprite/HUD/cam/light while they fit 2 MiB; CharacterBody velocity + argless move_and_slide; AABB slide, not Jolt / Viewport / Navigation / skin.");
+	r_out.warnings.push_back("2D/3D Godot scenes cook to AABB/mesh/sprite/HUD/cam/light while they fit 2 MiB; CharacterBody velocity + argless move_and_slide; AABB slide, not Jolt / Viewport / NavigationServer / skin.");
+	r_out.warnings.push_back("ABI 20: get_forward/right/up, translate_local, move_and_fly (6DoF AABB, not RigidBody); per-node is_on_floor; apply_gravity; not coyote.");
+	r_out.warnings.push_back("raycast_group + get_ray_point/node; 32 shots are not nodes; orbit clip; y-sort; wrap_position; set_cull_dist is draw cull.");
+	r_out.warnings.push_back("follow_node; 32 marker waypoints; 8 paths x 16 points; PathFollow tick; not Curve3D.");
+	r_out.warnings.push_back("32-vert NAV graph; nav_next one hop; not NavigationServer / get_nav_path.");
+	r_out.warnings.push_back("8 linear tweens; create_tween allowlisted; not SceneTreeTween tracks.");
+	r_out.warnings.push_back("RayCast/ShapeCast (8); VisibleOnScreen AABB; RemoteTransform; SpringArm ray; Timer nodes = 8 slots.");
+	r_out.warnings.push_back("unload extra packs and slices; pack 0 stays in the EXE; shots/cull/nav/path/tweens keep the 128/2 MiB walls.");
 	r_out.warnings.push_back("Camera / body / area / particles / light / audio / sprite methods live on those nodes; PS1.* is an alias. Instantiate a template to spawn; not a hidden global pool.");
 	r_out.warnings.push_back("8 group bits + get_in_group(i); not get_nodes_in_group Array.");
 	r_out.warnings.push_back("Slide inherits floor AABB velocity; get_floor_node / get_floor_normal; optional 45° tile slope.");
@@ -2674,7 +3133,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		r_out.warnings.push_back("Control theme/StyleBox/mouse are not cooked; pad-focus only.");
 	}
 	if (gathered.canvas_layer_count > 0) {
-		r_out.warnings.push_back("CanvasLayer offset is not cooked.");
+		r_out.warnings.push_back("CanvasLayer offset is one i16 xy; not a layer stack.");
 	}
 	if (gathered.hud_dropped > 0) {
 		r_out.warnings.push_back(vformat("kept first %d of %d HUD widgets.", kMaxHud, kMaxHud + gathered.hud_dropped));
@@ -3163,6 +3622,18 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			write_cam_table(eg.cameras, mesh.scale, camb);
 			write_extra_blob("CAM", camb);
 		}
+		{
+			fill_nav_from_hits(eg);
+			Vector<uint8_t> navb;
+			write_nav_table(eg, mesh.scale, navb);
+			write_extra_blob("NAV", navb);
+			Vector<uint8_t> pathb;
+			write_path_table(eg, mesh.scale, pathb);
+			write_extra_blob("PATH", pathb);
+			Vector<uint8_t> wayb;
+			write_way_table(eg, wayb);
+			write_extra_blob("WAY", wayb);
+		}
 		if (!eg.extra_wavs.is_empty()) {
 			Vector<uint8_t> sfxb;
 			write_sfx_bank(eg.extra_wavs, eg.extra_wav_names, kSpuLimit, sfxb);
@@ -3221,6 +3692,34 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		ERR_FAIL_COND_V(hf.is_null(), ERR_CANT_CREATE);
 		hf->store_buffer(hitb);
 	}
+	fill_nav_from_hits(gathered);
+	{
+		Vector<uint8_t> navb;
+		write_nav_table(gathered, mesh.scale, navb);
+		r_out.nav_path = p_export_dir.path_join("NAV00.bin");
+		Ref<FileAccess> nv = FileAccess::open(r_out.nav_path, FileAccess::WRITE);
+		if (nv.is_valid()) {
+			nv->store_buffer(navb);
+		}
+	}
+	{
+		Vector<uint8_t> pathb;
+		write_path_table(gathered, mesh.scale, pathb);
+		r_out.path_path = p_export_dir.path_join("PATH00.bin");
+		Ref<FileAccess> pf = FileAccess::open(r_out.path_path, FileAccess::WRITE);
+		if (pf.is_valid()) {
+			pf->store_buffer(pathb);
+		}
+	}
+	{
+		Vector<uint8_t> wayb;
+		write_way_table(gathered, wayb);
+		r_out.way_path = p_export_dir.path_join("WAY00.bin");
+		Ref<FileAccess> wf = FileAccess::open(r_out.way_path, FileAccess::WRITE);
+		if (wf.is_valid()) {
+			wf->store_buffer(wayb);
+		}
+	}
 	if (!gathered.text_lines.is_empty()) {
 		Vector<uint8_t> txtb;
 		write_text_bank(gathered.text_lines, txtb);
@@ -3232,7 +3731,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	}
 	Ref<FileAccess> nf = FileAccess::open(r_out.names_path, FileAccess::WRITE);
 	ERR_FAIL_COND_V(nf.is_null(), ERR_CANT_CREATE);
-	nf->store_line(src_name + " -> TEX00.TIM MESH00.bin SFX00.VAG SPRITE00.bin FMV00.MAP SCRIPT.IR SCRIPT.GD.BC SCRIPT.LU.BC NODE00.bin HUD00.bin TILE00.bin SCENE00.bin ANIM00.bin CAM00.bin HIT00.bin TXT00.bin SFX00.bin MUSIC00.bin");
+	nf->store_line(src_name + " -> TEX00.TIM MESH00.bin SFX00.VAG SPRITE00.bin FMV00.MAP SCRIPT.IR SCRIPT.GD.BC SCRIPT.LU.BC NODE00.bin HUD00.bin TILE00.bin SCENE00.bin ANIM00.bin CAM00.bin HIT00.bin TXT00.bin SFX00.bin MUSIC00.bin NAV00.bin PATH00.bin WAY00.bin");
 
 	r_out.texels = packed.pixel_w * MAX(1, packed.pixel_h);
 	r_out.tris = src_tris.size();

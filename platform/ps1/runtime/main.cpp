@@ -44,7 +44,7 @@
 #include "script_vm.h"
 
 #ifndef BLAZIUM_PS1_COOK_ABI
-#define BLAZIUM_PS1_COOK_ABI 19
+#define BLAZIUM_PS1_COOK_ABI 20
 #endif
 
 #define OT_LEN 2048
@@ -135,6 +135,21 @@ extern const size_t cooked_cam_size;
 #ifdef BLAZIUM_PS1_HAS_HIT
 extern const uint8_t cooked_hit[];
 extern const size_t cooked_hit_size;
+#endif
+
+#ifdef BLAZIUM_PS1_HAS_NAV
+extern const uint8_t cooked_nav[];
+extern const size_t cooked_nav_size;
+#endif
+
+#ifdef BLAZIUM_PS1_HAS_PATH
+extern const uint8_t cooked_path[];
+extern const size_t cooked_path_size;
+#endif
+
+#ifdef BLAZIUM_PS1_HAS_WAY
+extern const uint8_t cooked_way[];
+extern const size_t cooked_way_size;
 #endif
 
 static MATRIX g_color_mtx = {
@@ -911,9 +926,41 @@ static void draw_cooked_sprites(uint16_t *tpages, uint16_t *cluts) {
 	const int nspr = script_vm_sprite_count();
 	const ScriptVMNode *nodes = script_vm_nodes();
 	const int nn = script_vm_node_count();
-	for (int ni = 0; ni < nn; ni++) {
+	uint8_t order[128];
+	int nvis = 0;
+	int any_ysort = 0;
+	for (int ni = 0; ni < nn && nvis < 128; ni++) {
 		const int si = int(nodes[ni].sprite);
-		if (si < 0 || si >= nspr || !(nodes[ni].flags & 1)) {
+		if (si < 0 || si >= nspr || !(nodes[ni].flags & 1) || script_vm_node_culled(ni)) {
+			continue;
+		}
+		order[nvis++] = uint8_t(ni);
+		if (script_vm_node_ysort(ni)) {
+			any_ysort = 1;
+		}
+	}
+	if (any_ysort) {
+		for (int a = 1; a < nvis; a++) {
+			const uint8_t v = order[a];
+			int b = a;
+			while (b > 0) {
+				const int ia = int(order[b - 1]);
+				const int ib = int(v);
+				const int ya = script_vm_node_ysort(ia) ? int(nodes[ia].py) : ia;
+				const int yb = script_vm_node_ysort(ib) ? int(nodes[ib].py) : ib;
+				if (ya <= yb) {
+					break;
+				}
+				order[b] = order[b - 1];
+				b--;
+			}
+			order[b] = v;
+		}
+	}
+	for (int oi = 0; oi < nvis; oi++) {
+		const int ni = int(order[oi]);
+		const int si = int(nodes[ni].sprite);
+		if (si < 0 || si >= nspr || !(nodes[ni].flags & 1) || script_vm_node_culled(ni)) {
 			continue;
 		}
 		const uint8_t rgb = spr[si].rgb ? spr[si].rgb : 255;
@@ -987,7 +1034,7 @@ static void draw_cooked_tiles(uint16_t *tpages, uint16_t *cluts) {
 	const int nn = script_vm_node_count();
 	for (int i = 0; i < n; i++) {
 		const int nid = int(tiles[i].node_id);
-		if (nid >= 0 && nid < nn && !(nodes[nid].flags & 1)) {
+		if (nid >= 0 && nid < nn && (!(nodes[nid].flags & 1) || script_vm_node_culled(nid))) {
 			continue;
 		}
 		if ((uint8_t *)((SPRT *)g_pri + 1) > g_fb[g_active].packet + PACKET_LEN) {
@@ -1011,10 +1058,14 @@ static void draw_cooked_hud(uint16_t *cluts) {
 	const int n = script_vm_hud_count();
 	ScriptVMHud *hud = script_vm_hud();
 	const int focus = script_vm_hud_focus();
+	int ox = 0, oy = 0;
+	script_vm_get_hud_offset(&ox, &oy);
 	for (int i = 0; i < n; i++) {
 		if (!(hud[i].flags & 1)) {
 			continue;
 		}
+		const int16_t hx = int16_t(hud[i].x + ox);
+		const int16_t hy = int16_t(hud[i].y + oy);
 		uint8_t r, g, b;
 		unpack_rgb(hud[i].rgb, &r, &g, &b);
 		if (hud[i].rgb == 128 && r == 0) {
@@ -1031,7 +1082,7 @@ static void draw_cooked_hud(uint16_t *cluts) {
 			r = uint8_t(r > 200 ? 255 : r + 55);
 			g = uint8_t(g > 200 ? 255 : g + 55);
 			b = uint8_t(b > 200 ? 255 : b + 55);
-			draw_tile_rect(int16_t(hud[i].x - 1), int16_t(hud[i].y - 1), int16_t(hud[i].w + 2), int16_t(hud[i].h + 2), 255, 255, 80);
+			draw_tile_rect(int16_t(hx - 1), int16_t(hy - 1), int16_t(hud[i].w + 2), int16_t(hud[i].h + 2), 255, 255, 80);
 		}
 		if (hud[i].tex != 0xff) {
 			if ((uint8_t *)((SPRT *)g_pri + 1) > g_fb[g_active].packet + PACKET_LEN) {
@@ -1040,14 +1091,14 @@ static void draw_cooked_hud(uint16_t *cluts) {
 			SPRT *p = (SPRT *)g_pri;
 			setSprt(p);
 			setRGB0(p, r, g, b);
-			setXY0(p, hud[i].x, hud[i].y);
+			setXY0(p, hx, hy);
 			setWH(p, hud[i].w, hud[i].h);
 			setUV0(p, 0, 0);
 			p->clut = cluts[hud[i].tex & 15];
 			addPrim(&g_fb[g_active].ot[1], p);
 			g_pri = (uint8_t *)(p + 1);
 		} else {
-			draw_tile_rect(hud[i].x, hud[i].y, hud[i].w, hud[i].h, r, g, b);
+			draw_tile_rect(hx, hy, hud[i].w, hud[i].h, r, g, b);
 		}
 		if (hud[i].kind == 10 || hud[i].kind == 11 || hud[i].kind == 12) {
 			int span = int(hud[i].vmax) - int(hud[i].vmin);
@@ -1062,7 +1113,7 @@ static void draw_cooked_hud(uint16_t *cluts) {
 				fill = hud[i].w;
 			}
 			if (fill > 0) {
-				draw_tile_rect(hud[i].x, hud[i].y, int16_t(fill), hud[i].h, 80, 200, 80);
+				draw_tile_rect(hx, hy, int16_t(fill), hud[i].h, 80, 200, 80);
 			}
 		}
 		char line[40];
@@ -1078,7 +1129,7 @@ static void draw_cooked_hud(uint16_t *cluts) {
 		}
 		line[nch] = 0;
 		if (nch) {
-			g_pri = (uint8_t *)FntSort(&g_fb[g_active].ot[1], g_pri, hud[i].x + 2, hud[i].y + 2, line);
+			g_pri = (uint8_t *)FntSort(&g_fb[g_active].ot[1], g_pri, hx + 2, hy + 2, line);
 		}
 	}
 }
@@ -1229,7 +1280,7 @@ static int draw_cooked_mesh(const MATRIX *view, const uint16_t *tpages, const ui
 	if (nnode > 0 && nodes && view) {
 		int drawn = 0;
 		for (int i = 0; i < nnode; i++) {
-			if (!(nodes[i].flags & 1)) {
+			if (!(nodes[i].flags & 1) || script_vm_node_culled(i)) {
 				continue;
 			}
 			MATRIX world, mv;
@@ -1504,6 +1555,22 @@ int main(int argc, const char **argv) {
 			script_vm_set_scroll(scroll, got);
 			if (p + 10 <= end) {
 				script_vm_set_fog(p[0], int(p[2] | (p[3] << 8)), int(p[4] | (p[5] << 8)), p[6], p[7], p[8]);
+				p += 10;
+			}
+			if (p + 128 <= end) {
+				script_vm_set_ysort(p, 128);
+				p += 128;
+			}
+			if (p + 128 <= end) {
+				script_vm_set_kinds(p, 128);
+				p += 128;
+			}
+			if (p + 128 <= end) {
+				script_vm_set_path_ids(p, 128);
+				p += 128;
+			}
+			if (p + 8 <= end) {
+				script_vm_set_hud_offset(int16_t(p[0] | (p[1] << 8)), int16_t(p[2] | (p[3] << 8)));
 			}
 		}
 	}
@@ -1774,6 +1841,15 @@ int main(int argc, const char **argv) {
 		}
 	}
 #endif
+#ifdef BLAZIUM_PS1_HAS_NAV
+	script_vm_apply_nav_blob(cooked_nav, int(cooked_nav_size));
+#endif
+#ifdef BLAZIUM_PS1_HAS_PATH
+	script_vm_apply_path_blob(cooked_path, int(cooked_path_size));
+#endif
+#ifdef BLAZIUM_PS1_HAS_WAY
+	script_vm_apply_way_blob(cooked_way, int(cooked_way_size));
+#endif
 #ifdef BLAZIUM_PS1_HAS_SPRITE
 	if (cooked_sprite_size >= 4) {
 		const uint16_t n = uint16_t(cooked_sprite[0] | (cooked_sprite[1] << 8));
@@ -1997,6 +2073,42 @@ int main(int argc, const char **argv) {
 				setUV4(q, u0, 0, u1, 0, u0, 8, u1, 8);
 				q->tpage = tpages[parts[i].tex & 15];
 				q->clut = cluts[parts[i].tex & 15];
+				addPrim(&g_fb[g_active].ot[1], q);
+				g_pri = (uint8_t *)(q + 1);
+			}
+			const int ns = script_vm_shot_count();
+			const ScriptVMShot *shots = script_vm_shots();
+			for (int i = 0; i < ns; i++) {
+				if (!shots[i].used) {
+					continue;
+				}
+				const int dx = int(shots[i].x) - int(pos.vx);
+				const int dy = int(shots[i].y) - int(pos.vy);
+				const int dz = int(shots[i].z) - int(pos.vz);
+				const int cy = icos(rot.vy);
+				const int ysin = isin(rot.vy);
+				const int lx = (dx * cy - dz * ysin) >> 12;
+				const int lz = (dx * ysin + dz * cy) >> 12;
+				const int cp = icos(rot.vx);
+				const int sp = isin(rot.vx);
+				const int ly = (dy * cp - lz * sp) >> 12;
+				const int lz2 = (dy * sp + lz * cp) >> 12;
+				if (lz2 <= 1) {
+					continue;
+				}
+				const int fov = g_cam_scale > 0 ? g_cam_scale : 160;
+				const int16_t sx = int16_t(SCREEN_W / 2 + lx * fov / lz2);
+				const int16_t sy = int16_t(SCREEN_H / 2 - ly * fov / lz2);
+				if ((uint8_t *)((POLY_FT4 *)g_pri + 1) > g_fb[g_active].packet + PACKET_LEN) {
+					break;
+				}
+				POLY_FT4 *q = (POLY_FT4 *)g_pri;
+				setPolyFT4(q);
+				setRGB0(q, 255, 220, 80);
+				setXY4(q, int16_t(sx - 2), int16_t(sy - 2), int16_t(sx + 2), int16_t(sy - 2), int16_t(sx - 2), int16_t(sy + 2), int16_t(sx + 2), int16_t(sy + 2));
+				setUV4(q, 0, 0, 8, 0, 0, 8, 8, 8);
+				q->tpage = tpages[shots[i].tex & 15];
+				q->clut = cluts[shots[i].tex & 15];
 				addPrim(&g_fb[g_active].ot[1], q);
 				g_pri = (uint8_t *)(q + 1);
 			}

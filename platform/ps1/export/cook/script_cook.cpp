@@ -199,7 +199,28 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "find_nearest" || p_name == "set_billboard" || p_name == "get_billboard" ||
 			p_name == "get_floor_node" || p_name == "get_floor_normal" || p_name == "make_current" ||
 			p_name == "attach" || p_name == "look" || p_name == "orbit" || p_name == "shake" ||
-			p_name == "set_limits" || p_name == "set_drag";
+			p_name == "set_limits" || p_name == "set_drag" ||
+			p_name == "get_forward" || p_name == "get_right" || p_name == "get_up" ||
+			p_name == "translate_local" || p_name == "move_and_fly" ||
+			p_name == "apply_gravity" || p_name == "set_gravity" || p_name == "add_velocity" ||
+			p_name == "follow_node" || p_name == "raycast_group" ||
+			p_name == "get_ray_point" || p_name == "get_ray_node" ||
+			p_name == "spawn_shot" || p_name == "clear_shots" || p_name == "get_shot_count" ||
+			p_name == "get_free_shots" || p_name == "shot_hit" ||
+			p_name == "clip_orbit" || p_name == "set_y_sort" || p_name == "wrap_position" ||
+			p_name == "set_cull_dist" || p_name == "create_tween" || p_name == "tween_property" ||
+			p_name == "kill_tweens" || p_name == "tween_count" ||
+			p_name == "count_waypoints" || p_name == "get_waypoint" || p_name == "get_waypoint_pos" ||
+			p_name == "set_path_progress" || p_name == "get_path_progress" ||
+			p_name == "get_path_point" || p_name == "count_path_points" ||
+			p_name == "nav_nearest" || p_name == "nav_next" || p_name == "nav_next_node" ||
+			p_name == "load_nav" || p_name == "unload_nav" || p_name == "can_load_nav" || p_name == "is_nav_loaded" ||
+			p_name == "load_paths" || p_name == "unload_paths" || p_name == "can_load_paths" || p_name == "is_paths_loaded" ||
+			p_name == "load_waypoints" || p_name == "unload_waypoints" || p_name == "can_load_waypoints" || p_name == "is_waypoints_loaded" ||
+			p_name == "unload_pack" || p_name == "is_colliding" || p_name == "get_collider" ||
+			p_name == "get_collision_point" || p_name == "set_enabled" || p_name == "is_on_screen" ||
+			p_name == "is_navigation_finished" || p_name == "get_next_path_position" ||
+			p_name == "set_target_position" || p_name == "start" || p_name == "is_stopped";
 }
 
 static bool member_is_allowlisted(const String &p_name) {
@@ -265,7 +286,7 @@ static void warn_unknown_actions(const String &p_source, ScriptIR &r_out) {
 static bool luau_source_unbound(const String &p_source, String &r_why) {
 	const String src = strip_line_comments(p_source);
 	const char *bad[] = {
-		"call_deferred", "rpc", "create_tween", "duplicate"
+		"call_deferred", "rpc", "duplicate"
 	};
 	for (const char *b : bad) {
 		if (src.contains(String(b) + "(") || src.contains(String(b) + " (")) {
@@ -1198,7 +1219,7 @@ Error cook_scripts(const String &p_export_dir, ScriptIR &r_out) {
 		}
 	}
 
-	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 19)\n", r_out.rotate_y);
+	r_out.map_text = vformat("IR rotate_y=%f (GDScript+Luau ABI 20)\n", r_out.rotate_y);
 	for (int i = 0; i < r_out.accepted.size(); i++) {
 		r_out.map_text += "OK " + r_out.accepted[i] + "\n";
 	}
