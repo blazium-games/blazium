@@ -131,6 +131,9 @@
 #ifdef MODULE_ANALYTICS_ENABLED
 #include "modules/analytics/analytics.h"
 #endif
+#ifdef MODULE_LIVEWALLPAPER_ENABLED
+#include "modules/livewallpaper/livewallpaper_cmdline.h"
+#endif
 
 #if defined(MODULE_MONO_ENABLED) && defined(TOOLS_ENABLED)
 #include "modules/mono/editor/bindings_generator.h"
@@ -1126,6 +1129,9 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	I = args.front();
 	while (I) {
 		List<String>::Element *N = I->next();
+#ifdef MODULE_LIVEWALLPAPER_ENABLED
+		bool livewallpaper_consumed_next = false;
+#endif
 
 		const String &arg = I->get();
 
@@ -1960,6 +1966,16 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 				goto error;
 			}
 		} else if (arg.begins_with("--crash-reporter=")) {
+#endif
+#ifdef MODULE_LIVEWALLPAPER_ENABLED
+		} else if (
+#ifdef TOOLS_ENABLED
+				!editor && !project_manager &&
+#endif
+				LiveWallpaperCmdline::try_consume(arg, N ? N->get() : String(), livewallpaper_consumed_next)) {
+			if (livewallpaper_consumed_next && N) {
+				N = N->next();
+			}
 #endif
 		} else {
 			main_args.push_back(arg);
@@ -3189,11 +3205,24 @@ Error Main::setup2(bool p_show_boot_logo) {
 			context = DisplayServer::CONTEXT_ENGINE;
 		}
 
+#ifdef MODULE_LIVEWALLPAPER_ENABLED
+		bool livewallpaper_use_position = false;
+		LiveWallpaperCmdline::apply_recorded(window_mode, window_flags, position, window_size, init_embed_parent_window_id, livewallpaper_use_position);
+		if (livewallpaper_use_position) {
+			window_position = &position;
+		}
+#endif
+
 		if (init_embed_parent_window_id) {
 			// Reset flags and other settings to be sure it's borderless and windowed. The position and size should have been initialized correctly
 			// from --position and --resolution parameters.
 			window_mode = DisplayServer::WINDOW_MODE_WINDOWED;
 			window_flags = DisplayServer::WINDOW_FLAG_BORDERLESS_BIT;
+#ifdef MODULE_LIVEWALLPAPER_ENABLED
+			if (LiveWallpaperCmdline::get_mode() == LiveWallpaperCmdline::MODE_RUN) {
+				window_flags |= DisplayServer::WINDOW_FLAG_NO_FOCUS_BIT;
+			}
+#endif
 		}
 
 		// rendering_driver now held in static global String in main and initialized in setup()
