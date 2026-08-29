@@ -75,6 +75,12 @@ bool source_is_rejected(const String &p_source, String &r_why) {
 			break;
 		}
 		p = hit + 5;
+		if (hit > 0) {
+			const char32_t prev = src[hit - 1];
+			if ((prev >= 'a' && prev <= 'z') || (prev >= 'A' && prev <= 'Z') || (prev >= '0' && prev <= '9') || prev == '_') {
+				continue;
+			}
+		}
 		const int q = src.find("\"", hit);
 		if (q < 0) {
 			r_why = "load(";
@@ -123,7 +129,11 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "get_vector" || p_name == "push_error" || p_name == "get_frames_per_second" ||
 			p_name == "play" || p_name == "stop" || p_name == "is_playing" ||
 			p_name == "queue_free" || p_name == "load" || p_name == "instantiate" ||
-			p_name == "change_scene" || p_name == "change_scene_to_file" || p_name == "get_tree" ||
+			p_name == "change_scene" || p_name == "change_scene_to_file" || p_name == "change_scene_fade" || p_name == "get_tree" ||
+			p_name == "set_coyote" || p_name == "set_jump_buffer" || p_name == "can_jump" ||
+			p_name == "consume_jump" || p_name == "set_one_way_pass" ||
+			p_name == "get_x" || p_name == "get_y" || p_name == "get_z" ||
+			p_name == "set_x" || p_name == "set_y" || p_name == "set_z" ||
 			p_name == "connect" || p_name == "disconnect" ||
 			p_name == "load_scene" || p_name == "unload_scene" || p_name == "is_scene_loaded" ||
 			p_name == "get_loaded_scene_count" || p_name == "get_loaded_scene" ||
@@ -228,6 +238,8 @@ static bool member_is_allowlisted(const String &p_name) {
 			p_name == "text" || p_name == "disabled" || p_name == "pressed" || p_name == "button_pressed" ||
 			p_name == "value" || p_name == "min_value" || p_name == "max_value" || p_name == "selected" ||
 			p_name == "focus" || p_name == "x" || p_name == "y" || p_name == "z" ||
+			p_name == "get_x" || p_name == "get_y" || p_name == "get_z" ||
+			p_name == "set_x" || p_name == "set_y" || p_name == "set_z" ||
 			p_name == "frame" || p_name == "flip_h" || p_name == "flip_v" || p_name == "modulate" || p_name == "speed_scale" ||
 			p_name == "velocity" || p_name == "billboard" ||
 			p_name == "get_velocity" || p_name == "set_velocity" ||
@@ -881,7 +893,12 @@ static Vector<uint8_t> pack_luau_tape(const Vector<String> &p_paths, const Vecto
 			"get_ticks_msec", "create_timer", "is_timer_done",
 			"get_vector", "push_error", "get_frames_per_second",
 			"play", "stop", "is_playing", "queue_free",
-			"load", "instantiate", "change_scene", "change_scene_to_file", "get_tree",
+			"load", "instantiate", "change_scene", "change_scene_to_file", "change_scene_fade", "get_tree",
+			"set_coyote", "set_jump_buffer", "can_jump", "consume_jump", "set_one_way_pass",
+			"get_forward", "get_right", "get_up", "translate_local", "move_and_fly",
+			"apply_gravity", "add_velocity", "spawn_shot", "shot_hit", "get_ray_node",
+			"create_tween", "tween_property", "world_to_screen", "clip_orbit", "set_cull_dist",
+			"get_free_ram", "get_free_nodes", "nav_next", "follow_node",
 			"load_scene", "unload_scene", "is_scene_loaded", "get_loaded_scene_count", "get_loaded_scene",
 			"get_static_memory_usage", "get_static_memory_peak_usage", "get_ram_budget", "get_free_ram",
 			"can_load_scene", "can_instantiate", "get_node_count", "get_node_budget",

@@ -314,7 +314,7 @@ public:
 		_fail_ps1();
 		return false;
 	}
-	bool memcard_save(int p_slot, const String &p_name, const PackedByteArray &p_bytes) {
+	bool memcard_save(int p_slot, const String &p_name, const Variant &p_bytes = Variant()) {
 		_fail_ps1();
 		return false;
 	}
@@ -330,7 +330,7 @@ public:
 		_fail_ps1();
 		return String();
 	}
-	PackedByteArray memcard_wrap(const PackedByteArray &p_payload, const String &p_title);
+	PackedByteArray memcard_wrap(const Variant &p_payload, const String &p_title = String());
 	PackedByteArray memcard_unwrap(const PackedByteArray &p_framed);
 	Vector2 get_stick(int p_device, int p_stick) const {
 		_fail_ps1();
@@ -635,7 +635,7 @@ public:
 		_fail_ps1();
 		return false;
 	}
-	bool set_fade(float p_alpha, const Color &p_color) {
+	bool set_fade(float p_alpha, const Color &p_color = Color()) {
 		_fail_ps1();
 		return false;
 	}
@@ -819,6 +819,28 @@ public:
 		return false;
 	}
 	bool change_scene(const String &p_path) {
+		_fail_ps1();
+		return false;
+	}
+	void set_coyote(float p_ms) {
+		_fail_ps1();
+	}
+	void set_jump_buffer(float p_ms) {
+		_fail_ps1();
+	}
+	bool can_jump(const Variant &p_node) const {
+		_fail_ps1();
+		return false;
+	}
+	bool consume_jump(const Variant &p_node) {
+		_fail_ps1();
+		return false;
+	}
+	bool set_one_way_pass(const Variant &p_node, bool p_on) {
+		_fail_ps1();
+		return false;
+	}
+	bool change_scene_fade(const String &p_path, float p_seconds) {
 		_fail_ps1();
 		return false;
 	}

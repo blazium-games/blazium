@@ -106,11 +106,11 @@ void PS1::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("memcard_format", "slot"), &PS1::memcard_format);
 	ClassDB::bind_method(D_METHOD("memcard_exists", "slot", "name"), &PS1::memcard_exists);
 	ClassDB::bind_method(D_METHOD("memcard_delete", "slot", "name"), &PS1::memcard_delete);
-	ClassDB::bind_method(D_METHOD("memcard_save", "slot", "name", "bytes"), &PS1::memcard_save);
+	ClassDB::bind_method(D_METHOD("memcard_save", "slot", "name", "bytes"), &PS1::memcard_save, DEFVAL(Variant()));
 	ClassDB::bind_method(D_METHOD("memcard_load", "slot", "name"), &PS1::memcard_load);
 	ClassDB::bind_method(D_METHOD("memcard_count", "slot"), &PS1::memcard_count);
 	ClassDB::bind_method(D_METHOD("memcard_name", "slot", "index"), &PS1::memcard_name);
-	ClassDB::bind_method(D_METHOD("memcard_wrap", "payload", "title"), &PS1::memcard_wrap);
+	ClassDB::bind_method(D_METHOD("memcard_wrap", "payload", "title"), &PS1::memcard_wrap, DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("memcard_unwrap", "framed"), &PS1::memcard_unwrap);
 	ClassDB::bind_method(D_METHOD("get_stick", "device", "stick"), &PS1::get_stick);
 	ClassDB::bind_method(D_METHOD("set_rumble", "device", "small", "large"), &PS1::set_rumble);
@@ -187,7 +187,7 @@ void PS1::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_sfx_volume", "name", "vol"), &PS1::set_sfx_volume);
 	ClassDB::bind_method(D_METHOD("emit", "pos", "count", "sprite_or_tim"), &PS1::emit);
 	ClassDB::bind_method(D_METHOD("set_fog", "on", "start", "end", "color"), &PS1::set_fog);
-	ClassDB::bind_method(D_METHOD("set_fade", "alpha", "color"), &PS1::set_fade);
+	ClassDB::bind_method(D_METHOD("set_fade", "alpha", "color"), &PS1::set_fade, DEFVAL(Color()));
 	ClassDB::bind_method(D_METHOD("set_light", "index", "dir", "color"), &PS1::set_light);
 	ClassDB::bind_method(D_METHOD("get_forward", "node"), &PS1::get_forward, DEFVAL(Variant()));
 	ClassDB::bind_method(D_METHOD("get_right", "node"), &PS1::get_right, DEFVAL(Variant()));
@@ -233,6 +233,12 @@ void PS1::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_waypoints_loaded", "path"), &PS1::is_waypoints_loaded);
 	ClassDB::bind_method(D_METHOD("unload_pack", "path"), &PS1::unload_pack);
 	ClassDB::bind_method(D_METHOD("change_scene", "path"), &PS1::change_scene);
+	ClassDB::bind_method(D_METHOD("set_coyote", "ms"), &PS1::set_coyote);
+	ClassDB::bind_method(D_METHOD("set_jump_buffer", "ms"), &PS1::set_jump_buffer);
+	ClassDB::bind_method(D_METHOD("can_jump", "node"), &PS1::can_jump);
+	ClassDB::bind_method(D_METHOD("consume_jump", "node"), &PS1::consume_jump);
+	ClassDB::bind_method(D_METHOD("set_one_way_pass", "node", "on"), &PS1::set_one_way_pass);
+	ClassDB::bind_method(D_METHOD("change_scene_fade", "path", "seconds"), &PS1::change_scene_fade);
 	ClassDB::bind_method(D_METHOD("set_path_progress", "node", "t"), &PS1::set_path_progress);
 	ClassDB::bind_method(D_METHOD("get_path_progress", "node"), &PS1::get_path_progress);
 	ClassDB::bind_method(D_METHOD("get_path_point", "path", "i"), &PS1::get_path_point);
@@ -305,8 +311,19 @@ static PackedByteArray _mc_unwrap(const PackedByteArray &p_framed) {
 	return p_framed;
 }
 
-PackedByteArray PS1::memcard_wrap(const PackedByteArray &p_payload, const String &p_title) {
-	return _mc_wrap(p_payload, p_title);
+PackedByteArray PS1::memcard_wrap(const Variant &p_payload, const String &p_title) {
+	if (p_payload.get_type() == Variant::PACKED_BYTE_ARRAY) {
+		return _mc_wrap(p_payload, p_title);
+	}
+	PackedByteArray raw;
+	if (p_payload.get_type() == Variant::STRING) {
+		const CharString cs = String(p_payload).utf8();
+		raw.resize(cs.length());
+		if (cs.length()) {
+			memcpy(raw.ptrw(), cs.get_data(), cs.length());
+		}
+	}
+	return _mc_wrap(raw, p_title);
 }
 
 PackedByteArray PS1::memcard_unwrap(const PackedByteArray &p_framed) {

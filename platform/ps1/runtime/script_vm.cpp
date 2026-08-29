@@ -156,6 +156,15 @@ static uint8_t g_node_cull[PS1_MAX_NODES];
 static float g_cull_dist = 0;
 static int g_orbit_clip = 1;
 static float g_body_gx = 0, g_body_gy = -60, g_body_gz = 0;
+static float g_coyote_ms = 0;
+static float g_jump_buf_ms = 0;
+static float g_coyote_until[PS1_MAX_NODES];
+static float g_jump_buf_until[PS1_MAX_NODES];
+static uint8_t g_one_way_pass[PS1_MAX_NODES];
+static uint8_t g_was_floor[PS1_MAX_NODES];
+static uint8_t g_auto_jump[PS1_MAX_NODES];
+static float g_fade_out_left = 0;
+static float g_fade_out_dur = 0;
 static int16_t g_hud_ox = 0, g_hud_oy = 0;
 static ScriptVMShot g_shot[32];
 static int g_nshot = 32;
@@ -391,6 +400,11 @@ void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, 
 		g_floor_n[i] = 0;
 		g_wall_n[i] = 0;
 		g_ceil_n[i] = 0;
+		g_coyote_until[i] = 0;
+		g_jump_buf_until[i] = 0;
+		g_one_way_pass[i] = 0;
+		g_was_floor[i] = 0;
+		g_auto_jump[i] = 0;
 		g_ysort[i] = 0;
 		g_kind[i] = 0;
 		g_path_id[i] = 0;
@@ -412,6 +426,10 @@ void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, 
 	g_body_gx = 0;
 	g_body_gy = -60;
 	g_body_gz = 0;
+	g_coyote_ms = 0;
+	g_jump_buf_ms = 0;
+	g_fade_out_left = 0;
+	g_fade_out_dur = 0;
 	g_hud_ox = 0;
 	g_hud_oy = 0;
 	g_nvert = g_nedge = g_nav_loaded = 0;
@@ -983,6 +1001,31 @@ static int name_eq_n(const char *a, const char *b, int n) {
 
 static int node_ok(int id) {
 	return id >= 0 && id < g_nnode && g_node_used[id];
+}
+
+static int kit_nid(int node, const GVar *argv, int argc) {
+	if (argv && argc > 0) {
+		if (argv[0].type == V_OBJ) {
+			return argv[0].i;
+		}
+		if (argv[0].type != V_STR) {
+			return int(as_float(argv[0]));
+		}
+	}
+	return node;
+}
+
+static int kit_can_jump(int nid) {
+	if (!node_ok(nid)) {
+		return 0;
+	}
+	if (g_auto_jump[nid]) {
+		return 1;
+	}
+	if (g_floor_n[nid]) {
+		return 1;
+	}
+	return g_coyote_until[nid] > g_ticks_ms;
 }
 
 static int find_child(int parent, const char *name, int nlen) {
@@ -5208,6 +5251,8 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			name_is(name, "is_audio_loaded") || name_is(name, "play_sfx") || name_is(name, "stop_sfx") ||
 			name_is(name, "set_sfx_volume") || name_is(name, "set_music_volume") || name_is(name, "emit") || name_is(name, "set_fog") ||
 			name_is(name, "set_fade") || name_is(name, "set_light") ||
+			name_is(name, "set_coyote") || name_is(name, "set_jump_buffer") ||
+			name_is(name, "can_jump") || name_is(name, "consume_jump") || name_is(name, "set_one_way_pass") ||
 			name_is(name, "raycast_point") || name_is(name, "is_on_floor") || name_is(name, "is_on_wall") ||
 			name_is(name, "is_on_ceiling") || name_is(name, "set_hitbox_layer") || name_is(name, "get_hitbox_layer") ||
 			name_is(name, "shake_camera") || name_is(name, "set_paused") || name_is(name, "is_paused") ||
@@ -5893,6 +5938,9 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 						if (!(int(g_hits[i].layer) & mask)) {
 							continue;
 						}
+						if (g_one_way_pass[nid] && axis == 1 && (dim2 ? (vy < 0.0f) : (vy > 0.0f))) {
+							continue;
+						}
 						const int sep = tmp.max_x < g_hits[i].min_x || tmp.min_x > g_hits[i].max_x ||
 								tmp.max_y < g_hits[i].min_y || tmp.min_y > g_hits[i].max_y ||
 								(tmp.dim == 3 && (tmp.max_z < g_hits[i].min_z || tmp.min_z > g_hits[i].max_z));
@@ -5910,6 +5958,9 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 							continue;
 						}
 						if ((g_tiles[t].flags & 2) && !(axis == 1 && vy > 0.0f)) {
+							continue;
+						}
+						if (g_one_way_pass[nid] && (g_tiles[t].flags & 2) && axis == 1 && (dim2 ? (vy < 0.0f) : (vy > 0.0f))) {
 							continue;
 						}
 						const int16_t x = g_tiles[t].x;
@@ -5994,6 +6045,15 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			g_floor_n[nid] = uint8_t(g_on_floor);
 			g_wall_n[nid] = uint8_t(g_on_wall);
 			g_ceil_n[nid] = uint8_t(g_on_ceiling);
+			if (g_on_floor) {
+				if (!g_was_floor[nid] && g_jump_buf_until[nid] > g_ticks_ms) {
+					g_auto_jump[nid] = 1;
+				}
+				g_coyote_until[nid] = g_ticks_ms + g_coyote_ms;
+			} else if (g_was_floor[nid] && g_coyote_ms > 0) {
+				g_coyote_until[nid] = g_ticks_ms + g_coyote_ms;
+			}
+			g_was_floor[nid] = uint8_t(g_on_floor);
 			*ret = gv_v3(vx, vy, vz);
 			return 1;
 		}
@@ -6191,6 +6251,8 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			return 1;
 		}
 		if (name_is(name, "set_fade")) {
+			g_fade_out_left = 0;
+			g_fade_out_dur = 0;
 			g_fade_a = argv && argc > 0 ? int(as_float(argv[0]) * 255.0f) : 0;
 			if (g_fade_a < 0) {
 				g_fade_a = 0;
@@ -6233,6 +6295,70 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			if (host && host->set_light) {
 				host->set_light(idx, dx, dy, dz, r, g, b);
 			}
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "set_coyote")) {
+			g_coyote_ms = argv && argc > 0 ? as_float(argv[0]) : 0;
+			if (g_coyote_ms < 0) {
+				g_coyote_ms = 0;
+			}
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "set_jump_buffer")) {
+			g_jump_buf_ms = argv && argc > 0 ? as_float(argv[0]) : 0;
+			if (g_jump_buf_ms < 0) {
+				g_jump_buf_ms = 0;
+			}
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "can_jump")) {
+			const int nid = kit_nid(node, argv, argc);
+			*ret = gv_bool(kit_can_jump(nid));
+			return 1;
+		}
+		if (name_is(name, "consume_jump")) {
+			const int nid = kit_nid(node, argv, argc);
+			if (!node_ok(nid)) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			if (!kit_can_jump(nid)) {
+				if (g_jump_buf_ms > 0) {
+					g_jump_buf_until[nid] = g_ticks_ms + g_jump_buf_ms;
+				}
+				*ret = gv_bool(0);
+				return 1;
+			}
+			g_auto_jump[nid] = 0;
+			g_coyote_until[nid] = 0;
+			g_jump_buf_until[nid] = 0;
+			*ret = gv_bool(1);
+			return 1;
+		}
+		if (name_is(name, "set_one_way_pass")) {
+			int nid = node;
+			int on = 1;
+			if (argv && argc > 0) {
+				if (argv[0].type == V_OBJ) {
+					nid = argv[0].i;
+					if (argc > 1) {
+						on = int(as_float(argv[1]));
+					}
+				} else if (argc == 1) {
+					on = int(as_float(argv[0]));
+				} else {
+					nid = int(as_float(argv[0]));
+					on = int(as_float(argv[1]));
+				}
+			}
+			if (!node_ok(nid)) {
+				*ret = gv_bool(0);
+				return 1;
+			}
+			g_one_way_pass[nid] = uint8_t(on ? 1 : 0);
 			*ret = gv_bool(1);
 			return 1;
 		}
@@ -6782,7 +6908,7 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 		*ret = hit >= 0 ? gv_obj(hit) : gv_nil();
 		return 1;
 	}
-	if (name_is(name, "change_scene") || name_is(name, "change_scene_to_file")) {
+	if (name_is(name, "change_scene") || name_is(name, "change_scene_to_file") || name_is(name, "change_scene_fade")) {
 		int pack = pack_id_of(node);
 		if (argv && argc > 0) {
 			if (argv[0].type == V_STR) {
@@ -6790,6 +6916,14 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			} else if (argv[0].type == V_OBJ) {
 				pack = pack_id_of(argv[0].i);
 			}
+		}
+		if (name_is(name, "change_scene_fade")) {
+			g_fade_a = 255;
+			g_fade_out_dur = argv && argc > 1 ? as_float(argv[1]) : 0.5f;
+			if (g_fade_out_dur < 0.01f) {
+				g_fade_out_dur = 0.01f;
+			}
+			g_fade_out_left = g_fade_out_dur;
 		}
 		if (pack < 0 || !load_pack_resident(pack)) {
 			*ret = gv_int(0);
@@ -8403,6 +8537,15 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 		}
 	}
 	g_ticks_ms += delta * 1000.0f;
+	if (g_fade_out_left > 0) {
+		g_fade_out_left -= delta;
+		if (g_fade_out_left <= 0 || g_fade_out_dur <= 0) {
+			g_fade_out_left = 0;
+			g_fade_a = 0;
+		} else {
+			g_fade_a = int(255.0f * (g_fade_out_left / g_fade_out_dur));
+		}
+	}
 	for (int t = 0; t < 8; t++) {
 		if (g_timer_used[t] && g_ticks_ms >= g_timer_end[t]) {
 			emit_sig(kTimerBase + t, SIG_TIMEOUT, host, tape, tape_n);
