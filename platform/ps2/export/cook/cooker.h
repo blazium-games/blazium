@@ -29,6 +29,7 @@ static const int kMaxHud = 16;
 static const int kMaxTiles = 256;
 static const int kMaxNav = 32;
 static const int kMaxAnim = 16;
+static const int kMaxSprites = 32;
 static const int kGsVramLimit = 4 * 1024 * 1024;
 static const int kEeRamLimit = 24 * 1024 * 1024;
 
@@ -57,6 +58,7 @@ struct CookResult {
 	String tile_path;
 	String nav_path;
 	String anim_path;
+	String sprt_path;
 	String fmv_path;
 	String report;
 	Vector<String> extra_pack_files;

@@ -243,7 +243,44 @@ enum {
 	NAT_CAN_LOAD = 59,
 	NAT_CAN_INSTANTIATE = 60,
 	NAT_IS_LOADED = 61,
-	NAT_LOADED_COUNT = 62
+	NAT_LOADED_COUNT = 62,
+	NAT_SET_CAM = 63,
+	NAT_SET_DEFAULT_CAM = 64,
+	NAT_GET_CAM = 65,
+	NAT_GET_CAM_COUNT = 66,
+	NAT_MAKE_CURRENT = 67,
+	NAT_PREV_CAM = 68,
+	NAT_GET_DEFAULT_CAM = 69,
+	NAT_LOAD_SPRITES = 70,
+	NAT_UNLOAD_SPRITES = 71,
+	NAT_CAN_LOAD_SPRITES = 72,
+	NAT_IS_SPRITES_LOADED = 73,
+	NAT_LOAD_ANIMS = 74,
+	NAT_UNLOAD_ANIMS = 75,
+	NAT_IS_ANIMS_LOADED = 76,
+	NAT_LOAD_HITS = 77,
+	NAT_UNLOAD_HITS = 78,
+	NAT_IS_HITS_LOADED = 79,
+	NAT_LOAD_TILES = 80,
+	NAT_MOVE_PLANAR = 81,
+	NAT_FOLLOW_NODE = 82,
+	NAT_HURT = 83,
+	NAT_SET_HITSTOP = 84,
+	NAT_SET_INVULN = 85,
+	NAT_IS_INVULN = 86,
+	NAT_KNOCKBACK = 87,
+	NAT_SET_HP = 88,
+	NAT_GET_HP = 89,
+	NAT_HITBOX_ON = 90,
+	NAT_HITBOX_LAYER = 91,
+	NAT_GET_PRESSURE = 92,
+	NAT_SET_DEADZONE = 93,
+	NAT_GET_STICK = 94,
+	NAT_POKE = 95,
+	NAT_PEEK = 96,
+	NAT_SPAWN = 97,
+	NAT_OVERLAPS_ENTERED = 98,
+	NAT_SET_FLIP = 99
 };
 
 static const char *kUnsupportedCalls[] = {
@@ -286,7 +323,16 @@ static bool is_ps2_alias(const String &p_name) {
 			p_name == "set_hud_text" || p_name == "seek_animation" || p_name == "set_animation_speed" ||
 			p_name == "get_ee_ram_used" || p_name == "get_ee_ram_free" || p_name == "get_ee_ram_limit" ||
 			p_name == "get_gs_vram_used" || p_name == "get_gs_vram_free" || p_name == "get_gs_vram_limit" ||
-			p_name == "get_pack_cost";
+			p_name == "get_pack_cost" || p_name == "set_default_camera" || p_name == "get_default_camera" ||
+			p_name == "load_sprites" || p_name == "unload_sprites" || p_name == "can_load_sprites" ||
+			p_name == "is_sprites_loaded" || p_name == "load_animations" || p_name == "unload_animations" ||
+			p_name == "can_load_animations" || p_name == "is_animations_loaded" || p_name == "load_hitboxes" ||
+			p_name == "unload_hitboxes" || p_name == "can_load_hitboxes" || p_name == "is_hitboxes_loaded" ||
+			p_name == "spawn" || p_name == "move_planar" || p_name == "follow_node" ||
+			p_name == "set_hitbox_enabled" || p_name == "set_hitbox_layer" || p_name == "get_hitbox_layer" ||
+			p_name == "set_hitstop" || p_name == "set_invuln" || p_name == "is_invuln" || p_name == "knockback" ||
+			p_name == "set_cell" || p_name == "erase_cell" || p_name == "set_flip" ||
+			p_name == "poke" || p_name == "peek" || p_name == "godot_save_bytes" || p_name == "godot_load_bytes";
 }
 
 static bool reject_unsupported_apis(const String &p_src, String &r_why) {
@@ -421,6 +467,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	bool has_ram = false;
 	bool has_seek = false;
 	bool has_branch = false;
+	bool has_gameplay = false;
 	float rotate_rate = 0.4f;
 	float translate_rate = 1.0f;
 	for (int i = 0; i < r_out.accepted.size(); i++) {
@@ -486,7 +533,8 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 			has_music = true;
 		}
 		if (src.contains("look_camera") || src.contains("orbit_camera") || src.contains("attach_camera") ||
-				src.contains("shake_camera") || src.contains("next_camera") || src.contains("prev_camera")) {
+				src.contains("shake_camera") || src.contains("next_camera") || src.contains("prev_camera") ||
+				src.contains("set_camera") || src.contains("set_default_camera") || src.contains("make_current")) {
 			has_cam_rt = true;
 		}
 		if (src.contains("create_tween") || src.contains("tween_property") || src.contains("kill_tweens") ||
@@ -523,6 +571,11 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		}
 		if (src.contains("if ") || src.contains("while ") || src.contains("elif ")) {
 			has_branch = true;
+		}
+		if (src.contains("load_sprites") || src.contains("move_planar") || src.contains("poke(") ||
+				src.contains("get_pressure") || src.contains("set_hitstop") || src.contains("set_stick_deadzone") ||
+				src.contains("follow_node") || src.contains("can_load_sprites")) {
+			has_gameplay = true;
 		}
 	}
 	if (!r_out.extra_scenes.is_empty()) {
@@ -674,7 +727,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		tape.push_back(uint8_t(OP_CALL_NATIVE));
 		tape.push_back(uint8_t(NAT_CAN_LOAD));
 	}
-	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys || has_cam_rt || has_tween || has_slide || has_hitq || has_fade || has_change || has_load || has_inst || has_ram || has_seek || has_branch) {
+	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys || has_cam_rt || has_tween || has_slide || has_hitq || has_fade || has_change || has_load || has_inst || has_ram || has_seek || has_branch || has_gameplay) {
 		tape.push_back(uint8_t(OP_PROCESS));
 		if (has_gd_rotate || has_lu_rotate) {
 			tape.push_back(uint8_t(OP_LOAD_DELTA));
@@ -747,11 +800,66 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		if (has_cam_rt) {
 			tape.push_back(uint8_t(OP_LOOK_STICK));
 			tape.push_back(uint8_t(OP_NEXT_CAMERA));
+			tape.push_back(uint8_t(OP_CALL_NATIVE));
+			tape.push_back(uint8_t(NAT_SET_CAM));
+			tape.push_back(uint8_t(OP_CALL_NATIVE));
+			tape.push_back(uint8_t(NAT_GET_CAM));
+			tape.push_back(uint8_t(OP_CALL_NATIVE));
+			tape.push_back(uint8_t(NAT_GET_CAM_COUNT));
+			tape.push_back(uint8_t(OP_CALL_NATIVE));
+			tape.push_back(uint8_t(NAT_GET_DEFAULT_CAM));
+		}
+		if (has_gameplay) {
+			tape.push_back(uint8_t(OP_LOADK_S));
+			const char *kit = "res://scenes/gameplay_kit.tscn";
+			const int n = 31;
+			tape.push_back(uint8_t(n));
+			for (int c = 0; c < n; c++) {
+				tape.push_back(uint8_t(kit[c]));
+			}
+			tape.push_back(uint8_t(OP_CALL_NATIVE));
+			tape.push_back(uint8_t(NAT_LOAD_SPRITES));
+			tape.push_back(uint8_t(OP_CALL_NATIVE));
+			tape.push_back(uint8_t(NAT_CAN_LOAD_SPRITES));
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 0.0f);
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 0.0f);
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 1.0f);
+			tape.push_back(uint8_t(OP_CALL_NATIVE));
+			tape.push_back(uint8_t(NAT_MOVE_PLANAR));
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 1.0f);
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 0.0f);
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 0.0f);
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 0.0f);
+			tape.push_back(uint8_t(OP_CALL_NATIVE));
+			tape.push_back(uint8_t(NAT_HURT));
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 0.0f);
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 1.0f);
+			tape.push_back(uint8_t(OP_CALL_NATIVE));
+			tape.push_back(uint8_t(NAT_POKE));
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 0.0f);
+			tape.push_back(uint8_t(OP_CALL_NATIVE));
+			tape.push_back(uint8_t(NAT_GET_PRESSURE));
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 0.2f);
+			tape.push_back(uint8_t(OP_CALL_NATIVE));
+			tape.push_back(uint8_t(NAT_SET_DEADZONE));
+			tape.push_back(uint8_t(OP_CALL_NATIVE));
+			tape.push_back(uint8_t(NAT_PEEK));
 		}
 	}
 	tape.push_back(uint8_t(OP_END));
-	if (tape.size() > 1024) {
-		r_out.rejected.push_back("script too large for PS2 ABI 1 (tape exceeds 1 KiB)");
+	if (tape.size() > 1536) {
+		r_out.rejected.push_back("script too large for PS2 ABI 1 (tape exceeds 1.5 KiB)");
 		return ERR_UNCONFIGURED;
 	}
 
@@ -825,7 +933,15 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		r_out.ir_text += "IR PS2.load_music/set_music_volume (voice 1 loop)\n";
 	}
 	if (has_cam_rt) {
+		r_out.ir_text += "IR PS2.set_camera/set_default_camera/make_current\n";
 		r_out.ir_text += "IR PS2.look_camera/orbit_camera/shake_camera (runtime CAM)\n";
+	}
+	if (has_gameplay) {
+		r_out.ir_text += "IR PS2.load_sprites/can_load_sprites\n";
+		r_out.ir_text += "IR PS2.move_planar/follow_node\n";
+		r_out.ir_text += "IR PS2.hurt/set_hitstop/set_invuln/knockback\n";
+		r_out.ir_text += "IR PS2.poke/peek (24KiB)\n";
+		r_out.ir_text += "IR PS2.get_pressure/set_stick_deadzone\n";
 	}
 	if (has_tween) {
 		r_out.ir_text += "IR PS2.create_tween/create_timer (8 linear)\n";

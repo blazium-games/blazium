@@ -18,6 +18,7 @@
 #include "core/object/object.h"
 #include "core/string/ustring.h"
 #include "core/object/object_id.h"
+#include "core/io/marshalls.h"
 #include "core/variant/dictionary.h"
 #include "core/variant/variant.h"
 #include "editor/plugins/editor_plugin.h"
@@ -542,6 +543,184 @@ public:
 		d["ee"] = 0;
 		d["gs"] = 0;
 		return d;
+	}
+	bool set_default_camera(const Variant &p_index_or_name) {
+		_fail_ps2();
+		(void)p_index_or_name;
+		return false;
+	}
+	int get_default_camera() const {
+		_fail_ps2();
+		return 0;
+	}
+	bool load_sprites(const String &p_path) {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool unload_sprites(const String &p_path = String()) {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool can_load_sprites(const String &p_path) const {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool is_sprites_loaded(const String &p_path = String()) const {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool load_animations(const String &p_path) {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool unload_animations(const String &p_path = String()) {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool can_load_animations(const String &p_path) const {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool is_animations_loaded(const String &p_path = String()) const {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool load_hitboxes(const String &p_path) {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool unload_hitboxes(const String &p_path = String()) {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool can_load_hitboxes(const String &p_path) const {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool is_hitboxes_loaded(const String &p_path = String()) const {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	Variant spawn(const String &p_path, const Vector3 &p_pos = Vector3()) {
+		_fail_ps2();
+		(void)p_path;
+		(void)p_pos;
+		return Variant();
+	}
+	Vector3 move_planar(const Variant &p_node, float p_ax, float p_ay, float p_speed) {
+		_fail_ps2();
+		(void)p_node;
+		(void)p_ax;
+		(void)p_ay;
+		(void)p_speed;
+		return Vector3();
+	}
+	bool follow_node(const Variant &p_node, const Variant &p_target, float p_speed) {
+		_fail_ps2();
+		(void)p_node;
+		(void)p_target;
+		(void)p_speed;
+		return false;
+	}
+	bool set_hitbox_enabled(const Variant &p_node, bool p_on) {
+		_fail_ps2();
+		(void)p_node;
+		(void)p_on;
+		return false;
+	}
+	bool set_hitbox_layer(const Variant &p_node, int p_layer) {
+		_fail_ps2();
+		(void)p_node;
+		(void)p_layer;
+		return false;
+	}
+	int get_hitbox_layer(const Variant &p_node) const {
+		_fail_ps2();
+		(void)p_node;
+		return 0;
+	}
+	bool set_hitstop(float p_ms) {
+		_fail_ps2();
+		(void)p_ms;
+		return false;
+	}
+	bool set_invuln(const Variant &p_node, float p_ms) {
+		_fail_ps2();
+		(void)p_node;
+		(void)p_ms;
+		return false;
+	}
+	bool is_invuln(const Variant &p_node) const {
+		_fail_ps2();
+		(void)p_node;
+		return false;
+	}
+	bool knockback(const Variant &p_node, float p_vx, float p_vy, float p_vz) {
+		_fail_ps2();
+		(void)p_node;
+		(void)p_vx;
+		(void)p_vy;
+		(void)p_vz;
+		return false;
+	}
+	bool set_cell(int p_x, int p_y, int p_flags = 1) {
+		_fail_ps2();
+		(void)p_x;
+		(void)p_y;
+		(void)p_flags;
+		return false;
+	}
+	bool erase_cell(int p_x, int p_y) {
+		_fail_ps2();
+		(void)p_x;
+		(void)p_y;
+		return false;
+	}
+	bool set_flip(const Variant &p_node, bool p_flip) {
+		_fail_ps2();
+		(void)p_node;
+		(void)p_flip;
+		return false;
+	}
+	bool poke(int p_off, int p_byte) {
+		_fail_ps2();
+		(void)p_off;
+		(void)p_byte;
+		return false;
+	}
+	int peek(int p_off) const {
+		_fail_ps2();
+		(void)p_off;
+		return 0;
+	}
+	PackedByteArray godot_save_bytes(const Variant &p_v) const {
+		int len = 0;
+		encode_variant(p_v, nullptr, len, false);
+		PackedByteArray out;
+		out.resize(len);
+		if (len > 0) {
+			encode_variant(p_v, out.ptrw(), len, false);
+		}
+		return out;
+	}
+	Variant godot_load_bytes(const PackedByteArray &p_b) const {
+		Variant v;
+		if (!p_b.is_empty()) {
+			decode_variant(v, p_b.ptr(), p_b.size(), nullptr, false);
+		}
+		return v;
 	}
 };
 

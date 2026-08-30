@@ -24,6 +24,7 @@
 #include "scene/2d/sprite_2d.h"
 #include "scene/2d/tile_map.h"
 #include "scene/2d/tile_map_layer.h"
+#include "scene/2d/camera_2d.h"
 #include "scene/3d/camera_3d.h"
 #include "scene/3d/mesh_instance_3d.h"
 #include "scene/3d/physics/collision_object_3d.h"
@@ -130,6 +131,37 @@ void PS2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_gs_vram_free"), &PS2::get_gs_vram_free);
 	ClassDB::bind_method(D_METHOD("get_gs_vram_limit"), &PS2::get_gs_vram_limit);
 	ClassDB::bind_method(D_METHOD("get_pack_cost", "path"), &PS2::get_pack_cost);
+	ClassDB::bind_method(D_METHOD("set_default_camera", "index_or_name"), &PS2::set_default_camera);
+	ClassDB::bind_method(D_METHOD("get_default_camera"), &PS2::get_default_camera);
+	ClassDB::bind_method(D_METHOD("load_sprites", "path"), &PS2::load_sprites);
+	ClassDB::bind_method(D_METHOD("unload_sprites", "path"), &PS2::unload_sprites, DEFVAL(String()));
+	ClassDB::bind_method(D_METHOD("can_load_sprites", "path"), &PS2::can_load_sprites);
+	ClassDB::bind_method(D_METHOD("is_sprites_loaded", "path"), &PS2::is_sprites_loaded, DEFVAL(String()));
+	ClassDB::bind_method(D_METHOD("load_animations", "path"), &PS2::load_animations);
+	ClassDB::bind_method(D_METHOD("unload_animations", "path"), &PS2::unload_animations, DEFVAL(String()));
+	ClassDB::bind_method(D_METHOD("can_load_animations", "path"), &PS2::can_load_animations);
+	ClassDB::bind_method(D_METHOD("is_animations_loaded", "path"), &PS2::is_animations_loaded, DEFVAL(String()));
+	ClassDB::bind_method(D_METHOD("load_hitboxes", "path"), &PS2::load_hitboxes);
+	ClassDB::bind_method(D_METHOD("unload_hitboxes", "path"), &PS2::unload_hitboxes, DEFVAL(String()));
+	ClassDB::bind_method(D_METHOD("can_load_hitboxes", "path"), &PS2::can_load_hitboxes);
+	ClassDB::bind_method(D_METHOD("is_hitboxes_loaded", "path"), &PS2::is_hitboxes_loaded, DEFVAL(String()));
+	ClassDB::bind_method(D_METHOD("spawn", "path", "pos"), &PS2::spawn, DEFVAL(Vector3()));
+	ClassDB::bind_method(D_METHOD("move_planar", "node", "ax", "ay", "speed"), &PS2::move_planar);
+	ClassDB::bind_method(D_METHOD("follow_node", "node", "target", "speed"), &PS2::follow_node);
+	ClassDB::bind_method(D_METHOD("set_hitbox_enabled", "node", "on"), &PS2::set_hitbox_enabled);
+	ClassDB::bind_method(D_METHOD("set_hitbox_layer", "node", "layer"), &PS2::set_hitbox_layer);
+	ClassDB::bind_method(D_METHOD("get_hitbox_layer", "node"), &PS2::get_hitbox_layer);
+	ClassDB::bind_method(D_METHOD("set_hitstop", "ms"), &PS2::set_hitstop);
+	ClassDB::bind_method(D_METHOD("set_invuln", "node", "ms"), &PS2::set_invuln);
+	ClassDB::bind_method(D_METHOD("is_invuln", "node"), &PS2::is_invuln);
+	ClassDB::bind_method(D_METHOD("knockback", "node", "vx", "vy", "vz"), &PS2::knockback);
+	ClassDB::bind_method(D_METHOD("set_cell", "x", "y", "flags"), &PS2::set_cell, DEFVAL(1));
+	ClassDB::bind_method(D_METHOD("erase_cell", "x", "y"), &PS2::erase_cell);
+	ClassDB::bind_method(D_METHOD("set_flip", "node", "flip"), &PS2::set_flip);
+	ClassDB::bind_method(D_METHOD("poke", "off", "byte"), &PS2::poke);
+	ClassDB::bind_method(D_METHOD("peek", "off"), &PS2::peek);
+	ClassDB::bind_method(D_METHOD("godot_save_bytes", "value"), &PS2::godot_save_bytes);
+	ClassDB::bind_method(D_METHOD("godot_load_bytes", "bytes"), &PS2::godot_load_bytes);
 }
 
 static void _count_scene(Node *p_node, int &r_nodes, int &r_tris, int &r_tex, int &r_hud, int &r_tiles, int &r_cams, int &r_hits) {
@@ -158,7 +190,7 @@ static void _count_scene(Node *p_node, int &r_nodes, int &r_tris, int &r_tex, in
 	if (TileMapLayer *tl = Object::cast_to<TileMapLayer>(p_node)) {
 		r_tiles += tl->get_used_cells().size();
 	}
-	if (Object::cast_to<Camera3D>(p_node)) {
+	if (Object::cast_to<Camera3D>(p_node) || Object::cast_to<Camera2D>(p_node)) {
 		r_cams++;
 	}
 	if (Object::cast_to<CollisionObject3D>(p_node)) {
@@ -241,11 +273,13 @@ void PS2FlavorEditorPlugin::_sync_singleton(bool p_enabled) {
 }
 
 void PS2FlavorEditorPlugin::_refresh() {
+	const bool enabled = ProjectSettings::get_singleton() && bool(ProjectSettings::get_singleton()->get("ps2/enabled"));
+	if (enabled) {
+		_sync_singleton(true);
+	}
 	if (!status) {
 		return;
 	}
-	const bool enabled = ProjectSettings::get_singleton() && bool(ProjectSettings::get_singleton()->get("ps2/enabled"));
-	_sync_singleton(enabled);
 	last_enabled = enabled;
 	if (!enabled) {
 		status->set_text("Turn on Project Settings → ps2/enabled for the PS2 flavor dock.\nPS2.* is PS2 export only; use OS.has_feature(\"ps2\").\nExport writes an EE ELF via blazium-toolchain (no Godot templates).");
@@ -339,10 +373,7 @@ PS2FlavorEditorPlugin::PS2FlavorEditorPlugin() {
 		add_control_to_dock(DOCK_SLOT_RIGHT_UL, dock);
 		set_process(true);
 	}
-	const bool enabled = ProjectSettings::get_singleton() && bool(ProjectSettings::get_singleton()->get("ps2/enabled"));
-	if (enabled) {
-		_sync_singleton(true);
-	}
+	_sync_singleton(true);
 	if (!headless) {
 		_refresh();
 	}

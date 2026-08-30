@@ -53,6 +53,10 @@ static const char *kAllowed[] = {
 	"AudioStreamPlayer", "AudioStreamPlayer3D", "AudioStreamPlayer2D",
 	"Control", "CanvasLayer", "Label", "ColorRect", "Button", "TextureButton",
 	"Path3D", "PathFollow3D",
+	"Sprite2D", "AnimatedSprite2D", "Sprite3D", "Camera2D",
+	"TileMap", "TileMapLayer",
+	"Area2D", "Area3D", "CollisionShape2D", "CollisionShape3D",
+	"CharacterBody2D", "CharacterBody3D", "StaticBody2D", "StaticBody3D",
 };
 
 static bool type_allowed(const String &p_cls) {
@@ -96,6 +100,8 @@ struct Gather {
 		Vector3 pos;
 		Vector3 euler;
 		float fov = 55.0f;
+		uint16_t flags = 0;
+		String name;
 	};
 	Vector<CamRow> cams;
 	struct HitRow {
@@ -103,7 +109,24 @@ struct Gather {
 		uint8_t kit = 0;
 		Vector3 mn;
 		Vector3 mx;
+		uint8_t flags = 2;
+		uint8_t kind = 0;
+		uint8_t layer = 1;
+		uint16_t frame_lo = 0;
+		uint16_t frame_hi = 0xffff;
 	};
+	struct SpriteRow {
+		int node_id = -1;
+		uint16_t tex = 0;
+		int16_t x = 0;
+		int16_t y = 0;
+		int16_t w = 32;
+		int16_t h = 32;
+		uint8_t flip = 0;
+		uint8_t frame = 0;
+		int16_t z = 0;
+	};
+	Vector<SpriteRow> sprites;
 	Vector<HitRow> hits;
 	struct HudRow {
 		int16_t x = 8;
@@ -121,6 +144,7 @@ struct Gather {
 		int16_t x = 0;
 		int16_t y = 0;
 		uint8_t flags = 1;
+		uint8_t atlas = 0;
 	};
 	Vector<TileRow> tiles;
 	struct NavVert {
@@ -161,7 +185,7 @@ static uint8_t kind_of(Node *p_node) {
 	if (Object::cast_to<MeshInstance3D>(p_node) || p_node->is_class("ImporterMeshInstance3D")) {
 		return 2;
 	}
-	if (Object::cast_to<Camera3D>(p_node)) {
+	if (Object::cast_to<Camera3D>(p_node) || p_node->is_class("Camera2D")) {
 		return 3;
 	}
 	if (p_node->is_class("AnimationPlayer")) {
@@ -454,10 +478,151 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent, const String &p_
 		if (r_g.cams.size() < kMaxCameras && my >= 0) {
 			Gather::CamRow row;
 			row.node_id = my;
+			row.name = p_node->get_name();
 			row.pos = world_xform(cam).origin;
 			row.euler = world_xform(cam).basis.get_euler();
 			row.fov = cam->get_fov();
+			if (cam->is_current()) {
+				row.flags = 1;
+			}
 			r_g.cams.push_back(row);
+		}
+	}
+	if (p_node->is_class("Camera2D")) {
+		r_g.cameras++;
+		if (r_g.cams.size() < kMaxCameras && my >= 0) {
+			Gather::CamRow row;
+			row.node_id = my;
+			row.name = p_node->get_name();
+			row.flags = 2;
+			if (bool(p_node->get("enabled"))) {
+				row.flags |= 1;
+			}
+			const Variant posv = p_node->get("global_position");
+			if (posv.get_type() == Variant::VECTOR2) {
+				const Vector2 p = posv;
+				row.pos = Vector3(p.x, p.y, 8.0f);
+			}
+			const float zoom = float(p_node->get("zoom").operator Vector2().x);
+			row.fov = zoom > 0.01f ? (55.0f / zoom) : 55.0f;
+			r_g.cams.push_back(row);
+		}
+	}
+	if (p_node->is_class("Sprite2D") || p_node->is_class("AnimatedSprite2D") || p_node->is_class("Sprite3D")) {
+		if (r_g.sprites.size() < kMaxSprites && my >= 0) {
+			Gather::SpriteRow s;
+			s.node_id = my;
+			String tex_name = p_node->get_name();
+			Ref<Texture2D> tex = p_node->get("texture");
+			if (tex.is_valid()) {
+				Ref<Image> img = tex->get_image();
+				if (img.is_valid()) {
+					s.tex = register_image(r_g, img, tex_name);
+					s.w = int16_t(CLAMP(img->get_width(), 1, 256));
+					s.h = int16_t(CLAMP(img->get_height(), 1, 256));
+				}
+			}
+			const Variant posv = p_node->get("global_position");
+			if (posv.get_type() == Variant::VECTOR2) {
+				const Vector2 p = posv;
+				s.x = int16_t(p.x);
+				s.y = int16_t(p.y);
+			} else if (Node3D *n3 = Object::cast_to<Node3D>(p_node)) {
+				const Vector3 p = world_xform(n3).origin;
+				s.x = int16_t(p.x);
+				s.y = int16_t(-p.y);
+				s.z = int16_t(p.z);
+			}
+			if (bool(p_node->get("flip_h"))) {
+				s.flip |= 1;
+			}
+			if (bool(p_node->get("flip_v"))) {
+				s.flip |= 2;
+			}
+			s.frame = uint8_t(int(p_node->get("frame")));
+			r_g.sprites.push_back(s);
+		}
+	}
+	if (p_node->is_class("TileMap") || p_node->is_class("TileMapLayer")) {
+		Array cells;
+		if (p_node->is_class("TileMapLayer")) {
+			cells = p_node->call("get_used_cells");
+		} else {
+			cells = p_node->call("get_used_cells", 0);
+		}
+		for (int i = 0; i < cells.size(); i++) {
+			if (r_g.tiles.size() >= kMaxTiles) {
+				r_g.tile_dropped++;
+				break;
+			}
+			const Vector2i c = cells[i];
+			Gather::TileRow t;
+			t.x = int16_t(c.x);
+			t.y = int16_t(c.y);
+			t.flags = 1;
+			t.atlas = 0;
+			r_g.tiles.push_back(t);
+		}
+	}
+	if (p_node->is_class("CollisionShape2D") || p_node->is_class("CollisionShape3D") ||
+			p_node->is_class("Area2D") || p_node->is_class("Area3D")) {
+		if (r_g.hits.size() < kMaxHits && my >= 0) {
+			Gather::HitRow h;
+			h.node_id = my;
+			h.kit = r_g.nodes[my].kit;
+			h.flags = 2;
+			h.kind = (p_node->is_class("Area2D") || p_node->is_class("Area3D")) ? 1 : 0;
+			h.layer = 1;
+			{
+				Variant layer = p_node->get("collision_layer");
+				if (layer.get_type() == Variant::NIL && p_node->get_parent()) {
+					layer = p_node->get_parent()->get("collision_layer");
+				}
+				if (layer.get_type() == Variant::INT || layer.get_type() == Variant::FLOAT) {
+					const int bits = int(layer);
+					h.layer = uint8_t(bits & 255);
+					if (h.layer == 0) {
+						h.layer = 1;
+					}
+				}
+			}
+			if (p_node->is_class("CollisionShape2D") || p_node->is_class("Area2D")) {
+				h.flags |= 1;
+			}
+			const Variant posv = p_node->get("global_position");
+			Vector3 origin;
+			if (posv.get_type() == Variant::VECTOR2) {
+				const Vector2 p = posv;
+				origin = Vector3(p.x, p.y, 0);
+			} else if (Node3D *n3 = Object::cast_to<Node3D>(p_node)) {
+				origin = world_xform(n3).origin;
+			}
+			float hx = 0.5f, hy = 0.5f, hz = 0.5f;
+			const Variant shape = p_node->get("shape");
+			if (shape.get_type() == Variant::OBJECT) {
+				Object *sh = shape;
+				if (sh) {
+					if (sh->is_class("RectangleShape2D") || sh->is_class("BoxShape3D")) {
+						const Variant sz = sh->get("size");
+						if (sz.get_type() == Variant::VECTOR2) {
+							const Vector2 s = sz;
+							hx = s.x * 0.5f;
+							hy = s.y * 0.5f;
+							hz = 0.5f;
+						} else if (sz.get_type() == Variant::VECTOR3) {
+							const Vector3 s = sz;
+							hx = s.x * 0.5f;
+							hy = s.y * 0.5f;
+							hz = s.z * 0.5f;
+						}
+					}
+				}
+			}
+			h.mn = origin - Vector3(hx, hy, hz);
+			h.mx = origin + Vector3(hx, hy, hz);
+			r_g.hits.push_back(h);
+		} else if (my >= 0) {
+			r_g.hit_dropped++;
 		}
 	}
 	if (AnimationPlayer *ap = Object::cast_to<AnimationPlayer>(p_node)) {
@@ -692,6 +857,10 @@ static Vector<uint8_t> write_node_blob(const Gather &p_g) {
 		for (int c = 0; c < 32; c++) {
 			out.push_back(c < utf.length() ? uint8_t(utf[c]) : 0);
 		}
+		CharString hint = n.scene_hint.utf8();
+		for (int c = 0; c < 64; c++) {
+			out.push_back(c < hint.length() ? uint8_t(hint[c]) : 0);
+		}
 	}
 	return out;
 }
@@ -780,7 +949,7 @@ static Vector<uint8_t> write_cam_blob(const Gather &p_g) {
 	for (int i = 0; i < p_g.cams.size(); i++) {
 		const Gather::CamRow &c = p_g.cams[i];
 		append_u16(out, uint16_t(int16_t(c.node_id)));
-		append_u16(out, 0);
+		append_u16(out, c.flags);
 		append_f32(out, c.pos.x);
 		append_f32(out, c.pos.y);
 		append_f32(out, c.pos.z);
@@ -811,6 +980,34 @@ static Vector<uint8_t> write_hit_blob(const Gather &p_g) {
 		append_f32(out, h.mx.x);
 		append_f32(out, h.mx.y);
 		append_f32(out, h.mx.z);
+		out.push_back(h.flags);
+		out.push_back(h.kind);
+		out.push_back(h.layer);
+		append_u16(out, h.frame_lo);
+		append_u16(out, h.frame_hi);
+	}
+	return out;
+}
+
+static Vector<uint8_t> write_sprt_blob(const Gather &p_g) {
+	Vector<uint8_t> out;
+	out.push_back('S');
+	out.push_back('P');
+	out.push_back('R');
+	out.push_back('T');
+	append_u16(out, uint16_t(kCookABI));
+	append_u16(out, uint16_t(p_g.sprites.size()));
+	for (int i = 0; i < p_g.sprites.size(); i++) {
+		const Gather::SpriteRow &s = p_g.sprites[i];
+		append_u16(out, uint16_t(int16_t(s.node_id)));
+		append_u16(out, s.tex);
+		append_i16(out, s.x);
+		append_i16(out, s.y);
+		append_i16(out, s.w);
+		append_i16(out, s.h);
+		out.push_back(s.flip);
+		out.push_back(s.frame);
+		append_i16(out, s.z);
 	}
 	return out;
 }
@@ -856,7 +1053,7 @@ static Vector<uint8_t> write_tile_blob(const Gather &p_g) {
 		append_i16(out, t.x);
 		append_i16(out, t.y);
 		out.push_back(t.flags);
-		out.push_back(0);
+		out.push_back(t.atlas);
 	}
 	return out;
 }
@@ -1360,6 +1557,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 				{ vformat("TILE%02d.bin", pack), write_tile_blob(eg) },
 				{ vformat("NAV%02d.bin", pack), write_nav_blob(eg) },
 				{ vformat("ANIM%02d.bin", pack), write_anim_blob(eg) },
+				{ vformat("SPRT%02d.bin", pack), write_sprt_blob(eg) },
 			};
 			for (PackSys &s : psys) {
 				pack_ee += uint32_t(s.bytes.size());
@@ -1391,7 +1589,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			free_live();
 			return ERR_CANT_CREATE;
 		}
-		r_out.warnings.push_back("STREAM packs (MESH01../NODE01.. plus CAM/HIT/HUD/TILE/NAV/ANIM per pack) are not ELF-embedded. Guest loads them from host: or cdrom0: via PS2.change_scene / swap_pack / instantiate. EE 24 MiB and GS 4 MiB are shared — unload rooms/NPCs you are not using. Instantiating 20 unique NPC packs at once will refuse if their MESH/GTEX sum does not fit. Use ps2/make_iso or output_kind EE ELF + ISO.");
+		r_out.warnings.push_back("STREAM packs (MESH01../NODE01.. plus CAM/HIT/HUD/TILE/NAV/ANIM/SPRT per pack) are not ELF-embedded. Guest loads them from host: or cdrom0: via PS2.change_scene / swap_pack / instantiate. EE 24 MiB and GS 4 MiB are shared — unload rooms/NPCs you are not using. Instantiating 20 unique NPC packs at once will refuse if their MESH/GTEX/SPRT sum does not fit. Use ps2/make_iso or output_kind EE ELF + ISO.");
 	}
 
 	{
@@ -1461,6 +1659,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			{ "TILE00.bin", &r_out.tile_path, write_tile_blob(gathered) },
 			{ "NAV00.bin", &r_out.nav_path, write_nav_blob(gathered) },
 			{ "ANIM00.bin", &r_out.anim_path, write_anim_blob(gathered) },
+			{ "SPRT00.bin", &r_out.sprt_path, write_sprt_blob(gathered) },
 			{ "FMV00.bin", &r_out.fmv_path, write_fmv_blob() },
 		};
 		for (SysOut &s : sys) {
@@ -1482,9 +1681,9 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			r_out.warnings.push_back("ANIM clips are names/durations only on PS2 ABI 1 (bind pose; no bone palette).");
 		}
 		r_out.warnings.push_back("FMV/IPU is not shipped on PS2 ABI 1 (no license-clean decoder). PS2.play_fmv is a named no-op.");
-		r_out.warnings.push_back("HUD/TILE/NAV/CAM/HIT/ANIM sit next to the ELF (host:) or on the ISO; they are not ELF-embedded.");
-		r_out.warnings.push_back("CAM00 look-at is Camera3D local -Z (Godot YXZ) plus FOV; guest gs_draw_set_camera applies them. VU1 is optional (dvp-as + packet2) else CPU GIF.");
-		r_out.warnings.push_back("PS2.look_camera / orbit_camera / attach_camera / shake_camera / next_camera are runtime CAM on ABI 1 (right-stick look, L1/R1 cycle).");
+		r_out.warnings.push_back("HUD/TILE/NAV/CAM/HIT/ANIM/SPRT sit next to the ELF (host:) or on the ISO; they are not ELF-embedded.");
+		r_out.warnings.push_back("CAM00 look-at is Camera3D local -Z (Godot YXZ) plus FOV; guest gs_draw_set_camera applies them. current Camera3D is the default. VU1 is optional (dvp-as + packet2) else CPU GIF.");
+		r_out.warnings.push_back("PS2.set_camera / set_default_camera / make_current / next_camera / prev_camera switch baked CAM slots. L1/R1 still cycle. look_camera / shake_camera are runtime CAM.");
 		r_out.warnings.push_back("create_tween / create_timer are 8 linear slots (volume kind drives MUSIC). spawn_shot and play_xa stay refused.");
 		r_out.warnings.push_back("HIT00 AABBs clip PS2.move_and_slide / stick translate (enter-only). spawn_shot stays refused.");
 		r_out.warnings.push_back("PS2.overlaps / raycast / tile_solid_at query HIT00 AABBs and TILE00 cells. spawn_shot stays refused.");
@@ -1514,7 +1713,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		for (int i = 0; i < cooked_extras.size(); i++) {
 			const int pack = i + 1;
 			names->store_line(vformat("pack %d = %s", pack, cooked_extras[i]));
-			String line = cooked_extras[i] + vformat(" -> NODE%02d.bin MESH%02d.bin GTEX%02d.bin CAM%02d.bin HIT%02d.bin HUD%02d.bin", pack, pack, pack, pack, pack, pack);
+			String line = cooked_extras[i] + vformat(" -> NODE%02d.bin MESH%02d.bin GTEX%02d.bin CAM%02d.bin HIT%02d.bin HUD%02d.bin SPRT%02d.bin", pack, pack, pack, pack, pack, pack, pack);
 			if (pack == 1) {
 				line += " PACK01.bin";
 			}
