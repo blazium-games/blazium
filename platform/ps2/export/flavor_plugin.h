@@ -989,6 +989,106 @@ public:
 	}
 };
 
+class PS2SpawnPoint : public Node3D {
+	GDCLASS(PS2SpawnPoint, Node3D);
+
+protected:
+	static void _bind_methods();
+};
+
+class PS2Checkpoint : public Node3D {
+	GDCLASS(PS2Checkpoint, Node3D);
+
+protected:
+	static void _bind_methods();
+};
+
+class PS2Portal : public Node3D {
+	GDCLASS(PS2Portal, Node3D);
+	String dest;
+
+protected:
+	static void _bind_methods();
+
+public:
+	void set_dest(const String &p_path) { dest = p_path; }
+	String get_dest() const { return dest; }
+};
+
+class PS2SavePoint : public Node3D {
+	GDCLASS(PS2SavePoint, Node3D);
+	int slot = 0;
+
+protected:
+	static void _bind_methods();
+
+public:
+	void set_slot(int p_slot) { slot = p_slot; }
+	int get_slot() const { return slot; }
+};
+
+class PS2MusicZone : public Node3D {
+	GDCLASS(PS2MusicZone, Node3D);
+
+protected:
+	static void _bind_methods();
+};
+
+class PS2LoadZone : public Node3D {
+	GDCLASS(PS2LoadZone, Node3D);
+	String scene_path;
+
+protected:
+	static void _bind_methods();
+
+public:
+	void set_scene(const String &p_path) { scene_path = p_path; }
+	String get_scene() const { return scene_path; }
+};
+
+class PS2UnloadZone : public Node3D {
+	GDCLASS(PS2UnloadZone, Node3D);
+	String scene_path;
+
+protected:
+	static void _bind_methods();
+
+public:
+	void set_scene(const String &p_path) { scene_path = p_path; }
+	String get_scene() const { return scene_path; }
+};
+
+class PS2Hazard : public Node3D {
+	GDCLASS(PS2Hazard, Node3D);
+	int amount = 1;
+
+protected:
+	static void _bind_methods();
+
+public:
+	void set_amount(int p_n) { amount = p_n; }
+	int get_amount() const { return amount; }
+};
+
+class PS2Pickup : public Node3D {
+	GDCLASS(PS2Pickup, Node3D);
+
+protected:
+	static void _bind_methods();
+};
+
+class PS2Talk : public Node3D {
+	GDCLASS(PS2Talk, Node3D);
+	String line;
+
+protected:
+	static void _bind_methods();
+
+public:
+	void set_line(const String &p_line) { line = p_line; }
+	String get_line() const { return line; }
+};
+
 class PS2FlavorEditorPlugin : public EditorPlugin {
 	GDCLASS(PS2FlavorEditorPlugin, EditorPlugin);
 

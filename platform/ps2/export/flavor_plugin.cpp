@@ -256,6 +256,50 @@ void PS2Tween::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "duration"), "set_duration", "get_duration");
 }
 
+void PS2SpawnPoint::_bind_methods() {}
+
+void PS2Checkpoint::_bind_methods() {}
+
+void PS2Portal::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_dest", "path"), &PS2Portal::set_dest);
+	ClassDB::bind_method(D_METHOD("get_dest"), &PS2Portal::get_dest);
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "dest", PROPERTY_HINT_FILE, "*.tscn"), "set_dest", "get_dest");
+}
+
+void PS2SavePoint::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_slot", "slot"), &PS2SavePoint::set_slot);
+	ClassDB::bind_method(D_METHOD("get_slot"), &PS2SavePoint::get_slot);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "slot"), "set_slot", "get_slot");
+}
+
+void PS2MusicZone::_bind_methods() {}
+
+void PS2LoadZone::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_scene", "path"), &PS2LoadZone::set_scene);
+	ClassDB::bind_method(D_METHOD("get_scene"), &PS2LoadZone::get_scene);
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "scene", PROPERTY_HINT_FILE, "*.tscn"), "set_scene", "get_scene");
+}
+
+void PS2UnloadZone::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_scene", "path"), &PS2UnloadZone::set_scene);
+	ClassDB::bind_method(D_METHOD("get_scene"), &PS2UnloadZone::get_scene);
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "scene", PROPERTY_HINT_FILE, "*.tscn"), "set_scene", "get_scene");
+}
+
+void PS2Hazard::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_amount", "amount"), &PS2Hazard::set_amount);
+	ClassDB::bind_method(D_METHOD("get_amount"), &PS2Hazard::get_amount);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "amount"), "set_amount", "get_amount");
+}
+
+void PS2Pickup::_bind_methods() {}
+
+void PS2Talk::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_line", "line"), &PS2Talk::set_line);
+	ClassDB::bind_method(D_METHOD("get_line"), &PS2Talk::get_line);
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "line"), "set_line", "get_line");
+}
+
 static void _count_scene(Node *p_node, int &r_nodes, int &r_tris, int &r_tex, int &r_hud, int &r_tiles, int &r_cams, int &r_hits) {
 	if (!p_node) {
 		return;

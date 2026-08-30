@@ -63,6 +63,8 @@ static const char *kAllowed[] = {
 	"VehicleBody3D", "VehicleWheel3D",
 	"PS2Spawner", "PS2CameraVolume", "PS2Follow", "PS2Waypoint", "PS2Path",
 	"PS2NavRegion", "PS2Vehicle", "PS2Particles", "PS2Tween",
+	"PS2SpawnPoint", "PS2Checkpoint", "PS2Portal", "PS2SavePoint", "PS2MusicZone",
+	"PS2LoadZone", "PS2UnloadZone", "PS2Hazard", "PS2Pickup", "PS2Talk",
 };
 
 static bool type_allowed(const String &p_cls) {
@@ -256,6 +258,39 @@ static String kit_point_group(Node *p_node) {
 	if (!p_node) {
 		return String();
 	}
+	if (p_node->is_class("PS2SpawnPoint")) {
+		return "spawn";
+	}
+	if (p_node->is_class("PS2Checkpoint")) {
+		return "checkpoint";
+	}
+	if (p_node->is_class("PS2Portal")) {
+		return "portal";
+	}
+	if (p_node->is_class("CharacterBody2D") || p_node->is_class("CharacterBody3D")) {
+		return "player";
+	}
+	if (p_node->is_class("PS2Hazard")) {
+		return "hazard";
+	}
+	if (p_node->is_class("PS2Pickup")) {
+		return "pickup";
+	}
+	if (p_node->is_class("PS2MusicZone")) {
+		return "music";
+	}
+	if (p_node->is_class("PS2UnloadZone")) {
+		return "unload";
+	}
+	if (p_node->is_class("PS2LoadZone")) {
+		return "load";
+	}
+	if (p_node->is_class("PS2Talk")) {
+		return "talk";
+	}
+	if (p_node->is_class("PS2SavePoint")) {
+		return "save";
+	}
 	const String nm = String(p_node->get_name()).to_lower();
 	if (nm == "spawn" || p_node->is_in_group("spawn") || p_node->has_meta("ps1_spawn") || p_node->has_meta("ps2_spawn")) {
 		return "spawn";
@@ -395,10 +430,46 @@ static void collect_kit_scene(Node *p_node, Gather &r_g) {
 			r_g.kit_scenes.push_back(path);
 		}
 	}
-	if (p_node->is_class("PS2Spawner")) {
+	if (p_node->is_class("PS2Spawner") || p_node->is_class("PS2LoadZone") || p_node->is_class("PS2UnloadZone")) {
 		const String path = p_node->get("scene");
 		if (path.ends_with(".tscn") && !r_g.kit_scenes.has(path)) {
 			r_g.kit_scenes.push_back(path);
+		}
+	}
+	if (p_node->is_class("PS2Portal")) {
+		const String path = p_node->get("dest");
+		if (path.ends_with(".tscn") && !r_g.kit_scenes.has(path)) {
+			r_g.kit_scenes.push_back(path);
+		}
+	}
+}
+
+static void apply_kit_exports(Node *p_node, Gather::NodeRow &r_row) {
+	if (p_node->is_class("PS2Spawner") || p_node->is_class("PS2LoadZone") || p_node->is_class("PS2UnloadZone")) {
+		const String path = p_node->get("scene");
+		if (!path.is_empty()) {
+			r_row.scene_hint = path;
+		}
+	}
+	if (p_node->is_class("PS2Portal")) {
+		const String path = p_node->get("dest");
+		if (!path.is_empty()) {
+			r_row.scene_hint = path;
+		}
+	}
+	if (p_node->is_class("PS2CameraVolume")) {
+		r_row.scene_hint = String::num_int64(int(p_node->get("camera_index")));
+	}
+	if (p_node->is_class("PS2SavePoint")) {
+		r_row.scene_hint = String::num_int64(int(p_node->get("slot")));
+	}
+	if (p_node->is_class("PS2Hazard")) {
+		r_row.scene_hint = String::num_int64(int(p_node->get("amount")));
+	}
+	if (p_node->is_class("PS2Talk")) {
+		const String line = p_node->get("line");
+		if (!line.is_empty()) {
+			r_row.scene_hint = line;
 		}
 	}
 }
@@ -571,6 +642,7 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent, const String &p_
 		row.name = p_node->get_name();
 		row.scene_hint = p_scene;
 		collect_kit_scene(p_node, r_g);
+		apply_kit_exports(p_node, row);
 		if (Node3D *n3 = Object::cast_to<Node3D>(p_node)) {
 			const Transform3D xf = world_xform(n3);
 			row.pos = xf.origin;
@@ -720,6 +792,9 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent, const String &p_
 			Gather::HitRow h;
 			h.node_id = my;
 			h.kit = r_g.nodes[my].kit;
+			if (h.kit == 0 && p_parent >= 0 && p_parent < r_g.nodes.size()) {
+				h.kit = r_g.nodes[p_parent].kit;
+			}
 			h.flags = 2;
 			h.kind = (p_node->is_class("Area2D") || p_node->is_class("Area3D")) ? 1 : 0;
 			h.layer = 1;
@@ -773,6 +848,40 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent, const String &p_
 			r_g.hits.push_back(h);
 		} else if (my >= 0) {
 			r_g.hit_dropped++;
+		}
+	}
+	if (my >= 0 && my < r_g.nodes.size()) {
+		const uint8_t kit = r_g.nodes[my].kit;
+		if (kit >= 1 && kit <= 13 && kit != 4) {
+			bool has_hit = false;
+			for (int hi = 0; hi < r_g.hits.size(); hi++) {
+				if (r_g.hits[hi].node_id == my) {
+					has_hit = true;
+					break;
+				}
+			}
+			if (!has_hit) {
+				if (r_g.hits.size() < kMaxHits) {
+					Gather::HitRow h;
+					h.node_id = my;
+					h.kit = kit;
+					h.flags = 2;
+					h.kind = 1;
+					h.layer = 1;
+					const bool is2d = p_node->is_class("Node2D") || p_node->is_class("Area2D") || p_node->is_class("CollisionShape2D") || p_node->is_class("CharacterBody2D");
+					if (is2d) {
+						h.flags |= 1;
+					}
+					const float hx = is2d ? 8.0f : 0.5f;
+					const float hy = is2d ? 8.0f : 0.5f;
+					const float hz = 0.5f;
+					h.mn = r_g.nodes[my].pos - Vector3(hx, hy, hz);
+					h.mx = r_g.nodes[my].pos + Vector3(hx, hy, hz);
+					r_g.hits.push_back(h);
+				} else {
+					r_g.hit_dropped++;
+				}
+			}
 		}
 	}
 	if (AnimationPlayer *ap = Object::cast_to<AnimationPlayer>(p_node)) {
@@ -2110,6 +2219,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		r_out.warnings.push_back("create_tween / create_timer are 16 linear slots (volume kind drives MUSIC). spawn_shot and play_xa stay refused.");
 		r_out.warnings.push_back("PART/PATH/NAVM/VEHL are RAM-gated sidecars. Prefetch checks host: then cdrom0: plus can_fit. Camera2D is CAM flag 2 (ortho).");
 		r_out.warnings.push_back("HIT00 AABBs clip PS2.move_and_slide / stick translate (enter-only). spawn_shot stays refused.");
+		r_out.warnings.push_back("Kit volumes fire on HIT enter (overlap kit, not Cross-only). CharacterBody2D/3D cook as player kit 4 and auto-slide. export/guest is the resolved tree (embed + overlay + extra/*.cpp).");
 		r_out.warnings.push_back("PS2.overlaps / raycast / tile_solid_at query HIT00 AABBs and TILE00 cells. spawn_shot stays refused.");
 		r_out.warnings.push_back("PS2.set_fade / change_scene_fade are a GS alpha overlay (not set_fog). spawn_shot stays refused.");
 		r_out.warnings.push_back("play_xa is not supported on PS2 ABI 1 (no CD-XA; use PS2.play_sfx / load_music IMA). play_fmv has no license-clean IPU decoder.");
@@ -2170,6 +2280,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		if (!extra_gathers.is_empty()) {
 			names->store_line("kit: Spawn Checkpoint Portal Player Hazard Pickup Music Unload Load Talk Spawner Save");
 		}
+		names->store_line("guest: export/guest is the resolved tree (embed + overlay + extra/*.cpp)");
 		if (!r_out.sfx_path.is_empty()) {
 			names->store_line("sfx: SFX00.bin");
 		}
