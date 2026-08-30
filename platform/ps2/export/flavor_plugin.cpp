@@ -98,6 +98,8 @@ void PS2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("intersects_ray", "from", "dir"), &PS2::intersects_ray);
 	ClassDB::bind_method(D_METHOD("tile_solid_at", "x", "y"), &PS2::tile_solid_at);
 	ClassDB::bind_method(D_METHOD("tile_at", "x", "y"), &PS2::tile_at);
+	ClassDB::bind_method(D_METHOD("set_fade", "alpha", "color"), &PS2::set_fade, DEFVAL(Color()));
+	ClassDB::bind_method(D_METHOD("change_scene_fade", "path", "seconds"), &PS2::change_scene_fade);
 }
 
 void PS2FlavorEditorPlugin::_sync_singleton() {

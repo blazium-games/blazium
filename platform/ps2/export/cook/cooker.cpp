@@ -1390,6 +1390,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		r_out.warnings.push_back("create_tween / create_timer are 8 linear slots (volume kind drives MUSIC). spawn_shot and play_xa stay refused.");
 		r_out.warnings.push_back("HIT00 AABBs clip PS2.move_and_slide / stick translate (enter-only). spawn_shot stays refused.");
 		r_out.warnings.push_back("PS2.overlaps / raycast / tile_solid_at query HIT00 AABBs and TILE00 cells. spawn_shot stays refused.");
+		r_out.warnings.push_back("PS2.set_fade / change_scene_fade are a GS alpha overlay (not set_fog). spawn_shot stays refused.");
 	}
 
 	{

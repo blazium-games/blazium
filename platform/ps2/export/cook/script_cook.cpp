@@ -210,7 +210,9 @@ enum {
 	OP_SLIDE = 35,
 	OP_OVERLAP = 36,
 	OP_RAYCAST = 37,
-	OP_TILE_AT = 38
+	OP_TILE_AT = 38,
+	OP_SET_FADE = 39,
+	OP_SCENE_FADE = 40
 };
 
 static const char *kUnsupportedCalls[] = {
@@ -247,7 +249,8 @@ static bool is_ps2_alias(const String &p_name) {
 			p_name == "is_on_wall" || p_name == "is_on_ceiling" || p_name == "overlaps" ||
 			p_name == "overlaps_entered" || p_name == "has_overlapping_areas" ||
 			p_name == "hitbox_kind" || p_name == "raycast" || p_name == "raycast_point" ||
-			p_name == "intersects_ray" || p_name == "tile_solid_at" || p_name == "tile_at";
+			p_name == "intersects_ray" || p_name == "tile_solid_at" || p_name == "tile_at" ||
+			p_name == "set_fade" || p_name == "change_scene_fade";
 }
 
 static bool reject_unsupported_apis(const String &p_src, String &r_why) {
@@ -367,6 +370,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	bool has_tween = false;
 	bool has_slide = false;
 	bool has_hitq = false;
+	bool has_fade = false;
 	float rotate_rate = 0.4f;
 	float translate_rate = 1.0f;
 	for (int i = 0; i < r_out.accepted.size(); i++) {
@@ -446,6 +450,9 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		if (src.contains("overlaps") || src.contains("raycast") || src.contains("intersects_ray") ||
 				src.contains("hitbox_kind") || src.contains("tile_solid_at") || src.contains("tile_at")) {
 			has_hitq = true;
+		}
+		if (src.contains("set_fade") || src.contains("change_scene_fade")) {
+			has_fade = true;
 		}
 	}
 	if (!r_out.extra_scenes.is_empty()) {
@@ -528,7 +535,22 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		append_f32(tape, 0.0f);
 		tape.push_back(uint8_t(OP_TIMER));
 	}
-	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys || has_cam_rt || has_tween || has_slide || has_hitq) {
+	if (has_fade) {
+		tape.push_back(uint8_t(OP_READY));
+		tape.push_back(uint8_t(OP_LOADK_F));
+		append_f32(tape, 0.0f);
+		tape.push_back(uint8_t(OP_LOADK_F));
+		append_f32(tape, 0.0f);
+		tape.push_back(uint8_t(OP_LOADK_F));
+		append_f32(tape, 0.0f);
+		tape.push_back(uint8_t(OP_LOADK_F));
+		append_f32(tape, 0.0f);
+		tape.push_back(uint8_t(OP_SET_FADE));
+		tape.push_back(uint8_t(OP_LOADK_F));
+		append_f32(tape, 0.0f);
+		tape.push_back(uint8_t(OP_SCENE_FADE));
+	}
+	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys || has_cam_rt || has_tween || has_slide || has_hitq || has_fade) {
 		tape.push_back(uint8_t(OP_PROCESS));
 		if (has_gd_rotate || has_lu_rotate) {
 			tape.push_back(uint8_t(OP_LOAD_DELTA));
@@ -580,7 +602,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		if (has_nav) {
 			tape.push_back(uint8_t(OP_NAV_FOLLOW));
 		}
-		if (has_say || has_nav || has_sys || has_cam_rt || has_tween) {
+		if (has_say || has_nav || has_sys || has_cam_rt || has_tween || has_fade) {
 			tape.push_back(uint8_t(OP_SYS_TICK));
 		}
 		if (has_cam_rt) {
@@ -671,11 +693,17 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	if (has_hitq) {
 		r_out.ir_text += "IR PS2.overlaps/raycast/tile_solid_at (HIT00 AABB + TILE cells)\n";
 	}
+	if (has_fade) {
+		r_out.ir_text += "IR PS2.set_fade/change_scene_fade (GS alpha overlay)\n";
+	}
 	if (has_slide) {
 		r_out.warnings.push_back("move_and_slide clips against HIT00 mesh AABBs (enter-only so oversized industrial boxes do not trap).");
 	}
 	if (has_hitq) {
 		r_out.warnings.push_back("overlaps / raycast query HIT00 AABBs (including already-overlapping boxes). tile_solid_at uses TILE00 floor(x),floor(z) cells.");
+	}
+	if (has_fade) {
+		r_out.warnings.push_back("set_fade is a GS blended fullscreen rect (not set_fog). change_scene_fade lerps that overlay to clear.");
 	}
 	if (has_tween) {
 		r_out.warnings.push_back("create_tween / create_timer are 8 linear slots on PS2 ABI 1 (volume tweens drive MUSIC). Not SceneTreeTween.");

@@ -12,6 +12,7 @@
 #pragma once
 
 #include "core/input/shortcut.h"
+#include "core/math/color.h"
 #include "core/math/vector2.h"
 #include "core/math/vector3.h"
 #include "core/object/object.h"
@@ -460,6 +461,18 @@ public:
 		(void)p_x;
 		(void)p_y;
 		return 0;
+	}
+	bool set_fade(float p_alpha, const Color &p_color = Color()) {
+		_fail_ps2();
+		(void)p_alpha;
+		(void)p_color;
+		return false;
+	}
+	bool change_scene_fade(const String &p_path, float p_seconds) {
+		_fail_ps2();
+		(void)p_path;
+		(void)p_seconds;
+		return false;
 	}
 };
 
