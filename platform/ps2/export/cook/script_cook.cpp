@@ -230,7 +230,20 @@ enum {
 	OP_JMP = 46,
 	OP_JZ = 47,
 	OP_CALL_NATIVE = 48,
-	OP_LOADK_S = 49
+	OP_LOADK_S = 49,
+	OP_LOAD_SCENE = 50,
+	NAT_EE_USED = 51,
+	NAT_EE_FREE = 52,
+	NAT_EE_LIMIT = 53,
+	NAT_GS_USED = 54,
+	NAT_GS_FREE = 55,
+	NAT_GS_LIMIT = 56,
+	NAT_PACK_COST_EE = 57,
+	NAT_PACK_COST_GS = 58,
+	NAT_CAN_LOAD = 59,
+	NAT_CAN_INSTANTIATE = 60,
+	NAT_IS_LOADED = 61,
+	NAT_LOADED_COUNT = 62
 };
 
 static const char *kUnsupportedCalls[] = {
@@ -270,7 +283,10 @@ static bool is_ps2_alias(const String &p_name) {
 			p_name == "intersects_ray" || p_name == "tile_solid_at" || p_name == "tile_at" ||
 			p_name == "set_fade" || p_name == "change_scene_fade" || p_name == "change_scene" ||
 			p_name == "instantiate" || p_name == "can_instantiate" || p_name == "say_done" ||
-			p_name == "set_hud_text" || p_name == "seek_animation" || p_name == "set_animation_speed";
+			p_name == "set_hud_text" || p_name == "seek_animation" || p_name == "set_animation_speed" ||
+			p_name == "get_ee_ram_used" || p_name == "get_ee_ram_free" || p_name == "get_ee_ram_limit" ||
+			p_name == "get_gs_vram_used" || p_name == "get_gs_vram_free" || p_name == "get_gs_vram_limit" ||
+			p_name == "get_pack_cost";
 }
 
 static bool reject_unsupported_apis(const String &p_src, String &r_why) {
@@ -400,7 +416,9 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	bool has_hitq = false;
 	bool has_fade = false;
 	bool has_change = false;
+	bool has_load = false;
 	bool has_inst = false;
+	bool has_ram = false;
 	bool has_seek = false;
 	bool has_branch = false;
 	float rotate_rate = 0.4f;
@@ -420,7 +438,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		if (src.contains("OS.has_feature") && src.contains("\"ps2\"")) {
 			has_feature = true;
 		}
-		if (src.contains("swap_pack") || src.contains("load_scene") || src.contains("change_scene")) {
+		if (src.contains("swap_pack")) {
 			has_swap = true;
 		}
 		if (src.contains("play_sfx")) {
@@ -486,11 +504,19 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		if (src.contains("set_fade") || src.contains("change_scene_fade")) {
 			has_fade = true;
 		}
-		if (src.contains("change_scene(") || src.contains("load_scene(")) {
+		if (src.contains("change_scene(")) {
 			has_change = true;
 		}
-		if (src.contains("instantiate(") || src.contains("unload_pack(") || src.contains("can_instantiate")) {
+		if (src.contains("load_scene(")) {
+			has_load = true;
+		}
+		if (src.contains("instantiate(") || src.contains("unload_pack(")) {
 			has_inst = true;
+		}
+		if (src.contains("get_ee_ram") || src.contains("get_gs_vram") || src.contains("get_pack_cost") ||
+				src.contains("can_load_scene") || src.contains("can_instantiate") || src.contains("is_scene_loaded") ||
+				src.contains("get_loaded_scene_count")) {
+			has_ram = true;
 		}
 		if (src.contains("seek_animation") || src.contains("set_animation_speed") || src.contains("set_frame(")) {
 			has_seek = true;
@@ -605,6 +631,17 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		}
 		tape.push_back(uint8_t(OP_CHANGE_SCENE));
 	}
+	if (has_load) {
+		tape.push_back(uint8_t(OP_READY));
+		tape.push_back(uint8_t(OP_LOADK_S));
+		const char *kit = "res://scenes/spawn_kit.tscn";
+		const int n = 26;
+		tape.push_back(uint8_t(n));
+		for (int c = 0; c < n; c++) {
+			tape.push_back(uint8_t(kit[c]));
+		}
+		tape.push_back(uint8_t(OP_LOAD_SCENE));
+	}
 	if (has_inst) {
 		tape.push_back(uint8_t(OP_READY));
 		tape.push_back(uint8_t(OP_LOADK_S));
@@ -617,7 +654,27 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		tape.push_back(uint8_t(OP_INSTANTIATE));
 		tape.push_back(uint8_t(OP_UNLOAD_PACK));
 	}
-	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys || has_cam_rt || has_tween || has_slide || has_hitq || has_fade || has_change || has_inst || has_seek || has_branch) {
+	if (has_ram) {
+		tape.push_back(uint8_t(OP_READY));
+		tape.push_back(uint8_t(OP_CALL_NATIVE));
+		tape.push_back(uint8_t(NAT_EE_USED));
+		tape.push_back(uint8_t(OP_CALL_NATIVE));
+		tape.push_back(uint8_t(NAT_GS_USED));
+		tape.push_back(uint8_t(OP_LOADK_S));
+		const char *kit = "res://scenes/spawn_kit.tscn";
+		const int n = 26;
+		tape.push_back(uint8_t(n));
+		for (int c = 0; c < n; c++) {
+			tape.push_back(uint8_t(kit[c]));
+		}
+		tape.push_back(uint8_t(OP_CALL_NATIVE));
+		tape.push_back(uint8_t(NAT_PACK_COST_EE));
+		tape.push_back(uint8_t(OP_CALL_NATIVE));
+		tape.push_back(uint8_t(NAT_CAN_INSTANTIATE));
+		tape.push_back(uint8_t(OP_CALL_NATIVE));
+		tape.push_back(uint8_t(NAT_CAN_LOAD));
+	}
+	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys || has_cam_rt || has_tween || has_slide || has_hitq || has_fade || has_change || has_load || has_inst || has_ram || has_seek || has_branch) {
 		tape.push_back(uint8_t(OP_PROCESS));
 		if (has_gd_rotate || has_lu_rotate) {
 			tape.push_back(uint8_t(OP_LOAD_DELTA));
@@ -725,7 +782,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		r_out.ir_text += "IR OS.has_feature(\"ps2\")\n";
 	}
 	if (has_swap) {
-		r_out.ir_text += "IR PS2.swap_pack/load_scene\n";
+		r_out.ir_text += "IR PS2.swap_pack\n";
 	}
 	if (has_sfx) {
 		r_out.ir_text += "IR PS2.play_sfx\n";
@@ -783,10 +840,16 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		r_out.ir_text += "IR PS2.set_fade/change_scene_fade (GS alpha overlay)\n";
 	}
 	if (has_change) {
-		r_out.ir_text += "IR PS2.change_scene/load_scene (STREAM path map)\n";
+		r_out.ir_text += "IR PS2.change_scene (STREAM swap)\n";
+	}
+	if (has_load) {
+		r_out.ir_text += "IR PS2.load_scene (additive resident, not swap)\n";
 	}
 	if (has_inst) {
-		r_out.ir_text += "IR PS2.instantiate/unload_pack (4 resident extras)\n";
+		r_out.ir_text += "IR PS2.instantiate/unload_pack (16 resident extras, RAM-gated)\n";
+	}
+	if (has_ram) {
+		r_out.ir_text += "IR PS2.get_ee_ram/get_gs_vram/get_pack_cost/can_instantiate/can_load_scene\n";
 	}
 	if (has_seek) {
 		r_out.ir_text += "IR PS2.seek_animation/set_frame (Node3D TRS keys)\n";

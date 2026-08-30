@@ -18,7 +18,8 @@ namespace ps2_cook {
 
 // Must match blazium-toolchain/guest/ps2 CookABI and BLAZIUM_PS2_COOK_ABI.
 static const int kCookABI = 1;
-static const int kMaxScenePacks = 32;
+static const int kMaxScenePacks = 99;
+static const int kMaxResidentExtras = 16;
 static const int kMaxNodes = 512;
 static const int kMaxTris = 32768;
 static const int kMaxTextures = 64;

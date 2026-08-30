@@ -232,6 +232,10 @@ bool EditorExportPlatformPS2::has_valid_export_configuration(const Ref<EditorExp
 }
 
 bool EditorExportPlatformPS2::has_valid_project_configuration(const Ref<EditorExportPreset> &p_preset, String &r_error) const {
+	if (!ProjectSettings::get_singleton() || !bool(ProjectSettings::get_singleton()->get("ps2/enabled"))) {
+		r_error += "Turn on Project Settings → ps2/enabled to export for PS2.\n";
+		return false;
+	}
 	String hit;
 	if (_scan_forbidden("res://", hit)) {
 		r_error += "PS2 export forbids GDExtension and C# (" + hit + ").\n";
@@ -251,12 +255,17 @@ bool EditorExportPlatformPS2::has_valid_project_configuration(const Ref<EditorEx
 	r_error += "Refused: play_xa/stop_xa (no CD-XA; use play_sfx/load_music IMA). play_fmv (no license-clean IPU decoder). set_fog, spawn_shot, memcard_wrap. Official GDScript/Luau VMs. GDExtension/C#. AnimationTree/RigidBody/GPUParticles.\n";
 	r_error += "Audio is WAV-only (first res:// .wav = SFX00; path containing music = MUSIC00). FileAccess is user:// only (host:SAVE.BIN / mc0:SAVE.BIN). STREAM/SFX/DISP/CAM.. are not ELF-embedded (host: or ISO).\n";
 	r_error += "BIOS is required only for One-click / ps2 run, not for export. Guest framebuffer follows ps2/width and ps2/region (DISP.bin).\n";
+	r_error += "EE 24 MiB and GS 4 MiB are shared across every resident pack (not per-scene). Catalog up to 99 extras; at most 16 extras + pack 0 in RAM. Unload rooms/NPCs you are not using.\n";
 	return true;
 }
 
 Error EditorExportPlatformPS2::export_project(const Ref<EditorExportPreset> &p_preset, bool p_debug, const String &p_path, BitField<EditorExportPlatform::DebugFlags> p_flags) {
 	ExportNotifier notifier(*this, p_preset, p_debug, p_path, p_flags);
 	ERR_FAIL_COND_V(p_path.is_empty(), ERR_INVALID_PARAMETER);
+	if (!ProjectSettings::get_singleton() || !bool(ProjectSettings::get_singleton()->get("ps2/enabled"))) {
+		add_message(EXPORT_MESSAGE_ERROR, "PS2", "Turn on Project Settings → ps2/enabled to export for PS2.");
+		return ERR_UNCONFIGURED;
+	}
 	if (!_host_supported()) {
 		add_message(EXPORT_MESSAGE_ERROR, "PS2", "PS2 export is available on Windows and Linux hosts only.");
 		return ERR_UNAVAILABLE;

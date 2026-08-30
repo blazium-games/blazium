@@ -11,9 +11,24 @@
 
 #include "flavor_plugin.h"
 
+#include "cook/cooker.h"
+#include "cook/script_cook.h"
+
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
+#include "core/io/dir_access.h"
+#include "core/io/file_access.h"
 #include "core/os/os.h"
+#include "core/templates/hash_set.h"
+#include "editor/editor_interface.h"
+#include "scene/2d/sprite_2d.h"
+#include "scene/2d/tile_map.h"
+#include "scene/2d/tile_map_layer.h"
+#include "scene/3d/camera_3d.h"
+#include "scene/3d/mesh_instance_3d.h"
+#include "scene/3d/physics/collision_object_3d.h"
+#include "scene/gui/control.h"
+#include "scene/resources/mesh.h"
 #include "servers/display_server.h"
 
 void PS2::_bind_methods() {
@@ -108,18 +123,120 @@ void PS2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_hud_text", "hud", "text"), &PS2::set_hud_text);
 	ClassDB::bind_method(D_METHOD("seek_animation", "sec"), &PS2::seek_animation);
 	ClassDB::bind_method(D_METHOD("set_animation_speed", "speed"), &PS2::set_animation_speed);
+	ClassDB::bind_method(D_METHOD("get_ee_ram_used"), &PS2::get_ee_ram_used);
+	ClassDB::bind_method(D_METHOD("get_ee_ram_free"), &PS2::get_ee_ram_free);
+	ClassDB::bind_method(D_METHOD("get_ee_ram_limit"), &PS2::get_ee_ram_limit);
+	ClassDB::bind_method(D_METHOD("get_gs_vram_used"), &PS2::get_gs_vram_used);
+	ClassDB::bind_method(D_METHOD("get_gs_vram_free"), &PS2::get_gs_vram_free);
+	ClassDB::bind_method(D_METHOD("get_gs_vram_limit"), &PS2::get_gs_vram_limit);
+	ClassDB::bind_method(D_METHOD("get_pack_cost", "path"), &PS2::get_pack_cost);
 }
 
-void PS2FlavorEditorPlugin::_sync_singleton() {
+static void _count_scene(Node *p_node, int &r_nodes, int &r_tris, int &r_tex, int &r_hud, int &r_tiles, int &r_cams, int &r_hits) {
+	if (!p_node) {
+		return;
+	}
+	r_nodes++;
+	if (MeshInstance3D *mi = Object::cast_to<MeshInstance3D>(p_node)) {
+		const Ref<Mesh> mesh = mi->get_mesh();
+		if (mesh.is_valid()) {
+			r_tris += mesh->get_faces().size();
+			r_tex += MAX(1, mesh->get_surface_count());
+		} else {
+			r_tex++;
+		}
+	}
+	if (Object::cast_to<Sprite2D>(p_node)) {
+		r_tex++;
+	}
+	if (Object::cast_to<Control>(p_node)) {
+		r_hud++;
+	}
+	if (TileMap *tm = Object::cast_to<TileMap>(p_node)) {
+		r_tiles += tm->get_used_cells(0).size();
+	}
+	if (TileMapLayer *tl = Object::cast_to<TileMapLayer>(p_node)) {
+		r_tiles += tl->get_used_cells().size();
+	}
+	if (Object::cast_to<Camera3D>(p_node)) {
+		r_cams++;
+	}
+	if (Object::cast_to<CollisionObject3D>(p_node)) {
+		r_hits++;
+	}
+	for (int i = 0; i < p_node->get_child_count(); i++) {
+		_count_scene(p_node->get_child(i), r_nodes, r_tris, r_tex, r_hud, r_tiles, r_cams, r_hits);
+	}
+}
+
+static int _count_literal_packs() {
+	int n = 0;
+	Vector<String> stack;
+	stack.push_back("res://");
+	HashSet<String> seen;
+	while (!stack.is_empty()) {
+		const String dir = stack[stack.size() - 1];
+		stack.resize(stack.size() - 1);
+		Ref<DirAccess> da = DirAccess::open(dir);
+		if (da.is_null()) {
+			continue;
+		}
+		da->list_dir_begin();
+		for (String name = da->get_next(); !name.is_empty(); name = da->get_next()) {
+			if (name == "." || name == "..") {
+				continue;
+			}
+			const String path = dir.path_join(name);
+			if (da->current_is_dir()) {
+				if (name == "export" || name == ".godot" || name == "addons" || name == "tests" || name == "tools") {
+					continue;
+				}
+				stack.push_back(path);
+				continue;
+			}
+			if (name.ends_with(".tscn")) {
+				if (!seen.has(path)) {
+					seen.insert(path);
+					n++;
+				}
+				continue;
+			}
+			if (!(name.ends_with(".gd") || name.ends_with(".luau"))) {
+				continue;
+			}
+			if (name == "run_tests.gd" || name.begins_with("test_")) {
+				continue;
+			}
+			const String src = FileAccess::get_file_as_string(path);
+			Vector<String> scenes;
+			ps2_cook::collect_literal_scenes(src, scenes);
+			for (int i = 0; i < scenes.size(); i++) {
+				if (!seen.has(scenes[i])) {
+					seen.insert(scenes[i]);
+					n++;
+				}
+			}
+		}
+	}
+	return n;
+}
+
+void PS2FlavorEditorPlugin::_sync_singleton(bool p_enabled) {
 	Engine *eng = Engine::get_singleton();
 	if (!eng) {
 		return;
 	}
-	if (!ps2_stub) {
-		ps2_stub = memnew(PS2);
+	if (p_enabled) {
+		if (!ps2_stub) {
+			ps2_stub = memnew(PS2);
+		}
+		if (!eng->has_singleton("PS2")) {
+			eng->add_singleton(Engine::Singleton("PS2", ps2_stub));
+		}
+		return;
 	}
-	if (!eng->has_singleton("PS2")) {
-		eng->add_singleton(Engine::Singleton("PS2", ps2_stub));
+	if (eng->has_singleton("PS2")) {
+		eng->remove_singleton("PS2");
 	}
 }
 
@@ -128,21 +245,81 @@ void PS2FlavorEditorPlugin::_refresh() {
 		return;
 	}
 	const bool enabled = ProjectSettings::get_singleton() && bool(ProjectSettings::get_singleton()->get("ps2/enabled"));
-	_sync_singleton();
+	_sync_singleton(enabled);
 	last_enabled = enabled;
 	if (!enabled) {
 		status->set_text("Turn on Project Settings → ps2/enabled for the PS2 flavor dock.\nPS2.* is PS2 export only; use OS.has_feature(\"ps2\").\nExport writes an EE ELF via blazium-toolchain (no Godot templates).");
+		if (warn) {
+			warn->set_text("");
+		}
 		return;
 	}
+	Node *root = EditorInterface::get_singleton() ? EditorInterface::get_singleton()->get_edited_scene_root() : nullptr;
+	int nodes = 0, tris = 0, tex = 0, hud = 0, tiles = 0, cams = 0, hits = 0;
+	_count_scene(root, nodes, tris, tex, hud, tiles, cams, hits);
+	const int packs = _count_literal_packs();
+	const int extras = MAX(0, packs - 1);
+	const int est_ee = nodes * 80 + tris * 32 + 2 * 1024 * 1024;
+	const int est_gs = 640 * 448 * 6 + tex * 64 * 64 * 2;
+	const int load_ee = est_ee + extras * (tris > 0 ? MIN(est_ee / 4, 2 * 1024 * 1024) : 256 * 1024);
+	const int load_gs = est_gs + extras * MIN(est_gs / 4, 256 * 1024);
 	const String bios = OS::get_singleton() ? String(OS::get_singleton()->get_environment("PS2_BIOS_DIR")) : String();
-	String oneclick = bios.is_empty() ? "One-click disabled: set PS2_BIOS_DIR to a legal BIOS folder (export does not need BIOS)." : "One-click: PS2_BIOS_DIR is set (ps2 run / PCSX2 -elf).";
-	status->set_text("PS2 ABI 1 export is on. Guard PS2.* with OS.has_feature(\"ps2\").\nWorks: STREAM multi-scene, HIT slide/query, camera, tweens, IMA SFX/MUSIC, set_fade, DISP NTSC/PAL 640/512/320.\nPartial: change_scene/instantiate, Button HUD, AnimationPlayer TRS, custom IR (not official GDScript/Luau VMs).\nRefused: play_xa (no CD-XA), play_fmv (no IPU decoder), set_fog, spawn_shot, memcard_wrap, gsKit.\n" + oneclick);
+	const String oneclick = bios.is_empty() ? "One-click disabled: set PS2_BIOS_DIR to a legal BIOS folder (export does not need BIOS)." : "One-click: PS2_BIOS_DIR is set (ps2 run / PCSX2 -elf).";
+	status->set_text(vformat(
+			"nodes %d/%d\ntris %d/%d\ntextures %d/%d\ncameras %d/%d\nHIT %d/%d\nHUD %d/%d\ntiles %d\ncatalog extras %d/%d (resident max %d + pack 0)\nest EE %d/%d  GS %d/%d\nEE 24 MiB and GS 4 MiB are shared. Unload rooms/NPCs you are not using.\nPS2.* is PS2 export only; use OS.has_feature(\"ps2\").\nWorks: STREAM multi-scene, HIT slide/query, camera, tweens, IMA SFX/MUSIC, set_fade, DISP.\nPartial: change_scene swap / load_scene+instantiate additive, Button HUD, AnimationPlayer TRS, custom IR.\nRefused: play_xa, play_fmv, set_fog, spawn_shot, memcard_wrap, gsKit, official VMs.\n%s",
+			nodes, ps2_cook::kMaxNodes, tris, ps2_cook::kMaxTris, tex, ps2_cook::kMaxTextures,
+			cams, ps2_cook::kMaxCameras, hits, ps2_cook::kMaxHits, hud, ps2_cook::kMaxHud, tiles,
+			extras, ps2_cook::kMaxScenePacks, ps2_cook::kMaxResidentExtras,
+			est_ee, ps2_cook::kEeRamLimit, est_gs, ps2_cook::kGsVramLimit, oneclick));
+	PackedStringArray hard;
+	PackedStringArray soft;
+	auto over = [&](int v, int cap, const String &label) {
+		if (v > cap) {
+			hard.push_back(vformat("%s (%d/%d)", label, v, cap));
+		} else if (v > (cap * 4) / 5) {
+			soft.push_back(vformat("%s 80%% (%d/%d)", label, v, cap));
+		}
+	};
+	over(nodes, ps2_cook::kMaxNodes, "nodes");
+	over(tris, ps2_cook::kMaxTris, "tris");
+	over(tex, ps2_cook::kMaxTextures, "textures");
+	over(cams, ps2_cook::kMaxCameras, "cameras");
+	over(hits, ps2_cook::kMaxHits, "HIT");
+	over(hud, ps2_cook::kMaxHud, "HUD");
+	over(extras, ps2_cook::kMaxScenePacks, "catalog extras");
+	over(est_ee, ps2_cook::kEeRamLimit, "est EE");
+	over(est_gs, ps2_cook::kGsVramLimit, "est GS");
+	if (load_ee > ps2_cook::kEeRamLimit || load_gs > ps2_cook::kGsVramLimit) {
+		hard.push_back(vformat("Loading this scene plus %d already-referenced packs would exceed 24 MiB EE or 4 MiB GS — unload or split", extras));
+	}
+	if (!warn) {
+		return;
+	}
+	if (!hard.is_empty()) {
+		const String msg = "PS2 budget: " + String(", ").join(hard);
+		warn->add_theme_color_override("font_color", Color(1, 0.35f, 0.35f));
+		warn->set_text(msg);
+		WARN_PRINT(msg);
+	} else if (!soft.is_empty()) {
+		const String msg = "PS2 budget 80%: " + String(", ").join(soft);
+		warn->add_theme_color_override("font_color", Color(1, 0.82f, 0.25f));
+		warn->set_text(msg);
+		WARN_PRINT(msg);
+	} else {
+		warn->set_text("");
+	}
 }
 
 void PS2FlavorEditorPlugin::_notification(int p_what) {
 	if (p_what == NOTIFICATION_PROCESS && dock) {
+		Node *root = EditorInterface::get_singleton() ? EditorInterface::get_singleton()->get_edited_scene_root() : nullptr;
+		const ObjectID id = root ? root->get_instance_id() : ObjectID();
+		int nodes = 0, tris = 0, tex = 0, hud = 0, tiles = 0, cams = 0, hits = 0;
+		_count_scene(root, nodes, tris, tex, hud, tiles, cams, hits);
 		const bool enabled = ProjectSettings::get_singleton() && bool(ProjectSettings::get_singleton()->get("ps2/enabled"));
-		if (enabled != last_enabled) {
+		if (id != last_root || nodes != last_nodes || enabled != last_enabled) {
+			last_root = id;
+			last_nodes = nodes;
 			_refresh();
 		}
 	}
@@ -155,10 +332,17 @@ PS2FlavorEditorPlugin::PS2FlavorEditorPlugin() {
 		status = memnew(Label);
 		status->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
 		dock->add_child(status);
+		warn = memnew(Label);
+		warn->add_theme_color_override("font_color", Color(1, 0.35f, 0.35f));
+		warn->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
+		dock->add_child(warn);
 		add_control_to_dock(DOCK_SLOT_RIGHT_UL, dock);
 		set_process(true);
 	}
-	_sync_singleton();
+	const bool enabled = ProjectSettings::get_singleton() && bool(ProjectSettings::get_singleton()->get("ps2/enabled"));
+	if (enabled) {
+		_sync_singleton(true);
+	}
 	if (!headless) {
 		_refresh();
 	}

@@ -646,6 +646,13 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent, const String &p_
 	}
 }
 
+static void append_u32(Vector<uint8_t> &o, uint32_t v) {
+	o.push_back(uint8_t(v & 0xff));
+	o.push_back(uint8_t((v >> 8) & 0xff));
+	o.push_back(uint8_t((v >> 16) & 0xff));
+	o.push_back(uint8_t((v >> 24) & 0xff));
+}
+
 static void append_u16(Vector<uint8_t> &o, uint16_t v) {
 	o.push_back(uint8_t(v & 0xff));
 	o.push_back(uint8_t(v >> 8));
@@ -723,7 +730,7 @@ static void ensure_placeholder_tex(Gather &r_g) {
 	r_g.image_names.push_back("placeholder");
 }
 
-static Error cook_gather_bins(const String &p_node, const String &p_mesh, const String &p_gtex, Gather &p_g, String &r_err) {
+static Error cook_gather_bins(const String &p_node, const String &p_mesh, const String &p_gtex, Gather &p_g, String &r_err, uint32_t *r_ee, uint32_t *r_gs) {
 	ensure_placeholder_tex(p_g);
 	const Vector<uint8_t> node_blob = write_node_blob(p_g);
 	MeshBlob mesh;
@@ -747,6 +754,12 @@ static Error cook_gather_bins(const String &p_node, const String &p_mesh, const 
 	if (write_bytes(p_node, node_blob) != OK || write_bytes(p_mesh, mesh.bytes) != OK || write_bytes(p_gtex, gtex.bytes) != OK) {
 		r_err = "failed to write pack slices.";
 		return ERR_CANT_CREATE;
+	}
+	if (r_ee) {
+		*r_ee = uint32_t(node_blob.size() + mesh.bytes.size() + gtex.bytes.size());
+	}
+	if (r_gs) {
+		*r_gs = uint32_t(gtex.vram_bytes);
 	}
 	return OK;
 }
@@ -914,7 +927,7 @@ static Vector<uint8_t> write_fmv_blob() {
 	return out;
 }
 
-static Vector<uint8_t> write_stream_blob(int p_extra_count, const Vector<String> &p_paths) {
+static Vector<uint8_t> write_stream_blob(int p_extra_count, const Vector<String> &p_paths, const Vector<uint32_t> &p_ee, const Vector<uint32_t> &p_gs) {
 	Vector<uint8_t> out;
 	out.push_back('S');
 	out.push_back('T');
@@ -933,6 +946,8 @@ static Vector<uint8_t> write_stream_blob(int p_extra_count, const Vector<String>
 		for (int c = 0; c < n; c++) {
 			out.push_back(uint8_t(utf[c]));
 		}
+		append_u32(out, i < p_ee.size() ? p_ee[i] : 0);
+		append_u32(out, i < p_gs.size() ? p_gs[i] : 0);
 	}
 	return out;
 }
@@ -1138,11 +1153,13 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 
 	Vector<Gather> extra_gathers;
 	Vector<String> cooked_extras;
+	Vector<uint32_t> extra_ee;
+	Vector<uint32_t> extra_gs;
 	Vector<Node *> extra_live;
 	for (int i = 0; i < extra_scenes.size(); i++) {
 		const String extra = extra_scenes[i];
 		if (r_out.pack_count >= kMaxScenePacks) {
-			r_out.warnings.push_back("kept first 32 scene packs.");
+			r_out.warnings.push_back("kept first 99 scene packs.");
 			break;
 		}
 		if (!ResourceLoader::exists(extra)) {
@@ -1306,6 +1323,10 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		return ERR_CANT_CREATE;
 	}
 
+	if (extra_gathers.size() >= 80) {
+		r_out.warnings.push_back(vformat("STREAM catalog has %d extras (80%% of 99). EE 24 MiB / GS 4 MiB are shared — unload rooms/NPCs you are not using.", extra_gathers.size()));
+	}
+
 	if (!extra_gathers.is_empty()) {
 		for (int i = 0; i < extra_gathers.size(); i++) {
 			if (extra_gathers[i].images.is_empty()) {
@@ -1319,7 +1340,9 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			const String meshp = p_export_dir.path_join(vformat("MESH%02d.bin", pack));
 			const String gtexp = p_export_dir.path_join(vformat("GTEX%02d.bin", pack));
 			String pack_err;
-			if (cook_gather_bins(nodep, meshp, gtexp, extra_gathers.write[i], pack_err) != OK) {
+			uint32_t pack_ee = 0;
+			uint32_t pack_gs = 0;
+			if (cook_gather_bins(nodep, meshp, gtexp, extra_gathers.write[i], pack_err, &pack_ee, &pack_gs) != OK) {
 				r_out.errors.push_back(pack_err.is_empty() ? vformat("pack-%d cook failed.", pack) : pack_err);
 				r_out.report = r_out.errors[r_out.errors.size() - 1];
 				free_live();
@@ -1339,6 +1362,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 				{ vformat("ANIM%02d.bin", pack), write_anim_blob(eg) },
 			};
 			for (PackSys &s : psys) {
+				pack_ee += uint32_t(s.bytes.size());
 				if (write_bytes(p_export_dir.path_join(s.name), s.bytes) != OK) {
 					r_out.errors.push_back("failed to write " + s.name + ".");
 					r_out.report = r_out.errors[r_out.errors.size() - 1];
@@ -1346,6 +1370,8 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 					return ERR_CANT_CREATE;
 				}
 			}
+			extra_ee.push_back(pack_ee);
+			extra_gs.push_back(pack_gs);
 		}
 		Vector<String> toc_names;
 		toc_names.push_back("NODE01.bin");
@@ -1359,13 +1385,13 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			return ERR_CANT_CREATE;
 		}
 		r_out.stream_path = p_export_dir.path_join("STREAM.bin");
-		if (write_bytes(r_out.stream_path, write_stream_blob(extra_gathers.size(), cooked_extras)) != OK) {
+		if (write_bytes(r_out.stream_path, write_stream_blob(extra_gathers.size(), cooked_extras, extra_ee, extra_gs)) != OK) {
 			r_out.errors.push_back("failed to write STREAM.bin.");
 			r_out.report = r_out.errors[r_out.errors.size() - 1];
 			free_live();
 			return ERR_CANT_CREATE;
 		}
-		r_out.warnings.push_back("STREAM packs (MESH01../NODE01.. plus CAM/HIT/HUD/TILE/NAV/ANIM per pack) are not ELF-embedded. Guest loads them from host: or cdrom0: via PS2.change_scene / swap_pack / instantiate. Use ps2/make_iso or output_kind EE ELF + ISO.");
+		r_out.warnings.push_back("STREAM packs (MESH01../NODE01.. plus CAM/HIT/HUD/TILE/NAV/ANIM per pack) are not ELF-embedded. Guest loads them from host: or cdrom0: via PS2.change_scene / swap_pack / instantiate. EE 24 MiB and GS 4 MiB are shared — unload rooms/NPCs you are not using. Instantiating 20 unique NPC packs at once will refuse if their MESH/GTEX sum does not fit. Use ps2/make_iso or output_kind EE ELF + ISO.");
 	}
 
 	{
@@ -1481,6 +1507,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			return ERR_CANT_CREATE;
 		}
 		names->store_line(main_scene + " -> NODE00.bin MESH00.bin GTEX00.bin SCRP00.bin");
+		names->store_line(vformat("COST00 ee=%d gs=%d", r_out.ee_ram_bytes, r_out.vram_bytes));
 		if (main_scene.to_lower().contains("industrial") || main_abs.to_lower().contains("industrial")) {
 			names->store_line("fixture: industrial");
 		}
@@ -1492,6 +1519,9 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 				line += " PACK01.bin";
 			}
 			names->store_line(line);
+			const uint32_t ee = i < extra_ee.size() ? extra_ee[i] : 0;
+			const uint32_t gs = i < extra_gs.size() ? extra_gs[i] : 0;
+			names->store_line(vformat("COST%02d ee=%d gs=%d", pack, ee, gs));
 			if (cooked_extras[i].to_lower().contains("spawn_kit")) {
 				names->store_line("fixture: spawn_kit");
 			}

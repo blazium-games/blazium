@@ -17,6 +17,8 @@
 #include "core/math/vector3.h"
 #include "core/object/object.h"
 #include "core/string/ustring.h"
+#include "core/object/object_id.h"
+#include "core/variant/dictionary.h"
 #include "core/variant/variant.h"
 #include "editor/plugins/editor_plugin.h"
 #include "scene/gui/box_container.h"
@@ -509,6 +511,38 @@ public:
 		(void)p_s;
 		return false;
 	}
+	int get_ee_ram_used() const {
+		_fail_ps2();
+		return 0;
+	}
+	int get_ee_ram_free() const {
+		_fail_ps2();
+		return 0;
+	}
+	int get_ee_ram_limit() const {
+		_fail_ps2();
+		return 24 * 1024 * 1024;
+	}
+	int get_gs_vram_used() const {
+		_fail_ps2();
+		return 0;
+	}
+	int get_gs_vram_free() const {
+		_fail_ps2();
+		return 0;
+	}
+	int get_gs_vram_limit() const {
+		_fail_ps2();
+		return 4 * 1024 * 1024;
+	}
+	Dictionary get_pack_cost(const String &p_path) const {
+		_fail_ps2();
+		(void)p_path;
+		Dictionary d;
+		d["ee"] = 0;
+		d["gs"] = 0;
+		return d;
+	}
 };
 
 class PS2FlavorEditorPlugin : public EditorPlugin {
@@ -516,11 +550,14 @@ class PS2FlavorEditorPlugin : public EditorPlugin {
 
 	VBoxContainer *dock = nullptr;
 	Label *status = nullptr;
+	Label *warn = nullptr;
 	PS2 *ps2_stub = nullptr;
 	bool last_enabled = false;
+	ObjectID last_root;
+	int last_nodes = -1;
 
 	void _refresh();
-	void _sync_singleton();
+	void _sync_singleton(bool p_enabled);
 
 protected:
 	static void _bind_methods() {}
