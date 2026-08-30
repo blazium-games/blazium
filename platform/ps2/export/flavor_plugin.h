@@ -387,6 +387,25 @@ public:
 		(void)p_timer;
 		return true;
 	}
+	Vector3 move_and_slide(const Variant &p_node, const Vector3 &p_velocity, int p_mask = 255) {
+		_fail_ps2();
+		(void)p_node;
+		(void)p_velocity;
+		(void)p_mask;
+		return Vector3();
+	}
+	bool is_on_floor() const {
+		_fail_ps2();
+		return false;
+	}
+	bool is_on_wall() const {
+		_fail_ps2();
+		return false;
+	}
+	bool is_on_ceiling() const {
+		_fail_ps2();
+		return false;
+	}
 };
 
 class PS2FlavorEditorPlugin : public EditorPlugin {

@@ -1388,6 +1388,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		r_out.warnings.push_back("CAM00 look-at is Camera3D local -Z (Godot YXZ) plus FOV; guest gs_draw_set_camera applies them. VU1 is optional (dvp-as + packet2) else CPU GIF.");
 		r_out.warnings.push_back("PS2.look_camera / orbit_camera / attach_camera / shake_camera / next_camera are runtime CAM on ABI 1 (right-stick look, L1/R1 cycle).");
 		r_out.warnings.push_back("create_tween / create_timer are 8 linear slots (volume kind drives MUSIC). spawn_shot and play_xa stay refused.");
+		r_out.warnings.push_back("HIT00 AABBs clip PS2.move_and_slide / stick translate (enter-only). spawn_shot stays refused.");
 	}
 
 	{

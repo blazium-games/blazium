@@ -206,7 +206,8 @@ enum {
 	OP_ATTACH_CAMERA = 31,
 	OP_TWEEN = 32,
 	OP_TIMER = 33,
-	OP_KILL_TWEENS = 34
+	OP_KILL_TWEENS = 34,
+	OP_SLIDE = 35
 };
 
 static const char *kUnsupportedCalls[] = {
@@ -239,7 +240,8 @@ static bool is_ps2_alias(const String &p_name) {
 			p_name == "get_camera" || p_name == "get_camera_count" || p_name == "make_current" ||
 			p_name == "create_tween" || p_name == "tween_property" || p_name == "kill_tweens" ||
 			p_name == "tween_is_done" || p_name == "tween_count" || p_name == "create_timer" ||
-			p_name == "is_timer_done";
+			p_name == "is_timer_done" || p_name == "move_and_slide" || p_name == "is_on_floor" ||
+			p_name == "is_on_wall" || p_name == "is_on_ceiling";
 }
 
 static bool reject_unsupported_apis(const String &p_src, String &r_why) {
@@ -357,6 +359,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	bool has_music = false;
 	bool has_cam_rt = false;
 	bool has_tween = false;
+	bool has_slide = false;
 	float rotate_rate = 0.4f;
 	float translate_rate = 1.0f;
 	for (int i = 0; i < r_out.accepted.size(); i++) {
@@ -428,6 +431,10 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		if (src.contains("create_tween") || src.contains("tween_property") || src.contains("kill_tweens") ||
 				src.contains("tween_is_done") || src.contains("create_timer") || src.contains("is_timer_done")) {
 			has_tween = true;
+		}
+		if (src.contains("move_and_slide") || src.contains("is_on_floor") || src.contains("is_on_wall") ||
+				src.contains("is_on_ceiling")) {
+			has_slide = true;
 		}
 	}
 	if (!r_out.extra_scenes.is_empty()) {
@@ -510,7 +517,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		append_f32(tape, 0.0f);
 		tape.push_back(uint8_t(OP_TIMER));
 	}
-	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys || has_cam_rt || has_tween) {
+	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys || has_cam_rt || has_tween || has_slide) {
 		tape.push_back(uint8_t(OP_PROCESS));
 		if (has_gd_rotate || has_lu_rotate) {
 			tape.push_back(uint8_t(OP_LOAD_DELTA));
@@ -519,10 +526,19 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 			tape.push_back(uint8_t(OP_MUL));
 			tape.push_back(uint8_t(OP_CALL_ROTATE_Y));
 		}
-		if (has_input || has_translate) {
+		if (has_input || has_translate || has_slide) {
 			tape.push_back(uint8_t(OP_LOADK_F));
 			append_f32(tape, translate_rate);
 			tape.push_back(uint8_t(OP_INPUT_TRANSLATE));
+		}
+		if (has_slide) {
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 0.0f);
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 0.0f);
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 0.0f);
+			tape.push_back(uint8_t(OP_SLIDE));
 		}
 		if (has_input) {
 			tape.push_back(uint8_t(OP_JUST_ACCEPT_SFX));
@@ -620,6 +636,12 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	}
 	if (has_tween) {
 		r_out.ir_text += "IR PS2.create_tween/create_timer (8 linear)\n";
+	}
+	if (has_slide) {
+		r_out.ir_text += "IR PS2.move_and_slide (HIT00 AABB enter-only)\n";
+	}
+	if (has_slide) {
+		r_out.warnings.push_back("move_and_slide clips against HIT00 mesh AABBs (enter-only so oversized industrial boxes do not trap).");
 	}
 	if (has_tween) {
 		r_out.warnings.push_back("create_tween / create_timer are 8 linear slots on PS2 ABI 1 (volume tweens drive MUSIC). Not SceneTreeTween.");

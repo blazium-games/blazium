@@ -85,6 +85,10 @@ void PS2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("tween_count"), &PS2::tween_count);
 	ClassDB::bind_method(D_METHOD("create_timer", "sec"), &PS2::create_timer);
 	ClassDB::bind_method(D_METHOD("is_timer_done", "timer"), &PS2::is_timer_done);
+	ClassDB::bind_method(D_METHOD("move_and_slide", "node", "velocity", "mask"), &PS2::move_and_slide, DEFVAL(255));
+	ClassDB::bind_method(D_METHOD("is_on_floor"), &PS2::is_on_floor);
+	ClassDB::bind_method(D_METHOD("is_on_wall"), &PS2::is_on_wall);
+	ClassDB::bind_method(D_METHOD("is_on_ceiling"), &PS2::is_on_ceiling);
 }
 
 void PS2FlavorEditorPlugin::_sync_singleton() {
