@@ -68,12 +68,14 @@ struct Gather {
 	struct NodeRow {
 		int parent = -1;
 		uint8_t kind = 0;
+		uint8_t kit = 0;
 		String name;
 		Vector3 pos;
 		Vector3 rot;
 		Vector3 scale = Vector3(1, 1, 1);
 		String scene_hint;
 	};
+	Vector<String> kit_scenes;
 	Vector<NodeRow> nodes;
 	Vector<CookTri> tris;
 	Vector<Ref<Image>> images;
@@ -104,6 +106,103 @@ static uint8_t kind_of(Node *p_node) {
 		return 1;
 	}
 	return 0;
+}
+
+static String kit_point_group(Node *p_node) {
+	if (!p_node) {
+		return String();
+	}
+	const String nm = String(p_node->get_name()).to_lower();
+	if (nm == "spawn" || p_node->is_in_group("spawn") || p_node->has_meta("ps1_spawn") || p_node->has_meta("ps2_spawn")) {
+		return "spawn";
+	}
+	if (nm == "checkpoint" || p_node->is_in_group("checkpoint") || p_node->has_meta("ps1_checkpoint") || p_node->has_meta("ps2_checkpoint")) {
+		return "checkpoint";
+	}
+	if (nm == "portal" || p_node->is_in_group("portal") || p_node->has_meta("ps1_dest") || p_node->has_meta("ps1_portal") || p_node->has_meta("ps2_portal")) {
+		return "portal";
+	}
+	if (nm == "player" || nm == "hero" || p_node->is_in_group("player") || p_node->has_meta("ps1_player") || p_node->has_meta("ps2_player")) {
+		return "player";
+	}
+	if (nm == "hazard" || p_node->is_in_group("hazard") || p_node->has_meta("ps1_hurt") || p_node->has_meta("ps2_hurt")) {
+		return "hazard";
+	}
+	if (nm == "pickup" || p_node->is_in_group("pickup") || p_node->has_meta("ps1_line") || p_node->has_meta("ps2_pickup")) {
+		return "pickup";
+	}
+	if (nm == "music" || nm == "musiczone" || p_node->is_in_group("music") || p_node->has_meta("ps1_music") || p_node->has_meta("ps2_music")) {
+		return "music";
+	}
+	if (nm == "unload" || nm == "unloadvolume" || p_node->is_in_group("unload") || p_node->has_meta("ps1_unload") || p_node->has_meta("ps2_unload")) {
+		return "unload";
+	}
+	if (nm == "load" || nm == "loadzone" || p_node->is_in_group("load") || p_node->has_meta("ps1_load") || p_node->has_meta("ps2_load")) {
+		return "load";
+	}
+	if (nm == "talk" || nm == "talkzone" || p_node->is_in_group("talk") || p_node->has_meta("ps1_say") || p_node->has_meta("ps2_say")) {
+		return "talk";
+	}
+	if (nm == "spawner" || nm == "instance" || p_node->is_in_group("spawner") || p_node->has_meta("ps1_template") || p_node->has_meta("ps2_template")) {
+		return "spawner";
+	}
+	if (nm == "save" || nm == "savezone" || nm == "loadslot" || p_node->is_in_group("save") || p_node->has_meta("ps1_save") || p_node->has_meta("ps2_save")) {
+		return "save";
+	}
+	return String();
+}
+
+static uint8_t kit_id_of(const String &p_group) {
+	if (p_group == "spawn") {
+		return 1;
+	}
+	if (p_group == "checkpoint") {
+		return 2;
+	}
+	if (p_group == "portal") {
+		return 3;
+	}
+	if (p_group == "player") {
+		return 4;
+	}
+	if (p_group == "hazard") {
+		return 5;
+	}
+	if (p_group == "pickup") {
+		return 6;
+	}
+	if (p_group == "music") {
+		return 7;
+	}
+	if (p_group == "unload") {
+		return 8;
+	}
+	if (p_group == "load") {
+		return 9;
+	}
+	if (p_group == "talk") {
+		return 10;
+	}
+	if (p_group == "spawner") {
+		return 11;
+	}
+	if (p_group == "save") {
+		return 12;
+	}
+	return 0;
+}
+
+static void collect_kit_scene(Node *p_node, Gather &r_g) {
+	const char *keys[] = { "ps1_dest", "ps2_dest", "ps1_load", "ps2_load", "ps1_template", "ps2_template" };
+	for (const char *k : keys) {
+		if (!p_node->has_meta(k) || p_node->get_meta(k).get_type() != Variant::STRING) {
+			continue;
+		}
+		const String path = p_node->get_meta(k);
+		if (path.ends_with(".tscn") && !r_g.kit_scenes.has(path)) {
+			r_g.kit_scenes.push_back(path);
+		}
+	}
 }
 
 static Transform3D world_xform(Node3D *p_node) {
@@ -270,8 +369,10 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent, const String &p_
 		Gather::NodeRow row;
 		row.parent = p_parent;
 		row.kind = kind_of(p_node);
+		row.kit = kit_id_of(kit_point_group(p_node));
 		row.name = p_node->get_name();
 		row.scene_hint = p_scene;
+		collect_kit_scene(p_node, r_g);
 		if (Node3D *n3 = Object::cast_to<Node3D>(p_node)) {
 			const Transform3D xf = world_xform(n3);
 			row.pos = xf.origin;
@@ -338,7 +439,7 @@ static Vector<uint8_t> write_node_blob(const Gather &p_g) {
 		append_u16(out, uint16_t(i));
 		append_u16(out, uint16_t(int16_t(n.parent)));
 		out.push_back(n.kind);
-		out.push_back(0);
+		out.push_back(n.kit);
 		append_f32(out, n.pos.x);
 		append_f32(out, n.pos.y);
 		append_f32(out, n.pos.z);
@@ -416,6 +517,20 @@ static Error cook_gather_bins(const String &p_node, const String &p_mesh, const 
 		return ERR_CANT_CREATE;
 	}
 	return OK;
+}
+
+static Vector<uint8_t> write_stream_blob(int p_extra_count) {
+	Vector<uint8_t> out;
+	out.push_back('S');
+	out.push_back('T');
+	out.push_back('R');
+	out.push_back('M');
+	append_u16(out, uint16_t(kCookABI));
+	append_u16(out, uint16_t(p_extra_count));
+	for (int i = 1; i <= p_extra_count; i++) {
+		append_u16(out, uint16_t(i));
+	}
+	return out;
 }
 
 static Vector<uint8_t> write_disp_blob(const CookOptions &p_opts, int p_w, int p_h) {
@@ -574,14 +689,25 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 
 	r_out.pack_count = 1;
 	const String main_abs = ProjectSettings::get_singleton()->globalize_path(main_scene);
-	Gather pack1;
-	Vector<Node *> pack1_live;
-	Vector<String> pack1_scenes;
+	Vector<String> extra_scenes;
 	for (int i = 0; i < scripts.extra_scenes.size(); i++) {
 		const String extra = scripts.extra_scenes[i];
-		if (extra == main_scene) {
-			continue;
+		if (extra != main_scene && !extra_scenes.has(extra)) {
+			extra_scenes.push_back(extra);
 		}
+	}
+	for (int i = 0; i < gathered.kit_scenes.size(); i++) {
+		const String extra = gathered.kit_scenes[i];
+		if (extra != main_scene && !extra_scenes.has(extra)) {
+			extra_scenes.push_back(extra);
+		}
+	}
+
+	Vector<Gather> extra_gathers;
+	Vector<String> cooked_extras;
+	Vector<Node *> extra_live;
+	for (int i = 0; i < extra_scenes.size(); i++) {
+		const String extra = extra_scenes[i];
 		if (r_out.pack_count >= kMaxScenePacks) {
 			r_out.warnings.push_back("kept first 32 scene packs.");
 			break;
@@ -596,20 +722,28 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			continue;
 		}
 		Node *er = extra_ps->instantiate();
-		pack1_live.push_back(er);
-		walk_scene(er, pack1, -1, extra);
+		extra_live.push_back(er);
+		Gather one;
+		walk_scene(er, one, -1, extra);
+		for (int k = 0; k < one.kit_scenes.size(); k++) {
+			const String more = one.kit_scenes[k];
+			if (more != main_scene && !extra_scenes.has(more)) {
+				extra_scenes.push_back(more);
+			}
+		}
 		r_out.extra_pack_files.push_back(ProjectSettings::get_singleton()->globalize_path(extra));
-		pack1_scenes.push_back(extra);
+		cooked_extras.push_back(extra);
+		extra_gathers.push_back(one);
 		r_out.pack_count++;
 	}
 
 	r_out.errors.append_array(gathered.errors);
-	r_out.errors.append_array(pack1.errors);
 	r_out.warnings.append_array(gathered.warnings);
-	r_out.warnings.append_array(pack1.warnings);
 	append_stub_warnings(gathered, r_out.warnings, "");
-	if (!pack1_scenes.is_empty()) {
-		append_stub_warnings(pack1, r_out.warnings, "pack 1: ");
+	for (int i = 0; i < extra_gathers.size(); i++) {
+		r_out.errors.append_array(extra_gathers[i].errors);
+		r_out.warnings.append_array(extra_gathers[i].warnings);
+		append_stub_warnings(extra_gathers.write[i], r_out.warnings, vformat("pack %d: ", i + 1));
 	}
 	if (gathered.node_dropped > 0) {
 		r_out.warnings.push_back(vformat("kept first %d of %d nodes (dropped %d).", kMaxNodes, kMaxNodes + gathered.node_dropped, gathered.node_dropped));
@@ -620,26 +754,36 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	if (gathered.tex_dropped > 0) {
 		r_out.warnings.push_back(vformat("kept first %d textures (dropped %d).", kMaxTextures, gathered.tex_dropped));
 	}
-	if (pack1.node_dropped > 0) {
-		r_out.warnings.push_back(vformat("pack 1: kept first %d of %d nodes (dropped %d).", kMaxNodes, kMaxNodes + pack1.node_dropped, pack1.node_dropped));
-	}
-	if (pack1.tri_dropped > 0) {
-		r_out.warnings.push_back(vformat("pack 1: kept first %d of %d tris (dropped %d).", kMaxTris, kMaxTris + pack1.tri_dropped, pack1.tri_dropped));
-	}
-	if (pack1.tex_dropped > 0) {
-		r_out.warnings.push_back(vformat("pack 1: kept first %d textures (dropped %d).", kMaxTextures, pack1.tex_dropped));
+	for (int i = 0; i < extra_gathers.size(); i++) {
+		const Gather &eg = extra_gathers[i];
+		if (eg.node_dropped > 0) {
+			r_out.warnings.push_back(vformat("pack %d: kept first %d of %d nodes (dropped %d).", i + 1, kMaxNodes, kMaxNodes + eg.node_dropped, eg.node_dropped));
+		}
+		if (eg.tri_dropped > 0) {
+			r_out.warnings.push_back(vformat("pack %d: kept first %d of %d tris (dropped %d).", i + 1, kMaxTris, kMaxTris + eg.tri_dropped, eg.tri_dropped));
+		}
+		if (eg.tex_dropped > 0) {
+			r_out.warnings.push_back(vformat("pack %d: kept first %d textures (dropped %d).", i + 1, kMaxTextures, eg.tex_dropped));
+		}
 	}
 
 	auto free_live = [&]() {
 		for (int i = 0; i < live.size(); i++) {
 			memdelete(live[i]);
 		}
-		for (int i = 0; i < pack1_live.size(); i++) {
-			memdelete(pack1_live[i]);
+		for (int i = 0; i < extra_live.size(); i++) {
+			memdelete(extra_live[i]);
 		}
 	};
 
-	if (!gathered.errors.is_empty() || !pack1.errors.is_empty()) {
+	bool extra_had_errors = false;
+	for (int i = 0; i < extra_gathers.size(); i++) {
+		if (!extra_gathers[i].errors.is_empty()) {
+			extra_had_errors = true;
+			break;
+		}
+	}
+	if (!gathered.errors.is_empty() || extra_had_errors) {
 		r_out.report = r_out.errors.is_empty() ? String("cook failed") : r_out.errors[0];
 		free_live();
 		return ERR_UNCONFIGURED;
@@ -727,16 +871,25 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		return ERR_CANT_CREATE;
 	}
 
-	if (!pack1_scenes.is_empty()) {
-		const String node01 = p_export_dir.path_join("NODE01.bin");
-		const String mesh01 = p_export_dir.path_join("MESH01.bin");
-		const String gtex01 = p_export_dir.path_join("GTEX01.bin");
-		String pack_err;
-		if (cook_gather_bins(node01, mesh01, gtex01, pack1, pack_err) != OK) {
-			r_out.errors.push_back(pack_err.is_empty() ? String("pack-1 cook failed.") : pack_err);
-			r_out.report = r_out.errors[r_out.errors.size() - 1];
-			free_live();
-			return ERR_CANT_CREATE;
+	if (!extra_gathers.is_empty()) {
+		for (int i = 0; i < extra_gathers.size(); i++) {
+			if (extra_gathers[i].images.is_empty()) {
+				Ref<Image> placeholder = Image::create_empty(16, 16, false, Image::FORMAT_RGBA8);
+				placeholder->fill(Color(0.2f, 0.35f, 0.55f));
+				extra_gathers.write[i].images.push_back(placeholder);
+				extra_gathers.write[i].image_names.push_back("placeholder");
+			}
+			const int pack = i + 1;
+			const String nodep = p_export_dir.path_join(vformat("NODE%02d.bin", pack));
+			const String meshp = p_export_dir.path_join(vformat("MESH%02d.bin", pack));
+			const String gtexp = p_export_dir.path_join(vformat("GTEX%02d.bin", pack));
+			String pack_err;
+			if (cook_gather_bins(nodep, meshp, gtexp, extra_gathers.write[i], pack_err) != OK) {
+				r_out.errors.push_back(pack_err.is_empty() ? vformat("pack-%d cook failed.", pack) : pack_err);
+				r_out.report = r_out.errors[r_out.errors.size() - 1];
+				free_live();
+				return ERR_CANT_CREATE;
+			}
 		}
 		Vector<String> toc_names;
 		toc_names.push_back("NODE01.bin");
@@ -749,7 +902,14 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			free_live();
 			return ERR_CANT_CREATE;
 		}
-		r_out.warnings.push_back("Pack 1 (MESH01/GTEX01/NODE01) is not ELF-embedded. Guest loads it from host: or cdrom0: via PS2.swap_pack. Use ps2/make_iso or output_kind EE ELF + ISO.");
+		r_out.stream_path = p_export_dir.path_join("STREAM.bin");
+		if (write_bytes(r_out.stream_path, write_stream_blob(extra_gathers.size())) != OK) {
+			r_out.errors.push_back("failed to write STREAM.bin.");
+			r_out.report = r_out.errors[r_out.errors.size() - 1];
+			free_live();
+			return ERR_CANT_CREATE;
+		}
+		r_out.warnings.push_back("STREAM packs (MESH01../NODE01..) are not ELF-embedded. Guest loads them from host: or cdrom0: via PS2.swap_pack / portal / load. Use ps2/make_iso or output_kind EE ELF + ISO.");
 	}
 
 	{
@@ -801,11 +961,25 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		if (main_scene.to_lower().contains("industrial") || main_abs.to_lower().contains("industrial")) {
 			names->store_line("fixture: industrial");
 		}
-		for (int i = 0; i < pack1_scenes.size(); i++) {
-			names->store_line(pack1_scenes[i] + " -> NODE01.bin MESH01.bin GTEX01.bin PACK01.bin");
-			if (pack1_scenes[i].to_lower().contains("spawn_kit")) {
+		for (int i = 0; i < cooked_extras.size(); i++) {
+			const int pack = i + 1;
+			String line = cooked_extras[i] + vformat(" -> NODE%02d.bin MESH%02d.bin GTEX%02d.bin", pack, pack, pack);
+			if (pack == 1) {
+				line += " PACK01.bin";
+			}
+			names->store_line(line);
+			if (cooked_extras[i].to_lower().contains("spawn_kit")) {
 				names->store_line("fixture: spawn_kit");
 			}
+			if (cooked_extras[i].to_lower().contains("kit_room2")) {
+				names->store_line("fixture: kit_room2");
+			}
+		}
+		if (!r_out.stream_path.is_empty()) {
+			names->store_line(vformat("stream: STREAM.bin packs %d", extra_gathers.size()));
+		}
+		if (!extra_gathers.is_empty()) {
+			names->store_line("kit: Spawn Checkpoint Portal Player Hazard Pickup Music Unload Load Talk Spawner Save");
 		}
 		if (!r_out.sfx_path.is_empty()) {
 			names->store_line("sfx: SFX00.bin");
@@ -841,6 +1015,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			budget->store_line(vformat("ee_ram %d/%d", r_out.ee_ram_bytes, kEeRamLimit));
 			budget->store_line(vformat("display %dx%d", r_out.display_w, r_out.display_h));
 			budget->store_line(vformat("region %s", p_opts.region == 1 ? "PAL" : "NTSC"));
+			budget->store_line(vformat("packs %d", r_out.pack_count));
 		}
 		Ref<FileAccess> warn = FileAccess::open(r_out.warnings_path, FileAccess::WRITE);
 		if (warn.is_valid()) {

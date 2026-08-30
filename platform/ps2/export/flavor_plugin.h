@@ -114,6 +114,58 @@ public:
 		(void)p_zone;
 		return false;
 	}
+	bool set_checkpoint(const Variant &p_node) {
+		_fail_ps2();
+		(void)p_node;
+		return false;
+	}
+	bool respawn(const Variant &p_node) {
+		_fail_ps2();
+		(void)p_node;
+		return false;
+	}
+	bool portal(const String &p_unload, const String &p_load, float p_fade) {
+		_fail_ps2();
+		(void)p_unload;
+		(void)p_load;
+		(void)p_fade;
+		return false;
+	}
+	int hurt(const Variant &p_node, int p_amount, float p_vx, float p_vy, float p_vz) {
+		_fail_ps2();
+		(void)p_node;
+		(void)p_amount;
+		(void)p_vx;
+		(void)p_vy;
+		(void)p_vz;
+		return 0;
+	}
+	bool say(const Variant &p_hud, const String &p_line, float p_cps) {
+		_fail_ps2();
+		(void)p_hud;
+		(void)p_line;
+		(void)p_cps;
+		return false;
+	}
+	bool can_load_scene(const String &p_path) const {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool is_scene_loaded(const String &p_path) const {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	int get_loaded_scene_count() const {
+		_fail_ps2();
+		return 0;
+	}
+	bool unload_pack(const String &p_path) {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
 };
 
 class PS2FlavorEditorPlugin : public EditorPlugin {

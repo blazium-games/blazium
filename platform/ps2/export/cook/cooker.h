@@ -41,6 +41,7 @@ struct CookResult {
 	String budget_path;
 	String warnings_path;
 	String pack1_path;
+	String stream_path;
 	String sfx_path;
 	String disp_path;
 	String report;

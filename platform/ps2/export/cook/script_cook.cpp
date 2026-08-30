@@ -188,7 +188,8 @@ enum {
 	OP_JUST_ACCEPT_SFX = 13,
 	OP_USER_SAVE = 14,
 	OP_USER_LOAD = 15,
-	OP_MEMCARD_PRESENT = 16
+	OP_MEMCARD_PRESENT = 16,
+	OP_KIT_TICK = 17
 };
 
 static const char *kUnsupportedCalls[] = {
@@ -204,7 +205,11 @@ static bool is_ps2_alias(const String &p_name) {
 			p_name == "load_scene" || p_name == "unload_scene" || p_name == "get_abi" ||
 			p_name == "is_ready" || p_name == "get_display_width" || p_name == "get_display_height" ||
 			p_name == "memcard_present" || p_name == "memcard_ready" || p_name == "memcard_save" ||
-			p_name == "memcard_load" || p_name == "get_stick" || p_name == "set_stick_deadzone";
+			p_name == "memcard_load" || p_name == "get_stick" || p_name == "set_stick_deadzone" ||
+			p_name == "set_checkpoint" || p_name == "respawn" || p_name == "portal" ||
+			p_name == "hurt" || p_name == "say" || p_name == "can_load_scene" ||
+			p_name == "is_scene_loaded" || p_name == "get_loaded_scene_count" ||
+			p_name == "unload_pack";
 }
 
 static bool reject_unsupported_apis(const String &p_src, String &r_why) {
@@ -313,6 +318,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	bool has_translate = false;
 	bool has_user = false;
 	bool has_memcard = false;
+	bool has_kit = false;
 	float rotate_rate = 0.4f;
 	float translate_rate = 1.0f;
 	for (int i = 0; i < r_out.accepted.size(); i++) {
@@ -351,6 +357,15 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		if (src.contains("memcard_present") || src.contains("memcard_save") || src.contains("memcard_load") || src.contains("memcard_ready")) {
 			has_memcard = true;
 		}
+		if (src.contains("set_checkpoint") || src.contains("respawn") || src.contains("portal") ||
+				src.contains("hurt") || src.contains("can_load_scene") || src.contains("is_scene_loaded") ||
+				src.contains("unload_pack") || src.contains("Checkpoint") || src.contains("Hazard") ||
+				src.contains("Pickup") || src.contains("LoadZone") || src.contains("kit_room")) {
+			has_kit = true;
+		}
+	}
+	if (!r_out.extra_scenes.is_empty()) {
+		has_kit = true;
 	}
 
 	Vector<uint8_t> tape;
@@ -383,7 +398,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		tape.push_back(uint8_t(OP_USER_SAVE));
 		tape.push_back(uint8_t(OP_USER_LOAD));
 	}
-	if (has_gd_rotate || has_lu_rotate || has_input || has_translate) {
+	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit) {
 		tape.push_back(uint8_t(OP_PROCESS));
 		if (has_gd_rotate || has_lu_rotate) {
 			tape.push_back(uint8_t(OP_LOAD_DELTA));
@@ -399,6 +414,9 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		}
 		if (has_input) {
 			tape.push_back(uint8_t(OP_JUST_ACCEPT_SFX));
+		}
+		if (has_kit) {
+			tape.push_back(uint8_t(OP_KIT_TICK));
 		}
 	}
 	tape.push_back(uint8_t(OP_END));
@@ -450,10 +468,14 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	if (has_memcard) {
 		r_out.ir_text += "IR PS2.memcard_present/save/load\n";
 	}
+	if (has_kit) {
+		r_out.ir_text += "IR kit tick (portal/load/checkpoint/save/hazard)\n";
+		r_out.ir_text += vformat("IR STREAM extra_scenes=%d\n", r_out.extra_scenes.size());
+	}
 	if (has_user) {
 		r_out.warnings.push_back("FileAccess user:// maps to host:SAVE.BIN then mc0:SAVE.BIN. Missing HostFs/memcard is a guest error.");
 	}
-	r_out.ir_text += "kit: Spawn Player Portal (names)\n";
+	r_out.ir_text += "kit: Spawn Checkpoint Portal Player Hazard Pickup Music Unload Load Talk Spawner Save\n";
 	for (int i = 0; i < r_out.accepted.size(); i++) {
 		r_out.ir_text += r_out.accepted[i] + "\n";
 	}

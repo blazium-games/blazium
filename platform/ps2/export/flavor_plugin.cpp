@@ -34,6 +34,15 @@ void PS2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("memcard_load", "name"), &PS2::memcard_load);
 	ClassDB::bind_method(D_METHOD("get_stick", "pad", "stick"), &PS2::get_stick);
 	ClassDB::bind_method(D_METHOD("set_stick_deadzone", "zone"), &PS2::set_stick_deadzone);
+	ClassDB::bind_method(D_METHOD("set_checkpoint", "node"), &PS2::set_checkpoint);
+	ClassDB::bind_method(D_METHOD("respawn", "node"), &PS2::respawn);
+	ClassDB::bind_method(D_METHOD("portal", "unload_path", "load_path", "fade"), &PS2::portal);
+	ClassDB::bind_method(D_METHOD("hurt", "node", "amount", "vx", "vy", "vz"), &PS2::hurt);
+	ClassDB::bind_method(D_METHOD("say", "hud", "line", "cps"), &PS2::say);
+	ClassDB::bind_method(D_METHOD("can_load_scene", "path"), &PS2::can_load_scene);
+	ClassDB::bind_method(D_METHOD("is_scene_loaded", "path"), &PS2::is_scene_loaded);
+	ClassDB::bind_method(D_METHOD("get_loaded_scene_count"), &PS2::get_loaded_scene_count);
+	ClassDB::bind_method(D_METHOD("unload_pack", "path"), &PS2::unload_pack);
 }
 
 void PS2FlavorEditorPlugin::_sync_singleton() {
@@ -60,7 +69,7 @@ void PS2FlavorEditorPlugin::_refresh() {
 		status->set_text("Turn on Project Settings → ps2/enabled for the PS2 flavor dock.\nPS2.* is PS2 export only; use OS.has_feature(\"ps2\").\nExport writes an EE ELF via blazium-toolchain (no Godot templates).");
 		return;
 	}
-	status->set_text("PS2 export is on. Project → Export → PS2 cooks ABI 1 and writes Game.elf via blazium-toolchain.\nInput.get_vector / Node3D.translate / user:// (SAVE.BIN) cook onto the tape. BIOS is only for One-click.\nPS2.* (rumble, play_sfx, swap_pack, memcard_*) only works on a PS2 export. Guard with OS.has_feature(\"ps2\").");
+	status->set_text("PS2 export is on. Project → Export → PS2 cooks ABI 1 and writes Game.elf via blazium-toolchain.\nInput.get_vector / Node3D.translate / user:// (SAVE.BIN) / STREAM packs cook onto the tape. BIOS is only for One-click.\nPS2.* (rumble, swap_pack, portal, checkpoint, memcard_*) only works on a PS2 export. Guard with OS.has_feature(\"ps2\").");
 }
 
 void PS2FlavorEditorPlugin::_notification(int p_what) {
