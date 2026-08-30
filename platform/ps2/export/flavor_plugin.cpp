@@ -78,6 +78,13 @@ void PS2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_camera"), &PS2::get_camera);
 	ClassDB::bind_method(D_METHOD("get_camera_count"), &PS2::get_camera_count);
 	ClassDB::bind_method(D_METHOD("make_current", "node"), &PS2::make_current);
+	ClassDB::bind_method(D_METHOD("create_tween"), &PS2::create_tween);
+	ClassDB::bind_method(D_METHOD("tween_property", "tween", "node", "prop", "to", "sec"), &PS2::tween_property);
+	ClassDB::bind_method(D_METHOD("kill_tweens", "node"), &PS2::kill_tweens);
+	ClassDB::bind_method(D_METHOD("tween_is_done", "tween"), &PS2::tween_is_done);
+	ClassDB::bind_method(D_METHOD("tween_count"), &PS2::tween_count);
+	ClassDB::bind_method(D_METHOD("create_timer", "sec"), &PS2::create_timer);
+	ClassDB::bind_method(D_METHOD("is_timer_done", "timer"), &PS2::is_timer_done);
 }
 
 void PS2FlavorEditorPlugin::_sync_singleton() {

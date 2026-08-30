@@ -203,13 +203,16 @@ enum {
 	OP_ORBIT_CAMERA = 28,
 	OP_SHAKE_CAMERA = 29,
 	OP_NEXT_CAMERA = 30,
-	OP_ATTACH_CAMERA = 31
+	OP_ATTACH_CAMERA = 31,
+	OP_TWEEN = 32,
+	OP_TIMER = 33,
+	OP_KILL_TWEENS = 34
 };
 
 static const char *kUnsupportedCalls[] = {
 	"play_xa", "stop_xa",
 	"memcard_wrap", "memcard_unwrap",
-	"set_fog", "create_tween", "spawn_shot"
+	"set_fog", "spawn_shot"
 };
 
 static bool is_ps2_alias(const String &p_name) {
@@ -233,7 +236,10 @@ static bool is_ps2_alias(const String &p_name) {
 			p_name == "stop_music" || p_name == "look_camera" || p_name == "orbit_camera" ||
 			p_name == "attach_camera" || p_name == "shake_camera" || p_name == "next_camera" ||
 			p_name == "prev_camera" || p_name == "set_camera" || p_name == "set_camera_node" ||
-			p_name == "get_camera" || p_name == "get_camera_count" || p_name == "make_current";
+			p_name == "get_camera" || p_name == "get_camera_count" || p_name == "make_current" ||
+			p_name == "create_tween" || p_name == "tween_property" || p_name == "kill_tweens" ||
+			p_name == "tween_is_done" || p_name == "tween_count" || p_name == "create_timer" ||
+			p_name == "is_timer_done";
 }
 
 static bool reject_unsupported_apis(const String &p_src, String &r_why) {
@@ -350,6 +356,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	bool has_sys = false;
 	bool has_music = false;
 	bool has_cam_rt = false;
+	bool has_tween = false;
 	float rotate_rate = 0.4f;
 	float translate_rate = 1.0f;
 	for (int i = 0; i < r_out.accepted.size(); i++) {
@@ -418,6 +425,10 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 				src.contains("shake_camera") || src.contains("next_camera") || src.contains("prev_camera")) {
 			has_cam_rt = true;
 		}
+		if (src.contains("create_tween") || src.contains("tween_property") || src.contains("kill_tweens") ||
+				src.contains("tween_is_done") || src.contains("create_timer") || src.contains("is_timer_done")) {
+			has_tween = true;
+		}
 	}
 	if (!r_out.extra_scenes.is_empty()) {
 		has_kit = true;
@@ -484,7 +495,22 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		append_f32(tape, 0.0f);
 		tape.push_back(uint8_t(OP_SHAKE_CAMERA));
 	}
-	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys || has_cam_rt) {
+	if (has_tween) {
+		tape.push_back(uint8_t(OP_READY));
+		tape.push_back(uint8_t(OP_LOADK_F));
+		append_f32(tape, 0.6f);
+		tape.push_back(uint8_t(OP_LOADK_F));
+		append_f32(tape, 0.6f);
+		tape.push_back(uint8_t(OP_LOADK_F));
+		append_f32(tape, 0.0f);
+		tape.push_back(uint8_t(OP_LOADK_F));
+		append_f32(tape, 1.0f);
+		tape.push_back(uint8_t(OP_TWEEN));
+		tape.push_back(uint8_t(OP_LOADK_F));
+		append_f32(tape, 0.0f);
+		tape.push_back(uint8_t(OP_TIMER));
+	}
+	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys || has_cam_rt || has_tween) {
 		tape.push_back(uint8_t(OP_PROCESS));
 		if (has_gd_rotate || has_lu_rotate) {
 			tape.push_back(uint8_t(OP_LOAD_DELTA));
@@ -510,7 +536,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		if (has_nav) {
 			tape.push_back(uint8_t(OP_NAV_FOLLOW));
 		}
-		if (has_say || has_nav || has_sys || has_cam_rt) {
+		if (has_say || has_nav || has_sys || has_cam_rt || has_tween) {
 			tape.push_back(uint8_t(OP_SYS_TICK));
 		}
 		if (has_cam_rt) {
@@ -591,6 +617,12 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	}
 	if (has_cam_rt) {
 		r_out.ir_text += "IR PS2.look_camera/orbit_camera/shake_camera (runtime CAM)\n";
+	}
+	if (has_tween) {
+		r_out.ir_text += "IR PS2.create_tween/create_timer (8 linear)\n";
+	}
+	if (has_tween) {
+		r_out.warnings.push_back("create_tween / create_timer are 8 linear slots on PS2 ABI 1 (volume tweens drive MUSIC). Not SceneTreeTween.");
 	}
 	if (has_user) {
 		r_out.warnings.push_back("FileAccess user:// maps to host:SAVE.BIN then mc0:SAVE.BIN. Missing HostFs/memcard is a guest error.");

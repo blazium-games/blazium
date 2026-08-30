@@ -350,6 +350,43 @@ public:
 		(void)p_node;
 		return false;
 	}
+	Variant create_tween() {
+		_fail_ps2();
+		return Variant();
+	}
+	bool tween_property(const Variant &p_tween, const Variant &p_node, const String &p_prop, const Variant &p_to, float p_sec) {
+		_fail_ps2();
+		(void)p_tween;
+		(void)p_node;
+		(void)p_prop;
+		(void)p_to;
+		(void)p_sec;
+		return false;
+	}
+	bool kill_tweens(const Variant &p_node) {
+		_fail_ps2();
+		(void)p_node;
+		return false;
+	}
+	bool tween_is_done(const Variant &p_tw) const {
+		_fail_ps2();
+		(void)p_tw;
+		return true;
+	}
+	int tween_count() const {
+		_fail_ps2();
+		return 0;
+	}
+	Variant create_timer(float p_sec) {
+		_fail_ps2();
+		(void)p_sec;
+		return Variant();
+	}
+	bool is_timer_done(const Variant &p_timer) const {
+		_fail_ps2();
+		(void)p_timer;
+		return true;
+	}
 };
 
 class PS2FlavorEditorPlugin : public EditorPlugin {
