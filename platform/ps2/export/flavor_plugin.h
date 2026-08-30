@@ -13,6 +13,7 @@
 
 #include "core/input/shortcut.h"
 #include "core/object/object.h"
+#include "core/string/ustring.h"
 #include "editor/plugins/editor_plugin.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/label.h"
@@ -45,6 +46,39 @@ public:
 		return false;
 	}
 	int get_pressure(int p_device, int p_button) const {
+		_fail_ps2();
+		return 0;
+	}
+	bool play_sfx(const String &p_name) {
+		_fail_ps2();
+		(void)p_name;
+		return false;
+	}
+	bool stop_sfx() {
+		_fail_ps2();
+		return false;
+	}
+	bool swap_pack(const String &p_unload, const String &p_load) {
+		_fail_ps2();
+		(void)p_unload;
+		(void)p_load;
+		return false;
+	}
+	bool load_scene(const String &p_path) {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool unload_scene(const String &p_path) {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	int get_display_width() const {
+		_fail_ps2();
+		return 0;
+	}
+	int get_display_height() const {
 		_fail_ps2();
 		return 0;
 	}

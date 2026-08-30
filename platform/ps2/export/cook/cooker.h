@@ -42,6 +42,7 @@ struct CookResult {
 	String warnings_path;
 	String pack1_path;
 	String sfx_path;
+	String disp_path;
 	String report;
 	Vector<String> extra_pack_files;
 	int pack_count = 0;

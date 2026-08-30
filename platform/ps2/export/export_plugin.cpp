@@ -18,6 +18,7 @@
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/io/json.h"
+#include "core/io/resource_loader.h"
 #include "core/os/os.h"
 #include "editor/editor_node.h"
 #include "editor/editor_settings.h"
@@ -195,7 +196,7 @@ void EditorExportPlatformPS2::get_platform_features(List<String> *r_features) co
 }
 
 void EditorExportPlatformPS2::get_export_options(List<ExportOption> *r_options) const {
-	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "ps2/output_kind", PROPERTY_HINT_ENUM, "EE ELF"), 0));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "ps2/output_kind", PROPERTY_HINT_ENUM, "EE ELF,EE ELF + ISO"), 0));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "ps2/region", PROPERTY_HINT_ENUM, "NTSC,PAL"), 0));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "ps2/width", PROPERTY_HINT_ENUM, "640,512,320"), 0));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::BOOL, "ps2/make_iso"), false));
@@ -204,7 +205,7 @@ void EditorExportPlatformPS2::get_export_options(List<ExportOption> *r_options) 
 List<String> EditorExportPlatformPS2::get_binary_extensions(const Ref<EditorExportPreset> &p_preset) const {
 	List<String> list;
 	list.push_back("elf");
-	if (p_preset.is_valid() && bool(p_preset->get("ps2/make_iso"))) {
+	if (p_preset.is_valid() && (bool(p_preset->get("ps2/make_iso")) || int(p_preset->get("ps2/output_kind")) == 1)) {
 		list.push_back("iso");
 	}
 	return list;
@@ -240,7 +241,15 @@ bool EditorExportPlatformPS2::has_valid_project_configuration(const Ref<EditorEx
 		r_error += "PS2 export requires application/run/main_scene.\n";
 		return false;
 	}
-	r_error += "Note: Export cooks ABI 1 NODE/MESH/GTEX slices then spawns blazium-toolchain. BIOS is only required for One-click / ps2 run.\n";
+	if (!ResourceLoader::exists(main_scene)) {
+		r_error += "main_scene does not exist: " + main_scene + "\n";
+		return false;
+	}
+	r_error += "Note: audio is WAV-only. The first res:// .wav becomes SFX00 (IMA). Audible play needs libsdr + freesd.irx; otherwise PS2.play_sfx is silent.\n";
+	r_error += "Note: scripts cook a small ABI 1 tape (rotate_y, OS.has_feature(\"ps2\"), PS2.swap_pack / play_sfx / set_rumble). Unsupported PS1.* / play_fmv fail the cook.\n";
+	r_error += "Note: AnimationPlayer, Skeleton3D, and Light3D are allow-listed but not cooked. FileAccess is user:// only (host:SAVE.BIN / mc0:SAVE.BIN).\n";
+	r_error += "Note: pack 1 (MESH01/GTEX01) is not ELF-embedded. Guest loads it from host: or ISO via PS2.swap_pack. SFX/DISP sit next to the ELF.\n";
+	r_error += "Note: guest framebuffer follows ps2/width and ps2/region (DISP.bin). BIOS is only required for One-click / ps2 run.\n";
 	return true;
 }
 
@@ -285,8 +294,13 @@ Error EditorExportPlatformPS2::export_project(const Ref<EditorExportPreset> &p_p
 		return cook_err != OK ? cook_err : FAILED;
 	}
 
-	if (int(p_preset->get("ps2/output_kind")) != 0) {
-		add_message(EXPORT_MESSAGE_WARNING, "PS2", "ps2/output_kind is unread; output is an EE ELF. Use ps2/make_iso for a disc image.");
+	const int output_kind = int(p_preset->get("ps2/output_kind"));
+	const bool want_iso = bool(p_preset->get("ps2/make_iso")) || output_kind == 1;
+	if (output_kind > 1) {
+		add_message(EXPORT_MESSAGE_WARNING, "PS2", "ps2/output_kind is unknown; writing an EE ELF. Use 0 (ELF) or 1 (ELF + ISO), or ps2/make_iso.");
+	}
+	if (output_kind == 1 && !bool(p_preset->get("ps2/make_iso"))) {
+		add_message(EXPORT_MESSAGE_INFO, "PS2", "ps2/output_kind is EE ELF + ISO; will write Game.iso next to the ELF.");
 	}
 
 	List<String> args;
@@ -341,7 +355,7 @@ Error EditorExportPlatformPS2::export_project(const Ref<EditorExportPreset> &p_p
 	}
 	add_message(EXPORT_MESSAGE_INFO, "PS2", "Wrote EE ELF " + p_path);
 
-	if (bool(p_preset->get("ps2/make_iso"))) {
+	if (want_iso) {
 		String iso_warn;
 		if (_try_make_iso(p_path, iso_warn) != OK) {
 			add_message(EXPORT_MESSAGE_WARNING, "PS2", iso_warn.is_empty() ? String("ISO skipped.") : iso_warn);

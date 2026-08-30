@@ -83,6 +83,11 @@ struct Gather {
 	int node_dropped = 0;
 	int tri_dropped = 0;
 	int tex_dropped = 0;
+	int cameras = 0;
+	int anim_players = 0;
+	int skeletons = 0;
+	int lights = 0;
+	int audio_players = 0;
 };
 
 static uint8_t kind_of(Node *p_node) {
@@ -278,14 +283,29 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent, const String &p_
 	} else {
 		r_g.node_dropped++;
 	}
+	if (p_node->is_class("Camera3D")) {
+		r_g.cameras++;
+	}
+	if (p_node->is_class("AnimationPlayer")) {
+		r_g.anim_players++;
+	}
+	if (p_node->is_class("Skeleton3D")) {
+		r_g.skeletons++;
+	}
+	if (p_node->is_class("Light3D")) {
+		r_g.lights++;
+	}
+	if (p_node->is_class("AudioStreamPlayer") || p_node->is_class("AudioStreamPlayer3D") || p_node->is_class("AudioStreamPlayer2D")) {
+		r_g.audio_players++;
+	}
 	if (MeshInstance3D *mi = Object::cast_to<MeshInstance3D>(p_node)) {
 		if (mi->get_mesh().is_valid() && my >= 0) {
-			emit_mesh(r_g, mi->get_mesh(), Transform3D(), my, mi);
+			emit_mesh(r_g, mi->get_mesh(), world_xform(mi), my, mi);
 		}
 	}
 	if (ImporterMeshInstance3D *imi = Object::cast_to<ImporterMeshInstance3D>(p_node)) {
 		if (imi->get_mesh().is_valid() && my >= 0) {
-			emit_mesh(r_g, imi->get_mesh()->get_mesh(), Transform3D(), my, nullptr);
+			emit_mesh(r_g, imi->get_mesh()->get_mesh(), world_xform(imi), my, nullptr);
 		}
 	}
 	for (int i = 0; i < p_node->get_child_count(); i++) {
@@ -398,6 +418,37 @@ static Error cook_gather_bins(const String &p_node, const String &p_mesh, const 
 	return OK;
 }
 
+static Vector<uint8_t> write_disp_blob(const CookOptions &p_opts, int p_w, int p_h) {
+	Vector<uint8_t> out;
+	out.push_back('D');
+	out.push_back('I');
+	out.push_back('S');
+	out.push_back('P');
+	append_u16(out, uint16_t(kCookABI));
+	append_u16(out, uint16_t(p_opts.region == 1 ? 1 : 0));
+	append_u16(out, uint16_t(p_w));
+	append_u16(out, uint16_t(p_h));
+	return out;
+}
+
+static void append_stub_warnings(Gather &p_g, Vector<String> &r_warn, const String &p_pack) {
+	if (p_g.anim_players > 0) {
+		r_warn.push_back(p_pack + "AnimationPlayer is allow-listed but clips are not cooked on PS2 ABI 1 (bind pose only).");
+	}
+	if (p_g.skeletons > 0) {
+		r_warn.push_back(p_pack + "Skeleton3D is allow-listed; PS2 ABI 1 does not cook bone palettes.");
+	}
+	if (p_g.lights > 0) {
+		r_warn.push_back(p_pack + "Light3D is allow-listed; PS2 ABI 1 has no GTE lights (flat/textured vertex color).");
+	}
+	if (p_g.audio_players > 0) {
+		r_warn.push_back(p_pack + "AudioStreamPlayer is allow-listed; SFX00 is the first res:// .wav, not a per-node bank.");
+	}
+	if (p_g.cameras > kMaxCameras) {
+		r_warn.push_back(vformat("%skept first %d of %d cameras (guest uses the first Camera3D).", p_pack, kMaxCameras, p_g.cameras));
+	}
+}
+
 static Vector<uint8_t> write_pack_toc(const Vector<String> &p_names) {
 	Vector<uint8_t> out;
 	out.push_back('P');
@@ -500,6 +551,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 
 	ScriptCook scripts;
 	const Error sc_err = cook_scripts(p_export_dir, scripts);
+	r_out.warnings.append_array(scripts.warnings);
 	for (int i = 0; i < scripts.rejected.size(); i++) {
 		r_out.errors.push_back("script refused: " + scripts.rejected[i]);
 	}
@@ -555,6 +607,10 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	r_out.errors.append_array(pack1.errors);
 	r_out.warnings.append_array(gathered.warnings);
 	r_out.warnings.append_array(pack1.warnings);
+	append_stub_warnings(gathered, r_out.warnings, "");
+	if (!pack1_scenes.is_empty()) {
+		append_stub_warnings(pack1, r_out.warnings, "pack 1: ");
+	}
 	if (gathered.node_dropped > 0) {
 		r_out.warnings.push_back(vformat("kept first %d of %d nodes (dropped %d).", kMaxNodes, kMaxNodes + gathered.node_dropped, gathered.node_dropped));
 	}
@@ -563,6 +619,15 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	}
 	if (gathered.tex_dropped > 0) {
 		r_out.warnings.push_back(vformat("kept first %d textures (dropped %d).", kMaxTextures, gathered.tex_dropped));
+	}
+	if (pack1.node_dropped > 0) {
+		r_out.warnings.push_back(vformat("pack 1: kept first %d of %d nodes (dropped %d).", kMaxNodes, kMaxNodes + pack1.node_dropped, pack1.node_dropped));
+	}
+	if (pack1.tri_dropped > 0) {
+		r_out.warnings.push_back(vformat("pack 1: kept first %d of %d tris (dropped %d).", kMaxTris, kMaxTris + pack1.tri_dropped, pack1.tri_dropped));
+	}
+	if (pack1.tex_dropped > 0) {
+		r_out.warnings.push_back(vformat("pack 1: kept first %d textures (dropped %d).", kMaxTextures, pack1.tex_dropped));
 	}
 
 	auto free_live = [&]() {
@@ -636,6 +701,12 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		free_live();
 		return ERR_OUT_OF_MEMORY;
 	}
+	if (r_out.vram_bytes > (kGsVramLimit * 4) / 5) {
+		r_out.warnings.push_back(vformat("GS VRAM estimate %d is over 80%% of 4 MiB.", r_out.vram_bytes));
+	}
+	if (r_out.ee_ram_bytes > (kEeRamLimit * 4) / 5) {
+		r_out.warnings.push_back(vformat("EE RAM estimate %d is over 80%% of 24 MiB.", r_out.ee_ram_bytes));
+	}
 
 	r_out.node_path = p_export_dir.path_join("NODE00.bin");
 	r_out.mesh_path = p_export_dir.path_join("MESH00.bin");
@@ -678,6 +749,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			free_live();
 			return ERR_CANT_CREATE;
 		}
+		r_out.warnings.push_back("Pack 1 (MESH01/GTEX01/NODE01) is not ELF-embedded. Guest loads it from host: or cdrom0: via PS2.swap_pack. Use ps2/make_iso or output_kind EE ELF + ISO.");
 	}
 
 	{
@@ -696,6 +768,17 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		r_out.sfx_path = p_export_dir.path_join("SFX00.bin");
 		if (write_bytes(r_out.sfx_path, sfx.bytes) != OK) {
 			r_out.errors.push_back("failed to write SFX00.bin.");
+			r_out.report = r_out.errors[r_out.errors.size() - 1];
+			free_live();
+			return ERR_CANT_CREATE;
+		}
+		r_out.warnings.push_back("SFX00 is IMA-decoded on the EE. Audible play needs libsdr + freesd.irx (SPU2 voice). Without them PS2.play_sfx / Cross is silent. SFX is not ELF-embedded; keep SFX00.bin next to the ELF (host:) or on the ISO.");
+	}
+
+	{
+		r_out.disp_path = p_export_dir.path_join("DISP.bin");
+		if (write_bytes(r_out.disp_path, write_disp_blob(p_opts, r_out.display_w, r_out.display_h)) != OK) {
+			r_out.errors.push_back("failed to write DISP.bin.");
 			r_out.report = r_out.errors[r_out.errors.size() - 1];
 			free_live();
 			return ERR_CANT_CREATE;
@@ -727,6 +810,9 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		if (!r_out.sfx_path.is_empty()) {
 			names->store_line("sfx: SFX00.bin");
 		}
+		if (!r_out.disp_path.is_empty()) {
+			names->store_line(vformat("disp: DISP.bin %dx%d %s", r_out.display_w, r_out.display_h, p_opts.region == 1 ? "PAL" : "NTSC"));
+		}
 		for (int i = 0; i < gathered.image_names.size(); i++) {
 			if (gathered.image_names[i].to_lower().contains("glb") || gathered.image_names[i].to_lower().contains("industrial")) {
 				names->store_line("tex: " + gathered.image_names[i]);
@@ -751,6 +837,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			budget->store_line(vformat("gs_vram %d/%d", r_out.vram_bytes, kGsVramLimit));
 			budget->store_line(vformat("ee_ram %d/%d", r_out.ee_ram_bytes, kEeRamLimit));
 			budget->store_line(vformat("display %dx%d", r_out.display_w, r_out.display_h));
+			budget->store_line(vformat("region %s", p_opts.region == 1 ? "PAL" : "NTSC"));
 		}
 		Ref<FileAccess> warn = FileAccess::open(r_out.warnings_path, FileAccess::WRITE);
 		if (warn.is_valid()) {

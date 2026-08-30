@@ -119,6 +119,8 @@ static bool skip_script_dir(const String &p_name) {
 	return p_name == "tests" || p_name == "tools" || p_name == ".godot" || p_name == "export";
 }
 
+static bool reject_unsupported_apis(const String &p_src, String &r_why);
+
 static void walk_scripts(const String &p_dir, ScriptCook &r_out) {
 	Ref<DirAccess> da = DirAccess::open(p_dir);
 	if (da.is_null()) {
@@ -144,7 +146,7 @@ static void walk_scripts(const String &p_dir, ScriptCook &r_out) {
 		}
 		const String src = FileAccess::get_file_as_string(path);
 		String why;
-		if (source_is_rejected(src, why)) {
+		if (source_is_rejected(src, why) || reject_unsupported_apis(strip_line_comments(src), why)) {
 			r_out.rejected.push_back(path + " (" + why + ")");
 			continue;
 		}
@@ -177,8 +179,82 @@ enum {
 	OP_CALL_ROTATE_Y = 4,
 	OP_READY = 5,
 	OP_PROCESS = 6,
-	OP_HAS_FEATURE_PS2 = 7
+	OP_HAS_FEATURE_PS2 = 7,
+	OP_SWAP_PACK = 8,
+	OP_PLAY_SFX = 9,
+	OP_SET_RUMBLE = 10,
+	OP_STOP_RUMBLE = 11
 };
+
+static const char *kUnsupportedCalls[] = {
+	"play_fmv", "play_xa", "stop_xa",
+	"load_hud", "unload_hud", "load_tiles", "unload_tiles",
+	"memcard_format", "memcard_wrap", "memcard_unwrap",
+	"set_fog", "create_tween", "spawn_shot"
+};
+
+static bool is_ps2_alias(const String &p_name) {
+	return p_name == "set_rumble" || p_name == "stop_rumble" || p_name == "get_pressure" ||
+			p_name == "play_sfx" || p_name == "stop_sfx" || p_name == "swap_pack" ||
+			p_name == "load_scene" || p_name == "unload_scene" || p_name == "get_abi" ||
+			p_name == "is_ready" || p_name == "get_display_width" || p_name == "get_display_height";
+}
+
+static bool reject_unsupported_apis(const String &p_src, String &r_why) {
+	for (const char *bad : kUnsupportedCalls) {
+		if (p_src.contains(bad)) {
+			r_why = String(bad) + " is not supported on PS2 ABI 1";
+			return true;
+		}
+	}
+	int p = 0;
+	while (true) {
+		const int hit = p_src.find("PS1.", p);
+		if (hit < 0) {
+			break;
+		}
+		int e = hit + 4;
+		String name;
+		while (e < p_src.length()) {
+			const char32_t c = p_src[e];
+			if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') {
+				name += c;
+				e++;
+				continue;
+			}
+			break;
+		}
+		if (!name.is_empty() && !is_ps2_alias(name)) {
+			r_why = "PS1." + name + " is not supported on PS2 ABI 1 (use PS2.* or drop the call)";
+			return true;
+		}
+		p = e;
+	}
+	p = 0;
+	while (true) {
+		const int hit = p_src.find("PS2.", p);
+		if (hit < 0) {
+			break;
+		}
+		int e = hit + 4;
+		String name;
+		while (e < p_src.length()) {
+			const char32_t c = p_src[e];
+			if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') {
+				name += c;
+				e++;
+				continue;
+			}
+			break;
+		}
+		if (!name.is_empty() && !is_ps2_alias(name)) {
+			r_why = "PS2." + name + " is not implemented on PS2 ABI 1";
+			return true;
+		}
+		p = e;
+	}
+	return false;
+}
 
 static bool parse_rotate_y_rate(const String &p_src, float &r_rate) {
 	const int hit = p_src.find("rotate_y");
@@ -223,6 +299,9 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	bool has_gd_rotate = false;
 	bool has_lu_rotate = false;
 	bool has_feature = false;
+	bool has_swap = false;
+	bool has_sfx = false;
+	bool has_rumble = false;
 	float rotate_rate = 0.4f;
 	for (int i = 0; i < r_out.accepted.size(); i++) {
 		const String path = r_out.accepted[i];
@@ -239,12 +318,40 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		if (src.contains("OS.has_feature") && src.contains("\"ps2\"")) {
 			has_feature = true;
 		}
+		if (src.contains("swap_pack") || src.contains("load_scene")) {
+			has_swap = true;
+		}
+		if (src.contains("play_sfx")) {
+			has_sfx = true;
+		}
+		if (src.contains("set_rumble") || src.contains("stop_rumble")) {
+			has_rumble = true;
+		}
 	}
 
 	Vector<uint8_t> tape;
 	if (has_feature) {
 		tape.push_back(uint8_t(OP_READY));
 		tape.push_back(uint8_t(OP_HAS_FEATURE_PS2));
+	}
+	if (has_swap) {
+		tape.push_back(uint8_t(OP_READY));
+		tape.push_back(uint8_t(OP_LOADK_F));
+		append_f32(tape, 1.0f);
+		tape.push_back(uint8_t(OP_SWAP_PACK));
+	}
+	if (has_sfx) {
+		tape.push_back(uint8_t(OP_READY));
+		tape.push_back(uint8_t(OP_PLAY_SFX));
+	}
+	if (has_rumble) {
+		tape.push_back(uint8_t(OP_READY));
+		tape.push_back(uint8_t(OP_LOADK_F));
+		append_f32(tape, 1.0f);
+		tape.push_back(uint8_t(OP_LOADK_F));
+		append_f32(tape, 0.0f);
+		tape.push_back(uint8_t(OP_SET_RUMBLE));
+		tape.push_back(uint8_t(OP_STOP_RUMBLE));
 	}
 	if (has_gd_rotate || has_lu_rotate) {
 		tape.push_back(uint8_t(OP_PROCESS));
@@ -281,6 +388,15 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	}
 	if (has_feature) {
 		r_out.ir_text += "IR OS.has_feature(\"ps2\")\n";
+	}
+	if (has_swap) {
+		r_out.ir_text += "IR PS2.swap_pack/load_scene\n";
+	}
+	if (has_sfx) {
+		r_out.ir_text += "IR PS2.play_sfx\n";
+	}
+	if (has_rumble) {
+		r_out.ir_text += "IR PS2.set_rumble\n";
 	}
 	r_out.ir_text += "kit: Spawn Player Portal (names)\n";
 	for (int i = 0; i < r_out.accepted.size(); i++) {
