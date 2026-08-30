@@ -1287,7 +1287,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			free_live();
 			return ERR_CANT_CREATE;
 		}
-		r_out.warnings.push_back("SFX00 is IMA-decoded on the EE. Audible play needs libsdr + freesd.irx (SPU2 voice). Without them PS2.play_sfx / Cross is silent. SFX is not ELF-embedded; keep SFX00.bin next to the ELF (host:) or on the ISO.");
+		r_out.warnings.push_back("SFX00 IMA is decoded on the EE then VAG-uploaded via libsdr RPC (sdrdrv + freesd). Do not call sceSdInit. Missing IRX/HostFs leaves PS2.play_sfx / Cross silent. SFX is not ELF-embedded; keep SFX00.bin next to the ELF (host:) or on the ISO.");
 	}
 
 	{
