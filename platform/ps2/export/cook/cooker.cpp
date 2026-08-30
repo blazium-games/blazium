@@ -995,6 +995,35 @@ static bool walk_first_wav(const String &p_dir, Ref<AudioStreamWAV> &r_wav) {
 	return false;
 }
 
+static bool walk_music_wav(const String &p_dir, Ref<AudioStreamWAV> &r_wav) {
+	Ref<DirAccess> da = DirAccess::open(p_dir);
+	if (da.is_null()) {
+		return false;
+	}
+	da->list_dir_begin();
+	String n = da->get_next();
+	while (!n.is_empty()) {
+		if (n == "." || n == ".." || n == "tests" || n == "tools" || n == ".godot" || n == "export") {
+			n = da->get_next();
+			continue;
+		}
+		const String path = p_dir.path_join(n);
+		if (da->current_is_dir()) {
+			if (walk_music_wav(path, r_wav)) {
+				return true;
+			}
+		} else if (n.to_lower().ends_with(".wav") && path.to_lower().contains("music") && ResourceLoader::exists(path)) {
+			Ref<AudioStreamWAV> wav = ResourceLoader::load(path);
+			if (wav.is_valid()) {
+				r_wav = wav;
+				return true;
+			}
+		}
+		n = da->get_next();
+	}
+	return false;
+}
+
 Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOptions &p_opts) {
 	Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
 	const Error mk = da->make_dir_recursive(p_export_dir);
@@ -1288,6 +1317,27 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			return ERR_CANT_CREATE;
 		}
 		r_out.warnings.push_back("SFX00 IMA is decoded on the EE then VAG-uploaded via libsdr RPC (sdrdrv + freesd). Do not call sceSdInit. Missing IRX/HostFs leaves PS2.play_sfx / Cross silent. SFX is not ELF-embedded; keep SFX00.bin next to the ELF (host:) or on the ISO.");
+		SfxBlob music;
+		Vector<int16_t> mpcm = pcm;
+		int mrate = rate;
+		Ref<AudioStreamWAV> mwav;
+		if (walk_music_wav("res://", mwav)) {
+			pcm_from_wav(mwav, mpcm, mrate);
+		}
+		if (write_music_pcm(mpcm, mrate, music) != OK) {
+			r_out.errors.push_back("MUSIC cook failed.");
+			r_out.report = r_out.errors[r_out.errors.size() - 1];
+			free_live();
+			return FAILED;
+		}
+		r_out.music_path = p_export_dir.path_join("MUSIC00.bin");
+		if (write_bytes(r_out.music_path, music.bytes) != OK) {
+			r_out.errors.push_back("failed to write MUSIC00.bin.");
+			r_out.report = r_out.errors[r_out.errors.size() - 1];
+			free_live();
+			return ERR_CANT_CREATE;
+		}
+		r_out.warnings.push_back("MUSIC00 IMA is decoded on the EE then looped VAG-uploaded on SPU2 voice 1 via libsdr RPC (sdrdrv + freesd). Do not call sceSdInit. Missing IRX/HostFs leaves PS2.load_music silent. MUSIC is not ELF-embedded; keep MUSIC00.bin next to the ELF (host:) or on the ISO.");
 	}
 
 	{
@@ -1389,6 +1439,9 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		if (!r_out.sfx_path.is_empty()) {
 			names->store_line("sfx: SFX00.bin");
 		}
+		if (!r_out.music_path.is_empty()) {
+			names->store_line("music: MUSIC00.bin");
+		}
 		if (!r_out.disp_path.is_empty()) {
 			names->store_line(vformat("disp: DISP.bin %dx%d %s", r_out.display_w, r_out.display_h, p_opts.region == 1 ? "PAL" : "NTSC"));
 		}
@@ -1448,6 +1501,9 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			budget->store_line(vformat("tiles %d/%d", gathered.tiles.size(), kMaxTiles));
 			budget->store_line(vformat("nav %d/%d", gathered.nav.size(), kMaxNav));
 			budget->store_line(vformat("anims %d/%d", gathered.anims.size(), kMaxAnim));
+			if (!r_out.music_path.is_empty()) {
+				budget->store_line("music 1");
+			}
 		}
 		Ref<FileAccess> warn = FileAccess::open(r_out.warnings_path, FileAccess::WRITE);
 		if (warn.is_valid()) {

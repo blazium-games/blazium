@@ -48,6 +48,7 @@ struct CookResult {
 	String pack1_path;
 	String stream_path;
 	String sfx_path;
+	String music_path;
 	String disp_path;
 	String cam_path;
 	String hit_path;

@@ -60,6 +60,13 @@ void PS2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("save_slot", "slot"), &PS2::save_slot);
 	ClassDB::bind_method(D_METHOD("load_slot", "slot"), &PS2::load_slot);
 	ClassDB::bind_method(D_METHOD("memcard_format"), &PS2::memcard_format);
+	ClassDB::bind_method(D_METHOD("load_music", "path"), &PS2::load_music);
+	ClassDB::bind_method(D_METHOD("unload_music", "path"), &PS2::unload_music);
+	ClassDB::bind_method(D_METHOD("can_load_music", "path"), &PS2::can_load_music);
+	ClassDB::bind_method(D_METHOD("is_music_loaded", "path"), &PS2::is_music_loaded);
+	ClassDB::bind_method(D_METHOD("set_music_volume", "vol"), &PS2::set_music_volume);
+	ClassDB::bind_method(D_METHOD("set_music_fade", "to_vol", "ms"), &PS2::set_music_fade);
+	ClassDB::bind_method(D_METHOD("stop_music"), &PS2::stop_music);
 }
 
 void PS2FlavorEditorPlugin::_sync_singleton() {

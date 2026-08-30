@@ -112,12 +112,12 @@ static void encode_ima(const Vector<int16_t> &p_pcm, Vector<uint8_t> &r_nibbles)
 	}
 }
 
-static void finish_blob(const Vector<uint8_t> &p_nibbles, int p_rate, SfxBlob &r_out) {
+static void finish_blob(const Vector<uint8_t> &p_nibbles, int p_rate, SfxBlob &r_out, const char *p_magic) {
 	Vector<uint8_t> out;
-	out.push_back('S');
-	out.push_back('F');
-	out.push_back('X');
-	out.push_back(' ');
+	out.push_back(uint8_t(p_magic[0]));
+	out.push_back(uint8_t(p_magic[1]));
+	out.push_back(uint8_t(p_magic[2]));
+	out.push_back(uint8_t(p_magic[3]));
 	append_u16(out, 1);
 	append_u16(out, uint16_t(CLAMP(p_rate, 1, 65535)));
 	append_u32(out, uint32_t(p_nibbles.size()));
@@ -148,7 +148,28 @@ Error write_sfx_pcm(const Vector<int16_t> &p_pcm, int p_sample_rate, SfxBlob &r_
 	if (nibbles.is_empty()) {
 		return write_sfx_beep(r_out);
 	}
-	finish_blob(nibbles, p_sample_rate > 0 ? p_sample_rate : 22050, r_out);
+	finish_blob(nibbles, p_sample_rate > 0 ? p_sample_rate : 22050, r_out, "SFX ");
+	return OK;
+}
+
+Error write_music_pcm(const Vector<int16_t> &p_pcm, int p_sample_rate, SfxBlob &r_out) {
+	if (p_pcm.is_empty()) {
+		const int rate = 22050;
+		const int samples = rate / 5;
+		Vector<int16_t> beep;
+		beep.resize(samples);
+		for (int i = 0; i < samples; i++) {
+			beep.write[i] = ((i / 32) & 1) ? 8000 : -8000;
+		}
+		return write_music_pcm(beep, rate, r_out);
+	}
+	Vector<uint8_t> nibbles;
+	encode_ima(p_pcm, nibbles);
+	if (nibbles.is_empty()) {
+		Vector<int16_t> empty;
+		return write_music_pcm(empty, 22050, r_out);
+	}
+	finish_blob(nibbles, p_sample_rate > 0 ? p_sample_rate : 22050, r_out, "MUS ");
 	return OK;
 }
 

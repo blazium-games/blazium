@@ -194,7 +194,10 @@ enum {
 	OP_NAV_FOLLOW = 19,
 	OP_SAVE_SLOT = 20,
 	OP_PLAY_FMV = 21,
-	OP_SYS_TICK = 22
+	OP_SYS_TICK = 22,
+	OP_PLAY_MUSIC = 23,
+	OP_STOP_MUSIC = 24,
+	OP_MUSIC_VOL = 25
 };
 
 static const char *kUnsupportedCalls[] = {
@@ -218,7 +221,10 @@ static bool is_ps2_alias(const String &p_name) {
 			p_name == "unload_tiles" || p_name == "can_load_tiles" || p_name == "is_tiles_loaded" ||
 			p_name == "nav_follow" || p_name == "nav_next_node" || p_name == "set_hp" ||
 			p_name == "get_hp" || p_name == "set_frame" || p_name == "play_fmv" ||
-			p_name == "save_slot" || p_name == "load_slot" || p_name == "memcard_format";
+			p_name == "save_slot" || p_name == "load_slot" || p_name == "memcard_format" ||
+			p_name == "load_music" || p_name == "unload_music" || p_name == "can_load_music" ||
+			p_name == "is_music_loaded" || p_name == "set_music_volume" || p_name == "set_music_fade" ||
+			p_name == "stop_music";
 }
 
 static bool reject_unsupported_apis(const String &p_src, String &r_why) {
@@ -333,6 +339,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	bool has_slot = false;
 	bool has_fmv = false;
 	bool has_sys = false;
+	bool has_music = false;
 	float rotate_rate = 0.4f;
 	float translate_rate = 1.0f;
 	for (int i = 0; i < r_out.accepted.size(); i++) {
@@ -392,6 +399,11 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		if (src.contains("load_tiles") || src.contains("set_hp") || src.contains("set_frame") || src.contains("systems_kit")) {
 			has_sys = true;
 		}
+		if (src.contains("load_music") || src.contains("stop_music") || src.contains("set_music_volume") ||
+				src.contains("set_music_fade") || src.contains("unload_music") || src.contains("can_load_music") ||
+				src.contains("is_music_loaded")) {
+			has_music = true;
+		}
 	}
 	if (!r_out.extra_scenes.is_empty()) {
 		has_kit = true;
@@ -435,6 +447,13 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	if (has_fmv) {
 		tape.push_back(uint8_t(OP_READY));
 		tape.push_back(uint8_t(OP_PLAY_FMV));
+	}
+	if (has_music) {
+		tape.push_back(uint8_t(OP_READY));
+		tape.push_back(uint8_t(OP_LOADK_F));
+		append_f32(tape, 0.6f);
+		tape.push_back(uint8_t(OP_MUSIC_VOL));
+		tape.push_back(uint8_t(OP_PLAY_MUSIC));
 	}
 	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys) {
 		tape.push_back(uint8_t(OP_PROCESS));
@@ -533,6 +552,9 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	}
 	if (has_sys) {
 		r_out.ir_text += "IR HUD/TILE/NAV/CAM/HIT/ANIM sys tick\n";
+	}
+	if (has_music) {
+		r_out.ir_text += "IR PS2.load_music/set_music_volume (voice 1 loop)\n";
 	}
 	if (has_user) {
 		r_out.warnings.push_back("FileAccess user:// maps to host:SAVE.BIN then mc0:SAVE.BIN. Missing HostFs/memcard is a guest error.");

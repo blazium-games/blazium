@@ -255,6 +255,41 @@ public:
 		_fail_ps2();
 		return false;
 	}
+	bool load_music(const String &p_path) {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool unload_music(const String &p_path) {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool can_load_music(const String &p_path) const {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool is_music_loaded(const String &p_path) const {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool set_music_volume(float p_vol) {
+		_fail_ps2();
+		(void)p_vol;
+		return false;
+	}
+	bool set_music_fade(float p_to_vol, float p_ms) {
+		_fail_ps2();
+		(void)p_to_vol;
+		(void)p_ms;
+		return false;
+	}
+	bool stop_music() {
+		_fail_ps2();
+		return false;
+	}
 };
 
 class PS2FlavorEditorPlugin : public EditorPlugin {
