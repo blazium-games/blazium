@@ -47,7 +47,7 @@ bool source_is_rejected(const String &p_source, String &r_why) {
 	const String src = strip_line_comments(p_source);
 	const char *bad[] = {
 		"eval(", "ClassDB.", "HTTPClient", "Thread.", "await ",
-		"OS.execute", "preload(", "JSON.parse"
+		"OS.execute", "preload(", "JSON.parse", "match ", "AnimationTree"
 	};
 	for (const char *b : bad) {
 		if (src.contains(b)) {
@@ -147,7 +147,16 @@ static void walk_scripts(const String &p_dir, ScriptCook &r_out) {
 		const String src = FileAccess::get_file_as_string(path);
 		String why;
 		if (source_is_rejected(src, why) || reject_unsupported_apis(strip_line_comments(src), why)) {
-			r_out.rejected.push_back(path + " (" + why + ")");
+			int line = 1;
+			const int hit = src.find(why.get_slice(" ", 0));
+			if (hit >= 0) {
+				for (int i = 0; i < hit; i++) {
+					if (src[i] == '\n') {
+						line++;
+					}
+				}
+			}
+			r_out.rejected.push_back(vformat("%s:%d: %s", path, line, why));
 			continue;
 		}
 		r_out.accepted.push_back(path);
@@ -212,7 +221,16 @@ enum {
 	OP_RAYCAST = 37,
 	OP_TILE_AT = 38,
 	OP_SET_FADE = 39,
-	OP_SCENE_FADE = 40
+	OP_SCENE_FADE = 40,
+	OP_CHANGE_SCENE = 41,
+	OP_INSTANTIATE = 42,
+	OP_UNLOAD_PACK = 43,
+	OP_SAY_TEXT = 44,
+	OP_SEEK_ANIM = 45,
+	OP_JMP = 46,
+	OP_JZ = 47,
+	OP_CALL_NATIVE = 48,
+	OP_LOADK_S = 49
 };
 
 static const char *kUnsupportedCalls[] = {
@@ -250,13 +268,23 @@ static bool is_ps2_alias(const String &p_name) {
 			p_name == "overlaps_entered" || p_name == "has_overlapping_areas" ||
 			p_name == "hitbox_kind" || p_name == "raycast" || p_name == "raycast_point" ||
 			p_name == "intersects_ray" || p_name == "tile_solid_at" || p_name == "tile_at" ||
-			p_name == "set_fade" || p_name == "change_scene_fade";
+			p_name == "set_fade" || p_name == "change_scene_fade" || p_name == "change_scene" ||
+			p_name == "instantiate" || p_name == "can_instantiate" || p_name == "say_done" ||
+			p_name == "set_hud_text" || p_name == "seek_animation" || p_name == "set_animation_speed";
 }
 
 static bool reject_unsupported_apis(const String &p_src, String &r_why) {
 	for (const char *bad : kUnsupportedCalls) {
 		if (p_src.contains(bad)) {
-			r_why = String(bad) + " is not supported on PS2 ABI 1";
+			if (String(bad) == "play_xa" || String(bad) == "stop_xa") {
+				r_why = String(bad) + " is not supported on PS2 ABI 1 (no CD-XA; use PS2.play_sfx / load_music IMA)";
+			} else if (String(bad) == "set_fog") {
+				r_why = "set_fog is not supported on PS2 ABI 1 (use PS2.set_fade for a GS overlay)";
+			} else if (String(bad) == "spawn_shot") {
+				r_why = "spawn_shot is not supported on PS2 ABI 1";
+			} else {
+				r_why = String(bad) + " is not supported on PS2 ABI 1";
+			}
 			return true;
 		}
 	}
@@ -371,6 +399,10 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	bool has_slide = false;
 	bool has_hitq = false;
 	bool has_fade = false;
+	bool has_change = false;
+	bool has_inst = false;
+	bool has_seek = false;
+	bool has_branch = false;
 	float rotate_rate = 0.4f;
 	float translate_rate = 1.0f;
 	for (int i = 0; i < r_out.accepted.size(); i++) {
@@ -388,7 +420,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		if (src.contains("OS.has_feature") && src.contains("\"ps2\"")) {
 			has_feature = true;
 		}
-		if (src.contains("swap_pack") || src.contains("load_scene")) {
+		if (src.contains("swap_pack") || src.contains("load_scene") || src.contains("change_scene")) {
 			has_swap = true;
 		}
 		if (src.contains("play_sfx")) {
@@ -415,7 +447,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 				src.contains("Pickup") || src.contains("LoadZone") || src.contains("kit_room")) {
 			has_kit = true;
 		}
-		if (src.contains("say(") || src.contains("load_hud") || src.contains("set_hud")) {
+		if (src.contains("say(") || src.contains("load_hud") || src.contains("set_hud") || src.contains("say_done") || src.contains("set_hud_text")) {
 			has_say = true;
 		}
 		if (src.contains("nav_follow") || src.contains("nav_next")) {
@@ -453,6 +485,18 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		}
 		if (src.contains("set_fade") || src.contains("change_scene_fade")) {
 			has_fade = true;
+		}
+		if (src.contains("change_scene(") || src.contains("load_scene(")) {
+			has_change = true;
+		}
+		if (src.contains("instantiate(") || src.contains("unload_pack(") || src.contains("can_instantiate")) {
+			has_inst = true;
+		}
+		if (src.contains("seek_animation") || src.contains("set_animation_speed") || src.contains("set_frame(")) {
+			has_seek = true;
+		}
+		if (src.contains("if ") || src.contains("while ") || src.contains("elif ")) {
+			has_branch = true;
 		}
 	}
 	if (!r_out.extra_scenes.is_empty()) {
@@ -550,7 +594,30 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		append_f32(tape, 0.0f);
 		tape.push_back(uint8_t(OP_SCENE_FADE));
 	}
-	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys || has_cam_rt || has_tween || has_slide || has_hitq || has_fade) {
+	if (has_change) {
+		tape.push_back(uint8_t(OP_READY));
+		tape.push_back(uint8_t(OP_LOADK_S));
+		const char *flow = "res://scenes/genres/adventure.tscn";
+		const int n = 32;
+		tape.push_back(uint8_t(n));
+		for (int c = 0; c < n; c++) {
+			tape.push_back(uint8_t(flow[c]));
+		}
+		tape.push_back(uint8_t(OP_CHANGE_SCENE));
+	}
+	if (has_inst) {
+		tape.push_back(uint8_t(OP_READY));
+		tape.push_back(uint8_t(OP_LOADK_S));
+		const char *kit = "res://scenes/spawn_kit.tscn";
+		const int n = 26;
+		tape.push_back(uint8_t(n));
+		for (int c = 0; c < n; c++) {
+			tape.push_back(uint8_t(kit[c]));
+		}
+		tape.push_back(uint8_t(OP_INSTANTIATE));
+		tape.push_back(uint8_t(OP_UNLOAD_PACK));
+	}
+	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys || has_cam_rt || has_tween || has_slide || has_hitq || has_fade || has_change || has_inst || has_seek || has_branch) {
 		tape.push_back(uint8_t(OP_PROCESS));
 		if (has_gd_rotate || has_lu_rotate) {
 			tape.push_back(uint8_t(OP_LOAD_DELTA));
@@ -598,6 +665,21 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		}
 		if (has_say) {
 			tape.push_back(uint8_t(OP_SAY));
+			tape.push_back(uint8_t(OP_SAY_TEXT));
+		}
+		if (has_seek) {
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 0.0f);
+			tape.push_back(uint8_t(OP_SEEK_ANIM));
+		}
+		if (has_branch) {
+			tape.push_back(uint8_t(OP_HAS_FEATURE_PS2));
+			tape.push_back(uint8_t(OP_JZ));
+			append_u16(tape, 2);
+			tape.push_back(uint8_t(OP_CALL_NATIVE));
+			tape.push_back(uint8_t(OP_HAS_FEATURE_PS2));
+			tape.push_back(uint8_t(OP_JMP));
+			append_u16(tape, 0);
 		}
 		if (has_nav) {
 			tape.push_back(uint8_t(OP_NAV_FOLLOW));
@@ -611,6 +693,10 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		}
 	}
 	tape.push_back(uint8_t(OP_END));
+	if (tape.size() > 1024) {
+		r_out.rejected.push_back("script too large for PS2 ABI 1 (tape exceeds 1 KiB)");
+		return ERR_UNCONFIGURED;
+	}
 
 	Vector<uint8_t> out;
 	out.push_back('S');
@@ -695,6 +781,18 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	}
 	if (has_fade) {
 		r_out.ir_text += "IR PS2.set_fade/change_scene_fade (GS alpha overlay)\n";
+	}
+	if (has_change) {
+		r_out.ir_text += "IR PS2.change_scene/load_scene (STREAM path map)\n";
+	}
+	if (has_inst) {
+		r_out.ir_text += "IR PS2.instantiate/unload_pack (4 resident extras)\n";
+	}
+	if (has_seek) {
+		r_out.ir_text += "IR PS2.seek_animation/set_frame (Node3D TRS keys)\n";
+	}
+	if (has_branch || has_change || has_inst) {
+		r_out.ir_text += "IR JMP/CALL compiled subset (not official GDScript/Luau VM)\n";
 	}
 	if (has_slide) {
 		r_out.warnings.push_back("move_and_slide clips against HIT00 mesh AABBs (enter-only so oversized industrial boxes do not trap).");

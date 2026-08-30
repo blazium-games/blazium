@@ -13,6 +13,7 @@
 
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
+#include "core/os/os.h"
 #include "servers/display_server.h"
 
 void PS2::_bind_methods() {
@@ -100,6 +101,13 @@ void PS2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("tile_at", "x", "y"), &PS2::tile_at);
 	ClassDB::bind_method(D_METHOD("set_fade", "alpha", "color"), &PS2::set_fade, DEFVAL(Color()));
 	ClassDB::bind_method(D_METHOD("change_scene_fade", "path", "seconds"), &PS2::change_scene_fade);
+	ClassDB::bind_method(D_METHOD("change_scene", "path"), &PS2::change_scene);
+	ClassDB::bind_method(D_METHOD("instantiate", "path_or_pack"), &PS2::instantiate);
+	ClassDB::bind_method(D_METHOD("can_instantiate", "path_or_pack"), &PS2::can_instantiate);
+	ClassDB::bind_method(D_METHOD("say_done"), &PS2::say_done);
+	ClassDB::bind_method(D_METHOD("set_hud_text", "hud", "text"), &PS2::set_hud_text);
+	ClassDB::bind_method(D_METHOD("seek_animation", "sec"), &PS2::seek_animation);
+	ClassDB::bind_method(D_METHOD("set_animation_speed", "speed"), &PS2::set_animation_speed);
 }
 
 void PS2FlavorEditorPlugin::_sync_singleton() {
@@ -126,7 +134,9 @@ void PS2FlavorEditorPlugin::_refresh() {
 		status->set_text("Turn on Project Settings → ps2/enabled for the PS2 flavor dock.\nPS2.* is PS2 export only; use OS.has_feature(\"ps2\").\nExport writes an EE ELF via blazium-toolchain (no Godot templates).");
 		return;
 	}
-	status->set_text("PS2 export is on. Project → Export → PS2 cooks ABI 1 and writes Game.elf via blazium-toolchain.\nHUD/TILE/NAV/CAM/HIT/ANIM cook as ABI 1 sidecars. FMV/IPU is a named no-op. BIOS is only for One-click.\nPS2.* only works on a PS2 export. Guard with OS.has_feature(\"ps2\").");
+	const String bios = OS::get_singleton() ? String(OS::get_singleton()->get_environment("PS2_BIOS_DIR")) : String();
+	String oneclick = bios.is_empty() ? "One-click disabled: set PS2_BIOS_DIR to a legal BIOS folder (export does not need BIOS)." : "One-click: PS2_BIOS_DIR is set (ps2 run / PCSX2 -elf).";
+	status->set_text("PS2 ABI 1 export is on. Guard PS2.* with OS.has_feature(\"ps2\").\nWorks: STREAM multi-scene, HIT slide/query, camera, tweens, IMA SFX/MUSIC, set_fade, DISP NTSC/PAL 640/512/320.\nPartial: change_scene/instantiate, Button HUD, AnimationPlayer TRS, custom IR (not official GDScript/Luau VMs).\nRefused: play_xa (no CD-XA), play_fmv (no IPU decoder), set_fog, spawn_shot, memcard_wrap, gsKit.\n" + oneclick);
 }
 
 void PS2FlavorEditorPlugin::_notification(int p_what) {

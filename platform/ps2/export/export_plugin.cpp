@@ -199,6 +199,7 @@ void EditorExportPlatformPS2::get_export_options(List<ExportOption> *r_options) 
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "ps2/output_kind", PROPERTY_HINT_ENUM, "EE ELF,EE ELF + ISO"), 0));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "ps2/region", PROPERTY_HINT_ENUM, "NTSC,PAL"), 0));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "ps2/width", PROPERTY_HINT_ENUM, "640,512,320"), 0));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "ps2/display_hint", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY), "Height from width: 640/512 -> 448 NTSC / 512 PAL; 320 -> 224. NTSC 60 Hz, PAL 50 Hz."));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::BOOL, "ps2/make_iso"), false));
 }
 
@@ -245,11 +246,11 @@ bool EditorExportPlatformPS2::has_valid_project_configuration(const Ref<EditorEx
 		r_error += "main_scene does not exist: " + main_scene + "\n";
 		return false;
 	}
-	r_error += "Note: audio is WAV-only. The first res:// .wav becomes SFX00 (IMA); a path containing music becomes MUSIC00, else SFX PCM is cloned. Audible play needs libsdr + freesd.irx; otherwise PS2.play_sfx / load_music is silent.\n";
-	r_error += "Note: scripts cook a small ABI 1 tape (rotate_y, Input, translate, user://, kit, HUD/TILE/NAV/CAM/HIT/ANIM, music). PS2.play_fmv is a named no-op (no IPU decoder). Unsupported PS1.* still fail the cook.\n";
-	r_error += "Note: AnimationPlayer, Skeleton3D, and Light3D are allow-listed but not cooked. FileAccess is user:// only (host:SAVE.BIN / mc0:SAVE.BIN); missing card/HostFs is a named error.\n";
-	r_error += "Note: STREAM packs (MESH01../NODE01..) are not ELF-embedded. Guest loads them from host: or ISO via PS2.swap_pack. SFX/DISP sit next to the ELF.\n";
-	r_error += "Note: guest framebuffer follows ps2/width and ps2/region (DISP.bin). BIOS is only required for One-click / ps2 run.\n";
+	r_error += "Works: MESH/GTEX/NODE pack 0 in the ELF; STREAM extras; CAM/HIT/HUD/TILE/NAV/ANIM per pack; Input; move_and_slide; overlaps/raycast/tile_solid_at; look/orbit/shake; linear tweens; IMA SFX/MUSIC via libsdr; set_fade; DISP NTSC/PAL 640/512/320 (heights 448/512 or 224).\n";
+	r_error += "Partial: change_scene/load/instantiate resolve STREAM paths; AnimationPlayer Node3D TRS keys (no AnimationTree); Button HUD slots; custom IR (not the official GDScript/Luau VM).\n";
+	r_error += "Refused: play_xa/stop_xa (no CD-XA; use play_sfx/load_music IMA). play_fmv (no license-clean IPU decoder). set_fog, spawn_shot, memcard_wrap. Official GDScript/Luau VMs. GDExtension/C#. AnimationTree/RigidBody/GPUParticles.\n";
+	r_error += "Audio is WAV-only (first res:// .wav = SFX00; path containing music = MUSIC00). FileAccess is user:// only (host:SAVE.BIN / mc0:SAVE.BIN). STREAM/SFX/DISP/CAM.. are not ELF-embedded (host: or ISO).\n";
+	r_error += "BIOS is required only for One-click / ps2 run, not for export. Guest framebuffer follows ps2/width and ps2/region (DISP.bin).\n";
 	return true;
 }
 

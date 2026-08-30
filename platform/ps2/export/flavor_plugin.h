@@ -474,6 +474,41 @@ public:
 		(void)p_seconds;
 		return false;
 	}
+	bool change_scene(const String &p_path) {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	Variant instantiate(const Variant &p_path_or_pack) {
+		_fail_ps2();
+		(void)p_path_or_pack;
+		return Variant();
+	}
+	bool can_instantiate(const Variant &p_path_or_pack) const {
+		_fail_ps2();
+		(void)p_path_or_pack;
+		return false;
+	}
+	bool say_done() const {
+		_fail_ps2();
+		return true;
+	}
+	bool set_hud_text(const Variant &p_hud, const String &p_text) {
+		_fail_ps2();
+		(void)p_hud;
+		(void)p_text;
+		return false;
+	}
+	bool seek_animation(float p_sec) {
+		_fail_ps2();
+		(void)p_sec;
+		return false;
+	}
+	bool set_animation_speed(float p_s) {
+		_fail_ps2();
+		(void)p_s;
+		return false;
+	}
 };
 
 class PS2FlavorEditorPlugin : public EditorPlugin {

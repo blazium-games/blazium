@@ -27,8 +27,11 @@
 #include "scene/3d/node_3d.h"
 #include "scene/3d/path_3d.h"
 #include "scene/animation/animation_player.h"
+#include "scene/gui/button.h"
 #include "scene/gui/color_rect.h"
 #include "scene/gui/label.h"
+#include "scene/gui/texture_button.h"
+#include "core/math/quaternion.h"
 #include "scene/resources/animation.h"
 #include "scene/resources/curve.h"
 #include "scene/resources/3d/importer_mesh.h"
@@ -48,7 +51,7 @@ static const char *kAllowed[] = {
 	"WorldEnvironment", "Marker3D",
 	"DirectionalLight3D", "OmniLight3D", "SpotLight3D", "Light3D",
 	"AudioStreamPlayer", "AudioStreamPlayer3D", "AudioStreamPlayer2D",
-	"Control", "CanvasLayer", "Label", "ColorRect",
+	"Control", "CanvasLayer", "Label", "ColorRect", "Button", "TextureButton",
 	"Path3D", "PathFollow3D",
 };
 
@@ -125,9 +128,16 @@ struct Gather {
 		int node_id = -1;
 	};
 	Vector<NavVert> nav;
+	struct AnimKey {
+		float t = 0.0f;
+		Vector3 pos;
+		Vector3 rot;
+	};
 	struct AnimClip {
 		String name;
 		float length = 1.0f;
+		int node_id = -1;
+		Vector<AnimKey> keys;
 	};
 	Vector<AnimClip> anims;
 	Vector<String> errors;
@@ -461,9 +471,28 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent, const String &p_
 			}
 			Gather::AnimClip clip;
 			clip.name = nm;
+			clip.node_id = my;
 			const Ref<Animation> anim = ap->get_animation(nm);
 			if (anim.is_valid()) {
 				clip.length = float(anim->get_length());
+				for (int t = 0; t < anim->get_track_count() && clip.keys.size() < 64; t++) {
+					const Animation::TrackType tt = anim->track_get_type(t);
+					if (tt != Animation::TYPE_POSITION_3D && tt != Animation::TYPE_ROTATION_3D) {
+						continue;
+					}
+					const int kc = anim->track_get_key_count(t);
+					for (int k = 0; k < kc && clip.keys.size() < 64; k++) {
+						Gather::AnimKey key;
+						key.t = float(anim->track_get_key_time(t, k));
+						const Variant val = anim->track_get_key_value(t, k);
+						if (tt == Animation::TYPE_POSITION_3D && val.get_type() == Variant::VECTOR3) {
+							key.pos = val;
+						} else if (tt == Animation::TYPE_ROTATION_3D && val.get_type() == Variant::QUATERNION) {
+							key.rot = Quaternion(val).get_euler();
+						}
+						clip.keys.push_back(key);
+					}
+				}
 			}
 			r_g.anims.push_back(clip);
 		}
@@ -477,6 +506,34 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent, const String &p_
 			row.w = int16_t(MAX(8.0, lab->get_size().x));
 			row.h = int16_t(MAX(8.0, lab->get_size().y));
 			row.text = lab->get_text();
+			r_g.hud.push_back(row);
+		} else {
+			r_g.hud_dropped++;
+		}
+	}
+	if (Button *btn = Object::cast_to<Button>(p_node)) {
+		if (r_g.hud.size() < kMaxHud) {
+			Gather::HudRow row;
+			row.kind = 3;
+			row.x = int16_t(btn->get_position().x);
+			row.y = int16_t(btn->get_position().y);
+			row.w = int16_t(MAX(8.0, btn->get_size().x));
+			row.h = int16_t(MAX(16.0, btn->get_size().y));
+			row.text = btn->get_text();
+			r_g.hud.push_back(row);
+		} else {
+			r_g.hud_dropped++;
+		}
+	}
+	if (TextureButton *tb = Object::cast_to<TextureButton>(p_node)) {
+		if (r_g.hud.size() < kMaxHud) {
+			Gather::HudRow row;
+			row.kind = 3;
+			row.x = int16_t(tb->get_position().x);
+			row.y = int16_t(tb->get_position().y);
+			row.w = int16_t(MAX(8.0, tb->get_size().x));
+			row.h = int16_t(MAX(16.0, tb->get_size().y));
+			row.text = tb->get_name();
 			r_g.hud.push_back(row);
 		} else {
 			r_g.hud_dropped++;
@@ -698,31 +755,6 @@ static void append_i16(Vector<uint8_t> &o, int16_t v) {
 	append_u16(o, uint16_t(v));
 }
 
-static void merge_systems(Gather &r_dst, const Gather &p_src) {
-	for (int i = 0; i < p_src.cams.size() && r_dst.cams.size() < kMaxCameras; i++) {
-		r_dst.cams.push_back(p_src.cams[i]);
-	}
-	for (int i = 0; i < p_src.hits.size() && r_dst.hits.size() < kMaxHits; i++) {
-		r_dst.hits.push_back(p_src.hits[i]);
-	}
-	for (int i = 0; i < p_src.hud.size() && r_dst.hud.size() < kMaxHud; i++) {
-		r_dst.hud.push_back(p_src.hud[i]);
-	}
-	for (int i = 0; i < p_src.tiles.size() && r_dst.tiles.size() < kMaxTiles; i++) {
-		r_dst.tiles.push_back(p_src.tiles[i]);
-	}
-	for (int i = 0; i < p_src.nav.size() && r_dst.nav.size() < kMaxNav; i++) {
-		r_dst.nav.push_back(p_src.nav[i]);
-	}
-	for (int i = 0; i < p_src.anims.size() && r_dst.anims.size() < kMaxAnim; i++) {
-		r_dst.anims.push_back(p_src.anims[i]);
-	}
-	r_dst.hit_dropped += p_src.hit_dropped;
-	r_dst.hud_dropped += p_src.hud_dropped;
-	r_dst.tile_dropped += p_src.tile_dropped;
-	r_dst.nav_dropped += p_src.nav_dropped;
-	r_dst.anim_dropped += p_src.anim_dropped;
-}
 
 static Vector<uint8_t> write_cam_blob(const Gather &p_g) {
 	Vector<uint8_t> out;
@@ -855,6 +887,18 @@ static Vector<uint8_t> write_anim_blob(const Gather &p_g) {
 			out.push_back(c < utf.length() ? uint8_t(utf[c]) : 0);
 		}
 		append_f32(out, p_g.anims[i].length);
+		append_u16(out, uint16_t(p_g.anims[i].keys.size()));
+		append_u16(out, uint16_t(int16_t(p_g.anims[i].node_id)));
+		for (int k = 0; k < p_g.anims[i].keys.size(); k++) {
+			const Gather::AnimKey &key = p_g.anims[i].keys[k];
+			append_f32(out, key.t);
+			append_f32(out, key.pos.x);
+			append_f32(out, key.pos.y);
+			append_f32(out, key.pos.z);
+			append_f32(out, key.rot.x);
+			append_f32(out, key.rot.y);
+			append_f32(out, key.rot.z);
+		}
 	}
 	return out;
 }
@@ -870,7 +914,7 @@ static Vector<uint8_t> write_fmv_blob() {
 	return out;
 }
 
-static Vector<uint8_t> write_stream_blob(int p_extra_count) {
+static Vector<uint8_t> write_stream_blob(int p_extra_count, const Vector<String> &p_paths) {
 	Vector<uint8_t> out;
 	out.push_back('S');
 	out.push_back('T');
@@ -880,6 +924,15 @@ static Vector<uint8_t> write_stream_blob(int p_extra_count) {
 	append_u16(out, uint16_t(p_extra_count));
 	for (int i = 1; i <= p_extra_count; i++) {
 		append_u16(out, uint16_t(i));
+	}
+	for (int i = 0; i < p_extra_count; i++) {
+		const String path = i < p_paths.size() ? p_paths[i] : String();
+		CharString utf = path.utf8();
+		const int n = MIN(127, utf.length());
+		out.push_back(uint8_t(n));
+		for (int c = 0; c < n; c++) {
+			out.push_back(uint8_t(utf[c]));
+		}
 	}
 	return out;
 }
@@ -899,10 +952,10 @@ static Vector<uint8_t> write_disp_blob(const CookOptions &p_opts, int p_w, int p
 
 static void append_stub_warnings(Gather &p_g, Vector<String> &r_warn, const String &p_pack) {
 	if (p_g.anim_players > 0) {
-		r_warn.push_back(p_pack + "AnimationPlayer is allow-listed but clips are not cooked on PS2 ABI 1 (bind pose only).");
+		r_warn.push_back(p_pack + "AnimationPlayer cooks Node3D TRS keys on PS2 ABI 1 (no AnimationTree / blend spaces).");
 	}
 	if (p_g.skeletons > 0) {
-		r_warn.push_back(p_pack + "Skeleton3D is allow-listed; PS2 ABI 1 does not cook bone palettes.");
+		r_warn.push_back(p_pack + "Skeleton3D skin is not cooked on PS2 ABI 1 (bind pose). Remove the skeleton or use AnimationPlayer on Node3D.");
 	}
 	if (p_g.lights > 0) {
 		r_warn.push_back(p_pack + "Light3D is allow-listed; PS2 ABI 1 has no GTE lights (flat/textured vertex color).");
@@ -1147,9 +1200,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		}
 	}
 
-	for (int i = 0; i < extra_gathers.size(); i++) {
-		merge_systems(gathered, extra_gathers[i]);
-	}
+	// Per-pack sidecars: do not merge extra CAM/HIT/HUD into pack 0.
 
 	auto free_live = [&]() {
 		for (int i = 0; i < live.size(); i++) {
@@ -1274,6 +1325,27 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 				free_live();
 				return ERR_CANT_CREATE;
 			}
+			const Gather &eg = extra_gathers[i];
+			struct PackSys {
+				String name;
+				Vector<uint8_t> bytes;
+			};
+			PackSys psys[] = {
+				{ vformat("CAM%02d.bin", pack), write_cam_blob(eg) },
+				{ vformat("HIT%02d.bin", pack), write_hit_blob(eg) },
+				{ vformat("HUD%02d.bin", pack), write_hud_blob(eg) },
+				{ vformat("TILE%02d.bin", pack), write_tile_blob(eg) },
+				{ vformat("NAV%02d.bin", pack), write_nav_blob(eg) },
+				{ vformat("ANIM%02d.bin", pack), write_anim_blob(eg) },
+			};
+			for (PackSys &s : psys) {
+				if (write_bytes(p_export_dir.path_join(s.name), s.bytes) != OK) {
+					r_out.errors.push_back("failed to write " + s.name + ".");
+					r_out.report = r_out.errors[r_out.errors.size() - 1];
+					free_live();
+					return ERR_CANT_CREATE;
+				}
+			}
 		}
 		Vector<String> toc_names;
 		toc_names.push_back("NODE01.bin");
@@ -1287,13 +1359,13 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			return ERR_CANT_CREATE;
 		}
 		r_out.stream_path = p_export_dir.path_join("STREAM.bin");
-		if (write_bytes(r_out.stream_path, write_stream_blob(extra_gathers.size())) != OK) {
+		if (write_bytes(r_out.stream_path, write_stream_blob(extra_gathers.size(), cooked_extras)) != OK) {
 			r_out.errors.push_back("failed to write STREAM.bin.");
 			r_out.report = r_out.errors[r_out.errors.size() - 1];
 			free_live();
 			return ERR_CANT_CREATE;
 		}
-		r_out.warnings.push_back("STREAM packs (MESH01../NODE01..) are not ELF-embedded. Guest loads them from host: or cdrom0: via PS2.swap_pack / portal / load. Use ps2/make_iso or output_kind EE ELF + ISO.");
+		r_out.warnings.push_back("STREAM packs (MESH01../NODE01.. plus CAM/HIT/HUD/TILE/NAV/ANIM per pack) are not ELF-embedded. Guest loads them from host: or cdrom0: via PS2.change_scene / swap_pack / instantiate. Use ps2/make_iso or output_kind EE ELF + ISO.");
 	}
 
 	{
@@ -1391,6 +1463,9 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		r_out.warnings.push_back("HIT00 AABBs clip PS2.move_and_slide / stick translate (enter-only). spawn_shot stays refused.");
 		r_out.warnings.push_back("PS2.overlaps / raycast / tile_solid_at query HIT00 AABBs and TILE00 cells. spawn_shot stays refused.");
 		r_out.warnings.push_back("PS2.set_fade / change_scene_fade are a GS alpha overlay (not set_fog). spawn_shot stays refused.");
+		r_out.warnings.push_back("play_xa is not supported on PS2 ABI 1 (no CD-XA; use PS2.play_sfx / load_music IMA). play_fmv has no license-clean IPU decoder.");
+		r_out.warnings.push_back("Button HUD slots use D-pad focus and ui_accept (Cross). Not Godot theme/CSS. Overflow drops extras (16 slots).");
+		r_out.warnings.push_back("WAV-only audio cook (IMA then VAG). STR/XA encode is refused.");
 	}
 
 	{
@@ -1411,7 +1486,8 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		}
 		for (int i = 0; i < cooked_extras.size(); i++) {
 			const int pack = i + 1;
-			String line = cooked_extras[i] + vformat(" -> NODE%02d.bin MESH%02d.bin GTEX%02d.bin", pack, pack, pack);
+			names->store_line(vformat("pack %d = %s", pack, cooked_extras[i]));
+			String line = cooked_extras[i] + vformat(" -> NODE%02d.bin MESH%02d.bin GTEX%02d.bin CAM%02d.bin HIT%02d.bin HUD%02d.bin", pack, pack, pack, pack, pack, pack);
 			if (pack == 1) {
 				line += " PACK01.bin";
 			}
