@@ -183,7 +183,12 @@ enum {
 	OP_SWAP_PACK = 8,
 	OP_PLAY_SFX = 9,
 	OP_SET_RUMBLE = 10,
-	OP_STOP_RUMBLE = 11
+	OP_STOP_RUMBLE = 11,
+	OP_INPUT_TRANSLATE = 12,
+	OP_JUST_ACCEPT_SFX = 13,
+	OP_USER_SAVE = 14,
+	OP_USER_LOAD = 15,
+	OP_MEMCARD_PRESENT = 16
 };
 
 static const char *kUnsupportedCalls[] = {
@@ -197,7 +202,9 @@ static bool is_ps2_alias(const String &p_name) {
 	return p_name == "set_rumble" || p_name == "stop_rumble" || p_name == "get_pressure" ||
 			p_name == "play_sfx" || p_name == "stop_sfx" || p_name == "swap_pack" ||
 			p_name == "load_scene" || p_name == "unload_scene" || p_name == "get_abi" ||
-			p_name == "is_ready" || p_name == "get_display_width" || p_name == "get_display_height";
+			p_name == "is_ready" || p_name == "get_display_width" || p_name == "get_display_height" ||
+			p_name == "memcard_present" || p_name == "memcard_ready" || p_name == "memcard_save" ||
+			p_name == "memcard_load" || p_name == "get_stick" || p_name == "set_stick_deadzone";
 }
 
 static bool reject_unsupported_apis(const String &p_src, String &r_why) {
@@ -302,7 +309,12 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	bool has_swap = false;
 	bool has_sfx = false;
 	bool has_rumble = false;
+	bool has_input = false;
+	bool has_translate = false;
+	bool has_user = false;
+	bool has_memcard = false;
 	float rotate_rate = 0.4f;
+	float translate_rate = 1.0f;
 	for (int i = 0; i < r_out.accepted.size(); i++) {
 		const String path = r_out.accepted[i];
 		const String src = strip_line_comments(FileAccess::get_file_as_string(path));
@@ -327,6 +339,18 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		if (src.contains("set_rumble") || src.contains("stop_rumble")) {
 			has_rumble = true;
 		}
+		if (src.contains("Input.get_vector") || src.contains("Input.is_action") || src.contains("Input.get_joy_axis") || src.contains("get_stick")) {
+			has_input = true;
+		}
+		if (src.contains("translate(") || src.contains("translate_object_local")) {
+			has_translate = true;
+		}
+		if (src.contains("FileAccess") && src.contains("user://")) {
+			has_user = true;
+		}
+		if (src.contains("memcard_present") || src.contains("memcard_save") || src.contains("memcard_load") || src.contains("memcard_ready")) {
+			has_memcard = true;
+		}
 	}
 
 	Vector<uint8_t> tape;
@@ -340,7 +364,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		append_f32(tape, 1.0f);
 		tape.push_back(uint8_t(OP_SWAP_PACK));
 	}
-	if (has_sfx) {
+	if (has_sfx && !has_input) {
 		tape.push_back(uint8_t(OP_READY));
 		tape.push_back(uint8_t(OP_PLAY_SFX));
 	}
@@ -353,13 +377,29 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		tape.push_back(uint8_t(OP_SET_RUMBLE));
 		tape.push_back(uint8_t(OP_STOP_RUMBLE));
 	}
-	if (has_gd_rotate || has_lu_rotate) {
+	if (has_user || has_memcard) {
+		tape.push_back(uint8_t(OP_READY));
+		tape.push_back(uint8_t(OP_MEMCARD_PRESENT));
+		tape.push_back(uint8_t(OP_USER_SAVE));
+		tape.push_back(uint8_t(OP_USER_LOAD));
+	}
+	if (has_gd_rotate || has_lu_rotate || has_input || has_translate) {
 		tape.push_back(uint8_t(OP_PROCESS));
-		tape.push_back(uint8_t(OP_LOAD_DELTA));
-		tape.push_back(uint8_t(OP_LOADK_F));
-		append_f32(tape, rotate_rate);
-		tape.push_back(uint8_t(OP_MUL));
-		tape.push_back(uint8_t(OP_CALL_ROTATE_Y));
+		if (has_gd_rotate || has_lu_rotate) {
+			tape.push_back(uint8_t(OP_LOAD_DELTA));
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, rotate_rate);
+			tape.push_back(uint8_t(OP_MUL));
+			tape.push_back(uint8_t(OP_CALL_ROTATE_Y));
+		}
+		if (has_input || has_translate) {
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, translate_rate);
+			tape.push_back(uint8_t(OP_INPUT_TRANSLATE));
+		}
+		if (has_input) {
+			tape.push_back(uint8_t(OP_JUST_ACCEPT_SFX));
+		}
 	}
 	tape.push_back(uint8_t(OP_END));
 
@@ -397,6 +437,21 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	}
 	if (has_rumble) {
 		r_out.ir_text += "IR PS2.set_rumble\n";
+	}
+	if (has_input) {
+		r_out.ir_text += "IR Input.get_vector/is_action (ui_left..ui_accept)\n";
+	}
+	if (has_translate) {
+		r_out.ir_text += "IR Node3D.translate\n";
+	}
+	if (has_user) {
+		r_out.ir_text += "IR FileAccess user:// → host:SAVE.BIN / mc0:SAVE.BIN\n";
+	}
+	if (has_memcard) {
+		r_out.ir_text += "IR PS2.memcard_present/save/load\n";
+	}
+	if (has_user) {
+		r_out.warnings.push_back("FileAccess user:// maps to host:SAVE.BIN then mc0:SAVE.BIN. Missing HostFs/memcard is a guest error.");
 	}
 	r_out.ir_text += "kit: Spawn Player Portal (names)\n";
 	for (int i = 0; i < r_out.accepted.size(); i++) {

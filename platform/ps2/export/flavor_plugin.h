@@ -12,8 +12,10 @@
 #pragma once
 
 #include "core/input/shortcut.h"
+#include "core/math/vector2.h"
 #include "core/object/object.h"
 #include "core/string/ustring.h"
+#include "core/variant/variant.h"
 #include "editor/plugins/editor_plugin.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/label.h"
@@ -81,6 +83,36 @@ public:
 	int get_display_height() const {
 		_fail_ps2();
 		return 0;
+	}
+	bool memcard_present() const {
+		_fail_ps2();
+		return false;
+	}
+	bool memcard_ready() const {
+		_fail_ps2();
+		return false;
+	}
+	bool memcard_save(const String &p_name, const PackedByteArray &p_data) {
+		_fail_ps2();
+		(void)p_name;
+		(void)p_data;
+		return false;
+	}
+	PackedByteArray memcard_load(const String &p_name) {
+		_fail_ps2();
+		(void)p_name;
+		return PackedByteArray();
+	}
+	Vector2 get_stick(int p_pad, int p_stick) const {
+		_fail_ps2();
+		(void)p_pad;
+		(void)p_stick;
+		return Vector2();
+	}
+	bool set_stick_deadzone(float p_zone) {
+		_fail_ps2();
+		(void)p_zone;
+		return false;
 	}
 };
 

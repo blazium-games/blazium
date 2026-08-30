@@ -813,6 +813,9 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		if (!r_out.disp_path.is_empty()) {
 			names->store_line(vformat("disp: DISP.bin %dx%d %s", r_out.display_w, r_out.display_h, p_opts.region == 1 ? "PAL" : "NTSC"));
 		}
+		if (scripts.ir_text.contains("user://") || scripts.ir_text.contains("memcard")) {
+			names->store_line("user:// -> host:SAVE.BIN mc0:SAVE.BIN");
+		}
 		for (int i = 0; i < gathered.image_names.size(); i++) {
 			if (gathered.image_names[i].to_lower().contains("glb") || gathered.image_names[i].to_lower().contains("industrial")) {
 				names->store_line("tex: " + gathered.image_names[i]);

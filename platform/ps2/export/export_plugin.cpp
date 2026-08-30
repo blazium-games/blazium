@@ -246,8 +246,8 @@ bool EditorExportPlatformPS2::has_valid_project_configuration(const Ref<EditorEx
 		return false;
 	}
 	r_error += "Note: audio is WAV-only. The first res:// .wav becomes SFX00 (IMA). Audible play needs libsdr + freesd.irx; otherwise PS2.play_sfx is silent.\n";
-	r_error += "Note: scripts cook a small ABI 1 tape (rotate_y, OS.has_feature(\"ps2\"), PS2.swap_pack / play_sfx / set_rumble). Unsupported PS1.* / play_fmv fail the cook.\n";
-	r_error += "Note: AnimationPlayer, Skeleton3D, and Light3D are allow-listed but not cooked. FileAccess is user:// only (host:SAVE.BIN / mc0:SAVE.BIN).\n";
+	r_error += "Note: scripts cook a small ABI 1 tape (rotate_y, Input.get_vector/is_action, Node3D.translate, FileAccess user://, PS2.swap_pack / play_sfx / memcard_*). Unsupported PS1.* / play_fmv fail the cook.\n";
+	r_error += "Note: AnimationPlayer, Skeleton3D, and Light3D are allow-listed but not cooked. FileAccess is user:// only (host:SAVE.BIN / mc0:SAVE.BIN); missing card/HostFs is a named error.\n";
 	r_error += "Note: pack 1 (MESH01/GTEX01) is not ELF-embedded. Guest loads it from host: or ISO via PS2.swap_pack. SFX/DISP sit next to the ELF.\n";
 	r_error += "Note: guest framebuffer follows ps2/width and ps2/region (DISP.bin). BIOS is only required for One-click / ps2 run.\n";
 	return true;
