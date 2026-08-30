@@ -207,7 +207,10 @@ enum {
 	OP_TWEEN = 32,
 	OP_TIMER = 33,
 	OP_KILL_TWEENS = 34,
-	OP_SLIDE = 35
+	OP_SLIDE = 35,
+	OP_OVERLAP = 36,
+	OP_RAYCAST = 37,
+	OP_TILE_AT = 38
 };
 
 static const char *kUnsupportedCalls[] = {
@@ -241,7 +244,10 @@ static bool is_ps2_alias(const String &p_name) {
 			p_name == "create_tween" || p_name == "tween_property" || p_name == "kill_tweens" ||
 			p_name == "tween_is_done" || p_name == "tween_count" || p_name == "create_timer" ||
 			p_name == "is_timer_done" || p_name == "move_and_slide" || p_name == "is_on_floor" ||
-			p_name == "is_on_wall" || p_name == "is_on_ceiling";
+			p_name == "is_on_wall" || p_name == "is_on_ceiling" || p_name == "overlaps" ||
+			p_name == "overlaps_entered" || p_name == "has_overlapping_areas" ||
+			p_name == "hitbox_kind" || p_name == "raycast" || p_name == "raycast_point" ||
+			p_name == "intersects_ray" || p_name == "tile_solid_at" || p_name == "tile_at";
 }
 
 static bool reject_unsupported_apis(const String &p_src, String &r_why) {
@@ -360,6 +366,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	bool has_cam_rt = false;
 	bool has_tween = false;
 	bool has_slide = false;
+	bool has_hitq = false;
 	float rotate_rate = 0.4f;
 	float translate_rate = 1.0f;
 	for (int i = 0; i < r_out.accepted.size(); i++) {
@@ -435,6 +442,10 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		if (src.contains("move_and_slide") || src.contains("is_on_floor") || src.contains("is_on_wall") ||
 				src.contains("is_on_ceiling")) {
 			has_slide = true;
+		}
+		if (src.contains("overlaps") || src.contains("raycast") || src.contains("intersects_ray") ||
+				src.contains("hitbox_kind") || src.contains("tile_solid_at") || src.contains("tile_at")) {
+			has_hitq = true;
 		}
 	}
 	if (!r_out.extra_scenes.is_empty()) {
@@ -517,7 +528,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		append_f32(tape, 0.0f);
 		tape.push_back(uint8_t(OP_TIMER));
 	}
-	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys || has_cam_rt || has_tween || has_slide) {
+	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys || has_cam_rt || has_tween || has_slide || has_hitq) {
 		tape.push_back(uint8_t(OP_PROCESS));
 		if (has_gd_rotate || has_lu_rotate) {
 			tape.push_back(uint8_t(OP_LOAD_DELTA));
@@ -539,6 +550,23 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 			tape.push_back(uint8_t(OP_LOADK_F));
 			append_f32(tape, 0.0f);
 			tape.push_back(uint8_t(OP_SLIDE));
+		}
+		if (has_hitq) {
+			tape.push_back(uint8_t(OP_OVERLAP));
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 0.0f);
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 0.0f);
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 1.0f);
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 8.0f);
+			tape.push_back(uint8_t(OP_RAYCAST));
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 0.0f);
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 1.0f);
+			tape.push_back(uint8_t(OP_TILE_AT));
 		}
 		if (has_input) {
 			tape.push_back(uint8_t(OP_JUST_ACCEPT_SFX));
@@ -640,8 +668,14 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	if (has_slide) {
 		r_out.ir_text += "IR PS2.move_and_slide (HIT00 AABB enter-only)\n";
 	}
+	if (has_hitq) {
+		r_out.ir_text += "IR PS2.overlaps/raycast/tile_solid_at (HIT00 AABB + TILE cells)\n";
+	}
 	if (has_slide) {
 		r_out.warnings.push_back("move_and_slide clips against HIT00 mesh AABBs (enter-only so oversized industrial boxes do not trap).");
+	}
+	if (has_hitq) {
+		r_out.warnings.push_back("overlaps / raycast query HIT00 AABBs (including already-overlapping boxes). tile_solid_at uses TILE00 floor(x),floor(z) cells.");
 	}
 	if (has_tween) {
 		r_out.warnings.push_back("create_tween / create_timer are 8 linear slots on PS2 ABI 1 (volume tweens drive MUSIC). Not SceneTreeTween.");

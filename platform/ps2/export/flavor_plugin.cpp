@@ -89,6 +89,15 @@ void PS2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_on_floor"), &PS2::is_on_floor);
 	ClassDB::bind_method(D_METHOD("is_on_wall"), &PS2::is_on_wall);
 	ClassDB::bind_method(D_METHOD("is_on_ceiling"), &PS2::is_on_ceiling);
+	ClassDB::bind_method(D_METHOD("overlaps", "a", "b"), &PS2::overlaps);
+	ClassDB::bind_method(D_METHOD("overlaps_entered", "a", "b"), &PS2::overlaps_entered);
+	ClassDB::bind_method(D_METHOD("has_overlapping_areas"), &PS2::has_overlapping_areas);
+	ClassDB::bind_method(D_METHOD("hitbox_kind", "node"), &PS2::hitbox_kind);
+	ClassDB::bind_method(D_METHOD("raycast", "from", "dir", "dist", "mask"), &PS2::raycast, DEFVAL(255));
+	ClassDB::bind_method(D_METHOD("raycast_point", "from", "dir", "dist", "mask"), &PS2::raycast_point, DEFVAL(255));
+	ClassDB::bind_method(D_METHOD("intersects_ray", "from", "dir"), &PS2::intersects_ray);
+	ClassDB::bind_method(D_METHOD("tile_solid_at", "x", "y"), &PS2::tile_solid_at);
+	ClassDB::bind_method(D_METHOD("tile_at", "x", "y"), &PS2::tile_at);
 }
 
 void PS2FlavorEditorPlugin::_sync_singleton() {

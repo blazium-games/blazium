@@ -406,6 +406,61 @@ public:
 		_fail_ps2();
 		return false;
 	}
+	bool overlaps(const Variant &p_a, const Variant &p_b) const {
+		_fail_ps2();
+		(void)p_a;
+		(void)p_b;
+		return false;
+	}
+	bool overlaps_entered(const Variant &p_a, const Variant &p_b) const {
+		_fail_ps2();
+		(void)p_a;
+		(void)p_b;
+		return false;
+	}
+	bool has_overlapping_areas() const {
+		_fail_ps2();
+		return false;
+	}
+	int hitbox_kind(const Variant &p_node) const {
+		_fail_ps2();
+		(void)p_node;
+		return 0;
+	}
+	Variant raycast(const Vector3 &p_from, const Vector3 &p_dir, float p_dist, int p_mask = 255) const {
+		_fail_ps2();
+		(void)p_from;
+		(void)p_dir;
+		(void)p_dist;
+		(void)p_mask;
+		return Variant();
+	}
+	Variant raycast_point(const Vector3 &p_from, const Vector3 &p_dir, float p_dist, int p_mask = 255) const {
+		_fail_ps2();
+		(void)p_from;
+		(void)p_dir;
+		(void)p_dist;
+		(void)p_mask;
+		return Variant();
+	}
+	bool intersects_ray(const Vector3 &p_from, const Vector3 &p_dir) const {
+		_fail_ps2();
+		(void)p_from;
+		(void)p_dir;
+		return false;
+	}
+	bool tile_solid_at(float p_x, float p_y) const {
+		_fail_ps2();
+		(void)p_x;
+		(void)p_y;
+		return false;
+	}
+	int tile_at(float p_x, float p_y) const {
+		_fail_ps2();
+		(void)p_x;
+		(void)p_y;
+		return 0;
+	}
 };
 
 class PS2FlavorEditorPlugin : public EditorPlugin {
