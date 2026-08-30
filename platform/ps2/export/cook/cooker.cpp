@@ -1335,6 +1335,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		}
 		r_out.warnings.push_back("FMV/IPU is not shipped on PS2 ABI 1 (no license-clean decoder). PS2.play_fmv is a named no-op.");
 		r_out.warnings.push_back("HUD/TILE/NAV/CAM/HIT/ANIM sit next to the ELF (host:) or on the ISO; they are not ELF-embedded.");
+		r_out.warnings.push_back("CAM00 look-at is Camera3D local -Z (Godot YXZ) plus FOV; guest gs_draw_set_camera applies them. VU1 is optional (dvp-as + packet2) else CPU GIF.");
 	}
 
 	{
@@ -1395,7 +1396,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			names->store_line("user:// -> host:SAVE.BIN host:SAVE0.BIN mc0:SAVE.BIN");
 		}
 		if (!r_out.cam_path.is_empty()) {
-			names->store_line(vformat("cam: CAM00.bin %d", gathered.cams.size()));
+			names->store_line(vformat("cam: CAM00.bin %d look+fov", gathered.cams.size()));
 		}
 		if (!r_out.hit_path.is_empty()) {
 			names->store_line(vformat("hit: HIT00.bin %d", gathered.hits.size()));
