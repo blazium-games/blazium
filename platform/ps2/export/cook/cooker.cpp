@@ -47,7 +47,7 @@
 namespace ps2_cook {
 
 static const char *kAllowed[] = {
-	"Node", "Node3D", "MeshInstance3D", "ImporterMeshInstance3D",
+	"Node", "Node2D", "Node3D", "MeshInstance3D", "ImporterMeshInstance3D",
 	"Camera3D", "AnimationPlayer", "Skeleton3D", "BoneAttachment3D",
 	"WorldEnvironment", "Marker3D",
 	"DirectionalLight3D", "OmniLight3D", "SpotLight3D", "Light3D",

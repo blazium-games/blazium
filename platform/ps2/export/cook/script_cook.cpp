@@ -116,7 +116,7 @@ void collect_literal_scenes(const String &p_source, Vector<String> &r_paths) {
 }
 
 static bool skip_script_dir(const String &p_name) {
-	return p_name == "tests" || p_name == "tools" || p_name == ".godot" || p_name == "export";
+	return p_name == "tests" || p_name == "tools" || p_name == "projects" || p_name == ".godot" || p_name == "export";
 }
 
 static bool reject_unsupported_apis(const String &p_src, String &r_why);
