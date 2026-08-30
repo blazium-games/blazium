@@ -189,6 +189,7 @@ static float g_music_fade_from = 1;
 static float g_music_fade_to = 1;
 static float g_music_fade_left = 0;
 static float g_music_fade_dur = 0;
+static int g_music_pack = -1;
 static int g_last_shot_nid = -1;
 static int16_t g_hp_max[PS1_MAX_NODES];
 static int g_spawn_nid = -1;
@@ -257,6 +258,7 @@ static int write_host_file(const char *path, const uint8_t *src, int n);
 static void copy_str(char *dst, int max, const char *src);
 static int pack_id_of(int node);
 static int group_bit_of(const char *name);
+static void kit_bind_music(int pack);
 static int aabb_overlap(int a, int b, int mask);
 static int hit_of_node(int node);
 static int mc_restore();
@@ -510,6 +512,7 @@ void script_vm_init(const uint8_t *gdbc, size_t gdbc_size, const uint8_t *luau, 
 	g_music_fade_to = 1;
 	g_music_fade_left = 0;
 	g_music_fade_dur = 0;
+	g_music_pack = -1;
 	g_hud_ox = 0;
 	g_hud_oy = 0;
 	g_nvert = g_nedge = g_nav_loaded = 0;
@@ -2960,6 +2963,7 @@ static int load_pack_resident(int pack) {
 	g_did_ready = 0;
 	kit_bind_scene_points(pack);
 	kit_bind_camera(pack);
+	kit_bind_music(pack);
 	return 1;
 }
 
@@ -2974,6 +2978,16 @@ static int unload_pack_resident(int pack) {
 	const int hi = int(g_packs[pack].node_hi);
 	if (g_cam_attach >= lo && g_cam_attach < hi) {
 		return 0;
+	}
+	if (g_music_pack == pack) {
+		if (g_host && g_host->stop_music) {
+			g_host->stop_music();
+		}
+		g_music_fade_left = 0;
+		if (g_packs[pack].music_resident) {
+			unload_pack_slice(pack, "MUSIC");
+		}
+		g_music_pack = -1;
 	}
 	reclaim_pack_mesh(pack);
 	reclaim_pack_tim(pack);
@@ -3842,6 +3856,64 @@ static int load_pack_slice(int pack, const char *kind) {
 		return 1;
 	}
 	return 0;
+}
+
+static void kit_bind_music(int pack) {
+	if (pack < 0 || pack >= g_npack) {
+		return;
+	}
+	const int mbit = group_bit_of("music");
+	if (mbit < 0) {
+		return;
+	}
+	const uint8_t mask = uint8_t(1u << mbit);
+	int found = -1;
+	for (int i = 0; i < g_nnode; i++) {
+		if (!g_node_used[i] || int(g_node_pack[i]) != pack || !(g_group[i] & mask)) {
+			continue;
+		}
+		found = i;
+		break;
+	}
+	if (found < 0) {
+		return;
+	}
+	if (!g_packs[pack].text_resident) {
+		load_pack_slice(pack, "TXT");
+	}
+	char path[64];
+	path[0] = 0;
+	for (int i = 0; i < g_ntxt; i++) {
+		if (!g_txt[i].name[0] || !name_is(g_txt[i].name, g_nodes[found].name) || !g_txt[i].text[0]) {
+			continue;
+		}
+		copy_str(path, 64, g_txt[i].text);
+		for (int k = 0; path[k]; k++) {
+			if (path[k] == '|') {
+				path[k] = 0;
+				break;
+			}
+		}
+		break;
+	}
+	int dest = pack;
+	if (path[0]) {
+		const int fp = find_pack_path(path);
+		if (fp >= 0) {
+			dest = fp;
+		}
+	} else if (g_packs[pack].path[0]) {
+		const int fp = find_pack_path(g_packs[pack].path);
+		if (fp >= 0) {
+			dest = fp;
+		}
+	}
+	if (try_read_pack_blob(dest, "MUSIC", g_load_buf, 8) <= 0 || !budgets_fit(0, 0, 0, 0, 0, 32768)) {
+		return;
+	}
+	if (load_pack_slice(dest, "MUSIC")) {
+		g_music_pack = pack;
+	}
 }
 
 static int unload_pack_slice(int pack, const char *kind) {
@@ -6677,6 +6749,7 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 			if (ok) {
 				kit_bind_scene_points(pack);
 				kit_bind_camera(pack);
+				kit_bind_music(pack);
 				kit_apply_spawn();
 			}
 			*ret = gv_bool(ok);
@@ -8875,6 +8948,7 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 		activate_pack(pack, host);
 		kit_bind_scene_points(pack);
 		kit_bind_camera(pack);
+		kit_bind_music(pack);
 		kit_apply_spawn();
 		*ret = gv_int(1);
 		return 1;
@@ -10693,6 +10767,65 @@ static void kit_tick_kit_areas(const ScriptVMHost *host) {
 			apply_call(host, pl, "say", 0, sayv, 3, &dummy);
 		}
 	}
+	const int ubit = group_bit_of("unload");
+	if (ubit >= 0) {
+		const int un = kit_first_in_group_overlap(pl, ubit, 1);
+		if (un >= 0) {
+			const char *raw = "";
+			for (int i = 0; i < g_ntxt; i++) {
+				if (g_txt[i].name[0] && name_is(g_txt[i].name, g_nodes[un].name)) {
+					raw = g_txt[i].text;
+					break;
+				}
+			}
+			char path[64];
+			char slice[16];
+			path[0] = 0;
+			slice[0] = 0;
+			const char *bar = nullptr;
+			for (const char *c = raw; *c; c++) {
+				if (*c == '|') {
+					bar = c;
+					break;
+				}
+			}
+			if (bar) {
+				int n = 0;
+				for (const char *c = raw; c < bar && n < 63; c++) {
+					path[n++] = *c;
+				}
+				path[n] = 0;
+				n = 0;
+				for (const char *c = bar + 1; *c && n < 15; c++) {
+					slice[n++] = *c;
+				}
+				slice[n] = 0;
+			} else if (raw[0]) {
+				copy_str(path, 64, raw);
+			}
+			if (!path[0]) {
+				const int pk = int(g_node_pack[un]);
+				if (pk > 0 && pk < g_npack && g_packs[pk].path[0]) {
+					copy_str(path, 64, g_packs[pk].path);
+				}
+			}
+			GVar dummy = gv_nil();
+			GVar args[1];
+			args[0].type = V_STR;
+			copy_str(args[0].s, 32, path);
+			if (!slice[0] || name_is(slice, "all")) {
+				apply_call(host, pl, "unload_scene", 0, args, 1, &dummy);
+			} else if (name_is(slice, "meshes") || name_is(slice, "mesh")) {
+				apply_call(host, pl, "unload_meshes", 0, args, 1, &dummy);
+			} else if (name_is(slice, "audio") || name_is(slice, "sfx")) {
+				apply_call(host, pl, "unload_audio", 0, args, 1, &dummy);
+			} else if (name_is(slice, "tiles")) {
+				apply_call(host, pl, "unload_tiles", 0, args, 1, &dummy);
+			} else if (name_is(slice, "hud")) {
+				apply_call(host, pl, "unload_hud", 0, args, 1, &dummy);
+			}
+		}
+	}
 	const int pbit = group_bit_of("portal");
 	if (pbit < 0) {
 		return;
@@ -10806,6 +10939,7 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 		load_pack_slice(0, "WAY");
 		kit_bind_scene_points(0);
 		kit_bind_camera(0);
+		kit_bind_music(0);
 		kit_apply_spawn();
 	}
 	kit_tick_kit_areas(host);
