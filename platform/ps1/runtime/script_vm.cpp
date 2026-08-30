@@ -260,6 +260,9 @@ static int pack_id_of(int node);
 static int group_bit_of(const char *name);
 static void kit_bind_music(int pack);
 static void kit_bind_load(int pack);
+static void kit_bind_spawner(int pack);
+static void kit_bind_player_kit();
+static float kit_parse_fade(const char *s);
 static int aabb_overlap(int a, int b, int mask);
 static int hit_of_node(int node);
 static int mc_restore();
@@ -2966,6 +2969,7 @@ static int load_pack_resident(int pack) {
 	kit_bind_camera(pack);
 	kit_bind_music(pack);
 	kit_bind_load(pack);
+	kit_bind_spawner(pack);
 	return 1;
 }
 
@@ -4003,6 +4007,125 @@ static void kit_bind_load(int pack) {
 			continue;
 		}
 		kit_do_load(path, slice);
+	}
+}
+
+static int kit_spawner_has_dest(int nid, int dest) {
+	if (!node_ok(nid) || dest < 0) {
+		return 0;
+	}
+	for (int i = 0; i < g_nnode; i++) {
+		if (g_node_used[i] && int(g_nodes[i].parent) == nid && int(g_node_pack[i]) == dest) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+static int kit_instantiate_spawner(int nid, int once) {
+	char path[64];
+	char slice[16];
+	kit_fill_txt_path_slice(nid, path, 64, slice, 16);
+	if (!path[0]) {
+		return -1;
+	}
+	const int dest = find_pack_path(path);
+	if (dest < 0 || !g_packs[dest].resident) {
+		return -1;
+	}
+	if (once && kit_spawner_has_dest(nid, dest)) {
+		return -1;
+	}
+	return instantiate_pack(dest, nid);
+}
+
+static void kit_bind_spawner(int pack) {
+	if (pack < 0 || pack >= g_npack) {
+		return;
+	}
+	const int sbit = group_bit_of("spawner");
+	if (sbit < 0) {
+		return;
+	}
+	const uint8_t mask = uint8_t(1u << sbit);
+	if (!g_packs[pack].text_resident) {
+		load_pack_slice(pack, "TXT");
+	}
+	for (int i = 0; i < g_nnode; i++) {
+		if (!g_node_used[i] || int(g_node_pack[i]) != pack || !(g_group[i] & mask)) {
+			continue;
+		}
+		if (hit_of_node(i) >= 0) {
+			continue;
+		}
+		kit_instantiate_spawner(i, 1);
+	}
+}
+
+static void kit_bind_player_kit() {
+	const int pl = kit_find_player();
+	if (!node_ok(pl)) {
+		return;
+	}
+	const char *raw = "";
+	for (int i = 0; i < g_ntxt; i++) {
+		if (g_txt[i].name[0] && name_is(g_txt[i].name, g_nodes[pl].name) && g_txt[i].text[0]) {
+			raw = g_txt[i].text;
+			break;
+		}
+	}
+	if (!raw[0]) {
+		return;
+	}
+	const char *p = raw;
+	while (*p) {
+		char key[16];
+		char val[16];
+		int k = 0;
+		int v = 0;
+		while (*p && *p != '=' && *p != '|' && k < 15) {
+			key[k++] = *p++;
+		}
+		key[k] = 0;
+		if (*p == '=') {
+			p++;
+		}
+		while (*p && *p != '|' && v < 15) {
+			val[v++] = *p++;
+		}
+		val[v] = 0;
+		if (*p == '|') {
+			p++;
+		}
+		if (!key[0]) {
+			continue;
+		}
+		const float n = kit_parse_fade(val);
+		if (name_is(key, "coyote")) {
+			g_coyote_ms = n < 0 ? 0 : n;
+		} else if (name_is(key, "buffer")) {
+			g_jump_buf_ms = n < 0 ? 0 : n;
+		} else if (name_is(key, "air")) {
+			int ai = int(n);
+			if (ai < 0) {
+				ai = 0;
+			}
+			if (ai > 8) {
+				ai = 8;
+			}
+			g_air_jumps = uint8_t(ai);
+			for (int i = 0; i < PS1_MAX_NODES; i++) {
+				if (g_floor_n[i]) {
+					g_air_left[i] = g_air_jumps;
+				}
+			}
+		} else if (name_is(key, "wall")) {
+			g_wall_jump_ms = n < 0 ? 0 : n;
+		} else if (name_is(key, "oneway")) {
+			g_one_way_pass[pl] = uint8_t(n != 0 ? 1 : 0);
+		} else if (name_is(key, "hp")) {
+			kit_set_hp_cap(pl, int(n));
+		}
 	}
 }
 
@@ -6841,7 +6964,9 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 				kit_bind_camera(pack);
 				kit_bind_music(pack);
 				kit_bind_load(pack);
+				kit_bind_spawner(pack);
 				kit_apply_spawn();
+				kit_bind_player_kit();
 			}
 			*ret = gv_bool(ok);
 			return 1;
@@ -9041,7 +9166,9 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 		kit_bind_camera(pack);
 		kit_bind_music(pack);
 		kit_bind_load(pack);
+		kit_bind_spawner(pack);
 		kit_apply_spawn();
+		kit_bind_player_kit();
 		*ret = gv_int(1);
 		return 1;
 	}
@@ -10971,6 +11098,13 @@ static void kit_tick_kit_areas(const ScriptVMHost *host) {
 			apply_call(host, pl, "say", 0, sayv, 3, &dummy);
 		}
 	}
+	const int spit = group_bit_of("spawner");
+	if (spit >= 0) {
+		const int sp = kit_first_in_group_overlap(pl, spit, 1);
+		if (sp >= 0 && hit_of_node(sp) >= 0) {
+			kit_instantiate_spawner(sp, 0);
+		}
+	}
 	const int pbit = group_bit_of("portal");
 	if (pbit < 0) {
 		return;
@@ -11086,7 +11220,9 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 		kit_bind_camera(0);
 		kit_bind_music(0);
 		kit_bind_load(0);
+		kit_bind_spawner(0);
 		kit_apply_spawn();
+		kit_bind_player_kit();
 	}
 	kit_tick_kit_areas(host);
 	script_vm_hud_tick(host);
