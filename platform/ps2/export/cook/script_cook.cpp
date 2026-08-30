@@ -189,13 +189,17 @@ enum {
 	OP_USER_SAVE = 14,
 	OP_USER_LOAD = 15,
 	OP_MEMCARD_PRESENT = 16,
-	OP_KIT_TICK = 17
+	OP_KIT_TICK = 17,
+	OP_SAY = 18,
+	OP_NAV_FOLLOW = 19,
+	OP_SAVE_SLOT = 20,
+	OP_PLAY_FMV = 21,
+	OP_SYS_TICK = 22
 };
 
 static const char *kUnsupportedCalls[] = {
-	"play_fmv", "play_xa", "stop_xa",
-	"load_hud", "unload_hud", "load_tiles", "unload_tiles",
-	"memcard_format", "memcard_wrap", "memcard_unwrap",
+	"play_xa", "stop_xa",
+	"memcard_wrap", "memcard_unwrap",
 	"set_fog", "create_tween", "spawn_shot"
 };
 
@@ -209,7 +213,12 @@ static bool is_ps2_alias(const String &p_name) {
 			p_name == "set_checkpoint" || p_name == "respawn" || p_name == "portal" ||
 			p_name == "hurt" || p_name == "say" || p_name == "can_load_scene" ||
 			p_name == "is_scene_loaded" || p_name == "get_loaded_scene_count" ||
-			p_name == "unload_pack";
+			p_name == "unload_pack" || p_name == "load_hud" || p_name == "unload_hud" ||
+			p_name == "can_load_hud" || p_name == "is_hud_loaded" || p_name == "load_tiles" ||
+			p_name == "unload_tiles" || p_name == "can_load_tiles" || p_name == "is_tiles_loaded" ||
+			p_name == "nav_follow" || p_name == "nav_next_node" || p_name == "set_hp" ||
+			p_name == "get_hp" || p_name == "set_frame" || p_name == "play_fmv" ||
+			p_name == "save_slot" || p_name == "load_slot" || p_name == "memcard_format";
 }
 
 static bool reject_unsupported_apis(const String &p_src, String &r_why) {
@@ -319,6 +328,11 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	bool has_user = false;
 	bool has_memcard = false;
 	bool has_kit = false;
+	bool has_say = false;
+	bool has_nav = false;
+	bool has_slot = false;
+	bool has_fmv = false;
+	bool has_sys = false;
 	float rotate_rate = 0.4f;
 	float translate_rate = 1.0f;
 	for (int i = 0; i < r_out.accepted.size(); i++) {
@@ -363,6 +377,21 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 				src.contains("Pickup") || src.contains("LoadZone") || src.contains("kit_room")) {
 			has_kit = true;
 		}
+		if (src.contains("say(") || src.contains("load_hud") || src.contains("set_hud")) {
+			has_say = true;
+		}
+		if (src.contains("nav_follow") || src.contains("nav_next")) {
+			has_nav = true;
+		}
+		if (src.contains("save_slot") || src.contains("load_slot") || src.contains("memcard_format")) {
+			has_slot = true;
+		}
+		if (src.contains("play_fmv")) {
+			has_fmv = true;
+		}
+		if (src.contains("load_tiles") || src.contains("set_hp") || src.contains("set_frame") || src.contains("systems_kit")) {
+			has_sys = true;
+		}
 	}
 	if (!r_out.extra_scenes.is_empty()) {
 		has_kit = true;
@@ -392,13 +421,22 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		tape.push_back(uint8_t(OP_SET_RUMBLE));
 		tape.push_back(uint8_t(OP_STOP_RUMBLE));
 	}
-	if (has_user || has_memcard) {
+	if (has_user || has_memcard || has_slot) {
 		tape.push_back(uint8_t(OP_READY));
 		tape.push_back(uint8_t(OP_MEMCARD_PRESENT));
 		tape.push_back(uint8_t(OP_USER_SAVE));
 		tape.push_back(uint8_t(OP_USER_LOAD));
+		if (has_slot) {
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 0.0f);
+			tape.push_back(uint8_t(OP_SAVE_SLOT));
+		}
 	}
-	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit) {
+	if (has_fmv) {
+		tape.push_back(uint8_t(OP_READY));
+		tape.push_back(uint8_t(OP_PLAY_FMV));
+	}
+	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys) {
 		tape.push_back(uint8_t(OP_PROCESS));
 		if (has_gd_rotate || has_lu_rotate) {
 			tape.push_back(uint8_t(OP_LOAD_DELTA));
@@ -417,6 +455,15 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		}
 		if (has_kit) {
 			tape.push_back(uint8_t(OP_KIT_TICK));
+		}
+		if (has_say) {
+			tape.push_back(uint8_t(OP_SAY));
+		}
+		if (has_nav) {
+			tape.push_back(uint8_t(OP_NAV_FOLLOW));
+		}
+		if (has_say || has_nav || has_sys) {
+			tape.push_back(uint8_t(OP_SYS_TICK));
 		}
 	}
 	tape.push_back(uint8_t(OP_END));
@@ -471,6 +518,21 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	if (has_kit) {
 		r_out.ir_text += "IR kit tick (portal/load/checkpoint/save/hazard)\n";
 		r_out.ir_text += vformat("IR STREAM extra_scenes=%d\n", r_out.extra_scenes.size());
+	}
+	if (has_say) {
+		r_out.ir_text += "IR PS2.say / load_hud\n";
+	}
+	if (has_nav) {
+		r_out.ir_text += "IR PS2.nav_follow\n";
+	}
+	if (has_slot) {
+		r_out.ir_text += "IR PS2.save_slot/load_slot\n";
+	}
+	if (has_fmv) {
+		r_out.ir_text += "IR PS2.play_fmv (IPU not shipped)\n";
+	}
+	if (has_sys) {
+		r_out.ir_text += "IR HUD/TILE/NAV/CAM/HIT/ANIM sys tick\n";
 	}
 	if (has_user) {
 		r_out.warnings.push_back("FileAccess user:// maps to host:SAVE.BIN then mc0:SAVE.BIN. Missing HostFs/memcard is a guest error.");

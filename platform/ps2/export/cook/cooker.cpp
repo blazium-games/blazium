@@ -25,6 +25,12 @@
 #include "scene/3d/importer_mesh_instance_3d.h"
 #include "scene/3d/mesh_instance_3d.h"
 #include "scene/3d/node_3d.h"
+#include "scene/3d/path_3d.h"
+#include "scene/animation/animation_player.h"
+#include "scene/gui/color_rect.h"
+#include "scene/gui/label.h"
+#include "scene/resources/animation.h"
+#include "scene/resources/curve.h"
 #include "scene/resources/3d/importer_mesh.h"
 #include "scene/resources/audio_stream_wav.h"
 #include "scene/resources/material.h"
@@ -42,6 +48,8 @@ static const char *kAllowed[] = {
 	"WorldEnvironment", "Marker3D",
 	"DirectionalLight3D", "OmniLight3D", "SpotLight3D", "Light3D",
 	"AudioStreamPlayer", "AudioStreamPlayer3D", "AudioStreamPlayer2D",
+	"Control", "CanvasLayer", "Label", "ColorRect",
+	"Path3D", "PathFollow3D",
 };
 
 static bool type_allowed(const String &p_cls) {
@@ -80,11 +88,58 @@ struct Gather {
 	Vector<CookTri> tris;
 	Vector<Ref<Image>> images;
 	Vector<String> image_names;
+	struct CamRow {
+		int node_id = -1;
+		Vector3 pos;
+		Vector3 euler;
+		float fov = 55.0f;
+	};
+	Vector<CamRow> cams;
+	struct HitRow {
+		int node_id = -1;
+		uint8_t kit = 0;
+		Vector3 mn;
+		Vector3 mx;
+	};
+	Vector<HitRow> hits;
+	struct HudRow {
+		int16_t x = 8;
+		int16_t y = 8;
+		int16_t w = 64;
+		int16_t h = 16;
+		uint8_t kind = 0;
+		uint8_t r = 255;
+		uint8_t g = 255;
+		uint8_t b = 255;
+		String text;
+	};
+	Vector<HudRow> hud;
+	struct TileRow {
+		int16_t x = 0;
+		int16_t y = 0;
+		uint8_t flags = 1;
+	};
+	Vector<TileRow> tiles;
+	struct NavVert {
+		Vector3 pos;
+		int node_id = -1;
+	};
+	Vector<NavVert> nav;
+	struct AnimClip {
+		String name;
+		float length = 1.0f;
+	};
+	Vector<AnimClip> anims;
 	Vector<String> errors;
 	Vector<String> warnings;
 	int node_dropped = 0;
 	int tri_dropped = 0;
 	int tex_dropped = 0;
+	int hit_dropped = 0;
+	int hud_dropped = 0;
+	int tile_dropped = 0;
+	int nav_dropped = 0;
+	int anim_dropped = 0;
 	int cameras = 0;
 	int anim_players = 0;
 	int skeletons = 0;
@@ -384,11 +439,107 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent, const String &p_
 	} else {
 		r_g.node_dropped++;
 	}
-	if (p_node->is_class("Camera3D")) {
+	if (Camera3D *cam = Object::cast_to<Camera3D>(p_node)) {
 		r_g.cameras++;
+		if (r_g.cams.size() < kMaxCameras && my >= 0) {
+			Gather::CamRow row;
+			row.node_id = my;
+			row.pos = world_xform(cam).origin;
+			row.euler = world_xform(cam).basis.get_euler();
+			row.fov = cam->get_fov();
+			r_g.cams.push_back(row);
+		}
 	}
-	if (p_node->is_class("AnimationPlayer")) {
+	if (AnimationPlayer *ap = Object::cast_to<AnimationPlayer>(p_node)) {
 		r_g.anim_players++;
+		List<StringName> names;
+		ap->get_animation_list(&names);
+		for (const StringName &nm : names) {
+			if (r_g.anims.size() >= kMaxAnim) {
+				r_g.anim_dropped++;
+				break;
+			}
+			Gather::AnimClip clip;
+			clip.name = nm;
+			const Ref<Animation> anim = ap->get_animation(nm);
+			if (anim.is_valid()) {
+				clip.length = float(anim->get_length());
+			}
+			r_g.anims.push_back(clip);
+		}
+	}
+	if (Label *lab = Object::cast_to<Label>(p_node)) {
+		if (r_g.hud.size() < kMaxHud) {
+			Gather::HudRow row;
+			row.kind = 1;
+			row.x = int16_t(lab->get_position().x);
+			row.y = int16_t(lab->get_position().y);
+			row.w = int16_t(MAX(8.0, lab->get_size().x));
+			row.h = int16_t(MAX(8.0, lab->get_size().y));
+			row.text = lab->get_text();
+			r_g.hud.push_back(row);
+		} else {
+			r_g.hud_dropped++;
+		}
+	}
+	if (ColorRect *bar = Object::cast_to<ColorRect>(p_node)) {
+		if (r_g.hud.size() < kMaxHud) {
+			Gather::HudRow row;
+			row.kind = 2;
+			row.x = int16_t(bar->get_position().x);
+			row.y = int16_t(bar->get_position().y);
+			row.w = int16_t(MAX(8.0, bar->get_size().x));
+			row.h = int16_t(MAX(8.0, bar->get_size().y));
+			const Color c = bar->get_color();
+			row.r = uint8_t(CLAMP(int(c.r * 255.0f), 0, 255));
+			row.g = uint8_t(CLAMP(int(c.g * 255.0f), 0, 255));
+			row.b = uint8_t(CLAMP(int(c.b * 255.0f), 0, 255));
+			r_g.hud.push_back(row);
+		} else {
+			r_g.hud_dropped++;
+		}
+	}
+	if (Path3D *path = Object::cast_to<Path3D>(p_node)) {
+		const Ref<Curve3D> curve = path->get_curve();
+		if (curve.is_valid()) {
+			const Transform3D xf = world_xform(path);
+			for (int i = 0; i < curve->get_point_count(); i++) {
+				if (r_g.nav.size() >= kMaxNav) {
+					r_g.nav_dropped++;
+					break;
+				}
+				Gather::NavVert v;
+				v.pos = xf.xform(curve->get_point_position(i));
+				v.node_id = my;
+				r_g.nav.push_back(v);
+			}
+		}
+	}
+	if (!Object::cast_to<Path3D>(p_node) && (p_node->is_in_group("nav") || p_node->is_in_group("waypoint") || String(p_node->get_name()).begins_with("Nav"))) {
+		if (Node3D *n3 = Object::cast_to<Node3D>(p_node)) {
+			if (r_g.nav.size() < kMaxNav) {
+				Gather::NavVert v;
+				v.pos = world_xform(n3).origin;
+				v.node_id = my;
+				r_g.nav.push_back(v);
+			} else {
+				r_g.nav_dropped++;
+			}
+		}
+	}
+	if (p_node->is_in_group("tile") || String(p_node->get_name()).begins_with("Tile")) {
+		if (Node3D *n3 = Object::cast_to<Node3D>(p_node)) {
+			if (r_g.tiles.size() < kMaxTiles) {
+				Gather::TileRow t;
+				const Vector3 p = world_xform(n3).origin;
+				t.x = int16_t(Math::floor(p.x));
+				t.y = int16_t(Math::floor(p.z));
+				t.flags = 1;
+				r_g.tiles.push_back(t);
+			} else {
+				r_g.tile_dropped++;
+			}
+		}
 	}
 	if (p_node->is_class("Skeleton3D")) {
 		r_g.skeletons++;
@@ -401,12 +552,36 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent, const String &p_
 	}
 	if (MeshInstance3D *mi = Object::cast_to<MeshInstance3D>(p_node)) {
 		if (mi->get_mesh().is_valid() && my >= 0) {
-			emit_mesh(r_g, mi->get_mesh(), world_xform(mi), my, mi);
+			const Transform3D xf = world_xform(mi);
+			emit_mesh(r_g, mi->get_mesh(), xf, my, mi);
+			if (r_g.hits.size() < kMaxHits) {
+				const AABB aabb = xf.xform(mi->get_mesh()->get_aabb());
+				Gather::HitRow h;
+				h.node_id = my;
+				h.kit = r_g.nodes[my].kit;
+				h.mn = aabb.position;
+				h.mx = aabb.position + aabb.size;
+				r_g.hits.push_back(h);
+			} else {
+				r_g.hit_dropped++;
+			}
 		}
 	}
 	if (ImporterMeshInstance3D *imi = Object::cast_to<ImporterMeshInstance3D>(p_node)) {
 		if (imi->get_mesh().is_valid() && my >= 0) {
-			emit_mesh(r_g, imi->get_mesh()->get_mesh(), world_xform(imi), my, nullptr);
+			const Transform3D xf = world_xform(imi);
+			emit_mesh(r_g, imi->get_mesh()->get_mesh(), xf, my, nullptr);
+			if (r_g.hits.size() < kMaxHits) {
+				const AABB aabb = xf.xform(imi->get_mesh()->get_mesh()->get_aabb());
+				Gather::HitRow h;
+				h.node_id = my;
+				h.kit = r_g.nodes[my].kit;
+				h.mn = aabb.position;
+				h.mx = aabb.position + aabb.size;
+				r_g.hits.push_back(h);
+			} else {
+				r_g.hit_dropped++;
+			}
 		}
 	}
 	for (int i = 0; i < p_node->get_child_count(); i++) {
@@ -517,6 +692,182 @@ static Error cook_gather_bins(const String &p_node, const String &p_mesh, const 
 		return ERR_CANT_CREATE;
 	}
 	return OK;
+}
+
+static void append_i16(Vector<uint8_t> &o, int16_t v) {
+	append_u16(o, uint16_t(v));
+}
+
+static void merge_systems(Gather &r_dst, const Gather &p_src) {
+	for (int i = 0; i < p_src.cams.size() && r_dst.cams.size() < kMaxCameras; i++) {
+		r_dst.cams.push_back(p_src.cams[i]);
+	}
+	for (int i = 0; i < p_src.hits.size() && r_dst.hits.size() < kMaxHits; i++) {
+		r_dst.hits.push_back(p_src.hits[i]);
+	}
+	for (int i = 0; i < p_src.hud.size() && r_dst.hud.size() < kMaxHud; i++) {
+		r_dst.hud.push_back(p_src.hud[i]);
+	}
+	for (int i = 0; i < p_src.tiles.size() && r_dst.tiles.size() < kMaxTiles; i++) {
+		r_dst.tiles.push_back(p_src.tiles[i]);
+	}
+	for (int i = 0; i < p_src.nav.size() && r_dst.nav.size() < kMaxNav; i++) {
+		r_dst.nav.push_back(p_src.nav[i]);
+	}
+	for (int i = 0; i < p_src.anims.size() && r_dst.anims.size() < kMaxAnim; i++) {
+		r_dst.anims.push_back(p_src.anims[i]);
+	}
+	r_dst.hit_dropped += p_src.hit_dropped;
+	r_dst.hud_dropped += p_src.hud_dropped;
+	r_dst.tile_dropped += p_src.tile_dropped;
+	r_dst.nav_dropped += p_src.nav_dropped;
+	r_dst.anim_dropped += p_src.anim_dropped;
+}
+
+static Vector<uint8_t> write_cam_blob(const Gather &p_g) {
+	Vector<uint8_t> out;
+	out.push_back('C');
+	out.push_back('A');
+	out.push_back('M');
+	out.push_back(' ');
+	append_u16(out, uint16_t(kCookABI));
+	append_u16(out, uint16_t(p_g.cams.size()));
+	for (int i = 0; i < p_g.cams.size(); i++) {
+		const Gather::CamRow &c = p_g.cams[i];
+		append_u16(out, uint16_t(int16_t(c.node_id)));
+		append_u16(out, 0);
+		append_f32(out, c.pos.x);
+		append_f32(out, c.pos.y);
+		append_f32(out, c.pos.z);
+		append_f32(out, c.euler.x);
+		append_f32(out, c.euler.y);
+		append_f32(out, c.euler.z);
+		append_f32(out, c.fov);
+	}
+	return out;
+}
+
+static Vector<uint8_t> write_hit_blob(const Gather &p_g) {
+	Vector<uint8_t> out;
+	out.push_back('H');
+	out.push_back('I');
+	out.push_back('T');
+	out.push_back(' ');
+	append_u16(out, uint16_t(kCookABI));
+	append_u16(out, uint16_t(p_g.hits.size()));
+	for (int i = 0; i < p_g.hits.size(); i++) {
+		const Gather::HitRow &h = p_g.hits[i];
+		append_u16(out, uint16_t(int16_t(h.node_id)));
+		out.push_back(h.kit);
+		out.push_back(0);
+		append_f32(out, h.mn.x);
+		append_f32(out, h.mn.y);
+		append_f32(out, h.mn.z);
+		append_f32(out, h.mx.x);
+		append_f32(out, h.mx.y);
+		append_f32(out, h.mx.z);
+	}
+	return out;
+}
+
+static Vector<uint8_t> write_hud_blob(const Gather &p_g) {
+	Vector<uint8_t> out;
+	out.push_back('H');
+	out.push_back('U');
+	out.push_back('D');
+	out.push_back(' ');
+	append_u16(out, uint16_t(kCookABI));
+	append_u16(out, uint16_t(p_g.hud.size()));
+	for (int i = 0; i < p_g.hud.size(); i++) {
+		const Gather::HudRow &h = p_g.hud[i];
+		append_i16(out, h.x);
+		append_i16(out, h.y);
+		append_i16(out, h.w);
+		append_i16(out, h.h);
+		out.push_back(h.kind);
+		out.push_back(h.r);
+		out.push_back(h.g);
+		out.push_back(h.b);
+		CharString utf = h.text.utf8();
+		for (int c = 0; c < 64; c++) {
+			out.push_back(c < utf.length() ? uint8_t(utf[c]) : 0);
+		}
+	}
+	return out;
+}
+
+static Vector<uint8_t> write_tile_blob(const Gather &p_g) {
+	Vector<uint8_t> out;
+	out.push_back('T');
+	out.push_back('I');
+	out.push_back('L');
+	out.push_back('E');
+	append_u16(out, uint16_t(kCookABI));
+	append_u16(out, uint16_t(p_g.tiles.size()));
+	out.push_back(1);
+	out.push_back(1);
+	for (int i = 0; i < p_g.tiles.size(); i++) {
+		const Gather::TileRow &t = p_g.tiles[i];
+		append_i16(out, t.x);
+		append_i16(out, t.y);
+		out.push_back(t.flags);
+		out.push_back(0);
+	}
+	return out;
+}
+
+static Vector<uint8_t> write_nav_blob(const Gather &p_g) {
+	Vector<uint8_t> out;
+	out.push_back('N');
+	out.push_back('A');
+	out.push_back('V');
+	out.push_back(' ');
+	append_u16(out, uint16_t(kCookABI));
+	const int nv = MIN(p_g.nav.size(), kMaxNav);
+	const int ne = nv > 1 ? nv - 1 : 0;
+	append_u16(out, uint16_t(nv));
+	append_u16(out, uint16_t(ne));
+	for (int i = 0; i < nv; i++) {
+		append_f32(out, p_g.nav[i].pos.x);
+		append_f32(out, p_g.nav[i].pos.y);
+		append_f32(out, p_g.nav[i].pos.z);
+		append_u16(out, uint16_t(int16_t(p_g.nav[i].node_id)));
+		append_u16(out, 0);
+	}
+	for (int i = 0; i < ne; i++) {
+		append_u16(out, uint16_t(i));
+		append_u16(out, uint16_t(i + 1));
+	}
+	return out;
+}
+
+static Vector<uint8_t> write_anim_blob(const Gather &p_g) {
+	Vector<uint8_t> out;
+	out.push_back('A');
+	out.push_back('N');
+	out.push_back('I');
+	out.push_back('M');
+	append_u16(out, uint16_t(kCookABI));
+	append_u16(out, uint16_t(p_g.anims.size()));
+	for (int i = 0; i < p_g.anims.size(); i++) {
+		CharString utf = p_g.anims[i].name.utf8();
+		for (int c = 0; c < 32; c++) {
+			out.push_back(c < utf.length() ? uint8_t(utf[c]) : 0);
+		}
+		append_f32(out, p_g.anims[i].length);
+	}
+	return out;
+}
+
+static Vector<uint8_t> write_fmv_blob() {
+	Vector<uint8_t> out;
+	out.push_back('F');
+	out.push_back('M');
+	out.push_back('V');
+	out.push_back(' ');
+	append_u16(out, uint16_t(kCookABI));
+	append_u16(out, 0);
+	return out;
 }
 
 static Vector<uint8_t> write_stream_blob(int p_extra_count) {
@@ -767,6 +1118,10 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		}
 	}
 
+	for (int i = 0; i < extra_gathers.size(); i++) {
+		merge_systems(gathered, extra_gathers[i]);
+	}
+
 	auto free_live = [&]() {
 		for (int i = 0; i < live.size(); i++) {
 			memdelete(live[i]);
@@ -946,6 +1301,43 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	}
 
 	{
+		struct SysOut {
+			String name;
+			String *path;
+			Vector<uint8_t> bytes;
+		};
+		SysOut sys[] = {
+			{ "CAM00.bin", &r_out.cam_path, write_cam_blob(gathered) },
+			{ "HIT00.bin", &r_out.hit_path, write_hit_blob(gathered) },
+			{ "HUD00.bin", &r_out.hud_path, write_hud_blob(gathered) },
+			{ "TILE00.bin", &r_out.tile_path, write_tile_blob(gathered) },
+			{ "NAV00.bin", &r_out.nav_path, write_nav_blob(gathered) },
+			{ "ANIM00.bin", &r_out.anim_path, write_anim_blob(gathered) },
+			{ "FMV00.bin", &r_out.fmv_path, write_fmv_blob() },
+		};
+		for (SysOut &s : sys) {
+			*s.path = p_export_dir.path_join(s.name);
+			if (write_bytes(*s.path, s.bytes) != OK) {
+				r_out.errors.push_back("failed to write " + s.name + ".");
+				r_out.report = r_out.errors[r_out.errors.size() - 1];
+				free_live();
+				return ERR_CANT_CREATE;
+			}
+		}
+		if (gathered.hit_dropped > 0) {
+			r_out.warnings.push_back(vformat("kept first %d HIT AABBs (dropped %d).", kMaxHits, gathered.hit_dropped));
+		}
+		if (gathered.hud_dropped > 0) {
+			r_out.warnings.push_back(vformat("kept first %d HUD widgets (dropped %d).", kMaxHud, gathered.hud_dropped));
+		}
+		if (gathered.anims.is_empty() && gathered.anim_players > 0) {
+			r_out.warnings.push_back("ANIM clips are names/durations only on PS2 ABI 1 (bind pose; no bone palette).");
+		}
+		r_out.warnings.push_back("FMV/IPU is not shipped on PS2 ABI 1 (no license-clean decoder). PS2.play_fmv is a named no-op.");
+		r_out.warnings.push_back("HUD/TILE/NAV/CAM/HIT/ANIM sit next to the ELF (host:) or on the ISO; they are not ELF-embedded.");
+	}
+
+	{
 		Ref<FileAccess> ir = FileAccess::open(r_out.script_ir_path, FileAccess::WRITE);
 		if (ir.is_valid()) {
 			ir->store_string(scripts.ir_text);
@@ -974,6 +1366,9 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			if (cooked_extras[i].to_lower().contains("kit_room2")) {
 				names->store_line("fixture: kit_room2");
 			}
+			if (cooked_extras[i].to_lower().contains("systems_kit")) {
+				names->store_line("fixture: systems_kit");
+			}
 		}
 		if (!r_out.stream_path.is_empty()) {
 			names->store_line(vformat("stream: STREAM.bin packs %d", extra_gathers.size()));
@@ -988,7 +1383,28 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			names->store_line(vformat("disp: DISP.bin %dx%d %s", r_out.display_w, r_out.display_h, p_opts.region == 1 ? "PAL" : "NTSC"));
 		}
 		if (scripts.ir_text.contains("user://") || scripts.ir_text.contains("memcard")) {
-			names->store_line("user:// -> host:SAVE.BIN mc0:SAVE.BIN");
+			names->store_line("user:// -> host:SAVE.BIN host:SAVE0.BIN mc0:SAVE.BIN");
+		}
+		if (!r_out.cam_path.is_empty()) {
+			names->store_line(vformat("cam: CAM00.bin %d", gathered.cams.size()));
+		}
+		if (!r_out.hit_path.is_empty()) {
+			names->store_line(vformat("hit: HIT00.bin %d", gathered.hits.size()));
+		}
+		if (!r_out.hud_path.is_empty()) {
+			names->store_line(vformat("hud: HUD00.bin %d", gathered.hud.size()));
+		}
+		if (!r_out.tile_path.is_empty()) {
+			names->store_line(vformat("tile: TILE00.bin %d", gathered.tiles.size()));
+		}
+		if (!r_out.nav_path.is_empty()) {
+			names->store_line(vformat("nav: NAV00.bin %d", gathered.nav.size()));
+		}
+		if (!r_out.anim_path.is_empty()) {
+			names->store_line(vformat("anim: ANIM00.bin %d", gathered.anims.size()));
+		}
+		if (!r_out.fmv_path.is_empty()) {
+			names->store_line("fmv: FMV00.bin (IPU not shipped)");
 		}
 		for (int i = 0; i < gathered.image_names.size(); i++) {
 			if (gathered.image_names[i].to_lower().contains("glb") || gathered.image_names[i].to_lower().contains("industrial")) {
@@ -1016,6 +1432,12 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			budget->store_line(vformat("display %dx%d", r_out.display_w, r_out.display_h));
 			budget->store_line(vformat("region %s", p_opts.region == 1 ? "PAL" : "NTSC"));
 			budget->store_line(vformat("packs %d", r_out.pack_count));
+			budget->store_line(vformat("cams %d/%d", gathered.cams.size(), kMaxCameras));
+			budget->store_line(vformat("hits %d/%d", gathered.hits.size(), kMaxHits));
+			budget->store_line(vformat("hud %d/%d", gathered.hud.size(), kMaxHud));
+			budget->store_line(vformat("tiles %d/%d", gathered.tiles.size(), kMaxTiles));
+			budget->store_line(vformat("nav %d/%d", gathered.nav.size(), kMaxNav));
+			budget->store_line(vformat("anims %d/%d", gathered.anims.size(), kMaxAnim));
 		}
 		Ref<FileAccess> warn = FileAccess::open(r_out.warnings_path, FileAccess::WRITE);
 		if (warn.is_valid()) {

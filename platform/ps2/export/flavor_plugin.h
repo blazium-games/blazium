@@ -166,6 +166,95 @@ public:
 		(void)p_path;
 		return false;
 	}
+	bool load_hud(const String &p_path) {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool unload_hud(const String &p_path) {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool can_load_hud(const String &p_path) const {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool is_hud_loaded(const String &p_path) const {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool load_tiles(const String &p_path) {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool unload_tiles(const String &p_path) {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool can_load_tiles(const String &p_path) const {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool is_tiles_loaded(const String &p_path) const {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool nav_follow(const Variant &p_node, const Variant &p_goal, float p_speed) {
+		_fail_ps2();
+		(void)p_node;
+		(void)p_goal;
+		(void)p_speed;
+		return false;
+	}
+	int nav_next_node(int p_from, int p_to) const {
+		_fail_ps2();
+		(void)p_from;
+		(void)p_to;
+		return -1;
+	}
+	int set_hp(const Variant &p_node, int p_n) {
+		_fail_ps2();
+		(void)p_node;
+		(void)p_n;
+		return 0;
+	}
+	int get_hp(const Variant &p_node) const {
+		_fail_ps2();
+		(void)p_node;
+		return 0;
+	}
+	bool set_frame(const Variant &p_node, int p_i) {
+		_fail_ps2();
+		(void)p_node;
+		(void)p_i;
+		return false;
+	}
+	bool play_fmv(const String &p_path) {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool save_slot(int p_slot) {
+		_fail_ps2();
+		(void)p_slot;
+		return false;
+	}
+	PackedByteArray load_slot(int p_slot) {
+		_fail_ps2();
+		(void)p_slot;
+		return PackedByteArray();
+	}
+	bool memcard_format() {
+		_fail_ps2();
+		return false;
+	}
 };
 
 class PS2FlavorEditorPlugin : public EditorPlugin {

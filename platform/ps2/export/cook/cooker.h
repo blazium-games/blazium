@@ -23,6 +23,11 @@ static const int kMaxNodes = 512;
 static const int kMaxTris = 32768;
 static const int kMaxTextures = 64;
 static const int kMaxCameras = 8;
+static const int kMaxHits = 64;
+static const int kMaxHud = 16;
+static const int kMaxTiles = 256;
+static const int kMaxNav = 32;
+static const int kMaxAnim = 16;
 static const int kGsVramLimit = 4 * 1024 * 1024;
 static const int kEeRamLimit = 24 * 1024 * 1024;
 
@@ -44,6 +49,13 @@ struct CookResult {
 	String stream_path;
 	String sfx_path;
 	String disp_path;
+	String cam_path;
+	String hit_path;
+	String hud_path;
+	String tile_path;
+	String nav_path;
+	String anim_path;
+	String fmv_path;
 	String report;
 	Vector<String> extra_pack_files;
 	int pack_count = 0;
