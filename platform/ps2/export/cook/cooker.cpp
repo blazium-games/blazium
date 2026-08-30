@@ -28,6 +28,7 @@
 #include "scene/3d/node_3d.h"
 #include "scene/3d/path_3d.h"
 #include "scene/animation/animation_player.h"
+#include "scene/main/node.h"
 #include "scene/gui/button.h"
 #include "scene/gui/color_rect.h"
 #include "scene/gui/label.h"
@@ -472,6 +473,37 @@ static void apply_kit_exports(Node *p_node, Gather::NodeRow &r_row) {
 			r_row.scene_hint = line;
 		}
 	}
+	if (p_node->is_class("PS2Follow")) {
+		r_row.scene_hint = String::num(float(p_node->get("speed")), 2);
+	}
+}
+
+static String hud_button_action(Node *p_node) {
+	if (p_node->has_meta("ps2_action")) {
+		return String(p_node->get_meta("ps2_action")).strip_edges().to_lower();
+	}
+	const char *groups[] = { "pause", "resume", "save", "load", "respawn", "say", "portal" };
+	for (const char *g : groups) {
+		if (p_node->is_in_group(g)) {
+			return String(g);
+		}
+	}
+	const String nm = String(p_node->get_name()).to_lower();
+	for (const char *g : groups) {
+		if (nm == g || nm.begins_with(String(g))) {
+			return String(g);
+		}
+	}
+	return String();
+}
+
+static String hud_button_text(Node *p_node, const String &p_label) {
+	const String action = hud_button_action(p_node);
+	const String label = p_label.is_empty() ? String(p_node->get_name()) : p_label;
+	if (action.is_empty()) {
+		return label;
+	}
+	return action + "|" + label;
 }
 
 static Transform3D world_xform(Node3D *p_node) {
@@ -943,7 +975,7 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent, const String &p_
 			row.y = int16_t(btn->get_position().y);
 			row.w = int16_t(MAX(8.0, btn->get_size().x));
 			row.h = int16_t(MAX(16.0, btn->get_size().y));
-			row.text = btn->get_text();
+			row.text = hud_button_text(btn, btn->get_text());
 			r_g.hud.push_back(row);
 		} else {
 			r_g.hud_dropped++;
@@ -957,7 +989,7 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent, const String &p_
 			row.y = int16_t(tb->get_position().y);
 			row.w = int16_t(MAX(8.0, tb->get_size().x));
 			row.h = int16_t(MAX(16.0, tb->get_size().y));
-			row.text = tb->get_name();
+			row.text = hud_button_text(tb, String(tb->get_name()));
 			r_g.hud.push_back(row);
 		} else {
 			r_g.hud_dropped++;
@@ -2220,6 +2252,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		r_out.warnings.push_back("PART/PATH/NAVM/VEHL are RAM-gated sidecars. Prefetch checks host: then cdrom0: plus can_fit. Camera2D is CAM flag 2 (ortho).");
 		r_out.warnings.push_back("HIT00 AABBs clip PS2.move_and_slide / stick translate (enter-only). spawn_shot stays refused.");
 		r_out.warnings.push_back("Kit volumes fire on HIT enter (overlap kit, not Cross-only). CharacterBody2D/3D cook as player kit 4 and auto-slide. export/guest is the resolved tree (embed + overlay + extra/*.cpp).");
+		r_out.warnings.push_back("Spawn teleports from NODE xyz. Checkpoint stores xyz (not memcard). Start pauses. Button HUD text action|label (pause/save/load/respawn/say/portal). Gravity+jump when no HUD focus.");
 		r_out.warnings.push_back("PS2.overlaps / raycast / tile_solid_at query HIT00 AABBs and TILE00 cells. spawn_shot stays refused.");
 		r_out.warnings.push_back("PS2.set_fade / change_scene_fade are a GS alpha overlay (not set_fog). spawn_shot stays refused.");
 		r_out.warnings.push_back("play_xa is not supported on PS2 ABI 1 (no CD-XA; use PS2.play_sfx / load_music IMA). play_fmv has no license-clean IPU decoder.");

@@ -305,7 +305,9 @@ enum {
 	NAT_CAN_LOAD_MUSIC = 121,
 	NAT_IS_MUSIC_LOADED = 122,
 	NAT_PLAY_ANIM = 123,
-	NAT_STOP_ANIM = 124
+	NAT_STOP_ANIM = 124,
+	NAT_SET_CHECKPOINT = 125,
+	NAT_RESPAWN = 126
 };
 
 static void emit_loadk_s(Vector<uint8_t> &o, const char *s) {
@@ -787,6 +789,13 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		tape.push_back(uint8_t(OP_CALL_NATIVE));
 		tape.push_back(uint8_t(NAT_CAN_LOAD));
 	}
+	if (has_kit) {
+		tape.push_back(uint8_t(OP_READY));
+		tape.push_back(uint8_t(OP_CALL_NATIVE));
+		tape.push_back(uint8_t(NAT_SET_CHECKPOINT));
+		tape.push_back(uint8_t(OP_CALL_NATIVE));
+		tape.push_back(uint8_t(NAT_RESPAWN));
+	}
 	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys || has_cam_rt || has_tween || has_slide || has_hitq || has_fade || has_change || has_load || has_inst || has_ram || has_seek || has_play || has_branch || has_gameplay || has_genre) {
 		tape.push_back(uint8_t(OP_PROCESS));
 		if (has_gd_rotate || has_lu_rotate) {
@@ -1016,6 +1025,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	}
 	if (has_kit) {
 		r_out.ir_text += "IR kit tick on HIT enter (overlap kit, not Cross-only)\n";
+		r_out.ir_text += "IR checkpoint xyz / respawn\n";
 		r_out.ir_text += vformat("IR STREAM extra_scenes=%d\n", r_out.extra_scenes.size());
 	}
 	if (has_say) {
@@ -1104,6 +1114,8 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	}
 	r_out.ir_text += "kit: Spawn Checkpoint Portal Player Hazard Pickup Music Unload Load Talk Spawner Save\n";
 	r_out.ir_text += "IR kit tick on HIT enter (overlap kit, not Cross-only)\n";
+	r_out.ir_text += "IR checkpoint xyz / respawn\n";
+	r_out.ir_text += "IR spawn_ofs gravity jump pause action|\n";
 	for (int i = 0; i < r_out.accepted.size(); i++) {
 		r_out.ir_text += r_out.accepted[i] + "\n";
 	}
