@@ -11,6 +11,8 @@
 
 #pragma once
 
+#include "cook/cooker.h"
+
 #include "core/variant/dictionary.h"
 #include "editor/export/editor_export_platform.h"
 #include "scene/resources/image_texture.h"
@@ -29,6 +31,7 @@ class EditorExportPlatformPS2 : public EditorExportPlatform {
 	bool _scan_forbidden(const String &p_dir, String &r_hit) const;
 	Error _spawn_toolchain(const List<String> &p_args, String &r_output, int &r_exit) const;
 	Error _try_make_iso(const String &p_elf_path, String &r_warning);
+	void _emit_cook_messages(const ps2_cook::CookResult &p_cooked);
 
 public:
 	virtual void get_preset_features(const Ref<EditorExportPreset> &p_preset, List<String> *r_features) const override;

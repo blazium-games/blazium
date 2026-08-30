@@ -11,6 +11,7 @@
 
 #include "export_plugin.h"
 
+#include "cook/cooker.h"
 #include "logo_svg.gen.h"
 
 #include "core/config/project_settings.h"
@@ -239,7 +240,7 @@ bool EditorExportPlatformPS2::has_valid_project_configuration(const Ref<EditorEx
 		r_error += "PS2 export requires application/run/main_scene.\n";
 		return false;
 	}
-	r_error += "Note: P2 writes the bundled EE guest ELF. Cook/GS mesh land in later phases. BIOS is only required for One-click / ps2 run.\n";
+	r_error += "Note: Export cooks ABI 1 NODE/MESH/GTEX slices then spawns blazium-toolchain. BIOS is only required for One-click / ps2 run.\n";
 	return true;
 }
 
@@ -269,6 +270,21 @@ Error EditorExportPlatformPS2::export_project(const Ref<EditorExportPreset> &p_p
 	Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
 	da->make_dir_recursive(p_path.get_base_dir());
 
+	ps2_cook::CookOptions opts;
+	static const int widths[] = { 640, 512, 320 };
+	const int wsel = int(p_preset->get("ps2/width"));
+	opts.width = widths[CLAMP(wsel, 0, 2)];
+	opts.region = int(p_preset->get("ps2/region")) == 1 ? 1 : 0;
+	ps2_cook::CookResult cooked;
+	const Error cook_err = ps2_cook::cook_project(p_path.get_base_dir(), cooked, opts);
+	_emit_cook_messages(cooked);
+	if (cook_err != OK || !cooked.errors.is_empty()) {
+		if (cooked.errors.is_empty()) {
+			add_message(EXPORT_MESSAGE_ERROR, "PS2", cooked.report.is_empty() ? String("Cook failed.") : cooked.report);
+		}
+		return cook_err != OK ? cook_err : FAILED;
+	}
+
 	if (int(p_preset->get("ps2/output_kind")) != 0) {
 		add_message(EXPORT_MESSAGE_WARNING, "PS2", "ps2/output_kind is unread; output is an EE ELF. Use ps2/make_iso for a disc image.");
 	}
@@ -288,6 +304,22 @@ Error EditorExportPlatformPS2::export_project(const Ref<EditorExportPreset> &p_p
 	args.push_back(p_path.get_base_dir().path_join("guest"));
 	args.push_back("--out");
 	args.push_back(p_path);
+	if (!cooked.node_path.is_empty()) {
+		args.push_back("--node");
+		args.push_back(cooked.node_path);
+	}
+	if (!cooked.mesh_path.is_empty()) {
+		args.push_back("--mesh");
+		args.push_back(cooked.mesh_path);
+	}
+	if (!cooked.gtex_path.is_empty()) {
+		args.push_back("--gtex");
+		args.push_back(cooked.gtex_path);
+	}
+	if (!cooked.script_path.is_empty()) {
+		args.push_back("--script");
+		args.push_back(cooked.script_path);
+	}
 
 	String output;
 	int exitcode = 0;
@@ -316,6 +348,21 @@ Error EditorExportPlatformPS2::export_project(const Ref<EditorExportPreset> &p_p
 		}
 	}
 	return OK;
+}
+
+void EditorExportPlatformPS2::_emit_cook_messages(const ps2_cook::CookResult &p_cooked) {
+	for (int i = 0; i < p_cooked.errors.size(); i++) {
+		add_message(EXPORT_MESSAGE_ERROR, "PS2", p_cooked.errors[i]);
+	}
+	for (int i = 0; i < p_cooked.warnings.size(); i++) {
+		add_message(EXPORT_MESSAGE_WARNING, "PS2", p_cooked.warnings[i]);
+	}
+	for (int i = 0; i < p_cooked.infos.size(); i++) {
+		add_message(EXPORT_MESSAGE_INFO, "PS2", p_cooked.infos[i]);
+	}
+	if (!p_cooked.report.is_empty()) {
+		add_message(EXPORT_MESSAGE_INFO, "PS2", p_cooked.report);
+	}
 }
 
 Error EditorExportPlatformPS2::_try_make_iso(const String &p_elf_path, String &r_warning) {
