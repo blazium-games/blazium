@@ -197,7 +197,13 @@ enum {
 	OP_SYS_TICK = 22,
 	OP_PLAY_MUSIC = 23,
 	OP_STOP_MUSIC = 24,
-	OP_MUSIC_VOL = 25
+	OP_MUSIC_VOL = 25,
+	OP_LOOK_STICK = 26,
+	OP_LOOK_CAMERA = 27,
+	OP_ORBIT_CAMERA = 28,
+	OP_SHAKE_CAMERA = 29,
+	OP_NEXT_CAMERA = 30,
+	OP_ATTACH_CAMERA = 31
 };
 
 static const char *kUnsupportedCalls[] = {
@@ -224,7 +230,10 @@ static bool is_ps2_alias(const String &p_name) {
 			p_name == "save_slot" || p_name == "load_slot" || p_name == "memcard_format" ||
 			p_name == "load_music" || p_name == "unload_music" || p_name == "can_load_music" ||
 			p_name == "is_music_loaded" || p_name == "set_music_volume" || p_name == "set_music_fade" ||
-			p_name == "stop_music";
+			p_name == "stop_music" || p_name == "look_camera" || p_name == "orbit_camera" ||
+			p_name == "attach_camera" || p_name == "shake_camera" || p_name == "next_camera" ||
+			p_name == "prev_camera" || p_name == "set_camera" || p_name == "set_camera_node" ||
+			p_name == "get_camera" || p_name == "get_camera_count" || p_name == "make_current";
 }
 
 static bool reject_unsupported_apis(const String &p_src, String &r_why) {
@@ -340,6 +349,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	bool has_fmv = false;
 	bool has_sys = false;
 	bool has_music = false;
+	bool has_cam_rt = false;
 	float rotate_rate = 0.4f;
 	float translate_rate = 1.0f;
 	for (int i = 0; i < r_out.accepted.size(); i++) {
@@ -404,6 +414,10 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 				src.contains("is_music_loaded")) {
 			has_music = true;
 		}
+		if (src.contains("look_camera") || src.contains("orbit_camera") || src.contains("attach_camera") ||
+				src.contains("shake_camera") || src.contains("next_camera") || src.contains("prev_camera")) {
+			has_cam_rt = true;
+		}
 	}
 	if (!r_out.extra_scenes.is_empty()) {
 		has_kit = true;
@@ -455,7 +469,22 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		tape.push_back(uint8_t(OP_MUSIC_VOL));
 		tape.push_back(uint8_t(OP_PLAY_MUSIC));
 	}
-	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys) {
+	if (has_cam_rt) {
+		tape.push_back(uint8_t(OP_READY));
+		tape.push_back(uint8_t(OP_LOADK_F));
+		append_f32(tape, 0.0f);
+		tape.push_back(uint8_t(OP_LOADK_F));
+		append_f32(tape, 0.0f);
+		tape.push_back(uint8_t(OP_LOADK_F));
+		append_f32(tape, 0.0f);
+		tape.push_back(uint8_t(OP_ATTACH_CAMERA));
+		tape.push_back(uint8_t(OP_LOADK_F));
+		append_f32(tape, 0.0f);
+		tape.push_back(uint8_t(OP_LOADK_F));
+		append_f32(tape, 0.0f);
+		tape.push_back(uint8_t(OP_SHAKE_CAMERA));
+	}
+	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys || has_cam_rt) {
 		tape.push_back(uint8_t(OP_PROCESS));
 		if (has_gd_rotate || has_lu_rotate) {
 			tape.push_back(uint8_t(OP_LOAD_DELTA));
@@ -481,8 +510,12 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		if (has_nav) {
 			tape.push_back(uint8_t(OP_NAV_FOLLOW));
 		}
-		if (has_say || has_nav || has_sys) {
+		if (has_say || has_nav || has_sys || has_cam_rt) {
 			tape.push_back(uint8_t(OP_SYS_TICK));
+		}
+		if (has_cam_rt) {
+			tape.push_back(uint8_t(OP_LOOK_STICK));
+			tape.push_back(uint8_t(OP_NEXT_CAMERA));
 		}
 	}
 	tape.push_back(uint8_t(OP_END));
@@ -555,6 +588,9 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	}
 	if (has_music) {
 		r_out.ir_text += "IR PS2.load_music/set_music_volume (voice 1 loop)\n";
+	}
+	if (has_cam_rt) {
+		r_out.ir_text += "IR PS2.look_camera/orbit_camera/shake_camera (runtime CAM)\n";
 	}
 	if (has_user) {
 		r_out.warnings.push_back("FileAccess user:// maps to host:SAVE.BIN then mc0:SAVE.BIN. Missing HostFs/memcard is a guest error.");

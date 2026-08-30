@@ -67,6 +67,17 @@ void PS2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_music_volume", "vol"), &PS2::set_music_volume);
 	ClassDB::bind_method(D_METHOD("set_music_fade", "to_vol", "ms"), &PS2::set_music_fade);
 	ClassDB::bind_method(D_METHOD("stop_music"), &PS2::stop_music);
+	ClassDB::bind_method(D_METHOD("look_camera", "yaw", "pitch", "roll"), &PS2::look_camera, DEFVAL(0.0f));
+	ClassDB::bind_method(D_METHOD("orbit_camera", "target", "yaw", "pitch", "dist", "clip"), &PS2::orbit_camera, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("attach_camera", "node", "offset"), &PS2::attach_camera, DEFVAL(Vector3()));
+	ClassDB::bind_method(D_METHOD("shake_camera", "amp", "ms"), &PS2::shake_camera);
+	ClassDB::bind_method(D_METHOD("next_camera"), &PS2::next_camera);
+	ClassDB::bind_method(D_METHOD("prev_camera"), &PS2::prev_camera);
+	ClassDB::bind_method(D_METHOD("set_camera", "index"), &PS2::set_camera);
+	ClassDB::bind_method(D_METHOD("set_camera_node", "name"), &PS2::set_camera_node);
+	ClassDB::bind_method(D_METHOD("get_camera"), &PS2::get_camera);
+	ClassDB::bind_method(D_METHOD("get_camera_count"), &PS2::get_camera_count);
+	ClassDB::bind_method(D_METHOD("make_current", "node"), &PS2::make_current);
 }
 
 void PS2FlavorEditorPlugin::_sync_singleton() {

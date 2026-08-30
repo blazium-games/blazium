@@ -13,6 +13,7 @@
 
 #include "core/input/shortcut.h"
 #include "core/math/vector2.h"
+#include "core/math/vector3.h"
 #include "core/object/object.h"
 #include "core/string/ustring.h"
 #include "core/variant/variant.h"
@@ -288,6 +289,65 @@ public:
 	}
 	bool stop_music() {
 		_fail_ps2();
+		return false;
+	}
+	bool look_camera(float p_yaw, float p_pitch, float p_roll = 0.0f) {
+		_fail_ps2();
+		(void)p_yaw;
+		(void)p_pitch;
+		(void)p_roll;
+		return false;
+	}
+	bool orbit_camera(const Variant &p_target, float p_yaw, float p_pitch, float p_dist, int p_clip = 0) {
+		_fail_ps2();
+		(void)p_target;
+		(void)p_yaw;
+		(void)p_pitch;
+		(void)p_dist;
+		(void)p_clip;
+		return false;
+	}
+	bool attach_camera(const Variant &p_node, const Vector3 &p_offset = Vector3()) {
+		_fail_ps2();
+		(void)p_node;
+		(void)p_offset;
+		return false;
+	}
+	bool shake_camera(float p_amp, float p_ms) {
+		_fail_ps2();
+		(void)p_amp;
+		(void)p_ms;
+		return false;
+	}
+	bool next_camera() {
+		_fail_ps2();
+		return false;
+	}
+	bool prev_camera() {
+		_fail_ps2();
+		return false;
+	}
+	bool set_camera(int p_index) {
+		_fail_ps2();
+		(void)p_index;
+		return false;
+	}
+	bool set_camera_node(const String &p_name) {
+		_fail_ps2();
+		(void)p_name;
+		return false;
+	}
+	int get_camera() const {
+		_fail_ps2();
+		return 0;
+	}
+	int get_camera_count() const {
+		_fail_ps2();
+		return 0;
+	}
+	bool make_current(const Variant &p_node) {
+		_fail_ps2();
+		(void)p_node;
 		return false;
 	}
 };
