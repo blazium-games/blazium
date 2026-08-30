@@ -509,6 +509,15 @@ public:
 		(void)p_sec;
 		return false;
 	}
+	bool play_animation(const Variant &p_name_or_index) {
+		_fail_ps2();
+		(void)p_name_or_index;
+		return false;
+	}
+	bool stop_animation() {
+		_fail_ps2();
+		return false;
+	}
 	bool set_animation_speed(float p_s) {
 		_fail_ps2();
 		(void)p_s;

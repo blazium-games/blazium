@@ -294,8 +294,34 @@ enum {
 	NAT_PREFETCH_SCENE = 110,
 	NAT_NAVMESH = 111,
 	NAT_TWEEN_PLAY = 112,
-	NAT_TWEEN_KILL = 113
+	NAT_TWEEN_KILL = 113,
+	NAT_UNLOAD_TILES = 114,
+	NAT_LOAD_HUD = 115,
+	NAT_UNLOAD_HUD = 116,
+	NAT_CAN_LOAD_HUD = 117,
+	NAT_IS_HUD_LOADED = 118,
+	NAT_LOAD_MUSIC = 119,
+	NAT_UNLOAD_MUSIC = 120,
+	NAT_CAN_LOAD_MUSIC = 121,
+	NAT_IS_MUSIC_LOADED = 122,
+	NAT_PLAY_ANIM = 123,
+	NAT_STOP_ANIM = 124
 };
+
+static void emit_loadk_s(Vector<uint8_t> &o, const char *s) {
+	int n = 0;
+	while (s[n]) {
+		n++;
+	}
+	if (n > 127) {
+		n = 127;
+	}
+	o.push_back(uint8_t(OP_LOADK_S));
+	o.push_back(uint8_t(n));
+	for (int i = 0; i < n; i++) {
+		o.push_back(uint8_t(s[i]));
+	}
+}
 
 static const char *kUnsupportedCalls[] = {
 	"play_xa", "stop_xa",
@@ -335,6 +361,7 @@ static bool is_ps2_alias(const String &p_name) {
 			p_name == "set_fade" || p_name == "change_scene_fade" || p_name == "change_scene" ||
 			p_name == "instantiate" || p_name == "can_instantiate" || p_name == "say_done" ||
 			p_name == "set_hud_text" || p_name == "seek_animation" || p_name == "set_animation_speed" ||
+			p_name == "play_animation" || p_name == "stop_animation" ||
 			p_name == "get_ee_ram_used" || p_name == "get_ee_ram_free" || p_name == "get_ee_ram_limit" ||
 			p_name == "get_gs_vram_used" || p_name == "get_gs_vram_free" || p_name == "get_gs_vram_limit" ||
 			p_name == "get_pack_cost" || p_name == "set_default_camera" || p_name == "get_default_camera" ||
@@ -484,6 +511,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	bool has_inst = false;
 	bool has_ram = false;
 	bool has_seek = false;
+	bool has_play = false;
 	bool has_branch = false;
 	bool has_gameplay = false;
 	bool has_genre = false;
@@ -588,6 +616,9 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		if (src.contains("seek_animation") || src.contains("set_animation_speed") || src.contains("set_frame(")) {
 			has_seek = true;
 		}
+		if (src.contains("play_animation") || src.contains("stop_animation")) {
+			has_play = true;
+		}
 		if (src.contains("if ") || src.contains("while ") || src.contains("elif ")) {
 			has_branch = true;
 		}
@@ -650,7 +681,12 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		tape.push_back(uint8_t(OP_LOADK_F));
 		append_f32(tape, 0.6f);
 		tape.push_back(uint8_t(OP_MUSIC_VOL));
+		emit_loadk_s(tape, "res://audio/loop");
+		tape.push_back(uint8_t(OP_CALL_NATIVE));
+		tape.push_back(uint8_t(NAT_LOAD_MUSIC));
 		tape.push_back(uint8_t(OP_PLAY_MUSIC));
+		tape.push_back(uint8_t(OP_CALL_NATIVE));
+		tape.push_back(uint8_t(NAT_UNLOAD_MUSIC));
 	}
 	if (has_cam_rt) {
 		tape.push_back(uint8_t(OP_READY));
@@ -751,7 +787,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		tape.push_back(uint8_t(OP_CALL_NATIVE));
 		tape.push_back(uint8_t(NAT_CAN_LOAD));
 	}
-	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys || has_cam_rt || has_tween || has_slide || has_hitq || has_fade || has_change || has_load || has_inst || has_ram || has_seek || has_branch || has_gameplay || has_genre) {
+	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys || has_cam_rt || has_tween || has_slide || has_hitq || has_fade || has_change || has_load || has_inst || has_ram || has_seek || has_play || has_branch || has_gameplay || has_genre) {
 		tape.push_back(uint8_t(OP_PROCESS));
 		if (has_gd_rotate || has_lu_rotate) {
 			tape.push_back(uint8_t(OP_LOAD_DELTA));
@@ -772,6 +808,8 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 			append_f32(tape, 0.0f);
 			tape.push_back(uint8_t(OP_LOADK_F));
 			append_f32(tape, 0.0f);
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 255.0f);
 			tape.push_back(uint8_t(OP_SLIDE));
 		}
 		if (has_hitq) {
@@ -800,11 +838,21 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		if (has_say) {
 			tape.push_back(uint8_t(OP_SAY));
 			tape.push_back(uint8_t(OP_SAY_TEXT));
+			emit_loadk_s(tape, "res://scenes/systems_kit.tscn");
+			tape.push_back(uint8_t(OP_CALL_NATIVE));
+			tape.push_back(uint8_t(NAT_LOAD_HUD));
 		}
 		if (has_seek) {
 			tape.push_back(uint8_t(OP_LOADK_F));
 			append_f32(tape, 0.0f);
 			tape.push_back(uint8_t(OP_SEEK_ANIM));
+		}
+		if (has_play) {
+			emit_loadk_s(tape, "idle");
+			tape.push_back(uint8_t(OP_CALL_NATIVE));
+			tape.push_back(uint8_t(NAT_PLAY_ANIM));
+			tape.push_back(uint8_t(OP_CALL_NATIVE));
+			tape.push_back(uint8_t(NAT_STOP_ANIM));
 		}
 		if (has_branch) {
 			tape.push_back(uint8_t(OP_HAS_FEATURE_PS2));
@@ -986,7 +1034,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		r_out.ir_text += "IR HUD/TILE/NAV/CAM/HIT/ANIM sys tick\n";
 	}
 	if (has_music) {
-		r_out.ir_text += "IR PS2.load_music/set_music_volume (voice 1 loop)\n";
+		r_out.ir_text += "IR PS2.load_music/unload_music/set_music_volume (voice 1 loop)\n";
 	}
 	if (has_cam_rt) {
 		r_out.ir_text += "IR PS2.set_camera/set_default_camera/make_current\n";
@@ -1025,13 +1073,16 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		r_out.ir_text += "IR PS2.load_scene (additive resident, not swap)\n";
 	}
 	if (has_inst) {
-		r_out.ir_text += "IR PS2.instantiate/unload_pack (16 resident extras, RAM-gated)\n";
+		r_out.ir_text += "IR PS2.instantiate/unload_pack (pack handle, 16 resident extras, RAM-gated)\n";
 	}
 	if (has_ram) {
 		r_out.ir_text += "IR PS2.get_ee_ram/get_gs_vram/get_pack_cost/can_instantiate/can_load_scene\n";
 	}
 	if (has_seek) {
 		r_out.ir_text += "IR PS2.seek_animation/set_frame (Node3D TRS keys)\n";
+	}
+	if (has_play) {
+		r_out.ir_text += "IR PS2.play_animation/stop_animation\n";
 	}
 	if (has_branch || has_change || has_inst) {
 		r_out.ir_text += "IR JMP/CALL compiled subset (not official GDScript/Luau VM)\n";

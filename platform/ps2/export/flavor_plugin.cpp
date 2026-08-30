@@ -123,6 +123,8 @@ void PS2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("say_done"), &PS2::say_done);
 	ClassDB::bind_method(D_METHOD("set_hud_text", "hud", "text"), &PS2::set_hud_text);
 	ClassDB::bind_method(D_METHOD("seek_animation", "sec"), &PS2::seek_animation);
+	ClassDB::bind_method(D_METHOD("play_animation", "name_or_index"), &PS2::play_animation);
+	ClassDB::bind_method(D_METHOD("stop_animation"), &PS2::stop_animation);
 	ClassDB::bind_method(D_METHOD("set_animation_speed", "speed"), &PS2::set_animation_speed);
 	ClassDB::bind_method(D_METHOD("get_ee_ram_used"), &PS2::get_ee_ram_used);
 	ClassDB::bind_method(D_METHOD("get_ee_ram_free"), &PS2::get_ee_ram_free);

@@ -637,11 +637,18 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent, const String &p_
 			Ref<Texture2D> tex = p_node->get("texture");
 			if (tex.is_valid()) {
 				Ref<Image> img = tex->get_image();
-				if (img.is_valid()) {
+				if (img.is_valid() && !img->is_empty()) {
 					s.tex = register_image(r_g, img, tex_name);
 					s.w = int16_t(CLAMP(img->get_width(), 1, 256));
 					s.h = int16_t(CLAMP(img->get_height(), 1, 256));
 				}
+			}
+			if (s.w < 1 || s.h < 1 || (!tex.is_valid())) {
+				Ref<Image> ph = Image::create_empty(16, 16, false, Image::FORMAT_RGBA8);
+				ph->fill(Color(0.85f, 0.35f, 0.75f));
+				s.tex = register_image(r_g, ph, tex_name + "_ph");
+				s.w = 16;
+				s.h = 16;
 			}
 			const Variant posv = p_node->get("global_position");
 			if (posv.get_type() == Variant::VECTOR2) {
@@ -671,6 +678,28 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent, const String &p_
 		} else {
 			cells = p_node->call("get_used_cells", 0);
 		}
+		uint8_t atlas = 0;
+		const Variant tsv = p_node->get("tile_set");
+		Object *ts = tsv.get_validated_object();
+		if (ts && int(ts->call("get_source_count")) > 0) {
+			const int sid = int(ts->call("get_source_id", 0));
+			const Variant srcv = ts->call("get_source", sid);
+			Object *src = srcv.get_validated_object();
+			if (src) {
+				Ref<Texture2D> tex = src->get("texture");
+				if (tex.is_valid()) {
+					Ref<Image> img = tex->get_image();
+					if (img.is_valid() && !img->is_empty()) {
+						atlas = uint8_t(register_image(r_g, img, String(p_node->get_name()) + "_atlas"));
+					}
+				}
+			}
+		}
+		if (!ts || (atlas == 0 && r_g.image_names.find(String(p_node->get_name()) + "_atlas") < 0)) {
+			Ref<Image> ph = Image::create_empty(16, 16, false, Image::FORMAT_RGBA8);
+			ph->fill(Color(0.25f, 0.55f, 0.3f));
+			atlas = uint8_t(register_image(r_g, ph, String(p_node->get_name()) + "_atlas"));
+		}
 		for (int i = 0; i < cells.size(); i++) {
 			if (r_g.tiles.size() >= kMaxTiles) {
 				r_g.tile_dropped++;
@@ -681,7 +710,7 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent, const String &p_
 			t.x = int16_t(c.x);
 			t.y = int16_t(c.y);
 			t.flags = 1;
-			t.atlas = 0;
+			t.atlas = atlas;
 			r_g.tiles.push_back(t);
 		}
 	}
@@ -1031,6 +1060,11 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent, const String &p_
 				t.x = int16_t(Math::floor(p.x));
 				t.y = int16_t(Math::floor(p.z));
 				t.flags = 1;
+				{
+					Ref<Image> ph = Image::create_empty(16, 16, false, Image::FORMAT_RGBA8);
+					ph->fill(Color(0.25f, 0.55f, 0.3f));
+					t.atlas = uint8_t(register_image(r_g, ph, "tile_ph"));
+				}
 				r_g.tiles.push_back(t);
 			} else {
 				r_g.tile_dropped++;
