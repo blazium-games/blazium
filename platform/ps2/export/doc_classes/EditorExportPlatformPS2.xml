@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="EditorExportPlatformPS2" inherits="EditorExportPlatform" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+		Exporter for PlayStation 2. Writes an EE ELF by spawning blazium-toolchain. No Godot export templates.
+	</brief_description>
+	<description>
+		[EditorExportPlatformPS2] appears in Project → Export as "PS2" on Windows and Linux hosts only. Export runs [code]blazium-toolchain ps2 setup --profile compile[/code] (if needed) then [code]ps2 build --out[/code] using the guest stub bundled in the toolchain. Guest [code]*.cpp[/code] is written next to the ELF under [code]guest/[/code]. Optional Editor Setting [code]export/ps2/runtime_src[/code] replaces the stub ([code]--src[/code]). [code]export/ps2/runtime_overlay[/code], [code]BLAZIUM_PS2_OVERLAY[/code], or project [code]res://ps2_guest[/code] overlays extra or replacement sources ([code]--overlay[/code]). Optional preset [code]ps2/make_iso[/code] then runs [code]ps2 iso[/code] (ISO9660, no [code].cue[/code]). One-click runs [code]blazium-toolchain ps2 run[/code] (PCSX2 [code]-elf[/code]) and fails if no BIOS is configured. GDExtension and C# are rejected. This class does not call [code]find_export_template()[/code] or [code]save_pack()[/code].
+	</description>
+	<tutorials>
+	</tutorials>
+</class>
