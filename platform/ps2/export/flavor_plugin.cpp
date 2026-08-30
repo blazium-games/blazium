@@ -162,6 +162,96 @@ void PS2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("peek", "off"), &PS2::peek);
 	ClassDB::bind_method(D_METHOD("godot_save_bytes", "value"), &PS2::godot_save_bytes);
 	ClassDB::bind_method(D_METHOD("godot_load_bytes", "bytes"), &PS2::godot_load_bytes);
+	ClassDB::bind_method(D_METHOD("move_6dof", "node", "ax", "ay", "az", "pitch", "yaw", "roll", "speed"), &PS2::move_6dof);
+	ClassDB::bind_method(D_METHOD("set_steer", "node", "steer"), &PS2::set_steer);
+	ClassDB::bind_method(D_METHOD("set_thrust", "node", "thrust"), &PS2::set_thrust);
+	ClassDB::bind_method(D_METHOD("set_eye_height", "height"), &PS2::set_eye_height);
+	ClassDB::bind_method(D_METHOD("load_particles", "path"), &PS2::load_particles);
+	ClassDB::bind_method(D_METHOD("unload_particles", "path"), &PS2::unload_particles, DEFVAL(String()));
+	ClassDB::bind_method(D_METHOD("can_load_particles", "path"), &PS2::can_load_particles);
+	ClassDB::bind_method(D_METHOD("is_particles_loaded", "path"), &PS2::is_particles_loaded, DEFVAL(String()));
+	ClassDB::bind_method(D_METHOD("path_follow", "node", "speed"), &PS2::path_follow);
+	ClassDB::bind_method(D_METHOD("set_path_offset", "node", "offset"), &PS2::set_path_offset);
+	ClassDB::bind_method(D_METHOD("prefetch_scene", "path"), &PS2::prefetch_scene);
+	ClassDB::bind_method(D_METHOD("navmesh", "node", "goal"), &PS2::navmesh);
+	ClassDB::bind_method(D_METHOD("tween_play", "tween"), &PS2::tween_play);
+	ClassDB::bind_method(D_METHOD("tween_kill", "tween"), &PS2::tween_kill);
+}
+
+void PS2Spawner::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_scene", "path"), &PS2Spawner::set_scene);
+	ClassDB::bind_method(D_METHOD("get_scene"), &PS2Spawner::get_scene);
+	ClassDB::bind_method(D_METHOD("spawn"), &PS2Spawner::spawn);
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "scene", PROPERTY_HINT_FILE, "*.tscn"), "set_scene", "get_scene");
+}
+
+void PS2CameraVolume::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_camera_index", "index"), &PS2CameraVolume::set_camera_index);
+	ClassDB::bind_method(D_METHOD("get_camera_index"), &PS2CameraVolume::get_camera_index);
+	ClassDB::bind_method(D_METHOD("make_current"), &PS2CameraVolume::make_current);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "camera_index"), "set_camera_index", "get_camera_index");
+}
+
+void PS2Follow::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_target_path", "path"), &PS2Follow::set_target_path);
+	ClassDB::bind_method(D_METHOD("get_target_path"), &PS2Follow::get_target_path);
+	ClassDB::bind_method(D_METHOD("set_speed", "speed"), &PS2Follow::set_speed);
+	ClassDB::bind_method(D_METHOD("get_speed"), &PS2Follow::get_speed);
+	ClassDB::bind_method(D_METHOD("follow"), &PS2Follow::follow);
+	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "target_path"), "set_target_path", "get_target_path");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "speed"), "set_speed", "get_speed");
+}
+
+void PS2Waypoint::_bind_methods() {}
+
+void PS2Path::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_path_offset", "offset"), &PS2Path::set_path_offset);
+	ClassDB::bind_method(D_METHOD("get_path_offset"), &PS2Path::get_path_offset);
+	ClassDB::bind_method(D_METHOD("path_follow", "speed"), &PS2Path::path_follow);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "path_offset"), "set_path_offset", "get_path_offset");
+}
+
+void PS2NavRegion::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("nav_follow", "goal", "speed"), &PS2NavRegion::nav_follow);
+	ClassDB::bind_method(D_METHOD("nav_next"), &PS2NavRegion::nav_next);
+}
+
+void PS2Vehicle::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_mode", "mode"), &PS2Vehicle::set_mode);
+	ClassDB::bind_method(D_METHOD("get_mode"), &PS2Vehicle::get_mode);
+	ClassDB::bind_method(D_METHOD("set_mass", "mass"), &PS2Vehicle::set_mass);
+	ClassDB::bind_method(D_METHOD("get_mass"), &PS2Vehicle::get_mass);
+	ClassDB::bind_method(D_METHOD("set_thrust", "thrust"), &PS2Vehicle::set_thrust);
+	ClassDB::bind_method(D_METHOD("get_thrust"), &PS2Vehicle::get_thrust);
+	ClassDB::bind_method(D_METHOD("set_steer", "steer"), &PS2Vehicle::set_steer);
+	ClassDB::bind_method(D_METHOD("get_steer"), &PS2Vehicle::get_steer);
+	ClassDB::bind_method(D_METHOD("move_6dof", "ax", "ay", "az", "pitch", "yaw", "roll", "speed"), &PS2Vehicle::move_6dof);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "mode"), "set_mode", "get_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "mass"), "set_mass", "get_mass");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "thrust"), "set_thrust", "get_thrust");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "steer"), "set_steer", "get_steer");
+}
+
+void PS2Particles::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_mode", "mode"), &PS2Particles::set_mode);
+	ClassDB::bind_method(D_METHOD("get_mode"), &PS2Particles::get_mode);
+	ClassDB::bind_method(D_METHOD("set_amount", "amount"), &PS2Particles::set_amount);
+	ClassDB::bind_method(D_METHOD("get_amount"), &PS2Particles::get_amount);
+	ClassDB::bind_method(D_METHOD("set_lifetime", "lifetime"), &PS2Particles::set_lifetime);
+	ClassDB::bind_method(D_METHOD("get_lifetime"), &PS2Particles::get_lifetime);
+	ClassDB::bind_method(D_METHOD("load_particles"), &PS2Particles::load_particles);
+	ClassDB::bind_method(D_METHOD("unload_particles"), &PS2Particles::unload_particles);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "mode"), "set_mode", "get_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "amount"), "set_amount", "get_amount");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "lifetime"), "set_lifetime", "get_lifetime");
+}
+
+void PS2Tween::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_duration", "duration"), &PS2Tween::set_duration);
+	ClassDB::bind_method(D_METHOD("get_duration"), &PS2Tween::get_duration);
+	ClassDB::bind_method(D_METHOD("play"), &PS2Tween::play);
+	ClassDB::bind_method(D_METHOD("kill"), &PS2Tween::kill);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "duration"), "set_duration", "get_duration");
 }
 
 static void _count_scene(Node *p_node, int &r_nodes, int &r_tris, int &r_tex, int &r_hud, int &r_tiles, int &r_cams, int &r_hits) {
@@ -300,7 +390,7 @@ void PS2FlavorEditorPlugin::_refresh() {
 	const String bios = OS::get_singleton() ? String(OS::get_singleton()->get_environment("PS2_BIOS_DIR")) : String();
 	const String oneclick = bios.is_empty() ? "One-click disabled: set PS2_BIOS_DIR to a legal BIOS folder (export does not need BIOS)." : "One-click: PS2_BIOS_DIR is set (ps2 run / PCSX2 -elf).";
 	status->set_text(vformat(
-			"nodes %d/%d\ntris %d/%d\ntextures %d/%d\ncameras %d/%d\nHIT %d/%d\nHUD %d/%d\ntiles %d\ncatalog extras %d/%d (resident max %d + pack 0)\nest EE %d/%d  GS %d/%d\nEE 24 MiB and GS 4 MiB are shared. Unload rooms/NPCs you are not using.\nPS2.* is PS2 export only; use OS.has_feature(\"ps2\").\nWorks: STREAM multi-scene, HIT slide/query, camera, tweens, IMA SFX/MUSIC, set_fade, DISP.\nPartial: change_scene swap / load_scene+instantiate additive, Button HUD, AnimationPlayer TRS, custom IR.\nRefused: play_xa, play_fmv, set_fog, spawn_shot, memcard_wrap, gsKit, official VMs.\n%s",
+			"nodes %d/%d\ntris %d/%d\ntextures %d/%d\ncameras %d/%d\nHIT %d/%d\nHUD %d/%d\ntiles %d\ncatalog extras %d/%d (resident max %d + pack 0)\nest EE %d/%d  GS %d/%d\nEE 24 MiB and GS 4 MiB are shared. Extra STREAM packs cap at 2 MiB EE. Unload rooms/NPCs you are not using.\nPS2.* is PS2 export only; use OS.has_feature(\"ps2\").\nWorks: STREAM host:/cdrom0:, HIT, camera2D/3D, 6DoF/vehicle, CPU particles, nav/path, 16 tweens, IMA SFX/MUSIC, set_fade, DISP.\nPartial: change_scene swap / load_scene+instantiate additive, Button HUD, AnimationPlayer TRS, custom IR.\nRefused: play_xa, play_fmv, set_fog, spawn_shot, memcard_wrap, gsKit, official VMs, live GPUParticles/RigidBody.\n%s",
 			nodes, ps2_cook::kMaxNodes, tris, ps2_cook::kMaxTris, tex, ps2_cook::kMaxTextures,
 			cams, ps2_cook::kMaxCameras, hits, ps2_cook::kMaxHits, hud, ps2_cook::kMaxHud, tiles,
 			extras, ps2_cook::kMaxScenePacks, ps2_cook::kMaxResidentExtras,

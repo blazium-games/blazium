@@ -280,7 +280,21 @@ enum {
 	NAT_PEEK = 96,
 	NAT_SPAWN = 97,
 	NAT_OVERLAPS_ENTERED = 98,
-	NAT_SET_FLIP = 99
+	NAT_SET_FLIP = 99,
+	NAT_MOVE_6DOF = 100,
+	NAT_LOAD_PARTICLES = 101,
+	NAT_UNLOAD_PARTICLES = 102,
+	NAT_CAN_LOAD_PARTICLES = 103,
+	NAT_IS_PARTICLES_LOADED = 104,
+	NAT_PATH_FOLLOW = 105,
+	NAT_SET_PATH_OFFSET = 106,
+	NAT_SET_THRUST = 107,
+	NAT_SET_STEER = 108,
+	NAT_SET_EYE_HEIGHT = 109,
+	NAT_PREFETCH_SCENE = 110,
+	NAT_NAVMESH = 111,
+	NAT_TWEEN_PLAY = 112,
+	NAT_TWEEN_KILL = 113
 };
 
 static const char *kUnsupportedCalls[] = {
@@ -332,7 +346,11 @@ static bool is_ps2_alias(const String &p_name) {
 			p_name == "set_hitbox_enabled" || p_name == "set_hitbox_layer" || p_name == "get_hitbox_layer" ||
 			p_name == "set_hitstop" || p_name == "set_invuln" || p_name == "is_invuln" || p_name == "knockback" ||
 			p_name == "set_cell" || p_name == "erase_cell" || p_name == "set_flip" ||
-			p_name == "poke" || p_name == "peek" || p_name == "godot_save_bytes" || p_name == "godot_load_bytes";
+			p_name == "poke" || p_name == "peek" || p_name == "godot_save_bytes" || p_name == "godot_load_bytes" ||
+			p_name == "move_6dof" || p_name == "set_steer" || p_name == "set_thrust" || p_name == "set_eye_height" ||
+			p_name == "load_particles" || p_name == "unload_particles" || p_name == "can_load_particles" ||
+			p_name == "is_particles_loaded" || p_name == "path_follow" || p_name == "set_path_offset" ||
+			p_name == "prefetch_scene" || p_name == "navmesh" || p_name == "tween_play" || p_name == "tween_kill";
 }
 
 static bool reject_unsupported_apis(const String &p_src, String &r_why) {
@@ -468,6 +486,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	bool has_seek = false;
 	bool has_branch = false;
 	bool has_gameplay = false;
+	bool has_genre = false;
 	float rotate_rate = 0.4f;
 	float translate_rate = 1.0f;
 	for (int i = 0; i < r_out.accepted.size(); i++) {
@@ -576,6 +595,11 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 				src.contains("get_pressure") || src.contains("set_hitstop") || src.contains("set_stick_deadzone") ||
 				src.contains("follow_node") || src.contains("can_load_sprites")) {
 			has_gameplay = true;
+		}
+		if (src.contains("move_6dof") || src.contains("load_particles") || src.contains("path_follow") ||
+				src.contains("set_thrust") || src.contains("navmesh") || src.contains("prefetch_scene") ||
+				src.contains("set_steer") || src.contains("set_eye_height") || src.contains("tween_play")) {
+			has_genre = true;
 		}
 	}
 	if (!r_out.extra_scenes.is_empty()) {
@@ -727,7 +751,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		tape.push_back(uint8_t(OP_CALL_NATIVE));
 		tape.push_back(uint8_t(NAT_CAN_LOAD));
 	}
-	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys || has_cam_rt || has_tween || has_slide || has_hitq || has_fade || has_change || has_load || has_inst || has_ram || has_seek || has_branch || has_gameplay) {
+	if (has_gd_rotate || has_lu_rotate || has_input || has_translate || has_kit || has_say || has_nav || has_sys || has_cam_rt || has_tween || has_slide || has_hitq || has_fade || has_change || has_load || has_inst || has_ram || has_seek || has_branch || has_gameplay || has_genre) {
 		tape.push_back(uint8_t(OP_PROCESS));
 		if (has_gd_rotate || has_lu_rotate) {
 			tape.push_back(uint8_t(OP_LOAD_DELTA));
@@ -856,6 +880,38 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 			tape.push_back(uint8_t(OP_CALL_NATIVE));
 			tape.push_back(uint8_t(NAT_PEEK));
 		}
+		if (has_genre) {
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 0.0f);
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 0.0f);
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 0.0f);
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 0.0f);
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 0.0f);
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 0.0f);
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 1.0f);
+			tape.push_back(uint8_t(OP_CALL_NATIVE));
+			tape.push_back(uint8_t(NAT_MOVE_6DOF));
+			tape.push_back(uint8_t(OP_CALL_NATIVE));
+			tape.push_back(uint8_t(NAT_LOAD_PARTICLES));
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 1.0f);
+			tape.push_back(uint8_t(OP_CALL_NATIVE));
+			tape.push_back(uint8_t(NAT_PATH_FOLLOW));
+			tape.push_back(uint8_t(OP_LOADK_F));
+			append_f32(tape, 1.0f);
+			tape.push_back(uint8_t(OP_CALL_NATIVE));
+			tape.push_back(uint8_t(NAT_SET_THRUST));
+			tape.push_back(uint8_t(OP_CALL_NATIVE));
+			tape.push_back(uint8_t(NAT_NAVMESH));
+			tape.push_back(uint8_t(OP_CALL_NATIVE));
+			tape.push_back(uint8_t(NAT_PREFETCH_SCENE));
+		}
 	}
 	tape.push_back(uint8_t(OP_END));
 	if (tape.size() > 1536) {
@@ -943,8 +999,15 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		r_out.ir_text += "IR PS2.poke/peek (24KiB)\n";
 		r_out.ir_text += "IR PS2.get_pressure/set_stick_deadzone\n";
 	}
+	if (has_genre) {
+		r_out.ir_text += "IR PS2.move_6dof\n";
+		r_out.ir_text += "IR PS2.load_particles\n";
+		r_out.ir_text += "IR PS2.path_follow\n";
+		r_out.ir_text += "IR PS2.set_thrust\n";
+		r_out.ir_text += "IR PS2.navmesh\n";
+	}
 	if (has_tween) {
-		r_out.ir_text += "IR PS2.create_tween/create_timer (8 linear)\n";
+		r_out.ir_text += "IR PS2.create_tween/create_timer (16 linear)\n";
 	}
 	if (has_slide) {
 		r_out.ir_text += "IR PS2.move_and_slide (HIT00 AABB enter-only)\n";
@@ -983,7 +1046,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		r_out.warnings.push_back("set_fade is a GS blended fullscreen rect (not set_fog). change_scene_fade lerps that overlay to clear.");
 	}
 	if (has_tween) {
-		r_out.warnings.push_back("create_tween / create_timer are 8 linear slots on PS2 ABI 1 (volume tweens drive MUSIC). Not SceneTreeTween.");
+		r_out.warnings.push_back("create_tween / create_timer are 16 linear slots on PS2 ABI 1 (volume tweens drive MUSIC). Not SceneTreeTween.");
 	}
 	if (has_user) {
 		r_out.warnings.push_back("FileAccess user:// maps to host:SAVE.BIN then mc0:SAVE.BIN. Missing HostFs/memcard is a guest error.");

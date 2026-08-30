@@ -16,12 +16,14 @@
 #include "core/math/vector2.h"
 #include "core/math/vector3.h"
 #include "core/object/object.h"
+#include "core/string/node_path.h"
 #include "core/string/ustring.h"
 #include "core/object/object_id.h"
 #include "core/io/marshalls.h"
 #include "core/variant/dictionary.h"
 #include "core/variant/variant.h"
 #include "editor/plugins/editor_plugin.h"
+#include "scene/3d/node_3d.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/label.h"
 
@@ -721,6 +723,260 @@ public:
 			decode_variant(v, p_b.ptr(), p_b.size(), nullptr, false);
 		}
 		return v;
+	}
+	Vector3 move_6dof(const Variant &p_node, float p_ax, float p_ay, float p_az, float p_pitch, float p_yaw, float p_roll, float p_speed) {
+		_fail_ps2();
+		(void)p_node;
+		(void)p_ax;
+		(void)p_ay;
+		(void)p_az;
+		(void)p_pitch;
+		(void)p_yaw;
+		(void)p_roll;
+		(void)p_speed;
+		return Vector3();
+	}
+	bool set_steer(const Variant &p_node, float p_steer) {
+		_fail_ps2();
+		(void)p_node;
+		(void)p_steer;
+		return false;
+	}
+	bool set_thrust(const Variant &p_node, float p_thrust) {
+		_fail_ps2();
+		(void)p_node;
+		(void)p_thrust;
+		return false;
+	}
+	bool set_eye_height(float p_h) {
+		_fail_ps2();
+		(void)p_h;
+		return false;
+	}
+	bool load_particles(const String &p_path) {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool unload_particles(const String &p_path = String()) {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool can_load_particles(const String &p_path) const {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool is_particles_loaded(const String &p_path = String()) const {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	bool path_follow(const Variant &p_node, float p_speed) {
+		_fail_ps2();
+		(void)p_node;
+		(void)p_speed;
+		return false;
+	}
+	bool set_path_offset(const Variant &p_node, float p_t) {
+		_fail_ps2();
+		(void)p_node;
+		(void)p_t;
+		return false;
+	}
+	bool prefetch_scene(const String &p_path) const {
+		_fail_ps2();
+		(void)p_path;
+		return false;
+	}
+	int navmesh(const Variant &p_node, const Variant &p_goal) {
+		_fail_ps2();
+		(void)p_node;
+		(void)p_goal;
+		return -1;
+	}
+	bool tween_play(const Variant &p_tween) {
+		_fail_ps2();
+		(void)p_tween;
+		return false;
+	}
+	bool tween_kill(const Variant &p_tween) {
+		_fail_ps2();
+		(void)p_tween;
+		return false;
+	}
+};
+
+class PS2Spawner : public Node3D {
+	GDCLASS(PS2Spawner, Node3D);
+	String scene_path;
+
+protected:
+	static void _bind_methods();
+
+public:
+	void set_scene(const String &p_path) { scene_path = p_path; }
+	String get_scene() const { return scene_path; }
+	Variant spawn() {
+		ERR_PRINT("PS2Spawner.spawn only works on a PS2 export.");
+		return Variant();
+	}
+};
+
+class PS2CameraVolume : public Node3D {
+	GDCLASS(PS2CameraVolume, Node3D);
+	int camera_index = 0;
+
+protected:
+	static void _bind_methods();
+
+public:
+	void set_camera_index(int p_i) { camera_index = p_i; }
+	int get_camera_index() const { return camera_index; }
+	bool make_current() {
+		ERR_PRINT("PS2CameraVolume.make_current only works on a PS2 export.");
+		return false;
+	}
+};
+
+class PS2Follow : public Node3D {
+	GDCLASS(PS2Follow, Node3D);
+	NodePath target;
+	float speed = 4.0f;
+
+protected:
+	static void _bind_methods();
+
+public:
+	void set_target_path(const NodePath &p_p) { target = p_p; }
+	NodePath get_target_path() const { return target; }
+	void set_speed(float p_s) { speed = p_s; }
+	float get_speed() const { return speed; }
+	bool follow() {
+		ERR_PRINT("PS2Follow.follow only works on a PS2 export.");
+		return false;
+	}
+};
+
+class PS2Waypoint : public Node3D {
+	GDCLASS(PS2Waypoint, Node3D);
+
+protected:
+	static void _bind_methods();
+};
+
+class PS2Path : public Node3D {
+	GDCLASS(PS2Path, Node3D);
+	float offset = 0.0f;
+
+protected:
+	static void _bind_methods();
+
+public:
+	void set_path_offset(float p_t) { offset = p_t; }
+	float get_path_offset() const { return offset; }
+	bool path_follow(float p_speed) {
+		ERR_PRINT("PS2Path.path_follow only works on a PS2 export.");
+		(void)p_speed;
+		return false;
+	}
+};
+
+class PS2NavRegion : public Node3D {
+	GDCLASS(PS2NavRegion, Node3D);
+
+protected:
+	static void _bind_methods();
+
+public:
+	bool nav_follow(const Variant &p_goal, float p_speed) {
+		ERR_PRINT("PS2NavRegion.nav_follow only works on a PS2 export.");
+		(void)p_goal;
+		(void)p_speed;
+		return false;
+	}
+	int nav_next() {
+		ERR_PRINT("PS2NavRegion.nav_next only works on a PS2 export.");
+		return -1;
+	}
+};
+
+class PS2Vehicle : public Node3D {
+	GDCLASS(PS2Vehicle, Node3D);
+	int mode = 0;
+	float mass = 1.0f;
+	float thrust = 8.0f;
+	float steer = 0.0f;
+
+protected:
+	static void _bind_methods();
+
+public:
+	void set_mode(int p_m) { mode = p_m; }
+	int get_mode() const { return mode; }
+	void set_mass(float p_m) { mass = p_m; }
+	float get_mass() const { return mass; }
+	void set_thrust(float p_t) { thrust = p_t; }
+	float get_thrust() const { return thrust; }
+	void set_steer(float p_s) { steer = p_s; }
+	float get_steer() const { return steer; }
+	Vector3 move_6dof(float p_ax, float p_ay, float p_az, float p_pitch, float p_yaw, float p_roll, float p_speed) {
+		ERR_PRINT("PS2Vehicle.move_6dof only works on a PS2 export.");
+		(void)p_ax;
+		(void)p_ay;
+		(void)p_az;
+		(void)p_pitch;
+		(void)p_yaw;
+		(void)p_roll;
+		(void)p_speed;
+		return Vector3();
+	}
+};
+
+class PS2Particles : public Node3D {
+	GDCLASS(PS2Particles, Node3D);
+	int mode = 0;
+	int amount = 16;
+	float lifetime = 1.0f;
+
+protected:
+	static void _bind_methods();
+
+public:
+	void set_mode(int p_m) { mode = p_m; }
+	int get_mode() const { return mode; }
+	void set_amount(int p_n) { amount = p_n; }
+	int get_amount() const { return amount; }
+	void set_lifetime(float p_t) { lifetime = p_t; }
+	float get_lifetime() const { return lifetime; }
+	bool load_particles() {
+		ERR_PRINT("PS2Particles.load_particles only works on a PS2 export.");
+		return false;
+	}
+	bool unload_particles() {
+		ERR_PRINT("PS2Particles.unload_particles only works on a PS2 export.");
+		return false;
+	}
+};
+
+class PS2Tween : public Node3D {
+	GDCLASS(PS2Tween, Node3D);
+	float duration = 1.0f;
+
+protected:
+	static void _bind_methods();
+
+public:
+	void set_duration(float p_t) { duration = p_t; }
+	float get_duration() const { return duration; }
+	bool play() {
+		ERR_PRINT("PS2Tween.play only works on a PS2 export.");
+		return false;
+	}
+	bool kill() {
+		ERR_PRINT("PS2Tween.kill only works on a PS2 export.");
+		return false;
 	}
 };
 

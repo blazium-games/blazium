@@ -27,11 +27,17 @@ static const int kMaxCameras = 8;
 static const int kMaxHits = 64;
 static const int kMaxHud = 16;
 static const int kMaxTiles = 256;
-static const int kMaxNav = 32;
+static const int kMaxNav = 128;
+static const int kMaxNavmVerts = 128;
+static const int kMaxNavmTris = 64;
+static const int kMaxPathPoints = 128;
+static const int kMaxPartEmit = 16;
+static const int kMaxVehl = 8;
 static const int kMaxAnim = 16;
 static const int kMaxSprites = 32;
 static const int kGsVramLimit = 4 * 1024 * 1024;
 static const int kEeRamLimit = 24 * 1024 * 1024;
+static const int kMaxExtraPackEe = 2 * 1024 * 1024;
 
 struct CookOptions {
 	int width = 640; // 640, 512, or 320
@@ -59,6 +65,10 @@ struct CookResult {
 	String nav_path;
 	String anim_path;
 	String sprt_path;
+	String part_path;
+	String path_path;
+	String navm_path;
+	String vehl_path;
 	String fmv_path;
 	String report;
 	Vector<String> extra_pack_files;

@@ -17,6 +17,7 @@
 #include "script_cook.h"
 
 #include "core/config/project_settings.h"
+#include "core/variant/variant.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/io/image.h"
@@ -52,11 +53,16 @@ static const char *kAllowed[] = {
 	"DirectionalLight3D", "OmniLight3D", "SpotLight3D", "Light3D",
 	"AudioStreamPlayer", "AudioStreamPlayer3D", "AudioStreamPlayer2D",
 	"Control", "CanvasLayer", "Label", "ColorRect", "Button", "TextureButton",
-	"Path3D", "PathFollow3D",
-	"Sprite2D", "AnimatedSprite2D", "Sprite3D", "Camera2D",
+	"Path3D", "PathFollow3D", "Path2D", "PathFollow2D",
+	"Sprite2D", "AnimatedSprite2D", "Sprite3D", "Camera2D", "Marker2D",
 	"TileMap", "TileMapLayer",
 	"Area2D", "Area3D", "CollisionShape2D", "CollisionShape3D",
 	"CharacterBody2D", "CharacterBody3D", "StaticBody2D", "StaticBody3D",
+	"CPUParticles2D", "CPUParticles3D", "GPUParticles2D", "GPUParticles3D",
+	"NavigationRegion2D", "NavigationRegion3D", "NavigationAgent2D", "NavigationAgent3D",
+	"VehicleBody3D", "VehicleWheel3D",
+	"PS2Spawner", "PS2CameraVolume", "PS2Follow", "PS2Waypoint", "PS2Path",
+	"PS2NavRegion", "PS2Vehicle", "PS2Particles", "PS2Tween",
 };
 
 static bool type_allowed(const String &p_cls) {
@@ -71,10 +77,8 @@ static bool type_allowed(const String &p_cls) {
 static bool type_refused(const String &p_cls) {
 	return p_cls == "AnimationTree" ||
 			p_cls.begins_with("RigidBody") ||
-			p_cls.begins_with("VehicleWheel") ||
 			p_cls.begins_with("SubViewport") ||
 			p_cls.begins_with("SoftBody") ||
-			p_cls.begins_with("GPUParticles") ||
 			p_cls == "Decal" || p_cls == "ReflectionProbe" ||
 			p_cls == "FogVolume" || p_cls == "VoxelGI";
 }
@@ -164,6 +168,41 @@ struct Gather {
 		Vector<AnimKey> keys;
 	};
 	Vector<AnimClip> anims;
+	struct PartRow {
+		int node_id = -1;
+		uint8_t mode = 0;
+		uint8_t tex = 0;
+		uint16_t maxp = 16;
+		float rate = 8.0f;
+		float life = 1.0f;
+		float stretch = 1.0f;
+		uint32_t color = 0xffffffff;
+	};
+	Vector<PartRow> parts;
+	struct PathPoly {
+		int node_id = -1;
+		Vector<Vector3> pts;
+	};
+	Vector<PathPoly> paths;
+	struct NavmVert {
+		Vector3 pos;
+	};
+	Vector<NavmVert> navm_verts;
+	struct NavmTri {
+		uint16_t a = 0;
+		uint16_t b = 0;
+		uint16_t c = 0;
+	};
+	Vector<NavmTri> navm_tris;
+	struct VehlRow {
+		int node_id = -1;
+		uint8_t mode = 0;
+		float mass = 1.0f;
+		float thrust = 8.0f;
+		float wx[4] = { -0.5f, 0.5f, -0.5f, 0.5f };
+		float wz[4] = { 0.6f, 0.6f, -0.6f, -0.6f };
+	};
+	Vector<VehlRow> vehls;
 	Vector<String> errors;
 	Vector<String> warnings;
 	int node_dropped = 0;
@@ -190,6 +229,22 @@ static uint8_t kind_of(Node *p_node) {
 	}
 	if (p_node->is_class("AnimationPlayer")) {
 		return 4;
+	}
+	if (p_node->is_class("PathFollow3D") || p_node->is_class("PathFollow2D") || p_node->is_class("PS2Path")) {
+		return 5;
+	}
+	if (p_node->is_class("PS2Follow")) {
+		return 6;
+	}
+	if (p_node->is_class("NavigationAgent3D") || p_node->is_class("NavigationAgent2D")) {
+		return 8;
+	}
+	if (p_node->is_class("PS2Vehicle") || p_node->is_class("VehicleBody3D")) {
+		return 9;
+	}
+	if (p_node->is_class("PS2Particles") || p_node->is_class("CPUParticles2D") || p_node->is_class("CPUParticles3D") ||
+			p_node->is_class("GPUParticles2D") || p_node->is_class("GPUParticles3D")) {
+		return 10;
 	}
 	if (Object::cast_to<Node3D>(p_node)) {
 		return 1;
@@ -232,11 +287,35 @@ static String kit_point_group(Node *p_node) {
 	if (nm == "talk" || nm == "talkzone" || p_node->is_in_group("talk") || p_node->has_meta("ps1_say") || p_node->has_meta("ps2_say")) {
 		return "talk";
 	}
-	if (nm == "spawner" || nm == "instance" || p_node->is_in_group("spawner") || p_node->has_meta("ps1_template") || p_node->has_meta("ps2_template")) {
+	if (nm == "spawner" || nm == "instance" || p_node->is_in_group("spawner") || p_node->has_meta("ps1_template") || p_node->has_meta("ps2_template") || p_node->is_class("PS2Spawner")) {
 		return "spawner";
 	}
 	if (nm == "save" || nm == "savezone" || nm == "loadslot" || p_node->is_in_group("save") || p_node->has_meta("ps1_save") || p_node->has_meta("ps2_save")) {
 		return "save";
+	}
+	if (p_node->is_class("PS2CameraVolume") || nm == "cameravolume" || p_node->is_in_group("camera_volume")) {
+		return "camera_volume";
+	}
+	if (p_node->is_class("PS2Follow") || nm == "follow" || p_node->is_in_group("follow")) {
+		return "follow";
+	}
+	if (p_node->is_class("PS2Waypoint") || p_node->is_in_group("waypoint") || p_node->is_in_group("waypoints")) {
+		return "waypoint";
+	}
+	if (p_node->is_class("PS2Path") || p_node->is_class("Path3D") || p_node->is_class("Path2D")) {
+		return "path";
+	}
+	if (p_node->is_class("PS2NavRegion") || p_node->is_class("NavigationRegion3D") || p_node->is_class("NavigationRegion2D")) {
+		return "nav_region";
+	}
+	if (p_node->is_class("PS2Vehicle") || p_node->is_class("VehicleBody3D")) {
+		return "vehicle";
+	}
+	if (p_node->is_class("PS2Particles") || p_node->is_class("CPUParticles2D") || p_node->is_class("CPUParticles3D")) {
+		return "particles";
+	}
+	if (p_node->is_class("PS2Tween")) {
+		return "tween";
 	}
 	return String();
 }
@@ -278,6 +357,30 @@ static uint8_t kit_id_of(const String &p_group) {
 	if (p_group == "save") {
 		return 12;
 	}
+	if (p_group == "camera_volume") {
+		return 13;
+	}
+	if (p_group == "follow") {
+		return 14;
+	}
+	if (p_group == "waypoint") {
+		return 15;
+	}
+	if (p_group == "path") {
+		return 16;
+	}
+	if (p_group == "nav_region") {
+		return 17;
+	}
+	if (p_group == "vehicle") {
+		return 18;
+	}
+	if (p_group == "particles") {
+		return 19;
+	}
+	if (p_group == "tween") {
+		return 20;
+	}
 	return 0;
 }
 
@@ -288,6 +391,12 @@ static void collect_kit_scene(Node *p_node, Gather &r_g) {
 			continue;
 		}
 		const String path = p_node->get_meta(k);
+		if (path.ends_with(".tscn") && !r_g.kit_scenes.has(path)) {
+			r_g.kit_scenes.push_back(path);
+		}
+	}
+	if (p_node->is_class("PS2Spawner")) {
+		const String path = p_node->get("scene");
 		if (path.ends_with(".tscn") && !r_g.kit_scenes.has(path)) {
 			r_g.kit_scenes.push_back(path);
 		}
@@ -467,6 +576,18 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent, const String &p_
 			row.pos = xf.origin;
 			row.rot = xf.basis.get_euler();
 			row.scale = xf.basis.get_scale();
+		} else if (p_node->is_class("Node2D")) {
+			const Variant posv = p_node->get("global_position");
+			if (posv.get_type() == Variant::VECTOR2) {
+				const Vector2 p = posv;
+				row.pos = Vector3(p.x, p.y, 0.0f);
+			}
+			row.rot = Vector3(0.0f, 0.0f, float(p_node->get("global_rotation")));
+			const Variant sc = p_node->get("scale");
+			if (sc.get_type() == Variant::VECTOR2) {
+				const Vector2 s = sc;
+				row.scale = Vector3(s.x, s.y, 1.0f);
+			}
 		}
 		my = r_g.nodes.size();
 		r_g.nodes.push_back(row);
@@ -725,19 +846,72 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent, const String &p_
 		const Ref<Curve3D> curve = path->get_curve();
 		if (curve.is_valid()) {
 			const Transform3D xf = world_xform(path);
+			Gather::PathPoly poly;
+			poly.node_id = my;
 			for (int i = 0; i < curve->get_point_count(); i++) {
+				const Vector3 wp = xf.xform(curve->get_point_position(i));
+				if (poly.pts.size() < kMaxPathPoints) {
+					poly.pts.push_back(wp);
+				}
 				if (r_g.nav.size() >= kMaxNav) {
 					r_g.nav_dropped++;
-					break;
+				} else {
+					Gather::NavVert v;
+					v.pos = wp;
+					v.node_id = my;
+					r_g.nav.push_back(v);
 				}
-				Gather::NavVert v;
-				v.pos = xf.xform(curve->get_point_position(i));
-				v.node_id = my;
-				r_g.nav.push_back(v);
+			}
+			if (!poly.pts.is_empty()) {
+				r_g.paths.push_back(poly);
 			}
 		}
 	}
-	if (!Object::cast_to<Path3D>(p_node) && (p_node->is_in_group("nav") || p_node->is_in_group("waypoint") || String(p_node->get_name()).begins_with("Nav"))) {
+	if (p_node->is_class("Path2D")) {
+		const Variant curvev = p_node->get("curve");
+		if (curvev.get_type() == Variant::OBJECT) {
+			Object *curve = curvev;
+			if (curve && curve->has_method("get_point_count") && curve->has_method("get_point_position")) {
+				Gather::PathPoly poly;
+				poly.node_id = my;
+				const int n = int(curve->call("get_point_count"));
+				const Variant posv = p_node->get("global_position");
+				Vector2 origin;
+				if (posv.get_type() == Variant::VECTOR2) {
+					origin = posv;
+				}
+				for (int i = 0; i < n; i++) {
+					const Vector2 lp = curve->call("get_point_position", i);
+					const Vector3 wp(origin.x + lp.x, origin.y + lp.y, 0.0f);
+					if (poly.pts.size() < kMaxPathPoints) {
+						poly.pts.push_back(wp);
+					}
+					if (r_g.nav.size() < kMaxNav) {
+						Gather::NavVert v;
+						v.pos = wp;
+						v.node_id = my;
+						r_g.nav.push_back(v);
+					} else {
+						r_g.nav_dropped++;
+					}
+				}
+				if (!poly.pts.is_empty()) {
+					r_g.paths.push_back(poly);
+				}
+			}
+		}
+	}
+	if (p_node->is_class("PS2Path") && !Object::cast_to<Path3D>(p_node) && !p_node->is_class("Path2D")) {
+		if (Node3D *n3 = Object::cast_to<Node3D>(p_node)) {
+			Gather::PathPoly poly;
+			poly.node_id = my;
+			poly.pts.push_back(world_xform(n3).origin);
+			r_g.paths.push_back(poly);
+		}
+	}
+	if (!Object::cast_to<Path3D>(p_node) && !p_node->is_class("Path2D") &&
+			(p_node->is_in_group("nav") || p_node->is_in_group("waypoint") || p_node->is_class("PS2Waypoint") ||
+					String(p_node->get_name()).begins_with("Nav"))) {
 		if (Node3D *n3 = Object::cast_to<Node3D>(p_node)) {
 			if (r_g.nav.size() < kMaxNav) {
 				Gather::NavVert v;
@@ -747,6 +921,106 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent, const String &p_
 			} else {
 				r_g.nav_dropped++;
 			}
+		} else if (p_node->is_class("Node2D") && r_g.nav.size() < kMaxNav) {
+			const Variant posv = p_node->get("global_position");
+			if (posv.get_type() == Variant::VECTOR2) {
+				const Vector2 p = posv;
+				Gather::NavVert v;
+				v.pos = Vector3(p.x, p.y, 0.0f);
+				v.node_id = my;
+				r_g.nav.push_back(v);
+			}
+		} else if (r_g.nav.size() >= kMaxNav) {
+			r_g.nav_dropped++;
+		}
+	}
+	if (p_node->is_class("NavigationRegion3D") || p_node->is_class("NavigationRegion2D") || p_node->is_class("PS2NavRegion")) {
+		const Variant meshv = p_node->get("navigation_mesh");
+		if (meshv.get_type() == Variant::OBJECT) {
+			Object *mesh = meshv;
+			if (mesh && mesh->has_method("get_vertices")) {
+				const PackedVector3Array verts = mesh->call("get_vertices");
+				const int base = r_g.navm_verts.size();
+				for (int i = 0; i < verts.size() && r_g.navm_verts.size() < kMaxNavmVerts; i++) {
+					Gather::NavmVert nv;
+					nv.pos = verts[i];
+					r_g.navm_verts.push_back(nv);
+				}
+				if (mesh->has_method("get_polygon_count") && mesh->has_method("get_polygon")) {
+					const int pc = int(mesh->call("get_polygon_count"));
+					for (int i = 0; i < pc && r_g.navm_tris.size() < kMaxNavmTris; i++) {
+						const PackedInt32Array poly = mesh->call("get_polygon", i);
+						if (poly.size() >= 3) {
+							Gather::NavmTri t;
+							t.a = uint16_t(base + poly[0]);
+							t.b = uint16_t(base + poly[1]);
+							t.c = uint16_t(base + poly[2]);
+							r_g.navm_tris.push_back(t);
+						}
+					}
+				}
+			}
+		}
+	}
+	if (p_node->is_class("CPUParticles2D") || p_node->is_class("CPUParticles3D") ||
+			p_node->is_class("GPUParticles2D") || p_node->is_class("GPUParticles3D") ||
+			p_node->is_class("PS2Particles")) {
+		if (r_g.parts.size() < kMaxPartEmit && my >= 0) {
+			Gather::PartRow pr;
+			pr.node_id = my;
+			pr.maxp = uint16_t(CLAMP(int(p_node->get("amount")), 1, 64));
+			if (p_node->is_class("PS2Particles")) {
+				pr.maxp = uint16_t(CLAMP(int(p_node->get("amount")), 1, 64));
+				pr.life = float(p_node->get("lifetime"));
+				pr.mode = uint8_t(int(p_node->get("mode")) & 3);
+			} else {
+				pr.life = float(p_node->get("lifetime"));
+				const String nm = String(p_node->get_name()).to_lower();
+				if (nm.contains("flip")) {
+					pr.mode = 1;
+				} else if (nm.contains("trail")) {
+					pr.mode = 2;
+				} else if (nm.contains("point")) {
+					pr.mode = 3;
+				}
+				if (p_node->has_meta("ps2_part_mode")) {
+					pr.mode = uint8_t(int(p_node->get_meta("ps2_part_mode")) & 3);
+				}
+			}
+			if (pr.life <= 0.01f) {
+				pr.life = 1.0f;
+			}
+			pr.rate = float(pr.maxp) / pr.life;
+			r_g.parts.push_back(pr);
+		}
+		if (p_node->is_class("GPUParticles2D") || p_node->is_class("GPUParticles3D")) {
+			r_g.warnings.push_back("GPUParticles cooked as PART CPU emit (no GPU particle server on PS2 ABI 1).");
+		}
+	}
+	if (p_node->is_class("PS2Vehicle") || p_node->is_class("VehicleBody3D")) {
+		if (r_g.vehls.size() < kMaxVehl && my >= 0) {
+			Gather::VehlRow vr;
+			vr.node_id = my;
+			if (p_node->is_class("PS2Vehicle")) {
+				vr.mode = uint8_t(int(p_node->get("mode")) & 3);
+				vr.mass = float(p_node->get("mass"));
+				vr.thrust = float(p_node->get("thrust"));
+			} else {
+				vr.mass = float(p_node->get("mass"));
+				const String nm = String(p_node->get_name()).to_lower();
+				if (nm.contains("hover")) {
+					vr.mode = 1;
+				} else if (nm.contains("6dof") || nm.contains("space")) {
+					vr.mode = 2;
+				}
+			}
+			if (vr.mass < 0.1f) {
+				vr.mass = 1.0f;
+			}
+			if (vr.thrust < 0.1f) {
+				vr.thrust = 8.0f;
+			}
+			r_g.vehls.push_back(vr);
 		}
 	}
 	if (p_node->is_in_group("tile") || String(p_node->get_name()).begins_with("Tile")) {
@@ -1079,6 +1353,106 @@ static Vector<uint8_t> write_nav_blob(const Gather &p_g) {
 	for (int i = 0; i < ne; i++) {
 		append_u16(out, uint16_t(i));
 		append_u16(out, uint16_t(i + 1));
+	}
+	return out;
+}
+
+static Vector<uint8_t> write_part_blob(const Gather &p_g) {
+	Vector<uint8_t> out;
+	out.push_back('P');
+	out.push_back('A');
+	out.push_back('R');
+	out.push_back('T');
+	append_u16(out, uint16_t(kCookABI));
+	append_u16(out, uint16_t(p_g.parts.size()));
+	for (int i = 0; i < p_g.parts.size(); i++) {
+		const Gather::PartRow &p = p_g.parts[i];
+		append_u16(out, uint16_t(int16_t(p.node_id)));
+		out.push_back(p.mode);
+		out.push_back(p.tex);
+		append_u16(out, p.maxp);
+		append_f32(out, p.rate);
+		append_f32(out, p.life);
+		append_f32(out, p.stretch);
+		append_u32(out, p.color);
+	}
+	return out;
+}
+
+static Vector<uint8_t> write_path_blob(const Gather &p_g) {
+	Vector<uint8_t> out;
+	out.push_back('P');
+	out.push_back('A');
+	out.push_back('T');
+	out.push_back('H');
+	append_u16(out, uint16_t(kCookABI));
+	int npts = 0;
+	for (int i = 0; i < p_g.paths.size(); i++) {
+		npts += p_g.paths[i].pts.size();
+	}
+	if (npts > kMaxPathPoints) {
+		npts = kMaxPathPoints;
+	}
+	append_u16(out, uint16_t(npts));
+	int written = 0;
+	for (int i = 0; i < p_g.paths.size() && written < npts; i++) {
+		for (int p = 0; p < p_g.paths[i].pts.size() && written < npts; p++) {
+			append_f32(out, p_g.paths[i].pts[p].x);
+			append_f32(out, p_g.paths[i].pts[p].y);
+			append_f32(out, p_g.paths[i].pts[p].z);
+			append_u16(out, uint16_t(int16_t(p_g.paths[i].node_id)));
+			append_u16(out, 0);
+			written++;
+		}
+	}
+	return out;
+}
+
+static Vector<uint8_t> write_navm_blob(const Gather &p_g) {
+	Vector<uint8_t> out;
+	out.push_back('N');
+	out.push_back('A');
+	out.push_back('V');
+	out.push_back('M');
+	append_u16(out, uint16_t(kCookABI));
+	const int nv = MIN(p_g.navm_verts.size(), kMaxNavmVerts);
+	const int nt = MIN(p_g.navm_tris.size(), kMaxNavmTris);
+	append_u16(out, uint16_t(nv));
+	append_u16(out, uint16_t(nt));
+	for (int i = 0; i < nv; i++) {
+		append_f32(out, p_g.navm_verts[i].pos.x);
+		append_f32(out, p_g.navm_verts[i].pos.y);
+		append_f32(out, p_g.navm_verts[i].pos.z);
+	}
+	for (int i = 0; i < nt; i++) {
+		append_u16(out, p_g.navm_tris[i].a);
+		append_u16(out, p_g.navm_tris[i].b);
+		append_u16(out, p_g.navm_tris[i].c);
+	}
+	return out;
+}
+
+static Vector<uint8_t> write_vehl_blob(const Gather &p_g) {
+	Vector<uint8_t> out;
+	out.push_back('V');
+	out.push_back('E');
+	out.push_back('H');
+	out.push_back('L');
+	append_u16(out, uint16_t(kCookABI));
+	append_u16(out, uint16_t(p_g.vehls.size()));
+	for (int i = 0; i < p_g.vehls.size(); i++) {
+		const Gather::VehlRow &v = p_g.vehls[i];
+		append_u16(out, uint16_t(int16_t(v.node_id)));
+		out.push_back(v.mode);
+		out.push_back(0);
+		append_f32(out, v.mass);
+		append_f32(out, v.thrust);
+		for (int w = 0; w < 4; w++) {
+			append_f32(out, v.wx[w]);
+		}
+		for (int w = 0; w < 4; w++) {
+			append_f32(out, v.wz[w]);
+		}
 	}
 	return out;
 }
@@ -1558,6 +1932,10 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 				{ vformat("NAV%02d.bin", pack), write_nav_blob(eg) },
 				{ vformat("ANIM%02d.bin", pack), write_anim_blob(eg) },
 				{ vformat("SPRT%02d.bin", pack), write_sprt_blob(eg) },
+				{ vformat("PART%02d.bin", pack), write_part_blob(eg) },
+				{ vformat("PATH%02d.bin", pack), write_path_blob(eg) },
+				{ vformat("NAVM%02d.bin", pack), write_navm_blob(eg) },
+				{ vformat("VEHL%02d.bin", pack), write_vehl_blob(eg) },
 			};
 			for (PackSys &s : psys) {
 				pack_ee += uint32_t(s.bytes.size());
@@ -1567,6 +1945,13 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 					free_live();
 					return ERR_CANT_CREATE;
 				}
+			}
+			if (pack_ee > uint32_t(kMaxExtraPackEe)) {
+				r_out.over_budget = true;
+				r_out.errors.push_back(vformat("extra pack %d EE %d exceeds 2 MiB STREAM cap.", pack, pack_ee));
+				r_out.report = r_out.errors[r_out.errors.size() - 1];
+				free_live();
+				return ERR_OUT_OF_MEMORY;
 			}
 			extra_ee.push_back(pack_ee);
 			extra_gs.push_back(pack_gs);
@@ -1589,7 +1974,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			free_live();
 			return ERR_CANT_CREATE;
 		}
-		r_out.warnings.push_back("STREAM packs (MESH01../NODE01.. plus CAM/HIT/HUD/TILE/NAV/ANIM/SPRT per pack) are not ELF-embedded. Guest loads them from host: or cdrom0: via PS2.change_scene / swap_pack / instantiate. EE 24 MiB and GS 4 MiB are shared — unload rooms/NPCs you are not using. Instantiating 20 unique NPC packs at once will refuse if their MESH/GTEX/SPRT sum does not fit. Use ps2/make_iso or output_kind EE ELF + ISO.");
+		r_out.warnings.push_back("STREAM packs (MESH01../NODE01.. plus CAM/HIT/HUD/TILE/NAV/ANIM/SPRT/PART/PATH/NAVM/VEHL per pack) are not ELF-embedded. Guest loads them from host: (PCSX2 HostFs) then cdrom0: (ISO 8.3). Extra packs are capped at 2 MiB EE. EE 24 MiB and GS 4 MiB are shared — unload rooms/NPCs you are not using. This is whole-file STREAM, not XA/IPU. Use ps2/make_iso or output_kind EE ELF + ISO.");
 	}
 
 	{
@@ -1660,6 +2045,10 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			{ "NAV00.bin", &r_out.nav_path, write_nav_blob(gathered) },
 			{ "ANIM00.bin", &r_out.anim_path, write_anim_blob(gathered) },
 			{ "SPRT00.bin", &r_out.sprt_path, write_sprt_blob(gathered) },
+			{ "PART00.bin", &r_out.part_path, write_part_blob(gathered) },
+			{ "PATH00.bin", &r_out.path_path, write_path_blob(gathered) },
+			{ "NAVM00.bin", &r_out.navm_path, write_navm_blob(gathered) },
+			{ "VEHL00.bin", &r_out.vehl_path, write_vehl_blob(gathered) },
 			{ "FMV00.bin", &r_out.fmv_path, write_fmv_blob() },
 		};
 		for (SysOut &s : sys) {
@@ -1684,7 +2073,8 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		r_out.warnings.push_back("HUD/TILE/NAV/CAM/HIT/ANIM/SPRT sit next to the ELF (host:) or on the ISO; they are not ELF-embedded.");
 		r_out.warnings.push_back("CAM00 look-at is Camera3D local -Z (Godot YXZ) plus FOV; guest gs_draw_set_camera applies them. current Camera3D is the default. VU1 is optional (dvp-as + packet2) else CPU GIF.");
 		r_out.warnings.push_back("PS2.set_camera / set_default_camera / make_current / next_camera / prev_camera switch baked CAM slots. L1/R1 still cycle. look_camera / shake_camera are runtime CAM.");
-		r_out.warnings.push_back("create_tween / create_timer are 8 linear slots (volume kind drives MUSIC). spawn_shot and play_xa stay refused.");
+		r_out.warnings.push_back("create_tween / create_timer are 16 linear slots (volume kind drives MUSIC). spawn_shot and play_xa stay refused.");
+		r_out.warnings.push_back("PART/PATH/NAVM/VEHL are RAM-gated sidecars. Prefetch checks host: then cdrom0: plus can_fit. Camera2D is CAM flag 2 (ortho).");
 		r_out.warnings.push_back("HIT00 AABBs clip PS2.move_and_slide / stick translate (enter-only). spawn_shot stays refused.");
 		r_out.warnings.push_back("PS2.overlaps / raycast / tile_solid_at query HIT00 AABBs and TILE00 cells. spawn_shot stays refused.");
 		r_out.warnings.push_back("PS2.set_fade / change_scene_fade are a GS alpha overlay (not set_fog). spawn_shot stays refused.");
