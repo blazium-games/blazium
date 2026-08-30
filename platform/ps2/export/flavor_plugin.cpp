@@ -18,6 +18,9 @@
 void PS2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_abi"), &PS2::get_abi);
 	ClassDB::bind_method(D_METHOD("is_ready"), &PS2::is_ready);
+	ClassDB::bind_method(D_METHOD("set_rumble", "device", "small", "large"), &PS2::set_rumble);
+	ClassDB::bind_method(D_METHOD("stop_rumble", "device"), &PS2::stop_rumble);
+	ClassDB::bind_method(D_METHOD("get_pressure", "device", "button"), &PS2::get_pressure);
 }
 
 void PS2FlavorEditorPlugin::_sync_singleton() {
@@ -44,7 +47,7 @@ void PS2FlavorEditorPlugin::_refresh() {
 		status->set_text("Turn on Project Settings → ps2/enabled for the PS2 flavor dock.\nPS2.* is PS2 export only; use OS.has_feature(\"ps2\").\nExport writes an EE ELF via blazium-toolchain (no Godot templates).");
 		return;
 	}
-	status->set_text("PS2 export is on. Project → Export → PS2 writes Game.elf by spawning blazium-toolchain.\nPS2.* only works on a PS2 export. Guard with OS.has_feature(\"ps2\").\nCook / GS mesh land in later phases. BIOS is only required for One-click.");
+	status->set_text("PS2 export is on. Project → Export → PS2 cooks ABI 1 and writes Game.elf via blazium-toolchain.\nGS mesh, scripts, pad, and CI gates are in. BIOS is only required for One-click.\nPS2.* (rumble/pressure) only works on a PS2 export. Guard with OS.has_feature(\"ps2\").");
 }
 
 void PS2FlavorEditorPlugin::_notification(int p_what) {

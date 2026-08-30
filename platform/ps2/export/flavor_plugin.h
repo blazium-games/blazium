@@ -36,6 +36,18 @@ public:
 		_fail_ps2();
 		return false;
 	}
+	bool set_rumble(int p_device, int p_small, int p_large) {
+		_fail_ps2();
+		return false;
+	}
+	bool stop_rumble(int p_device) {
+		_fail_ps2();
+		return false;
+	}
+	int get_pressure(int p_device, int p_button) const {
+		_fail_ps2();
+		return 0;
+	}
 };
 
 class PS2FlavorEditorPlugin : public EditorPlugin {
