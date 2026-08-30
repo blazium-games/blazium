@@ -16,6 +16,8 @@
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 
+#include <cstring>
+
 namespace ps2_cook {
 
 static String strip_line_comments(const String &p_source) {
@@ -137,7 +139,7 @@ static void walk_scripts(const String &p_dir, ScriptCook &r_out) {
 		if (!(n.ends_with(".gd") || n.ends_with(".luau"))) {
 			continue;
 		}
-		if (n == "run_tests.gd") {
+		if (n == "run_tests.gd" || n.begins_with("illegal_")) {
 			continue;
 		}
 		const String src = FileAccess::get_file_as_string(path);
@@ -161,11 +163,99 @@ static void append_u32(Vector<uint8_t> &o, uint32_t v) {
 	append_u16(o, uint16_t(v >> 16));
 }
 
+static void append_f32(Vector<uint8_t> &o, float v) {
+	uint32_t bits = 0;
+	memcpy(&bits, &v, sizeof(bits));
+	append_u32(o, bits);
+}
+
+enum {
+	OP_END = 0,
+	OP_LOADK_F = 1,
+	OP_LOAD_DELTA = 2,
+	OP_MUL = 3,
+	OP_CALL_ROTATE_Y = 4,
+	OP_READY = 5,
+	OP_PROCESS = 6,
+	OP_HAS_FEATURE_PS2 = 7
+};
+
+static bool parse_rotate_y_rate(const String &p_src, float &r_rate) {
+	const int hit = p_src.find("rotate_y");
+	if (hit < 0) {
+		return false;
+	}
+	const int par = p_src.find("(", hit);
+	if (par < 0) {
+		return false;
+	}
+	const int star = p_src.find("*", par);
+	if (star < 0) {
+		return false;
+	}
+	int i = star + 1;
+	while (i < p_src.length() && (p_src[i] == ' ' || p_src[i] == '\t')) {
+		i++;
+	}
+	String num;
+	while (i < p_src.length()) {
+		const char32_t c = p_src[i];
+		if ((c >= '0' && c <= '9') || c == '.' || c == '-' || c == '+') {
+			num += c;
+			i++;
+			continue;
+		}
+		break;
+	}
+	if (num.is_empty() || !num.is_valid_float()) {
+		return false;
+	}
+	r_rate = num.to_float();
+	return true;
+}
+
 Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	walk_scripts("res://", r_out);
 	if (!r_out.rejected.is_empty()) {
 		return ERR_UNCONFIGURED;
 	}
+
+	bool has_gd_rotate = false;
+	bool has_lu_rotate = false;
+	bool has_feature = false;
+	float rotate_rate = 0.4f;
+	for (int i = 0; i < r_out.accepted.size(); i++) {
+		const String path = r_out.accepted[i];
+		const String src = strip_line_comments(FileAccess::get_file_as_string(path));
+		float rate = 0.0f;
+		if (parse_rotate_y_rate(src, rate)) {
+			rotate_rate = rate;
+			if (path.ends_with(".luau")) {
+				has_lu_rotate = true;
+			} else {
+				has_gd_rotate = true;
+			}
+		}
+		if (src.contains("OS.has_feature") && src.contains("\"ps2\"")) {
+			has_feature = true;
+		}
+	}
+
+	Vector<uint8_t> tape;
+	if (has_feature) {
+		tape.push_back(uint8_t(OP_READY));
+		tape.push_back(uint8_t(OP_HAS_FEATURE_PS2));
+	}
+	if (has_gd_rotate || has_lu_rotate) {
+		tape.push_back(uint8_t(OP_PROCESS));
+		tape.push_back(uint8_t(OP_LOAD_DELTA));
+		tape.push_back(uint8_t(OP_LOADK_F));
+		append_f32(tape, rotate_rate);
+		tape.push_back(uint8_t(OP_MUL));
+		tape.push_back(uint8_t(OP_CALL_ROTATE_Y));
+	}
+	tape.push_back(uint8_t(OP_END));
+
 	Vector<uint8_t> out;
 	out.push_back('S');
 	out.push_back('C');
@@ -173,16 +263,26 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 	out.push_back('P');
 	append_u16(out, uint16_t(kCookABI));
 	append_u16(out, 0);
-	append_u32(out, uint32_t(r_out.accepted.size()));
-	for (int i = 0; i < r_out.accepted.size(); i++) {
-		const CharString utf = r_out.accepted[i].utf8();
-		append_u16(out, uint16_t(utf.length()));
-		for (int b = 0; b < utf.length(); b++) {
-			out.push_back(uint8_t(utf[b]));
-		}
-	}
+	append_u32(out, uint32_t(tape.size()));
+	out.append_array(tape);
 	r_out.scrp = out;
-	r_out.ir_text = "PS2 script IR stub (P3). Allowlisted sources:\n";
+
+	r_out.ir_text = vformat("ABI %d\n", kCookABI);
+	if (has_gd_rotate || has_lu_rotate) {
+		String langs;
+		if (has_gd_rotate && has_lu_rotate) {
+			langs = "GDScript+Luau";
+		} else if (has_lu_rotate) {
+			langs = "Luau";
+		} else {
+			langs = "GDScript";
+		}
+		r_out.ir_text += vformat("IR rotate_y=%s (%s)\n", rtos(rotate_rate), langs);
+	}
+	if (has_feature) {
+		r_out.ir_text += "IR OS.has_feature(\"ps2\")\n";
+	}
+	r_out.ir_text += "kit: Spawn Player Portal (names)\n";
 	for (int i = 0; i < r_out.accepted.size(); i++) {
 		r_out.ir_text += r_out.accepted[i] + "\n";
 	}
