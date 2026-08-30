@@ -261,11 +261,13 @@ static int group_bit_of(const char *name);
 static void kit_bind_music(int pack);
 static void kit_bind_load(int pack);
 static void kit_bind_spawner(int pack);
+static void kit_bind_save(int pack);
 static void kit_bind_player_kit();
 static float kit_parse_fade(const char *s);
 static int aabb_overlap(int a, int b, int mask);
 static int hit_of_node(int node);
 static int mc_restore();
+static void mc_persist();
 
 enum {
 	kTapeReturn = 0,
@@ -1836,6 +1838,14 @@ static void kit_bind_camera(int pack) {
 		}
 	}
 	if (found < 0) {
+		for (int i = 0; i < g_ncam; i++) {
+			if (g_cams[i].dim != 2 && g_cams[i].is_default && int(g_cams[i].pack) == pack) {
+				found = i;
+				break;
+			}
+		}
+	}
+	if (found < 0) {
 		return;
 	}
 	const int pl = kit_find_player();
@@ -1844,6 +1854,15 @@ static void kit_bind_camera(int pack) {
 	}
 	g_cam_cur = found;
 	g_cam_attach = pl;
+	g_cam_offx = 0;
+	g_cam_offy = 0;
+	g_cam_offz = 0;
+	const int camn = int(g_cams[found].node_id);
+	if (node_ok(camn) && int(g_nodes[camn].parent) == pl) {
+		g_cam_offx = g_nodes[camn].px;
+		g_cam_offy = g_nodes[camn].py;
+		g_cam_offz = g_nodes[camn].pz;
+	}
 	g_script_cam = 1;
 	if (g_host && g_host->script_drives_cam) {
 		*g_host->script_drives_cam = 1;
@@ -2970,6 +2989,7 @@ static int load_pack_resident(int pack) {
 	kit_bind_music(pack);
 	kit_bind_load(pack);
 	kit_bind_spawner(pack);
+	kit_bind_save(pack);
 	return 1;
 }
 
@@ -4059,6 +4079,69 @@ static void kit_bind_spawner(int pack) {
 			continue;
 		}
 		kit_instantiate_spawner(i, 1);
+	}
+}
+
+static void kit_parse_save_slot(int nid, int *slot, int *load) {
+	char path[64];
+	char slice[16];
+	kit_fill_txt_path_slice(nid, path, 64, slice, 16);
+	*slot = 0;
+	*load = 0;
+	if (path[0]) {
+		*slot = int(kit_parse_fade(path));
+	}
+	if (*slot < 0) {
+		*slot = 0;
+	}
+	if (*slot > 9) {
+		*slot = 9;
+	}
+	if (name_is(slice, "load") || name_is(g_nodes[nid].name, "LoadSlot")) {
+		*load = 1;
+	}
+}
+
+static void kit_do_save_slot(int slot, int load) {
+	g_mc_title[0] = 'S';
+	g_mc_title[1] = 'L';
+	g_mc_title[2] = 'O';
+	g_mc_title[3] = 'T';
+	g_mc_title[4] = char('0' + slot);
+	g_mc_title[5] = 0;
+	if (load) {
+		mc_restore();
+	} else {
+		if (g_mc_len < 12) {
+			g_mc_len = 12;
+		}
+		mc_persist();
+	}
+}
+
+static void kit_bind_save(int pack) {
+	if (pack < 0 || pack >= g_npack) {
+		return;
+	}
+	const int sbit = group_bit_of("save");
+	if (sbit < 0) {
+		return;
+	}
+	const uint8_t mask = uint8_t(1u << sbit);
+	if (!g_packs[pack].text_resident) {
+		load_pack_slice(pack, "TXT");
+	}
+	for (int i = 0; i < g_nnode; i++) {
+		if (!g_node_used[i] || int(g_node_pack[i]) != pack || !(g_group[i] & mask)) {
+			continue;
+		}
+		if (hit_of_node(i) >= 0) {
+			continue;
+		}
+		int slot = 0;
+		int load = 0;
+		kit_parse_save_slot(i, &slot, &load);
+		kit_do_save_slot(slot, load);
 	}
 }
 
@@ -6965,6 +7048,7 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 				kit_bind_music(pack);
 				kit_bind_load(pack);
 				kit_bind_spawner(pack);
+				kit_bind_save(pack);
 				kit_apply_spawn();
 				kit_bind_player_kit();
 			}
@@ -9167,6 +9251,7 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 		kit_bind_music(pack);
 		kit_bind_load(pack);
 		kit_bind_spawner(pack);
+		kit_bind_save(pack);
 		kit_apply_spawn();
 		kit_bind_player_kit();
 		*ret = gv_int(1);
@@ -11105,6 +11190,19 @@ static void kit_tick_kit_areas(const ScriptVMHost *host) {
 			kit_instantiate_spawner(sp, 0);
 		}
 	}
+	const int svbit = group_bit_of("save");
+	if (svbit >= 0) {
+		const int sv = kit_first_in_group_overlap(pl, svbit, 1);
+		if (sv >= 0 && hit_of_node(sv) >= 0) {
+			int slot = 0;
+			int load = 0;
+			kit_parse_save_slot(sv, &slot, &load);
+			GVar dummy = gv_nil();
+			GVar args[1];
+			args[0] = gv_float(float(slot));
+			apply_call(host, pl, load ? "load_slot" : "save_slot", 0, args, 1, &dummy);
+		}
+	}
 	const int pbit = group_bit_of("portal");
 	if (pbit < 0) {
 		return;
@@ -11221,6 +11319,7 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 		kit_bind_music(0);
 		kit_bind_load(0);
 		kit_bind_spawner(0);
+		kit_bind_save(0);
 		kit_apply_spawn();
 		kit_bind_player_kit();
 	}

@@ -559,6 +559,15 @@ static String kit_point_group(Node *p_node) {
 	if (nm == "spawner" || nm == "instance" || p_node->is_in_group("spawner") || p_node->has_meta("ps1_template")) {
 		return "spawner";
 	}
+	{
+		const bool tagged = p_node->is_in_group("save") || p_node->has_meta("ps1_save") || p_node->has_meta("ps1_slot");
+		const bool named = (nm == "save" || nm == "savezone" || nm == "loadslot");
+		const bool place = Object::cast_to<Marker2D>(p_node) || Object::cast_to<Marker3D>(p_node) ||
+				Object::cast_to<Area2D>(p_node) || Object::cast_to<Area3D>(p_node);
+		if (tagged || (named && place)) {
+			return "save";
+		}
+	}
 	return String();
 }
 
@@ -636,6 +645,28 @@ static void cook_kit_volume_text(Node *p_node, const String &p_kit, SceneGather 
 		text = p_node->get_meta("ps1_say");
 	} else if (p_kit == "spawner" && p_node->has_meta("ps1_template") && p_node->get_meta("ps1_template").get_type() == Variant::STRING) {
 		text = p_node->get_meta("ps1_template");
+	} else if (p_kit == "save") {
+		int slot = 0;
+		if (p_node->has_meta("ps1_save")) {
+			slot = int(p_node->get_meta("ps1_save"));
+		} else if (p_node->has_meta("ps1_slot")) {
+			slot = int(p_node->get_meta("ps1_slot"));
+		}
+		if (slot < 0) {
+			slot = 0;
+		}
+		if (slot > 9) {
+			slot = 9;
+		}
+		text = String::num_int64(slot);
+		const String nm = String(p_node->get_name()).to_lower();
+		bool load = (nm == "loadslot");
+		if (p_node->has_meta("ps1_load_slot") && bool(p_node->get_meta("ps1_load_slot"))) {
+			load = true;
+		}
+		if (load) {
+			text += "|load";
+		}
 	}
 	if (text.is_empty() && (p_kit == "music" || p_kit == "unload")) {
 		text = r_g.scene_path;
@@ -1583,7 +1614,7 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 					cook_portal_dest(p_node, r_g);
 				} else if (kit == "hazard" || kit == "pickup") {
 					cook_kit_area_text(p_node, kit, r_g);
-				} else if (kit == "music" || kit == "unload" || kit == "load" || kit == "talk" || kit == "spawner") {
+				} else if (kit == "music" || kit == "unload" || kit == "load" || kit == "talk" || kit == "spawner" || kit == "save") {
 					cook_kit_volume_text(p_node, kit, r_g);
 				} else if (kit == "player") {
 					cook_player_kit_text(p_node, r_g);
@@ -2960,7 +2991,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	r_out.warnings.push_back("get_node walks the cooked tree; FileAccess user:// is the 24 KiB payload; not CARD BIOS. Memcard is Sony MC/SC wrap of user:// via pcdrv SAVE.MCD.");
 	r_out.warnings.push_back("can_load_* is a real budget/slice check; missing slice → false. is_*_loaded is the resident flag.");
 	r_out.warnings.push_back("2D/3D Godot scenes cook to AABB/mesh/sprite/HUD/cam/light while they fit 2 MiB; CharacterBody velocity + argless move_and_slide; AABB slide, not Jolt / Viewport / NavigationServer / skin.");
-	r_out.warnings.push_back("ABI 20: get_forward/right/up, translate_local, move_and_fly (6DoF AABB, not RigidBody); per-node is_on_floor; apply_gravity; set_coyote/set_jump_buffer/can_jump/consume_jump; set_one_way_pass; change_scene_fade; set_invuln/set_air_jumps/set_wall_jump/set_checkpoint/respawn/set_frame/set_flip; set_hitstop/knockback/say/swap_pack/stop_music/set_music_fade/set_checkpoint_scene; shot_hit_any/hurt/portal/nav_follow/move_planar/save_slot; set_spawn/set_global_position/unload_extras; set_process_when_paused/tween_is_done/overlaps_group/unload_pack_of/quit; node.x/y/z same units as set_position; get_tree().paused; to_global/to_local; TileMap set_cell/erase_cell; Engine.time_scale; load_meshes/unload_meshes/load_textures/unload_textures; load_tiles/unload_tiles/load_hud/unload_hud; get_flip_v/set_flip_v; honest TXT/SFX/HIT reclaim; unload_scene cascades ANIM/SPRITE/HIT/CAM/TXT/SFX/MUSIC; z_index/collision_layer; Color modulate; scene Spawn/Checkpoint/Portal; Camera2D bind + hazard/pickup ticks; scene Music/Unload volumes; scene Load/Talk volumes; scene Spawner + Hero kit meta (no ABI bump).");
+	r_out.warnings.push_back("ABI 20: get_forward/right/up, translate_local, move_and_fly (6DoF AABB, not RigidBody); per-node is_on_floor; apply_gravity; set_coyote/set_jump_buffer/can_jump/consume_jump; set_one_way_pass; change_scene_fade; set_invuln/set_air_jumps/set_wall_jump/set_checkpoint/respawn/set_frame/set_flip; set_hitstop/knockback/say/swap_pack/stop_music/set_music_fade/set_checkpoint_scene; shot_hit_any/hurt/portal/nav_follow/move_planar/save_slot; set_spawn/set_global_position/unload_extras; set_process_when_paused/tween_is_done/overlaps_group/unload_pack_of/quit; node.x/y/z same units as set_position; get_tree().paused; to_global/to_local; TileMap set_cell/erase_cell; Engine.time_scale; load_meshes/unload_meshes/load_textures/unload_textures; load_tiles/unload_tiles/load_hud/unload_hud; get_flip_v/set_flip_v; honest TXT/SFX/HIT reclaim; unload_scene cascades ANIM/SPRITE/HIT/CAM/TXT/SFX/MUSIC; z_index/collision_layer; Color modulate; scene Spawn/Checkpoint/Portal; Camera2D bind + hazard/pickup ticks; scene Music/Unload volumes; scene Load/Talk volumes; scene Spawner + Hero kit meta; Camera3D attach + scene Save/LoadSlot (no ABI bump).");
 	r_out.warnings.push_back("raycast_group + get_ray_point/node; 32 shots are not nodes; orbit clip; y-sort; wrap_position; set_cull_dist is draw cull.");
 	r_out.warnings.push_back("follow_node; 32 marker waypoints; 8 paths x 16 points; PathFollow tick; not Curve3D.");
 	r_out.warnings.push_back("32-vert NAV graph; nav_next one hop; not NavigationServer / get_nav_path.");
