@@ -81,6 +81,28 @@ String EditorExportPlatformPS1::_optional_runtime_src() const {
 	return String();
 }
 
+String EditorExportPlatformPS1::_optional_runtime_overlay() const {
+	if (OS::get_singleton() && OS::get_singleton()->has_environment("BLAZIUM_PS1_OVERLAY")) {
+		const String from_env = OS::get_singleton()->get_environment("BLAZIUM_PS1_OVERLAY");
+		if (!from_env.is_empty() && DirAccess::dir_exists_absolute(from_env)) {
+			return from_env;
+		}
+	}
+	if (EditorSettings::get_singleton()) {
+		const String from_settings = EditorSettings::get_singleton()->get("export/ps1/runtime_overlay");
+		if (!from_settings.is_empty() && DirAccess::dir_exists_absolute(from_settings)) {
+			return from_settings;
+		}
+	}
+	if (ProjectSettings::get_singleton()) {
+		const String project_guest = ProjectSettings::get_singleton()->globalize_path("res://ps1_guest");
+		if (!project_guest.is_empty() && DirAccess::dir_exists_absolute(project_guest)) {
+			return project_guest;
+		}
+	}
+	return String();
+}
+
 Dictionary EditorExportPlatformPS1::_toolchain_status() const {
 	List<String> args;
 	args.push_back("--json");
@@ -237,6 +259,7 @@ Error EditorExportPlatformPS1::export_project(const Ref<EditorExportPreset> &p_p
 	}
 
 	const String src = _optional_runtime_src();
+	const String overlay = _optional_runtime_overlay();
 
 	Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
 	da->make_dir_recursive(p_path.get_base_dir());
@@ -263,6 +286,12 @@ Error EditorExportPlatformPS1::export_project(const Ref<EditorExportPreset> &p_p
 		args.push_back("--src");
 		args.push_back(src);
 	}
+	if (!overlay.is_empty()) {
+		args.push_back("--overlay");
+		args.push_back(overlay);
+	}
+	args.push_back("--export-src");
+	args.push_back(p_path.get_base_dir().path_join("guest"));
 	args.push_back("--out");
 	args.push_back(p_path);
 	if (!cooked.tim_path.is_empty()) {

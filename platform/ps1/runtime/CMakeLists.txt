@@ -11,8 +11,16 @@ project(
 )
 
 psn00bsdk_add_executable(runtime GPREL main.cpp script_vm.cpp fmv_play.cpp)
+file(GLOB _ps1_root_extra RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "*.cpp")
+list(REMOVE_ITEM _ps1_root_extra main.cpp script_vm.cpp fmv_play.cpp)
+file(GLOB _ps1_extra RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
+	"extra/*.cpp" "extra/*.c" "extra/*.S")
+if(_ps1_root_extra OR _ps1_extra)
+	target_sources(runtime PRIVATE ${_ps1_root_extra} ${_ps1_extra})
+endif()
+target_include_directories(runtime PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/extra")
 target_compile_options(runtime PRIVATE -fno-exceptions -fno-rtti)
-	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_COOK_ABI=20)
+target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_COOK_ABI=20)
 
 set(BLAZIUM_PS1_TIM "" CACHE FILEPATH "Optional cooked TIM to embed")
 if(BLAZIUM_PS1_TIM)

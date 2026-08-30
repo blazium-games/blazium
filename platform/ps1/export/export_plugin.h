@@ -25,6 +25,7 @@ class EditorExportPlatformPS1 : public EditorExportPlatform {
 	static bool _host_supported();
 	String _find_toolchain() const;
 	String _optional_runtime_src() const;
+	String _optional_runtime_overlay() const;
 	Dictionary _toolchain_status() const;
 	Error _ensure_toolchain(const String &p_profile, String &r_error);
 	bool _scan_forbidden(const String &p_dir, String &r_hit) const;

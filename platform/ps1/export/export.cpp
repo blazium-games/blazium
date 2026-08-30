@@ -41,6 +41,8 @@ void register_ps1_exporter() {
 	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::STRING, "export/ps1/toolchain", PROPERTY_HINT_GLOBAL_FILE, "*.exe,*.bin,*"));
 	EDITOR_DEF("export/ps1/runtime_src", "");
 	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::STRING, "export/ps1/runtime_src", PROPERTY_HINT_GLOBAL_DIR));
+	EDITOR_DEF("export/ps1/runtime_overlay", "");
+	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::STRING, "export/ps1/runtime_overlay", PROPERTY_HINT_GLOBAL_DIR));
 
 	Ref<EditorExportPlatformPS1> platform;
 	platform.instantiate();
