@@ -259,6 +259,7 @@ static void copy_str(char *dst, int max, const char *src);
 static int pack_id_of(int node);
 static int group_bit_of(const char *name);
 static void kit_bind_music(int pack);
+static void kit_bind_load(int pack);
 static int aabb_overlap(int a, int b, int mask);
 static int hit_of_node(int node);
 static int mc_restore();
@@ -2964,6 +2965,7 @@ static int load_pack_resident(int pack) {
 	kit_bind_scene_points(pack);
 	kit_bind_camera(pack);
 	kit_bind_music(pack);
+	kit_bind_load(pack);
 	return 1;
 }
 
@@ -3913,6 +3915,94 @@ static void kit_bind_music(int pack) {
 	}
 	if (load_pack_slice(dest, "MUSIC")) {
 		g_music_pack = pack;
+	}
+}
+
+static void kit_fill_txt_path_slice(int nid, char *path, int path_max, char *slice, int slice_max) {
+	path[0] = 0;
+	slice[0] = 0;
+	const char *raw = "";
+	for (int i = 0; i < g_ntxt; i++) {
+		if (g_txt[i].name[0] && name_is(g_txt[i].name, g_nodes[nid].name)) {
+			raw = g_txt[i].text;
+			break;
+		}
+	}
+	const char *bar = nullptr;
+	for (const char *c = raw; *c; c++) {
+		if (*c == '|') {
+			bar = c;
+			break;
+		}
+	}
+	if (bar) {
+		int n = 0;
+		for (const char *c = raw; c < bar && n < path_max - 1; c++) {
+			path[n++] = *c;
+		}
+		path[n] = 0;
+		n = 0;
+		for (const char *c = bar + 1; *c && n < slice_max - 1; c++) {
+			slice[n++] = *c;
+		}
+		slice[n] = 0;
+	} else if (raw[0]) {
+		copy_str(path, path_max, raw);
+	}
+}
+
+static void kit_do_load(const char *path, const char *slice) {
+	if (!path || !path[0]) {
+		return;
+	}
+	const int dest = find_pack_path(path);
+	if (dest < 0) {
+		return;
+	}
+	if (!slice || !slice[0] || name_is(slice, "all")) {
+		if (g_packs[dest].resident) {
+			return;
+		}
+		load_pack_resident(dest);
+		return;
+	}
+	if (name_is(slice, "meshes") || name_is(slice, "mesh")) {
+		load_pack_slice(dest, "MESH");
+	} else if (name_is(slice, "audio") || name_is(slice, "sfx")) {
+		load_pack_slice(dest, "SFX");
+	} else if (name_is(slice, "tiles")) {
+		load_pack_slice(dest, "TILE");
+	} else if (name_is(slice, "hud")) {
+		load_pack_slice(dest, "HUD");
+	}
+}
+
+static void kit_bind_load(int pack) {
+	if (pack < 0 || pack >= g_npack) {
+		return;
+	}
+	const int lbit = group_bit_of("load");
+	if (lbit < 0) {
+		return;
+	}
+	const uint8_t mask = uint8_t(1u << lbit);
+	if (!g_packs[pack].text_resident) {
+		load_pack_slice(pack, "TXT");
+	}
+	for (int i = 0; i < g_nnode; i++) {
+		if (!g_node_used[i] || int(g_node_pack[i]) != pack || !(g_group[i] & mask)) {
+			continue;
+		}
+		if (hit_of_node(i) >= 0) {
+			continue;
+		}
+		char path[64];
+		char slice[16];
+		kit_fill_txt_path_slice(i, path, 64, slice, 16);
+		if (!path[0]) {
+			continue;
+		}
+		kit_do_load(path, slice);
 	}
 }
 
@@ -6750,6 +6840,7 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 				kit_bind_scene_points(pack);
 				kit_bind_camera(pack);
 				kit_bind_music(pack);
+				kit_bind_load(pack);
 				kit_apply_spawn();
 			}
 			*ret = gv_bool(ok);
@@ -8949,6 +9040,7 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 		kit_bind_scene_points(pack);
 		kit_bind_camera(pack);
 		kit_bind_music(pack);
+		kit_bind_load(pack);
 		kit_apply_spawn();
 		*ret = gv_int(1);
 		return 1;
@@ -10826,6 +10918,59 @@ static void kit_tick_kit_areas(const ScriptVMHost *host) {
 			}
 		}
 	}
+	const int lbit = group_bit_of("load");
+	if (lbit >= 0) {
+		const int ld = kit_first_in_group_overlap(pl, lbit, 1);
+		if (ld >= 0 && hit_of_node(ld) >= 0) {
+			char path[64];
+			char slice[16];
+			kit_fill_txt_path_slice(ld, path, 64, slice, 16);
+			if (path[0]) {
+				GVar dummy = gv_nil();
+				GVar args[1];
+				args[0].type = V_STR;
+				copy_str(args[0].s, 32, path);
+				if (!slice[0] || name_is(slice, "all")) {
+					apply_call(host, pl, "load_scene", 0, args, 1, &dummy);
+				} else if (name_is(slice, "meshes") || name_is(slice, "mesh")) {
+					apply_call(host, pl, "load_meshes", 0, args, 1, &dummy);
+				} else if (name_is(slice, "audio") || name_is(slice, "sfx")) {
+					apply_call(host, pl, "load_audio", 0, args, 1, &dummy);
+				} else if (name_is(slice, "tiles")) {
+					apply_call(host, pl, "load_tiles", 0, args, 1, &dummy);
+				} else if (name_is(slice, "hud")) {
+					apply_call(host, pl, "load_hud", 0, args, 1, &dummy);
+				}
+			}
+		}
+	}
+	const int tbit = group_bit_of("talk");
+	if (tbit >= 0) {
+		const int tk = kit_first_in_group_overlap(pl, tbit, 1);
+		if (tk >= 0) {
+			char line[64];
+			char extra[16];
+			kit_fill_txt_path_slice(tk, line, 64, extra, 16);
+			float cps = 20;
+			if (extra[0]) {
+				cps = kit_parse_fade(extra);
+				if (cps <= 0) {
+					cps = 20;
+				}
+			}
+			GVar sayv[3];
+			sayv[0] = gv_int(0);
+			sayv[1].type = V_STR;
+			if (line[0]) {
+				copy_str(sayv[1].s, 32, line);
+			} else {
+				copy_str(sayv[1].s, 32, g_nodes[tk].name);
+			}
+			sayv[2] = gv_float(cps);
+			GVar dummy = gv_nil();
+			apply_call(host, pl, "say", 0, sayv, 3, &dummy);
+		}
+	}
 	const int pbit = group_bit_of("portal");
 	if (pbit < 0) {
 		return;
@@ -10940,6 +11085,7 @@ int script_vm_process(float delta, const ScriptVMHost *host) {
 		kit_bind_scene_points(0);
 		kit_bind_camera(0);
 		kit_bind_music(0);
+		kit_bind_load(0);
 		kit_apply_spawn();
 	}
 	kit_tick_kit_areas(host);
