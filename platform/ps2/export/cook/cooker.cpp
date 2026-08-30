@@ -1369,6 +1369,15 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			if (cooked_extras[i].to_lower().contains("systems_kit")) {
 				names->store_line("fixture: systems_kit");
 			}
+			if (cooked_extras[i].to_lower().contains("platformer")) {
+				names->store_line("fixture: platformer");
+			}
+			if (cooked_extras[i].to_lower().contains("adventure")) {
+				names->store_line("fixture: adventure");
+			}
+			if (cooked_extras[i].to_lower().contains("shmup")) {
+				names->store_line("fixture: shmup");
+			}
 		}
 		if (!r_out.stream_path.is_empty()) {
 			names->store_line(vformat("stream: STREAM.bin packs %d", extra_gathers.size()));
