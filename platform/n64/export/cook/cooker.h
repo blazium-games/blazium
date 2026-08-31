@@ -27,6 +27,13 @@ static const int kMaxHits = 64;
 static const int kMaxAnims = 16;
 static const int kMaxSprites = 32;
 static const int kMaxTiles = 256;
+static const int kMaxParts = 8;
+static const int kMaxPaths = 8;
+static const int kMaxPathPoints = 32;
+static const int kMaxWaypoints = 32;
+static const int kMaxNavmVerts = 64;
+static const int kMaxNavmTris = 32;
+static const int kMaxVehicles = 4;
 static const int kTmemBytes = 4096;
 static const int kNtexFmtRgba16 = 1;
 static const int kRdramBudget = 6815744; // 6.5 MiB of 8 MiB Expansion Pak
@@ -76,6 +83,12 @@ struct CookResult {
 	String anim_path;
 	String sprt_path;
 	String tile_path;
+	String prtn_path;
+	String pthn_path;
+	String wayn_path;
+	String navn_path;
+	String navm_path;
+	String vehn_path;
 	String report;
 	Vector<String> errors;
 	Vector<String> warnings;

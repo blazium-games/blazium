@@ -158,4 +158,132 @@ Error write_tiln_blob(const Vector<TileRow> &p_tiles, Vector<uint8_t> &r_out) {
 	return OK;
 }
 
+Error write_prtn_blob(const Vector<PartRow> &p_parts, Vector<uint8_t> &r_out) {
+	if (p_parts.size() > kMaxParts) {
+		return ERR_OUT_OF_MEMORY;
+	}
+	r_out.clear();
+	magic4(r_out, 'P', 'R', 'T', 'N');
+	append_u16(r_out, uint16_t(kCookABI));
+	append_u16(r_out, uint16_t(p_parts.size()));
+	for (int i = 0; i < p_parts.size(); i++) {
+		const PartRow &p = p_parts[i];
+		append_u16(r_out, uint16_t(int16_t(p.node_id)));
+		r_out.push_back(p.mode);
+		r_out.push_back(0);
+		append_f32(r_out, p.rate);
+		append_f32(r_out, p.life);
+		append_f32(r_out, p.speed);
+		r_out.push_back(uint8_t(p.color & 0xff));
+		r_out.push_back(uint8_t((p.color >> 8) & 0xff));
+		r_out.push_back(uint8_t((p.color >> 16) & 0xff));
+		r_out.push_back(uint8_t((p.color >> 24) & 0xff));
+		append_f32(r_out, p.u0);
+		append_f32(r_out, p.v0);
+		append_f32(r_out, p.u1);
+		append_f32(r_out, p.v1);
+	}
+	return OK;
+}
+
+Error write_pthn_blob(const Vector<PathRow> &p_paths, Vector<uint8_t> &r_out) {
+	if (p_paths.size() > kMaxPaths) {
+		return ERR_OUT_OF_MEMORY;
+	}
+	r_out.clear();
+	magic4(r_out, 'P', 'T', 'H', 'N');
+	append_u16(r_out, uint16_t(kCookABI));
+	append_u16(r_out, uint16_t(p_paths.size()));
+	for (int i = 0; i < p_paths.size(); i++) {
+		const PathRow &p = p_paths[i];
+		if (p.pts.size() > kMaxPathPoints) {
+			return ERR_OUT_OF_MEMORY;
+		}
+		append_u16(r_out, uint16_t(int16_t(p.node_id)));
+		append_u16(r_out, uint16_t(p.pts.size()));
+		for (int k = 0; k < p.pts.size(); k++) {
+			append_f32(r_out, p.pts[k].x);
+			append_f32(r_out, p.pts[k].y);
+			append_f32(r_out, p.pts[k].z);
+		}
+	}
+	return OK;
+}
+
+Error write_wayn_blob(const Vector<WayRow> &p_ways, Vector<uint8_t> &r_out) {
+	if (p_ways.size() > kMaxWaypoints) {
+		return ERR_OUT_OF_MEMORY;
+	}
+	r_out.clear();
+	magic4(r_out, 'W', 'A', 'Y', 'N');
+	append_u16(r_out, uint16_t(kCookABI));
+	append_u16(r_out, uint16_t(p_ways.size()));
+	for (int i = 0; i < p_ways.size(); i++) {
+		append_u16(r_out, uint16_t(int16_t(p_ways[i].node_id)));
+		append_u16(r_out, 0);
+		append_f32(r_out, p_ways[i].pos.x);
+		append_f32(r_out, p_ways[i].pos.y);
+		append_f32(r_out, p_ways[i].pos.z);
+	}
+	return OK;
+}
+
+Error write_navn_blob(const Vector<NavEdge> &p_edges, Vector<uint8_t> &r_out) {
+	r_out.clear();
+	magic4(r_out, 'N', 'A', 'V', 'N');
+	append_u16(r_out, uint16_t(kCookABI));
+	append_u16(r_out, uint16_t(p_edges.size()));
+	for (int i = 0; i < p_edges.size(); i++) {
+		append_u16(r_out, p_edges[i].a);
+		append_u16(r_out, p_edges[i].b);
+	}
+	return OK;
+}
+
+Error write_navm_blob(const Vector<NavmVert> &p_verts, const Vector<NavmTri> &p_tris, Vector<uint8_t> &r_out) {
+	if (p_verts.size() > kMaxNavmVerts || p_tris.size() > kMaxNavmTris) {
+		return ERR_OUT_OF_MEMORY;
+	}
+	r_out.clear();
+	magic4(r_out, 'N', 'A', 'V', 'M');
+	append_u16(r_out, uint16_t(kCookABI));
+	append_u16(r_out, uint16_t(p_verts.size()));
+	append_u16(r_out, uint16_t(p_tris.size()));
+	append_u16(r_out, 0);
+	for (int i = 0; i < p_verts.size(); i++) {
+		append_f32(r_out, p_verts[i].pos.x);
+		append_f32(r_out, p_verts[i].pos.y);
+		append_f32(r_out, p_verts[i].pos.z);
+	}
+	for (int i = 0; i < p_tris.size(); i++) {
+		append_u16(r_out, p_tris[i].a);
+		append_u16(r_out, p_tris[i].b);
+		append_u16(r_out, p_tris[i].c);
+	}
+	return OK;
+}
+
+Error write_vehn_blob(const Vector<VehlRow> &p_vehls, Vector<uint8_t> &r_out) {
+	if (p_vehls.size() > kMaxVehicles) {
+		return ERR_OUT_OF_MEMORY;
+	}
+	r_out.clear();
+	magic4(r_out, 'V', 'E', 'H', 'N');
+	append_u16(r_out, uint16_t(kCookABI));
+	append_u16(r_out, uint16_t(p_vehls.size()));
+	for (int i = 0; i < p_vehls.size(); i++) {
+		const VehlRow &v = p_vehls[i];
+		append_u16(r_out, uint16_t(int16_t(v.node_id)));
+		r_out.push_back(v.mode);
+		r_out.push_back(0);
+		append_f32(r_out, v.pos.x);
+		append_f32(r_out, v.pos.y);
+		append_f32(r_out, v.pos.z);
+		append_f32(r_out, v.yaw);
+		append_f32(r_out, v.speed);
+		append_f32(r_out, v.turn);
+	}
+	return OK;
+}
+
 } // namespace n64_cook

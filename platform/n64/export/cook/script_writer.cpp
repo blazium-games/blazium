@@ -36,6 +36,9 @@ enum {
 	OP_SEEK_ANIM = 45,
 	OP_CALL_NATIVE = 48,
 	OP_LOAD_SCENE = 50,
+	OP_NAV_FOLLOW = 19,
+	OP_TWEEN = 32,
+	OP_KILL_TWEENS = 34,
 };
 
 enum {
@@ -49,6 +52,12 @@ enum {
 	NAT_LOAD_HITS = 77,
 	NAT_UNLOAD_HITS = 78,
 	NAT_UNLOAD_SPRITES = 79,
+	NAT_MOVE_6DOF = 69,
+	NAT_LOAD_PARTICLES = 70,
+	NAT_PATH_FOLLOW = 71,
+	NAT_FOLLOW_NODE = 80,
+	NAT_UNLOAD_PARTICLES = 81,
+	NAT_NAVMESH = 82,
 };
 
 static void append_u16(Vector<uint8_t> &o, uint16_t v) {
@@ -293,6 +302,60 @@ Error write_script_blob(const Vector<String> &p_sources, const HashMap<String, i
 		if (src.contains("user_save") || src.contains("godot_save_bytes") || src.contains("user://")) {
 			code.push_back(uint8_t(OP_USER_SAVE));
 			code.push_back(uint8_t(OP_USER_LOAD));
+		}
+		if (src.contains("create_tween") || src.contains("N64.create_tween")) {
+			code.push_back(uint8_t(OP_LOADK_F));
+			append_f32(code, 0.0f);
+			code.push_back(uint8_t(OP_LOADK_F));
+			append_f32(code, 1.0f);
+			code.push_back(uint8_t(OP_TWEEN));
+			r_ir_extra += "IR N64.create_tween\n";
+		}
+		if (src.contains("kill_tweens")) {
+			code.push_back(uint8_t(OP_KILL_TWEENS));
+		}
+		if (src.contains("path_follow") || src.contains("N64.path_follow")) {
+			code.push_back(uint8_t(OP_LOADK_F));
+			append_f32(code, 0.0f);
+			code.push_back(uint8_t(OP_CALL_NATIVE));
+			code.push_back(uint8_t(NAT_PATH_FOLLOW));
+			r_ir_extra += "IR N64.path_follow\n";
+		}
+		if (src.contains("follow_node")) {
+			code.push_back(uint8_t(OP_LOADK_F));
+			append_f32(code, 0.0f);
+			code.push_back(uint8_t(OP_CALL_NATIVE));
+			code.push_back(uint8_t(NAT_FOLLOW_NODE));
+			r_ir_extra += "IR N64.follow_node\n";
+		}
+		if (src.contains("load_particles") || src.contains("play_particles")) {
+			code.push_back(uint8_t(OP_LOADK_F));
+			append_f32(code, 0.0f);
+			code.push_back(uint8_t(OP_CALL_NATIVE));
+			code.push_back(uint8_t(NAT_LOAD_PARTICLES));
+			r_ir_extra += "IR PART billboard\n";
+		}
+		if (src.contains("unload_particles")) {
+			code.push_back(uint8_t(OP_CALL_NATIVE));
+			code.push_back(uint8_t(NAT_UNLOAD_PARTICLES));
+		}
+		if (src.contains("navmesh") || src.contains("nav_follow")) {
+			code.push_back(uint8_t(OP_NAV_FOLLOW));
+			code.push_back(uint8_t(OP_LOADK_F));
+			append_f32(code, 0.0f);
+			code.push_back(uint8_t(OP_CALL_NATIVE));
+			code.push_back(uint8_t(NAT_NAVMESH));
+			r_ir_extra += "IR NAVM\n";
+		}
+		if (src.contains("move_6dof") || src.contains("drive")) {
+			code.push_back(uint8_t(OP_LOADK_F));
+			append_f32(code, 0.0f);
+			code.push_back(uint8_t(OP_LOADK_F));
+			append_f32(code, 0.0f);
+			code.push_back(uint8_t(OP_LOADK_F));
+			append_f32(code, 0.0f);
+			code.push_back(uint8_t(OP_CALL_NATIVE));
+			code.push_back(uint8_t(NAT_MOVE_6DOF));
 		}
 	}
 	(void)any_src;
