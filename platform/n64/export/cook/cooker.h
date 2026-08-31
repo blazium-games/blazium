@@ -25,6 +25,7 @@ static const int kCookABI = 1;
 static const int kTmemBytes = 4096;
 static const int kNtexFmtRgba16 = 1;
 static const int kRdramBudget = 6815744; // 6.5 MiB of 8 MiB Expansion Pak
+static const int kRdramBudget4 = 2621440; // 2.5 MiB of 4 MiB no-pak (same 1.5 MiB slack)
 static const int kRomBudget = 16777216; // 16 MiB cartridge including DFS
 static const int kFbZBytes = 460800; // 320x240 16-bit double FB + 16-bit Z
 static const int kGuestReserve = 1258291; // ~1.2 MiB .text/heap (breakdown §11)
@@ -75,6 +76,6 @@ struct CookResult {
 	bool over_budget = false;
 };
 
-Error cook_project(const String &p_export_dir, CookResult &r_out, int p_display_w = 320);
+Error cook_project(const String &p_export_dir, CookResult &r_out, int p_display_w = 320, int p_rdram_mb = 8);
 
 } // namespace n64_cook

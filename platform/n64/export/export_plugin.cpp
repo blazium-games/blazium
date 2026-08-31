@@ -207,9 +207,11 @@ void EditorExportPlatformN64::get_platform_features(List<String> *r_features) co
 void EditorExportPlatformN64::get_export_options(List<ExportOption> *r_options) const {
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "n64/region", PROPERTY_HINT_ENUM, "Region-free,NTSC,PAL"), 0));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "n64/width", PROPERTY_HINT_ENUM, "320,640"), 0));
-	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "n64/display_hint", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY), "Default framebuffer is 320×240. 640×480 is P8 optional. Expansion Pak 8 MiB is always on."));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "n64/display_hint", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY), "Default framebuffer is 320×240. 640×480 is P8 optional. Default RDRAM is 8 MiB Expansion Pak; 4 MiB no-pak is P8 optional."));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "n64/rumble", PROPERTY_HINT_ENUM, "Off,On"), 0));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "n64/rumble_hint", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY), "Rumble Pak is P8 optional. Skip the motor if the accessory is missing."));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "n64/rdram", PROPERTY_HINT_ENUM, "8 MiB,4 MiB"), 0));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "n64/rdram_hint", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY), "4 MiB no-pak tightens the RDRAM cook cap; skip Project64 (unknown-ROM pin stays 8 MB)."));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "n64/emu", PROPERTY_HINT_ENUM, "Host default,Ares,Project64"), 0));
 }
 
@@ -313,8 +315,9 @@ Error EditorExportPlatformN64::export_project(const Ref<EditorExportPreset> &p_p
 	da->make_dir_recursive(p_path.get_base_dir());
 
 	const int display_w = int(p_preset->get("n64/width")) == 1 ? 640 : 320;
+	const int rdram_mb = int(p_preset->get("n64/rdram")) == 1 ? 4 : 8;
 	n64_cook::CookResult cooked;
-	const Error cook_err = n64_cook::cook_project(p_path.get_base_dir(), cooked, display_w);
+	const Error cook_err = n64_cook::cook_project(p_path.get_base_dir(), cooked, display_w, rdram_mb);
 	if (cook_err != OK || !cooked.errors.is_empty()) {
 		const String msg = cooked.errors.is_empty() ? (cooked.report.is_empty() ? String("N64 cook failed.") : cooked.report) : cooked.errors[0];
 		add_message(EXPORT_MESSAGE_ERROR, "N64", msg);
@@ -371,6 +374,10 @@ Error EditorExportPlatformN64::export_project(const Ref<EditorExportPreset> &p_p
 	}
 	if (int(p_preset->get("n64/rumble")) == 1) {
 		args.push_back("--rumble");
+	}
+	if (rdram_mb == 4) {
+		args.push_back("--rdram");
+		args.push_back("4");
 	}
 	args.push_back("--export-src");
 	args.push_back(p_path.get_base_dir().path_join("guest"));

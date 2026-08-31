@@ -289,7 +289,7 @@ static Vector<uint8_t> write_node_blob(const Gather &p_g) {
 	return out;
 }
 
-Error cook_project(const String &p_export_dir, CookResult &r_out, int p_display_w) {
+Error cook_project(const String &p_export_dir, CookResult &r_out, int p_display_w, int p_rdram_mb) {
 	Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
 	const Error mk = da->make_dir_recursive(p_export_dir);
 	ERR_FAIL_COND_V(mk != OK && mk != ERR_ALREADY_EXISTS, mk);
@@ -533,10 +533,11 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, int p_display_
 	const int tmem = albedo->get_width() * albedo->get_height() * 2;
 	const int rdram = fb_z + kGuestReserve + blob.size() + mesh_blob.size() + ntex_blob.size() + inp_blob.size() + sfx_blob.size() + music_blob.size() + pack_blob.size() + script_blob.size();
 	const int rom = blob.size() + mesh_blob.size() + ntex_blob.size() + inp_blob.size() + sfx_blob.size() + music_blob.size() + pack_blob.size() + script_blob.size() + kRomPad;
+	const int rdram_cap = p_rdram_mb == 4 ? kRdramBudget4 : kRdramBudget;
 	r_out.tmem_bytes = tmem;
 	r_out.rdram_bytes = rdram;
 	r_out.rom_bytes = rom;
-	r_out.over_budget = tmem > kTmemBytes || rdram > kRdramBudget || rom > kRomBudget;
+	r_out.over_budget = tmem > kTmemBytes || rdram > rdram_cap || rom > kRomBudget;
 
 	const String budget_path = p_export_dir.path_join("BUDGET.txt");
 	Ref<FileAccess> budget = FileAccess::open(budget_path, FileAccess::WRITE);
@@ -549,7 +550,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, int p_display_
 	budget->store_line(vformat("nodes %d/%d", r_out.nodes, kMaxNodes));
 	budget->store_line(vformat("tris %d/%d", r_out.tris, kMaxTris));
 	budget->store_line(vformat("tmem %d/%d", tmem, kTmemBytes));
-	budget->store_line(vformat("rdram %d/%d", rdram, kRdramBudget));
+	budget->store_line(vformat("rdram %d/%d", rdram, rdram_cap));
 	budget->store_line(vformat("rom %d/%d", rom, kRomBudget));
 	budget->store_line(vformat("display %dx%d", display_w, display_h));
 	r_out.budget_path = budget_path;
