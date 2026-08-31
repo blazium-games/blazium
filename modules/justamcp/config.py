@@ -2,10 +2,11 @@ def can_build(env, platform):
     # Depending on websocket and mbedtls for networking
     env.module_add_dependencies("justamcp", ["websocket", "mbedtls"], True)
     env.module_add_dependencies("justamcp", ["httpserver"], False)
-    env.module_add_dependencies("justamcp", ["assettags"], False)
-    env.module_add_dependencies("justamcp", ["semanticsearch"], False)
-    env.module_add_dependencies("justamcp", ["remote_control"], False)
-    return env.editor_build
+    # Editor-only modules: required in the editor catalog, optional in export templates.
+    env.module_add_dependencies("justamcp", ["assettags"], True)
+    env.module_add_dependencies("justamcp", ["semanticsearch"], True)
+    env.module_add_dependencies("justamcp", ["remote_control"], True)
+    return True
 
 
 def configure(env):

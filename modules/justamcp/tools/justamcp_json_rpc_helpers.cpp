@@ -29,8 +29,10 @@
 
 #include "justamcp_json_rpc_helpers.h"
 
-#ifdef TOOLS_ENABLED
 #include "../justamcp_mcp_spec.h"
+#include "core/io/json.h"
+
+#ifdef TOOLS_ENABLED
 #include "justamcp_tool_schema_cache.h"
 #endif
 
@@ -90,12 +92,6 @@ String JustAMCPJsonRpcHelpers::get_tool_task_support(const String &p_tool_name) 
 #endif
 	return "forbidden";
 }
-
-#ifdef TOOLS_ENABLED
-
-#include "core/io/json.h"
-
-static bool mcp_tool_settings_dirty = false;
 
 Dictionary JustAMCPJsonRpcHelpers::format_tool_result(bool p_success, const Variant &p_result, const String &p_error) {
 	Dictionary rpc_result;
@@ -201,6 +197,10 @@ Dictionary JustAMCPJsonRpcHelpers::format_tool_result(bool p_success, const Vari
 	}
 	return rpc_result;
 }
+
+#ifdef TOOLS_ENABLED
+
+static bool mcp_tool_settings_dirty = false;
 
 void JustAMCPJsonRpcHelpers::mark_mcp_tool_settings_dirty() {
 	mcp_tool_settings_dirty = true;

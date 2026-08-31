@@ -81,6 +81,7 @@ private:
 
 	int current_sse_connection_id = -1;
 	bool server_started = false;
+	bool runtime_host = false;
 	int active_listening_port = -1;
 	HashMap<String, Vector<uint64_t>> session_enqueue_timestamps_usec;
 	Mutex session_enqueue_rate_mutex;
@@ -273,6 +274,8 @@ public:
 #endif
 
 	void start_listening();
+	void set_runtime_host(bool p_runtime_host) { runtime_host = p_runtime_host; }
+	bool is_runtime_host() const { return runtime_host; }
 	bool is_server_started() const { return server_started; }
 	int get_listening_port() const { return active_listening_port; }
 	int get_pending_tool_queue_size();

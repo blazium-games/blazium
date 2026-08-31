@@ -39,9 +39,9 @@ public:
 	static Dictionary extract_request_meta(const Dictionary &p_params);
 	static String progress_token_from_meta(const Dictionary &p_meta);
 	static String get_tool_task_support(const String &p_tool_name);
+	static Dictionary format_tool_result(bool p_success, const Variant &p_result, const String &p_error = String());
 
 #ifdef TOOLS_ENABLED
-	static Dictionary format_tool_result(bool p_success, const Variant &p_result, const String &p_error = String());
 	static bool should_broadcast_tools_list_changed();
 	static void mark_mcp_tool_settings_dirty();
 #endif

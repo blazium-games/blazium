@@ -49,9 +49,9 @@ void JustAMCPServer::_complete_task_tool_entry(MCPToolQueueEntry *p_entry, bool 
 
 	const String progress_token = p_entry->progress_token;
 	const String task_id = p_entry->task_id;
-	const bool was_cancelled = p_entry->cancel_requested || String(p_error) == "cancelled" || (p_result.get_type() == Variant::DICTIONARY && String(Dictionary(p_result).get("error", "")) == "cancelled");
 
 #ifdef TOOLS_ENABLED
+	const bool was_cancelled = p_entry->cancel_requested || String(p_error) == "cancelled" || (p_result.get_type() == Variant::DICTIONARY && String(Dictionary(p_result).get("error", "")) == "cancelled");
 	if (task_manager && !task_id.is_empty()) {
 		if (was_cancelled) {
 			task_manager->cancel_task_execution(task_id);

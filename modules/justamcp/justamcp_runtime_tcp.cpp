@@ -29,14 +29,21 @@
 
 #include "justamcp_runtime.h"
 
+#include "justamcp_cli_args.h"
+#include "justamcp_server.h"
+#include "tools/justamcp_settings_resolver.h"
+
+#include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
 #include "core/object/message_queue.h"
 #include "core/os/os.h"
 #include "core/os/time.h"
-#include "justamcp_cli_args.h"
-#include "tools/justamcp_settings_resolver.h"
+#include "scene/main/node.h"
+#include "scene/main/scene_tree.h"
+#ifdef TOOLS_ENABLED
 #include "tools/justamcp_tool_executor.h"
+#endif
 
 void JustAMCPRuntime::_thread_poll_wrapper(void *p_user) {
 	JustAMCPRuntime *runtime = (JustAMCPRuntime *)p_user;
@@ -79,7 +86,7 @@ void JustAMCPRuntime::poll() {
 		for (int i = 0; i < accepted_clients.size(); i++) {
 			Ref<StreamPeerTCP> client = accepted_clients[i];
 			clients.push_back(client);
-			print_line("[MCP Runtime] Client connected");
+			_debug_print("[MCP Runtime] Client connected");
 			call_deferred("emit_signal", "client_connected");
 			_send_welcome(client);
 		}
@@ -123,7 +130,7 @@ void JustAMCPRuntime::poll() {
 			Ref<StreamPeerTCP> c = clients_to_remove[i];
 			clients.erase(c);
 			client_buffers.erase(c);
-			print_line("[MCP Runtime] Client disconnected");
+			_debug_print("[MCP Runtime] Client disconnected");
 			call_deferred("emit_signal", "client_disconnected");
 		}
 	}
@@ -184,25 +191,47 @@ void JustAMCPRuntime::push_error_log(const String &p_message, bool p_is_error) {
 	}
 }
 
+static void _justamcp_load_project_scripts_idle() {
+	if (JustAMCPRuntime *runtime = JustAMCPRuntime::get_singleton()) {
+		runtime->load_project_mcp_scripts();
+	}
+}
+
 void JustAMCPRuntime::_start_server() {
 	if (JustAMCPCliArgs::skip_mcp_server()) {
 		return;
 	}
-	if (JustAMCPCliArgs::disable_game_mcp() || JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/disable_game_mcp", false)) {
+	if (!JustAMCPSettingsResolver::resolve_runtime_enabled()) {
 		return;
 	}
 
-	port = JustAMCPSettingsResolver::resolve_server_port();
-	const bool game_control = JustAMCPCliArgs::enable_mcp_game_control() ||
-			JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/game_control_enabled", false);
-	if (JustAMCPCliArgs::enable_mcp() || game_control) {
-		enabled = true;
-	} else {
-		enabled = JustAMCPSettingsResolver::resolve_server_enabled();
-	}
-
-	if (!enabled) {
+	port = JustAMCPSettingsResolver::resolve_runtime_port();
+	if (JustAMCPSettingsResolver::runtime_port_conflicts_with_editor()) {
+		ERR_PRINT(vformat("[MCP Runtime] Game port %d equals the editor MCP port. Set blazium/justamcp/export_port or --mcp-game-port.", port));
 		return;
+	}
+	enabled = true;
+
+	bool start_http_host = true;
+#ifdef TOOLS_ENABLED
+	if (Engine::get_singleton() && Engine::get_singleton()->is_editor_hint()) {
+		start_http_host = false;
+	}
+#endif
+	if (start_http_host) {
+		if (!http_host) {
+			http_host = memnew(JustAMCPServer);
+			http_host->set_runtime_host(true);
+		}
+		http_host->start_listening();
+		if (http_host->is_server_started() && http_host->get_listening_port() > 0) {
+			port = http_host->get_listening_port();
+		}
+		if (Object::cast_to<SceneTree>(OS::get_singleton()->get_main_loop())) {
+			load_project_mcp_scripts();
+		} else {
+			SceneTree::add_idle_callback(_justamcp_load_project_scripts_idle);
+		}
 	}
 
 	if (server.is_valid() && server->is_listening()) {
@@ -212,13 +241,34 @@ void JustAMCPRuntime::_start_server() {
 	const bool bind_to_localhost = JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/bind_to_localhost_only", true);
 	String bind_address = bind_to_localhost ? "127.0.0.1" : "*";
 
-	Error err = server->listen(port, bind_address);
+	int tcp_port = port;
+	if (http_host && http_host->is_server_started()) {
+		tcp_port = port + 1;
+		if (tcp_port == JustAMCPSettingsResolver::resolve_server_port()) {
+			tcp_port++;
+		}
+	}
+
+	Error err = server->listen(tcp_port, bind_address);
 	if (err != OK) {
-		ERR_PRINT(vformat("[MCP Runtime] Failed to start server on port %d: %d", port, err));
-		enabled = false;
+		const int retry_port = tcp_port + 1;
+		if (retry_port != JustAMCPSettingsResolver::resolve_server_port()) {
+			err = server->listen(retry_port, bind_address);
+			if (err == OK) {
+				tcp_port = retry_port;
+			}
+		}
+	}
+	if (err != OK) {
+		ERR_PRINT(vformat("[MCP Runtime] Failed to start TCP bridge on port %d: %d", tcp_port, err));
+		if (!http_host || !http_host->is_server_started()) {
+			enabled = false;
+		}
 	} else {
-		print_line(vformat("[MCP Runtime] Server listening on port %d", port));
-		print_line(vformat("BLAZIUM_READY:{\"proto\":\"blazium/1\",\"port\":%d,\"engine\":\"Blazium\"}", port));
+		_debug_print(vformat("[MCP Runtime] TCP bridge listening on port %d", tcp_port));
+		if (!http_host || !http_host->is_server_started()) {
+			print_line(vformat("BLAZIUM_READY:{\"proto\":\"blazium/1\",\"port\":%d,\"engine\":\"Blazium\"}", tcp_port));
+		}
 		quit_thread = false;
 		if (!server_thread) {
 			server_thread = memnew(Thread);
@@ -226,6 +276,10 @@ void JustAMCPRuntime::_start_server() {
 		if (!server_thread->is_started()) {
 			server_thread->start(_thread_poll_wrapper, this);
 		}
+	}
+	if (http_host && http_host->is_server_started()) {
+		_debug_print(vformat("[MCP Runtime] HTTP MCP host listening on port %d", port));
+		print_line(vformat("BLAZIUM_READY:{\"proto\":\"blazium/1\",\"port\":%d,\"engine\":\"Blazium\",\"mcp\":\"http://127.0.0.1:%d/mcp\"}", port, port));
 	}
 }
 
@@ -239,10 +293,29 @@ void JustAMCPRuntime::_cleanup() {
 		server_thread = nullptr;
 	}
 
+#ifdef TOOLS_ENABLED
 	if (executor) {
 		memdelete(executor);
 		executor = nullptr;
 	}
+#endif
+	if (http_host) {
+		memdelete(http_host);
+		http_host = nullptr;
+	}
+	for (int i = 0; i < project_mcp_instances.size(); i++) {
+		if (Object *inst = project_mcp_instances[i]) {
+			if (Node *node = Object::cast_to<Node>(inst)) {
+				if (node->is_inside_tree()) {
+					node->queue_free();
+					continue;
+				}
+			}
+			memdelete(inst);
+		}
+	}
+	project_mcp_instances.clear();
+	project_scripts_loaded = false;
 
 	{
 		MutexLock lock(clients_mutex);

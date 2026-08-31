@@ -45,6 +45,7 @@ void test_justamcp_http_modern_discover_and_list();
 void test_justamcp_http_modern_header_mismatch_and_unsupported();
 void test_justamcp_http_initialize_modern_client_stays_legacy();
 void test_justamcp_http_modern_get_delete_and_listen();
+void test_justamcp_http_get_concatenated_modern_legacy_header();
 void test_justamcp_accepted_protocol_versions_pinning();
 
 TEST_CASE("[Modules][JustAMCP] negotiate protocol versions") {
@@ -101,6 +102,10 @@ TEST_CASE("[Modules][JustAMCP] http initialize modern client stays legacy") {
 
 TEST_CASE("[Modules][JustAMCP] http modern get delete and listen") {
 	test_justamcp_http_modern_get_delete_and_listen();
+}
+
+TEST_CASE("[Modules][JustAMCP] http GET allows concatenated modern+legacy protocol header") {
+	test_justamcp_http_get_concatenated_modern_legacy_header();
 }
 
 TEST_CASE("[Modules][JustAMCP] accepted protocol versions pinning") {

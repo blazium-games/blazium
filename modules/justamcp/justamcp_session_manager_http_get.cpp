@@ -84,11 +84,11 @@ bool MCPSessionManager::handle_mcp_get(const Ref<HTTPRequestContext> &p_context,
 		p_response->set_status(403);
 		return true;
 	}
-	const String requested = first_protocol_version_token(get_header(p_context, "MCP-Protocol-Version"));
-	if (is_modern_protocol_version(requested)) {
+	const String protocol_header = get_header(p_context, "MCP-Protocol-Version");
+	if (!protocol_header_allows_legacy_sse(protocol_header)) {
 		apply_cors_headers(p_response, p_context);
 		p_response->set_status(405);
-		p_response->set_body("GET is not supported for protocol " + requested);
+		p_response->set_body("GET is not supported for protocol " + first_protocol_version_token(protocol_header));
 		return true;
 	}
 	if (!accepts_event_stream(p_context)) {
@@ -110,6 +110,13 @@ bool MCPSessionManager::handle_mcp_get(const Ref<HTTPRequestContext> &p_context,
 	if (!session) {
 		p_response->set_status(404);
 		p_response->set_body("Unknown or expired MCP session");
+		return true;
+	}
+	if (is_modern_protocol_version(session->negotiated_protocol)) {
+		lock.temp_unlock();
+		apply_cors_headers(p_response, p_context);
+		p_response->set_status(405);
+		p_response->set_body("GET is not supported for protocol " + session->negotiated_protocol);
 		return true;
 	}
 	_touch_session(*session);

@@ -93,6 +93,9 @@ for name, path in env.module_list.items():
         import glob
 
         module_tests = sorted(glob.glob(os.path.join(base_path, "tests", "*.h")))
+        if name == "justamcp" and not env.editor_build:
+            # Editor-only JustAMCP suites require TOOLS_ENABLED implementations.
+            module_tests = []
         if module_tests != []:
             test_headers += module_tests
 

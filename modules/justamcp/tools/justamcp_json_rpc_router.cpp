@@ -33,79 +33,18 @@
 
 #include "../justamcp_log_levels.h"
 #include "../justamcp_mcp_spec.h"
+#include "../justamcp_pagination.h"
+#include "../justamcp_project_registry.h"
 #include "../justamcp_server.h"
 #include "../justamcp_session_manager.h"
 #include "justamcp_prompt_executor.h"
 #include "justamcp_resource_executor.h"
 #include "justamcp_task_manager.h"
 #include "justamcp_tool_executor.h"
+#include "justamcp_tool_schema_cache.h"
+#include "justamcp_toolset_registry.h"
 
 #include "core/os/mutex.h"
-
-String JustAMCPJsonRpcRouter::extract_list_cursor(const Dictionary &p_payload) {
-	if (!p_payload.has("params") || p_payload["params"].get_type() != Variant::DICTIONARY) {
-		return String();
-	}
-	const Dictionary params = p_payload["params"];
-	if (!params.has("cursor")) {
-		return String();
-	}
-	return String(params["cursor"]);
-}
-
-Dictionary JustAMCPJsonRpcRouter::finalize_list_result(const Dictionary &p_result, const Variant &p_req_id) {
-	if (p_result.has("ok") && !bool(p_result.get("ok", true))) {
-		Dictionary err;
-		err["handled"] = true;
-		err["jsonrpc"] = "2.0";
-		err["id"] = p_req_id;
-		Dictionary error_dict;
-		error_dict["code"] = p_result.get("error_code", -32602);
-		error_dict["message"] = p_result.get("error", "Invalid params.");
-		err["error"] = error_dict;
-		return err;
-	}
-
-	Dictionary out = p_result.duplicate();
-	out.erase("ok");
-	justamcp_apply_protocol_to_list_result(out, justamcp_active_protocol_version());
-	Dictionary rpc_result;
-	rpc_result["handled"] = true;
-	rpc_result["jsonrpc"] = "2.0";
-	rpc_result["id"] = p_req_id;
-	rpc_result["result"] = out;
-	return rpc_result;
-}
-
-Dictionary JustAMCPJsonRpcRouter::make_invalid_params(const Variant &p_req_id, const String &p_message) {
-	Dictionary err;
-	err["handled"] = true;
-	err["jsonrpc"] = "2.0";
-	err["id"] = p_req_id;
-	Dictionary error_dict;
-	error_dict["code"] = -32602;
-	error_dict["message"] = p_message;
-	err["error"] = error_dict;
-	return err;
-}
-
-Dictionary JustAMCPJsonRpcRouter::finalize_action_result(const Dictionary &p_result, const Variant &p_req_id) {
-	Dictionary rpc_result;
-	rpc_result["handled"] = true;
-	rpc_result["jsonrpc"] = "2.0";
-	rpc_result["id"] = p_req_id;
-	if (p_result.get("ok", false)) {
-		Dictionary out = p_result.duplicate();
-		out.erase("ok");
-		rpc_result["result"] = out;
-	} else {
-		Dictionary error_dict;
-		error_dict["code"] = p_result.get("error_code", -32603);
-		error_dict["message"] = p_result.get("error", "Request failed.");
-		rpc_result["error"] = error_dict;
-	}
-	return rpc_result;
-}
 
 static Dictionary _handle_resource_subscription(const String &p_method, const Dictionary &p_payload, const Variant &p_req_id_var) {
 	Dictionary empty;
@@ -284,18 +223,35 @@ Dictionary JustAMCPJsonRpcRouter::route(const String &p_method, const Dictionary
 }
 
 Dictionary JustAMCPJsonRpcRouter::route_tools_list(const String &p_cursor, const Variant &p_req_id_var) {
-	Dictionary result = JustAMCPToolExecutor::list_tools(p_cursor);
-	return finalize_list_result(result, p_req_id_var);
+	bool apply_discovery_filter = false;
+	if (JustAMCPToolsetRegistry::get_singleton() && JustAMCPToolsetRegistry::get_singleton()->is_discovery_enabled()) {
+		apply_discovery_filter = true;
+	}
+	Array schemas = JustAMCPToolSchemaCache::get_schemas(false, false, apply_discovery_filter, false);
+	const Array project_tools = JustAMCPProjectRegistry::list_tool_schemas();
+	for (int i = 0; i < project_tools.size(); i++) {
+		schemas.push_back(project_tools[i]);
+	}
+	return finalize_list_result(justamcp_pagination_slice_array(schemas, p_cursor, "tools"), p_req_id_var);
 }
 
 Dictionary JustAMCPJsonRpcRouter::route_prompts_list(const String &p_cursor, const Variant &p_req_id_var, JustAMCPPromptExecutor *p_prompts) {
+	Dictionary listed;
 	if (p_prompts) {
-		return finalize_list_result(p_prompts->list_prompts(p_cursor), p_req_id_var);
+		listed = p_prompts->list_prompts(p_cursor);
+	} else {
+		listed["ok"] = true;
+		listed["prompts"] = Array();
 	}
-	Dictionary empty;
-	empty["ok"] = true;
-	empty["prompts"] = Array();
-	return finalize_list_result(empty, p_req_id_var);
+	if (p_cursor.is_empty()) {
+		Array prompts = listed.get("prompts", Array());
+		const Array project_prompts = JustAMCPProjectRegistry::list_prompt_schemas();
+		for (int i = 0; i < project_prompts.size(); i++) {
+			prompts.push_back(project_prompts[i]);
+		}
+		listed["prompts"] = prompts;
+	}
+	return finalize_list_result(listed, p_req_id_var);
 }
 
 Dictionary JustAMCPJsonRpcRouter::route_prompts_get(const Dictionary &p_payload, const Variant &p_req_id_var, JustAMCPPromptExecutor *p_prompts) {
@@ -308,6 +264,9 @@ Dictionary JustAMCPJsonRpcRouter::route_prompts_get(const Dictionary &p_payload,
 	}
 	const String prompt_name = params["name"];
 	const Dictionary args = params.has("arguments") && params["arguments"].get_type() == Variant::DICTIONARY ? Dictionary(params["arguments"]) : Dictionary();
+	if (JustAMCPProjectRegistry::has_prompt(prompt_name)) {
+		return finalize_action_result(JustAMCPProjectRegistry::call_prompt(prompt_name, args), p_req_id_var);
+	}
 	Dictionary result;
 	if (p_prompts) {
 		result = p_prompts->get_prompt(prompt_name, args);

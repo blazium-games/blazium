@@ -117,6 +117,7 @@ public:
 	static Dictionary header_mismatch_error(const Variant &p_id, const String &p_message);
 	static Dictionary mcp_server_info();
 	static String first_protocol_version_token(const String &p_header);
+	static bool protocol_header_allows_legacy_sse(const String &p_header);
 	static String decode_mcp_header_value(const String &p_value);
 	static String protocol_version_from_payload(const Dictionary &p_payload);
 	static void decorate_modern_rpc(Dictionary &p_rpc, const String &p_method);

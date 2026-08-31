@@ -260,30 +260,34 @@ void JustAMCPEditorPlugin::_notification(int p_what) {
 			if (editor_node) {
 				mcp_server = Object::cast_to<JustAMCPServer>(editor_node->get_node_or_null(NodePath("JustAMCPServer")));
 			}
-			if (!mcp_server) {
-				mcp_server = memnew(JustAMCPServer);
-				mcp_server->set_name("JustAMCPServer");
-				add_child(mcp_server);
-				mcp_server->start_listening();
-			} else {
-				if (!mcp_server->is_inside_tree()) {
+			if (JustAMCPSettingsResolver::should_instantiate_editor_server()) {
+				if (!mcp_server) {
+					mcp_server = memnew(JustAMCPServer);
+					mcp_server->set_name("JustAMCPServer");
 					add_child(mcp_server);
+					mcp_server->start_listening();
+				} else {
+					if (!mcp_server->is_inside_tree()) {
+						add_child(mcp_server);
+					}
+					mcp_server->start_listening();
 				}
-				mcp_server->start_listening();
 			}
 
 			tool_executor = memnew(JustAMCPToolExecutor);
 			tool_executor->set_as_active_instance();
 			tool_executor->set_editor_plugin(this);
 
-			if (!mcp_server->is_connected("tool_requested", callable_mp(this, &JustAMCPEditorPlugin::_on_tool_requested))) {
-				mcp_server->connect("tool_requested", callable_mp(this, &JustAMCPEditorPlugin::_on_tool_requested));
-			}
-			if (!mcp_server->is_connected("request_cancelled", callable_mp(mcp_server, &JustAMCPServer::_on_request_cancelled))) {
-				mcp_server->connect("request_cancelled", callable_mp(mcp_server, &JustAMCPServer::_on_request_cancelled));
-			}
-			if (!mcp_server->is_connected("server_status_changed", callable_mp(this, &JustAMCPEditorPlugin::_on_server_status_changed))) {
-				mcp_server->connect("server_status_changed", callable_mp(this, &JustAMCPEditorPlugin::_on_server_status_changed));
+			if (mcp_server) {
+				if (!mcp_server->is_connected("tool_requested", callable_mp(this, &JustAMCPEditorPlugin::_on_tool_requested))) {
+					mcp_server->connect("tool_requested", callable_mp(this, &JustAMCPEditorPlugin::_on_tool_requested));
+				}
+				if (!mcp_server->is_connected("request_cancelled", callable_mp(mcp_server, &JustAMCPServer::_on_request_cancelled))) {
+					mcp_server->connect("request_cancelled", callable_mp(mcp_server, &JustAMCPServer::_on_request_cancelled));
+				}
+				if (!mcp_server->is_connected("server_status_changed", callable_mp(this, &JustAMCPEditorPlugin::_on_server_status_changed))) {
+					mcp_server->connect("server_status_changed", callable_mp(this, &JustAMCPEditorPlugin::_on_server_status_changed));
+				}
 			}
 
 			_setup_status_indicator();
@@ -436,14 +440,20 @@ void JustAMCPEditorPlugin::_on_tool_requested(const Variant &p_request_id, const
 
 String JustAMCPEditorPlugin::get_mcp_config_json(MCPConfigClient p_client) {
 	int port = JustAMCPSettingsResolver::resolve_server_port();
-	if (JustAMCPServer::get_singleton() && JustAMCPServer::get_singleton()->get_listening_port() > 0) {
+	if (JustAMCPServer::get_singleton() && JustAMCPServer::get_singleton()->get_listening_port() > 0 && !JustAMCPServer::get_singleton()->is_runtime_host()) {
 		port = JustAMCPServer::get_singleton()->get_listening_port();
+	}
+	int game_port = JustAMCPSettingsResolver::resolve_runtime_port();
+	if (game_port == port) {
+		game_port = port + 1;
 	}
 	const bool oauth_enabled = JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/oauth_enabled", false);
 	const String client_id = JustAMCPSettingsResolver::resolve_string("blazium/justamcp/client_id");
 	const String client_secret = JustAMCPSettingsResolver::resolve_string("blazium/justamcp/client_secret");
 
 	const String mcp_url = "http://127.0.0.1:" + itos(port) + "/mcp";
+	const String game_url = "http://127.0.0.1:" + itos(game_port) + "/mcp";
+	const bool game_enabled = JustAMCPSettingsResolver::resolve_runtime_enabled();
 
 	if (p_client == MCP_CONFIG_OPENCODE) {
 		String json_config = "{\n";
@@ -453,8 +463,15 @@ String JustAMCPEditorPlugin::get_mcp_config_json(MCPConfigClient p_client) {
 		json_config += "      \"type\": \"remote\",\n";
 		json_config += "      \"url\": \"" + mcp_url + "\",\n";
 		json_config += "      \"enabled\": true\n";
-		json_config += "    }\n";
-		json_config += "  }\n";
+		json_config += "    }";
+		if (game_enabled) {
+			json_config += ",\n    \"blazium-game\": {\n";
+			json_config += "      \"type\": \"remote\",\n";
+			json_config += "      \"url\": \"" + game_url + "\",\n";
+			json_config += "      \"enabled\": true\n";
+			json_config += "    }";
+		}
+		json_config += "\n  }\n";
 		json_config += "}";
 		return json_config;
 	}
@@ -477,8 +494,17 @@ String JustAMCPEditorPlugin::get_mcp_config_json(MCPConfigClient p_client) {
 		json_config += "\n";
 	}
 
-	json_config += "    }\n";
-	json_config += "  }\n";
+	json_config += "    }";
+	if (game_enabled) {
+		json_config += ",\n    \"blazium-game\": {\n";
+		if (p_client == MCP_CONFIG_CURSOR) {
+			json_config += "      \"url\": \"" + game_url + "\"\n";
+		} else {
+			json_config += "      \"serverUrl\": \"" + game_url + "\"\n";
+		}
+		json_config += "    }";
+	}
+	json_config += "\n  }\n";
 	json_config += "}";
 	return json_config;
 }
