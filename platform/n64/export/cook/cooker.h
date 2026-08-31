@@ -29,6 +29,7 @@ enum NodeKind : uint8_t {
 
 struct CookResult {
 	String node_path;
+	String names_path;
 	String report;
 	Vector<String> errors;
 	int nodes = 0;

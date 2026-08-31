@@ -189,7 +189,20 @@ Error cook_project(const String &p_export_dir, CookResult &r_out) {
 
 	r_out.node_path = node_path;
 	r_out.nodes = gathered.nodes.size();
-	r_out.report = vformat("cooked %d nodes to NODE00.bin", r_out.nodes);
+
+	const String names_path = p_export_dir.path_join("NAMES.MAP");
+	Ref<FileAccess> names = FileAccess::open(names_path, FileAccess::WRITE);
+	if (names.is_null()) {
+		r_out.errors.push_back("cannot write " + names_path);
+		r_out.report = r_out.errors[0];
+		return ERR_CANT_CREATE;
+	}
+	names->store_line(main_scene + " -> NODE00.bin");
+	for (int i = 0; i < gathered.nodes.size(); i++) {
+		names->store_line(vformat("node %d %s", i, gathered.nodes[i].name));
+	}
+	r_out.names_path = names_path;
+	r_out.report = vformat("cooked %d nodes to NODE00.bin + NAMES.MAP", r_out.nodes);
 	return OK;
 }
 
