@@ -45,6 +45,7 @@ struct NodeRow {
 	Vector3 rot;
 	Vector3 scale = Vector3(1, 1, 1);
 	String name;
+	String kit;
 };
 
 struct Gather {
@@ -136,6 +137,20 @@ static uint8_t kind_of(Node *p_node) {
 	return KIND_OTHER;
 }
 
+static String kit_place(Node *p_node) {
+	if (!p_node) {
+		return String();
+	}
+	const String nm = String(p_node->get_name()).to_lower();
+	if (nm == "spawn" || p_node->is_in_group("spawn") || p_node->has_meta("n64_spawn")) {
+		return "spawn";
+	}
+	if (nm == "portal" || p_node->is_in_group("portal") || p_node->has_meta("n64_portal") || p_node->has_meta("n64_dest")) {
+		return "portal";
+	}
+	return String();
+}
+
 static void walk_scene(Node *p_node, Gather &r_g, int p_parent) {
 	if (!p_node) {
 		return;
@@ -149,6 +164,7 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent) {
 	row.parent = p_parent;
 	row.kind = kind_of(p_node);
 	row.name = p_node->get_name();
+	row.kit = kit_place(p_node);
 	if (Node3D *n3 = Object::cast_to<Node3D>(p_node)) {
 		const Transform3D xf = n3->get_transform();
 		row.pos = xf.origin;
@@ -503,6 +519,11 @@ Error cook_project(const String &p_export_dir, CookResult &r_out) {
 	names->store_line(main_scene + " -> NODE00.bin MESH00.bin NTEX00.bin INP600.bin SFX00.wav MUSIC00.wav PACK01.bin SCRP00.bin");
 	for (int i = 0; i < gathered.nodes.size(); i++) {
 		names->store_line(vformat("node %d %s", i, gathered.nodes[i].name));
+	}
+	for (int i = 0; i < gathered.nodes.size(); i++) {
+		if (!gathered.nodes[i].kit.is_empty()) {
+			names->store_line(vformat("kit %s node %d", gathered.nodes[i].kit, i));
+		}
 	}
 	r_out.names_path = names_path;
 
