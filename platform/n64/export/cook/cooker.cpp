@@ -303,7 +303,38 @@ Error cook_project(const String &p_export_dir, CookResult &r_out) {
 		names->store_line(vformat("node %d %s", i, gathered.nodes[i].name));
 	}
 	r_out.names_path = names_path;
-	r_out.report = vformat("cooked %d nodes, %d tris to NODE/MESH/NTEX + NAMES.MAP", r_out.nodes, r_out.tris);
+
+	const int tmem = albedo->get_width() * albedo->get_height() * 2;
+	const int rdram = kFbZBytes + kGuestReserve + blob.size() + mesh_blob.size() + ntex_blob.size();
+	const int rom = blob.size() + mesh_blob.size() + ntex_blob.size() + kRomPad;
+	r_out.tmem_bytes = tmem;
+	r_out.rdram_bytes = rdram;
+	r_out.rom_bytes = rom;
+	r_out.over_budget = tmem > kTmemBytes || rdram > kRdramBudget || rom > kRomBudget;
+
+	const String budget_path = p_export_dir.path_join("BUDGET.txt");
+	Ref<FileAccess> budget = FileAccess::open(budget_path, FileAccess::WRITE);
+	if (budget.is_null()) {
+		r_out.errors.push_back("cannot write " + budget_path);
+		r_out.report = r_out.errors[0];
+		return ERR_CANT_CREATE;
+	}
+	budget->store_line(vformat("ABI %d", kCookABI));
+	budget->store_line(vformat("nodes %d/%d", r_out.nodes, kMaxNodes));
+	budget->store_line(vformat("tris %d/%d", r_out.tris, kMaxTris));
+	budget->store_line(vformat("tmem %d/%d", tmem, kTmemBytes));
+	budget->store_line(vformat("rdram %d/%d", rdram, kRdramBudget));
+	budget->store_line(vformat("rom %d/%d", rom, kRomBudget));
+	budget->store_line(vformat("display %dx%d", kDisplayW, kDisplayH));
+	r_out.budget_path = budget_path;
+
+	if (r_out.over_budget) {
+		r_out.errors.push_back("N64 cook exceeded TMEM, RDRAM, or ROM budget.");
+		r_out.report = r_out.errors[0];
+		return ERR_OUT_OF_MEMORY;
+	}
+
+	r_out.report = vformat("cooked %d nodes, %d tris to NODE/MESH/NTEX + NAMES.MAP + BUDGET.txt", r_out.nodes, r_out.tris);
 	return OK;
 }
 

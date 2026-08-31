@@ -22,6 +22,13 @@ static const int kMaxNodes = 256;
 static const int kMaxTris = 16384;
 static const int kTmemBytes = 4096;
 static const int kNtexFmtRgba16 = 1;
+static const int kRdramBudget = 6815744; // 6.5 MiB of 8 MiB Expansion Pak
+static const int kRomBudget = 16777216; // 16 MiB cartridge including DFS
+static const int kFbZBytes = 460800; // 320x240 16-bit double FB + 16-bit Z
+static const int kGuestReserve = 1258291; // ~1.2 MiB .text/heap (breakdown §11)
+static const int kRomPad = 393216; // hello .z64 IPL3/ELF pad
+static const int kDisplayW = 320;
+static const int kDisplayH = 240;
 
 enum NodeKind : uint8_t {
 	KIND_OTHER = 0,
@@ -35,10 +42,15 @@ struct CookResult {
 	String mesh_path;
 	String ntex_path;
 	String names_path;
+	String budget_path;
 	String report;
 	Vector<String> errors;
 	int nodes = 0;
 	int tris = 0;
+	int tmem_bytes = 0;
+	int rdram_bytes = 0;
+	int rom_bytes = 0;
+	bool over_budget = false;
 };
 
 Error cook_project(const String &p_export_dir, CookResult &r_out);

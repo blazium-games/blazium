@@ -365,6 +365,11 @@ Error EditorExportPlatformN64::export_project(const Ref<EditorExportPreset> &p_p
 		add_message(EXPORT_MESSAGE_ERROR, "N64", "Output is not a big-endian .z64 (refusing PE, ELF, or other formats).");
 		return FAILED;
 	}
+	const uint64_t rom_len = f->get_length();
+	if (rom_len > uint64_t(n64_cook::kRomBudget)) {
+		add_message(EXPORT_MESSAGE_ERROR, "N64", vformat("N64 ROM is %d bytes; cap is %d (no silent oversize).", int64_t(rom_len), n64_cook::kRomBudget));
+		return ERR_OUT_OF_MEMORY;
+	}
 	add_message(EXPORT_MESSAGE_INFO, "N64", "Wrote N64 ROM " + p_path);
 	return OK;
 }
