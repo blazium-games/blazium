@@ -342,6 +342,10 @@ Error EditorExportPlatformN64::export_project(const Ref<EditorExportPreset> &p_p
 		args.push_back("--ntex");
 		args.push_back(cooked.ntex_path);
 	}
+	if (!cooked.inp_path.is_empty()) {
+		args.push_back("--inp");
+		args.push_back(cooked.inp_path);
+	}
 	args.push_back("--export-src");
 	args.push_back(p_path.get_base_dir().path_join("guest"));
 	args.push_back("--out");
