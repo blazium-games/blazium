@@ -334,6 +334,14 @@ Error EditorExportPlatformN64::export_project(const Ref<EditorExportPreset> &p_p
 		args.push_back("--node");
 		args.push_back(cooked.node_path);
 	}
+	if (!cooked.mesh_path.is_empty()) {
+		args.push_back("--mesh");
+		args.push_back(cooked.mesh_path);
+	}
+	if (!cooked.ntex_path.is_empty()) {
+		args.push_back("--ntex");
+		args.push_back(cooked.ntex_path);
+	}
 	args.push_back("--export-src");
 	args.push_back(p_path.get_base_dir().path_join("guest"));
 	args.push_back("--out");

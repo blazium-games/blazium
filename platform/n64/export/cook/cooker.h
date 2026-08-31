@@ -19,6 +19,9 @@ namespace n64_cook {
 // Must match blazium-toolchain/guest/n64 CookABI. Do not reuse PS1/PS2 ABI numbers.
 static const int kCookABI = 1;
 static const int kMaxNodes = 256;
+static const int kMaxTris = 16384;
+static const int kTmemBytes = 4096;
+static const int kNtexFmtRgba16 = 1;
 
 enum NodeKind : uint8_t {
 	KIND_OTHER = 0,
@@ -29,10 +32,13 @@ enum NodeKind : uint8_t {
 
 struct CookResult {
 	String node_path;
+	String mesh_path;
+	String ntex_path;
 	String names_path;
 	String report;
 	Vector<String> errors;
 	int nodes = 0;
+	int tris = 0;
 };
 
 Error cook_project(const String &p_export_dir, CookResult &r_out);
