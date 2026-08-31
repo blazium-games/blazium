@@ -11,6 +11,7 @@
 
 #include "export_plugin.h"
 
+#include "cook/cooker.h"
 #include "logo_svg.gen.h"
 
 #include "core/config/project_settings.h"
@@ -309,6 +310,15 @@ Error EditorExportPlatformN64::export_project(const Ref<EditorExportPreset> &p_p
 	Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
 	da->make_dir_recursive(p_path.get_base_dir());
 
+	n64_cook::CookResult cooked;
+	const Error cook_err = n64_cook::cook_project(p_path.get_base_dir(), cooked);
+	if (cook_err != OK || !cooked.errors.is_empty()) {
+		const String msg = cooked.errors.is_empty() ? (cooked.report.is_empty() ? String("N64 cook failed.") : cooked.report) : cooked.errors[0];
+		add_message(EXPORT_MESSAGE_ERROR, "N64", msg);
+		return cook_err != OK ? cook_err : FAILED;
+	}
+	add_message(EXPORT_MESSAGE_INFO, "N64", cooked.report);
+
 	List<String> args;
 	args.push_back("n64");
 	args.push_back("build");
@@ -319,6 +329,10 @@ Error EditorExportPlatformN64::export_project(const Ref<EditorExportPreset> &p_p
 	if (!overlay.is_empty()) {
 		args.push_back("--overlay");
 		args.push_back(overlay);
+	}
+	if (!cooked.node_path.is_empty()) {
+		args.push_back("--node");
+		args.push_back(cooked.node_path);
 	}
 	args.push_back("--export-src");
 	args.push_back(p_path.get_base_dir().path_join("guest"));
