@@ -21,6 +21,7 @@ static const int kCookABI = 1;
 	static const int kMaxNodes = 256;
 	static const int kMaxTris = 16384;
 	static const int kMaxActions = 32;
+	static const int kMaxPacks = 24;
 static const int kTmemBytes = 4096;
 static const int kNtexFmtRgba16 = 1;
 static const int kRdramBudget = 6815744; // 6.5 MiB of 8 MiB Expansion Pak
@@ -45,6 +46,7 @@ struct CookResult {
 	String inp_path;
 	String sfx_path;
 	String music_path;
+	String pack_path;
 	String names_path;
 	String budget_path;
 	String report;

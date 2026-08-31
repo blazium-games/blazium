@@ -14,6 +14,7 @@
 #include "inp_writer.h"
 #include "mesh_writer.h"
 #include "ntex_writer.h"
+#include "pack_writer.h"
 #include "wav_writer.h"
 
 #include <cstring>
@@ -417,6 +418,23 @@ Error cook_project(const String &p_export_dir, CookResult &r_out) {
 	muf->store_buffer(music_blob);
 	r_out.music_path = music_path;
 
+	Vector<uint8_t> pack_blob;
+	const Error pack_err = write_pack_blob(1, "pack01", pack_blob);
+	if (pack_err != OK) {
+		r_out.errors.push_back(pack_err == ERR_OUT_OF_MEMORY ? vformat("N64 cook refuses pack id outside 1..%d (no silent drop).", kMaxPacks - 1) : String("PACK cook failed."));
+		r_out.report = r_out.errors[0];
+		return pack_err;
+	}
+	const String pack_path = p_export_dir.path_join("PACK01.bin");
+	Ref<FileAccess> pkf = FileAccess::open(pack_path, FileAccess::WRITE);
+	if (pkf.is_null()) {
+		r_out.errors.push_back("cannot write " + pack_path);
+		r_out.report = r_out.errors[0];
+		return ERR_CANT_CREATE;
+	}
+	pkf->store_buffer(pack_blob);
+	r_out.pack_path = pack_path;
+
 	const String names_path = p_export_dir.path_join("NAMES.MAP");
 	Ref<FileAccess> names = FileAccess::open(names_path, FileAccess::WRITE);
 	if (names.is_null()) {
@@ -424,15 +442,15 @@ Error cook_project(const String &p_export_dir, CookResult &r_out) {
 		r_out.report = r_out.errors[0];
 		return ERR_CANT_CREATE;
 	}
-	names->store_line(main_scene + " -> NODE00.bin MESH00.bin NTEX00.bin INP600.bin SFX00.wav MUSIC00.wav");
+	names->store_line(main_scene + " -> NODE00.bin MESH00.bin NTEX00.bin INP600.bin SFX00.wav MUSIC00.wav PACK01.bin");
 	for (int i = 0; i < gathered.nodes.size(); i++) {
 		names->store_line(vformat("node %d %s", i, gathered.nodes[i].name));
 	}
 	r_out.names_path = names_path;
 
 	const int tmem = albedo->get_width() * albedo->get_height() * 2;
-	const int rdram = kFbZBytes + kGuestReserve + blob.size() + mesh_blob.size() + ntex_blob.size() + inp_blob.size() + sfx_blob.size() + music_blob.size();
-	const int rom = blob.size() + mesh_blob.size() + ntex_blob.size() + inp_blob.size() + sfx_blob.size() + music_blob.size() + kRomPad;
+	const int rdram = kFbZBytes + kGuestReserve + blob.size() + mesh_blob.size() + ntex_blob.size() + inp_blob.size() + sfx_blob.size() + music_blob.size() + pack_blob.size();
+	const int rom = blob.size() + mesh_blob.size() + ntex_blob.size() + inp_blob.size() + sfx_blob.size() + music_blob.size() + pack_blob.size() + kRomPad;
 	r_out.tmem_bytes = tmem;
 	r_out.rdram_bytes = rdram;
 	r_out.rom_bytes = rom;
@@ -460,7 +478,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out) {
 		return ERR_OUT_OF_MEMORY;
 	}
 
-	r_out.report = vformat("cooked %d nodes, %d tris, %d actions + SFX/MUSIC WAV to NODE/MESH/NTEX/INP6 + NAMES.MAP + BUDGET.txt", r_out.nodes, r_out.tris, r_out.actions);
+	r_out.report = vformat("cooked %d nodes, %d tris, %d actions + SFX/MUSIC + PACK01 to NODE/MESH/NTEX/INP6 + NAMES.MAP + BUDGET.txt", r_out.nodes, r_out.tris, r_out.actions);
 	return OK;
 }
 
