@@ -32,6 +32,20 @@ static const int kRomPad = 393216; // hello .z64 IPL3/ELF pad
 static const int kDisplayW = 320;
 static const int kDisplayH = 240;
 
+inline int display_height_for_width(int p_w) {
+	return p_w == 640 ? 480 : 240;
+}
+
+inline int display_width_clamped(int p_w) {
+	return p_w == 640 ? 640 : 320;
+}
+
+inline int fb_z_bytes_for_width(int p_w) {
+	const int w = display_width_clamped(p_w);
+	const int h = display_height_for_width(w);
+	return w * h * 2 * 3; // 16-bit double color + Z
+}
+
 enum NodeKind : uint8_t {
 	KIND_OTHER = 0,
 	KIND_NODE3D = 1,
@@ -61,6 +75,6 @@ struct CookResult {
 	bool over_budget = false;
 };
 
-Error cook_project(const String &p_export_dir, CookResult &r_out);
+Error cook_project(const String &p_export_dir, CookResult &r_out, int p_display_w = 320);
 
 } // namespace n64_cook

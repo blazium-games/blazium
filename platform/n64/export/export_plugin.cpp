@@ -206,8 +206,8 @@ void EditorExportPlatformN64::get_platform_features(List<String> *r_features) co
 
 void EditorExportPlatformN64::get_export_options(List<ExportOption> *r_options) const {
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "n64/region", PROPERTY_HINT_ENUM, "Region-free,NTSC,PAL"), 0));
-	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "n64/width", PROPERTY_HINT_ENUM, "320"), 0));
-	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "n64/display_hint", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY), "v1 framebuffer is 320×240. Expansion Pak 8 MiB is always on."));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "n64/width", PROPERTY_HINT_ENUM, "320,640"), 0));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "n64/display_hint", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY), "Default framebuffer is 320×240. 640×480 is P8 optional. Expansion Pak 8 MiB is always on."));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "n64/emu", PROPERTY_HINT_ENUM, "Host default,Ares,Project64"), 0));
 }
 
@@ -310,8 +310,9 @@ Error EditorExportPlatformN64::export_project(const Ref<EditorExportPreset> &p_p
 	Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
 	da->make_dir_recursive(p_path.get_base_dir());
 
+	const int display_w = int(p_preset->get("n64/width")) == 1 ? 640 : 320;
 	n64_cook::CookResult cooked;
-	const Error cook_err = n64_cook::cook_project(p_path.get_base_dir(), cooked);
+	const Error cook_err = n64_cook::cook_project(p_path.get_base_dir(), cooked, display_w);
 	if (cook_err != OK || !cooked.errors.is_empty()) {
 		const String msg = cooked.errors.is_empty() ? (cooked.report.is_empty() ? String("N64 cook failed.") : cooked.report) : cooked.errors[0];
 		add_message(EXPORT_MESSAGE_ERROR, "N64", msg);
@@ -361,6 +362,10 @@ Error EditorExportPlatformN64::export_project(const Ref<EditorExportPreset> &p_p
 	if (!cooked.script_path.is_empty()) {
 		args.push_back("--script");
 		args.push_back(cooked.script_path);
+	}
+	if (display_w == 640) {
+		args.push_back("--display");
+		args.push_back("640");
 	}
 	args.push_back("--export-src");
 	args.push_back(p_path.get_base_dir().path_join("guest"));

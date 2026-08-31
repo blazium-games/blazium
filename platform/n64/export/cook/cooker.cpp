@@ -289,7 +289,7 @@ static Vector<uint8_t> write_node_blob(const Gather &p_g) {
 	return out;
 }
 
-Error cook_project(const String &p_export_dir, CookResult &r_out) {
+Error cook_project(const String &p_export_dir, CookResult &r_out, int p_display_w) {
 	Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
 	const Error mk = da->make_dir_recursive(p_export_dir);
 	ERR_FAIL_COND_V(mk != OK && mk != ERR_ALREADY_EXISTS, mk);
@@ -527,8 +527,11 @@ Error cook_project(const String &p_export_dir, CookResult &r_out) {
 	}
 	r_out.names_path = names_path;
 
+	const int display_w = display_width_clamped(p_display_w);
+	const int display_h = display_height_for_width(display_w);
+	const int fb_z = fb_z_bytes_for_width(display_w);
 	const int tmem = albedo->get_width() * albedo->get_height() * 2;
-	const int rdram = kFbZBytes + kGuestReserve + blob.size() + mesh_blob.size() + ntex_blob.size() + inp_blob.size() + sfx_blob.size() + music_blob.size() + pack_blob.size() + script_blob.size();
+	const int rdram = fb_z + kGuestReserve + blob.size() + mesh_blob.size() + ntex_blob.size() + inp_blob.size() + sfx_blob.size() + music_blob.size() + pack_blob.size() + script_blob.size();
 	const int rom = blob.size() + mesh_blob.size() + ntex_blob.size() + inp_blob.size() + sfx_blob.size() + music_blob.size() + pack_blob.size() + script_blob.size() + kRomPad;
 	r_out.tmem_bytes = tmem;
 	r_out.rdram_bytes = rdram;
@@ -548,7 +551,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out) {
 	budget->store_line(vformat("tmem %d/%d", tmem, kTmemBytes));
 	budget->store_line(vformat("rdram %d/%d", rdram, kRdramBudget));
 	budget->store_line(vformat("rom %d/%d", rom, kRomBudget));
-	budget->store_line(vformat("display %dx%d", kDisplayW, kDisplayH));
+	budget->store_line(vformat("display %dx%d", display_w, display_h));
 	r_out.budget_path = budget_path;
 
 	if (r_out.over_budget) {

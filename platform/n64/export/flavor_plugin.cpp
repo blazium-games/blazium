@@ -72,7 +72,7 @@ void N64FlavorEditorPlugin::_refresh() {
 		status->set_text("Turn on Project Settings → n64/enabled for the N64 flavor dock.\nN64.* is N64 export only; use OS.has_feature(\"n64\").\nExport writes a .z64 via blazium-toolchain (no Godot templates, no ISO).");
 		return;
 	}
-	status->set_text("N64 v1: rdpq 320×240, 8 MiB Expansion Pak, DragonFS rom://, EEPROM user://.\nN64.* is N64 export only; use OS.has_feature(\"n64\").\nProduct is .z64 (80 37 12 40). Cook (NTEX/MESH/NODE) is P3.\nValidators: Ares and Project64. No PIF dump. Never C:\\ultra.");
+	status->set_text("N64 v1: rdpq 320×240 (640×480 is P8 optional), 8 MiB Expansion Pak, DragonFS rom://, EEPROM user://.\nN64.* is N64 export only; use OS.has_feature(\"n64\").\nProduct is .z64 (80 37 12 40). Cook (NTEX/MESH/NODE) is P3.\nValidators: Ares and Project64. No PIF dump. Never C:\\ultra.");
 }
 
 void N64FlavorEditorPlugin::_notification(int p_what) {
