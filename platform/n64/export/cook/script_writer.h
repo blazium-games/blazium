@@ -17,6 +17,7 @@
 
 namespace n64_cook {
 
+bool source_is_forbidden(const String &p_src);
 Error write_script_blob(const Vector<String> &p_sources, Vector<uint8_t> &r_out);
 
 } // namespace n64_cook

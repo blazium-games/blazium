@@ -26,7 +26,7 @@ static void append_u16(Vector<uint8_t> &o, uint16_t v) {
 	o.push_back(uint8_t(v >> 8));
 }
 
-static bool source_is_forbidden(const String &p_src) {
+bool source_is_forbidden(const String &p_src) {
 	return p_src.contains("eval(") || p_src.contains("load(") || p_src.contains("HTTPClient") || p_src.contains("add_child") || p_src.contains("ClassDB");
 }
 

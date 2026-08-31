@@ -467,6 +467,32 @@ Error cook_project(const String &p_export_dir, CookResult &r_out) {
 	scf->store_buffer(script_blob);
 	r_out.script_path = script_path;
 
+	String ir_text = "IR rotate_y\n";
+	Ref<DirAccess> examples = DirAccess::open("res://examples");
+	if (examples.is_valid()) {
+		examples->list_dir_begin();
+		String name = examples->get_next();
+		while (!name.is_empty()) {
+			if (!examples->current_is_dir() && name.ends_with(".gd")) {
+				const String path = String("res://examples/").path_join(name);
+				const String src = FileAccess::get_file_as_string(path);
+				if (source_is_forbidden(src)) {
+					ir_text += "REJECT " + path + "\n";
+				}
+			}
+			name = examples->get_next();
+		}
+		examples->list_dir_end();
+	}
+	const String ir_path = p_export_dir.path_join("SCRIPT_IR.txt");
+	Ref<FileAccess> irf = FileAccess::open(ir_path, FileAccess::WRITE);
+	if (irf.is_null()) {
+		r_out.errors.push_back("cannot write " + ir_path);
+		r_out.report = r_out.errors[0];
+		return ERR_CANT_CREATE;
+	}
+	irf->store_string(ir_text);
+
 	const String names_path = p_export_dir.path_join("NAMES.MAP");
 	Ref<FileAccess> names = FileAccess::open(names_path, FileAccess::WRITE);
 	if (names.is_null()) {
