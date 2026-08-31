@@ -273,7 +273,12 @@ Error cook_project(const String &p_export_dir, CookResult &r_out) {
 	r_out.tris = tris;
 
 	Ref<Image> albedo = Image::create_empty(16, 16, false, Image::FORMAT_RGBA8);
-	albedo->fill(Color(0.2f, 0.45f, 0.85f));
+	for (int y = 0; y < 16; y++) {
+		for (int x = 0; x < 16; x++) {
+			const bool cell = (((x / 4) + (y / 4)) & 1) != 0;
+			albedo->set_pixel(x, y, cell ? Color(0.2f, 0.45f, 0.85f) : Color(0.85f, 0.85f, 0.95f));
+		}
+	}
 	Vector<uint8_t> ntex_blob;
 	const Error ntex_err = write_ntex_blob(albedo, ntex_blob);
 	if (ntex_err != OK) {
