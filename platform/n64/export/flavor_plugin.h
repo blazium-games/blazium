@@ -116,6 +116,53 @@ public:
 		(void)p_roll;
 		return false;
 	}
+	bool set_camera(int p_id) {
+		_fail_n64();
+		(void)p_id;
+		return false;
+	}
+	bool set_default_camera(int p_id) {
+		_fail_n64();
+		(void)p_id;
+		return false;
+	}
+	bool next_camera() {
+		_fail_n64();
+		return false;
+	}
+	bool play_anim(const String &p_name) {
+		_fail_n64();
+		(void)p_name;
+		return false;
+	}
+	bool load_anims() {
+		_fail_n64();
+		return false;
+	}
+	bool unload_anims() {
+		_fail_n64();
+		return false;
+	}
+	bool load_sprites() {
+		_fail_n64();
+		return false;
+	}
+	int overlaps(float p_x, float p_y, float p_z) {
+		_fail_n64();
+		(void)p_x;
+		(void)p_y;
+		(void)p_z;
+		return 0;
+	}
+	bool mempak_save(const PackedByteArray &p_data) {
+		_fail_n64();
+		(void)p_data;
+		return false;
+	}
+	PackedByteArray mempak_load() {
+		_fail_n64();
+		return PackedByteArray();
+	}
 	PackedByteArray godot_save_bytes(const Variant &p_v) const {
 		int len = 0;
 		encode_variant(p_v, nullptr, len, false);

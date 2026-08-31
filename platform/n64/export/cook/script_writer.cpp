@@ -24,9 +24,31 @@ enum {
 	OP_CALL_ROTATE_Y = 4,
 	OP_SET_RUMBLE = 10,
 	OP_STOP_RUMBLE = 11,
+	OP_USER_SAVE = 14,
+	OP_USER_LOAD = 15,
+	OP_LOOK_CAMERA = 27,
+	OP_NEXT_CAMERA = 30,
+	OP_SLIDE = 35,
+	OP_OVERLAP = 36,
+	OP_RAYCAST = 37,
 	OP_CHANGE_SCENE = 41,
 	OP_INSTANTIATE = 42,
+	OP_SEEK_ANIM = 45,
+	OP_CALL_NATIVE = 48,
 	OP_LOAD_SCENE = 50,
+};
+
+enum {
+	NAT_SET_CAM = 63,
+	NAT_LOAD_SPRITES = 64,
+	NAT_SET_DEFAULT_CAM = 72,
+	NAT_PLAY_ANIM = 73,
+	NAT_STOP_ANIM = 74,
+	NAT_LOAD_ANIMS = 75,
+	NAT_UNLOAD_ANIMS = 76,
+	NAT_LOAD_HITS = 77,
+	NAT_UNLOAD_HITS = 78,
+	NAT_UNLOAD_SPRITES = 79,
 };
 
 static void append_u16(Vector<uint8_t> &o, uint16_t v) {
@@ -189,6 +211,91 @@ Error write_script_blob(const Vector<String> &p_sources, const HashMap<String, i
 		}
 		r_ir_extra += "IR N64.load (res://*.tscn pack)\n";
 	}
+	bool any_src = false;
+	for (int i = 0; i < p_sources.size(); i++) {
+		const String &src = p_sources[i];
+		any_src = true;
+		if (src.contains("set_camera") || src.contains("set_cam")) {
+			code.push_back(uint8_t(OP_LOADK_F));
+			append_f32(code, 0.0f);
+			code.push_back(uint8_t(OP_CALL_NATIVE));
+			code.push_back(uint8_t(NAT_SET_CAM));
+			r_ir_extra += "IR N64.set_camera\n";
+		}
+		if (src.contains("set_default_camera")) {
+			code.push_back(uint8_t(OP_LOADK_F));
+			append_f32(code, 0.0f);
+			code.push_back(uint8_t(OP_CALL_NATIVE));
+			code.push_back(uint8_t(NAT_SET_DEFAULT_CAM));
+		}
+		if (src.contains("next_camera")) {
+			code.push_back(uint8_t(OP_NEXT_CAMERA));
+		}
+		if (src.contains("look_camera")) {
+			code.push_back(uint8_t(OP_LOADK_F));
+			append_f32(code, 0.0f);
+			code.push_back(uint8_t(OP_LOADK_F));
+			append_f32(code, 0.0f);
+			code.push_back(uint8_t(OP_LOOK_CAMERA));
+		}
+		if (src.contains("play_anim") || src.contains(".play(")) {
+			code.push_back(uint8_t(OP_LOADK_F));
+			append_f32(code, 0.0f);
+			code.push_back(uint8_t(OP_CALL_NATIVE));
+			code.push_back(uint8_t(NAT_PLAY_ANIM));
+			r_ir_extra += "IR ANIM TRS\n";
+		}
+		if (src.contains("seek_anim") || src.contains(".seek(")) {
+			code.push_back(uint8_t(OP_LOADK_F));
+			append_f32(code, 0.0f);
+			code.push_back(uint8_t(OP_SEEK_ANIM));
+		}
+		if (src.contains("load_anims")) {
+			code.push_back(uint8_t(OP_LOADK_F));
+			append_f32(code, 0.0f);
+			code.push_back(uint8_t(OP_CALL_NATIVE));
+			code.push_back(uint8_t(NAT_LOAD_ANIMS));
+		}
+		if (src.contains("unload_anims")) {
+			code.push_back(uint8_t(OP_CALL_NATIVE));
+			code.push_back(uint8_t(NAT_UNLOAD_ANIMS));
+		}
+		if (src.contains("load_sprites")) {
+			code.push_back(uint8_t(OP_LOADK_F));
+			append_f32(code, 0.0f);
+			code.push_back(uint8_t(OP_CALL_NATIVE));
+			code.push_back(uint8_t(NAT_LOAD_SPRITES));
+		}
+		if (src.contains("unload_sprites")) {
+			code.push_back(uint8_t(OP_CALL_NATIVE));
+			code.push_back(uint8_t(NAT_UNLOAD_SPRITES));
+		}
+		if (src.contains("unload_hits")) {
+			code.push_back(uint8_t(OP_CALL_NATIVE));
+			code.push_back(uint8_t(NAT_UNLOAD_HITS));
+		}
+		if (src.contains("overlaps") || src.contains("overlap")) {
+			code.push_back(uint8_t(OP_OVERLAP));
+			r_ir_extra += "IR HIT AABB\n";
+		}
+		if (src.contains("raycast")) {
+			code.push_back(uint8_t(OP_RAYCAST));
+		}
+		if (src.contains("move_and_slide")) {
+			code.push_back(uint8_t(OP_LOADK_F));
+			append_f32(code, 0.0f);
+			code.push_back(uint8_t(OP_LOADK_F));
+			append_f32(code, 0.0f);
+			code.push_back(uint8_t(OP_LOADK_F));
+			append_f32(code, 0.0f);
+			code.push_back(uint8_t(OP_SLIDE));
+		}
+		if (src.contains("user_save") || src.contains("godot_save_bytes") || src.contains("user://")) {
+			code.push_back(uint8_t(OP_USER_SAVE));
+			code.push_back(uint8_t(OP_USER_LOAD));
+		}
+	}
+	(void)any_src;
 	code.push_back(uint8_t(OP_END));
 	r_out.clear();
 	r_out.push_back('S');

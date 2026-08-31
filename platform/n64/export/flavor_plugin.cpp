@@ -34,6 +34,16 @@ void N64::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_checkpoint", "node"), &N64::set_checkpoint);
 	ClassDB::bind_method(D_METHOD("respawn", "node"), &N64::respawn);
 	ClassDB::bind_method(D_METHOD("look_camera", "yaw", "pitch", "roll"), &N64::look_camera, DEFVAL(0.0f));
+	ClassDB::bind_method(D_METHOD("set_camera", "id"), &N64::set_camera);
+	ClassDB::bind_method(D_METHOD("set_default_camera", "id"), &N64::set_default_camera);
+	ClassDB::bind_method(D_METHOD("next_camera"), &N64::next_camera);
+	ClassDB::bind_method(D_METHOD("play_anim", "name"), &N64::play_anim);
+	ClassDB::bind_method(D_METHOD("load_anims"), &N64::load_anims);
+	ClassDB::bind_method(D_METHOD("unload_anims"), &N64::unload_anims);
+	ClassDB::bind_method(D_METHOD("load_sprites"), &N64::load_sprites);
+	ClassDB::bind_method(D_METHOD("overlaps", "x", "y", "z"), &N64::overlaps);
+	ClassDB::bind_method(D_METHOD("mempak_save", "data"), &N64::mempak_save);
+	ClassDB::bind_method(D_METHOD("mempak_load"), &N64::mempak_load);
 	ClassDB::bind_method(D_METHOD("godot_save_bytes", "value"), &N64::godot_save_bytes);
 	ClassDB::bind_method(D_METHOD("godot_load_bytes", "bytes"), &N64::godot_load_bytes);
 }
@@ -72,7 +82,7 @@ void N64FlavorEditorPlugin::_refresh() {
 		status->set_text("Turn on Project Settings → n64/enabled for the N64 flavor dock.\nN64.* is N64 export only; use OS.has_feature(\"n64\").\nExport writes a .z64 via blazium-toolchain (no Godot templates, no ISO).");
 		return;
 	}
-	status->set_text("N64 v1: rdpq 320×240 (640×480 is P8 optional), 8 MiB Expansion Pak (4 MiB no-pak is P8 optional; default stays 8 MiB). DragonFS rom://, EEPROM user://. Multi-scene is pack 0 plus rom:// packs 1–23; N64.change_scene / N64.instantiate / load(\"res://*.tscn\") only. Skeletal skinning and Godot Controls fail cook. Rumble Pak is P8 optional (skip if accessory missing). DSO overlays are libdragon dlopen, not GDExtension.\nN64.* is N64 export only; use OS.has_feature(\"n64\").\nProduct is .z64 (80 37 12 40). Cook (NTEX/MESH/NODE) is P3.\nValidators: Ares and Project64. No PIF dump. Never C:\\ultra.");
+	status->set_text("N64 v1: rdpq 320×240 (640×480 is P8 optional), 8 MiB Expansion Pak (4 MiB no-pak is P8 optional; default stays 8 MiB). DragonFS rom://, 4 KiB EEPROM user:// stores Godot marshalls bytes. Cameras (CAMN), TRS ANIM clips, bitmap SPRT/TILE, HIT AABB. Multi-scene is pack 0 plus rom:// packs 1–23; N64.change_scene / N64.instantiate / load(\"res://*.tscn\") only. Skeletal skinning and Godot Controls fail cook. Rumble Pak is P8 optional (skip if accessory missing). Controller Pak is optional. DSO overlays are libdragon dlopen, not GDExtension.\nN64.* is N64 export only; use OS.has_feature(\"n64\").\nProduct is .z64 (80 37 12 40). Cook (NTEX/MESH/NODE/CAMN/HITN/ANIM).\nValidators: Ares and Project64. No PIF dump. Never C:\\ultra.");
 }
 
 void N64FlavorEditorPlugin::_notification(int p_what) {

@@ -32,6 +32,10 @@ static const uint16_t kBtnDLeft = 1 << 6;
 static const uint16_t kBtnDRight = 1 << 7;
 static const uint16_t kBtnDUp = 1 << 8;
 static const uint16_t kBtnDDown = 1 << 9;
+static const uint16_t kBtnCLeft = 1 << 10;
+static const uint16_t kBtnCRight = 1 << 11;
+static const uint16_t kBtnCUp = 1 << 12;
+static const uint16_t kBtnCDown = 1 << 13;
 
 struct InpRow {
 	uint8_t id = 0;
@@ -67,6 +71,14 @@ static uint16_t buttons_from_joy(JoyButton p_btn) {
 			return kBtnDUp;
 		case JoyButton::DPAD_DOWN:
 			return kBtnDDown;
+		case JoyButton::Y:
+			return kBtnCUp;
+		case JoyButton::LEFT_STICK:
+			return kBtnCLeft;
+		case JoyButton::RIGHT_STICK:
+			return kBtnCRight;
+		case JoyButton::MISC1:
+			return kBtnCDown;
 		default:
 			return 0;
 	}
@@ -117,6 +129,18 @@ static int preferred_id(const String &p_name) {
 	if (p_name == "ui_down") {
 		return 6;
 	}
+	if (p_name == "c_left") {
+		return 7;
+	}
+	if (p_name == "c_right") {
+		return 8;
+	}
+	if (p_name == "c_up") {
+		return 9;
+	}
+	if (p_name == "c_down") {
+		return 10;
+	}
 	return -1;
 }
 
@@ -130,6 +154,10 @@ Error write_inp_blob(Vector<uint8_t> &r_out, int &r_count) {
 		{ 4, kBtnDRight, 1, "ui_right" },
 		{ 5, kBtnDUp, 2, "ui_up" },
 		{ 6, kBtnDDown, 2, "ui_down" },
+		{ 7, kBtnCLeft, 0, "c_left" },
+		{ 8, kBtnCRight, 0, "c_right" },
+		{ 9, kBtnCUp, 0, "c_up" },
+		{ 10, kBtnCDown, 0, "c_down" },
 	};
 	HashSet<String> seen;
 	for (const InpRow &d : defaults) {

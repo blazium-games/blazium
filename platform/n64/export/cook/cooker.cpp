@@ -16,26 +16,42 @@
 #include "ntex_writer.h"
 #include "pack_writer.h"
 #include "script_writer.h"
+#include "sidecar_writer.h"
 #include "wav_writer.h"
 
 #include <cstring>
 
 #include "core/config/project_settings.h"
+#include "core/math/quaternion.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/io/image.h"
 #include "core/io/resource_loader.h"
 #include "core/object/script_language.h"
 #include "core/templates/hash_map.h"
+#include "core/templates/list.h"
 #include "scene/2d/audio_stream_player_2d.h"
+#include "scene/2d/camera_2d.h"
+#include "scene/2d/node_2d.h"
+#include "scene/2d/physics/area_2d.h"
+#include "scene/2d/physics/collision_polygon_2d.h"
+#include "scene/2d/physics/collision_shape_2d.h"
+#include "scene/2d/sprite_2d.h"
+#include "scene/2d/tile_map.h"
+#include "scene/2d/tile_map_layer.h"
 #include "scene/3d/audio_stream_player_3d.h"
 #include "scene/3d/bone_attachment_3d.h"
 #include "scene/3d/camera_3d.h"
 #include "scene/3d/mesh_instance_3d.h"
+#include "scene/3d/physics/area_3d.h"
+#include "scene/3d/physics/collision_shape_3d.h"
 #include "scene/3d/node_3d.h"
 #include "scene/3d/skeleton_3d.h"
+#include "scene/3d/sprite_3d.h"
 #include "scene/animation/animation_player.h"
 #include "scene/animation/animation_tree.h"
+#include "scene/resources/3d/box_shape_3d.h"
+#include "scene/resources/animation.h"
 #include "scene/audio/audio_stream_player.h"
 #include "scene/gui/control.h"
 #include "scene/main/canvas_item.h"
@@ -65,9 +81,15 @@ struct Gather {
 	Ref<AudioStreamWAV> sfx;
 	Ref<AudioStreamWAV> music;
 	Vector<String> scripts;
+	Vector<CamRow> cams;
+	Vector<HitRow> hits;
+	Vector<AnimRow> anims;
+	Vector<SprtRow> sprites;
+	Vector<TileRow> tiles;
+	int default_cam = 0;
 	int extra_audio = 0;
 	bool saw_material = false;
-	bool saw_light_or_area = false;
+	bool saw_light = false;
 };
 
 static void gather_mesh(MeshInstance3D *p_mi, Gather &r_g) {
@@ -160,13 +182,11 @@ static String refuse_node_reason(Node *p_node) {
 	if (Object::cast_to<AnimationTree>(p_node)) {
 		return "N64 cook refuses AnimationTree. ANIM clips are a later slice.";
 	}
-	if (Object::cast_to<AnimationPlayer>(p_node)) {
-		return "N64 cook refuses AnimationPlayer. ANIM clips are a later slice.";
-	}
 	if (Object::cast_to<Control>(p_node) || Object::cast_to<CanvasLayer>(p_node)) {
 		return "N64 cook refuses Godot Control UI. Use InputMap actions; bitmap HUD is a later slice.";
 	}
-	if (Object::cast_to<CanvasItem>(p_node) && !Object::cast_to<AudioStreamPlayer2D>(p_node)) {
+	const bool cook_src = Object::cast_to<AudioStreamPlayer2D>(p_node) || Object::cast_to<Sprite2D>(p_node) || Object::cast_to<Camera2D>(p_node) || Object::cast_to<Area2D>(p_node) || Object::cast_to<CollisionShape2D>(p_node) || Object::cast_to<CollisionPolygon2D>(p_node) || Object::cast_to<TileMap>(p_node) || Object::cast_to<TileMapLayer>(p_node);
+	if (Object::cast_to<CanvasItem>(p_node) && !cook_src) {
 		return "N64 cook refuses Godot Control UI. Use InputMap actions; bitmap HUD is a later slice.";
 	}
 	if (MeshInstance3D *mi = Object::cast_to<MeshInstance3D>(p_node)) {
@@ -201,6 +221,78 @@ static String kit_place(Node *p_node) {
 	if (nm == "portal" || p_node->is_in_group("portal") || p_node->has_meta("n64_portal") || p_node->has_meta("n64_dest")) {
 		return "portal";
 	}
+	if (nm == "checkpoint" || p_node->is_in_group("checkpoint") || p_node->has_meta("n64_checkpoint") || p_node->get_class() == "N64Checkpoint") {
+		return "checkpoint";
+	}
+	if (nm == "hazard" || p_node->is_in_group("hazard") || p_node->has_meta("n64_hazard")) {
+		return "hazard";
+	}
+	if (nm == "pickup" || p_node->is_in_group("pickup") || p_node->has_meta("n64_pickup")) {
+		return "pickup";
+	}
+	if (nm == "talk" || p_node->is_in_group("talk") || p_node->has_meta("n64_talk")) {
+		return "talk";
+	}
+	if (nm == "spawner" || p_node->is_in_group("spawner") || p_node->has_meta("n64_spawner")) {
+		return "spawner";
+	}
+	if (nm == "save" || p_node->is_in_group("save") || p_node->has_meta("n64_save")) {
+		return "save";
+	}
+	return String();
+}
+
+static uint8_t kit_byte(const String &p_kit) {
+	if (p_kit == "spawn") {
+		return 1;
+	}
+	if (p_kit == "portal") {
+		return 2;
+	}
+	if (p_kit == "checkpoint") {
+		return 3;
+	}
+	if (p_kit == "hazard") {
+		return 4;
+	}
+	if (p_kit == "pickup") {
+		return 5;
+	}
+	if (p_kit == "talk") {
+		return 6;
+	}
+	if (p_kit == "spawner") {
+		return 7;
+	}
+	if (p_kit == "save") {
+		return 8;
+	}
+	return 0;
+}
+
+static String anim_player_reason(AnimationPlayer *p_ap) {
+	if (!p_ap) {
+		return String();
+	}
+	List<StringName> names;
+	p_ap->get_animation_list(&names);
+	for (const StringName &nm : names) {
+		const Ref<Animation> anim = p_ap->get_animation(nm);
+		if (anim.is_null()) {
+			continue;
+		}
+		const int tc = anim->get_track_count();
+		for (int t = 0; t < tc; t++) {
+			const Animation::TrackType ty = anim->track_get_type(t);
+			if (ty != Animation::TYPE_POSITION_3D && ty != Animation::TYPE_ROTATION_3D && ty != Animation::TYPE_SCALE_3D) {
+				return "N64 cook refuses AnimationPlayer tracks that are not node TRS (no bones / AnimationTree).";
+			}
+			const NodePath path = anim->track_get_path(t);
+			if (String(path).contains(":")) {
+				return "N64 cook refuses skeletal skinning (4 KiB TMEM / no bone palette). Use rigid MeshInstance3D meshes.";
+			}
+		}
+	}
 	return String();
 }
 
@@ -212,6 +304,13 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent) {
 	if (!refuse.is_empty()) {
 		r_g.errors.push_back(refuse);
 		return;
+	}
+	if (AnimationPlayer *ap = Object::cast_to<AnimationPlayer>(p_node)) {
+		const String anim_err = anim_player_reason(ap);
+		if (!anim_err.is_empty()) {
+			r_g.errors.push_back(anim_err);
+			return;
+		}
 	}
 	if (r_g.nodes.size() >= kMaxNodes) {
 		r_g.errors.push_back(vformat("N64 cook refuses more than %d nodes (no silent drop).", kMaxNodes));
@@ -230,8 +329,8 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent) {
 		}
 	}
 	const String cls = p_node->get_class();
-	if (cls.contains("Light") || cls.contains("Area3D") || cls.contains("Area2D")) {
-		r_g.saw_light_or_area = true;
+	if (cls.contains("Light")) {
+		r_g.saw_light = true;
 	}
 	if (Node3D *n3 = Object::cast_to<Node3D>(p_node)) {
 		const Transform3D xf = n3->get_transform();
@@ -281,6 +380,150 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent) {
 				r_g.scripts.push_back(src);
 				collect_scene_refs(src, r_g.kit_scenes);
 			}
+		}
+	}
+
+	if (Camera3D *c3 = Object::cast_to<Camera3D>(p_node)) {
+		if (r_g.cams.size() >= kMaxCams) {
+			r_g.errors.push_back(vformat("N64 cook refuses more than %d cameras (no silent drop).", kMaxCams));
+			return;
+		}
+		CamRow cam;
+		cam.node_id = my;
+		cam.pos = row.pos;
+		cam.euler = row.rot;
+		cam.fov = c3->get_fov();
+		if (c3->is_current()) {
+			cam.flags = 2;
+			r_g.default_cam = r_g.cams.size();
+		}
+		r_g.cams.push_back(cam);
+	} else if (Camera2D *c2 = Object::cast_to<Camera2D>(p_node)) {
+		if (r_g.cams.size() >= kMaxCams) {
+			r_g.errors.push_back(vformat("N64 cook refuses more than %d cameras (no silent drop).", kMaxCams));
+			return;
+		}
+		CamRow cam;
+		cam.node_id = my;
+		cam.pos = Vector3(c2->get_position().x, c2->get_position().y, 0);
+		cam.fov = 55.0f;
+		cam.flags = 1;
+		if (c2->is_current()) {
+			cam.flags |= 2;
+			r_g.default_cam = r_g.cams.size();
+		}
+		r_g.cams.push_back(cam);
+	}
+	if (Object::cast_to<Area3D>(p_node) || Object::cast_to<Area2D>(p_node) || Object::cast_to<CollisionShape3D>(p_node) || Object::cast_to<CollisionShape2D>(p_node)) {
+		if (r_g.hits.size() >= kMaxHits) {
+			r_g.errors.push_back(vformat("N64 cook refuses more than %d HIT AABBs (no silent drop).", kMaxHits));
+			return;
+		}
+		HitRow hit;
+		hit.node_id = my;
+		hit.kit = kit_byte(row.kit);
+		if (Node3D *n3 = Object::cast_to<Node3D>(p_node)) {
+			const Vector3 p = n3->get_transform().origin;
+			Vector3 s = n3->get_transform().basis.get_scale();
+			if (s.length() < 0.01f) {
+				s = Vector3(0.5f, 0.5f, 0.5f);
+			}
+			if (CollisionShape3D *cs = Object::cast_to<CollisionShape3D>(p_node)) {
+				if (const BoxShape3D *box = Object::cast_to<BoxShape3D>(cs->get_shape().ptr())) {
+					s = box->get_size() * 0.5f;
+				}
+			}
+			hit.mn = p - s;
+			hit.mx = p + s;
+			hit.kind = 0;
+			hit.flags = 1;
+		} else if (Node2D *n2 = Object::cast_to<Node2D>(p_node)) {
+			const Vector2 p = n2->get_position();
+			hit.mn = Vector3(p.x - 8, p.y - 8, 0);
+			hit.mx = Vector3(p.x + 8, p.y + 8, 0.1f);
+			hit.kind = 1;
+			hit.flags = 1;
+		}
+		r_g.hits.push_back(hit);
+	}
+	if (AnimationPlayer *ap = Object::cast_to<AnimationPlayer>(p_node)) {
+		List<StringName> names;
+		ap->get_animation_list(&names);
+		for (const StringName &nm : names) {
+			if (r_g.anims.size() >= kMaxAnims) {
+				r_g.errors.push_back(vformat("N64 cook refuses more than %d ANIM clips (no silent drop).", kMaxAnims));
+				return;
+			}
+			const Ref<Animation> anim = ap->get_animation(nm);
+			if (anim.is_null()) {
+				continue;
+			}
+			AnimRow ar;
+			ar.name = nm;
+			ar.length = float(anim->get_length());
+			ar.node_id = my;
+			const int tc = anim->get_track_count();
+			for (int t = 0; t < tc; t++) {
+				if (anim->track_get_type(t) != Animation::TYPE_POSITION_3D && anim->track_get_type(t) != Animation::TYPE_ROTATION_3D) {
+					continue;
+				}
+				const int kc = anim->track_get_key_count(t);
+				for (int k = 0; k < kc; k++) {
+					AnimKey key;
+					key.t = float(anim->track_get_key_time(t, k));
+					const Variant val = anim->track_get_key_value(t, k);
+					if (anim->track_get_type(t) == Animation::TYPE_POSITION_3D) {
+						key.pos = val;
+					} else if (val.get_type() == Variant::QUATERNION) {
+						key.rot = Quaternion(val).get_euler();
+					} else {
+						key.rot = val;
+					}
+					ar.keys.push_back(key);
+				}
+			}
+			r_g.anims.push_back(ar);
+		}
+	}
+	if (Sprite2D *s2 = Object::cast_to<Sprite2D>(p_node)) {
+		if (r_g.sprites.size() >= kMaxSprites) {
+			r_g.errors.push_back(vformat("N64 cook refuses more than %d sprites (no silent drop).", kMaxSprites));
+			return;
+		}
+		SprtRow s;
+		s.node_id = my;
+		s.x = int16_t(s2->get_position().x);
+		s.y = int16_t(s2->get_position().y);
+		s.w = 16;
+		s.h = 16;
+		r_g.sprites.push_back(s);
+	} else if (Sprite3D *s3 = Object::cast_to<Sprite3D>(p_node)) {
+		if (r_g.sprites.size() >= kMaxSprites) {
+			r_g.errors.push_back(vformat("N64 cook refuses more than %d sprites (no silent drop).", kMaxSprites));
+			return;
+		}
+		SprtRow s;
+		s.node_id = my;
+		s.x = int16_t(s3->get_position().x);
+		s.y = int16_t(s3->get_position().y);
+		s.z = int16_t(s3->get_position().z);
+		s.w = 16;
+		s.h = 16;
+		r_g.sprites.push_back(s);
+	}
+	if (TileMapLayer *tl = Object::cast_to<TileMapLayer>(p_node)) {
+		const TypedArray<Vector2i> cells = tl->get_used_cells();
+		for (int i = 0; i < cells.size(); i++) {
+			if (r_g.tiles.size() >= kMaxTiles) {
+				r_g.errors.push_back(vformat("N64 cook refuses more than %d TILE cells (no silent drop).", kMaxTiles));
+				return;
+			}
+			const Vector2i c = cells[i];
+			TileRow t;
+			t.tx = int16_t(c.x);
+			t.ty = int16_t(c.y);
+			t.solid = 1;
+			r_g.tiles.push_back(t);
 		}
 	}
 
@@ -411,7 +654,79 @@ static Error cook_gather_slices(const Gather &p_g, const String &p_export_dir, i
 	if (err != OK) {
 		return err;
 	}
-	return store_blob(ntex_path, r_ntex, r_out);
+	err = store_blob(ntex_path, r_ntex, r_out);
+	if (err != OK) {
+		return err;
+	}
+
+	Vector<uint8_t> cam_blob;
+	Vector<uint8_t> hit_blob;
+	Vector<uint8_t> anim_blob;
+	Vector<uint8_t> sprt_blob;
+	Vector<uint8_t> tile_blob;
+	err = write_camn_blob(p_g.cams, p_g.default_cam, cam_blob);
+	if (err != OK) {
+		r_out.errors.push_back(vformat("N64 cook refuses more than %d cameras (no silent drop).", kMaxCams));
+		r_out.report = r_out.errors[0];
+		return err;
+	}
+	err = write_hitn_blob(p_g.hits, hit_blob);
+	if (err != OK) {
+		r_out.errors.push_back(vformat("N64 cook refuses more than %d HIT AABBs (no silent drop).", kMaxHits));
+		r_out.report = r_out.errors[0];
+		return err;
+	}
+	err = write_anim_blob(p_g.anims, anim_blob);
+	if (err != OK) {
+		r_out.errors.push_back(vformat("N64 cook refuses more than %d ANIM clips (no silent drop).", kMaxAnims));
+		r_out.report = r_out.errors[0];
+		return err;
+	}
+	err = write_sprn_blob(p_g.sprites, sprt_blob);
+	if (err != OK) {
+		r_out.errors.push_back(vformat("N64 cook refuses more than %d sprites (no silent drop).", kMaxSprites));
+		r_out.report = r_out.errors[0];
+		return err;
+	}
+	err = write_tiln_blob(p_g.tiles, tile_blob);
+	if (err != OK) {
+		r_out.errors.push_back(vformat("N64 cook refuses more than %d TILE cells (no silent drop).", kMaxTiles));
+		r_out.report = r_out.errors[0];
+		return err;
+	}
+	const String cam_path = p_export_dir.path_join(vformat("CAM%02d.bin", p_pack));
+	const String hit_path = p_export_dir.path_join(vformat("HIT%02d.bin", p_pack));
+	const String anim_path = p_export_dir.path_join(vformat("ANIM%02d.bin", p_pack));
+	const String sprt_path = p_export_dir.path_join(vformat("SPRN%02d.bin", p_pack));
+	const String tile_path = p_export_dir.path_join(vformat("TILN%02d.bin", p_pack));
+	err = store_blob(cam_path, cam_blob, r_out);
+	if (err != OK) {
+		return err;
+	}
+	err = store_blob(hit_path, hit_blob, r_out);
+	if (err != OK) {
+		return err;
+	}
+	err = store_blob(anim_path, anim_blob, r_out);
+	if (err != OK) {
+		return err;
+	}
+	err = store_blob(sprt_path, sprt_blob, r_out);
+	if (err != OK) {
+		return err;
+	}
+	err = store_blob(tile_path, tile_blob, r_out);
+	if (err != OK) {
+		return err;
+	}
+	if (p_pack == 0) {
+		r_out.cam_path = cam_path;
+		r_out.hit_path = hit_path;
+		r_out.anim_path = anim_path;
+		r_out.sprt_path = sprt_path;
+		r_out.tile_path = tile_path;
+	}
+	return OK;
 }
 
 static void append_unique_scene(Vector<String> &r_scenes, const String &p_path, const String &p_main) {
@@ -633,8 +948,9 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, int p_display_
 		if (werr != OK) {
 			return werr;
 		}
-		extra_rdram += int(enode.size() + emesh.size() + entex.size() + epack.size());
-		extra_rom += int(enode.size() + emesh.size() + entex.size() + epack.size());
+		const int extra_sidecar = FileAccess::get_file_as_bytes(p_export_dir.path_join(vformat("CAM%02d.bin", pack_id))).size() + FileAccess::get_file_as_bytes(p_export_dir.path_join(vformat("HIT%02d.bin", pack_id))).size() + FileAccess::get_file_as_bytes(p_export_dir.path_join(vformat("ANIM%02d.bin", pack_id))).size() + FileAccess::get_file_as_bytes(p_export_dir.path_join(vformat("SPRN%02d.bin", pack_id))).size() + FileAccess::get_file_as_bytes(p_export_dir.path_join(vformat("TILN%02d.bin", pack_id))).size();
+		extra_rdram += int(enode.size() + emesh.size() + entex.size() + epack.size() + extra_sidecar);
+		extra_rom += int(enode.size() + emesh.size() + entex.size() + epack.size() + extra_sidecar);
 	}
 
 	Vector<uint8_t> pack_blob;
@@ -677,6 +993,9 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, int p_display_
 	r_out.script_path = script_path;
 
 	String ir_text = "IR rotate_y\n";
+	ir_text += "IR N64.set_camera\n";
+	ir_text += "IR ANIM TRS\n";
+	ir_text += "IR HIT AABB\n";
 	ir_text += ir_extra;
 	Ref<DirAccess> examples = DirAccess::open("res://examples");
 	if (examples.is_valid()) {
@@ -726,6 +1045,18 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, int p_display_
 			names->store_line(vformat("kit %s node %d", gathered.nodes[i].kit, i));
 		}
 	}
+	for (int i = 0; i < gathered.cams.size(); i++) {
+		names->store_line(vformat("cam: %d node %d", i, gathered.cams[i].node_id));
+	}
+	for (int i = 0; i < gathered.hits.size(); i++) {
+		names->store_line(vformat("hit: %d node %d", i, gathered.hits[i].node_id));
+	}
+	for (int i = 0; i < gathered.anims.size(); i++) {
+		names->store_line(vformat("anim: %d %s", i, gathered.anims[i].name));
+	}
+	for (int i = 0; i < gathered.sprites.size(); i++) {
+		names->store_line(vformat("sprt: %d node %d", i, gathered.sprites[i].node_id));
+	}
 	r_out.names_path = names_path;
 
 	if (gathered.saw_material) {
@@ -735,8 +1066,8 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, int p_display_
 		r_out.warnings.push_back("Extra audio streams beyond SFX00/MUSIC00 ignored.");
 	}
 	r_out.warnings.push_back("n64/region unused (still unwired).");
-	if (gathered.saw_light_or_area) {
-		r_out.warnings.push_back("Lights / Area3D recorded as KIND_OTHER (no lighting/physics this slice).");
+	if (gathered.saw_light) {
+		r_out.warnings.push_back("Lights recorded as KIND_OTHER (no lighting this slice).");
 	}
 	const String warnings_path = p_export_dir.path_join("WARNINGS.txt");
 	Ref<FileAccess> warnf = FileAccess::open(warnings_path, FileAccess::WRITE);
@@ -777,6 +1108,8 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, int p_display_
 	budget->store_line(vformat("rom %d/%d", rom, kRomBudget));
 	budget->store_line(vformat("display %dx%d", display_w, display_h));
 	budget->store_line(vformat("packs %d/%d", r_out.pack_count, kMaxPacks));
+	budget->store_line(vformat("hits %d/%d", gathered.hits.size(), kMaxHits));
+	budget->store_line(vformat("cams %d/%d", gathered.cams.size(), kMaxCams));
 	r_out.budget_path = budget_path;
 
 	if (r_out.over_budget) {
