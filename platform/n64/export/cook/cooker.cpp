@@ -14,6 +14,7 @@
 #include "inp_writer.h"
 #include "mesh_writer.h"
 #include "ntex_writer.h"
+#include "wav_writer.h"
 
 #include <cstring>
 
@@ -22,9 +23,13 @@
 #include "core/io/file_access.h"
 #include "core/io/image.h"
 #include "core/io/resource_loader.h"
+#include "scene/2d/audio_stream_player_2d.h"
+#include "scene/3d/audio_stream_player_3d.h"
 #include "scene/3d/camera_3d.h"
 #include "scene/3d/mesh_instance_3d.h"
 #include "scene/3d/node_3d.h"
+#include "scene/audio/audio_stream_player.h"
+#include "scene/resources/audio_stream_wav.h"
 #include "scene/resources/mesh.h"
 #include "scene/resources/packed_scene.h"
 
@@ -43,6 +48,8 @@ struct Gather {
 	Vector<NodeRow> nodes;
 	Vector<Vector3> verts;
 	Vector<String> errors;
+	Ref<AudioStreamWAV> sfx;
+	Ref<AudioStreamWAV> music;
 };
 
 static void gather_mesh(MeshInstance3D *p_mi, Gather &r_g) {
@@ -149,6 +156,27 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent) {
 	if (MeshInstance3D *mi = Object::cast_to<MeshInstance3D>(p_node)) {
 		gather_mesh(mi, r_g);
 	}
+	Ref<AudioStream> stream;
+	if (AudioStreamPlayer *ap = Object::cast_to<AudioStreamPlayer>(p_node)) {
+		stream = ap->get_stream();
+	} else if (AudioStreamPlayer3D *ap3 = Object::cast_to<AudioStreamPlayer3D>(p_node)) {
+		stream = ap3->get_stream();
+	} else if (AudioStreamPlayer2D *ap2 = Object::cast_to<AudioStreamPlayer2D>(p_node)) {
+		stream = ap2->get_stream();
+	}
+	if (stream.is_valid()) {
+		const Ref<AudioStreamWAV> wav = stream;
+		if (wav.is_valid() && (wav->get_format() == AudioStreamWAV::FORMAT_8_BITS || wav->get_format() == AudioStreamWAV::FORMAT_16_BITS)) {
+			if (r_g.sfx.is_null()) {
+				r_g.sfx = wav;
+			} else if (r_g.music.is_null()) {
+				r_g.music = wav;
+			}
+			if (r_g.music.is_null() && wav->get_loop_mode() != AudioStreamWAV::LOOP_DISABLED) {
+				r_g.music = wav;
+			}
+		}
+	}
 
 	const int child_count = p_node->get_child_count();
 	for (int i = 0; i < child_count; i++) {
@@ -157,6 +185,45 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent) {
 		}
 		walk_scene(p_node->get_child(i), r_g, my);
 	}
+}
+
+static Error pcm_from_wav(const Ref<AudioStreamWAV> &p_wav, Vector<int16_t> &r_pcm, int &r_rate) {
+	if (p_wav.is_null()) {
+		return ERR_INVALID_PARAMETER;
+	}
+	r_rate = p_wav->get_mix_rate() > 0 ? p_wav->get_mix_rate() : 22050;
+	const Vector<uint8_t> data = p_wav->get_data();
+	const bool stereo = p_wav->is_stereo();
+	r_pcm.clear();
+	if (p_wav->get_format() == AudioStreamWAV::FORMAT_16_BITS) {
+		const int step = stereo ? 4 : 2;
+		for (int i = 0; i + 1 < data.size(); i += step) {
+			r_pcm.push_back(int16_t(int(data[i]) | (int(data[i + 1]) << 8)));
+		}
+	} else {
+		const int step = stereo ? 2 : 1;
+		for (int i = 0; i < data.size(); i += step) {
+			r_pcm.push_back(int16_t((int(data[i]) - 128) * 256));
+		}
+	}
+	return r_pcm.is_empty() ? ERR_INVALID_DATA : OK;
+}
+
+static Error write_cooked_wav(const Ref<AudioStreamWAV> &p_wav, int p_beep_hz, int p_beep_ms, Vector<uint8_t> &r_blob) {
+	if (p_wav.is_valid()) {
+		Vector<int16_t> pcm;
+		int rate = 22050;
+		if (pcm_from_wav(p_wav, pcm, rate) == OK) {
+			const Error err = write_wav_pcm(pcm, rate, r_blob);
+			if (err == OK) {
+				return OK;
+			}
+			if (err == ERR_OUT_OF_MEMORY) {
+				return err;
+			}
+		}
+	}
+	return write_wav_beep(p_beep_hz, p_beep_ms, 22050, r_blob);
 }
 
 static Vector<uint8_t> write_node_blob(const Gather &p_g) {
@@ -316,6 +383,40 @@ Error cook_project(const String &p_export_dir, CookResult &r_out) {
 	r_out.inp_path = inp_path;
 	r_out.actions = actions;
 
+	Vector<uint8_t> sfx_blob;
+	const Error sfx_err = write_cooked_wav(gathered.sfx, 880, 120, sfx_blob);
+	if (sfx_err != OK) {
+		r_out.errors.push_back(sfx_err == ERR_OUT_OF_MEMORY ? String("N64 cook refuses SFX WAV over 512 KiB (no silent drop).") : String("SFX WAV cook failed."));
+		r_out.report = r_out.errors[0];
+		return sfx_err;
+	}
+	const String sfx_path = p_export_dir.path_join("SFX00.wav");
+	Ref<FileAccess> sxf = FileAccess::open(sfx_path, FileAccess::WRITE);
+	if (sxf.is_null()) {
+		r_out.errors.push_back("cannot write " + sfx_path);
+		r_out.report = r_out.errors[0];
+		return ERR_CANT_CREATE;
+	}
+	sxf->store_buffer(sfx_blob);
+	r_out.sfx_path = sfx_path;
+
+	Vector<uint8_t> music_blob;
+	const Error mus_err = write_cooked_wav(gathered.music, 440, 400, music_blob);
+	if (mus_err != OK) {
+		r_out.errors.push_back(mus_err == ERR_OUT_OF_MEMORY ? String("N64 cook refuses MUSIC WAV over 512 KiB (no silent drop).") : String("MUSIC WAV cook failed."));
+		r_out.report = r_out.errors[0];
+		return mus_err;
+	}
+	const String music_path = p_export_dir.path_join("MUSIC00.wav");
+	Ref<FileAccess> muf = FileAccess::open(music_path, FileAccess::WRITE);
+	if (muf.is_null()) {
+		r_out.errors.push_back("cannot write " + music_path);
+		r_out.report = r_out.errors[0];
+		return ERR_CANT_CREATE;
+	}
+	muf->store_buffer(music_blob);
+	r_out.music_path = music_path;
+
 	const String names_path = p_export_dir.path_join("NAMES.MAP");
 	Ref<FileAccess> names = FileAccess::open(names_path, FileAccess::WRITE);
 	if (names.is_null()) {
@@ -323,15 +424,15 @@ Error cook_project(const String &p_export_dir, CookResult &r_out) {
 		r_out.report = r_out.errors[0];
 		return ERR_CANT_CREATE;
 	}
-	names->store_line(main_scene + " -> NODE00.bin MESH00.bin NTEX00.bin INP600.bin");
+	names->store_line(main_scene + " -> NODE00.bin MESH00.bin NTEX00.bin INP600.bin SFX00.wav MUSIC00.wav");
 	for (int i = 0; i < gathered.nodes.size(); i++) {
 		names->store_line(vformat("node %d %s", i, gathered.nodes[i].name));
 	}
 	r_out.names_path = names_path;
 
 	const int tmem = albedo->get_width() * albedo->get_height() * 2;
-	const int rdram = kFbZBytes + kGuestReserve + blob.size() + mesh_blob.size() + ntex_blob.size() + inp_blob.size();
-	const int rom = blob.size() + mesh_blob.size() + ntex_blob.size() + inp_blob.size() + kRomPad;
+	const int rdram = kFbZBytes + kGuestReserve + blob.size() + mesh_blob.size() + ntex_blob.size() + inp_blob.size() + sfx_blob.size() + music_blob.size();
+	const int rom = blob.size() + mesh_blob.size() + ntex_blob.size() + inp_blob.size() + sfx_blob.size() + music_blob.size() + kRomPad;
 	r_out.tmem_bytes = tmem;
 	r_out.rdram_bytes = rdram;
 	r_out.rom_bytes = rom;
@@ -359,7 +460,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out) {
 		return ERR_OUT_OF_MEMORY;
 	}
 
-	r_out.report = vformat("cooked %d nodes, %d tris, %d actions to NODE/MESH/NTEX/INP6 + NAMES.MAP + BUDGET.txt", r_out.nodes, r_out.tris, r_out.actions);
+	r_out.report = vformat("cooked %d nodes, %d tris, %d actions + SFX/MUSIC WAV to NODE/MESH/NTEX/INP6 + NAMES.MAP + BUDGET.txt", r_out.nodes, r_out.tris, r_out.actions);
 	return OK;
 }
 

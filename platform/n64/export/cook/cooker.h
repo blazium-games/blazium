@@ -43,6 +43,8 @@ struct CookResult {
 	String mesh_path;
 	String ntex_path;
 	String inp_path;
+	String sfx_path;
+	String music_path;
 	String names_path;
 	String budget_path;
 	String report;

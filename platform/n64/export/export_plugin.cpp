@@ -346,6 +346,14 @@ Error EditorExportPlatformN64::export_project(const Ref<EditorExportPreset> &p_p
 		args.push_back("--inp");
 		args.push_back(cooked.inp_path);
 	}
+	if (!cooked.sfx_path.is_empty()) {
+		args.push_back("--sfx");
+		args.push_back(cooked.sfx_path);
+	}
+	if (!cooked.music_path.is_empty()) {
+		args.push_back("--music");
+		args.push_back(cooked.music_path);
+	}
 	args.push_back("--export-src");
 	args.push_back(p_path.get_base_dir().path_join("guest"));
 	args.push_back("--out");
