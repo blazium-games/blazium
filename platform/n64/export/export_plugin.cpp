@@ -208,6 +208,8 @@ void EditorExportPlatformN64::get_export_options(List<ExportOption> *r_options) 
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "n64/region", PROPERTY_HINT_ENUM, "Region-free,NTSC,PAL"), 0));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "n64/width", PROPERTY_HINT_ENUM, "320,640"), 0));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "n64/display_hint", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY), "Default framebuffer is 320×240. 640×480 is P8 optional. Expansion Pak 8 MiB is always on."));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "n64/rumble", PROPERTY_HINT_ENUM, "Off,On"), 0));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "n64/rumble_hint", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY), "Rumble Pak is P8 optional. Skip the motor if the accessory is missing."));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "n64/emu", PROPERTY_HINT_ENUM, "Host default,Ares,Project64"), 0));
 }
 
@@ -366,6 +368,9 @@ Error EditorExportPlatformN64::export_project(const Ref<EditorExportPreset> &p_p
 	if (display_w == 640) {
 		args.push_back("--display");
 		args.push_back("640");
+	}
+	if (int(p_preset->get("n64/rumble")) == 1) {
+		args.push_back("--rumble");
 	}
 	args.push_back("--export-src");
 	args.push_back(p_path.get_base_dir().path_join("guest"));

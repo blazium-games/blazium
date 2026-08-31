@@ -19,6 +19,8 @@ enum {
 	OP_END = 0,
 	OP_LOAD_DELTA = 2,
 	OP_CALL_ROTATE_Y = 4,
+	OP_SET_RUMBLE = 10,
+	OP_STOP_RUMBLE = 11,
 };
 
 static void append_u16(Vector<uint8_t> &o, uint16_t v) {
@@ -38,15 +40,22 @@ Error write_script_blob(const Vector<String> &p_sources, Vector<uint8_t> &r_out)
 	}
 	Vector<uint8_t> code;
 	bool rotate_y = false;
+	bool rumble = false;
 	for (int i = 0; i < p_sources.size(); i++) {
 		if (p_sources[i].contains("rotate_y")) {
 			rotate_y = true;
-			break;
+		}
+		if (p_sources[i].contains("start_joy_vibration")) {
+			rumble = true;
 		}
 	}
 	if (rotate_y) {
 		code.push_back(uint8_t(OP_LOAD_DELTA));
 		code.push_back(uint8_t(OP_CALL_ROTATE_Y));
+	}
+	if (rumble) {
+		code.push_back(uint8_t(OP_SET_RUMBLE));
+		code.push_back(uint8_t(OP_STOP_RUMBLE));
 	}
 	code.push_back(uint8_t(OP_END));
 	r_out.clear();
