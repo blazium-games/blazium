@@ -358,6 +358,10 @@ Error EditorExportPlatformN64::export_project(const Ref<EditorExportPreset> &p_p
 		args.push_back("--pack");
 		args.push_back(cooked.pack_path);
 	}
+	if (!cooked.script_path.is_empty()) {
+		args.push_back("--script");
+		args.push_back(cooked.script_path);
+	}
 	args.push_back("--export-src");
 	args.push_back(p_path.get_base_dir().path_join("guest"));
 	args.push_back("--out");

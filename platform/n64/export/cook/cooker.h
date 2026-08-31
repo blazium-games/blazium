@@ -47,6 +47,7 @@ struct CookResult {
 	String sfx_path;
 	String music_path;
 	String pack_path;
+	String script_path;
 	String names_path;
 	String budget_path;
 	String report;
