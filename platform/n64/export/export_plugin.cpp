@@ -20,6 +20,7 @@
 #include "core/io/resource_loader.h"
 #include "core/os/os.h"
 #include "editor/editor_node.h"
+#include "servers/display_server.h"
 #include "editor/editor_settings.h"
 #include "editor/themes/editor_scale.h"
 #include "modules/svg/image_loader_svg.h"
@@ -206,7 +207,7 @@ void EditorExportPlatformN64::get_export_options(List<ExportOption> *r_options) 
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "n64/region", PROPERTY_HINT_ENUM, "Region-free,NTSC,PAL"), 0));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "n64/width", PROPERTY_HINT_ENUM, "320"), 0));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "n64/display_hint", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY), "v1 framebuffer is 320×240. Expansion Pak 8 MiB is always on."));
-	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "n64/emu", PROPERTY_HINT_ENUM, "both,ares,project64"), 0));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "n64/emu", PROPERTY_HINT_ENUM, "Host default,Ares,Project64"), 0));
 }
 
 List<String> EditorExportPlatformN64::get_binary_extensions(const Ref<EditorExportPreset> &p_preset) const {
@@ -351,9 +352,11 @@ Error EditorExportPlatformN64::run(const Ref<EditorExportPreset> &p_preset, int 
 		add_message(EXPORT_MESSAGE_ERROR, "N64", "N64 One-click is available on Windows and Linux hosts only.");
 		return ERR_UNAVAILABLE;
 	}
-	String path = p_preset->get_export_path();
+	String path = p_preset.is_valid() ? p_preset->get_export_path() : String();
 	if (path.is_empty()) {
 		path = ProjectSettings::get_singleton()->globalize_path("res://export/Game.z64");
+	} else if (!path.is_absolute_path()) {
+		path = ProjectSettings::get_singleton()->globalize_path(path.begins_with("res://") ? path : String("res://") + path);
 	}
 	if (!FileAccess::exists(path)) {
 		const Error exp = export_project(p_preset, true, path, p_debug_flags);
@@ -378,9 +381,8 @@ Error EditorExportPlatformN64::run(const Ref<EditorExportPreset> &p_preset, int 
 			emu = "ares";
 		} else if (sel == 2) {
 			emu = "project64";
-		} else if (sel == 0) {
-			emu = "both";
 		}
+		// sel == 0: host default (Windows Project64, Linux Ares). Dual-emu is CI, not One-click.
 	}
 	List<String> args;
 	args.push_back("n64");
@@ -390,6 +392,20 @@ Error EditorExportPlatformN64::run(const Ref<EditorExportPreset> &p_preset, int 
 	args.push_back("--timeout");
 	args.push_back("30s");
 	args.push_back(path);
+	const bool headless = DisplayServer::get_singleton() && String(DisplayServer::get_singleton()->get_name()) == "headless";
+	if (headless) {
+		String output;
+		int exitcode = 0;
+		const Error err = OS::get_singleton()->execute(tc, args, &output, &exitcode, true);
+		if (err != OK || exitcode != 0) {
+			add_message(EXPORT_MESSAGE_ERROR, "N64", "blazium-toolchain n64 run failed:\n" + output);
+			return FAILED;
+		}
+		if (!output.is_empty()) {
+			add_message(EXPORT_MESSAGE_INFO, "N64", output);
+		}
+		return OK;
+	}
 	return OS::get_singleton()->create_process(tc, args);
 }
 
