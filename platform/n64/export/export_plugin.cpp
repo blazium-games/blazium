@@ -324,6 +324,9 @@ Error EditorExportPlatformN64::export_project(const Ref<EditorExportPreset> &p_p
 		return cook_err != OK ? cook_err : FAILED;
 	}
 	add_message(EXPORT_MESSAGE_INFO, "N64", cooked.report);
+	for (int i = 0; i < cooked.warnings.size(); i++) {
+		add_message(EXPORT_MESSAGE_WARNING, "N64", cooked.warnings[i]);
+	}
 
 	List<String> args;
 	args.push_back("n64");
@@ -364,6 +367,8 @@ Error EditorExportPlatformN64::export_project(const Ref<EditorExportPreset> &p_p
 		args.push_back("--pack");
 		args.push_back(cooked.pack_path);
 	}
+	args.push_back("--pack-dir");
+	args.push_back(p_path.get_base_dir());
 	if (!cooked.script_path.is_empty()) {
 		args.push_back("--script");
 		args.push_back(cooked.script_path);

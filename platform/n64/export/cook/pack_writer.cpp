@@ -27,7 +27,7 @@ static void append_u32(Vector<uint8_t> &o, uint32_t v) {
 	o.push_back(uint8_t((v >> 24) & 0xff));
 }
 
-Error write_pack_blob(int p_pack_id, const String &p_name, Vector<uint8_t> &r_out) {
+Error write_pack_blob(int p_pack_id, const String &p_name, Vector<uint8_t> &r_out, uint32_t p_node_sz, uint32_t p_mesh_sz, uint32_t p_ntex_sz) {
 	if (p_pack_id < 1 || p_pack_id > 23) {
 		return ERR_OUT_OF_MEMORY;
 	}
@@ -44,6 +44,9 @@ Error write_pack_blob(int p_pack_id, const String &p_name, Vector<uint8_t> &r_ou
 	for (int i = 0; i < 16; i++) {
 		r_out.push_back(i < name_n ? uint8_t(utf[i]) : 0);
 	}
+	append_u32(r_out, p_node_sz);
+	append_u32(r_out, p_mesh_sz);
+	append_u32(r_out, p_ntex_sz);
 	if (r_out.size() >= 2 && r_out[0] == 0x4D && r_out[1] == 0x5A) {
 		return FAILED;
 	}

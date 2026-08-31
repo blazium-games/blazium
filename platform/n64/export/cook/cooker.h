@@ -65,16 +65,23 @@ struct CookResult {
 	String script_path;
 	String names_path;
 	String budget_path;
+	String warnings_path;
 	String report;
 	Vector<String> errors;
+	Vector<String> warnings;
 	int nodes = 0;
 	int tris = 0;
 	int actions = 0;
 	int tmem_bytes = 0;
 	int rdram_bytes = 0;
 	int rom_bytes = 0;
+	int pack_count = 1;
 	bool over_budget = false;
 };
+
+static const int kMaxExtraPacks = 23;
+static const int kExtraRdramCap = 2 * 1024 * 1024;
+static const int kExtraRdramCap4 = 1 * 1024 * 1024;
 
 Error cook_project(const String &p_export_dir, CookResult &r_out, int p_display_w = 320, int p_rdram_mb = 8);
 

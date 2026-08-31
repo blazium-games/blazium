@@ -25,16 +25,24 @@
 #include "core/io/file_access.h"
 #include "core/io/image.h"
 #include "core/io/resource_loader.h"
+#include "core/object/script_language.h"
+#include "core/templates/hash_map.h"
 #include "scene/2d/audio_stream_player_2d.h"
 #include "scene/3d/audio_stream_player_3d.h"
+#include "scene/3d/bone_attachment_3d.h"
 #include "scene/3d/camera_3d.h"
 #include "scene/3d/mesh_instance_3d.h"
 #include "scene/3d/node_3d.h"
+#include "scene/3d/skeleton_3d.h"
+#include "scene/animation/animation_player.h"
+#include "scene/animation/animation_tree.h"
 #include "scene/audio/audio_stream_player.h"
+#include "scene/gui/control.h"
+#include "scene/main/canvas_item.h"
+#include "scene/main/canvas_layer.h"
 #include "scene/resources/audio_stream_wav.h"
 #include "scene/resources/mesh.h"
 #include "scene/resources/packed_scene.h"
-#include "core/object/script_language.h"
 
 namespace n64_cook {
 
@@ -52,9 +60,14 @@ struct Gather {
 	Vector<NodeRow> nodes;
 	Vector<Vector3> verts;
 	Vector<String> errors;
+	Vector<String> warnings;
+	Vector<String> kit_scenes;
 	Ref<AudioStreamWAV> sfx;
 	Ref<AudioStreamWAV> music;
 	Vector<String> scripts;
+	int extra_audio = 0;
+	bool saw_material = false;
+	bool saw_light_or_area = false;
 };
 
 static void gather_mesh(MeshInstance3D *p_mi, Gather &r_g) {
@@ -137,6 +150,46 @@ static uint8_t kind_of(Node *p_node) {
 	return KIND_OTHER;
 }
 
+static String refuse_node_reason(Node *p_node) {
+	if (!p_node) {
+		return String();
+	}
+	if (Object::cast_to<Skeleton3D>(p_node) || Object::cast_to<BoneAttachment3D>(p_node)) {
+		return "N64 cook refuses skeletal skinning (4 KiB TMEM / no bone palette). Use rigid MeshInstance3D meshes.";
+	}
+	if (Object::cast_to<AnimationTree>(p_node)) {
+		return "N64 cook refuses AnimationTree. ANIM clips are a later slice.";
+	}
+	if (Object::cast_to<AnimationPlayer>(p_node)) {
+		return "N64 cook refuses AnimationPlayer. ANIM clips are a later slice.";
+	}
+	if (Object::cast_to<Control>(p_node) || Object::cast_to<CanvasLayer>(p_node)) {
+		return "N64 cook refuses Godot Control UI. Use InputMap actions; bitmap HUD is a later slice.";
+	}
+	if (Object::cast_to<CanvasItem>(p_node) && !Object::cast_to<AudioStreamPlayer2D>(p_node)) {
+		return "N64 cook refuses Godot Control UI. Use InputMap actions; bitmap HUD is a later slice.";
+	}
+	if (MeshInstance3D *mi = Object::cast_to<MeshInstance3D>(p_node)) {
+		if (mi->get_skin().is_valid()) {
+			return "N64 cook refuses skeletal skinning (4 KiB TMEM / no bone palette). Use rigid MeshInstance3D meshes.";
+		}
+		const Ref<Mesh> mesh = mi->get_mesh();
+		if (mesh.is_valid()) {
+			const int surfaces = mesh->get_surface_count();
+			for (int s = 0; s < surfaces; s++) {
+				const Array arrays = mesh->surface_get_arrays(s);
+				if (arrays.size() > Mesh::ARRAY_BONES && arrays[Mesh::ARRAY_BONES].get_type() != Variant::NIL) {
+					return "N64 cook refuses skeletal skinning (4 KiB TMEM / no bone palette). Use rigid MeshInstance3D meshes.";
+				}
+				if (arrays.size() > Mesh::ARRAY_WEIGHTS && arrays[Mesh::ARRAY_WEIGHTS].get_type() != Variant::NIL) {
+					return "N64 cook refuses skeletal skinning (4 KiB TMEM / no bone palette). Use rigid MeshInstance3D meshes.";
+				}
+			}
+		}
+	}
+	return String();
+}
+
 static String kit_place(Node *p_node) {
 	if (!p_node) {
 		return String();
@@ -155,6 +208,11 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent) {
 	if (!p_node) {
 		return;
 	}
+	const String refuse = refuse_node_reason(p_node);
+	if (!refuse.is_empty()) {
+		r_g.errors.push_back(refuse);
+		return;
+	}
 	if (r_g.nodes.size() >= kMaxNodes) {
 		r_g.errors.push_back(vformat("N64 cook refuses more than %d nodes (no silent drop).", kMaxNodes));
 		return;
@@ -165,6 +223,16 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent) {
 	row.kind = kind_of(p_node);
 	row.name = p_node->get_name();
 	row.kit = kit_place(p_node);
+	if (p_node->has_meta("n64_dest")) {
+		const String dest = p_node->get_meta("n64_dest");
+		if (dest.ends_with(".tscn") && !r_g.kit_scenes.has(dest)) {
+			r_g.kit_scenes.push_back(dest);
+		}
+	}
+	const String cls = p_node->get_class();
+	if (cls.contains("Light") || cls.contains("Area3D") || cls.contains("Area2D")) {
+		r_g.saw_light_or_area = true;
+	}
 	if (Node3D *n3 = Object::cast_to<Node3D>(p_node)) {
 		const Transform3D xf = n3->get_transform();
 		row.pos = xf.origin;
@@ -175,6 +243,9 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent) {
 	r_g.nodes.push_back(row);
 	if (MeshInstance3D *mi = Object::cast_to<MeshInstance3D>(p_node)) {
 		gather_mesh(mi, r_g);
+		if (mi->get_material_override().is_valid() || mi->get_mesh().is_valid()) {
+			r_g.saw_material = true;
+		}
 	}
 	Ref<AudioStream> stream;
 	if (AudioStreamPlayer *ap = Object::cast_to<AudioStreamPlayer>(p_node)) {
@@ -191,6 +262,8 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent) {
 				r_g.sfx = wav;
 			} else if (r_g.music.is_null()) {
 				r_g.music = wav;
+			} else {
+				r_g.extra_audio++;
 			}
 			if (r_g.music.is_null() && wav->get_loop_mode() != AudioStreamWAV::LOOP_DISABLED) {
 				r_g.music = wav;
@@ -206,6 +279,7 @@ static void walk_scene(Node *p_node, Gather &r_g, int p_parent) {
 			}
 			if (!src.is_empty()) {
 				r_g.scripts.push_back(src);
+				collect_scene_refs(src, r_g.kit_scenes);
 			}
 		}
 	}
@@ -289,6 +363,64 @@ static Vector<uint8_t> write_node_blob(const Gather &p_g) {
 	return out;
 }
 
+static Error store_blob(const String &p_path, const Vector<uint8_t> &p_blob, CookResult &r_out) {
+	Ref<FileAccess> f = FileAccess::open(p_path, FileAccess::WRITE);
+	if (f.is_null()) {
+		r_out.errors.push_back("cannot write " + p_path);
+		r_out.report = r_out.errors[0];
+		return ERR_CANT_CREATE;
+	}
+	f->store_buffer(p_blob);
+	return OK;
+}
+
+static Error cook_gather_slices(const Gather &p_g, const String &p_export_dir, int p_pack, Vector<uint8_t> &r_node, Vector<uint8_t> &r_mesh, Vector<uint8_t> &r_ntex, int &r_tris, CookResult &r_out) {
+	r_node = write_node_blob(p_g);
+	if (p_g.verts.is_empty()) {
+		r_out.errors.push_back(vformat("N64 cook requires at least one MeshInstance3D triangle (pack %d).", p_pack));
+		r_out.report = r_out.errors[0];
+		return FAILED;
+	}
+	const Error mesh_err = write_mesh_blob(p_g.verts, r_mesh, r_tris);
+	if (mesh_err != OK) {
+		r_out.errors.push_back(mesh_err == ERR_OUT_OF_MEMORY ? vformat("N64 cook refuses more than %d tris (no silent drop).", kMaxTris) : String("MESH cook failed."));
+		r_out.report = r_out.errors[0];
+		return mesh_err;
+	}
+	Ref<Image> albedo = Image::create_empty(16, 16, false, Image::FORMAT_RGBA8);
+	for (int y = 0; y < 16; y++) {
+		for (int x = 0; x < 16; x++) {
+			const bool cell = (((x / 4) + (y / 4)) & 1) != 0;
+			albedo->set_pixel(x, y, cell ? Color(0.2f, 0.45f, 0.85f) : Color(0.85f, 0.85f, 0.95f));
+		}
+	}
+	const Error ntex_err = write_ntex_blob(albedo, r_ntex);
+	if (ntex_err != OK) {
+		r_out.errors.push_back(ntex_err == ERR_OUT_OF_MEMORY ? String("NTEX exceeds 4 KiB TMEM.") : String("NTEX cook failed."));
+		r_out.report = r_out.errors[0];
+		return ntex_err;
+	}
+	const String node_path = p_export_dir.path_join(vformat("NODE%02d.bin", p_pack));
+	const String mesh_path = p_export_dir.path_join(vformat("MESH%02d.bin", p_pack));
+	const String ntex_path = p_export_dir.path_join(vformat("NTEX%02d.bin", p_pack));
+	Error err = store_blob(node_path, r_node, r_out);
+	if (err != OK) {
+		return err;
+	}
+	err = store_blob(mesh_path, r_mesh, r_out);
+	if (err != OK) {
+		return err;
+	}
+	return store_blob(ntex_path, r_ntex, r_out);
+}
+
+static void append_unique_scene(Vector<String> &r_scenes, const String &p_path, const String &p_main) {
+	if (p_path.is_empty() || p_path == p_main || r_scenes.has(p_path)) {
+		return;
+	}
+	r_scenes.push_back(p_path);
+}
+
 Error cook_project(const String &p_export_dir, CookResult &r_out, int p_display_w, int p_rdram_mb) {
 	Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
 	const Error mk = da->make_dir_recursive(p_export_dir);
@@ -335,66 +467,94 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, int p_display_
 		return FAILED;
 	}
 
-	const Vector<uint8_t> blob = write_node_blob(gathered);
-	const String node_path = p_export_dir.path_join("NODE00.bin");
-	Ref<FileAccess> f = FileAccess::open(node_path, FileAccess::WRITE);
-	if (f.is_null()) {
-		r_out.errors.push_back("cannot write " + node_path);
-		r_out.report = r_out.errors[0];
-		return ERR_CANT_CREATE;
+	Vector<String> extra_scenes;
+	for (int i = 0; i < gathered.kit_scenes.size(); i++) {
+		append_unique_scene(extra_scenes, gathered.kit_scenes[i], main_scene);
 	}
-	f->store_buffer(blob);
-
-	r_out.node_path = node_path;
-	r_out.nodes = gathered.nodes.size();
-
-	if (gathered.verts.is_empty()) {
-		r_out.errors.push_back("N64 cook requires at least one MeshInstance3D triangle.");
+	if (extra_scenes.size() > kMaxExtraPacks) {
+		r_out.errors.push_back("N64 cook refuses more than 23 extra scene packs (no silent drop).");
 		r_out.report = r_out.errors[0];
 		return FAILED;
 	}
-	Vector<uint8_t> mesh_blob;
-	int tris = 0;
-	const Error mesh_err = write_mesh_blob(gathered.verts, mesh_blob, tris);
-	if (mesh_err != OK) {
-		r_out.errors.push_back(mesh_err == ERR_OUT_OF_MEMORY ? vformat("N64 cook refuses more than %d tris (no silent drop).", kMaxTris) : String("MESH cook failed."));
-		r_out.report = r_out.errors[0];
-		return mesh_err;
-	}
-	const String mesh_path = p_export_dir.path_join("MESH00.bin");
-	Ref<FileAccess> mf = FileAccess::open(mesh_path, FileAccess::WRITE);
-	if (mf.is_null()) {
-		r_out.errors.push_back("cannot write " + mesh_path);
-		r_out.report = r_out.errors[0];
-		return ERR_CANT_CREATE;
-	}
-	mf->store_buffer(mesh_blob);
-	r_out.mesh_path = mesh_path;
-	r_out.tris = tris;
 
-	Ref<Image> albedo = Image::create_empty(16, 16, false, Image::FORMAT_RGBA8);
-	for (int y = 0; y < 16; y++) {
-		for (int x = 0; x < 16; x++) {
-			const bool cell = (((x / 4) + (y / 4)) & 1) != 0;
-			albedo->set_pixel(x, y, cell ? Color(0.2f, 0.45f, 0.85f) : Color(0.85f, 0.85f, 0.95f));
+	Vector<Gather> extra_gathers;
+	Vector<Node *> extra_live;
+	for (int i = 0; i < extra_scenes.size(); i++) {
+		const String extra = extra_scenes[i];
+		if (!ResourceLoader::exists(extra)) {
+			r_out.errors.push_back("pack path not cooked: " + extra);
+			r_out.report = r_out.errors[0];
+			for (int k = 0; k < extra_live.size(); k++) {
+				memdelete(extra_live[k]);
+			}
+			return FAILED;
 		}
+		Ref<PackedScene> extra_ps = ResourceLoader::load(extra);
+		if (extra_ps.is_null()) {
+			r_out.errors.push_back("pack path not cooked: " + extra);
+			r_out.report = r_out.errors[0];
+			for (int k = 0; k < extra_live.size(); k++) {
+				memdelete(extra_live[k]);
+			}
+			return FAILED;
+		}
+		Node *er = extra_ps->instantiate();
+		if (!er) {
+			r_out.errors.push_back("pack path not cooked: " + extra);
+			r_out.report = r_out.errors[0];
+			for (int k = 0; k < extra_live.size(); k++) {
+				memdelete(extra_live[k]);
+			}
+			return FAILED;
+		}
+		extra_live.push_back(er);
+		Gather one;
+		walk_scene(er, one, -1);
+		if (!one.errors.is_empty()) {
+			r_out.errors = one.errors;
+			r_out.report = one.errors[0];
+			for (int k = 0; k < extra_live.size(); k++) {
+				memdelete(extra_live[k]);
+			}
+			return FAILED;
+		}
+		for (int k = 0; k < one.kit_scenes.size(); k++) {
+			append_unique_scene(extra_scenes, one.kit_scenes[k], main_scene);
+		}
+		if (extra_scenes.size() > kMaxExtraPacks) {
+			r_out.errors.push_back("N64 cook refuses more than 23 extra scene packs (no silent drop).");
+			r_out.report = r_out.errors[0];
+			for (int k = 0; k < extra_live.size(); k++) {
+				memdelete(extra_live[k]);
+			}
+			return FAILED;
+		}
+		extra_gathers.push_back(one);
 	}
+	for (int k = 0; k < extra_live.size(); k++) {
+		memdelete(extra_live[k]);
+	}
+
+	HashMap<String, int> pack_of;
+	pack_of[main_scene] = 0;
+	for (int i = 0; i < extra_scenes.size(); i++) {
+		pack_of[extra_scenes[i]] = i + 1;
+	}
+	r_out.pack_count = 1 + extra_scenes.size();
+
+	Vector<uint8_t> blob;
+	Vector<uint8_t> mesh_blob;
 	Vector<uint8_t> ntex_blob;
-	const Error ntex_err = write_ntex_blob(albedo, ntex_blob);
-	if (ntex_err != OK) {
-		r_out.errors.push_back(ntex_err == ERR_OUT_OF_MEMORY ? String("NTEX exceeds 4 KiB TMEM.") : String("NTEX cook failed."));
-		r_out.report = r_out.errors[0];
-		return ntex_err;
+	int tris = 0;
+	Error slice_err = cook_gather_slices(gathered, p_export_dir, 0, blob, mesh_blob, ntex_blob, tris, r_out);
+	if (slice_err != OK) {
+		return slice_err;
 	}
-	const String ntex_path = p_export_dir.path_join("NTEX00.bin");
-	Ref<FileAccess> tf = FileAccess::open(ntex_path, FileAccess::WRITE);
-	if (tf.is_null()) {
-		r_out.errors.push_back("cannot write " + ntex_path);
-		r_out.report = r_out.errors[0];
-		return ERR_CANT_CREATE;
-	}
-	tf->store_buffer(ntex_blob);
-	r_out.ntex_path = ntex_path;
+	r_out.node_path = p_export_dir.path_join("NODE00.bin");
+	r_out.mesh_path = p_export_dir.path_join("MESH00.bin");
+	r_out.ntex_path = p_export_dir.path_join("NTEX00.bin");
+	r_out.nodes = gathered.nodes.size();
+	r_out.tris = tris;
 
 	Vector<uint8_t> inp_blob;
 	int actions = 0;
@@ -449,50 +609,87 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, int p_display_
 	muf->store_buffer(music_blob);
 	r_out.music_path = music_path;
 
+	int extra_rdram = 0;
+	int extra_rom = 0;
+	for (int i = 0; i < extra_gathers.size(); i++) {
+		Vector<uint8_t> enode;
+		Vector<uint8_t> emesh;
+		Vector<uint8_t> entex;
+		int etris = 0;
+		const int pack_id = i + 1;
+		const Error eerr = cook_gather_slices(extra_gathers[i], p_export_dir, pack_id, enode, emesh, entex, etris, r_out);
+		if (eerr != OK) {
+			return eerr;
+		}
+		Vector<uint8_t> epack;
+		const String pname = extra_scenes[i].get_file().get_basename();
+		const Error perr = write_pack_blob(pack_id, pname, epack, uint32_t(enode.size()), uint32_t(emesh.size()), uint32_t(entex.size()));
+		if (perr != OK) {
+			r_out.errors.push_back("PACK cook failed.");
+			r_out.report = r_out.errors[0];
+			return perr;
+		}
+		const Error werr = store_blob(p_export_dir.path_join(vformat("PACK%02d.bin", pack_id)), epack, r_out);
+		if (werr != OK) {
+			return werr;
+		}
+		extra_rdram += int(enode.size() + emesh.size() + entex.size() + epack.size());
+		extra_rom += int(enode.size() + emesh.size() + entex.size() + epack.size());
+	}
+
 	Vector<uint8_t> pack_blob;
-	const Error pack_err = write_pack_blob(1, "pack01", pack_blob);
-	if (pack_err != OK) {
-		r_out.errors.push_back(pack_err == ERR_OUT_OF_MEMORY ? vformat("N64 cook refuses pack id outside 1..%d (no silent drop).", kMaxPacks - 1) : String("PACK cook failed."));
-		r_out.report = r_out.errors[0];
-		return pack_err;
+	if (extra_gathers.is_empty()) {
+		const Error pack_err = write_pack_blob(1, "pack01", pack_blob);
+		if (pack_err != OK) {
+			r_out.errors.push_back(pack_err == ERR_OUT_OF_MEMORY ? vformat("N64 cook refuses pack id outside 1..%d (no silent drop).", kMaxPacks - 1) : String("PACK cook failed."));
+			r_out.report = r_out.errors[0];
+			return pack_err;
+		}
+		const Error pkerr = store_blob(p_export_dir.path_join("PACK01.bin"), pack_blob, r_out);
+		if (pkerr != OK) {
+			return pkerr;
+		}
+	} else {
+		pack_blob = FileAccess::get_file_as_bytes(p_export_dir.path_join("PACK01.bin"));
 	}
-	const String pack_path = p_export_dir.path_join("PACK01.bin");
-	Ref<FileAccess> pkf = FileAccess::open(pack_path, FileAccess::WRITE);
-	if (pkf.is_null()) {
-		r_out.errors.push_back("cannot write " + pack_path);
+	r_out.pack_path = p_export_dir.path_join("PACK01.bin");
+
+	const int extra_cap = p_rdram_mb == 4 ? kExtraRdramCap4 : kExtraRdramCap;
+	if (extra_rdram > extra_cap) {
+		r_out.errors.push_back(vformat("N64 cook extra-pack RDRAM %d exceeds cap %d (no silent drop).", extra_rdram, extra_cap));
 		r_out.report = r_out.errors[0];
-		return ERR_CANT_CREATE;
+		return ERR_OUT_OF_MEMORY;
 	}
-	pkf->store_buffer(pack_blob);
-	r_out.pack_path = pack_path;
 
 	Vector<uint8_t> script_blob;
-	const Error scr_err = write_script_blob(gathered.scripts, script_blob);
+	String ir_extra;
+	const Error scr_err = write_script_blob(gathered.scripts, pack_of, script_blob, ir_extra);
 	if (scr_err != OK) {
-		r_out.errors.push_back("N64 cook refuses attached script that is not on the allow-list (no silent drop).");
+		r_out.errors.push_back(ir_extra.is_empty() ? String("N64 cook refuses attached script that is not on the allow-list (no silent drop).") : ir_extra);
 		r_out.report = r_out.errors[0];
 		return scr_err;
 	}
 	const String script_path = p_export_dir.path_join("SCRP00.bin");
-	Ref<FileAccess> scf = FileAccess::open(script_path, FileAccess::WRITE);
-	if (scf.is_null()) {
-		r_out.errors.push_back("cannot write " + script_path);
-		r_out.report = r_out.errors[0];
-		return ERR_CANT_CREATE;
+	const Error scerr = store_blob(script_path, script_blob, r_out);
+	if (scerr != OK) {
+		return scerr;
 	}
-	scf->store_buffer(script_blob);
 	r_out.script_path = script_path;
 
 	String ir_text = "IR rotate_y\n";
+	ir_text += ir_extra;
 	Ref<DirAccess> examples = DirAccess::open("res://examples");
 	if (examples.is_valid()) {
 		examples->list_dir_begin();
 		String name = examples->get_next();
 		while (!name.is_empty()) {
-			if (!examples->current_is_dir() && name.ends_with(".gd")) {
+			if (!examples->current_is_dir() && (name.ends_with(".gd") || name.ends_with(".tscn"))) {
 				const String path = String("res://examples/").path_join(name);
 				const String src = FileAccess::get_file_as_string(path);
-				if (source_is_forbidden(src)) {
+				if (name.ends_with(".gd") && source_is_forbidden(src)) {
+					ir_text += "REJECT " + path + "\n";
+				}
+				if (src.contains("Skeleton3D") || src.contains("BoneAttachment3D") || src.contains("AnimationTree") || src.contains("AnimationPlayer") || src.contains("type=\"Button\"") || src.contains("type=\"Control\"") || src.contains("CanvasLayer") || src.contains("load(\"res://x.png\")")) {
 					ir_text += "REJECT " + path + "\n";
 				}
 			}
@@ -517,6 +714,10 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, int p_display_
 		return ERR_CANT_CREATE;
 	}
 	names->store_line(main_scene + " -> NODE00.bin MESH00.bin NTEX00.bin INP600.bin SFX00.wav MUSIC00.wav PACK01.bin SCRP00.bin");
+	names->store_line(vformat("pack 0 %s", main_scene));
+	for (int i = 0; i < extra_scenes.size(); i++) {
+		names->store_line(vformat("pack %d %s", i + 1, extra_scenes[i]));
+	}
 	for (int i = 0; i < gathered.nodes.size(); i++) {
 		names->store_line(vformat("node %d %s", i, gathered.nodes[i].name));
 	}
@@ -527,12 +728,34 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, int p_display_
 	}
 	r_out.names_path = names_path;
 
+	if (gathered.saw_material) {
+		r_out.warnings.push_back("Materials ignored — procedural NTEX still used (scene textures not shipped this slice).");
+	}
+	if (gathered.extra_audio > 0) {
+		r_out.warnings.push_back("Extra audio streams beyond SFX00/MUSIC00 ignored.");
+	}
+	r_out.warnings.push_back("n64/region unused (still unwired).");
+	if (gathered.saw_light_or_area) {
+		r_out.warnings.push_back("Lights / Area3D recorded as KIND_OTHER (no lighting/physics this slice).");
+	}
+	const String warnings_path = p_export_dir.path_join("WARNINGS.txt");
+	Ref<FileAccess> warnf = FileAccess::open(warnings_path, FileAccess::WRITE);
+	if (warnf.is_null()) {
+		r_out.errors.push_back("cannot write " + warnings_path);
+		r_out.report = r_out.errors[0];
+		return ERR_CANT_CREATE;
+	}
+	for (int i = 0; i < r_out.warnings.size(); i++) {
+		warnf->store_line(r_out.warnings[i]);
+	}
+	r_out.warnings_path = warnings_path;
+
 	const int display_w = display_width_clamped(p_display_w);
 	const int display_h = display_height_for_width(display_w);
 	const int fb_z = fb_z_bytes_for_width(display_w);
-	const int tmem = albedo->get_width() * albedo->get_height() * 2;
+	const int tmem = 16 * 16 * 2;
 	const int rdram = fb_z + kGuestReserve + blob.size() + mesh_blob.size() + ntex_blob.size() + inp_blob.size() + sfx_blob.size() + music_blob.size() + pack_blob.size() + script_blob.size();
-	const int rom = blob.size() + mesh_blob.size() + ntex_blob.size() + inp_blob.size() + sfx_blob.size() + music_blob.size() + pack_blob.size() + script_blob.size() + kRomPad;
+	const int rom = blob.size() + mesh_blob.size() + ntex_blob.size() + inp_blob.size() + sfx_blob.size() + music_blob.size() + pack_blob.size() + script_blob.size() + extra_rom + kRomPad;
 	const int rdram_cap = p_rdram_mb == 4 ? kRdramBudget4 : kRdramBudget;
 	r_out.tmem_bytes = tmem;
 	r_out.rdram_bytes = rdram;
@@ -553,6 +776,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, int p_display_
 	budget->store_line(vformat("rdram %d/%d", rdram, rdram_cap));
 	budget->store_line(vformat("rom %d/%d", rom, kRomBudget));
 	budget->store_line(vformat("display %dx%d", display_w, display_h));
+	budget->store_line(vformat("packs %d/%d", r_out.pack_count, kMaxPacks));
 	r_out.budget_path = budget_path;
 
 	if (r_out.over_budget) {
@@ -561,7 +785,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, int p_display_
 		return ERR_OUT_OF_MEMORY;
 	}
 
-	r_out.report = vformat("cooked %d nodes, %d tris, %d actions + SFX/MUSIC + PACK01 + SCRP to NODE/MESH/NTEX/INP6 + NAMES.MAP + BUDGET.txt", r_out.nodes, r_out.tris, r_out.actions);
+	r_out.report = vformat("cooked %d nodes, %d tris, %d packs, %d actions + SFX/MUSIC + SCRP to NODE/MESH/NTEX/INP6 + NAMES.MAP + BUDGET.txt + WARNINGS.txt", r_out.nodes, r_out.tris, r_out.pack_count, r_out.actions);
 	return OK;
 }
 
