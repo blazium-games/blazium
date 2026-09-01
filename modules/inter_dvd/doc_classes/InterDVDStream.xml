@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="InterDVDStream" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Extra audio or subtitle stream muxed into an [InterDVDCell].
+	</brief_description>
+	<description>
+		[member InterDVDCell.audio_path] is stream 0. Additional AC3 audio tracks use [constant KIND_AUDIO] (private stream [code]0x81+[/code]). Caption files ([code].srt[/code], [code].sup[/code]) use [constant KIND_SUBTITLE] and are muxed as [code]dvdsub[/code] (private stream [code]0x20+[/code]). IFO stream tables are written only when that PES exists in the muxed VOB.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="code_extension" type="int" setter="set_code_extension" getter="get_code_extension" default="1">
+			Language code extension (normal, visually impaired, director comments, and so on).
+		</member>
+		<member name="enabled" type="bool" setter="set_enabled" getter="is_enabled" default="true">
+			If [code]false[/code], export skips this stream.
+		</member>
+		<member name="kind" type="int" setter="set_kind" getter="get_kind" enum="InterDVDStream.Kind" default="0">
+			Audio or subtitle.
+		</member>
+		<member name="language" type="String" setter="set_language" getter="get_language" default="&quot;en&quot;">
+			ISO 639-1 language code written into the IFO audio or subpicture attribute table.
+		</member>
+		<member name="source_path" type="String" setter="set_source_path" getter="get_source_path" default="&quot;&quot;">
+			Audio file or subtitle file to mux.
+		</member>
+	</members>
+	<constants>
+		<constant name="KIND_AUDIO" value="0" enum="Kind">
+			Additional AC3 audio track.
+		</constant>
+		<constant name="KIND_SUBTITLE" value="1" enum="Kind">
+			SPU / [code]dvdsub[/code] caption track.
+		</constant>
+	</constants>
+</class>

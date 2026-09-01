@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="InterDVDTitleSet" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		One Video Title Set under an [InterDVDDisc].
+	</brief_description>
+	<description>
+		Groups [InterDVDTitle] children and non-title [InterDVDMenuPage] children into [code]VTS_NN_*[/code]. VMGM title menus stay direct children of [InterDVDDisc]. Titles not under a set compile as VTS 1.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_root_menu">
+			<return type="InterDVDMenuPage" />
+			<param index="0" name="name" type="String" default="&quot;RootMenu&quot;" />
+			<description>
+				Appends a VTSM root menu for this title set.
+			</description>
+		</method>
+		<method name="add_title">
+			<return type="InterDVDTitle" />
+			<param index="0" name="name" type="String" default="&quot;Title&quot;" />
+			<description>
+				Appends a title in this title set.
+			</description>
+		</method>
+	</methods>
+</class>

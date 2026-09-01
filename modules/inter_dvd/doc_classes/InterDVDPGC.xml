@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="InterDVDPGC" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Program Chain: cells plus pre/post instruction arrays.
+	</brief_description>
+	<description>
+		PGC pre/post and cell-post sites are written into the IFO. First Play (FPC) is a PGC on [InterDVDProject]. Set [member Resource.resource_name] so button destination dropdowns can label this title. The inspector [b]DVD Authoring[/b] buttons append a video cell or a Jump Title highlight.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_cell_from_video">
+			<return type="InterDVDCell" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Appends a cell whose [member InterDVDCell.source_path] is [param path] and returns it. Each cell is chapter N in this title.
+			</description>
+		</method>
+		<method name="add_jump_title_button">
+			<return type="InterDVDButton" />
+			<param index="0" name="title_n" type="int" default="1" />
+			<description>
+				Appends a Jump Title highlight button targeting [param title_n] and returns it.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="buttons" type="InterDVDButton[]" setter="set_buttons" getter="get_buttons" default="[]">
+			Optional highlight buttons overlaid on this title (for example a Next Scene control). Written as PCI HLI in the title VOB.
+		</member>
+		<member name="cells" type="InterDVDCell[]" setter="set_cells" getter="get_cells" default="[]">
+			Ordered cells in this PGC. Each cell is muxed into the title VOB; cell N is chapter N (PGN N / PTT N).
+		</member>
+		<member name="clut" type="PackedColorArray" setter="set_clut" getter="get_clut" default="PackedColorArray()">
+			Optional 16-entry PGC palette written at PGC offset [code]0xA4[/code]. Empty keeps the default golds.
+		</member>
+		<member name="default_button" type="int" setter="set_default_button" getter="get_default_button" default="1">
+			Forced-selected title-domain button when this PGC has highlight buttons.
+		</member>
+		<member name="next_pgc" type="int" setter="set_next_pgc" getter="get_next_pgc" default="0">
+			Next PGC number. Titles with highlight buttons default to looping this PGC when unset.
+		</member>
+		<member name="post_commands" type="PackedByteArray[]" setter="set_post_commands" getter="get_post_commands" default="[]">
+			PGC post commands (used after the last cell).
+		</member>
+		<member name="pre_commands" type="PackedByteArray[]" setter="set_pre_commands" getter="get_pre_commands" default="[]">
+			PGC pre commands.
+		</member>
+		<member name="prev_pgc" type="int" setter="set_prev_pgc" getter="get_prev_pgc" default="0">
+			Previous PGC number.
+		</member>
+		<member name="still_time" type="int" setter="set_still_time" getter="get_still_time" default="0">
+			Still time in seconds written on the last cell ([code]255[/code] = infinite).
+		</member>
+		<member name="parental_id" type="int" setter="set_parental_id" getter="get_parental_id" default="0">
+			Parental id for TT_SRPT and PGCI search pointer.
+		</member>
+		<member name="uops" type="int" setter="set_uops" getter="get_uops" default="0">
+			Prohibited user operations written at PGC offset 8.
+		</member>
+		<member name="goup_pgc" type="int" setter="set_goup_pgc" getter="get_goup_pgc" default="0">
+			Go-Up PGC number at IFO offset [code]0xA0[/code].
+		</member>
+		<member name="title_set_nr" type="int" setter="set_title_set_nr" getter="get_title_set_nr" default="0">
+			1-based VTS number. [code]0[/code] compiles as VTS 1.
+		</member>
+	</members>
+</class>
