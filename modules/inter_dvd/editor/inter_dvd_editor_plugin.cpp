@@ -474,9 +474,9 @@ void EditorInspectorPluginInterDVDDisc::_add_title_menu(ObjectID p_id) {
 				}
 			} else if (InterDVDTitleSet *set = Object::cast_to<InterDVDTitleSet>(disc->get_child(i))) {
 				for (int t = 0; t < set->get_child_count(); t++) {
-					if (InterDVDTitle *title = Object::cast_to<InterDVDTitle>(set->get_child(t))) {
-						if (!title->is_menu_title()) {
-							dest = title;
+					if (InterDVDTitle *set_title = Object::cast_to<InterDVDTitle>(set->get_child(t))) {
+						if (!set_title->is_menu_title()) {
+							dest = set_title;
 							break;
 						}
 					}

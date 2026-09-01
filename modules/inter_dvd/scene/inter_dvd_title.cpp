@@ -83,9 +83,9 @@ InterDVDHotspot *InterDVDTitle::add_menu_hotspot(const String &p_name) {
 				}
 			} else if (InterDVDTitleSet *set = Object::cast_to<InterDVDTitleSet>(disc->get_child(i))) {
 				for (int t = 0; t < set->get_child_count(); t++) {
-					if (InterDVDTitle *title = Object::cast_to<InterDVDTitle>(set->get_child(t))) {
-						if (title->is_menu_title() && !menu_pgc) {
-							menu_pgc = title;
+					if (InterDVDTitle *set_title = Object::cast_to<InterDVDTitle>(set->get_child(t))) {
+						if (set_title->is_menu_title() && !menu_pgc) {
+							menu_pgc = set_title;
 						}
 					}
 				}
