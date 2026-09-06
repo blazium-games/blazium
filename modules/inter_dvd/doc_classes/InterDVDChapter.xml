@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="InterDVDChapter" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		One title chapter that compiles to [InterDVDCell].
+	</brief_description>
+	<description>
+		Child of [InterDVDTitle]. [constant SOURCE_VIDEO] uses [member source_path]; [constant SOURCE_SCENE] bakes [member packed_scene] for [member duration_sec]. PiP and extra audio stay on this node.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="compile_cell" qualifiers="const">
+			<return type="InterDVDCell" />
+			<description>
+				Builds the mux cell for this chapter.
+			</description>
+		</method>
+		<method name="fill_cell" qualifiers="const">
+			<return type="void" />
+			<param index="0" name="cell" type="InterDVDCell" />
+			<description>
+				Copies source, PiP, streams, and [member angle] onto [param cell].
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="audio_path" type="String" setter="set_audio_path" getter="get_audio_path" default="&quot;&quot;">
+			Optional menu or title audio file.
+		</member>
+		<member name="bake_camera_path" type="NodePath" setter="set_bake_camera_path" getter="get_bake_camera_path" default="NodePath(&quot;&quot;)">
+			Camera used when baking [member packed_scene].
+		</member>
+		<member name="bake_hold_sec" type="float" setter="set_bake_hold_sec" getter="get_bake_hold_sec" default="0.0">
+			Hold each unique bake frame.
+		</member>
+		<member name="duration_sec" type="float" setter="set_duration_sec" getter="get_duration_sec" default="4.0">
+			Bake length when [member source] is [constant SOURCE_SCENE].
+		</member>
+		<member name="include_audio" type="bool" setter="set_include_audio" getter="get_include_audio" default="true">
+			Mux AC3 from PiP, [member audio_path], or scene players.
+		</member>
+		<member name="loop_pad_sec" type="float" setter="set_loop_pad_sec" getter="get_loop_pad_sec" default="0.0">
+			Extra seconds after a PiP clip.
+		</member>
+		<member name="packed_scene" type="PackedScene" setter="set_packed_scene" getter="get_packed_scene">
+			Scene baked when [member source] is [constant SOURCE_SCENE].
+		</member>
+		<member name="pip_lead_sec" type="float" setter="set_pip_lead_sec" getter="get_pip_lead_sec" default="0.4">
+			Trim after black-detect on the PiP clip.
+		</member>
+		<member name="pip_rect" type="Rect2" setter="set_pip_rect" getter="get_pip_rect" default="Rect2(0, 0, 0, 0)">
+			Fallback PiP rectangle.
+		</member>
+		<member name="pip_slot_path" type="NodePath" setter="set_pip_slot_path" getter="get_pip_slot_path" default="NodePath(&quot;&quot;)">
+			Control or Node2D used as the PiP slot.
+		</member>
+		<member name="pip_source_path" type="String" setter="set_pip_source_path" getter="get_pip_source_path" default="&quot;&quot;">
+			Optional PiP overlay video.
+		</member>
+		<member name="source" type="int" setter="set_source" getter="get_source" enum="InterDVDChapter.Source" default="0">
+			Video file or PackedScene.
+		</member>
+		<member name="source_path" type="String" setter="set_source_path" getter="get_source_path" default="&quot;&quot;">
+			Host video path when [member source] is [constant SOURCE_VIDEO].
+		</member>
+		<member name="angle" type="int" setter="set_angle" getter="get_angle" default="1">
+			Angle number 1–9. Same-title siblings with different angles become one sequential angle-block.
+		</member>
+		<member name="streams" type="InterDVDStream[]" setter="set_streams" getter="get_streams" default="[]">
+			Extra audio and subtitle streams copied onto the compiled cell.
+		</member>
+	</members>
+	<constants>
+		<constant name="SOURCE_VIDEO" value="0" enum="Source">
+			Transcode or copy [member source_path].
+		</constant>
+		<constant name="SOURCE_SCENE" value="1" enum="Source">
+			Bake [member packed_scene].
+		</constant>
+	</constants>
+</class>

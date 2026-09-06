@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="InterDVDTitle" inherits="Control" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		One VTS title PGC in an [InterDVDDisc] tree. Layout canvas is 720×480.
+	</brief_description>
+	<description>
+		720×480 Control. Child [InterDVDChapter] nodes become chapters. Child [InterDVDHotspot] nodes become title-domain buttons. Set [member menu_title] for a VLC-safe menu return target (Jump Title, not CallSS).
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_chapter">
+			<return type="InterDVDChapter" />
+			<param index="0" name="name" type="String" default="&quot;Chapter&quot;" />
+			<description>
+				Appends a chapter child and returns it.
+			</description>
+		</method>
+		<method name="add_hotspot">
+			<return type="InterDVDHotspot" />
+			<param index="0" name="name" type="String" default="&quot;Play&quot;" />
+			<description>
+				Appends a hotspot child and returns it.
+			</description>
+		</method>
+		<method name="add_menu_hotspot">
+			<return type="InterDVDHotspot" />
+			<param index="0" name="name" type="String" default="&quot;Menu&quot;" />
+			<description>
+				Appends a hotspot whose destination is the disc menu title or TitleMenu page.
+			</description>
+		</method>
+		<method name="add_resume_hotspot">
+			<return type="InterDVDHotspot" />
+			<param index="0" name="name" type="String" default="&quot;Resume&quot;" />
+			<description>
+				Appends a Resume (RSM) hotspot.
+			</description>
+		</method>
+		<method name="compile_pgc" qualifiers="const">
+			<return type="InterDVDPGC" />
+			<description>
+				Builds the title PGC (destinations are resolved by [method InterDVDDisc.build_project]).
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="menu_title" type="bool" setter="set_menu_title" getter="is_menu_title" default="false">
+			When [code]true[/code], this title is the VLC-safe menu page. [method InterDVDDisc.add_menu_title] sets [member still_time] to 255; set it back to 0 for a motion menu.
+		</member>
+		<member name="still_time" type="int" setter="set_still_time" getter="get_still_time" default="0">
+			PGC still time. Use 255 only on menu titles.
+		</member>
+		<member name="parental_id" type="int" setter="set_parental_id" getter="get_parental_id" default="0">
+			IFO parental id written on the title PGC and TT_SRPT.
+		</member>
+		<member name="uops" type="int" setter="set_uops" getter="get_uops" default="0">
+			Prohibited user operations bitfield written at PGC offset 8.
+		</member>
+		<member name="goup_pgc" type="int" setter="set_goup_pgc" getter="get_goup_pgc" default="0">
+			Go-Up PGC number (IFO [code]0xA0[/code]). [method InterDVDDisc.build_project] defaults this to the menu title when unset.
+		</member>
+	</members>
+</class>
