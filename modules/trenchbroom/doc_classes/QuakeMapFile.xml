@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="QuakeMapFile" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Imported Quake MAP or VMF file resource.
+	</brief_description>
+	<description>
+		Holds raw map text imported by [ResourceImporterQuakeMap]. Used when building from UID paths or reimported map assets.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_map_data" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_revision" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_map_data">
+			<return type="void" />
+			<param index="0" name="map_data" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="set_revision">
+			<return type="void" />
+			<param index="0" name="revision" type="int" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

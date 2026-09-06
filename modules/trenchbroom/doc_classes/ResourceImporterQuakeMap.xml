@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ResourceImporterQuakeMap" inherits="ResourceImporter" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Imports Quake MAP and VMF files.
+	</brief_description>
+	<description>
+		Imports Quake MAP and VMF files. Portions derived from func-godot (MIT License).
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="NetRadiantCustomGamePackConfig" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		NetRadiant Custom gamepack export configuration.
+	</brief_description>
+	<description>
+		NetRadiant Custom gamepack export configuration. Portions derived from func-godot (MIT License).
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="export_file">
+			<return type="void" />
+			<description>
+				Exports the NetRadiant Custom gamepack to the folder configured in [TrenchbroomLocalConfig].
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="_export_file_func" type="Callable" setter="" getter="_get_export_file_func" default="Callable()">
+		</member>
+		<member name="base_game_path" type="String" setter="set_base_game_path" getter="get_base_game_path" default="&quot;&quot;">
+		</member>
+		<member name="clip_texture" type="String" setter="set_clip_texture" getter="get_clip_texture" default="&quot;textures/clip&quot;">
+		</member>
+		<member name="default_build_menu_commands" type="Dictionary" setter="set_default_build_menu_commands" getter="get_default_build_menu_commands" default="{}">
+		</member>
+		<member name="default_build_menu_variables" type="Dictionary" setter="set_default_build_menu_variables" getter="get_default_build_menu_variables" default="{}">
+		</member>
+		<member name="default_scale" type="String" setter="set_default_scale" getter="get_default_scale" default="&quot;1.0&quot;">
+		</member>
+		<member name="fgd_file" type="BlaziumFGDFile" setter="set_fgd_file" getter="get_fgd_file">
+		</member>
+		<member name="game_name" type="String" setter="set_game_name" getter="get_game_name" default="&quot;Blazium&quot;">
+		</member>
+		<member name="gamepack_name" type="String" setter="set_gamepack_name" getter="get_gamepack_name" default="&quot;blazium&quot;">
+		</member>
+		<member name="generate_model_point_class_models" type="bool" setter="set_generate_model_point_class_models" getter="get_generate_model_point_class_models" default="true">
+		</member>
+		<member name="map_type" type="int" setter="set_map_type" getter="get_map_type" enum="NetRadiantCustomGamePackConfig.NetRadiantCustomMapType" default="1">
+		</member>
+		<member name="model_types" type="PackedStringArray" setter="set_model_types" getter="get_model_types" default="PackedStringArray(&quot;glb&quot;, &quot;gltf&quot;, &quot;obj&quot;)">
+		</member>
+		<member name="netradiant_custom_shaders" type="NetRadiantCustomShader[]" setter="set_netradiant_custom_shaders" getter="get_netradiant_custom_shaders" default="[Object(NetRadiantCustomShader,&quot;resource_local_to_scene&quot;:false,&quot;resource_name&quot;:&quot;&quot;,&quot;texture_path&quot;:&quot;textures/clip&quot;,&quot;shader_attributes&quot;:Array[String]([&quot;qer_trans 0.4&quot;]),&quot;script&quot;:null) , Object(NetRadiantCustomShader,&quot;resource_local_to_scene&quot;:false,&quot;resource_name&quot;:&quot;&quot;,&quot;texture_path&quot;:&quot;textures/skip&quot;,&quot;shader_attributes&quot;:Array[String]([&quot;qer_trans 0.4&quot;]),&quot;script&quot;:null) , Object(NetRadiantCustomShader,&quot;resource_local_to_scene&quot;:false,&quot;resource_name&quot;:&quot;&quot;,&quot;texture_path&quot;:&quot;textures/origin&quot;,&quot;shader_attributes&quot;:Array[String]([&quot;qer_trans 0.4&quot;]),&quot;script&quot;:null) ]">
+		</member>
+		<member name="skip_texture" type="String" setter="set_skip_texture" getter="get_skip_texture" default="&quot;textures/skip&quot;">
+		</member>
+		<member name="sound_types" type="PackedStringArray" setter="set_sound_types" getter="get_sound_types" default="PackedStringArray(&quot;wav&quot;, &quot;ogg&quot;)">
+		</member>
+		<member name="texture_types" type="PackedStringArray" setter="set_texture_types" getter="get_texture_types" default="PackedStringArray(&quot;png&quot;, &quot;jpg&quot;, &quot;jpeg&quot;, &quot;bmp&quot;, &quot;tga&quot;)">
+		</member>
+	</members>
+	<constants>
+		<constant name="MAP_TYPE_QUAKE_1" value="0" enum="NetRadiantCustomMapType">
+		</constant>
+		<constant name="MAP_TYPE_QUAKE_3" value="1" enum="NetRadiantCustomMapType">
+		</constant>
+	</constants>
+</class>

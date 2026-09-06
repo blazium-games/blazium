@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TrenchbroomMapSettings" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Reusable map build configuration for [TrenchbroomMap] nodes.
+	</brief_description>
+	<description>
+		Controls scale, textures, materials, entity property names, and [BlaziumFGDFile] entity definitions used during map builds.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="albedo_map_pattern" type="String" setter="set_albedo_map_pattern" getter="get_albedo_map_pattern" default="&quot;%s_albedo&quot;">
+		</member>
+		<member name="ao_map_pattern" type="String" setter="set_ao_map_pattern" getter="get_ao_map_pattern" default="&quot;%s_ao&quot;">
+		</member>
+		<member name="base_material_dir" type="String" setter="set_base_material_dir" getter="get_base_material_dir" default="&quot;&quot;">
+			Base directory for loading and saving [Material] resources. Falls back to [member base_texture_dir] when empty.
+		</member>
+		<member name="base_texture_dir" type="String" setter="set_base_texture_dir" getter="get_base_texture_dir" default="&quot;res://textures&quot;">
+			Base directory searched for texture files matching brush face texture names.
+		</member>
+		<member name="clip_texture" type="String" setter="set_clip_texture" getter="get_clip_texture" default="&quot;clip&quot;">
+			Hint texture removed from generated meshes but kept in collision (unless concave).
+		</member>
+		<member name="cull_interior_faces_property" type="String" setter="set_cull_interior_faces_property" getter="get_cull_interior_faces_property" default="&quot;_cull_interior_faces&quot;">
+		</member>
+		<member name="default_material" type="Material" setter="set_default_material" getter="get_default_material">
+			Template material used when generating missing materials during build.
+		</member>
+		<member name="default_material_albedo_uniform" type="String" setter="set_default_material_albedo_uniform" getter="get_default_material_albedo_uniform" default="&quot;&quot;">
+		</member>
+		<member name="emission_map_pattern" type="String" setter="set_emission_map_pattern" getter="get_emission_map_pattern" default="&quot;%s_emission&quot;">
+		</member>
+		<member name="entity_fgd" type="BlaziumFGDFile" setter="set_entity_fgd" getter="get_entity_fgd">
+			FGD resource that maps map classnames to Godot nodes and scenes.
+		</member>
+		<member name="entity_name_property" type="String" setter="set_entity_name_property" getter="get_entity_name_property" default="&quot;&quot;">
+		</member>
+		<member name="entity_node_groups" type="String[]" setter="set_entity_node_groups" getter="get_entity_node_groups" default="[]">
+		</member>
+		<member name="entity_smoothing_angle_property" type="String" setter="set_entity_smoothing_angle_property" getter="get_entity_smoothing_angle_property" default="&quot;_phong_angle&quot;">
+		</member>
+		<member name="entity_smoothing_property" type="String" setter="set_entity_smoothing_property" getter="get_entity_smoothing_property" default="&quot;_phong&quot;">
+		</member>
+		<member name="height_map_pattern" type="String" setter="set_height_map_pattern" getter="get_height_map_pattern" default="&quot;%s_height&quot;">
+		</member>
+		<member name="inverse_scale_factor" type="float" setter="set_inverse_scale_factor" getter="get_inverse_scale_factor" default="32.0">
+			Ratio between map editor units and Godot units. Brush coordinates are divided by this value during build.
+		</member>
+		<member name="material_file_extension" type="String" setter="set_material_file_extension" getter="get_material_file_extension" default="&quot;tres&quot;">
+		</member>
+		<member name="metallic_map_pattern" type="String" setter="set_metallic_map_pattern" getter="get_metallic_map_pattern" default="&quot;%s_metallic&quot;">
+		</member>
+		<member name="normal_map_pattern" type="String" setter="set_normal_map_pattern" getter="get_normal_map_pattern" default="&quot;%s_normal&quot;">
+		</member>
+		<member name="origin_texture" type="String" setter="set_origin_texture" getter="get_origin_texture" default="&quot;origin&quot;">
+			Hint texture excluded from mesh and collision; face bounds define entity origin.
+		</member>
+		<member name="orm_map_pattern" type="String" setter="set_orm_map_pattern" getter="get_orm_map_pattern" default="&quot;%s_orm&quot;">
+		</member>
+		<member name="roughness_map_pattern" type="String" setter="set_roughness_map_pattern" getter="get_roughness_map_pattern" default="&quot;%s_roughness&quot;">
+		</member>
+		<member name="save_generated_materials" type="bool" setter="set_save_generated_materials" getter="get_save_generated_materials" default="true">
+			When true, writes auto-generated materials to [member base_material_dir] for reuse.
+		</member>
+		<member name="scale_factor" type="float" setter="" getter="get_scale_factor">
+		</member>
+		<member name="shader_material_uniform_map_patterns" type="Dictionary" setter="set_shader_material_uniform_map_patterns" getter="get_shader_material_uniform_map_patterns" default="{}">
+		</member>
+		<member name="skip_texture" type="String" setter="set_skip_texture" getter="get_skip_texture" default="&quot;skip&quot;">
+			Hint texture removed from generated meshes and optionally collision.
+		</member>
+		<member name="texture_file_extensions" type="String[]" setter="set_texture_file_extensions" getter="get_texture_file_extensions" default="[]">
+		</member>
+		<member name="texture_wads" type="QuakeWadFile[]" setter="set_texture_wads" getter="get_texture_wads" default="[]">
+			Optional WAD resources used to resolve brush face textures.
+		</member>
+		<member name="use_groups_hierarchy" type="bool" setter="set_use_groups_hierarchy" getter="get_use_groups_hierarchy" default="false">
+			When true, organizes the scene using TrenchBroom layers/groups or Hammer visgroups.
+		</member>
+		<member name="uv_unwrap_texel_size" type="float" setter="set_uv_unwrap_texel_size" getter="get_uv_unwrap_texel_size" default="2.0">
+			Texel size for UV2 lightmap unwrapping when [constant TrenchbroomMap.UNWRAP_UV2] is enabled.
+		</member>
+		<member name="vertex_merge_distance_property" type="String" setter="set_vertex_merge_distance_property" getter="get_vertex_merge_distance_property" default="&quot;_vertex_merge_distance&quot;">
+		</member>
+	</members>
+</class>
