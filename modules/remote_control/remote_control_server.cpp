@@ -131,7 +131,7 @@ int RemoteControlServer::configured_port() {
 	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/remote_control/server_port")) {
 		return int(GLOBAL_GET("blazium/remote_control/server_port"));
 	}
-	return 6507;
+	return 6508;
 }
 
 String RemoteControlServer::configured_bind_address() {
@@ -993,7 +993,10 @@ void RemoteControlServer::_deferred_run_autowork(Dictionary p_args) {
 	String test_name = p_args.get("test_name", p_args.get("select", ""));
 	String prefix = p_args.get("prefix", "");
 	String suffix = p_args.get("suffix", "");
-	(void)p_args.get("include_subdirs", true);
+	const bool include_subdirs = bool(p_args.get("include_subdirs", false));
+	if (aw->get_test_collector().is_valid()) {
+		aw->get_test_collector()->set_include_subdirectories(include_subdirs);
+	}
 	String results_path;
 	{
 		MutexLock lock(autowork_mutex);

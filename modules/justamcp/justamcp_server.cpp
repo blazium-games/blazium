@@ -518,7 +518,7 @@ void JustAMCPServer::_start_server_internal(bool p_ignore_cmdline_block) {
 					listen_err = HTTPServer::get_singleton()->listen(retry_port, bind_address, false);
 				}
 				if (listen_err == OK) {
-					WARN_PRINT("JustAMCP: Game MCP port " + itos(port) + " was busy (remote_control also defaults to 6507). Listening on " + itos(retry_port) + ". Set blazium/justamcp/export_port to pin the game port.");
+					WARN_PRINT("JustAMCP: Game MCP port " + itos(port) + " was busy. Listening on " + itos(retry_port) + ". Set blazium/justamcp/export_port to pin the game port.");
 					port = retry_port;
 				}
 			}

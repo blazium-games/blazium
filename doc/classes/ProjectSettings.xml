@@ -588,6 +588,9 @@
 		<member name="blazium/autowork/e2e_enabled" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], the Autowork framework will boot its WebSocket E2E server on startup, enabling orchestration from standard web runners (e.g. Playwright, Jest, Cypress).
 		</member>
+		<member name="blazium/autowork/show_runtime_ui" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], Autowork places [AutoworkRuntimeUI] on the scene root when a runner starts. Disabled by default. The Autowork module is not compiled into release export templates.
+		</member>
 		<member name="blazium/coldstorage/auto_pull" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], runs [code]syncAll("#head")[/code] after a successful ColdStorage connect (or when [code]--coldstorage-auto-pull[/code] is passed).
 		</member>
@@ -673,7 +676,7 @@
 		<member name="blazium/justamcp/enable_toolset_discovery" type="bool" setter="" getter="" default="true">
 		</member>
 		<member name="blazium/justamcp/export_port" type="int" setter="" getter="" default="0">
-			TCP port for the exported or play-mode JustAMCP HTTP MCP host ([code]POST /mcp[/code]). [code]0[/code] means the editor [member blazium/justamcp/server_port] plus one (6506 → 6507). Override at launch with [code]--mcp-game-port[/code]. Must not equal the editor port. [code]remote_control[/code] also defaults to 6507; if bind fails the host retries once on port+1.
+			TCP port for the exported or play-mode JustAMCP HTTP MCP host ([code]POST /mcp[/code]). [code]0[/code] means the editor [member blazium/justamcp/server_port] plus one (6506 → 6507). Override at launch with [code]--mcp-game-port[/code]. Must not equal the editor port. [code]remote_control[/code] defaults to 6508. If the game port is busy the host retries once on port+1.
 		</member>
 		<member name="blazium/justamcp/forward_engine_logs" type="bool" setter="" getter="" default="true">
 			If [code]true[/code] and the JustAMCP server is running, engine [code]print[/code] output is forwarded to MCP clients via [code]notifications/message[/code] ([code]logger: engine[/code]). Respects the client's [code]logging/setLevel[/code] minimum severity.
@@ -2206,8 +2209,8 @@
 		<member name="blazium/remote_control/server_enabled" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], start [RemoteControlServer] when the editor (or allowed runtime) launches. Can also be forced with [code]--enable-remote-control[/code].
 		</member>
-		<member name="blazium/remote_control/server_port" type="int" setter="" getter="" default="6507">
-			TCP port for the remote control HTTP API. Override with [code]--remote-control-port=&lt;port&gt;[/code].
+		<member name="blazium/remote_control/server_port" type="int" setter="" getter="" default="6508">
+			TCP port for the remote control HTTP API (default 6508 so it does not share Game MCP on 6507). Override with [code]--remote-control-port=&lt;port&gt;[/code].
 		</member>
 		<member name="blazium/remote_control/token" type="String" setter="" getter="" default="&quot;&quot;">
 			Optional auth token for remote control requests. Override with [code]--remote-control-token=&lt;token&gt;[/code].

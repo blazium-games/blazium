@@ -31,6 +31,7 @@
 #include "core/io/file_access.h"
 #include "core/io/json.h"
 #include "core/os/os.h"
+#include "core/templates/hash_map.h"
 
 void AutoworkLogger::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_pass", "message"), &AutoworkLogger::add_pass);
@@ -215,29 +216,48 @@ bool AutoworkLogger::export_xml(const String &p_file_path) {
 		return false;
 	}
 
-	int total_tests = get_test_count();
-	int total_failures = get_fails();
+	const int total_tests = get_test_count();
+	const int total_failures = get_fails();
+	const Vector<AutoworkTestMethodResult> &results = get_test_results();
 
 	file->store_string("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 	file->store_string(vformat("<testsuites name=\"AutoworkTests\" failures=\"%d\" tests=\"%d\">\n", total_failures, total_tests));
 
-	// We export a single suite since the Logger doesn't deeply segregate script boundaries internally for simplistic summary reporting yet
-	file->store_string(_xml_indent(1) + vformat("<testsuite name=\"summary\" tests=\"%d\" failures=\"%d\" skipped=\"%d\" time=\"0.0\">\n", total_tests, total_failures, get_warnings()));
-
-	// Instead of deep iteration for now, we just log a generic testcase based on the summary so CI doesn't crash on parse
-	// A complete mapping would require logger tracking individual assert vectors
-	if (total_failures > 0) {
-		file->store_string(_xml_indent(2) + vformat("<testcase name=\"failing_tests\" assertions=\"%d\" status=\"fail\" classname=\"summary\" time=\"0.0\">\n", total_failures));
-		file->store_string(_xml_indent(3) + "<failure message=\"failed\"><![CDATA[There were failing tests in the suite.]]></failure>\n");
-		file->store_string(_xml_indent(2) + "</testcase>\n");
+	HashMap<StringName, Vector<const AutoworkTestMethodResult *>> script_map;
+	for (int i = 0; i < results.size(); i++) {
+		script_map[results[i].script_name].push_back(&results[i]);
 	}
 
-	if (get_passes() > 0) {
-		file->store_string(_xml_indent(2) + vformat("<testcase name=\"passing_tests\" assertions=\"%d\" status=\"pass\" classname=\"summary\" time=\"0.0\">\n", get_passes()));
-		file->store_string(_xml_indent(2) + "</testcase>\n");
+	for (const KeyValue<StringName, Vector<const AutoworkTestMethodResult *>> &E : script_map) {
+		int suite_fails = 0;
+		for (int i = 0; i < E.value.size(); i++) {
+			suite_fails += E.value[i]->fails;
+		}
+		file->store_string(_xml_indent(1) + vformat("<testsuite name=\"%s\" tests=\"%d\" failures=\"%d\" skipped=\"%d\" time=\"0.0\">\n", _xml_escape(String(E.key)), E.value.size(), suite_fails, 0));
+		for (int i = 0; i < E.value.size(); i++) {
+			const AutoworkTestMethodResult *res = E.value[i];
+			const int assertions = res->passes + res->fails;
+			const String status = res->fails > 0 ? "fail" : "pass";
+			file->store_string(_xml_indent(2) + vformat("<testcase name=\"%s\" assertions=\"%d\" status=\"%s\" classname=\"%s\" time=\"0.0\"", _xml_escape(String(res->method_name)), assertions, status, _xml_escape(String(res->script_name))));
+			if (res->fails > 0) {
+				file->store_string(">\n");
+				String messages;
+				for (int k = 0; k < res->fail_messages.size(); k++) {
+					if (k > 0) {
+						messages += "\n";
+					}
+					messages += res->fail_messages[k];
+				}
+				messages = messages.replace("]]>", "]]]]><![CDATA[>");
+				file->store_string(_xml_indent(3) + vformat("<failure message=\"%s\"><![CDATA[%s]]></failure>\n", _xml_escape(messages.get_slice("\n", 0)), messages));
+				file->store_string(_xml_indent(2) + "</testcase>\n");
+			} else {
+				file->store_string("/>\n");
+			}
+		}
+		file->store_string(_xml_indent(1) + "</testsuite>\n");
 	}
 
-	file->store_string(_xml_indent(1) + "</testsuite>\n");
 	file->store_string("</testsuites>\n");
 
 	return true;
@@ -245,4 +265,8 @@ bool AutoworkLogger::export_xml(const String &p_file_path) {
 
 String AutoworkLogger::_xml_indent(int p_level) {
 	return String("  ").repeat(p_level);
+}
+
+String AutoworkLogger::_xml_escape(const String &p_text) {
+	return p_text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
 }

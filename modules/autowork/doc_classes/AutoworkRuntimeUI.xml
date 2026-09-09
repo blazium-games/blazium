@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="AutoworkRuntimeUI" inherits="Control" experimental="Some methods may not be implemented and may be changed in future versions." xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
+		Optional in-game Autowork runner panel.
 	</brief_description>
 	<description>
+		In-game Control that runs Autowork and displays logger output. Not placed automatically. Enable [code]blazium/autowork/show_runtime_ui[/code] to parent this control on the scene root when a runner starts.
 	</description>
 	<tutorials>
 	</tutorials>

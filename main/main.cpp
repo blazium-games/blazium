@@ -142,6 +142,10 @@
 #include "modules/mono/editor/bindings_generator.h"
 #endif
 
+#ifdef MODULE_AUTOWORK_ENABLED
+#include "modules/autowork/autowork_main.h"
+#endif
+
 #ifdef MODULE_GDSCRIPT_ENABLED
 #include "modules/gdscript/gdscript.h"
 #if defined(TOOLS_ENABLED) && !defined(GDSCRIPT_NO_LSP)
@@ -714,14 +718,14 @@ void Main::print_help(const char *p_binary) {
 #ifdef MODULE_REMOTE_CONTROL_ENABLED
 	print_help_title("Remote Control Options");
 	print_help_option("--enable-remote-control", "Start the remote_control HTTP API (localhost JSON /v1/* for blazium-cli remote).\n");
-	print_help_option("--remote-control-port=<port>", "Bind port for remote_control (default: 6507, or ProjectSettings blazium/remote_control/server_port).\n");
+	print_help_option("--remote-control-port=<port>", "Bind port for remote_control (default: 6508, or ProjectSettings blazium/remote_control/server_port).\n");
 	print_help_option("--remote-control-token=<token>", "Require Authorization: Bearer / X-Remote-Control-Token for remote_control requests.\n");
 #endif
 
 // AUTOWORK
 #ifdef MODULE_AUTOWORK_ENABLED
 	print_help_title("Autowork options");
-	print_help_option("--aw-dir=<directory>", "Run Autowork tests in the specified directory.\n");
+	print_help_option("--aw-dir=<directory>", "Run Autowork tests in the specified directory (starts the runner without -s).\n");
 	print_help_option("--aw-file=<file>", "Run a specific Autowork test script.\n");
 	print_help_option("--aw-test=<name>", "Run a specific Autowork test by name.\n");
 	print_help_option("--aw-select=<pattern>", "Run Autowork test scripts matching the pattern.\n");
@@ -4180,8 +4184,14 @@ int Main::start() {
 		game_path = ResourceUID::ensure_path(GLOBAL_GET("application/run/main_scene"));
 	}
 
+#ifdef MODULE_AUTOWORK_ENABLED
+	const bool autowork_cli = Autowork::has_unit_runner_cli_flags() && script.is_empty();
+#else
+	const bool autowork_cli = false;
+#endif
+
 #ifdef TOOLS_ENABLED
-	if (!editor && !project_manager && !cmdline_tool && script.is_empty() && game_path.is_empty()) {
+	if (!editor && !project_manager && !cmdline_tool && script.is_empty() && game_path.is_empty() && !autowork_cli) {
 		// If we end up here, it means we didn't manage to detect what we want to run.
 		// Let's throw an error gently. The code leading to this is pretty brittle so
 		// this might end up triggered by valid usage, in which case we'll have to
@@ -4568,7 +4578,11 @@ int Main::start() {
 			// Load SSL Certificates from Project Settings (or builtin).
 			Crypto::load_default_certificates(GLOBAL_GET("network/tls/certificate_bundle_override"));
 
-			if (!game_path.is_empty()) {
+			if (autowork_cli) {
+#ifdef MODULE_AUTOWORK_ENABLED
+				Autowork::start_from_cli(sml);
+#endif
+			} else if (!game_path.is_empty()) {
 				Node *scene = nullptr;
 				Ref<PackedScene> scenedata = ResourceLoader::load(local_game_path);
 				if (scenedata.is_valid()) {

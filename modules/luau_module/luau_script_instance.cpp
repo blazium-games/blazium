@@ -36,8 +36,12 @@
 #include "luau_script_language.h"
 #include "string_cache.h"
 
+#include "core/object/class_db.h"
+#include "core/object/object.h"
 #include "core/os/main_loop.h"
 #include "core/os/time.h"
+#include "core/templates/list.h"
+#include "core/variant/array.h"
 #include "scene/gui/control.h"
 #include "scene/main/canvas_item.h"
 #include "scene/main/node.h"
@@ -47,6 +51,30 @@
 using namespace luau_module;
 
 namespace {
+
+static bool _is_autowork_test_helper(const String &p_name) {
+	return p_name.begins_with("assert_") || p_name.begins_with("wait_") ||
+			p_name == "pass_test" || p_name == "fail_test" || p_name == "pending" ||
+			p_name == "print_log" || p_name == "p";
+}
+
+static int instance_autowork_method(lua_State *L) {
+	Object *owner = static_cast<Object *>(lua_touserdata(L, lua_upvalueindex(1)));
+	if (!owner) {
+		luaL_error(L, "AutoworkTest owner is null");
+	}
+	const char *method = lua_tostring(L, lua_upvalueindex(2));
+	if (!method) {
+		luaL_error(L, "AutoworkTest method is null");
+	}
+	Array args;
+	const int argc = lua_gettop(L);
+	for (int i = 1; i <= argc; i++) {
+		args.push_back(to_variant(L, i));
+	}
+	push_variant(L, owner->callv(StringName(method), args));
+	return 1;
+}
 
 static int instance_emit_signal(lua_State *L) {
 	Object *owner = static_cast<Object *>(lua_touserdata(L, lua_upvalueindex(1)));
@@ -116,6 +144,22 @@ void LuauScriptInstance::create_instance_table() {
 	lua_pushlightuserdata(L, owner);
 	lua_pushcclosurek(L, instance_emit_signal, "emit_signal", 1, nullptr);
 	lua_setfield(L, -2, "emit_signal");
+
+	if (owner && ClassDB::class_exists("AutoworkTest") && owner->is_class("AutoworkTest")) {
+		List<MethodInfo> methods;
+		ClassDB::get_method_list("AutoworkTest", &methods, true);
+		for (const MethodInfo &mi : methods) {
+			const String name = mi.name;
+			if (!_is_autowork_test_helper(name)) {
+				continue;
+			}
+			const CharString utf8 = name.utf8();
+			lua_pushlightuserdata(L, owner);
+			lua_pushstring(L, utf8.get_data());
+			lua_pushcclosurek(L, instance_autowork_method, utf8.get_data(), 2, nullptr);
+			lua_setfield(L, -2, utf8.get_data());
+		}
+	}
 
 	lua_pop(L, 1);
 

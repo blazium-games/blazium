@@ -61,6 +61,8 @@ public:
 	void set_logger(Object *p_logger);
 	void set_runner(Object *p_runner);
 
+	static AutoworkRuntimeUI *place_if_enabled(class Autowork *p_runner);
+
 	// Callable from Logger
 	void add_text(const String &p_text);
 	void add_color_text(const String &p_text, const Color &p_color);

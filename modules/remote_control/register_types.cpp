@@ -50,7 +50,7 @@ void initialize_remote_control_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(RemoteControlServer);
 
 		GLOBAL_DEF_BASIC("blazium/remote_control/server_enabled", false);
-		GLOBAL_DEF_BASIC("blazium/remote_control/server_port", 6507);
+		GLOBAL_DEF_BASIC("blazium/remote_control/server_port", 6508);
 		GLOBAL_DEF_BASIC("blazium/remote_control/bind_address", "127.0.0.1");
 		GLOBAL_DEF_BASIC("blazium/remote_control/token", String());
 		GLOBAL_DEF_BASIC("blazium/remote_control/allow_eval", false);

@@ -53,7 +53,7 @@
 			<return type="bool" />
 			<param index="0" name="file_path" type="String" />
 			<description>
-				Exports the collected test results in JUnit XML format.
+				Exports the collected test results in JUnit XML format, with one [code]testsuite[/code] per script and one [code]testcase[/code] per method.
 
 				The generated file can be used by continuous integration systems and reporting tools.
 				Returns [code]true[/code] if the export succeeds, otherwise [code]false[/code].

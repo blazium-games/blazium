@@ -105,7 +105,41 @@ void AutoworkConfig::apply_options(Autowork *p_runner) {
 		return;
 	}
 
-	// Apply equivalent options found in gut_config.gd's _apply_options
+	Ref<AutoworkCollector> collector = p_runner->get_test_collector();
+	if (collector.is_valid()) {
+		if (options.has("include_subdirs")) {
+			collector->set_include_subdirectories(bool(options["include_subdirs"]));
+		}
+		if (options.has("prefix")) {
+			collector->set_script_prefix(options["prefix"]);
+		}
+		if (options.has("suffix")) {
+			collector->set_script_suffix(options["suffix"]);
+		}
+		if (options.has("selected") && !String(options["selected"]).is_empty()) {
+			collector->script_pattern = options["selected"];
+		}
+		if (options.has("inner_class")) {
+			collector->inner_class_pattern = options["inner_class"];
+		}
+	}
+
+	if (options.has("hide_orphans") && p_runner->get_logger().is_valid()) {
+		p_runner->get_logger()->set_hide_orphans(bool(options["hide_orphans"]));
+	}
+	if (options.has("junit_xml_file")) {
+		const String junit = options["junit_xml_file"];
+		if (!junit.is_empty()) {
+			p_runner->set_xml_output_path(junit);
+		}
+	}
+	if (options.has("unit_test_name")) {
+		const String name = options["unit_test_name"];
+		if (!name.is_empty()) {
+			p_runner->set_test(name);
+		}
+	}
+
 	if (options.has("dirs")) {
 		Array dirs = options["dirs"];
 		String prefix = options["prefix"];
@@ -120,9 +154,5 @@ void AutoworkConfig::apply_options(Autowork *p_runner) {
 		for (int i = 0; i < tests.size(); i++) {
 			p_runner->add_script(tests[i]);
 		}
-	}
-
-	if (options.has("include_subdirs")) { // not explicitly in AutoworkMain yet, but map if present
-		// Runner logic typically uses add_directory with recursive flag, handled in CLI. Make sure runner has properties.
 	}
 }

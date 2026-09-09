@@ -28,9 +28,12 @@
 /**************************************************************************/
 
 #include "autowork_runtime_ui.h"
+#include "core/config/project_settings.h"
 #include "modules/autowork/autowork_logger.h"
 #include "modules/autowork/autowork_main.h"
 #include "scene/gui/panel.h"
+#include "scene/main/scene_tree.h"
+#include "scene/main/window.h"
 
 void AutoworkRuntimeUI::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_logger", "logger"), &AutoworkRuntimeUI::set_logger);
@@ -124,4 +127,40 @@ void AutoworkRuntimeUI::_on_run_pressed() {
 
 void AutoworkRuntimeUI::_on_clear_pressed() {
 	rich_text->clear();
+}
+
+AutoworkRuntimeUI *AutoworkRuntimeUI::place_if_enabled(Autowork *p_runner) {
+	if (!p_runner) {
+		return nullptr;
+	}
+	if (!ProjectSettings::get_singleton() || !bool(GLOBAL_GET("blazium/autowork/show_runtime_ui"))) {
+		return nullptr;
+	}
+
+	SceneTree *tree = SceneTree::get_singleton();
+	if (!tree || !tree->get_root()) {
+		return nullptr;
+	}
+	if (tree->get_root()->has_node(NodePath("AutoworkRuntimeUI"))) {
+		Node *existing = tree->get_root()->get_node(NodePath("AutoworkRuntimeUI"));
+		AutoworkRuntimeUI *ui = Object::cast_to<AutoworkRuntimeUI>(existing);
+		if (ui) {
+			ui->set_runner(p_runner);
+			if (p_runner->get_logger().is_valid()) {
+				ui->set_logger(p_runner->get_logger().ptr());
+				p_runner->get_logger()->set_output_ui(ui);
+			}
+		}
+		return ui;
+	}
+
+	AutoworkRuntimeUI *ui = memnew(AutoworkRuntimeUI);
+	ui->set_name("AutoworkRuntimeUI");
+	ui->set_runner(p_runner);
+	if (p_runner->get_logger().is_valid()) {
+		ui->set_logger(p_runner->get_logger().ptr());
+		p_runner->get_logger()->set_output_ui(ui);
+	}
+	tree->get_root()->add_child(ui);
+	return ui;
 }
