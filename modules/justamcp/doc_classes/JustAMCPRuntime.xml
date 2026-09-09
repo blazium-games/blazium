@@ -108,7 +108,7 @@
 			When [code]true[/code], the runtime server is active and can accept MCP traffic. Setting it to [code]false[/code] stops serving runtime requests.
 		</member>
 		<member name="port" type="int" setter="set_port" getter="get_port" default="6507">
-			Game MCP port. Defaults to the editor HTTP port plus one (6506 → 6507). Override with [code]--mcp-game-port[/code] or [member ProjectSettings.blazium/justamcp/export_port]. Never bind the editor port. [code]remote_control[/code] also defaults to 6507; if bind fails the host retries once on port+1.
+			Game MCP port. Defaults to the editor HTTP port plus one (6506 → 6507). Override with [code]--mcp-game-port[/code] or [member ProjectSettings.blazium/justamcp/export_port]. Never bind the editor port. [code]remote_control[/code] defaults to 6508. If bind fails the host retries once on port+1.
 		</member>
 	</members>
 	<signals>

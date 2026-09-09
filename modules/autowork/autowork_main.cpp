@@ -31,10 +31,12 @@
 #include "autowork_doubler.h"
 #include "autowork_hook_script.h"
 #include "autowork_logger.h"
+#include "autowork_runtime_ui.h"
 #include "autowork_signal_watcher.h"
 #include "autowork_spy.h"
 #include "autowork_stubber.h"
 #include "core/config/engine.h"
+#include "core/config/project_settings.h"
 #include "core/io/file_access.h"
 #include "core/io/json.h"
 #include "core/io/resource_loader.h"
@@ -44,6 +46,7 @@
 #include "core/os/os.h"
 #include "modules/gdscript/gdscript.h"
 #include "scene/main/scene_tree.h"
+#include "scene/main/window.h"
 
 void Autowork::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_directory", "path", "prefix", "suffix"), &Autowork::add_directory, DEFVAL(""), DEFVAL(""));
@@ -113,6 +116,51 @@ void Autowork::set_test(const String &p_test_name) {
 	}
 }
 
+void Autowork::maybe_place_runtime_ui() {
+	AutoworkRuntimeUI::place_if_enabled(this);
+}
+
+bool Autowork::has_unit_runner_flags(const List<String> &p_args) {
+	for (const String &arg : p_args) {
+		if (arg.begins_with("--aw-e2e")) {
+			continue;
+		}
+		if (arg.begins_with("--aw-dir=") || arg.begins_with("-gdir=") ||
+				arg.begins_with("--aw-file=") || arg.begins_with("-gtest=") ||
+				arg.begins_with("--aw-test=") || arg.begins_with("-gunit_test_name=") ||
+				arg.begins_with("--aw-select=") || arg.begins_with("-gselect=") ||
+				arg.begins_with("--aw-junit=") || arg.begins_with("-gjunit_xml_file=") ||
+				arg.begins_with("--aw-json=") ||
+				arg.begins_with("--aw-prefix=") || arg.begins_with("-gprefix=") ||
+				arg.begins_with("--aw-suffix=") || arg.begins_with("-gsuffix=") ||
+				arg.begins_with("--aw-inner-class=") || arg.begins_with("-ginner_class=") ||
+				arg.begins_with("--aw-pre-run=") || arg.begins_with("-gpre_run_script=") ||
+				arg.begins_with("--aw-post-run=") || arg.begins_with("-gpost_run_script=") ||
+				arg == "--aw-include-subdirs" || arg.begins_with("-ginclude_subdirs") ||
+				arg == "--aw-hide-orphans" || arg.begins_with("-ghide_orphans")) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool Autowork::has_unit_runner_cli_flags() {
+	if (OS::get_singleton() == nullptr) {
+		return false;
+	}
+	return has_unit_runner_flags(OS::get_singleton()->get_cmdline_args());
+}
+
+void Autowork::start_from_cli(SceneTree *p_tree) {
+	ERR_FAIL_NULL(p_tree);
+	ERR_FAIL_NULL(p_tree->get_root());
+	Autowork *aw = memnew(Autowork);
+	aw->set_name("CLI_AutoworkInstance");
+	p_tree->get_root()->add_child(aw);
+	aw->maybe_place_runtime_ui();
+	aw->run_tests();
+}
+
 void Autowork::_restore_editor_scripting_if_needed() {
 #ifdef TOOLS_ENABLED
 	if (restore_editor_scripting) {
@@ -139,6 +187,7 @@ void Autowork::abort() {
 }
 
 void Autowork::run_tests() {
+	maybe_place_runtime_ui();
 	finished = false;
 	aborted = false;
 	if (collector.is_null() || logger.is_null() || OS::get_singleton() == nullptr) {

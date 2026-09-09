@@ -59,6 +59,7 @@ protected:
 	Vector<AutoworkTestMethodResult> test_results;
 
 	String _xml_indent(int p_level);
+	String _xml_escape(const String &p_text);
 
 public:
 	AutoworkLogger();

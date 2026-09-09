@@ -31,7 +31,8 @@
 #include "autowork_test.h"
 #include "core/io/dir_access.h"
 #include "core/io/resource_loader.h"
-#include "modules/gdscript/gdscript.h"
+#include "core/object/script_language.h"
+#include "modules/modules_enabled.gen.h"
 
 void AutoworkCollector::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_script", "path"), &AutoworkCollector::add_script);
@@ -62,6 +63,19 @@ void AutoworkCollector::set_script_suffix(const String &p_suffix) {
 
 void AutoworkCollector::set_include_subdirectories(bool p_enable) {
 	include_subdirectories = p_enable;
+}
+
+bool AutoworkCollector::matches_script_filename(const String &p_file) const {
+	if (p_file.ends_with(script_suffix)) {
+		return true;
+	}
+#ifdef MODULE_MONO_ENABLED
+	// Default GDScript suffix also discovers C# AutoworkTest scripts.
+	if (script_suffix == ".gd" && p_file.ends_with(".cs")) {
+		return true;
+	}
+#endif
+	return false;
 }
 
 void AutoworkCollector::add_script(const String &p_path) {
@@ -129,6 +143,9 @@ void AutoworkCollector::add_script(const String &p_path) {
 		scripts.push_back(script_info);
 	};
 
+#ifdef MODULE_MONO_ENABLED
+	const int scripts_before = scripts.size();
+#endif
 	extract_methods(collected_script, "");
 
 	HashMap<StringName, Variant> constants;
@@ -162,6 +179,12 @@ void AutoworkCollector::add_script(const String &p_path) {
 			}
 		}
 	}
+
+#ifdef MODULE_MONO_ENABLED
+	if (p_path.get_extension() == "cs" && scripts.size() == scripts_before) {
+		ERR_PRINT(vformat("Autowork: C# test script '%s' has no test_* methods. Build the C# solution (for example --build-solutions) before collecting tests.", p_path));
+	}
+#endif
 }
 
 void AutoworkCollector::process_directory(const String &p_path) {
@@ -183,7 +206,7 @@ void AutoworkCollector::process_directory(const String &p_path) {
 			if (include_subdirectories) {
 				process_directory(full_path);
 			}
-		} else if (file.ends_with(script_suffix)) {
+		} else if (matches_script_filename(file)) {
 			if (script_prefix.is_empty() || file.begins_with(script_prefix)) {
 				add_script(full_path);
 			}

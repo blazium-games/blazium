@@ -35,7 +35,10 @@
 #include "autowork_spy.h"
 #include "autowork_stubber.h"
 #include "autowork_test.h"
+#include "core/templates/list.h"
 #include "scene/main/node.h"
+
+class SceneTree;
 
 class Autowork : public Node {
 	GDCLASS(Autowork, Node);
@@ -70,6 +73,11 @@ public:
 	void set_test(const String &p_test_name);
 	void run_tests();
 	void abort();
+	void maybe_place_runtime_ui();
+
+	static bool has_unit_runner_flags(const List<String> &p_args);
+	static bool has_unit_runner_cli_flags();
+	static void start_from_cli(SceneTree *p_tree);
 	void set_json_output_path(const String &p_path) { json_output_path = p_path; }
 	void set_xml_output_path(const String &p_path) { xml_output_path = p_path; }
 	bool is_finished() const { return finished; }

@@ -55,6 +55,7 @@ public:
 	void set_script_prefix(const String &p_prefix);
 	void set_script_suffix(const String &p_suffix);
 	void set_include_subdirectories(bool p_enable);
+	bool matches_script_filename(const String &p_file) const;
 	Array get_scripts() const;
 	void clear();
 };

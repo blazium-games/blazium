@@ -74,6 +74,7 @@ void initialize_autowork_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<AutoworkE2EServer>();
 
 		GLOBAL_DEF_BASIC("blazium/autowork/e2e_enabled", false);
+		GLOBAL_DEF_BASIC("blazium/autowork/show_runtime_ui", false);
 
 		if (AutoworkE2EConfig::is_enabled()) {
 			ProjectSettings::get_singleton()->set("autoload/AutomationServer", "*AutoworkE2EServer");

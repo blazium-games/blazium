@@ -18,7 +18,7 @@
 			<return type="void" />
 			<param index="0" name="runner" type="Autowork" />
 			<description>
-				Applies the stored configuration options to the given [param runner].
+				Applies the stored configuration options to the given [param runner]. Sets collector [code]include_subdirs[/code] before adding directories so recursive discovery works.
 			</description>
 		</method>
 		<method name="get_options" qualifiers="const">
