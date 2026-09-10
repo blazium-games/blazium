@@ -8657,7 +8657,10 @@ void Node3DEditor::clear() {
 void Node3DEditor::_sun_direction_draw() {
 	sun_direction->draw_rect(Rect2(Vector2(), sun_direction->get_size()), Color(1, 1, 1, 1));
 	Vector3 z_axis = preview_sun->get_transform().basis.get_column(Vector3::AXIS_Z);
-	z_axis = get_editor_viewport(0)->camera->get_camera_transform().basis.xform_inv(z_axis);
+	Camera3D *preview_camera = get_editor_viewport(0)->camera;
+	if (preview_camera && preview_camera->is_inside_tree()) {
+		z_axis = preview_camera->get_camera_transform().basis.xform_inv(z_axis);
+	}
 	sun_direction_material->set_shader_parameter("sun_direction", Vector3(z_axis.x, -z_axis.y, z_axis.z));
 	Color color = sun_color->get_pick_color() * sun_energy->get_value();
 	sun_direction_material->set_shader_parameter("sun_color", Vector3(color.r, color.g, color.b));
@@ -8671,7 +8674,9 @@ void Node3DEditor::_preview_settings_changed() {
 	{ // preview sun
 		Transform3D t;
 		t.basis = Basis::from_euler(Vector3(sun_rotation.x, sun_rotation.y, 0));
-		preview_sun->set_transform(t);
+		if (preview_sun->is_inside_tree()) {
+			preview_sun->set_transform(t);
+		}
 		sun_direction->queue_redraw();
 		preview_sun->set_param(Light3D::PARAM_ENERGY, sun_energy->get_value());
 		preview_sun->set_param(Light3D::PARAM_SHADOW_MAX_DISTANCE, sun_max_distance->get_value());
@@ -8750,6 +8755,7 @@ void Node3DEditor::_update_preview_environment() {
 			sun_state->hide();
 			sun_vb->show();
 			preview_sun_dangling = false;
+			_preview_settings_changed();
 		}
 	}
 
