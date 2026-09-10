@@ -256,6 +256,7 @@ MaterialEditor::MaterialEditor() {
 	viewport->set_msaa_3d(Viewport::MSAA_4X);
 
 	camera = memnew(Camera3D);
+	viewport->add_child(camera);
 	camera->set_transform(Transform3D(Basis(), Vector3(0, 0, 1.1)));
 	// Use low field of view so the sphere/box/quad is fully encompassed within the preview,
 	// without much distortion.
@@ -265,16 +266,15 @@ MaterialEditor::MaterialEditor() {
 		camera_attributes.instantiate();
 		camera->set_attributes(camera_attributes);
 	}
-	viewport->add_child(camera);
 
 	light1 = memnew(DirectionalLight3D);
-	light1->set_transform(Transform3D().looking_at(Vector3(-1, -1, -1), Vector3(0, 1, 0)));
 	viewport->add_child(light1);
+	light1->set_transform(Transform3D().looking_at(Vector3(-1, -1, -1), Vector3(0, 1, 0)));
 
 	light2 = memnew(DirectionalLight3D);
+	viewport->add_child(light2);
 	light2->set_transform(Transform3D().looking_at(Vector3(0, 1, 0), Vector3(0, 0, 1)));
 	light2->set_color(Color(0.7, 0.7, 0.7));
-	viewport->add_child(light2);
 
 	rotation = memnew(Node3D);
 	viewport->add_child(rotation);

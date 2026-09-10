@@ -1393,7 +1393,7 @@ Node3D::Node3D() :
 
 	data.visible = true;
 	data.disable_scale = false;
-	data.vi_visible = true;
+	data.vi_visible = false;
 
 #ifdef TOOLS_ENABLED
 	data.gizmos_disabled = false;
