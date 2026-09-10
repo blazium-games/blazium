@@ -68,6 +68,10 @@ void JustAMCPServer::_fail_and_remove_task_dispatch_entry(MCPToolQueueEntry *p_e
 	}
 	{
 		MutexLock lock(mcp_tool_queue.mutex);
+		if (p_entry->result_completed) {
+			return;
+		}
+		p_entry->result_completed = true;
 		for (int i = 0; i < mcp_tool_queue.pending.size(); i++) {
 			if (mcp_tool_queue.pending[i] == p_entry) {
 				mcp_tool_queue.pending.remove_at(i);
@@ -215,6 +219,11 @@ void JustAMCPServer::_dispatch_task_augmented_tools_call(const Variant &p_reques
 		}
 
 		if (entry->cancel_requested) {
+			if (entry->result_completed) {
+				// send_tool_result already owns cleanup.
+				return;
+			}
+			entry->result_completed = true;
 			entry->pending_task_dispatch = false;
 			entry->rpc_result = _justamcp_task_dispatch_cancelled_rpc(p_request_id);
 			has_stateless = entry->has_stateless_response;

@@ -128,6 +128,17 @@ void DDDBrowserVolume::_validate_property(PropertyInfo &p_property) const {
 	if (n == "volume_type" || n == "radius" || n == "extra_props") {
 		return;
 	}
+
+	// Only rewrite usage on this class's own fields. Inherited Node3D
+	// properties with PROPERTY_USAGE_NONE (global_transform, global_position,
+	// global_basis, global_rotation, global_rotation_degrees) must stay NONE.
+	// PROPERTY_USAGE_NO_EDITOR equals STORAGE, which makes ClassDB read those
+	// getters on a dummy instance that is not in the tree.
+	const bool is_owned = (n == "event_name" || n == "single_use" || n == "cooldown_seconds" || n == "fov_degrees" || n == "target_instance_id" || n == "max_fires" || n == "auto_remove_on_fire" || n == "stay_interval" || n == "required_stay_time" || n == "counter_word" || n == "required_count" || n == "auto_reset_after_fire" || n == "fire_once_when_reached" || n == "sequence_group_id" || n == "sequence_index" || n == "reset_if_wrong" || n == "is_on" || n == "on_activate_event" || n == "on_deactivate_event" || n == "action" || n == "target_position" || n == "keep_velocity");
+	if (!is_owned) {
+		return;
+	}
+
 	bool show = false;
 	switch (volume_type) {
 		case VOLUME_AUTOSAVE:

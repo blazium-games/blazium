@@ -115,9 +115,9 @@ MeshEditor::MeshEditor() {
 	viewport->set_msaa_3d(Viewport::MSAA_4X);
 	set_stretch(true);
 	camera = memnew(Camera3D);
+	viewport->add_child(camera);
 	camera->set_transform(Transform3D(Basis(), Vector3(0, 0, 1.1)));
 	camera->set_perspective(45, 0.1, 10);
-	viewport->add_child(camera);
 
 	if (GLOBAL_GET("rendering/lights_and_shadows/use_physical_light_units")) {
 		camera_attributes.instantiate();
@@ -125,13 +125,13 @@ MeshEditor::MeshEditor() {
 	}
 
 	light1 = memnew(DirectionalLight3D);
-	light1->set_transform(Transform3D().looking_at(Vector3(-1, -1, -1), Vector3(0, 1, 0)));
 	viewport->add_child(light1);
+	light1->set_transform(Transform3D().looking_at(Vector3(-1, -1, -1), Vector3(0, 1, 0)));
 
 	light2 = memnew(DirectionalLight3D);
+	viewport->add_child(light2);
 	light2->set_transform(Transform3D().looking_at(Vector3(0, 1, 0), Vector3(0, 0, 1)));
 	light2->set_color(Color(0.7, 0.7, 0.7));
-	viewport->add_child(light2);
 
 	rotation = memnew(Node3D);
 	viewport->add_child(rotation);

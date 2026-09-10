@@ -86,6 +86,9 @@ void VisualInstance3D::_notification(int p_what) {
 		} break;
 
 		case NOTIFICATION_TRANSFORM_CHANGED: {
+			if (!is_inside_tree()) {
+				break;
+			}
 			if (_is_vi_visible() || is_physics_interpolated_and_enabled()) {
 				if (!_is_using_identity_transform()) {
 					RenderingServer::get_singleton()->instance_set_transform(instance, get_global_transform());
