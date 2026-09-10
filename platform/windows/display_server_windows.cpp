@@ -4720,7 +4720,7 @@ LRESULT DisplayServerWindows::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 			}
 		} break;
 		case WM_INDICATOR_CALLBACK_MESSAGE: {
-			if (lParam == WM_LBUTTONDOWN || lParam == WM_RBUTTONDOWN || lParam == WM_MBUTTONDOWN || lParam == WM_XBUTTONDOWN) {
+			if (lParam == WM_LBUTTONDOWN || lParam == WM_LBUTTONDBLCLK || lParam == WM_RBUTTONDOWN || lParam == WM_MBUTTONDOWN || lParam == WM_XBUTTONDOWN) {
 				IndicatorID iid = (IndicatorID)wParam;
 				MouseButton mb = MouseButton::LEFT;
 				if (lParam == WM_RBUTTONDOWN) {
