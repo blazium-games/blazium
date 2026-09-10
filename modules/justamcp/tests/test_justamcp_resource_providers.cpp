@@ -51,8 +51,11 @@
 
 #ifdef MODULE_SEMANTICSEARCH_ENABLED
 #include "modules/semanticsearch/semantic_asset_index.h"
+#include "modules/semanticsearch/semantic_index_store.h"
 #endif
 
+#include "core/config/project_settings.h"
+#include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "tests/test_macros.h"
 
@@ -71,6 +74,7 @@ void test_justamcp_tags_resource_provider_reads() {
 	CHECK(registry.set_tags_for_asset(tagged_path, tags) == OK);
 	Dictionary asset = JustAMCPTagsResourceProvider::read("blazium://tags/asset/res%3A%2F%2Ftagged.tscn", "blazium://tags/asset/res%3A%2F%2Ftagged.tscn");
 	CHECK(asset.get("ok", false));
+	DirAccess::remove_absolute(ProjectSettings::get_singleton()->globalize_path(tagged_path));
 	AssetTagStorage::clear_test_storage_dir();
 #else
 	TEST_FAIL_COND(true, "MODULE_ASSETTAGS_ENABLED is required for tags resource provider tests");
@@ -79,6 +83,7 @@ void test_justamcp_tags_resource_provider_reads() {
 
 void test_justamcp_semantic_resource_provider_reads() {
 #ifdef MODULE_SEMANTICSEARCH_ENABLED
+	SemanticIndexStore::set_test_index_dir("res://.blazium/test_justamcp_semantic_resource");
 	SemanticAssetIndex *index = SemanticAssetIndex::get_singleton();
 	CHECK(index != nullptr);
 	const String test_path = "res://semantic_resource.tscn";
@@ -89,6 +94,8 @@ void test_justamcp_semantic_resource_provider_reads() {
 	CHECK(JustAMCPSemanticResourceProvider::can_read("blazium://semantic/index/stats"));
 	Dictionary stats = JustAMCPSemanticResourceProvider::read("blazium://semantic/index/stats", "blazium://semantic/index/stats");
 	CHECK(stats.get("ok", false));
+	DirAccess::remove_absolute(ProjectSettings::get_singleton()->globalize_path(test_path));
+	SemanticIndexStore::clear_test_index_dir();
 #else
 	TEST_FAIL_COND(true, "MODULE_SEMANTICSEARCH_ENABLED is required for semantic resource provider tests");
 #endif

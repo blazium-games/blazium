@@ -42,12 +42,16 @@
 #endif
 
 #include "../semantic_asset_index.h"
+#include "../semantic_index_store.h"
+#include "core/config/project_settings.h"
+#include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "tests/test_macros.h"
 
 void test_semantic_assettags_bridge_signal_upsert() {
 #ifdef MODULE_ASSETTAGS_ENABLED
 	AssetTagStorage::set_test_storage_dir("res://.blazium/test_bridge_signal");
+	SemanticIndexStore::set_test_index_dir("res://.blazium/test_bridge_signal_index");
 	AssetTagManager manager;
 	AssetTagRegistry registry;
 	SemanticAssetIndex *index = SemanticAssetIndex::get_singleton();
@@ -63,6 +67,8 @@ void test_semantic_assettags_bridge_signal_upsert() {
 	CHECK(registry.set_tags_for_asset(bridge_path, tags) == OK);
 	CHECK(index->search("bridge", 5).size() >= 1);
 	SemanticAssettagsBridge::detach();
+	DirAccess::remove_absolute(ProjectSettings::get_singleton()->globalize_path(bridge_path));
+	SemanticIndexStore::clear_test_index_dir();
 	AssetTagStorage::clear_test_storage_dir();
 #else
 	CHECK(true);
@@ -72,6 +78,7 @@ void test_semantic_assettags_bridge_signal_upsert() {
 void test_semantic_assettags_bridge_remove_missing_asset() {
 #ifdef MODULE_ASSETTAGS_ENABLED
 	AssetTagStorage::set_test_storage_dir("res://.blazium/test_bridge_remove");
+	SemanticIndexStore::set_test_index_dir("res://.blazium/test_bridge_remove_index");
 	AssetTagManager manager;
 	AssetTagRegistry registry;
 	SemanticAssetIndex *index = SemanticAssetIndex::get_singleton();
@@ -83,6 +90,7 @@ void test_semantic_assettags_bridge_remove_missing_asset() {
 	Dictionary entry = index->get_asset_entry("res://gone.tscn");
 	CHECK(!entry.get("ok", true));
 	SemanticAssettagsBridge::detach();
+	SemanticIndexStore::clear_test_index_dir();
 	AssetTagStorage::clear_test_storage_dir();
 #else
 	CHECK(true);

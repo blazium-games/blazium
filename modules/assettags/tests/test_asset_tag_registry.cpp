@@ -258,10 +258,6 @@ void test_asset_tag_registry_load_recovery() {
 
 void test_asset_tag_registry_recovery_quarantine_sidecars() {
 	AssetTagStorage::set_test_storage_dir("res://.blazium/test_recovery_quarantine_sidecars");
-	Ref<DirAccess> dir = DirAccess::open("res://");
-	if (dir.is_valid()) {
-		dir->make_dir_recursive(".blazium/test_recovery_quarantine_sidecars/index_dirty");
-	}
 	HashMap<String, Vector<String>> index;
 	Vector<String> stale_tags;
 	stale_tags.push_back("Stale.Tag");
@@ -284,10 +280,6 @@ void test_asset_tag_registry_recovery_quarantine_sidecars() {
 
 void test_asset_tag_alias_search_unmigrated_index() {
 	AssetTagStorage::set_test_storage_dir("res://.blazium/test_alias_search_unmigrated");
-	Ref<DirAccess> dir = DirAccess::open("res://");
-	if (dir.is_valid()) {
-		dir->make_dir_recursive(".blazium/test_alias_search_unmigrated");
-	}
 	AssetTagManager manager;
 	AssetTagRegistry registry;
 	manager.add_tag("Legacy.Tag");
@@ -313,10 +305,6 @@ void test_asset_tag_alias_search_unmigrated_index() {
 
 void test_asset_tag_prune_removed_paths() {
 	AssetTagStorage::set_test_storage_dir("res://.blazium/test_prune_removed_paths");
-	Ref<DirAccess> dir = DirAccess::open("res://");
-	if (dir.is_valid()) {
-		dir->make_dir_recursive(".blazium/test_prune_removed_paths");
-	}
 	AssetTagManager manager;
 	AssetTagRegistry registry;
 	manager.add_tag("Prune.Tag");
@@ -363,10 +351,6 @@ void test_asset_tag_registry_atomic_commit_batch() {
 
 void test_asset_tag_registry_index_write_blocked_commit() {
 	AssetTagStorage::set_test_storage_dir("res://.blazium/test_isolated_index_write_blocked");
-	Ref<DirAccess> dir = DirAccess::open("res://");
-	if (dir.is_valid()) {
-		dir->make_dir_recursive(".blazium/test_isolated_index_write_blocked");
-	}
 	Ref<FileAccess> corrupt = FileAccess::open(AssetTagStorage::get_index_file_path(), FileAccess::WRITE);
 	REQUIRE(corrupt.is_valid());
 	corrupt->store_string("{not-json");
@@ -395,10 +379,6 @@ void test_asset_tag_registry_index_write_blocked_commit() {
 
 void test_asset_tag_alias_incremental_update() {
 	AssetTagStorage::set_test_storage_dir("res://.blazium/test_alias_incremental");
-	Ref<DirAccess> dir = DirAccess::open("res://");
-	if (dir.is_valid()) {
-		dir->make_dir_recursive(".blazium/test_alias_incremental");
-	}
 	AssetTagManager manager;
 	AssetTagRegistry registry;
 	CHECK(manager.add_tag("Legacy.Tag") == OK);
@@ -424,10 +404,6 @@ void test_asset_tag_alias_incremental_update() {
 
 void test_asset_tag_alias_redirect_signal_rebuild() {
 	AssetTagStorage::set_test_storage_dir("res://.blazium/test_alias_redirect_signal");
-	Ref<DirAccess> dir = DirAccess::open("res://");
-	if (dir.is_valid()) {
-		dir->make_dir_recursive(".blazium/test_alias_redirect_signal");
-	}
 	AssetTagManager manager;
 	AssetTagRegistry registry;
 	manager.connect(SNAME("redirects_changed"), callable_mp(&registry, &AssetTagRegistry::_on_redirects_changed));
@@ -485,10 +461,6 @@ void test_asset_tag_teardown_deferred_noop() {
 
 void test_asset_tag_prune_queues_during_transaction() {
 	AssetTagStorage::set_test_storage_dir("res://.blazium/test_prune_during_transaction");
-	Ref<DirAccess> dir = DirAccess::open("res://");
-	if (dir.is_valid()) {
-		dir->make_dir_recursive(".blazium/test_prune_during_transaction");
-	}
 	AssetTagManager manager;
 	AssetTagRegistry registry;
 	AssetTagCoordinator coordinator;
@@ -512,10 +484,6 @@ void test_asset_tag_prune_queues_during_transaction() {
 
 void test_asset_tag_prune_queues_during_batch() {
 	AssetTagStorage::set_test_storage_dir("res://.blazium/test_prune_during_batch");
-	Ref<DirAccess> dir = DirAccess::open("res://");
-	if (dir.is_valid()) {
-		dir->make_dir_recursive(".blazium/test_prune_during_batch");
-	}
 	AssetTagManager manager;
 	AssetTagRegistry registry;
 	manager.add_tag("Batch.Prune");

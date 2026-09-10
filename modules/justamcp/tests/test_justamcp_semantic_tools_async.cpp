@@ -39,13 +39,17 @@
 #ifdef MODULE_SEMANTICSEARCH_ENABLED
 #include "modules/semanticsearch/semantic_asset_index.h"
 #include "modules/semanticsearch/semantic_async_search_worker.h"
+#include "modules/semanticsearch/semantic_index_store.h"
 #endif
 
+#include "core/config/project_settings.h"
+#include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "tests/test_macros.h"
 
 void test_justamcp_semantic_search_enqueue_poll() {
 #ifdef MODULE_SEMANTICSEARCH_ENABLED
+	SemanticIndexStore::set_test_index_dir("res://.blazium/test_justamcp_async_search");
 	SemanticAsyncSearchWorker *worker = SemanticAsyncSearchWorker::get_singleton();
 	CHECK(worker != nullptr);
 	SemanticAssetIndex *index = SemanticAssetIndex::get_singleton();
@@ -67,6 +71,8 @@ void test_justamcp_semantic_search_enqueue_poll() {
 	poll_args["job_id"] = job_id;
 	Dictionary poll = tools.execute_tool("semantic_search_poll", poll_args);
 	CHECK(poll.get("ok", false));
+	DirAccess::remove_absolute(ProjectSettings::get_singleton()->globalize_path(test_path));
+	SemanticIndexStore::clear_test_index_dir();
 #else
 	TEST_FAIL_COND(true, "MODULE_SEMANTICSEARCH_ENABLED is required for semantic async search tests");
 #endif
