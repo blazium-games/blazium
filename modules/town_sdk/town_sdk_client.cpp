@@ -131,6 +131,22 @@ void TownSdkClient::_attach_callbacks() {
 		emit_signal("inventory_update", p_update);
 	});
 
+	client->on_shot([this](const Variant &p_shot) {
+		emit_signal("shot", p_shot);
+	});
+
+	client->on_health([this](const Variant &p_health) {
+		emit_signal("health", p_health);
+	});
+
+	client->on_death([this](const Variant &p_death) {
+		emit_signal("death", p_death);
+	});
+
+	client->on_respawn([this](const Variant &p_respawn) {
+		emit_signal("respawn", p_respawn);
+	});
+
 	client->on_battle_start([this](const Variant &p_battle) {
 		emit_signal("battle_start", p_battle);
 	});
@@ -288,6 +304,12 @@ void TownSdkClient::send_interact(const String &p_interactable_id) {
 	}
 }
 
+void TownSdkClient::send_fire() {
+	if (client) {
+		client->send_fire();
+	}
+}
+
 void TownSdkClient::request_inventory() {
 	if (client) {
 		client->request_inventory();
@@ -409,6 +431,7 @@ void TownSdkClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("send_move", "held", "delta"), &TownSdkClient::send_move);
 	ClassDB::bind_method(D_METHOD("send_move_look", "held", "delta", "yaw", "pitch"), &TownSdkClient::send_move_look);
 	ClassDB::bind_method(D_METHOD("send_interact", "interactable_id"), &TownSdkClient::send_interact);
+	ClassDB::bind_method(D_METHOD("send_fire"), &TownSdkClient::send_fire);
 	ClassDB::bind_method(D_METHOD("request_inventory"), &TownSdkClient::request_inventory);
 	ClassDB::bind_method(D_METHOD("battle_action", "battle_id", "action", "target_id"), &TownSdkClient::battle_action, DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("leave_battle", "battle_id"), &TownSdkClient::leave_battle);
@@ -435,6 +458,10 @@ void TownSdkClient::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("entity_despawned", PropertyInfo(Variant::DICTIONARY, "entity")));
 	ADD_SIGNAL(MethodInfo("interactable_state", PropertyInfo(Variant::DICTIONARY, "state")));
 	ADD_SIGNAL(MethodInfo("inventory_update", PropertyInfo(Variant::DICTIONARY, "update")));
+	ADD_SIGNAL(MethodInfo("shot", PropertyInfo(Variant::DICTIONARY, "shot")));
+	ADD_SIGNAL(MethodInfo("health", PropertyInfo(Variant::DICTIONARY, "health")));
+	ADD_SIGNAL(MethodInfo("death", PropertyInfo(Variant::DICTIONARY, "death")));
+	ADD_SIGNAL(MethodInfo("respawn", PropertyInfo(Variant::DICTIONARY, "respawn")));
 	ADD_SIGNAL(MethodInfo("battle_start", PropertyInfo(Variant::DICTIONARY, "battle")));
 	ADD_SIGNAL(MethodInfo("battle_state", PropertyInfo(Variant::DICTIONARY, "state")));
 	ADD_SIGNAL(MethodInfo("battle_log", PropertyInfo(Variant::STRING, "log")));

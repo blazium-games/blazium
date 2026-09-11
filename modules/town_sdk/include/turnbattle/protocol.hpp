@@ -51,12 +51,17 @@ inline constexpr uint16_t MOVE_INPUT = 12;
 inline constexpr uint16_t INVENTORY_GET = 15;
 inline constexpr uint16_t INVENTORY_UPDATE = 16;
 inline constexpr uint16_t INTERACT = 17;
+inline constexpr uint16_t FIRE = 18;
 
 inline constexpr uint16_t REGION_SNAPSHOT = 20;
 inline constexpr uint16_t ENTITY_SPAWN = 21;
 inline constexpr uint16_t ENTITY_DESPAWN = 22;
 inline constexpr uint16_t MOVE_STATE = 23;
 inline constexpr uint16_t INTERACTABLE_STATE = 24;
+inline constexpr uint16_t SHOT = 25;
+inline constexpr uint16_t HEALTH = 26;
+inline constexpr uint16_t DEATH = 27;
+inline constexpr uint16_t RESPAWN = 28;
 
 inline constexpr uint16_t BATTLE_INDICATOR_SPAWN = 30;
 inline constexpr uint16_t BATTLE_INDICATOR_DESPAWN = 31;

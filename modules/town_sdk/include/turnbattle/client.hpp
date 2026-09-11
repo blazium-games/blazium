@@ -64,6 +64,7 @@ public:
 	void send_move(uint8_t held, float dt, float yaw, float pitch);
 	void send_interact(const std::string &interactable_id);
 	void request_inventory();
+	void send_fire();
 
 	// Battle
 	void battle_action(const std::string &battle_id, Action action,
@@ -83,6 +84,10 @@ public:
 	void on_entity_despawn(OnEntityDespawnCallback cb);
 	void on_interactable_state(OnInteractableStateCallback cb);
 	void on_inventory_update(OnInventoryUpdateCallback cb);
+	void on_shot(OnShotCallback cb);
+	void on_health(OnHealthCallback cb);
+	void on_death(OnDeathCallback cb);
+	void on_respawn(OnRespawnCallback cb);
 	void on_battle_start(OnBattleStartCallback cb);
 	void on_battle_state(OnBattleStateCallback cb);
 	void on_battle_log(OnBattleLogCallback cb);

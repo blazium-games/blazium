@@ -77,6 +77,7 @@ public:
 	void send_move(int p_held, double p_delta);
 	void send_move_look(int p_held, double p_delta, double p_yaw, double p_pitch);
 	void send_interact(const String &p_interactable_id);
+	void send_fire();
 	void request_inventory();
 
 	void battle_action(const String &p_battle_id, BattleAction p_action, const String &p_target_id = String());

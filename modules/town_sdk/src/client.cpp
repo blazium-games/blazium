@@ -105,6 +105,10 @@ struct Client::Impl {
 	OnEntityDespawnCallback on_entity_despawn;
 	OnInteractableStateCallback on_interactable_state;
 	OnInventoryUpdateCallback on_inventory_update;
+	OnShotCallback on_shot;
+	OnHealthCallback on_health;
+	OnDeathCallback on_death;
+	OnRespawnCallback on_respawn;
 	std::string game_type = "turn_based";
 	std::string last_username;
 	OnBattleStartCallback on_battle_start;
@@ -485,6 +489,11 @@ void Client::request_inventory() {
 	send_message(protocol::MessageType::INVENTORY_GET, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
 
+void Client::send_fire() {
+	Dictionary payload;
+	send_message(protocol::MessageType::FIRE, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
 void Client::battle_action(const std::string &battle_id, Action action, const std::string &target_id) {
 	std::string action_str;
 	switch (action) {
@@ -560,6 +569,18 @@ void Client::on_interactable_state(OnInteractableStateCallback cb) {
 }
 void Client::on_inventory_update(OnInventoryUpdateCallback cb) {
 	impl_->on_inventory_update = cb;
+}
+void Client::on_shot(OnShotCallback cb) {
+	impl_->on_shot = cb;
+}
+void Client::on_health(OnHealthCallback cb) {
+	impl_->on_health = cb;
+}
+void Client::on_death(OnDeathCallback cb) {
+	impl_->on_death = cb;
+}
+void Client::on_respawn(OnRespawnCallback cb) {
+	impl_->on_respawn = cb;
 }
 void Client::on_battle_start(OnBattleStartCallback cb) {
 	impl_->on_battle_start = cb;
@@ -798,6 +819,30 @@ void Client::handle_message(uint16_t type, const std::string &payload) {
 		case protocol::MessageType::INVENTORY_UPDATE:
 			if (impl_->on_inventory_update) {
 				impl_->on_inventory_update(parsed);
+			}
+			break;
+
+		case protocol::MessageType::SHOT:
+			if (impl_->on_shot) {
+				impl_->on_shot(parsed);
+			}
+			break;
+
+		case protocol::MessageType::HEALTH:
+			if (impl_->on_health) {
+				impl_->on_health(parsed);
+			}
+			break;
+
+		case protocol::MessageType::DEATH:
+			if (impl_->on_death) {
+				impl_->on_death(parsed);
+			}
+			break;
+
+		case protocol::MessageType::RESPAWN:
+			if (impl_->on_respawn) {
+				impl_->on_respawn(parsed);
 			}
 			break;
 
