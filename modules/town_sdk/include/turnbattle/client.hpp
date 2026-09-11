@@ -61,7 +61,8 @@ public:
 	void enter_region(const std::string &region_id);
 	void leave_region();
 	void send_move(uint8_t held, float dt);
-	void send_move(uint8_t held, float dt, float yaw, float pitch);
+	void send_move(uint8_t held, float dt, float yaw, float pitch,
+			bool flashlight = false);
 	void send_interact(const std::string &interactable_id);
 	void send_pickup(const std::string &pickup_id);
 	void request_inventory();

@@ -75,7 +75,7 @@ public:
 	void enter_region(const String &p_region_id);
 	void leave_region();
 	void send_move(int p_held, double p_delta);
-	void send_move_look(int p_held, double p_delta, double p_yaw, double p_pitch);
+	void send_move_look(int p_held, double p_delta, double p_yaw, double p_pitch, bool p_flashlight = false);
 	void send_interact(const String &p_interactable_id);
 	void send_pickup(const String &p_pickup_id);
 	void send_fire();
