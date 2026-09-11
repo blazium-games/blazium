@@ -82,6 +82,7 @@ public:
 	void send_equip(int p_slot);
 	void send_use(int p_slot);
 	void send_craft(const String &p_recipe);
+	void send_drop(const String &p_kind, int p_slot);
 	void send_reload();
 	void request_inventory();
 

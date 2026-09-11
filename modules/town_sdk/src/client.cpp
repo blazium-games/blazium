@@ -530,6 +530,14 @@ void Client::send_craft(const std::string &recipe) {
 	send_message(protocol::MessageType::USE, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
 
+void Client::send_drop(const std::string &kind, int slot) {
+	Dictionary payload;
+	payload["drop"] = true;
+	payload["kind"] = String::utf8(kind.empty() ? "bag" : kind.c_str());
+	payload["slot"] = slot;
+	send_message(protocol::MessageType::USE, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
 void Client::send_reload() {
 	Dictionary payload;
 	send_message(protocol::MessageType::RELOAD, variant_to_json_string(payload), protocol::Channel::CONTROL);

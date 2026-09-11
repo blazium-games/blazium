@@ -70,6 +70,7 @@ public:
 	void send_equip(int slot);
 	void send_use(int slot);
 	void send_craft(const std::string &recipe);
+	void send_drop(const std::string &kind, int slot);
 	void send_reload();
 
 	// Battle
