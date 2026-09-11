@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="NavimeshExporter" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Bakes and exports 2D and 3D navigation meshes for third-party servers.
+	</brief_description>
+	<description>
+		[NavimeshExporter] is an editor singleton that collects [NavigationRegion2D], [NavigationRegion3D], links, and obstacles, bakes missing meshes, and writes a JSON file plus a compact [code]BNAV[/code] binary twin.
+		The scene payload uses [code]format = "blazium.navimesh"[/code] and [code]version = 1[/code]. Each region, link, and obstacle includes a [code]dimension[/code] of [code]"2d"[/code] or [code]"3d"[/code]. Vertices are written in world space. Combined project exports use [code]format = "blazium.navimesh.bundle"[/code] with a [code]levels[/code] array.
+		Call this API from GDScript, Luau, or C# (GodotSharpEditor), the inspector/toolbar Export button, [code]--export-navmesh[/code], JustAMCP, or remote_control.
+		[codeblocks]
+		[gdscript]
+		NavimeshExporter.bake_node($NavigationRegion3D)
+		NavimeshExporter.export_scene("res://levels/town.tscn", "res://.navimesh_export/")
+		NavimeshExporter.export_project("res://levels/", "res://.navimesh_export/", NavimeshExporter.MODE_COMBINED)
+		[/gdscript]
+		[csharp]
+		NavimeshExporter.Singleton.BakeNode(region);
+		NavimeshExporter.Singleton.ExportScene("res://levels/town.tscn", "res://.navimesh_export/");
+		[/csharp]
+		[/codeblocks]
+		Headless CLI:
+		[codeblock]
+		blazium --headless --path &lt;project&gt; --export-navmesh --export-navmesh-scenes res://levels/ --export-navmesh-output res://.navimesh_export/ --export-navmesh-mode individual --export-navmesh-format both --export-navmesh-dimension both
+		[/codeblock]
+	</description>
+	<tutorials>
+		<link title="Navimesh Export Module Tests">https://github.com/blazium-games/navimesh_export_module_tests</link>
+	</tutorials>
+	<methods>
+		<method name="bake_node">
+			<return type="int" enum="Error" />
+			<param index="0" name="node" type="Node" />
+			<description>
+				Synchronously bakes a [NavigationRegion2D] or [NavigationRegion3D]. Emits [signal bake_finished] on success.
+			</description>
+		</method>
+		<method name="bake_scene">
+			<return type="Dictionary" />
+			<param index="0" name="scene_path" type="String" />
+			<param index="1" name="dimension" type="int" enum="NavimeshExporter.Dimension" default="2" />
+			<description>
+				Loads [param scene_path], bakes matching regions, and returns a summary with [code]ok[/code] and [code]baked[/code] counts.
+			</description>
+		</method>
+		<method name="collect_from_node">
+			<return type="Dictionary" />
+			<param index="0" name="node" type="Node" />
+			<param index="1" name="dimension" type="int" enum="NavimeshExporter.Dimension" default="2" />
+			<description>
+				Builds an in-memory navimesh payload from [param node] without writing files. Region nodes export that region plus same-dimension links.
+			</description>
+		</method>
+		<method name="export_node">
+			<return type="int" enum="Error" />
+			<param index="0" name="node" type="Node" />
+			<param index="1" name="output_path" type="String" />
+			<param index="2" name="format" type="int" enum="NavimeshExporter.Format" default="2" />
+			<description>
+				Bakes then writes JSON and/or binary next to [param output_path]. Link nodes export the whole scene for that dimension.
+			</description>
+		</method>
+		<method name="export_project">
+			<return type="Dictionary" />
+			<param index="0" name="scenes" type="String" default="&quot;res://&quot;" />
+			<param index="1" name="output_dir" type="String" default="&quot;res://.navimesh_export/&quot;" />
+			<param index="2" name="mode" type="int" enum="NavimeshExporter.Mode" default="0" />
+			<param index="3" name="format" type="int" enum="NavimeshExporter.Format" default="2" />
+			<param index="4" name="dimension" type="int" enum="NavimeshExporter.Dimension" default="2" />
+			<description>
+				Scans [param scenes] for [code].tscn[/code]/[code].scn[/code] files and exports them individually or as [code]navimesh_bundle.nav.json[/code] / [code].nav.bin[/code].
+			</description>
+		</method>
+		<method name="export_scene">
+			<return type="Dictionary" />
+			<param index="0" name="scene_path" type="String" />
+			<param index="1" name="output_dir" type="String" />
+			<param index="2" name="format" type="int" enum="NavimeshExporter.Format" default="2" />
+			<param index="3" name="dimension" type="int" enum="NavimeshExporter.Dimension" default="2" />
+			<description>
+				Bakes and exports one scene. Scenes without matching navigation regions are skipped.
+			</description>
+		</method>
+		<method name="list_scenes">
+			<return type="PackedStringArray" />
+			<param index="0" name="root" type="String" default="&quot;res://&quot;" />
+			<param index="1" name="dimension" type="int" enum="NavimeshExporter.Dimension" default="2" />
+			<description>
+				Returns scene paths under [param root] that contain [NavigationRegion2D] and/or [NavigationRegion3D].
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="bake_finished">
+			<param index="0" name="node" type="Node" />
+			<description>
+				Emitted after a successful [method bake_node] call.
+			</description>
+		</signal>
+		<signal name="export_finished">
+			<param index="0" name="paths" type="PackedStringArray" />
+			<param index="1" name="summary" type="Dictionary" />
+			<description>
+				Emitted after a file export finishes. [param paths] lists written [code].nav.json[/code] and [code].nav.bin[/code] files.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="DIMENSION_2D" value="0" enum="Dimension">
+			Export only 2D navigation.
+		</constant>
+		<constant name="DIMENSION_3D" value="1" enum="Dimension">
+			Export only 3D navigation.
+		</constant>
+		<constant name="DIMENSION_BOTH" value="2" enum="Dimension">
+			Export 2D and 3D navigation.
+		</constant>
+		<constant name="FORMAT_JSON" value="0" enum="Format">
+			Write [code].nav.json[/code] only.
+		</constant>
+		<constant name="FORMAT_BIN" value="1" enum="Format">
+			Write [code].nav.bin[/code] only.
+		</constant>
+		<constant name="FORMAT_BOTH" value="2" enum="Format">
+			Write JSON and the BNAV binary twin.
+		</constant>
+		<constant name="MODE_INDIVIDUAL" value="0" enum="Mode">
+			Write one file pair per scene.
+		</constant>
+		<constant name="MODE_COMBINED" value="1" enum="Mode">
+			Write a single bundle containing every exported level.
+		</constant>
+	</constants>
+</class>

@@ -2156,6 +2156,8 @@
 		</member>
 		<member name="blazium/justamcp/toolsets/Multiuser" type="bool" setter="" getter="" default="true">
 		</member>
+		<member name="blazium/justamcp/toolsets/NavimeshExport" type="bool" setter="" getter="" default="true">
+		</member>
 		<member name="blazium/justamcp/toolsets/Networking" type="bool" setter="" getter="" default="true">
 		</member>
 		<member name="blazium/justamcp/toolsets/Node" type="bool" setter="" getter="" default="true">
