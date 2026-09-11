@@ -147,6 +147,18 @@ void TownSdkClient::_attach_callbacks() {
 		emit_signal("respawn", p_respawn);
 	});
 
+	client->on_points([this](const Variant &p_points) {
+		emit_signal("points", p_points);
+	});
+
+	client->on_scoreboard([this](const Variant &p_scoreboard) {
+		emit_signal("scoreboard", p_scoreboard);
+	});
+
+	client->on_pickup_state([this](const Variant &p_state) {
+		emit_signal("pickup_state", p_state);
+	});
+
 	client->on_battle_start([this](const Variant &p_battle) {
 		emit_signal("battle_start", p_battle);
 	});
@@ -304,9 +316,33 @@ void TownSdkClient::send_interact(const String &p_interactable_id) {
 	}
 }
 
+void TownSdkClient::send_pickup(const String &p_pickup_id) {
+	if (client) {
+		client->send_pickup(_string_to_std(p_pickup_id));
+	}
+}
+
 void TownSdkClient::send_fire() {
 	if (client) {
 		client->send_fire();
+	}
+}
+
+void TownSdkClient::send_equip(int p_slot) {
+	if (client) {
+		client->send_equip(p_slot);
+	}
+}
+
+void TownSdkClient::send_use(int p_slot) {
+	if (client) {
+		client->send_use(p_slot);
+	}
+}
+
+void TownSdkClient::send_reload() {
+	if (client) {
+		client->send_reload();
 	}
 }
 
@@ -431,7 +467,11 @@ void TownSdkClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("send_move", "held", "delta"), &TownSdkClient::send_move);
 	ClassDB::bind_method(D_METHOD("send_move_look", "held", "delta", "yaw", "pitch"), &TownSdkClient::send_move_look);
 	ClassDB::bind_method(D_METHOD("send_interact", "interactable_id"), &TownSdkClient::send_interact);
+	ClassDB::bind_method(D_METHOD("send_pickup", "pickup_id"), &TownSdkClient::send_pickup);
 	ClassDB::bind_method(D_METHOD("send_fire"), &TownSdkClient::send_fire);
+	ClassDB::bind_method(D_METHOD("send_equip", "slot"), &TownSdkClient::send_equip);
+	ClassDB::bind_method(D_METHOD("send_use", "slot"), &TownSdkClient::send_use);
+	ClassDB::bind_method(D_METHOD("send_reload"), &TownSdkClient::send_reload);
 	ClassDB::bind_method(D_METHOD("request_inventory"), &TownSdkClient::request_inventory);
 	ClassDB::bind_method(D_METHOD("battle_action", "battle_id", "action", "target_id"), &TownSdkClient::battle_action, DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("leave_battle", "battle_id"), &TownSdkClient::leave_battle);
@@ -462,6 +502,9 @@ void TownSdkClient::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("health", PropertyInfo(Variant::DICTIONARY, "health")));
 	ADD_SIGNAL(MethodInfo("death", PropertyInfo(Variant::DICTIONARY, "death")));
 	ADD_SIGNAL(MethodInfo("respawn", PropertyInfo(Variant::DICTIONARY, "respawn")));
+	ADD_SIGNAL(MethodInfo("points", PropertyInfo(Variant::DICTIONARY, "points")));
+	ADD_SIGNAL(MethodInfo("scoreboard", PropertyInfo(Variant::DICTIONARY, "scoreboard")));
+	ADD_SIGNAL(MethodInfo("pickup_state", PropertyInfo(Variant::DICTIONARY, "state")));
 	ADD_SIGNAL(MethodInfo("battle_start", PropertyInfo(Variant::DICTIONARY, "battle")));
 	ADD_SIGNAL(MethodInfo("battle_state", PropertyInfo(Variant::DICTIONARY, "state")));
 	ADD_SIGNAL(MethodInfo("battle_log", PropertyInfo(Variant::STRING, "log")));

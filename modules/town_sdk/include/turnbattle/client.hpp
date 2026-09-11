@@ -63,8 +63,12 @@ public:
 	void send_move(uint8_t held, float dt);
 	void send_move(uint8_t held, float dt, float yaw, float pitch);
 	void send_interact(const std::string &interactable_id);
+	void send_pickup(const std::string &pickup_id);
 	void request_inventory();
 	void send_fire();
+	void send_equip(int slot);
+	void send_use(int slot);
+	void send_reload();
 
 	// Battle
 	void battle_action(const std::string &battle_id, Action action,
@@ -88,6 +92,9 @@ public:
 	void on_health(OnHealthCallback cb);
 	void on_death(OnDeathCallback cb);
 	void on_respawn(OnRespawnCallback cb);
+	void on_points(OnPointsCallback cb);
+	void on_scoreboard(OnScoreboardCallback cb);
+	void on_pickup_state(OnPickupStateCallback cb);
 	void on_battle_start(OnBattleStartCallback cb);
 	void on_battle_state(OnBattleStateCallback cb);
 	void on_battle_log(OnBattleLogCallback cb);

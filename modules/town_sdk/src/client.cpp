@@ -109,6 +109,9 @@ struct Client::Impl {
 	OnHealthCallback on_health;
 	OnDeathCallback on_death;
 	OnRespawnCallback on_respawn;
+	OnPointsCallback on_points;
+	OnScoreboardCallback on_scoreboard;
+	OnPickupStateCallback on_pickup_state;
 	std::string game_type = "turn_based";
 	std::string last_username;
 	OnBattleStartCallback on_battle_start;
@@ -494,6 +497,32 @@ void Client::send_fire() {
 	send_message(protocol::MessageType::FIRE, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
 
+void Client::send_pickup(const std::string &pickup_id) {
+	if (pickup_id.empty()) {
+		return;
+	}
+	Dictionary payload;
+	payload["id"] = String::utf8(pickup_id.c_str());
+	send_message(protocol::MessageType::PICKUP, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::send_equip(int slot) {
+	Dictionary payload;
+	payload["slot"] = slot;
+	send_message(protocol::MessageType::EQUIP, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::send_use(int slot) {
+	Dictionary payload;
+	payload["slot"] = slot;
+	send_message(protocol::MessageType::USE, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::send_reload() {
+	Dictionary payload;
+	send_message(protocol::MessageType::RELOAD, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
 void Client::battle_action(const std::string &battle_id, Action action, const std::string &target_id) {
 	std::string action_str;
 	switch (action) {
@@ -581,6 +610,15 @@ void Client::on_death(OnDeathCallback cb) {
 }
 void Client::on_respawn(OnRespawnCallback cb) {
 	impl_->on_respawn = cb;
+}
+void Client::on_points(OnPointsCallback cb) {
+	impl_->on_points = cb;
+}
+void Client::on_scoreboard(OnScoreboardCallback cb) {
+	impl_->on_scoreboard = cb;
+}
+void Client::on_pickup_state(OnPickupStateCallback cb) {
+	impl_->on_pickup_state = cb;
 }
 void Client::on_battle_start(OnBattleStartCallback cb) {
 	impl_->on_battle_start = cb;
@@ -843,6 +881,24 @@ void Client::handle_message(uint16_t type, const std::string &payload) {
 		case protocol::MessageType::RESPAWN:
 			if (impl_->on_respawn) {
 				impl_->on_respawn(parsed);
+			}
+			break;
+
+		case protocol::MessageType::POINTS:
+			if (impl_->on_points) {
+				impl_->on_points(parsed);
+			}
+			break;
+
+		case protocol::MessageType::SCOREBOARD:
+			if (impl_->on_scoreboard) {
+				impl_->on_scoreboard(parsed);
+			}
+			break;
+
+		case protocol::MessageType::PICKUP_STATE:
+			if (impl_->on_pickup_state) {
+				impl_->on_pickup_state(parsed);
 			}
 			break;
 
