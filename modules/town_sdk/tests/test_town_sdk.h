@@ -99,6 +99,11 @@ TEST_CASE("[TownSDK] optional live connection") {
 	logging_args.push_back(128);
 	client_obj->callv("set_debug_logging_enabled", logging_args);
 
+	TownSdkClient *sdk = Object::cast_to<TownSdkClient>(client_obj);
+	REQUIRE(sdk != nullptr);
+	sdk->set_game_type(TownSdkClient::GAME_TYPE_FPS);
+	CHECK(sdk->get_game_type() == TownSdkClient::GAME_TYPE_FPS);
+
 	Array connect_args;
 	connect_args.push_back(host);
 	connect_args.push_back(port);
@@ -113,10 +118,25 @@ TEST_CASE("[TownSDK] optional live connection") {
 	failure_message += std::to_string(port);
 
 	if (connected) {
-		Variant is_connected = client_obj->call("is_client_connected");
-		CHECK(is_connected.operator bool());
-		client_obj->call("disconnect_from_server");
-		client_obj->call("clear_debug_log");
+		for (int i = 0; i < 80 && sdk->get_server_version().is_empty(); i++) {
+			sdk->poll(0.016);
+			os->delay_usec(16000);
+		}
+		CHECK_MESSAGE(!sdk->get_server_version().is_empty(), "FPS VERSION_CHECK should set server version");
+		const String user_env = os->get_environment("TOWN_SDK_TEST_USER");
+		const String username = user_env.is_empty() ? String("aw_sdk_test") : user_env;
+		sdk->authenticate_username(username);
+		const String region_env = os->get_environment("TOWN_SDK_TEST_REGION");
+		const String region = region_env.is_empty() ? String("ghost_city_survival") : region_env;
+		sdk->enter_region(region);
+		for (int i = 0; i < 40; i++) {
+			sdk->poll(0.016);
+			os->delay_usec(16000);
+		}
+		CHECK(sdk->is_client_connected());
+		sdk->disconnect_from_server();
+		sdk->clear_debug_log();
+		sdk->set_game_type(TownSdkClient::GAME_TYPE_TURN_BASED);
 	} else {
 		PackedStringArray debug_log = client_obj->call("get_debug_log");
 		if (!debug_log.is_empty()) {
