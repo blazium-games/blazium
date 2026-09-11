@@ -103,6 +103,8 @@ struct Client::Impl {
 	OnMoveStateCallback on_move_state;
 	OnEntitySpawnCallback on_entity_spawn;
 	OnEntityDespawnCallback on_entity_despawn;
+	OnInteractableStateCallback on_interactable_state;
+	OnInventoryUpdateCallback on_inventory_update;
 	std::string game_type = "turn_based";
 	std::string last_username;
 	OnBattleStartCallback on_battle_start;
@@ -469,6 +471,20 @@ void Client::send_move(uint8_t held, float dt, float yaw, float pitch) {
 	send_message(protocol::MessageType::MOVE_INPUT, variant_to_json_string(payload), protocol::Channel::REGION);
 }
 
+void Client::send_interact(const std::string &interactable_id) {
+	if (interactable_id.empty()) {
+		return;
+	}
+	Dictionary payload;
+	payload["id"] = String::utf8(interactable_id.c_str());
+	send_message(protocol::MessageType::INTERACT, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::request_inventory() {
+	Dictionary payload;
+	send_message(protocol::MessageType::INVENTORY_GET, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
 void Client::battle_action(const std::string &battle_id, Action action, const std::string &target_id) {
 	std::string action_str;
 	switch (action) {
@@ -538,6 +554,12 @@ void Client::on_entity_spawn(OnEntitySpawnCallback cb) {
 }
 void Client::on_entity_despawn(OnEntityDespawnCallback cb) {
 	impl_->on_entity_despawn = cb;
+}
+void Client::on_interactable_state(OnInteractableStateCallback cb) {
+	impl_->on_interactable_state = cb;
+}
+void Client::on_inventory_update(OnInventoryUpdateCallback cb) {
+	impl_->on_inventory_update = cb;
 }
 void Client::on_battle_start(OnBattleStartCallback cb) {
 	impl_->on_battle_start = cb;
@@ -764,6 +786,18 @@ void Client::handle_message(uint16_t type, const std::string &payload) {
 		case protocol::MessageType::ENTITY_DESPAWN:
 			if (impl_->on_entity_despawn) {
 				impl_->on_entity_despawn(parsed);
+			}
+			break;
+
+		case protocol::MessageType::INTERACTABLE_STATE:
+			if (impl_->on_interactable_state) {
+				impl_->on_interactable_state(parsed);
+			}
+			break;
+
+		case protocol::MessageType::INVENTORY_UPDATE:
+			if (impl_->on_inventory_update) {
+				impl_->on_inventory_update(parsed);
 			}
 			break;
 

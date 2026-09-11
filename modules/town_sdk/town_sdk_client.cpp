@@ -123,6 +123,14 @@ void TownSdkClient::_attach_callbacks() {
 		emit_signal("entity_despawned", p_entity);
 	});
 
+	client->on_interactable_state([this](const Variant &p_state) {
+		emit_signal("interactable_state", p_state);
+	});
+
+	client->on_inventory_update([this](const Variant &p_update) {
+		emit_signal("inventory_update", p_update);
+	});
+
 	client->on_battle_start([this](const Variant &p_battle) {
 		emit_signal("battle_start", p_battle);
 	});
@@ -274,6 +282,18 @@ void TownSdkClient::send_move_look(int p_held, double p_delta, double p_yaw, dou
 	}
 }
 
+void TownSdkClient::send_interact(const String &p_interactable_id) {
+	if (client) {
+		client->send_interact(_string_to_std(p_interactable_id));
+	}
+}
+
+void TownSdkClient::request_inventory() {
+	if (client) {
+		client->request_inventory();
+	}
+}
+
 void TownSdkClient::battle_action(const String &p_battle_id, BattleAction p_action, const String &p_target_id) {
 	if (!client) {
 		return;
@@ -388,6 +408,8 @@ void TownSdkClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("leave_region"), &TownSdkClient::leave_region);
 	ClassDB::bind_method(D_METHOD("send_move", "held", "delta"), &TownSdkClient::send_move);
 	ClassDB::bind_method(D_METHOD("send_move_look", "held", "delta", "yaw", "pitch"), &TownSdkClient::send_move_look);
+	ClassDB::bind_method(D_METHOD("send_interact", "interactable_id"), &TownSdkClient::send_interact);
+	ClassDB::bind_method(D_METHOD("request_inventory"), &TownSdkClient::request_inventory);
 	ClassDB::bind_method(D_METHOD("battle_action", "battle_id", "action", "target_id"), &TownSdkClient::battle_action, DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("leave_battle", "battle_id"), &TownSdkClient::leave_battle);
 	ClassDB::bind_method(D_METHOD("admin_reload", "scope"), &TownSdkClient::admin_reload);
@@ -411,6 +433,8 @@ void TownSdkClient::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("move_state", PropertyInfo(Variant::DICTIONARY, "state")));
 	ADD_SIGNAL(MethodInfo("entity_spawned", PropertyInfo(Variant::DICTIONARY, "entity")));
 	ADD_SIGNAL(MethodInfo("entity_despawned", PropertyInfo(Variant::DICTIONARY, "entity")));
+	ADD_SIGNAL(MethodInfo("interactable_state", PropertyInfo(Variant::DICTIONARY, "state")));
+	ADD_SIGNAL(MethodInfo("inventory_update", PropertyInfo(Variant::DICTIONARY, "update")));
 	ADD_SIGNAL(MethodInfo("battle_start", PropertyInfo(Variant::DICTIONARY, "battle")));
 	ADD_SIGNAL(MethodInfo("battle_state", PropertyInfo(Variant::DICTIONARY, "state")));
 	ADD_SIGNAL(MethodInfo("battle_log", PropertyInfo(Variant::STRING, "log")));

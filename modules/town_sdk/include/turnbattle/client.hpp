@@ -62,6 +62,8 @@ public:
 	void leave_region();
 	void send_move(uint8_t held, float dt);
 	void send_move(uint8_t held, float dt, float yaw, float pitch);
+	void send_interact(const std::string &interactable_id);
+	void request_inventory();
 
 	// Battle
 	void battle_action(const std::string &battle_id, Action action,
@@ -79,6 +81,8 @@ public:
 	void on_move_state(OnMoveStateCallback cb);
 	void on_entity_spawn(OnEntitySpawnCallback cb);
 	void on_entity_despawn(OnEntityDespawnCallback cb);
+	void on_interactable_state(OnInteractableStateCallback cb);
+	void on_inventory_update(OnInventoryUpdateCallback cb);
 	void on_battle_start(OnBattleStartCallback cb);
 	void on_battle_state(OnBattleStateCallback cb);
 	void on_battle_log(OnBattleLogCallback cb);
