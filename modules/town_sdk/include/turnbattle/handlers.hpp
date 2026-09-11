@@ -38,6 +38,8 @@ using VariantCallback = std::function<void(const Variant &)>;
 
 using OnSnapshotCallback = VariantCallback;
 using OnMoveStateCallback = VariantCallback;
+using OnEntitySpawnCallback = VariantCallback;
+using OnEntityDespawnCallback = VariantCallback;
 using OnBattleStartCallback = VariantCallback;
 using OnBattleStateCallback = VariantCallback;
 using OnBattleLogCallback = std::function<void(const std::string &log)>;

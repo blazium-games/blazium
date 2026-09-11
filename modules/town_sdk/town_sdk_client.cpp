@@ -31,6 +31,7 @@
 
 #include "turnbattle/client.hpp"
 
+#include "core/config/project_settings.h"
 #include "core/error/error_macros.h"
 #include "core/math/math_funcs.h"
 #include "core/string/print_string.h"
@@ -60,7 +61,11 @@ TownSdkClient::TownSdkClient() {
 
 	client = std::make_unique<turnbattle::Client>();
 
+	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("town_sdk/game_type")) {
+		game_type = static_cast<GameType>((int)ProjectSettings::get_singleton()->get_setting("town_sdk/game_type", GAME_TYPE_TURN_BASED));
+	}
 	if (client) {
+		client->set_game_type(game_type == GAME_TYPE_FPS ? "fps" : "turn_based");
 		_attach_callbacks();
 		client->set_debug_logging_enabled(true, 128);
 	}
@@ -72,6 +77,8 @@ TownSdkClient::~TownSdkClient() {
 	if (client) {
 		client->on_snapshot({});
 		client->on_move_state({});
+		client->on_entity_spawn({});
+		client->on_entity_despawn({});
 		client->on_battle_start({});
 		client->on_battle_state({});
 		client->on_battle_log({});
@@ -106,6 +113,14 @@ void TownSdkClient::_attach_callbacks() {
 
 	client->on_move_state([this](const Variant &p_state) {
 		emit_signal("move_state", p_state);
+	});
+
+	client->on_entity_spawn([this](const Variant &p_entity) {
+		emit_signal("entity_spawned", p_entity);
+	});
+
+	client->on_entity_despawn([this](const Variant &p_entity) {
+		emit_signal("entity_despawned", p_entity);
 	});
 
 	client->on_battle_start([this](const Variant &p_battle) {
@@ -208,9 +223,28 @@ String TownSdkClient::get_server_version() const {
 	return _std_to_string(client->get_server_version());
 }
 
+void TownSdkClient::set_game_type(GameType p_type) {
+	game_type = p_type;
+	if (client) {
+		client->set_game_type(game_type == GAME_TYPE_FPS ? "fps" : "turn_based");
+	}
+}
+
+TownSdkClient::GameType TownSdkClient::get_game_type() const {
+	return game_type;
+}
+
 void TownSdkClient::authenticate(const String &p_jwt_token) {
 	if (client) {
+		client->set_game_type(game_type == GAME_TYPE_FPS ? "fps" : "turn_based");
 		client->auth(_string_to_std(p_jwt_token));
+	}
+}
+
+void TownSdkClient::authenticate_username(const String &p_username) {
+	if (client) {
+		client->set_game_type(game_type == GAME_TYPE_FPS ? "fps" : "turn_based");
+		client->auth_username(_string_to_std(p_username));
 	}
 }
 
@@ -230,6 +264,13 @@ void TownSdkClient::send_move(int p_held, double p_delta) {
 	if (client) {
 		uint8_t held = (uint8_t)CLAMP(p_held, 0, 255);
 		client->send_move(held, (float)p_delta);
+	}
+}
+
+void TownSdkClient::send_move_look(int p_held, double p_delta, double p_yaw, double p_pitch) {
+	if (client) {
+		uint8_t held = (uint8_t)CLAMP(p_held, 0, 255);
+		client->send_move(held, (float)p_delta, (float)p_yaw, (float)p_pitch);
 	}
 }
 
@@ -338,10 +379,15 @@ void TownSdkClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("disconnect_from_server"), &TownSdkClient::disconnect_from_server);
 	ClassDB::bind_method(D_METHOD("is_client_connected"), &TownSdkClient::is_client_connected);
 	ClassDB::bind_method(D_METHOD("get_server_version"), &TownSdkClient::get_server_version);
+	ClassDB::bind_method(D_METHOD("set_game_type", "game_type"), &TownSdkClient::set_game_type);
+	ClassDB::bind_method(D_METHOD("get_game_type"), &TownSdkClient::get_game_type);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "game_type", PROPERTY_HINT_ENUM, "Turn Based,FPS"), "set_game_type", "get_game_type");
 	ClassDB::bind_method(D_METHOD("authenticate", "jwt_token"), &TownSdkClient::authenticate);
+	ClassDB::bind_method(D_METHOD("authenticate_username", "username"), &TownSdkClient::authenticate_username);
 	ClassDB::bind_method(D_METHOD("enter_region", "region_id"), &TownSdkClient::enter_region);
 	ClassDB::bind_method(D_METHOD("leave_region"), &TownSdkClient::leave_region);
 	ClassDB::bind_method(D_METHOD("send_move", "held", "delta"), &TownSdkClient::send_move);
+	ClassDB::bind_method(D_METHOD("send_move_look", "held", "delta", "yaw", "pitch"), &TownSdkClient::send_move_look);
 	ClassDB::bind_method(D_METHOD("battle_action", "battle_id", "action", "target_id"), &TownSdkClient::battle_action, DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("leave_battle", "battle_id"), &TownSdkClient::leave_battle);
 	ClassDB::bind_method(D_METHOD("admin_reload", "scope"), &TownSdkClient::admin_reload);
@@ -363,6 +409,8 @@ void TownSdkClient::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("connection_failed"));
 	ADD_SIGNAL(MethodInfo("snapshot_received", PropertyInfo(Variant::DICTIONARY, "snapshot")));
 	ADD_SIGNAL(MethodInfo("move_state", PropertyInfo(Variant::DICTIONARY, "state")));
+	ADD_SIGNAL(MethodInfo("entity_spawned", PropertyInfo(Variant::DICTIONARY, "entity")));
+	ADD_SIGNAL(MethodInfo("entity_despawned", PropertyInfo(Variant::DICTIONARY, "entity")));
 	ADD_SIGNAL(MethodInfo("battle_start", PropertyInfo(Variant::DICTIONARY, "battle")));
 	ADD_SIGNAL(MethodInfo("battle_state", PropertyInfo(Variant::DICTIONARY, "state")));
 	ADD_SIGNAL(MethodInfo("battle_log", PropertyInfo(Variant::STRING, "log")));
@@ -379,6 +427,8 @@ void TownSdkClient::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("admin_stats_received", PropertyInfo(Variant::DICTIONARY, "payload")));
 	ADD_SIGNAL(MethodInfo("admin_broadcast_received", PropertyInfo(Variant::DICTIONARY, "payload")));
 
+	BIND_ENUM_CONSTANT(GAME_TYPE_TURN_BASED);
+	BIND_ENUM_CONSTANT(GAME_TYPE_FPS);
 	BIND_ENUM_CONSTANT(ACTION_ATTACK);
 	BIND_ENUM_CONSTANT(ACTION_BLOCK);
 	BIND_ENUM_CONSTANT(ACTION_DEFEND);

@@ -4,7 +4,7 @@
 		Client wrapper that connects the Blazium engine to a TownServer instance over ENet.
 	</brief_description>
 	<description>
-		`TownSdkClient` owns the low-level C++ SDK, exposes it to GDScript and GDNative, and emits signals for all incoming events from the server. The module instantiates a singleton automatically during engine startup, which can be retrieved through `TownSdkClient.get_singleton()` or `Engine.get_singleton("TownSDK")`. Call `poll()` once per frame (e.g. from `_process()`) to keep the client responsive.
+		`TownSdkClient` owns the low-level C++ SDK, exposes it to GDScript and GDNative, and emits signals for all incoming events from the server. The module instantiates a singleton automatically during engine startup, which can be retrieved through `TownSdkClient.get_singleton()` or `Engine.get_singleton("TownSDK")`. Call `poll()` once per frame (e.g. from `_process()`) to keep the client responsive. Set `game_type` to `GAME_TYPE_TURN_BASED` or `GAME_TYPE_FPS` so HELLO matches the town_server process mode. Use `authenticate_username` only when the server has `allow_username_login` enabled.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -38,6 +38,14 @@
 			<return type="void" />
 			<param index="0" name="jwt_token" type="String" />
 			<description>
+				Send HELLO with a JWT. Includes the current `game_type`.
+			</description>
+		</method>
+		<method name="authenticate_username">
+			<return type="void" />
+			<param index="0" name="username" type="String" />
+			<description>
+				Internal test login. The server must have `allow_username_login` enabled.
 			</description>
 		</method>
 		<method name="battle_action">

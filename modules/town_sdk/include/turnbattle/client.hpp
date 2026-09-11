@@ -52,12 +52,16 @@ public:
 	std::string get_server_version() const;
 
 	// Auth
+	void set_game_type(const std::string &game_type);
+	std::string get_game_type() const;
 	void auth(const std::string &jwt_token);
+	void auth_username(const std::string &username);
 
 	// Region
 	void enter_region(const std::string &region_id);
 	void leave_region();
 	void send_move(uint8_t held, float dt);
+	void send_move(uint8_t held, float dt, float yaw, float pitch);
 
 	// Battle
 	void battle_action(const std::string &battle_id, Action action,
@@ -73,6 +77,8 @@ public:
 	// Callbacks
 	void on_snapshot(OnSnapshotCallback cb);
 	void on_move_state(OnMoveStateCallback cb);
+	void on_entity_spawn(OnEntitySpawnCallback cb);
+	void on_entity_despawn(OnEntityDespawnCallback cb);
 	void on_battle_start(OnBattleStartCallback cb);
 	void on_battle_state(OnBattleStateCallback cb);
 	void on_battle_log(OnBattleLogCallback cb);

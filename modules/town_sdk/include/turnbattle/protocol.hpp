@@ -49,6 +49,8 @@ inline constexpr uint16_t REGION_LEAVE = 11;
 inline constexpr uint16_t MOVE_INPUT = 12;
 
 inline constexpr uint16_t REGION_SNAPSHOT = 20;
+inline constexpr uint16_t ENTITY_SPAWN = 21;
+inline constexpr uint16_t ENTITY_DESPAWN = 22;
 inline constexpr uint16_t MOVE_STATE = 23;
 
 inline constexpr uint16_t BATTLE_INDICATOR_SPAWN = 30;

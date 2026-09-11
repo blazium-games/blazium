@@ -101,6 +101,10 @@ struct Client::Impl {
 	// Callbacks
 	OnSnapshotCallback on_snapshot;
 	OnMoveStateCallback on_move_state;
+	OnEntitySpawnCallback on_entity_spawn;
+	OnEntityDespawnCallback on_entity_despawn;
+	std::string game_type = "turn_based";
+	std::string last_username;
 	OnBattleStartCallback on_battle_start;
 	OnBattleStateCallback on_battle_state;
 	OnBattleLogCallback on_battle_log;
@@ -325,6 +329,17 @@ bool Client::perform_version_check() {
 								if (data_dict.has("version")) {
 									impl_->server_version = to_std_string((Variant)data_dict["version"]);
 								}
+								if (data_dict.has("game_type")) {
+									const std::string server_gt = to_std_string((Variant)data_dict["game_type"]);
+									if (!server_gt.empty() && server_gt != impl_->game_type) {
+										log_error("game_type_mismatch");
+										if (impl_->on_error) {
+											impl_->on_error("game_type_mismatch");
+										}
+										enet_packet_destroy(event.packet);
+										return false;
+									}
+								}
 								enet_packet_destroy(event.packet);
 								return true;
 							}
@@ -399,12 +414,31 @@ bool Client::is_connected() const {
 	return impl_->connected;
 }
 
+void Client::set_game_type(const std::string &game_type) {
+	impl_->game_type = game_type.empty() ? "turn_based" : game_type;
+}
+
+std::string Client::get_game_type() const {
+	return impl_->game_type;
+}
+
 void Client::auth(const std::string &jwt_token) {
 	// Store for reconnection
 	impl_->last_jwt_token = jwt_token;
+	impl_->last_username.clear();
 
 	Dictionary payload;
 	payload["jwt"] = String::utf8(jwt_token.c_str());
+	payload["game_type"] = String::utf8(impl_->game_type.c_str());
+	send_message(protocol::MessageType::HELLO, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::auth_username(const std::string &username) {
+	impl_->last_username = username;
+	impl_->last_jwt_token.clear();
+	Dictionary payload;
+	payload["username"] = String::utf8(username.c_str());
+	payload["game_type"] = String::utf8(impl_->game_type.c_str());
 	send_message(protocol::MessageType::HELLO, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
 
@@ -423,6 +457,15 @@ void Client::send_move(uint8_t held, float dt) {
 	Dictionary payload;
 	payload["held"] = (int)held;
 	payload["dt"] = dt;
+	send_message(protocol::MessageType::MOVE_INPUT, variant_to_json_string(payload), protocol::Channel::REGION);
+}
+
+void Client::send_move(uint8_t held, float dt, float yaw, float pitch) {
+	Dictionary payload;
+	payload["held"] = (int)held;
+	payload["dt"] = dt;
+	payload["yaw"] = yaw;
+	payload["pitch"] = pitch;
 	send_message(protocol::MessageType::MOVE_INPUT, variant_to_json_string(payload), protocol::Channel::REGION);
 }
 
@@ -489,6 +532,12 @@ void Client::on_snapshot(OnSnapshotCallback cb) {
 }
 void Client::on_move_state(OnMoveStateCallback cb) {
 	impl_->on_move_state = cb;
+}
+void Client::on_entity_spawn(OnEntitySpawnCallback cb) {
+	impl_->on_entity_spawn = cb;
+}
+void Client::on_entity_despawn(OnEntityDespawnCallback cb) {
+	impl_->on_entity_despawn = cb;
 }
 void Client::on_battle_start(OnBattleStartCallback cb) {
 	impl_->on_battle_start = cb;
@@ -703,6 +752,18 @@ void Client::handle_message(uint16_t type, const std::string &payload) {
 		case protocol::MessageType::MOVE_STATE:
 			if (impl_->on_move_state) {
 				impl_->on_move_state(parsed);
+			}
+			break;
+
+		case protocol::MessageType::ENTITY_SPAWN:
+			if (impl_->on_entity_spawn) {
+				impl_->on_entity_spawn(parsed);
+			}
+			break;
+
+		case protocol::MessageType::ENTITY_DESPAWN:
+			if (impl_->on_entity_despawn) {
+				impl_->on_entity_despawn(parsed);
 			}
 			break;
 

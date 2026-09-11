@@ -46,6 +46,11 @@ class TownSdkClient : public Object {
 	GDCLASS(TownSdkClient, Object);
 
 public:
+	enum GameType {
+		GAME_TYPE_TURN_BASED = 0,
+		GAME_TYPE_FPS = 1,
+	};
+
 	enum BattleAction {
 		ACTION_ATTACK = (int)turnbattle::Action::ATTACK,
 		ACTION_BLOCK = (int)turnbattle::Action::BLOCK,
@@ -62,10 +67,15 @@ public:
 	bool is_client_connected() const;
 	String get_server_version() const;
 
+	void set_game_type(GameType p_type);
+	GameType get_game_type() const;
+
 	void authenticate(const String &p_jwt_token);
+	void authenticate_username(const String &p_username);
 	void enter_region(const String &p_region_id);
 	void leave_region();
 	void send_move(int p_held, double p_delta);
+	void send_move_look(int p_held, double p_delta, double p_yaw, double p_pitch);
 
 	void battle_action(const String &p_battle_id, BattleAction p_action, const String &p_target_id = String());
 	void leave_battle(const String &p_battle_id);
@@ -99,6 +109,8 @@ private:
 
 	static TownSdkClient *singleton;
 	std::unique_ptr<turnbattle::Client> client;
+	GameType game_type = GAME_TYPE_TURN_BASED;
 };
 
+VARIANT_ENUM_CAST(TownSdkClient::GameType);
 VARIANT_ENUM_CAST(TownSdkClient::BattleAction);

@@ -33,6 +33,8 @@
 
 #include <string>
 
+#include "town_sdk_client.h"
+
 #include "core/config/engine.h"
 #include "core/os/os.h"
 #include "core/string/ustring.h"
@@ -52,6 +54,21 @@ TEST_CASE("[TownSDK] singleton available") {
 	REQUIRE_MESSAGE(client != nullptr, "Engine singleton 'TownSDK' should exist.");
 
 	CHECK(client->is_class("TownSdkClient"));
+}
+
+TEST_CASE("[TownSDK] game type defaults to turn based and can switch to fps") {
+	Engine *engine = Engine::get_singleton();
+	REQUIRE(engine != nullptr);
+	Object *client_obj = engine->get_singleton_object("TownSDK");
+	REQUIRE(client_obj != nullptr);
+	TownSdkClient *sdk = Object::cast_to<TownSdkClient>(client_obj);
+	REQUIRE(sdk != nullptr);
+
+	CHECK(sdk->get_game_type() == TownSdkClient::GAME_TYPE_TURN_BASED);
+	sdk->set_game_type(TownSdkClient::GAME_TYPE_FPS);
+	CHECK(sdk->get_game_type() == TownSdkClient::GAME_TYPE_FPS);
+	sdk->set_game_type(TownSdkClient::GAME_TYPE_TURN_BASED);
+	CHECK(sdk->get_game_type() == TownSdkClient::GAME_TYPE_TURN_BASED);
 }
 
 TEST_CASE("[TownSDK] optional live connection") {
