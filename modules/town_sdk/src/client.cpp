@@ -482,10 +482,14 @@ void Client::send_move(uint8_t held, float dt, float yaw, float pitch, bool flas
 }
 
 void Client::send_interact(const std::string &interactable_id) {
+	send_interact(interactable_id, Dictionary());
+}
+
+void Client::send_interact(const std::string &interactable_id, const Dictionary &extra) {
 	if (interactable_id.empty()) {
 		return;
 	}
-	Dictionary payload;
+	Dictionary payload = extra.duplicate();
 	payload["id"] = String::utf8(interactable_id.c_str());
 	send_message(protocol::MessageType::INTERACT, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }

@@ -30,6 +30,7 @@
 #pragma once
 #include "handlers.hpp"
 #include "types.hpp"
+#include "core/variant/dictionary.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -64,6 +65,7 @@ public:
 	void send_move(uint8_t held, float dt, float yaw, float pitch,
 			bool flashlight = false, bool weapon_light = false);
 	void send_interact(const std::string &interactable_id);
+	void send_interact(const std::string &interactable_id, const Dictionary &extra);
 	void send_pickup(const std::string &pickup_id);
 	void request_inventory();
 	void send_fire();

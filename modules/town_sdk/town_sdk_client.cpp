@@ -310,9 +310,9 @@ void TownSdkClient::send_move_look(int p_held, double p_delta, double p_yaw, dou
 	}
 }
 
-void TownSdkClient::send_interact(const String &p_interactable_id) {
+void TownSdkClient::send_interact(const String &p_interactable_id, const Dictionary &p_extra) {
 	if (client) {
-		client->send_interact(_string_to_std(p_interactable_id));
+		client->send_interact(_string_to_std(p_interactable_id), p_extra);
 	}
 }
 
@@ -478,7 +478,7 @@ void TownSdkClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("leave_region"), &TownSdkClient::leave_region);
 	ClassDB::bind_method(D_METHOD("send_move", "held", "delta"), &TownSdkClient::send_move);
 	ClassDB::bind_method(D_METHOD("send_move_look", "held", "delta", "yaw", "pitch", "flashlight", "weapon_light"), &TownSdkClient::send_move_look, DEFVAL(false), DEFVAL(false));
-	ClassDB::bind_method(D_METHOD("send_interact", "interactable_id"), &TownSdkClient::send_interact);
+	ClassDB::bind_method(D_METHOD("send_interact", "interactable_id", "extra"), &TownSdkClient::send_interact, DEFVAL(Dictionary()));
 	ClassDB::bind_method(D_METHOD("send_pickup", "pickup_id"), &TownSdkClient::send_pickup);
 	ClassDB::bind_method(D_METHOD("send_fire"), &TownSdkClient::send_fire);
 	ClassDB::bind_method(D_METHOD("send_equip", "slot"), &TownSdkClient::send_equip);

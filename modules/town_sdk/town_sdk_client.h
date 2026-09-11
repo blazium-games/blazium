@@ -34,6 +34,7 @@
 #include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "core/string/ustring.h"
+#include "core/variant/dictionary.h"
 #include "core/variant/typed_array.h"
 
 #include <memory>
@@ -76,7 +77,7 @@ public:
 	void leave_region();
 	void send_move(int p_held, double p_delta);
 	void send_move_look(int p_held, double p_delta, double p_yaw, double p_pitch, bool p_flashlight = false, bool p_weapon_light = false);
-	void send_interact(const String &p_interactable_id);
+	void send_interact(const String &p_interactable_id, const Dictionary &p_extra = Dictionary());
 	void send_pickup(const String &p_pickup_id);
 	void send_fire();
 	void send_equip(int p_slot);
