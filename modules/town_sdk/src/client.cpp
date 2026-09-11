@@ -469,13 +469,15 @@ void Client::send_move(uint8_t held, float dt) {
 	send_message(protocol::MessageType::MOVE_INPUT, variant_to_json_string(payload), protocol::Channel::REGION);
 }
 
-void Client::send_move(uint8_t held, float dt, float yaw, float pitch, bool flashlight) {
+void Client::send_move(uint8_t held, float dt, float yaw, float pitch, bool flashlight,
+		bool weapon_light) {
 	Dictionary payload;
 	payload["held"] = (int)held;
 	payload["dt"] = dt;
 	payload["yaw"] = yaw;
 	payload["pitch"] = pitch;
 	payload["flashlight"] = flashlight;
+	payload["weapon_light"] = weapon_light;
 	send_message(protocol::MessageType::MOVE_INPUT, variant_to_json_string(payload), protocol::Channel::REGION);
 }
 

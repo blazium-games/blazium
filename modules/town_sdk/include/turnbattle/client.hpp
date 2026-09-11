@@ -62,7 +62,7 @@ public:
 	void leave_region();
 	void send_move(uint8_t held, float dt);
 	void send_move(uint8_t held, float dt, float yaw, float pitch,
-			bool flashlight = false);
+			bool flashlight = false, bool weapon_light = false);
 	void send_interact(const std::string &interactable_id);
 	void send_pickup(const std::string &pickup_id);
 	void request_inventory();

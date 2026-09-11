@@ -303,10 +303,10 @@ void TownSdkClient::send_move(int p_held, double p_delta) {
 	}
 }
 
-void TownSdkClient::send_move_look(int p_held, double p_delta, double p_yaw, double p_pitch, bool p_flashlight) {
+void TownSdkClient::send_move_look(int p_held, double p_delta, double p_yaw, double p_pitch, bool p_flashlight, bool p_weapon_light) {
 	if (client) {
 		uint8_t held = (uint8_t)CLAMP(p_held, 0, 255);
-		client->send_move(held, (float)p_delta, (float)p_yaw, (float)p_pitch, p_flashlight);
+		client->send_move(held, (float)p_delta, (float)p_yaw, (float)p_pitch, p_flashlight, p_weapon_light);
 	}
 }
 
@@ -471,7 +471,7 @@ void TownSdkClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("enter_region", "region_id"), &TownSdkClient::enter_region);
 	ClassDB::bind_method(D_METHOD("leave_region"), &TownSdkClient::leave_region);
 	ClassDB::bind_method(D_METHOD("send_move", "held", "delta"), &TownSdkClient::send_move);
-	ClassDB::bind_method(D_METHOD("send_move_look", "held", "delta", "yaw", "pitch", "flashlight"), &TownSdkClient::send_move_look, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("send_move_look", "held", "delta", "yaw", "pitch", "flashlight", "weapon_light"), &TownSdkClient::send_move_look, DEFVAL(false), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("send_interact", "interactable_id"), &TownSdkClient::send_interact);
 	ClassDB::bind_method(D_METHOD("send_pickup", "pickup_id"), &TownSdkClient::send_pickup);
 	ClassDB::bind_method(D_METHOD("send_fire"), &TownSdkClient::send_fire);
