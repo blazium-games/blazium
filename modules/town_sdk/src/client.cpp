@@ -519,6 +519,15 @@ void Client::send_use(int slot) {
 	send_message(protocol::MessageType::USE, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
 
+void Client::send_craft(const std::string &recipe) {
+	if (recipe.empty()) {
+		return;
+	}
+	Dictionary payload;
+	payload["recipe"] = String::utf8(recipe.c_str());
+	send_message(protocol::MessageType::USE, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
 void Client::send_reload() {
 	Dictionary payload;
 	send_message(protocol::MessageType::RELOAD, variant_to_json_string(payload), protocol::Channel::CONTROL);

@@ -340,6 +340,12 @@ void TownSdkClient::send_use(int p_slot) {
 	}
 }
 
+void TownSdkClient::send_craft(const String &p_recipe) {
+	if (client) {
+		client->send_craft(std::string(p_recipe.utf8().get_data()));
+	}
+}
+
 void TownSdkClient::send_reload() {
 	if (client) {
 		client->send_reload();
@@ -471,6 +477,7 @@ void TownSdkClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("send_fire"), &TownSdkClient::send_fire);
 	ClassDB::bind_method(D_METHOD("send_equip", "slot"), &TownSdkClient::send_equip);
 	ClassDB::bind_method(D_METHOD("send_use", "slot"), &TownSdkClient::send_use);
+	ClassDB::bind_method(D_METHOD("send_craft", "recipe"), &TownSdkClient::send_craft);
 	ClassDB::bind_method(D_METHOD("send_reload"), &TownSdkClient::send_reload);
 	ClassDB::bind_method(D_METHOD("request_inventory"), &TownSdkClient::request_inventory);
 	ClassDB::bind_method(D_METHOD("battle_action", "battle_id", "action", "target_id"), &TownSdkClient::battle_action, DEFVAL(String()));
