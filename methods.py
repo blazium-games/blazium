@@ -153,6 +153,13 @@ def get_version_info(module_version_string="", silent=False):
         "module_config": str(version.module_config) + module_version_string,
         "website": str(version.website),
         "docs_branch": str(version.docs),
+        "external_major": int(os.getenv("EXTERNAL_MAJOR", version.external_major)),
+        "external_minor": int(os.getenv("EXTERNAL_MINOR", version.external_minor)),
+        "external_patch": int(os.getenv("EXTERNAL_PATCH", version.external_patch)),
+        "external_status": os.getenv("EXTERNAL_STATUS", version.external_status),
+        "external_sha": os.getenv("EXTERNAL_SHA", version.external_sha),
+        "mirror_list": os.getenv("MIRROR_LIST_URL", version.mirror_list),
+        "version_url": os.getenv("VERSION_URL", version.version_url),
     }
 
     # For dev snapshots (alpha, beta, RC, etc.) we do not commit status change to Git,
@@ -265,7 +272,8 @@ def detect_modules(search_path, recursive=False):
         version_path = os.path.join(path, "version.py")
         if os.path.exists(version_path):
             with open(version_path, "r", encoding="utf-8") as f:
-                if 'short_name = "godot"' in f.read():
+                content = f.read()
+                if 'short_name = "godot"' in content or 'short_name = "blazium"' in content:
                     return True
         return False
 

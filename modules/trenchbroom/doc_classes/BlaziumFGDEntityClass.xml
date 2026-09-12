@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="BlaziumFGDEntityClass" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Base FGD entity class definition.
+	</brief_description>
+	<description>
+		Shared FGD fields for solid and point classes, including classname, properties, and export metadata.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="build_def_text" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="target_editor" type="int" enum="BlaziumFGDFile.TargetMapEditor" default="1" />
+			<description>
+			</description>
+		</method>
+		<method name="retrieve_all_class_properties" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="properties" type="Dictionary" default="{}" />
+			<description>
+			</description>
+		</method>
+		<method name="retrieve_all_class_property_descriptions" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="descriptions" type="Dictionary" default="{}" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="auto_apply_to_matching_node_properties" type="bool" setter="set_auto_apply_to_matching_node_properties" getter="get_auto_apply_to_matching_node_properties" default="false">
+		</member>
+		<member name="base_classes" type="Array" setter="set_base_classes" getter="get_base_classes" default="[]">
+		</member>
+		<member name="blazium_internal" type="bool" setter="set_blazium_internal" getter="get_blazium_internal" default="false">
+			When true, omits this class from exported FGD files.
+		</member>
+		<member name="class_properties" type="Dictionary" setter="set_class_properties" getter="get_class_properties" default="{}">
+			Default property values and type metadata for FGD export.
+		</member>
+		<member name="class_property_descriptions" type="Dictionary" setter="set_class_property_descriptions" getter="get_class_property_descriptions" default="{}">
+		</member>
+		<member name="classname" type="String" setter="set_classname" getter="get_classname" default="&quot;&quot;">
+			Map entity classname matched during parsing.
+		</member>
+		<member name="description" type="String" setter="set_description" getter="get_description" default="&quot;&quot;">
+			Human-readable description exported into FGD text.
+		</member>
+		<member name="entity_extension_script" type="Script" setter="set_entity_extension_script" getter="get_entity_extension_script">
+			Optional script invoked during FGD export to attach extra properties.
+		</member>
+		<member name="meta_properties" type="Dictionary" setter="set_meta_properties" getter="get_meta_properties" default="{}">
+		</member>
+		<member name="name_property" type="String" setter="set_name_property" getter="get_name_property" default="&quot;&quot;">
+		</member>
+		<member name="node_class" type="String" setter="set_node_class" getter="get_node_class" default="&quot;&quot;">
+		</member>
+		<member name="node_groups" type="PackedStringArray" setter="set_node_groups" getter="get_node_groups" default="PackedStringArray()">
+		</member>
+		<member name="prefix" type="String" setter="set_prefix" getter="get_prefix" default="&quot;&quot;">
+		</member>
+	</members>
+</class>

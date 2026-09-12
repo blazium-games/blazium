@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="QuakePaletteFile" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Imported Quake palette resource.
+	</brief_description>
+	<description>
+		Imported Quake palette resource. Portions derived from func-godot (MIT License).
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_colors" qualifiers="const">
+			<return type="PackedColorArray" />
+			<description>
+			</description>
+		</method>
+		<method name="set_colors">
+			<return type="void" />
+			<param index="0" name="colors" type="PackedColorArray" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

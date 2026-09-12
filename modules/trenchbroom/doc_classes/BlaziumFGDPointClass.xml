@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="BlaziumFGDPointClass" inherits="BlaziumFGDEntityClass" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		FGD point class for non-brush entities.
+	</brief_description>
+	<description>
+		Defines point entities instantiated from origin properties or packed scenes, including optional editor display descriptors.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="apply_rotation_on_map_build" type="bool" setter="set_apply_rotation_on_map_build" getter="get_apply_rotation_on_map_build" default="true">
+			Applies the map entity angles property as node rotation.
+		</member>
+		<member name="apply_scale_on_map_build" type="bool" setter="set_apply_scale_on_map_build" getter="get_apply_scale_on_map_build" default="true">
+		</member>
+		<member name="display_descriptors" type="BlaziumFGDPointClassDisplayDescriptor[]" setter="set_display_descriptors" getter="get_display_descriptors" default="[]">
+			Editor display models/sprites exported for TrenchBroom point class preview.
+		</member>
+		<member name="prefix" type="String" setter="set_prefix" getter="get_prefix" overrides="BlaziumFGDEntityClass" default="&quot;@PointClass&quot;" />
+		<member name="scene_file" type="PackedScene" setter="set_scene_file" getter="get_scene_file">
+			Optional packed scene instantiated instead of [member BlaziumFGDEntityClass.node_class].
+		</member>
+		<member name="script_class" type="Script" setter="set_script_class" getter="get_script_class">
+			Optional script attached to the generated node.
+		</member>
+	</members>
+</class>

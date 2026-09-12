@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="BlaziumFGDModelPointClass" inherits="BlaziumFGDPointClass" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		FGD model point class with generated models.
+	</brief_description>
+	<description>
+		FGD model point class with generated models. Portions derived from func-godot (MIT License).
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="generate_gd_ignore_file">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="_generate_gd_ignore_file_func" type="Callable" setter="" getter="_get_generate_gd_ignore_file_func" default="Callable()">
+		</member>
+		<member name="generate_size_property" type="bool" setter="set_generate_size_property" getter="get_generate_size_property" default="false">
+		</member>
+		<member name="model_generation_enabled" type="bool" setter="set_model_generation_enabled" getter="get_model_generation_enabled" default="false">
+		</member>
+		<member name="models_sub_folder" type="String" setter="set_models_sub_folder" getter="get_models_sub_folder" default="&quot;&quot;">
+		</member>
+		<member name="rotation_offset" type="Vector3" setter="set_rotation_offset" getter="get_rotation_offset" default="Vector3(0, 0, 0)">
+		</member>
+		<member name="scale_expression" type="String" setter="set_scale_expression" getter="get_scale_expression" default="&quot;&quot;">
+		</member>
+		<member name="target_map_editor" type="int" setter="set_target_map_editor" getter="get_target_map_editor" enum="BlaziumFGDModelPointClass.TargetMapEditor" default="0">
+		</member>
+	</members>
+	<constants>
+		<constant name="EDITOR_GENERIC" value="0" enum="TargetMapEditor">
+		</constant>
+		<constant name="EDITOR_TRENCHBROOM" value="1" enum="TargetMapEditor">
+		</constant>
+	</constants>
+</class>

@@ -638,7 +638,12 @@ Transform3D Node3D::get_global_transform_interpolated() {
 }
 
 Transform3D Node3D::get_global_transform() const {
-	ERR_FAIL_COND_V(!is_inside_tree(), Transform3D());
+	if (!is_inside_tree()) {
+		// Editor/ClassDB instantiate nodes to read default properties (global_transform,
+		// global_position, global_basis, global_rotation, global_rotation_degrees).
+		// Local transform is the correct identity-parent default; do not ERR here.
+		return get_transform();
+	}
 
 	/* Due to how threads work at scene level, while this global transform won't be able to be changed from outside a thread,
 	 * it is possible that multiple threads can access it while it's dirty from previous work. Due to this, we must ensure that
@@ -1554,7 +1559,7 @@ Node3D::Node3D() :
 
 	data.visible = true;
 	data.disable_scale = false;
-	data.vi_visible = true;
+	data.vi_visible = false;
 
 	data.fti_on_frame_xform_list = false;
 	data.fti_on_frame_property_list = false;

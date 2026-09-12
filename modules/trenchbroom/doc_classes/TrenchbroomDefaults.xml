@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TrenchbroomDefaults" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Utility for Blazium Trenchbroom module default assets and settings.
+	</brief_description>
+	<description>
+		Resolves the external [code]trenchbroom_defaults[/code] repo via [code]blazium/trenchbroom/defaults_path[/code] and provides factory methods for default FGD, map settings, and game config resources.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="create_default_fgd" qualifiers="static">
+			<return type="BlaziumFGDFile" />
+			<description>
+				Loads or builds the default bundled FGD resource.
+			</description>
+		</method>
+		<method name="create_default_game_config" qualifiers="static">
+			<return type="TrenchbroomGameConfig" />
+			<description>
+				Loads or builds the default TrenchBroom game config preset.
+			</description>
+		</method>
+		<method name="create_default_map_settings" qualifiers="static">
+			<return type="TrenchbroomMapSettings" />
+			<description>
+				Loads or builds default map settings from the defaults repo.
+			</description>
+		</method>
+		<method name="ensure_default_assets" qualifiers="static">
+			<return type="void" />
+			<description>
+				Creates missing palette, texture, and icon files in the defaults directory.
+			</description>
+		</method>
+		<method name="get_default_palette_path" qualifiers="static">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_default_texture_path" qualifiers="static">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_defaults_dir" qualifiers="static">
+			<return type="String" />
+			<description>
+				Returns the project defaults directory from ProjectSettings.
+			</description>
+		</method>
+		<method name="get_module_defaults_dir" qualifiers="static">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_quake2_palette_path" qualifiers="static">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="make_brush_tag" qualifiers="static">
+			<return type="TrenchbroomTag" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="pattern" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="make_face_tag" qualifiers="static">
+			<return type="TrenchbroomTag" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="pattern" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="resolve_defaults_path" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Resolves a relative path against the configured defaults directory.
+			</description>
+		</method>
+	</methods>
+</class>

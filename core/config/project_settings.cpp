@@ -1747,6 +1747,7 @@ ProjectSettings::ProjectSettings() {
 	// Keep the enum values in sync with the `DisplayServer::SCREEN_` enum.
 	GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "display/window/size/initial_screen", PROPERTY_HINT_RANGE, "0,64,1,or_greater"), 0);
 
+	GLOBAL_DEF("display/window/size/allow_hide_main_window", false);
 	GLOBAL_DEF_BASIC("display/window/size/resizable", true);
 	GLOBAL_DEF_BASIC("display/window/size/borderless", false);
 	GLOBAL_DEF("display/window/size/always_on_top", false);

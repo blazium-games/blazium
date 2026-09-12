@@ -2058,6 +2058,15 @@ void DisplayServerWindows::show_window(DisplayServerEnums::WindowID p_id) {
 	}
 }
 
+void DisplayServerWindows::hide_window(DisplayServerEnums::WindowID p_id) {
+	ERR_FAIL_COND(!windows.has(p_id));
+
+	WindowData &wd = windows[p_id];
+	if (wd.hWnd) {
+		ShowWindow(wd.hWnd, SW_HIDE);
+	}
+}
+
 void DisplayServerWindows::delete_sub_window(DisplayServerEnums::WindowID p_window) {
 	_THREAD_SAFE_METHOD_
 

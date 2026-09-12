@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ResourceImporterQuakeWal" inherits="ResourceImporter" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Imports Quake 2 WAL texture files.
+	</brief_description>
+	<description>
+		Imports Quake 2 WAL texture files. Portions derived from func-godot (MIT License).
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="generate_mipmaps" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="palette_file" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+	</members>
+</class>

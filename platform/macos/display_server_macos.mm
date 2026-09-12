@@ -1814,6 +1814,12 @@ void DisplayServerMacOS::show_window(DisplayServerEnums::WindowID p_id) {
 	}
 }
 
+void DisplayServerMacOS::hide_window(DisplayServerEnums::WindowID p_id) {
+	ERR_FAIL_COND(!windows.has(p_id));
+	WindowData &wd = windows[p_id];
+	[wd.window_object orderOut:nil];
+}
+
 void DisplayServerMacOS::delete_sub_window(DisplayServerEnums::WindowID p_id) {
 	_THREAD_SAFE_METHOD_
 

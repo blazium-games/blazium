@@ -1022,7 +1022,24 @@ void Window::set_visible(bool p_visible) {
 		return;
 	}
 
-	ERR_FAIL_NULL_MSG(get_parent(), "Can't change visibility of main window.");
+	if (!get_parent()) {
+		if (!GLOBAL_GET("display/window/size/allow_hide_main_window")) {
+			ERR_FAIL_MSG("Can't change visibility of main window.");
+		}
+
+		visible = p_visible;
+		updating_child_controls = false;
+		if (window_id != DisplayServerEnums::INVALID_WINDOW_ID) {
+			if (p_visible) {
+				DisplayServer::get_singleton()->show_window(window_id);
+			} else {
+				DisplayServer::get_singleton()->hide_window(window_id);
+			}
+		}
+		notification(NOTIFICATION_VISIBILITY_CHANGED);
+		emit_signal(SceneStringName(visibility_changed));
+		return;
+	}
 
 	visible = p_visible;
 

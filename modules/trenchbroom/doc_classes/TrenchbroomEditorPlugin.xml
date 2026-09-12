@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TrenchbroomEditorPlugin" inherits="EditorPlugin" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Editor integration for TrenchbroomMap nodes.
+	</brief_description>
+	<description>
+		Editor integration for TrenchbroomMap nodes. Portions derived from func-godot (MIT License).
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

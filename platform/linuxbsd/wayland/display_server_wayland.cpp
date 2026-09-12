@@ -977,6 +977,33 @@ void DisplayServerWayland::show_window(DisplayServerEnums::WindowID p_window_id)
 	}
 }
 
+void DisplayServerWayland::hide_window(DisplayServerEnums::WindowID p_window_id) {
+	MutexLock mutex_lock(wayland_thread.mutex);
+
+	ERR_FAIL_COND(!windows.has(p_window_id));
+	WindowData &wd = windows[p_window_id];
+	if (!wd.visible) {
+		return;
+	}
+
+#ifdef VULKAN_ENABLED
+	if (rendering_device) {
+		rendering_device->screen_free(p_window_id);
+	}
+	if (rendering_context) {
+		rendering_context->window_destroy(p_window_id);
+	}
+#endif
+#ifdef GLES3_ENABLED
+	if (egl_manager) {
+		egl_manager->window_destroy(p_window_id);
+	}
+#endif
+	wayland_thread.window_destroy(p_window_id);
+	wd.visible = false;
+	wd.created = false;
+}
+
 void DisplayServerWayland::delete_sub_window(DisplayServerEnums::WindowID p_window_id) {
 	MutexLock mutex_lock(wayland_thread.mutex);
 
