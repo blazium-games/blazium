@@ -31,9 +31,10 @@
 
 #include "tests/test_macros.h"
 
-#include "core/object/callable_method_pointer.h"
+#include "core/object/callable_mp.h"
 #include "modules/rcon/rcon_packet.h"
 #include "modules/rcon/rcon_server.h"
+#include "core/string/ustring.h"
 
 namespace TestRCONServer {
 

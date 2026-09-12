@@ -30,6 +30,7 @@
 #include "steam_achievement_info.h"
 
 #include "core/io/image.h"
+#include "core/object/class_db.h"
 
 void SteamAchievementInfo::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_api_name"), &SteamAchievementInfo::get_api_name);

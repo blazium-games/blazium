@@ -31,6 +31,7 @@
 
 #include "core/io/image.h"
 #include "core/templates/vector.h"
+#include "core/string/ustring.h"
 
 struct GIFEncodeFrame {
 	Ref<Image> image;

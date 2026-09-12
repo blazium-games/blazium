@@ -31,8 +31,8 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "editor/lsp/luau_text_document.h"
-#include "editor/lsp/luau_workspace.h"
+#include "modules/luau_module/editor/lsp/luau_text_document.h"
+#include "modules/luau_module/editor/lsp/luau_workspace.h"
 
 #include "core/io/stream_peer_tcp.h"
 #include "core/io/tcp_server.h"
@@ -40,6 +40,7 @@
 #include "modules/modules_enabled.gen.h"
 #ifdef MODULE_JSONRPC_ENABLED
 #include "modules/jsonrpc/jsonrpc.h"
+#include "core/string/ustring.h"
 #else
 #define LUAU_NO_LSP
 #endif

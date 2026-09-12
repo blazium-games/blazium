@@ -37,6 +37,7 @@
 #include "core/variant/typed_array.h"
 
 #include <memory>
+#include "core/variant/type_info.h"
 
 namespace turnbattle {
 class Client;

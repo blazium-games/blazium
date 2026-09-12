@@ -32,6 +32,7 @@
 #include "core/object/ref_counted.h"
 #include "core/string/ustring.h"
 #include "core/templates/vector.h"
+#include "editor/editor_node.h"
 
 struct EmbeddingResult {
 	Vector<double> vector;

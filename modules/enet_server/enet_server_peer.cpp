@@ -32,6 +32,7 @@
 #include "core/os/time.h"
 #include "enet_packet.h"
 #include "enet_server.h"
+#include "core/object/class_db.h"
 
 void ENetServerPeer::_bind_methods() {
 	// Getters
@@ -78,7 +79,7 @@ int ENetServerPeer::get_peer_id() const {
 
 String ENetServerPeer::get_remote_address() const {
 	if (packet_peer.is_valid()) {
-		return packet_peer->get_remote_address();
+		return String(packet_peer->get_remote_address());
 	}
 	return "";
 }

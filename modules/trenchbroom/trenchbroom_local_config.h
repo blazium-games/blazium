@@ -30,6 +30,8 @@
 #pragma once
 
 #include "core/io/resource.h"
+#include "core/string/string_name.h"
+#include "core/variant/type_info.h"
 
 class TrenchbroomLocalConfig : public Resource {
 	GDCLASS(TrenchbroomLocalConfig, Resource);

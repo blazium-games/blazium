@@ -35,8 +35,10 @@
 #include "core/os/mutex.h"
 #include "core/templates/hash_map.h"
 #include "core/templates/hash_set.h"
+#include "core/string/ustring.h"
 #include "core/variant/dictionary.h"
 #include "scene/resources/mesh.h"
+#include "core/templates/local_vector.h"
 
 class Material;
 

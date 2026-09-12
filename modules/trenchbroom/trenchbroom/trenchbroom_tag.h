@@ -31,6 +31,7 @@
 
 #include "core/io/resource.h"
 #include "core/variant/typed_array.h"
+#include "core/variant/type_info.h"
 
 class TrenchbroomTag : public Resource {
 	GDCLASS(TrenchbroomTag, Resource);

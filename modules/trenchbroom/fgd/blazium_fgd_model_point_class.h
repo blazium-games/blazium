@@ -34,6 +34,9 @@
 #include "modules/gltf/structures/gltf_mesh.h"
 #include "modules/gltf/structures/gltf_node.h"
 #include "scene/3d/node_3d.h"
+#include "core/string/ustring.h"
+#include "core/templates/vector.h"
+#include "core/variant/type_info.h"
 
 class GLTFDocument;
 class GLTFState;
@@ -66,7 +69,7 @@ protected:
 	bool _create_gltf_file(Ref<GLTFState> p_gltf_state, const String &p_path, Node3D *p_node);
 	void _save_to_file_system(Ref<GLTFDocument> p_gltf_document, Ref<GLTFState> p_gltf_state, const String &p_path);
 	void _save_gltf_deferred(Ref<GLTFDocument> p_gltf_document, Ref<GLTFState> p_gltf_state, const String &p_path);
-	AABB _generate_size_from_aabb(const TypedArray<GLTFMesh> &p_meshes, const TypedArray<GLTFNode> &p_nodes) const;
+	AABB _generate_size_from_aabb(const Vector<Ref<GLTFMesh>> &p_meshes, const Vector<Ref<GLTFNode>> &p_nodes) const;
 
 public:
 	void set_target_map_editor(TargetMapEditor p_editor) { target_map_editor = p_editor; }

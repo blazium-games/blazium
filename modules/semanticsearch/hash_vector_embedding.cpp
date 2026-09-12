@@ -30,6 +30,7 @@
 #include "hash_vector_embedding.h"
 
 #include "core/math/math_funcs.h"
+#include "core/string/ustring.h"
 #include "core/templates/hashfuncs.h"
 
 Vector<double> HashVectorEmbedding::from_tokens(const Vector<String> &p_tokens, int p_dim) {

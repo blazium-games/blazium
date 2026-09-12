@@ -32,6 +32,7 @@
 #include "modules/ircclient/irc_message.h"
 
 #include "tests/test_macros.h"
+#include "core/string/ustring.h"
 
 namespace TestIRCClient {
 

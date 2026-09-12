@@ -44,7 +44,7 @@
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
 #include "core/io/resource_uid.h"
-#include "modules/regex/regex.h"
+#include "core/string/regex.h"
 
 void JustAMCPProjectTools::_bind_methods() {}
 

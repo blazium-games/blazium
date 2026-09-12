@@ -50,6 +50,7 @@
 #include "gdk_runtime.h"
 #include "gdk_signal_xasync_context.h"
 #include "gdk_user.h"
+#include "core/object/class_db.h"
 
 #ifdef XBOX_MODULE_GDK_ENABLED
 

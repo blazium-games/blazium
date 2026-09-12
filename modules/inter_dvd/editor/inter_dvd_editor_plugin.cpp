@@ -48,15 +48,16 @@
 #include "core/object/object.h"
 #include "core/os/os.h"
 #include "editor/editor_node.h"
-#include "editor/editor_properties.h"
-#include "editor/editor_settings.h"
+#include "editor/inspector/editor_properties.h"
+#include "editor/settings/editor_settings.h"
 #include "editor/export/editor_export.h"
 #include "editor/gui/editor_file_dialog.h"
-#include "editor/inspector_dock.h"
+#include "editor/docks/inspector_dock.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/button.h"
 #include "scene/gui/label.h"
 #include "scene/resources/packed_scene.h"
+#include "core/object/callable_mp.h"
 
 bool EditorInspectorPluginInterDVDCell::can_handle(Object *p_object) {
 	return Object::cast_to<InterDVDCell>(p_object) != nullptr;

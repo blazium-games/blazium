@@ -34,6 +34,7 @@
 #include "modules/websocket/websocket_peer.h"
 #include "socketio_namespace.h"
 #include "socketio_packet.h"
+#include "core/variant/type_info.h"
 
 class SocketIOClient : public Object {
 	GDCLASS(SocketIOClient, Object);

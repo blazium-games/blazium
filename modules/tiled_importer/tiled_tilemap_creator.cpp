@@ -36,7 +36,7 @@
 #include "scene/2d/light_occluder_2d.h"
 #include "scene/2d/line_2d.h"
 #include "scene/2d/marker_2d.h"
-#include "scene/2d/navigation_region_2d.h"
+#include "scene/2d/navigation/navigation_region_2d.h"
 #include "scene/2d/parallax_2d.h"
 #include "scene/2d/parallax_background.h"
 #include "scene/2d/parallax_layer.h"
@@ -50,7 +50,7 @@
 #include "scene/2d/physics/static_body_2d.h"
 #include "scene/2d/polygon_2d.h"
 #include "scene/2d/sprite_2d.h"
-#include "scene/2d/tile_map_layer.h"
+#include "modules/tilemap/tile_map_layer.h"
 #include "scene/gui/color_rect.h"
 #include "scene/gui/label.h"
 #include "scene/gui/texture_rect.h"
@@ -59,9 +59,11 @@
 #include "scene/resources/2d/rectangle_shape_2d.h"
 #include "scene/resources/2d/segment_shape_2d.h"
 #include "scene/resources/font.h"
-#include "servers/text_server.h"
+#include "servers/text/text_server.h"
 #include "tiled_dictionary_builder.h"
 #include "tiled_tileset_creator.h"
+#include "core/string/string_name.h"
+#include "core/config/engine.h"
 
 // Note: Replicates roughly 2200 lines of TilemapCreator.gd
 
@@ -98,7 +100,7 @@ Node *TiledTilemapCreator::create_tilemap(const String &p_source_file) {
 	_infinite = (_base_map.is_valid() ? _base_map->is_infinite() : false);
 	_parallax_origin_x = (_base_map.is_valid() ? _base_map->get_parallax_origin().x : 0);
 	_parallax_origin_y = (_base_map.is_valid() ? _base_map->get_parallax_origin().y : 0);
-	_background_color = (_base_map.is_valid() ? _base_map->get_background_color() : Color());
+	_background_color = (_base_map.is_valid() ? String("#") + _base_map->get_background_color().to_html(false) : String());
 
 	if (_base_map.is_valid()) {
 		Array tilesets = _base_map->get_tilesets();
@@ -209,7 +211,7 @@ void TiledTilemapCreator::handle_layer(Ref<TiledLayer> p_layer, Node2D *p_parent
 	float layer_opacity = p_layer->get_opacity();
 	bool layer_visible = p_layer->is_visible();
 	String layer_type = p_layer->get_tson_type();
-	String tint_color = p_layer->get_tint_color();
+	String tint_color = String("#") + p_layer->get_tint_color().to_html(false);
 
 	// v1.2: Skip layer check via property "no_import" (simplified)
 
@@ -472,7 +474,7 @@ Array TiledTilemapCreator::handle_data(const Variant &p_data, int p_map_size) {
 		}
 	} else if (_encoding == "base64") {
 		String b64_str = p_data;
-		PackedByteArray bytes = core_bind::Marshalls::get_singleton()->base64_to_raw(b64_str);
+		PackedByteArray bytes = CoreBind::Marshalls::get_singleton()->base64_to_raw(b64_str);
 		if (!_compression.is_empty()) {
 			if (_compression == "lzma") {
 				bytes = TiledTilesonBridge::decompress_lzma(bytes, p_map_size * 4);
@@ -1136,7 +1138,7 @@ void TiledTilemapCreator::handle_object(Ref<TiledObject> p_obj_ro, Node *p_layer
 		class_string = p_obj->get_tson_type();
 	}
 	bool prop_found = false;
-	String godot_node_type_property_string = get_godot_node_type_property(p_obj, prop_found);
+	String godot_node_type_property_string = get_godot_node_type_property(p_obj->get_properties(), prop_found);
 	if (!prop_found) {
 		godot_node_type_property_string = class_string;
 	}
@@ -1692,36 +1694,44 @@ TiledTilemapCreator::GodotType TiledTilemapCreator::get_godot_type(const String 
 	}
 	return GODOT_TYPE_UNKNOWN;
 }
-String TiledTilemapCreator::get_godot_node_type_property(Ref<TiledObject> p_obj, bool &r_property_found) {
+String TiledTilemapCreator::get_godot_node_type_property(const Array &p_properties, bool &r_property_found) {
 	r_property_found = false;
-	if ((p_obj->get_properties().size() > 0)) {
-		Array props = p_obj->get_properties();
-		for (int i = 0; i < props.size(); i++) {
-			Ref<TiledProperty> prop = props[i];
-			String name = prop->get_name();
-			String type = prop->get_property_type();
-			String val = prop->get_value();
-			if (name.to_lower() == "godot_node_type" && type == "string") {
-				r_property_found = true;
-				return val;
-			}
+	for (int i = 0; i < p_properties.size(); i++) {
+		Ref<TiledProperty> prop = p_properties[i];
+		if (prop.is_null()) {
+			continue;
+		}
+		String name = prop->get_name();
+		String type = prop->get_property_type();
+		String val = prop->get_value();
+		if (name.to_lower() == "godot_node_type" && type == "string") {
+			r_property_found = true;
+			return val;
 		}
 	}
 	return "";
 }
-TiledTilemapCreator::GodotType TiledTilemapCreator::get_godot_node_type(Ref<TiledObject> p_obj) {
-	String class_string = p_obj->get_class_type();
+TiledTilemapCreator::GodotType TiledTilemapCreator::get_godot_node_type(const String &p_class_type, const String &p_tson_type, const Array &p_properties) {
+	String class_string = p_class_type;
 	if (class_string.is_empty()) {
-		class_string = p_obj->get_tson_type();
+		class_string = p_tson_type;
 	}
 
 	bool prop_found = false;
-	String search_result = get_godot_node_type_property(p_obj, prop_found);
+	String search_result = get_godot_node_type_property(p_properties, prop_found);
 	if (!prop_found) {
 		search_result = class_string;
 	}
 
 	return get_godot_type(search_result);
+}
+TiledTilemapCreator::GodotType TiledTilemapCreator::get_godot_node_type(const Ref<TiledObject> &p_obj) {
+	ERR_FAIL_COND_V(p_obj.is_null(), GODOT_TYPE_UNKNOWN);
+	return get_godot_node_type(p_obj->get_class_type(), p_obj->get_tson_type(), p_obj->get_properties());
+}
+TiledTilemapCreator::GodotType TiledTilemapCreator::get_godot_node_type(const Ref<TiledLayer> &p_layer) {
+	ERR_FAIL_COND_V(p_layer.is_null(), GODOT_TYPE_UNKNOWN);
+	return get_godot_node_type(p_layer->get_class_type(), p_layer->get_tson_type(), p_layer->get_properties());
 }
 
 void TiledTilemapCreator::set_sprite_offset(Sprite2D *p_sprite, float p_width, float p_height, const String &p_alignment) {
@@ -1803,7 +1813,7 @@ void TiledTilemapCreator::convert_metadata_to_obj_properties(TileData *p_td, Ref
 	List<StringName> meta_list;
 	p_td->get_meta_list(&meta_list);
 	for (const StringName &meta_name_sn : meta_list) {
-		String meta_name = meta_name_sn.operator String();
+		String meta_name = String(meta_name_sn);
 		if (meta_name.to_lower() == "godot_node_type") {
 			continue;
 		}

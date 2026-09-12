@@ -33,6 +33,9 @@
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
 #include "core/variant/variant_utility.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 void SQLiteDatabase::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_sqlite"), &SQLiteDatabase::get_sqlite);

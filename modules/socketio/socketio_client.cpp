@@ -31,6 +31,7 @@
 
 #include "core/io/json.h"
 #include "core/os/time.h"
+#include "core/object/class_db.h"
 
 SocketIOClient *SocketIOClient::singleton = nullptr;
 
@@ -288,7 +289,7 @@ void SocketIOClient::_process_websocket_messages() {
 
 		if (ws->was_string_packet()) {
 			String packet_str;
-			packet_str.parse_utf8((const char *)buffer, buffer_size);
+			packet_str.append_utf8((const char *)buffer, buffer_size);
 
 			if (packet_str.is_empty()) {
 				continue;

@@ -40,6 +40,7 @@
 #include "modules/trenchbroom/trenchbroom_defaults.h"
 #include "modules/trenchbroom/trenchbroom_local_config.h"
 #include "trenchbroom_tag.h"
+#include "core/object/callable_mp.h"
 
 void TrenchbroomGameConfig::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_game_name", "game_name"), &TrenchbroomGameConfig::set_game_name);

@@ -30,8 +30,8 @@
 #pragma once
 
 #include "blazium_goap_world_state.h"
-#include "core/object/gdvirtual.gen.inc"
 #include "scene/main/node.h"
+#include "core/string/string_name.h"
 
 class BlaziumGoapAgent;
 

@@ -31,6 +31,7 @@
 #include "core/io/json.h"
 #include "core/os/os.h"
 #include "core/os/time.h"
+#include "core/object/class_db.h"
 
 void ReactClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_message", "args"), &ReactClient::_on_message);

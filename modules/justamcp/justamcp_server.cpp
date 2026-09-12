@@ -35,7 +35,7 @@
 #include "justamcp_notification_bus.h"
 #include "justamcp_pagination.h"
 #ifdef TOOLS_ENABLED
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 #include "justamcp_project_settings.h"
 #include "justamcp_tool_dispatch.h"
 #include "tools/justamcp_prompt_executor.h"
@@ -52,7 +52,7 @@
 #include "tools/justamcp_settings_resolver.h"
 
 #include "core/config/project_settings.h"
-#include "core/object/callable_method_pointer.h"
+#include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
 #include "core/os/os.h"
 

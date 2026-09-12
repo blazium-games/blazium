@@ -39,12 +39,12 @@
 #include "core/io/resource_loader.h"
 #include "core/os/os.h"
 #include "core/os/time.h"
-#include "scene/2d/navigation_link_2d.h"
-#include "scene/2d/navigation_obstacle_2d.h"
-#include "scene/2d/navigation_region_2d.h"
-#include "scene/3d/navigation_link_3d.h"
-#include "scene/3d/navigation_obstacle_3d.h"
-#include "scene/3d/navigation_region_3d.h"
+#include "scene/2d/navigation/navigation_link_2d.h"
+#include "scene/2d/navigation/navigation_obstacle_2d.h"
+#include "scene/2d/navigation/navigation_region_2d.h"
+#include "scene/3d/navigation/navigation_link_3d.h"
+#include "scene/3d/navigation/navigation_obstacle_3d.h"
+#include "scene/3d/navigation/navigation_region_3d.h"
 #include "scene/main/node.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/viewport.h"
@@ -53,6 +53,7 @@
 #include "scene/resources/3d/world_3d.h"
 #include "scene/resources/navigation_mesh.h"
 #include "scene/resources/packed_scene.h"
+#include "core/string/string_name.h"
 
 static const char *NAVIMESH_EXPORT_HOLDER = "__NavimeshExportHolder";
 static const int NAVIMESH_SCAN_CHUNK = 8192;

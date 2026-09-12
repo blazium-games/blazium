@@ -29,8 +29,8 @@
 
 #include "justamcp_tilemap_access.h"
 
-#include "scene/2d/tile_map.h"
-#include "scene/2d/tile_map_layer.h"
+#include "modules/tilemap/tile_map.h"
+#include "modules/tilemap/tile_map_layer.h"
 #include "scene/main/node.h"
 
 JustAMCPTileTarget justamcp_tile_target_from_node(Node *p_node, int p_layer_index) {

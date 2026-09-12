@@ -41,6 +41,7 @@
 #include "requests/kick_oauth_requests.h"
 #include "requests/kick_request_base.h"
 #include "requests/kick_users_requests.h"
+#include "core/object/class_db.h"
 
 static KickAPI *kick_api_singleton = nullptr;
 

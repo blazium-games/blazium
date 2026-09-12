@@ -2908,6 +2908,22 @@ Error Image::save_png(const String &p_path) const {
 	return save_png_func(p_path, Ref<Image>((Image *)this));
 }
 
+Error Image::save_gif(const String &p_path) const {
+	if (save_gif_func == nullptr) {
+		return ERR_UNAVAILABLE;
+	}
+
+	return save_gif_func(p_path, Ref<Image>((Image *)this));
+}
+
+Vector<uint8_t> Image::save_gif_to_buffer() const {
+	if (save_gif_buffer_func == nullptr) {
+		return Vector<uint8_t>();
+	}
+
+	return save_gif_buffer_func(Ref<Image>((Image *)this));
+}
+
 Error Image::save_jpg(const String &p_path, float p_quality) const {
 	if (save_jpg_func == nullptr) {
 		return ERR_UNAVAILABLE;
@@ -4001,6 +4017,8 @@ void Image::_bind_methods() {
 	ClassDB::bind_static_method("Image", D_METHOD("load_from_file", "path"), &Image::load_from_file);
 	ClassDB::bind_method(D_METHOD("save_png", "path"), &Image::save_png);
 	ClassDB::bind_method(D_METHOD("save_png_to_buffer"), &Image::save_png_to_buffer);
+	ClassDB::bind_method(D_METHOD("save_gif", "path"), &Image::save_gif);
+	ClassDB::bind_method(D_METHOD("save_gif_to_buffer"), &Image::save_gif_to_buffer);
 	ClassDB::bind_method(D_METHOD("save_jpg", "path", "quality"), &Image::save_jpg, DEFVAL(0.75));
 	ClassDB::bind_method(D_METHOD("save_jpg_to_buffer", "quality"), &Image::save_jpg_to_buffer, DEFVAL(0.75));
 	ClassDB::bind_method(D_METHOD("save_exr", "path", "grayscale", "color_image", "max_linear_value"), &Image::save_exr, DEFVAL(false), DEFVAL(false), DEFVAL(-1.0));
@@ -4056,6 +4074,7 @@ void Image::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("adjust_bcs", "brightness", "contrast", "saturation"), &Image::adjust_bcs);
 
 	ClassDB::bind_method(D_METHOD("load_png_from_buffer", "buffer"), &Image::load_png_from_buffer);
+	ClassDB::bind_method(D_METHOD("load_gif_from_buffer", "buffer"), &Image::load_gif_from_buffer);
 	ClassDB::bind_method(D_METHOD("load_jpg_from_buffer", "buffer"), &Image::load_jpg_from_buffer);
 	ClassDB::bind_method(D_METHOD("load_webp_from_buffer", "buffer"), &Image::load_webp_from_buffer);
 	ClassDB::bind_method(D_METHOD("load_tga_from_buffer", "buffer"), &Image::load_tga_from_buffer);
@@ -4646,6 +4665,10 @@ uint32_t Image::get_format_component_mask(Format p_format) {
 
 Error Image::load_png_from_buffer(const Vector<uint8_t> &p_array) {
 	return _load_from_buffer(p_array, _png_mem_loader_func);
+}
+
+Error Image::load_gif_from_buffer(const Vector<uint8_t> &p_array) {
+	return _load_from_buffer(p_array, _gif_mem_loader_func);
 }
 
 Error Image::load_jpg_from_buffer(const Vector<uint8_t> &p_array) {

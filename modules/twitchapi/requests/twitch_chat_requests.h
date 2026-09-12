@@ -30,6 +30,7 @@
 #pragma once
 
 #include "twitch_request_base.h"
+#include "core/string/ustring.h"
 
 class TwitchChatRequests : public TwitchRequestBase {
 	GDCLASS(TwitchChatRequests, TwitchRequestBase);

@@ -34,7 +34,7 @@
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_interface.h"
-#include "editor/plugins/script_editor_plugin.h"
+#include "editor/script/script_editor_plugin.h"
 #include "scene/gui/control.h"
 #endif
 
@@ -44,7 +44,7 @@
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
 #include "core/object/script_language.h"
-#include "modules/regex/regex.h"
+#include "core/string/regex.h"
 #include "scene/resources/packed_scene.h"
 
 #include "../justamcp_mcp_tool_macros.h"
@@ -371,7 +371,7 @@ Dictionary JustAMCPScriptTools::_delete_script(const Dictionary &p_params) {
 		return MCP_INVALID_PARAMS("delete_script path must be a script file (.gd, .cs)");
 	}
 	const String main_scene = ProjectSettings::get_singleton() ? String(ProjectSettings::get_singleton()->get_setting("application/run/main_scene", "")) : String();
-	if (ProjectSettings::is_project_settings_file(path) || path == "res://export_presets.cfg" || path == "res://main.gd" || path == "res://main.tscn" || (!main_scene.is_empty() && (path == main_scene || path == main_scene.get_basename() + ".gd"))) {
+	if (JustAMCPEditorSceneAccess::is_project_settings_file(path) || path == "res://export_presets.cfg" || path == "res://main.gd" || path == "res://main.tscn" || (!main_scene.is_empty() && (path == main_scene || path == main_scene.get_basename() + ".gd"))) {
 		return MCP_ERROR(-32000, "Refusing to delete protected project path: " + path);
 	}
 	if (!FileAccess::exists(path)) {

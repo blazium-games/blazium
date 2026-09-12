@@ -30,6 +30,7 @@
 #include "kick_moderation_requests.h"
 
 #include "core/io/json.h"
+#include "core/object/class_db.h"
 
 void KickModerationRequests::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("ban_user", "broadcaster_user_id", "user_id", "reason", "duration"),

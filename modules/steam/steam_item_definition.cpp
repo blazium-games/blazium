@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "steam_item_definition.h"
+#include "core/object/class_db.h"
 
 void SteamItemDefinition::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_def_id"), &SteamItemDefinition::get_def_id);

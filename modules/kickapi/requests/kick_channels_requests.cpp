@@ -30,6 +30,7 @@
 #include "kick_channels_requests.h"
 
 #include "core/io/json.h"
+#include "core/object/class_db.h"
 
 void KickChannelsRequests::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_channels", "params"), &KickChannelsRequests::get_channels, DEFVAL(Dictionary()));

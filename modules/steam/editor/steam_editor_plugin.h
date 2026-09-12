@@ -32,6 +32,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "editor/plugins/editor_plugin.h"
+#include "core/string/ustring.h"
 
 class LineEdit;
 class RichTextLabel;

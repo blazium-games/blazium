@@ -44,7 +44,7 @@
 #include "core/os/os.h"
 #include "core/os/thread.h"
 #include "core/templates/hash_map.h"
-#include "editor/editor_file_system.h"
+#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
 #include "editor/editor_undo_redo_manager.h"

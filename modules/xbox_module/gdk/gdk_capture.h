@@ -46,6 +46,7 @@
 
 #ifdef XBOX_MODULE_GDK_ENABLED
 #include <XAppCapture.h>
+#include "core/variant/type_info.h"
 #endif
 
 class GDK;

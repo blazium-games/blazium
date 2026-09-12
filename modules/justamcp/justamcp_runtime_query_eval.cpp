@@ -48,10 +48,12 @@
 #include "scene/main/scene_tree.h"
 #include "scene/main/viewport.h"
 #include "scene/main/window.h"
-#include "servers/audio_server.h"
+#include "servers/audio/audio_server.h"
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
+#include "core/object/callable_mp.h"
+#include "core/config/engine.h"
 #endif
 
 Dictionary JustAMCPRuntime::_cmd_get_metrics(const Dictionary &p_params) {

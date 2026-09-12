@@ -31,6 +31,7 @@
 #pragma once
 
 #include "core/object/ref_counted.h"
+#include "core/object/class_db.h"
 
 class DiscordEmbeddedAppResponse : public RefCounted {
 	GDCLASS(DiscordEmbeddedAppResponse, RefCounted);

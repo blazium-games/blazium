@@ -34,6 +34,7 @@
 #include "core/os/mutex.h"
 #include "core/templates/hash_map.h"
 #include "core/variant/callable.h"
+#include "core/string/ustring.h"
 #include "core/variant/dictionary.h"
 
 class RemoteControlRegistry : public Object {

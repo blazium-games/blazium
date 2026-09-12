@@ -34,6 +34,8 @@
 #include "editor/editor_node.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/separator.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 
 void TiledEditorPlugin::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_reimport_pressed"), &TiledEditorPlugin::_on_reimport_pressed);

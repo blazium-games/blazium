@@ -39,7 +39,7 @@
 #include "core/io/dir_access.h"
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
-#include "core/object/callable_method_pointer.h"
+#include "core/object/callable_mp.h"
 #include "core/object/worker_thread_pool.h"
 #include "core/os/mutex.h"
 #include "core/os/os.h"
@@ -49,6 +49,7 @@
 #include "scene/resources/mesh_data_tool.h"
 #include "scene/resources/surface_tool.h"
 #include "scene/resources/texture.h"
+#include "core/templates/local_vector.h"
 
 static const Vector3 _VEC3_UP_ID(0.0, 0.0, 1.0);
 static const Vector3 _VEC3_RIGHT_ID(0.0, 1.0, 0.0);

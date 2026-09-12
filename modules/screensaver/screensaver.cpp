@@ -47,10 +47,11 @@
 #include "scene/main/canvas_item.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
-#include "servers/display_server.h"
+#include "servers/display/display_server.h"
 
 #ifdef WINDOWS_ENABLED
 #include <windows.h>
+#include "core/object/callable_mp.h"
 #endif
 
 Screensaver *Screensaver::singleton = nullptr;
@@ -186,7 +187,7 @@ void Screensaver::setup_runtime() {
 	_connect_frame_hook();
 
 	if (get_mode() == MODE_RUN && Input::get_singleton()) {
-		Input::get_singleton()->set_mouse_mode(Input::MOUSE_MODE_HIDDEN);
+		Input::get_singleton()->set_mouse_mode(InputClassEnums::MOUSE_MODE_HIDDEN);
 	}
 
 	if (get_mode() == MODE_RUN) {
@@ -229,7 +230,7 @@ static HWND _main_hwnd() {
 	if (ds == nullptr) {
 		return nullptr;
 	}
-	return (HWND)ds->window_get_native_handle(DisplayServer::WINDOW_HANDLE);
+	return (HWND)ds->window_get_native_handle(DisplayServerEnums::WINDOW_HANDLE);
 }
 #endif
 
@@ -262,11 +263,11 @@ void Screensaver::_place_window_hwnd(Window *p_window, const Rect2i &p_os_rect) 
 	if (ds == nullptr) {
 		return;
 	}
-	const DisplayServer::WindowID id = p_window->get_window_id();
-	if (id == DisplayServer::INVALID_WINDOW_ID) {
+	const DisplayServerEnums::WindowID id = p_window->get_window_id();
+	if (id == DisplayServerEnums::INVALID_WINDOW_ID) {
 		return;
 	}
-	const HWND hwnd = (HWND)ds->window_get_native_handle(DisplayServer::WINDOW_HANDLE, id);
+	const HWND hwnd = (HWND)ds->window_get_native_handle(DisplayServerEnums::WINDOW_HANDLE, id);
 	_native_place_hwnd(hwnd, p_os_rect);
 #endif
 }
@@ -559,7 +560,7 @@ void Screensaver::_ensure_run_chrome() {
 
 void Screensaver::_ensure_dialog_chrome() {
 	if (Input::get_singleton()) {
-		Input::get_singleton()->set_mouse_mode(Input::MOUSE_MODE_VISIBLE);
+		Input::get_singleton()->set_mouse_mode(InputClassEnums::MOUSE_MODE_VISIBLE);
 	}
 	SceneTree *tree = SceneTree::get_singleton();
 	if (tree == nullptr || tree->get_root() == nullptr) {
@@ -746,7 +747,7 @@ void Screensaver::_show_unlock_dialog() {
 		return;
 	}
 	if (Input::get_singleton()) {
-		Input::get_singleton()->set_mouse_mode(Input::MOUSE_MODE_VISIBLE);
+		Input::get_singleton()->set_mouse_mode(InputClassEnums::MOUSE_MODE_VISIBLE);
 	}
 	AcceptDialog *dlg = memnew(AcceptDialog);
 	dlg->set_name("UnlockDialog");

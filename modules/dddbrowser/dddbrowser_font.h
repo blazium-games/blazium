@@ -30,6 +30,8 @@
 #pragma once
 
 #include "scene/3d/node_3d.h"
+#include "core/string/ustring.h"
+#include "core/variant/type_info.h"
 
 class DDDBrowserFont : public Node3D {
 	GDCLASS(DDDBrowserFont, Node3D);

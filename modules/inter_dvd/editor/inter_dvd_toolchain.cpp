@@ -34,7 +34,7 @@
 #include "core/io/file_access.h"
 #include "core/io/json.h"
 #include "core/os/os.h"
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 
 namespace {
 #ifdef WINDOWS_ENABLED

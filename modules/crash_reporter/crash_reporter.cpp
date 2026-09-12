@@ -42,10 +42,12 @@
 #include "core/os/os.h"
 #include "core/string/print_string.h"
 #include "core/version.h"
-#include "servers/display_server.h"
+#include "servers/display/display_server.h"
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_paths.h"
+#include "editor/file_system/editor_paths.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 #endif
 
 CrashReporter *CrashReporter::singleton = nullptr;

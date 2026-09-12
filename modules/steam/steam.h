@@ -35,6 +35,7 @@
 #include "steam_auth_result.h"
 #include "steam_inventory_item.h"
 #include "steam_item_definition.h"
+#include "core/variant/type_info.h"
 
 class SteamAuthClient;
 

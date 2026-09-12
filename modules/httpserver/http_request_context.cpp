@@ -30,6 +30,7 @@
 #include "http_request_context.h"
 
 #include "core/io/json.h"
+#include "core/object/class_db.h"
 
 void HTTPRequestContext::_bind_methods() {
 	// Setters

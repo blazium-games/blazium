@@ -38,6 +38,7 @@
 #include "core/input/input_event.h"
 #include "core/input/input_map.h"
 #include "core/io/json.h"
+#include "core/variant/typed_array.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
 #include "main/performance.h"
@@ -46,6 +47,7 @@
 #ifdef MODULE_ASSETTAGS_ENABLED
 #include "core/templates/hash_set.h"
 #include "modules/assettags/asset_tag_manager.h"
+#include "core/string/string_name.h"
 #endif
 
 static Dictionary _project_json_contents(const String &p_uri, const Dictionary &p_payload) {
@@ -143,9 +145,10 @@ Dictionary JustAMCPProjectResourceProvider::read(const String &p_uri, const Stri
 	if (p_canonical_uri == "blazium://input_map") {
 		Dictionary actions;
 		if (InputMap::get_singleton()) {
-			List<StringName> action_names = InputMap::get_singleton()->get_actions();
-			for (const StringName &action_name : action_names) {
-				String action = action_name;
+			TypedArray<StringName> action_names = InputMap::get_singleton()->get_actions();
+			for (const Variant &action_var : action_names) {
+				const StringName action_name = action_var;
+				String action = String(action_name);
 				if (action.begins_with("ui_")) {
 					continue;
 				}

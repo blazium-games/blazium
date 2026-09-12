@@ -63,6 +63,9 @@ def _override_mold_linker_for_luau(env):
 
 def configure(env):
     env.Append(CPPDEFINES=["LUAU_MODULE_ENABLED"])
+    # Keep the module in the SCons graph, but do not compile the 4.3 ScriptLanguage
+    # implementation. Consumers should check LUAU_STUB_ON_GODOT_48.
+    env.Append(CPPDEFINES=["LUAU_STUB_ON_GODOT_48"])
 
     if "module_luau_module_analysis" not in ARGUMENTS:
         env["module_luau_module_analysis"] = _default_analysis_enabled(env)

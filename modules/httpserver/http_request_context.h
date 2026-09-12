@@ -31,6 +31,7 @@
 
 #include "core/io/ip_address.h"
 #include "core/object/ref_counted.h"
+#include "core/string/ustring.h"
 #include "core/variant/dictionary.h"
 
 class HTTPRequestContext : public RefCounted {

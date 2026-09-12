@@ -33,6 +33,7 @@
 #include "core/templates/hash_map.h"
 #include "core/templates/vector.h"
 #include "core/variant/callable.h"
+#include "core/variant/type_info.h"
 
 class SocketIOClient;
 

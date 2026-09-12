@@ -33,6 +33,7 @@
 #include "protocol.h"
 
 #include <cstring>
+#include "core/object/callable_mp.h"
 
 void WebRTCLink::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("local_description", PropertyInfo(Variant::STRING, "type"), PropertyInfo(Variant::STRING, "sdp")));

@@ -45,17 +45,19 @@
 
 #include "core/config/project_settings.h"
 #include "core/os/os.h"
-#include "editor/editor_file_system.h"
+#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/dialogs.h"
 #include "scene/gui/grid_container.h"
 #include "scene/gui/text_edit.h"
-#include "servers/display_server.h"
+#include "servers/display/display_server.h"
 #include "tools/justamcp_resource_subscriptions.h"
 #include "tools/resources/justamcp_materials_resource_provider.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 
 void JustAMCPConfigUI::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_copy_pressed"), &JustAMCPConfigUI::_copy_pressed);

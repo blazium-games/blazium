@@ -39,6 +39,7 @@
 #include "scene/main/multiplayer_peer.h"
 #include "scene/main/node.h"
 #include "scene/main/scene_tree.h"
+#include "core/object/class_db.h"
 
 void JustAMCPNetworkingTools::_bind_methods() {}
 

@@ -28,6 +28,8 @@
 /**************************************************************************/
 
 #include "autowork_spy.h"
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 void AutoworkSpy::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_call", "object", "method_name", "args"), &AutoworkSpy::add_call);

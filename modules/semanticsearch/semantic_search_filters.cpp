@@ -35,7 +35,7 @@
 #ifdef MODULE_ASSETTAGS_ENABLED
 #include "modules/assettags/asset_tag_registry.h"
 #endif
-#include "modules/regex/regex.h"
+#include "core/string/regex.h"
 
 HashSet<String> SemanticSearchFilters::intersect_path_sets(const HashSet<String> &p_left, const HashSet<String> &p_right) {
 	if (p_left.is_empty() || p_right.is_empty()) {
@@ -95,8 +95,8 @@ SemanticFilterSnapshot SemanticSearchFilters::build_filter_snapshot(
 	snapshot.metadata = p_metadata;
 	snapshot.mutation_generation = p_mutation_generation;
 
-	const HashSet<String> metadata_filtered = collect_paths_matching_metadata_snapshot(
-			p_metadata, p_path_regex, p_class_filter, snapshot.filter_error);
+	const HashSet<String> metadata_filtered(collect_paths_matching_metadata_snapshot(
+			p_metadata, p_path_regex, p_class_filter, snapshot.filter_error));
 	if (!snapshot.filter_error.is_empty()) {
 		return snapshot;
 	}
@@ -139,8 +139,8 @@ HashSet<String> SemanticSearchFilters::resolve_allowed_paths_from_metadata(
 		String &r_filter_error) {
 	HashSet<String> allowed_paths;
 	r_filter_error = String();
-	const HashSet<String> metadata_filtered = collect_paths_matching_metadata_snapshot(
-			p_metadata, p_path_regex, p_class_filter, r_filter_error);
+	const HashSet<String> metadata_filtered(collect_paths_matching_metadata_snapshot(
+			p_metadata, p_path_regex, p_class_filter, r_filter_error));
 	if (!r_filter_error.is_empty()) {
 		return allowed_paths;
 	}
@@ -181,5 +181,5 @@ HashSet<String> SemanticSearchFilters::resolve_allowed_paths(
 	}
 	const SemanticFilterSnapshot snapshot = p_index->build_filter_snapshot(p_tags, p_require_all, p_path_regex, p_class_filter);
 	r_filter_error = snapshot.filter_error;
-	return snapshot.allowed_paths;
+	return HashSet<String>(snapshot.allowed_paths);
 }

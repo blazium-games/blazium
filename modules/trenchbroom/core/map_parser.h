@@ -31,6 +31,7 @@
 
 #include "core/templates/hash_set.h"
 #include "modules/trenchbroom/core/data.h"
+#include "core/string/ustring.h"
 
 class TrenchbroomMapSettings;
 

@@ -33,6 +33,8 @@
 #include "discord_embedded_app_response.h"
 #include "platform/web/api/javascript_bridge_singleton.h"
 #include "scene/main/node.h"
+#include "core/string/ustring.h"
+#include "core/variant/type_info.h"
 
 // From https://github.com/discord/embedded-app-sdk/blob/main/src/Discord.ts v1.9.0
 class DiscordEmbeddedAppClient : public ThirdPartyClient {

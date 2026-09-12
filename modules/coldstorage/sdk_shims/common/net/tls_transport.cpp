@@ -31,13 +31,13 @@
 #include "common/net/tls_cert.h"
 #include "common/util/net_trace.h"
 
-#include <mbedtls/ctr_drbg.h>
-#include <mbedtls/entropy.h>
+#include "core/crypto/crypto_core.h"
+
 #include <mbedtls/error.h>
 #include <mbedtls/pk.h>
-#include <mbedtls/sha256.h>
 #include <mbedtls/ssl.h>
 #include <mbedtls/x509_crt.h>
+#include <psa/crypto.h>
 
 #include <cstring>
 
@@ -53,26 +53,8 @@ namespace coldstorage {
 
 namespace {
 
-struct Drbg {
-	mbedtls_entropy_context entropy;
-	mbedtls_ctr_drbg_context ctr;
-	bool ok = false;
-	Drbg() {
-		mbedtls_entropy_init(&entropy);
-		mbedtls_ctr_drbg_init(&ctr);
-		const char *pers = "cs-tls-transport";
-		ok = mbedtls_ctr_drbg_seed(&ctr, mbedtls_entropy_func, &entropy,
-					 reinterpret_cast<const unsigned char *>(pers), std::strlen(pers)) == 0;
-	}
-	~Drbg() {
-		mbedtls_ctr_drbg_free(&ctr);
-		mbedtls_entropy_free(&entropy);
-	}
-};
-
-Drbg &drbg() {
-	static Drbg d;
-	return d;
+bool psa_ready() {
+	return psa_crypto_init() == PSA_SUCCESS;
 }
 
 int bio_send(void *ctx, const unsigned char *buf, size_t len) {
@@ -128,7 +110,7 @@ struct OwnedTls {
 };
 
 bool setup_client_owned(OwnedTls &o, const TLSContext &ctx) {
-	if (!drbg().ok) {
+	if (!psa_ready()) {
 		return false;
 	}
 	if (ctx.verifyPeer() && ctx.caFile().empty()) {
@@ -138,7 +120,6 @@ bool setup_client_owned(OwnedTls &o, const TLSContext &ctx) {
 				MBEDTLS_SSL_PRESET_DEFAULT) != 0) {
 		return false;
 	}
-	mbedtls_ssl_conf_rng(&o.conf, mbedtls_ctr_drbg_random, &drbg().ctr);
 	mbedtls_ssl_conf_authmode(&o.conf, ctx.verifyPeer() ? MBEDTLS_SSL_VERIFY_REQUIRED : MBEDTLS_SSL_VERIFY_NONE);
 	if (!ctx.caFile().empty()) {
 		if (mbedtls_x509_crt_parse_file(&o.cacert, ctx.caFile().c_str()) != 0) {
@@ -151,7 +132,7 @@ bool setup_client_owned(OwnedTls &o, const TLSContext &ctx) {
 		if (mbedtls_x509_crt_parse_file(&o.clicert, ctx.certFile().c_str()) != 0) {
 			return false;
 		}
-		if (mbedtls_pk_parse_keyfile(&o.pkey, ctx.keyFile().c_str(), nullptr, mbedtls_ctr_drbg_random, &drbg().ctr) != 0) {
+		if (mbedtls_pk_parse_keyfile(&o.pkey, ctx.keyFile().c_str(), nullptr) != 0) {
 			return false;
 		}
 		mbedtls_ssl_conf_own_cert(&o.conf, &o.clicert, &o.pkey);
@@ -291,7 +272,7 @@ std::string TlsTransport::peerFingerprint() const {
 		return {};
 	}
 	unsigned char hash[32];
-	if (mbedtls_sha256(crt->raw.p, crt->raw.len, hash, 0) != 0) {
+	if (CryptoCore::sha256(crt->raw.p, crt->raw.len, hash) != OK) {
 		return {};
 	}
 	std::string hex;

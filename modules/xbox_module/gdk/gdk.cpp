@@ -56,6 +56,7 @@
 
 #include <iterator>
 #include <vector>
+#include "core/object/class_db.h"
 
 GDK *GDK::singleton = nullptr;
 

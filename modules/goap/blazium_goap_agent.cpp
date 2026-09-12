@@ -31,6 +31,10 @@
 #include "blazium_goap_action.h"
 #include "blazium_goap_goal.h"
 #include "core/debugger/engine_debugger.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
+#include "core/config/engine.h"
 
 void BlaziumGoapAgent::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("init", "actor"), &BlaziumGoapAgent::init);

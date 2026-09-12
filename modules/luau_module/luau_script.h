@@ -35,6 +35,8 @@
 #include "lua_state.h"
 #include "luau_class_info.h"
 #include <lua.h>
+#include "core/string/string_name.h"
+#include "core/string/ustring.h"
 
 class LuauScriptLanguage;
 class LuauScriptInstance;

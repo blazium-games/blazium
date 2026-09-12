@@ -41,7 +41,7 @@
 #endif
 
 #include "core/object/class_db.h"
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 #include "editor/plugins/editor_plugin.h"
 #endif
 

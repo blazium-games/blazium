@@ -32,6 +32,7 @@
 #include "core/crypto/crypto.h"
 #include "core/io/file_access.h"
 #include "core/os/os.h"
+#include "core/object/class_db.h"
 
 HTTPServer *HTTPServer::singleton = nullptr;
 
@@ -245,7 +246,7 @@ void HTTPServer::_poll_client(int p_client_id, ClientConnection &p_client) {
 					p_client.headers_parsed = true;
 					p_client.header_length = i + 1;
 
-					String header_str = String((const char *)p_client.req_buf.ptr(), p_client.header_length);
+					String header_str = String::utf8((const char *)p_client.req_buf.ptr(), p_client.header_length);
 					Vector<String> lines = header_str.split("\r\n");
 					for (int j = 1; j < lines.size(); j++) {
 						if (lines[j].to_lower().begins_with("content-length:")) {
@@ -268,7 +269,7 @@ void HTTPServer::_poll_client(int p_client_id, ClientConnection &p_client) {
 }
 
 void HTTPServer::_parse_and_dispatch_request(int p_client_id, ClientConnection &p_client) {
-	String header_str = String((const char *)p_client.req_buf.ptr(), p_client.header_length);
+	String header_str = String::utf8((const char *)p_client.req_buf.ptr(), p_client.header_length);
 	Vector<String> lines = header_str.split("\r\n");
 
 	if (lines.size() < 2) {

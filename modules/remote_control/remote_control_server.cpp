@@ -52,12 +52,13 @@
 #include "modules/autowork/autowork_main.h"
 #endif
 
-#if defined(MODULE_LUAU_MODULE_ENABLED)
+#if 0 // MODULE_LUAU_MODULE_ENABLED — Luau is stubbed on Godot 4.8
 #include "modules/luau_module/lua_state.h"
 #endif
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
+#include "core/object/callable_mp.h"
 #endif
 
 RemoteControlServer *RemoteControlServer::singleton = nullptr;
@@ -428,7 +429,7 @@ String RemoteControlServer::_normalize_language(const String &p_language) {
 }
 
 bool RemoteControlServer::_luau_eval_available() {
-#if defined(MODULE_LUAU_MODULE_ENABLED)
+#if 0 // MODULE_LUAU_MODULE_ENABLED — Luau is stubbed on Godot 4.8
 	return ClassDB::class_exists("LuaState");
 #else
 	return false;
@@ -486,7 +487,7 @@ Dictionary RemoteControlServer::_eval_luau(const String &p_expression) const {
 		ret["error"] = "Missing expression";
 		return ret;
 	}
-#if !defined(MODULE_LUAU_MODULE_ENABLED)
+#if 1 // Luau unavailable on Godot 4.8 stub
 	ret["ok"] = false;
 	ret["error"] = "Luau module not available";
 	return ret;

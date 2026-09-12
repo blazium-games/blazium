@@ -36,7 +36,8 @@
 #include "core/io/json.h"
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
-#include "editor/editor_file_system.h"
+#include "core/templates/local_vector.h"
+#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
 #include "scene/resources/packed_scene.h"
@@ -49,12 +50,13 @@
 #include "scene/animation/animation_tree.h"
 #include "scene/resources/animation_library.h"
 
-#include "scene/2d/navigation_agent_2d.h"
-#include "scene/2d/navigation_region_2d.h"
-#include "scene/3d/navigation_agent_3d.h"
-#include "scene/3d/navigation_region_3d.h"
+#include "scene/2d/navigation/navigation_agent_2d.h"
+#include "scene/2d/navigation/navigation_region_2d.h"
+#include "scene/3d/navigation/navigation_agent_3d.h"
+#include "scene/3d/navigation/navigation_region_3d.h"
 #include "scene/resources/2d/navigation_polygon.h"
 #include "scene/resources/navigation_mesh.h"
+#include "core/string/string_name.h"
 
 void JustAMCPAnimationTools::_refresh_and_reload(const String &p_scene_path) {
 	_refresh_filesystem(p_scene_path);
@@ -285,8 +287,7 @@ Dictionary JustAMCPAnimationTools::_serialize_state_machine(const Ref<AnimationN
 	info["type"] = "AnimationNodeStateMachine";
 
 	Array states;
-	List<StringName> node_names;
-	p_state_machine->get_node_list(&node_names);
+	LocalVector<StringName> node_names = p_state_machine->get_node_list();
 	for (const StringName &name : node_names) {
 		Ref<AnimationNode> child = p_state_machine->get_node(name);
 		Dictionary state = _serialize_animation_node(child);
@@ -325,8 +326,7 @@ Dictionary JustAMCPAnimationTools::_serialize_blend_tree(const Ref<AnimationNode
 	info["type"] = "AnimationNodeBlendTree";
 
 	Array nodes;
-	List<StringName> node_names;
-	p_blend_tree->get_node_list(&node_names);
+	LocalVector<StringName> node_names = p_blend_tree->get_node_list();
 	for (const StringName &name : node_names) {
 		Ref<AnimationNode> child = p_blend_tree->get_node(name);
 		Dictionary node = _serialize_animation_node(child);
@@ -369,7 +369,7 @@ Dictionary JustAMCPAnimationTools::get_animation_info(const Dictionary &p_args) 
 		return ret;
 	}
 
-	List<StringName> names;
+	LocalVector<StringName> names;
 	player->get_animation_list(&names);
 	Array animations;
 	for (const StringName &name : names) {

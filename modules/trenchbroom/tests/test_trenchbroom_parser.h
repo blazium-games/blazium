@@ -61,6 +61,10 @@
 #include "tests/test_utils.h"
 #ifdef TOOLS_ENABLED
 #include "modules/gdscript/gdscript.h"
+#include "core/string/string_name.h"
+#include "core/templates/local_vector.h"
+#include "core/io/dir_access.h"
+#include "core/string/ustring.h"
 #endif
 
 namespace TestTrenchbroomParser {
@@ -482,7 +486,7 @@ TEST_CASE("[Trenchbroom] compute_interior_faces_to_cull marks shared opposite fa
 	face_brush_index[&inner_face] = 0;
 	face_brush_index[&outer_face] = 1;
 
-	const HashSet<FaceData *> culled = generator->compute_interior_faces_to_cull(faces, face_brush_index, TrenchbroomUtil::VERTEX_EPSILON);
+	const HashSet<FaceData *> culled(generator->compute_interior_faces_to_cull(faces, face_brush_index, TrenchbroomUtil::VERTEX_EPSILON));
 	CHECK((culled.has(&inner_face) || culled.has(&outer_face)));
 }
 

@@ -81,10 +81,10 @@
 
 #ifdef TOOLS_ENABLED
 #include "../justamcp_editor_plugin.h"
-#include "editor/editor_file_system.h"
+#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 #include "scene/main/node.h"
 #include "scene/resources/material.h"
 #include "scene/resources/mesh.h"
@@ -97,6 +97,7 @@
 
 #ifdef MODULE_MULTIUSER_EDITOR_ENABLED
 #include "justamcp_multiuser_tools.h"
+#include "core/object/class_db.h"
 #endif
 
 void JustAMCPToolExecutor::_bind_methods() {

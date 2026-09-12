@@ -30,6 +30,7 @@
 #include "kick_events_requests.h"
 
 #include "core/io/json.h"
+#include "core/object/class_db.h"
 
 void KickEventsRequests::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_subscriptions"), &KickEventsRequests::get_subscriptions);

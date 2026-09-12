@@ -35,6 +35,7 @@
 #include "asset_tags_dialog.h"
 #include "editor/editor_node.h"
 #include "editor/editor_string_names.h"
+#include "core/object/callable_mp.h"
 
 void AssetTagsContextMenuPlugin::_bind_methods() {}
 
@@ -63,7 +64,11 @@ void AssetTagsContextMenuPlugin::_edit_tags(const Variant &p_paths) {
 	dialog->edit(edit_paths);
 }
 
-void AssetTagsContextMenuPlugin::get_options(const Vector<String> &p_paths) {
+void AssetTagsContextMenuPlugin::get_options(const OptionsData &p_data) {
+	PackedStringArray p_paths;
+	if (p_data.has("selected_files")) {
+		p_paths = p_data["selected_files"];
+	}
 	bool any_taggable = false;
 	for (int i = 0; i < p_paths.size(); i++) {
 		const String &path = p_paths[i];

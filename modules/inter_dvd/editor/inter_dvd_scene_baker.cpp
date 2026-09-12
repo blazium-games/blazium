@@ -42,6 +42,7 @@
 #include "core/math/math_funcs.h"
 #include "core/object/class_db.h"
 #include "core/os/os.h"
+#include "core/templates/local_vector.h"
 #include "scene/2d/animated_sprite_2d.h"
 #include "scene/2d/audio_stream_player_2d.h"
 #include "scene/2d/camera_2d.h"
@@ -49,8 +50,8 @@
 #include "scene/2d/mesh_instance_2d.h"
 #include "scene/2d/polygon_2d.h"
 #include "scene/2d/sprite_2d.h"
-#include "scene/2d/tile_map.h"
-#include "scene/2d/tile_map_layer.h"
+#include "modules/tilemap/tile_map.h"
+#include "modules/tilemap/tile_map_layer.h"
 #ifndef _3D_DISABLED
 #include "scene/3d/audio_stream_player_3d.h"
 #include "scene/3d/camera_3d.h"
@@ -75,7 +76,7 @@
 #include "scene/gui/texture_button.h"
 #include "scene/gui/texture_rect.h"
 #include "scene/gui/video_stream_player.h"
-#include "scene/resources/2d/tile_set.h"
+#include "modules/tilemap/tile_set.h"
 #include "scene/resources/packed_scene.h"
 #include "scene/resources/sprite_frames.h"
 #include "scene/resources/style_box.h"
@@ -85,10 +86,11 @@
 #include "scene/main/scene_tree.h"
 #include "scene/main/viewport.h"
 #include "scene/main/window.h"
-#include "scene/resources/audio_stream_wav.h"
+#include "scene/resources/audio/audio_stream_wav.h"
 #include "scene/resources/texture.h"
-#include "servers/rendering_server.h"
-#include "servers/text_server.h"
+#include "servers/rendering/rendering_server.h"
+#include "servers/text/text_server.h"
+#include "core/string/string_name.h"
 namespace {
 
 constexpr int BAKE_WIDTH = 720;
@@ -205,10 +207,10 @@ String packed_visual_fingerprint(const Ref<PackedScene> &p_scene) {
 
 void play_animations(Node *p_node) {
 	if (AnimationPlayer *ap = Object::cast_to<AnimationPlayer>(p_node)) {
-		List<StringName> names;
+		LocalVector<StringName> names;
 		ap->get_animation_list(&names);
 		if (!names.is_empty() && !ap->is_playing()) {
-			ap->play(names.front()->get());
+			ap->play(names[0]);
 		}
 	}
 	for (int i = 0; i < p_node->get_child_count(); i++) {

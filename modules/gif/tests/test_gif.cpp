@@ -38,7 +38,7 @@
 #include "core/io/image.h"
 #include "scene/resources/image_texture.h"
 #include "scene/resources/sprite_frames.h"
-#include "servers/rendering_server.h"
+#include "servers/rendering/rendering_server.h"
 
 #include <string.h>
 

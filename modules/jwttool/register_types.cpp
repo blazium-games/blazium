@@ -32,6 +32,7 @@
 
 #include "core/config/engine.h"
 #include "jwt.h"
+#include "core/object/class_db.h"
 
 static JWT *jwt_singleton_global = nullptr;
 

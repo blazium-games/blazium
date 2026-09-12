@@ -31,6 +31,7 @@
 
 #include "core/templates/vector.h"
 #include "core/variant/array.h"
+#include "core/string/ustring.h"
 #include "core/variant/dictionary.h"
 #include "core/variant/variant.h"
 

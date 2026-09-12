@@ -33,6 +33,7 @@
 
 #include "modules/rcon/rcon_client.h"
 #include "modules/rcon/rcon_packet.h"
+#include "core/string/ustring.h"
 
 namespace TestRCONClient {
 

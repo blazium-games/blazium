@@ -42,6 +42,7 @@
 #include "core/os/os.h"
 #include "core/os/time.h"
 #include "core/version.h"
+#include "core/object/class_db.h"
 
 static uint64_t g_justamcp_client_rpc_id = 1;
 

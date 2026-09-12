@@ -40,8 +40,8 @@
 #include "core/object/script_language.h"
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_settings.h"
-#include "editor/luau_formatter.h"
+#include "editor/settings/editor_settings.h"
+#include "modules/luau_module/editor/luau_formatter.h"
 #endif
 
 Error ResourceFormatSaverLuau::save(const Ref<Resource> &p_resource, const String &p_path, uint32_t p_flags) {

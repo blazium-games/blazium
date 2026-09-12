@@ -58,6 +58,7 @@
 #include "scene/3d/sprite_3d.h"
 #include "scene/resources/mesh.h"
 #include "scene/resources/texture.h"
+#include "core/object/class_db.h"
 
 void DDDBrowserExporter::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("export_scene", "root", "export_dir", "generate_html"), &DDDBrowserExporter::export_scene, DEFVAL(true));

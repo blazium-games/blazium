@@ -31,6 +31,7 @@
 
 #include "core/object/ref_counted.h"
 #include "gif_texture.h"
+#include "core/variant/type_info.h"
 
 class Viewport;
 class Window;

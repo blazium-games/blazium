@@ -54,8 +54,7 @@ String ScreensaverPassword::hash_password(const String &p_plain, const String &p
 
 String ScreensaverPassword::generate_salt() {
 	uint8_t bytes[16];
-	CryptoCore::RandomGenerator rng;
-	if (rng.init() != OK || rng.get_random_bytes(bytes, 16) != OK) {
+	if (CryptoCore::generate_random(bytes, 16) != OK) {
 		const uint64_t ticks = OS::get_singleton() ? OS::get_singleton()->get_ticks_usec() : 1;
 		for (int i = 0; i < 16; i++) {
 			bytes[i] = uint8_t((ticks >> ((i * 5) % 56)) & 0xFF);

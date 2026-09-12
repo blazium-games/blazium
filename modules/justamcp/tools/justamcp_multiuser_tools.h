@@ -33,12 +33,13 @@
 
 #ifdef MODULE_MULTIUSER_EDITOR_ENABLED
 
-#include "core/object/ref_counted.h"
+#include "core/object/class_db.h"
+#include "core/object/object.h"
 
 class JustAMCPEditorPlugin;
 
-class JustAMCPMultiuserTools : public RefCounted {
-	GDCLASS(JustAMCPMultiuserTools, RefCounted);
+class JustAMCPMultiuserTools : public Object {
+	GDCLASS(JustAMCPMultiuserTools, Object);
 
 private:
 	JustAMCPEditorPlugin *editor_plugin = nullptr;

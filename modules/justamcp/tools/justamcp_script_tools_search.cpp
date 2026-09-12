@@ -35,10 +35,11 @@
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
 #include "core/object/script_language.h"
-#include "modules/regex/regex.h"
+#include "core/string/regex.h"
 #include "scene/resources/packed_scene.h"
 
 #include "../justamcp_mcp_tool_macros.h"
+#include "core/object/class_db.h"
 
 Dictionary JustAMCPScriptTools::_search_in_scripts(const Dictionary &p_params) {
 	if (!p_params.has("pattern")) {

@@ -32,6 +32,7 @@
 #include "dotcsv.h"
 
 #include "core/io/resource_saver.h"
+#include "core/string/string_name.h"
 
 namespace {
 

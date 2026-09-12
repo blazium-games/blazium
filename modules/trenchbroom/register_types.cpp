@@ -29,6 +29,7 @@
 
 #include "register_types.h"
 
+#include "core/object/class_db.h"
 #include "fgd/blazium_fgd_base_class.h"
 #include "fgd/blazium_fgd_entity_class.h"
 #include "fgd/blazium_fgd_file.h"
@@ -53,7 +54,7 @@
 #include "core/io/dir_access.h"
 #include "core/io/resource_importer.h"
 #include "editor/editor_node.h"
-#include "editor/trenchbroom_editor_plugin.h"
+#include "modules/trenchbroom/editor/trenchbroom_editor_plugin.h"
 #include "import/resource_importer_map.h"
 #include "import/resource_importer_palette.h"
 #include "import/resource_importer_wad.h"

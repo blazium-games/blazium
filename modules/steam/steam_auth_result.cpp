@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "steam_auth_result.h"
+#include "core/object/class_db.h"
 
 void SteamAuthResult::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_jwt"), &SteamAuthResult::get_jwt);

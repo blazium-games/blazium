@@ -98,7 +98,7 @@ bool AssetTagRegistryCommitPolicy::persist_batch_changes(
 			}
 		}
 	} else if (p_save_index) {
-		HashSet<String> paths_to_merge = p_dirty_index_paths;
+		HashSet<String> paths_to_merge(p_dirty_index_paths);
 		if (paths_to_merge.is_empty()) {
 			for (const KeyValue<String, Vector<String>> &kv : p_asset_index) {
 				paths_to_merge.insert(kv.key);

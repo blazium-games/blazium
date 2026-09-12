@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "lua_debug.h"
+#include "core/object/class_db.h"
 
 using namespace luau_module;
 

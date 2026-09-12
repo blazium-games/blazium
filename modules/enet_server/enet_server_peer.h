@@ -33,6 +33,7 @@
 #include "modules/enet/enet_packet_peer.h"
 
 #include <enet/enet.h>
+#include "core/variant/type_info.h"
 
 class ENetServerPeer : public RefCounted {
 	GDCLASS(ENetServerPeer, RefCounted);

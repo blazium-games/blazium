@@ -34,8 +34,9 @@
 #include "../dddbrowser_exporter.h"
 #include "../dddbrowser_preview_server.h"
 
-#include "editor/plugins/editor_context_menu_plugin.h"
+#include "editor/inspector/editor_context_menu_plugin.h"
 #include "editor/plugins/editor_plugin.h"
+#include "core/string/ustring.h"
 
 class EditorFileDialog;
 
@@ -52,7 +53,7 @@ protected:
 
 public:
 	void set_callbacks(const Callable &p_export, const Callable &p_test, const Callable &p_create, const Callable &p_check_luau = Callable());
-	virtual void get_options(const Vector<String> &p_paths) override;
+	virtual void get_options(const OptionsData &p_data) override;
 };
 
 class DDDBrowserSceneTreeContextPlugin : public EditorContextMenuPlugin {
@@ -67,7 +68,7 @@ protected:
 
 public:
 	void set_callbacks(const Callable &p_export, const Callable &p_test, const Callable &p_check_luau = Callable());
-	virtual void get_options(const Vector<String> &p_paths) override;
+	virtual void get_options(const OptionsData &p_data) override;
 };
 
 class DDDBrowserEditorPlugin : public EditorPlugin {

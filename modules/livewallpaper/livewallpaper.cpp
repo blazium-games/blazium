@@ -37,11 +37,12 @@
 #include "modules/livewallpaper/livewallpaper_workerw.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
-#include "servers/display_server.h"
-#include "servers/rendering_server.h"
+#include "servers/display/display_server.h"
+#include "servers/rendering/rendering_server.h"
 
 #ifdef WINDOWS_ENABLED
 #include <windows.h>
+#include "core/object/callable_mp.h"
 #endif
 
 LiveWallpaper *LiveWallpaper::singleton = nullptr;
@@ -223,7 +224,7 @@ void LiveWallpaper::_ensure_attached() {
 	if (ds == nullptr) {
 		return;
 	}
-	const int64_t hwnd = ds->window_get_native_handle(DisplayServer::WINDOW_HANDLE);
+	const int64_t hwnd = ds->window_get_native_handle(DisplayServerEnums::WINDOW_HANDLE);
 	int64_t workerw = LiveWallpaperCmdline::get_embed_hwnd();
 	if (workerw == 0) {
 		workerw = LiveWallpaperWorkerW::find_workerw();
@@ -258,7 +259,7 @@ void LiveWallpaper::_sync_root_viewport(const Size2i &p_size) {
 		return;
 	}
 	const RID vp = root->get_viewport_rid();
-	rs->viewport_set_update_mode(vp, RenderingServer::VIEWPORT_UPDATE_ALWAYS);
+	rs->viewport_set_update_mode(vp, RSE::VIEWPORT_UPDATE_ALWAYS);
 	rs->viewport_set_disable_2d(vp, false);
 	if (last_synced_viewport == p_size) {
 		return;
@@ -266,7 +267,7 @@ void LiveWallpaper::_sync_root_viewport(const Size2i &p_size) {
 	last_synced_viewport = p_size;
 	rs->viewport_set_size(vp, p_size.x, p_size.y);
 
-	rs->viewport_attach_to_screen(vp, Rect2(), DisplayServer::INVALID_WINDOW_ID);
+	rs->viewport_attach_to_screen(vp, Rect2(), DisplayServerEnums::INVALID_WINDOW_ID);
 }
 
 void LiveWallpaper::process_frame() {

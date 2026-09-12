@@ -10,6 +10,7 @@
 
 #include "modules/inter_dvd/author/inter_dvd_project.h"
 #include "scene/gui/control.h"
+#include "core/string/ustring.h"
 
 class InterDVDChapter;
 class InterDVDHotspot;

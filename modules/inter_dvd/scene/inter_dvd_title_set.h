@@ -10,6 +10,7 @@
 
 #include "modules/inter_dvd/author/inter_dvd_project.h"
 #include "scene/main/node.h"
+#include "core/string/ustring.h"
 
 class InterDVDTitle;
 class InterDVDMenuPage;

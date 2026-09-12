@@ -37,6 +37,7 @@
 #include "core/os/thread.h"
 #include "core/templates/hash_map.h"
 #include "core/templates/list.h"
+#include "core/variant/type_info.h"
 
 class RCONServer : public RefCounted {
 	GDCLASS(RCONServer, RefCounted);

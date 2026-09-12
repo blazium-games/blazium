@@ -35,6 +35,7 @@
 #include "scene/gui/box_container.h"
 #include "scene/gui/button.h"
 #include "scene/gui/rich_text_label.h"
+#include "core/string/ustring.h"
 
 class AutoworkEditorPlugin : public EditorPlugin {
 	GDCLASS(AutoworkEditorPlugin, EditorPlugin);

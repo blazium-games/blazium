@@ -35,6 +35,7 @@
 #include "modules/trenchbroom/util/trenchbroom_util.h"
 
 #include "core/string/print_string.h"
+#include "core/templates/local_vector.h"
 
 bool TrenchbroomMapParser::_parse_vmf(const PackedStringArray &p_map_data, const TrenchbroomMapSettings *p_map_settings, ParseData &r_parse_data) {
 	LocalVector<EntityData> &entities_data = r_parse_data.entities;

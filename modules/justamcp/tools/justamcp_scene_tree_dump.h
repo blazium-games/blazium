@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "core/string/ustring.h"
 #include "core/variant/dictionary.h"
 
 Dictionary justamcp_scene_tree_dump(const Dictionary &p_args);

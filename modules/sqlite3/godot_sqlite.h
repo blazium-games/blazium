@@ -31,6 +31,7 @@
 
 #pragma once
 
+#include "core/core_bind.h"
 #include "core/object/ref_counted.h"
 #include "core/templates/hash_map.h"
 #include "core/templates/local_vector.h"
@@ -38,6 +39,7 @@
 #include "core/variant/typed_array.h"
 #include "thirdparty/spmemvfs/spmemvfs.h"
 #include "thirdparty/sqlite/sqlite3.h"
+#include "core/object/class_db.h"
 
 class SQLiteColumnSchema : public RefCounted {
 	GDCLASS(SQLiteColumnSchema, RefCounted);
@@ -231,7 +233,7 @@ private:
 	spmemvfs_db_t spmemvfs_db{};
 	bool memory_read = false;
 
-	::LocalVector<Ref<WeakRef>> queries;
+	::LocalVector<Ref<CoreBind::WeakRef>> queries;
 
 	struct SQLiteCallableContext {
 		Callable func;

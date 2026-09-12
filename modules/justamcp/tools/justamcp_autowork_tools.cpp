@@ -48,7 +48,7 @@
 #include "core/os/os.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
-#include "servers/display_server.h"
+#include "servers/display/display_server.h"
 
 void JustAMCPAutoworkTools::_bind_methods() {
 }

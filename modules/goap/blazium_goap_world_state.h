@@ -30,6 +30,7 @@
 #pragma once
 
 #include "core/object/ref_counted.h"
+#include "core/string/string_name.h"
 
 class BlaziumGoapWorldState : public RefCounted {
 	GDCLASS(BlaziumGoapWorldState, RefCounted);

@@ -44,7 +44,7 @@
 #include "core/os/os.h"
 #include "core/string/ustring.h"
 #include "core/templates/hash_set.h"
-#include "editor/editor_file_system.h"
+#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_interface.h"
 
 #define RECENT_APPLY_MAX (multiuser_editor::kFilesystemSyncRecentApplyMax)
@@ -723,7 +723,7 @@ Error MultiuserEditorFilesystemSync::host_accumulate_propose(int p_sender_net_id
 			return we;
 		}
 		if (EditorInterface::get_singleton()) {
-			if (EditorFileSystem *efs = EditorInterface::get_singleton()->get_resource_file_system()) {
+			if (EditorFileSystem *efs = EditorInterface::get_singleton()->get_resource_filesystem()) {
 				efs->update_file(st.path);
 			}
 		}
@@ -785,7 +785,7 @@ void MultiuserEditorFilesystemSync::apply_delete(const String &p_res_path) {
 		}
 	}
 	if (EditorInterface::get_singleton()) {
-		if (EditorFileSystem *efs = EditorInterface::get_singleton()->get_resource_file_system()) {
+		if (EditorFileSystem *efs = EditorInterface::get_singleton()->get_resource_filesystem()) {
 			efs->update_file(canonical);
 		}
 	}
@@ -806,7 +806,7 @@ void MultiuserEditorFilesystemSync::apply_move(const String &p_old_res, const St
 		root->rename(rel_old, rel_new);
 	}
 	if (EditorInterface::get_singleton()) {
-		if (EditorFileSystem *efs = EditorInterface::get_singleton()->get_resource_file_system()) {
+		if (EditorFileSystem *efs = EditorInterface::get_singleton()->get_resource_filesystem()) {
 			efs->update_file(old_canonical);
 			efs->update_file(new_canonical);
 		}
@@ -820,7 +820,7 @@ static void _maybe_reimport(const String &p_path) {
 	if (!EditorInterface::get_singleton()) {
 		return;
 	}
-	EditorFileSystem *efs = EditorInterface::get_singleton()->get_resource_file_system();
+	EditorFileSystem *efs = EditorInterface::get_singleton()->get_resource_filesystem();
 	if (!efs) {
 		return;
 	}
@@ -1049,7 +1049,7 @@ Error MultiuserEditorFilesystemSync::apply_incoming_transfer(const String &p_typ
 			if (e != OK) {
 				return e;
 			}
-			if (EditorFileSystem *efs = EditorInterface::get_singleton()->get_resource_file_system()) {
+			if (EditorFileSystem *efs = EditorInterface::get_singleton()->get_resource_filesystem()) {
 				efs->update_file(st.path);
 			}
 			if (p_trigger_reimport) {

@@ -17,13 +17,15 @@
 #include "core/object/class_db.h"
 #include "core/os/os.h"
 #include "core/os/thread.h"
-#include "servers/display_server.h"
+#include "servers/display/display_server.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
 #include "scene/main/node.h"
 #include "scene/main/window.h"
+#include "core/string/string_name.h"
+#include "core/string/ustring.h"
 #endif
 
 inline Dictionary justamcp_normalize_runtime_result(const Dictionary &p_raw) {

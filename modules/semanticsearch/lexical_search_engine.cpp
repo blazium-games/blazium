@@ -91,7 +91,7 @@ Array LexicalSearchEngine::search(
 		const String &p_query,
 		int p_limit,
 		const HashSet<String> *p_allowed_paths) {
-	const Vector<String> query_tokens = tokenize(p_query);
+	const Vector<String> query_tokens(tokenize(p_query));
 	if (query_tokens.is_empty()) {
 		return Array();
 	}

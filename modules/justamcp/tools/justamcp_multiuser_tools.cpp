@@ -33,6 +33,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "modules/multiuser_editor/multiuser_editor_plugin.h"
+#include "core/object/class_db.h"
 
 void JustAMCPMultiuserTools::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("multiuser_get_status", "args"), &JustAMCPMultiuserTools::multiuser_get_status);

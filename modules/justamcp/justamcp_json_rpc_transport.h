@@ -33,6 +33,7 @@
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 
+#include "core/string/ustring.h"
 #include "core/variant/dictionary.h"
 #include "core/variant/variant.h"
 

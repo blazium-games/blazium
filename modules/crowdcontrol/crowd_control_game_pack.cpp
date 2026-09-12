@@ -31,6 +31,7 @@
 
 #include "core/io/file_access.h"
 #include "core/io/json.h"
+#include "core/object/class_db.h"
 
 void CrowdControlGamePack::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_pack_meta", "meta"), &CrowdControlGamePack::set_pack_meta);

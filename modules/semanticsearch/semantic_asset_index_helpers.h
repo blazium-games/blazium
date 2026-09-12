@@ -31,6 +31,7 @@
 
 #include "hash_vector_embedding.h"
 #include "semantic_index_store.h"
+#include "core/string/ustring.h"
 
 static inline bool semantic_is_embedding_stale(const SemanticAssetEntry &p_entry, const String &p_active_provider) {
 	if (p_entry.embedding_vector.is_empty() || !HashVectorEmbedding::is_valid_embedding_dim(p_entry.embedding_vector.size())) {

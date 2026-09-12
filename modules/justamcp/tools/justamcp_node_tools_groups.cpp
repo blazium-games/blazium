@@ -42,6 +42,7 @@
 #include "scene/gui/control.h"
 
 #include "../justamcp_mcp_tool_macros.h"
+#include "core/string/string_name.h"
 
 static String _justamcp_safe_path_to(Node *p_root, Node *p_node) {
 	return JustAMCPEditorSceneAccess::safe_path_to(p_root, p_node);

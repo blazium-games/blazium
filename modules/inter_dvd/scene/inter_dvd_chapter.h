@@ -11,6 +11,8 @@
 #include "modules/inter_dvd/author/inter_dvd_project.h"
 #include "scene/main/node.h"
 #include "scene/resources/packed_scene.h"
+#include "core/string/ustring.h"
+#include "core/variant/type_info.h"
 
 class InterDVDChapter : public Node {
 	GDCLASS(InterDVDChapter, Node);

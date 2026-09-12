@@ -36,9 +36,9 @@
 #include "justamcp_scene_file_io.h"
 
 #include "core/io/resource_loader.h"
-#include "scene/2d/tile_map.h"
-#include "scene/2d/tile_map_layer.h"
-#include "scene/resources/2d/tile_set.h"
+#include "modules/tilemap/tile_map.h"
+#include "modules/tilemap/tile_map_layer.h"
+#include "modules/tilemap/tile_set.h"
 #include "scene/resources/texture.h"
 
 JustAMCPTileMapTools::JustAMCPTileMapTools() {

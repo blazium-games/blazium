@@ -30,6 +30,7 @@
 #include "twitch_chat_requests.h"
 
 #include "core/io/json.h"
+#include "core/object/class_db.h"
 
 void TwitchChatRequests::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_chatters", "broadcaster_id", "moderator_id", "params"), &TwitchChatRequests::get_chatters, DEFVAL(Dictionary()));

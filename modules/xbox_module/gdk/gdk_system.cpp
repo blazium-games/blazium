@@ -43,6 +43,7 @@
 #include "gdk.h"
 #include "gdk_result.h"
 #include "gdk_xbox_services.h"
+#include "core/object/class_db.h"
 
 namespace {
 

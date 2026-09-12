@@ -32,6 +32,8 @@
 #include "trenchbroom_map_settings.h"
 
 #include "scene/3d/node_3d.h"
+#include "core/string/ustring.h"
+#include "core/variant/type_info.h"
 
 class TrenchbroomMap : public Node3D {
 	GDCLASS(TrenchbroomMap, Node3D);

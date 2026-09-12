@@ -31,6 +31,7 @@
 
 #include "core/os/os.h"
 #include "rcon_packet.h"
+#include "core/object/class_db.h"
 
 void RCONServer::_bind_methods() {
 	// High-level API
@@ -477,7 +478,7 @@ void RCONServer::_accept_new_clients_tcp() {
 			clients[client.id] = client;
 
 			Dictionary data;
-			String addr_str = peer->get_connected_host();
+			String addr_str = String(peer->get_connected_host());
 			data["address"] = addr_str + String(":") + itos(peer->get_connected_port());
 			_queue_event_unlocked(Event::EVENT_CLIENT_CONNECTED, client.id, data);
 		}

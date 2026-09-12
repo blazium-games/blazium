@@ -41,6 +41,7 @@
 #include "tiled_tilemap_creator.h"
 #include "tiled_tileset_creator.h"
 #include "tiled_tileson_bridge.h"
+#include "core/string/string_name.h"
 
 static void _set_owner_recursive(Node *p_node, Node *p_owner) {
 	if (p_node != p_owner) {

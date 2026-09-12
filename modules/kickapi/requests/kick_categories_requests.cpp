@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "kick_categories_requests.h"
+#include "core/object/class_db.h"
 
 void KickCategoriesRequests::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_categories", "search_query", "page"), &KickCategoriesRequests::get_categories, DEFVAL(1));

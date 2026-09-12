@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "rcon_packet.h"
+#include "core/object/class_db.h"
 
 // CRC32 lookup table for BattlEye
 static uint32_t crc32_table[256];

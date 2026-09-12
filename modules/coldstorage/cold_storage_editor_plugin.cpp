@@ -39,11 +39,13 @@
 #include "core/os/os.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
-#include "editor/editor_settings.h"
-#include "editor/editor_vcs_interface.h"
-#include "editor/plugins/version_control_editor_plugin.h"
+#include "editor/settings/editor_settings.h"
+#include "editor/version_control/editor_vcs_interface.h"
+#include "editor/version_control/version_control_editor_plugin.h"
 #include "scene/gui/dialogs.h"
 #include "scene/gui/label.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 
 ColdStorageEditorPlugin *ColdStorageEditorPlugin::singleton = nullptr;
 

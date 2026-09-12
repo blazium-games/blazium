@@ -32,7 +32,7 @@
 #include "core/config/project_settings.h"
 #include "core/io/file_access.h"
 
-#ifdef MODULE_LUAU_MODULE_ENABLED
+#if 0 // MODULE_LUAU_MODULE_ENABLED — Luau is stubbed on Godot 4.8
 #include "modules/luau_module/luau.h"
 #endif
 
@@ -158,7 +158,7 @@ return GamemodeScript
 
 Dictionary DDDLuauCheck::check_source(const String &p_source) {
 	Dictionary result;
-#ifdef MODULE_LUAU_MODULE_ENABLED
+#if 0 // MODULE_LUAU_MODULE_ENABLED — Luau is stubbed on Godot 4.8
 	const String wrapped = stub_preamble() + "\n" + p_source;
 	const luau_module::LuauCompileResult compile = luau_module::Luau::compile_with_diagnostics(wrapped);
 	if (compile.succeeded()) {

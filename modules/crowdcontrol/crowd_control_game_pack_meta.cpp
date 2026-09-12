@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "crowd_control_game_pack_meta.h"
+#include "core/object/class_db.h"
 
 void CrowdControlGamePackMeta::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_game_name", "name"), &CrowdControlGamePackMeta::set_game_name);

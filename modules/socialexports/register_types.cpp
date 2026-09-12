@@ -36,6 +36,7 @@
 #include "third_party_client.h"
 #include "youtube/youtube_playables_client.h"
 #include "youtube/youtube_playables_response.h"
+#include "core/object/class_db.h"
 
 void initialize_socialexports_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {

@@ -32,8 +32,11 @@
 #include "core/io/resource.h"
 #include "core/math/vector2i.h"
 #include "core/os/mutex.h"
+#include "core/os/rw_lock.h"
 #include "core/templates/hash_set.h"
 #include "scene/resources/texture.h"
+#include "core/string/string_name.h"
+#include "core/variant/type_info.h"
 
 class SpriteFrames;
 struct GIFDecoded;

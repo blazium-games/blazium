@@ -39,7 +39,7 @@
 #include "lexical_index_builder.h"
 #include "lexical_search_engine.h"
 #include "modules/modules_enabled.gen.h"
-#include "modules/regex/regex.h"
+#include "core/string/regex.h"
 #include "semantic_embedding_pipeline.h"
 #include "semantic_index_store.h"
 #include "semantic_search_backend.h"
@@ -53,7 +53,8 @@
 #endif
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_file_system.h"
+#include "editor/file_system/editor_file_system.h"
+#include "core/object/class_db.h"
 #endif
 
 SemanticAssetIndex *SemanticAssetIndex::singleton = nullptr;

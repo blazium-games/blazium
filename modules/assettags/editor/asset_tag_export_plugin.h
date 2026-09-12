@@ -32,6 +32,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "editor/export/editor_export_plugin.h"
+#include "core/string/ustring.h"
 
 class EditorExportAssetTags : public EditorExportPlugin {
 	GDCLASS(EditorExportAssetTags, EditorExportPlugin);

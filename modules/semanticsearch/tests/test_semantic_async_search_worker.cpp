@@ -128,7 +128,7 @@ void test_semantic_sidecar_compact_at_64() {
 	seed.caption = "Seed";
 	store.set_entry(seed.path, seed);
 	CHECK(store.save() == OK);
-	HashMap<String, SemanticAssetEntry> entries = store.get_entries();
+	HashMap<String, SemanticAssetEntry> entries(store.get_entries());
 
 	for (int i = 0; i < 64; i++) {
 		const String path = vformat("res://semantic_asset_%03d.tscn", i);

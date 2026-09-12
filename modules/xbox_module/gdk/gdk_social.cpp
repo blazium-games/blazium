@@ -48,6 +48,7 @@
 #include "gdk_signal_xasync_context.h"
 #include "gdk_user.h"
 #include "gdk_xbox_services.h"
+#include "core/object/class_db.h"
 
 #ifdef XBOX_MODULE_GDK_ENABLED
 

@@ -34,6 +34,7 @@
 #include "core/templates/vector.h"
 #include "modules/websocket/websocket_peer.h"
 #include "obs_enums.h"
+#include "core/variant/type_info.h"
 
 class OBSClient : public Object {
 	GDCLASS(OBSClient, Object);

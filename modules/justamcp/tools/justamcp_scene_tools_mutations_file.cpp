@@ -47,13 +47,15 @@
 #include "core/os/thread.h"
 #include "core/templates/hash_map.h"
 #include "editor/editor_data.h"
-#include "editor/editor_file_system.h"
+#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
 #include "editor/editor_undo_redo_manager.h"
 #include "scene/2d/sprite_2d.h"
 #include "scene/3d/sprite_3d.h"
 #include "scene/resources/packed_scene.h"
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 Dictionary JustAMCPSceneTools::create_scene(const Dictionary &p_args) {
 	String project_path = p_args.get("projectPath", "");
@@ -149,7 +151,7 @@ Dictionary JustAMCPSceneTools::delete_scene_file(const Dictionary &p_args) {
 		return ret;
 	}
 	const String main_scene = ProjectSettings::get_singleton() ? String(ProjectSettings::get_singleton()->get_setting("application/run/main_scene", "")) : String();
-	if ((!main_scene.is_empty() && scene_path == main_scene) || ProjectSettings::is_project_settings_file(scene_path) || scene_path == "res://export_presets.cfg") {
+	if ((!main_scene.is_empty() && scene_path == main_scene) || JustAMCPEditorSceneAccess::is_project_settings_file(scene_path) || scene_path == "res://export_presets.cfg") {
 		Dictionary ret;
 		ret["ok"] = false;
 		ret["error"] = "Refusing to delete protected project path: " + scene_path;
@@ -329,7 +331,15 @@ Dictionary JustAMCPSceneTools::close_scene(const Dictionary &p_args) {
 		EditorNode::get_singleton()->save_scene_if_open(closed_path);
 	}
 
-	EditorNode::get_singleton()->close_scene(idx);
+	if (editor_data.get_edited_scene() != idx) {
+		editor_data.set_edited_scene(idx);
+	}
+	if (!EditorNode::get_singleton()->close_scene()) {
+		ret["ok"] = false;
+		ret["error"] = "Failed to close scene tab.";
+		ret["path"] = closed_path;
+		return ret;
+	}
 
 	ret["ok"] = true;
 	ret["path"] = closed_path;

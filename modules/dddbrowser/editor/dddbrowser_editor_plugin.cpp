@@ -46,12 +46,14 @@
 #include "core/os/os.h"
 #include "editor/editor_data.h"
 #include "editor/editor_node.h"
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 #include "editor/gui/editor_file_dialog.h"
 #include "scene/gui/popup_menu.h"
 #include "scene/main/window.h"
 #include "scene/resources/packed_scene.h"
-#include "servers/display_server.h"
+#include "servers/display/display_server.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 
 void DDDBrowserFilesystemContextPlugin::set_callbacks(const Callable &p_export, const Callable &p_test, const Callable &p_create, const Callable &p_check_luau) {
 	export_cb = p_export;
@@ -60,14 +62,18 @@ void DDDBrowserFilesystemContextPlugin::set_callbacks(const Callable &p_export, 
 	check_luau_cb = p_check_luau;
 }
 
-void DDDBrowserFilesystemContextPlugin::get_options(const Vector<String> &p_paths) {
+void DDDBrowserFilesystemContextPlugin::get_options(const OptionsData &p_data) {
+	PackedStringArray files;
+	if (p_data.has("selected_files")) {
+		files = p_data["selected_files"];
+	}
 	bool has_tscn = false;
 	bool has_luau = false;
-	for (int i = 0; i < p_paths.size(); i++) {
-		if (p_paths[i].ends_with(".tscn") || p_paths[i].ends_with(".scn")) {
+	for (int i = 0; i < files.size(); i++) {
+		if (files[i].ends_with(".tscn") || files[i].ends_with(".scn")) {
 			has_tscn = true;
 		}
-		if (p_paths[i].ends_with(".luau")) {
+		if (files[i].ends_with(".luau")) {
 			has_luau = true;
 		}
 	}
@@ -89,7 +95,8 @@ void DDDBrowserSceneTreeContextPlugin::set_callbacks(const Callable &p_export, c
 	check_luau_cb = p_check_luau;
 }
 
-void DDDBrowserSceneTreeContextPlugin::get_options(const Vector<String> &p_paths) {
+void DDDBrowserSceneTreeContextPlugin::get_options(const OptionsData &p_data) {
+	(void)p_data;
 	add_context_menu_item(TTR("Export as DDDBrowser Page"), export_cb, Ref<Texture2D>());
 	add_context_menu_item(TTR("Test DDDBrowser Page (HTTPServer)"), test_cb, Ref<Texture2D>());
 	if (check_luau_cb.is_valid()) {
@@ -132,7 +139,7 @@ Node *DDDBrowserEditorPlugin::_load_scene_root(const String &p_path) {
 void DDDBrowserEditorPlugin::_popup_export_dialog() {
 	Node *root = EditorNode::get_singleton()->get_edited_scene();
 	if (!root) {
-		EditorNode::get_singleton()->show_accept(TTR("This operation can't be done without a scene."), TTR("OK"));
+		EditorNode::get_singleton()->show_warning(TTR("This operation can't be done without a scene."));
 		return;
 	}
 	String filename = root->get_scene_file_path().get_file().get_basename();
@@ -151,10 +158,10 @@ void DDDBrowserEditorPlugin::_export_to_path(const String &p_path) {
 	}
 	Error err = exporter->export_scene(root, p_path, true);
 	if (err != OK) {
-		EditorNode::get_singleton()->show_accept(vformat(TTR("DDDBrowser export failed: %s"), exporter->get_last_error()), TTR("OK"));
+		EditorNode::get_singleton()->show_warning(vformat(TTR("DDDBrowser export failed: %s"), exporter->get_last_error()));
 		return;
 	}
-	EditorNode::get_singleton()->show_accept(vformat(TTR("Exported DDDBrowser page to:\n%s"), p_path), TTR("OK"));
+	EditorNode::get_singleton()->show_warning(vformat(TTR("Exported DDDBrowser page to:\n%s"), p_path));
 }
 
 void DDDBrowserEditorPlugin::_export_paths(const Variant &p_paths) {
@@ -169,7 +176,7 @@ void DDDBrowserEditorPlugin::_export_paths(const Variant &p_paths) {
 		root = EditorNode::get_singleton()->get_edited_scene();
 	}
 	if (!root) {
-		EditorNode::get_singleton()->show_accept(TTR("Could not load scene for DDDBrowser export."), TTR("OK"));
+		EditorNode::get_singleton()->show_warning(TTR("Could not load scene for DDDBrowser export."));
 		return;
 	}
 	String out_dir = _default_export_dir(scene_path.is_empty() ? root->get_scene_file_path() : scene_path);
@@ -179,10 +186,10 @@ void DDDBrowserEditorPlugin::_export_paths(const Variant &p_paths) {
 		root->queue_free();
 	}
 	if (err != OK) {
-		EditorNode::get_singleton()->show_accept(vformat(TTR("DDDBrowser export failed: %s"), exporter->get_last_error()), TTR("OK"));
+		EditorNode::get_singleton()->show_warning(vformat(TTR("DDDBrowser export failed: %s"), exporter->get_last_error()));
 		return;
 	}
-	EditorNode::get_singleton()->show_accept(vformat(TTR("Exported DDDBrowser page to:\n%s"), out_dir), TTR("OK"));
+	EditorNode::get_singleton()->show_warning(vformat(TTR("Exported DDDBrowser page to:\n%s"), out_dir));
 }
 
 void DDDBrowserEditorPlugin::_test_scene_root(Node *p_root) {
@@ -190,12 +197,12 @@ void DDDBrowserEditorPlugin::_test_scene_root(Node *p_root) {
 	String out_dir = _default_export_dir(p_root->get_scene_file_path());
 	Error err = exporter->export_scene(p_root, out_dir, true);
 	if (err != OK) {
-		EditorNode::get_singleton()->show_accept(vformat(TTR("DDDBrowser export failed: %s"), exporter->get_last_error()), TTR("OK"));
+		EditorNode::get_singleton()->show_warning(vformat(TTR("DDDBrowser export failed: %s"), exporter->get_last_error()));
 		return;
 	}
 	err = preview_server->start(out_dir, 8081);
 	if (err != OK) {
-		EditorNode::get_singleton()->show_accept(TTR("Failed to start HTTPServer preview on port 8081."), TTR("OK"));
+		EditorNode::get_singleton()->show_warning(TTR("Failed to start HTTPServer preview on port 8081."));
 		return;
 	}
 	String url = preview_server->get_index_url();
@@ -208,7 +215,7 @@ void DDDBrowserEditorPlugin::_test_scene_root(Node *p_root) {
 		OS::get_singleton()->create_process(exe, args);
 		msg += TTR("\nLaunched DDDBrowser executable.");
 	}
-	EditorNode::get_singleton()->show_accept(msg, TTR("OK"));
+	EditorNode::get_singleton()->show_warning(msg);
 }
 
 void DDDBrowserEditorPlugin::_test_paths(const Variant &p_paths) {
@@ -223,7 +230,7 @@ void DDDBrowserEditorPlugin::_test_paths(const Variant &p_paths) {
 		root = EditorNode::get_singleton()->get_edited_scene();
 	}
 	if (!root) {
-		EditorNode::get_singleton()->show_accept(TTR("Could not load scene for DDDBrowser test."), TTR("OK"));
+		EditorNode::get_singleton()->show_warning(TTR("Could not load scene for DDDBrowser test."));
 		return;
 	}
 	_test_scene_root(root);
@@ -252,7 +259,7 @@ void DDDBrowserEditorPlugin::_check_luau_paths(const Variant &p_paths) {
 		}
 	}
 	if (script_path.is_empty()) {
-		List<Node *> selection = EditorNode::get_singleton()->get_editor_selection()->get_selected_node_list();
+		List<Node *> selection = EditorNode::get_singleton()->get_editor_selection()->get_full_selected_node_list();
 		for (Node *n : selection) {
 			if (DDDBrowserScript *script_node = Object::cast_to<DDDBrowserScript>(n)) {
 				script_path = script_node->get_source_path();
@@ -261,13 +268,13 @@ void DDDBrowserEditorPlugin::_check_luau_paths(const Variant &p_paths) {
 		}
 	}
 	if (script_path.is_empty()) {
-		EditorNode::get_singleton()->show_accept(TTR("Select a .luau file or DDDBrowserScript node to check."), TTR("OK"));
+		EditorNode::get_singleton()->show_warning(TTR("Select a .luau file or DDDBrowserScript node to check."));
 		return;
 	}
 	Dictionary result = DDDLuauCheck::check_file(script_path);
 	const bool ok = result.get("ok", false);
 	const String message = result.get("message", "");
-	EditorNode::get_singleton()->show_accept(ok ? message : vformat(TTR("DDD Luau check failed:\n%s"), message), TTR("OK"));
+	EditorNode::get_singleton()->show_warning(ok ? message : vformat(TTR("DDD Luau check failed:\n%s"), message));
 }
 
 void DDDBrowserEditorPlugin::_create_level_paths(const Variant &p_paths) {
@@ -332,7 +339,7 @@ void DDDBrowserEditorPlugin::_create_level_paths(const Variant &p_paths) {
 	Error err = ResourceSaver::save(ps, save_path);
 	memdelete(level);
 	if (err != OK) {
-		EditorNode::get_singleton()->show_accept(TTR("Failed to create DDDBrowser level scene."), TTR("OK"));
+		EditorNode::get_singleton()->show_warning(TTR("Failed to create DDDBrowser level scene."));
 		return;
 	}
 	EditorNode::get_singleton()->load_scene(save_path);

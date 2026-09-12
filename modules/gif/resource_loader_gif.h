@@ -30,6 +30,7 @@
 #pragma once
 
 #include "core/io/resource_loader.h"
+#include "core/string/ustring.h"
 
 class ResourceFormatLoaderGIF : public ResourceFormatLoader {
 	GDCLASS(ResourceFormatLoaderGIF, ResourceFormatLoader);

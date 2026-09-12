@@ -31,6 +31,7 @@
 
 #include "core/object/ref_counted.h"
 #include "modules/trenchbroom/core/data.h"
+#include "core/templates/local_vector.h"
 
 class TrenchbroomMap;
 class TrenchbroomMapSettings;

@@ -29,9 +29,10 @@
 
 #include "rcon_client.h"
 
-#include "core/object/callable_method_pointer.h"
+#include "core/object/callable_mp.h"
 #include "core/os/os.h"
 #include "rcon_packet.h"
+#include "core/object/class_db.h"
 
 void RCONClient::_bind_methods() {
 	// High-level API

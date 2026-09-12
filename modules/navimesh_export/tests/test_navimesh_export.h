@@ -42,11 +42,13 @@
 #include "core/io/file_access.h"
 #include "core/object/class_db.h"
 #include "core/os/os.h"
-#include "scene/2d/navigation_region_2d.h"
-#include "scene/3d/navigation_region_3d.h"
+#include "scene/2d/navigation/navigation_region_2d.h"
+#include "scene/3d/navigation/navigation_region_3d.h"
 #include "scene/main/viewport.h"
 #include "scene/resources/2d/navigation_polygon.h"
 #include "scene/resources/navigation_mesh.h"
+#include "scene/main/scene_tree.h"
+#include "core/string/ustring.h"
 
 namespace TestNavimeshExport {
 

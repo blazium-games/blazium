@@ -42,7 +42,8 @@
 #include "modules/remote_control/remote_control_server.h"
 
 #include "core/config/project_settings.h"
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
+#include "core/object/class_db.h"
 
 void JustAMCPRemoteControlTools::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("provide_tool_schemas", "register_only", "ignore_settings", "include_disabled_tools"), &JustAMCPRemoteControlTools::provide_tool_schemas, DEFVAL(false), DEFVAL(false), DEFVAL(false));

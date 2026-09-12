@@ -32,6 +32,8 @@
 #ifdef TOOLS_ENABLED
 
 #include "platform/windows/export/export_plugin.h"
+#include "core/string/string_name.h"
+#include "core/string/ustring.h"
 
 class EditorExportPlatformWindowsScreensaver : public EditorExportPlatformWindows {
 	GDCLASS(EditorExportPlatformWindowsScreensaver, EditorExportPlatformWindows);
@@ -43,7 +45,6 @@ public:
 	EditorExportPlatformWindowsScreensaver();
 
 	virtual String get_template_file_name(const String &p_target, const String &p_arch) const override;
-	virtual String get_exported_executable_extension() const override { return "scr"; }
 	virtual List<String> get_binary_extensions(const Ref<EditorExportPreset> &p_preset) const override;
 	virtual void get_export_options(List<ExportOption> *r_options) const override;
 	virtual String get_export_option_warning(const EditorExportPreset *p_preset, const StringName &p_name) const override;
@@ -52,7 +53,7 @@ public:
 	virtual void get_preset_features(const Ref<EditorExportPreset> &p_preset, List<String> *r_features) const override;
 	virtual bool has_valid_export_configuration(const Ref<EditorExportPreset> &p_preset, String &r_error, bool &r_missing_templates, bool p_debug = false) const override;
 	virtual HashMap<String, Variant> get_custom_project_settings(const Ref<EditorExportPreset> &p_preset) const override;
-	virtual Error export_project(const Ref<EditorExportPreset> &p_preset, bool p_debug, const String &p_path, BitField<EditorExportPlatform::DebugFlags> p_flags = 0) override;
+	virtual Error export_project(const Ref<EditorExportPreset> &p_preset, bool p_debug, const String &p_path, BitField<EditorExportPlatform::DebugFlags> p_flags = 0, bool p_notify = true) override;
 };
 
 #endif

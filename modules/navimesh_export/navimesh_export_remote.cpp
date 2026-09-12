@@ -36,6 +36,7 @@
 
 #include "navimesh_exporter.h"
 
+#include "core/object/callable_mp.h"
 #include "modules/remote_control/remote_control_registry.h"
 
 static Dictionary _cmd_list_scenes(const Dictionary &p_args) {

@@ -36,12 +36,12 @@
 #include "core/config/engine.h"
 #include "core/os/os.h"
 #include "editor/editor_data.h"
-#include "editor/editor_file_system.h"
+#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
 #include "editor/gui/editor_file_dialog.h"
-#include "editor/gui/editor_run_bar.h"
-#include "editor/plugins/game_view_plugin.h"
+#include "editor/run/editor_run_bar.h"
+#include "editor/run/game_view_plugin.h"
 #include "editor/themes/editor_scale.h"
 #include "scene/animation/animation_player.h"
 #include "scene/gui/box_container.h"
@@ -55,7 +55,9 @@
 #include "scene/main/viewport.h"
 #include "scene/resources/animation.h"
 #include "scene/resources/image_texture.h"
-#include "servers/display_server.h"
+#include "servers/display/display_server.h"
+#include "core/object/callable_mp.h"
+#include "core/string/string_name.h"
 
 class GIFInspectorControls : public VBoxContainer {
 	GDCLASS(GIFInspectorControls, VBoxContainer);
@@ -395,7 +397,7 @@ void GIFEditorPlugin::_export_animation_player() {
 	EditorSelection *sel = EditorInterface::get_singleton()->get_selection();
 	ERR_FAIL_NULL(sel);
 	AnimationPlayer *ap = nullptr;
-	for (Node *n : sel->get_selected_node_list()) {
+	for (Node *n : sel->get_full_selected_node_list()) {
 		ap = Object::cast_to<AnimationPlayer>(n);
 		if (ap) {
 			break;

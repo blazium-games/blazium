@@ -31,7 +31,7 @@
 
 #pragma once
 
-#include "scene/2d/tile_map.h"
+#include "modules/tilemap/tile_map.h"
 
 // Equivalent to TilemapCreator.gd
 
@@ -39,12 +39,13 @@
 #include "scene/2d/parallax_2d.h"
 #include "scene/2d/parallax_background.h"
 #include "scene/2d/parallax_layer.h"
-#include "scene/2d/tile_map_layer.h"
+#include "modules/tilemap/tile_map_layer.h"
 #include "scene/gui/color_rect.h"
 #include "scene/gui/texture_rect.h"
 #include "tiled_common.h"
 #include "tiled_custom_types.h"
 #include "tileson_gd_bindings.h"
+#include "core/string/ustring.h"
 
 class Sprite2D;
 class CollisionObject2D;
@@ -164,6 +165,8 @@ public:
 	Node *create_tilemap(const String &p_source_file);
 
 	static GodotType get_godot_type(const String &p_godot_type_string);
-	static String get_godot_node_type_property(Ref<TiledObject> p_obj, bool &r_property_found);
-	static GodotType get_godot_node_type(Ref<TiledObject> p_obj);
+	static String get_godot_node_type_property(const Array &p_properties, bool &r_property_found);
+	static GodotType get_godot_node_type(const String &p_class_type, const String &p_tson_type, const Array &p_properties);
+	static GodotType get_godot_node_type(const Ref<TiledObject> &p_obj);
+	static GodotType get_godot_node_type(const Ref<TiledLayer> &p_layer);
 };

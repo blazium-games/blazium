@@ -41,10 +41,13 @@
 #include "core/object/class_db.h"
 #include "scene/3d/mesh_instance_3d.h"
 #include "scene/3d/node_3d.h"
+#include "scene/main/scene_tree.h"
 #include "scene/3d/occluder_instance_3d.h"
 #include "scene/3d/physics/collision_object_3d.h"
 #include "scene/3d/physics/collision_shape_3d.h"
 #include "scene/resources/packed_scene.h"
+#include "core/string/string_name.h"
+#include "core/templates/local_vector.h"
 
 static bool _node_has_property(Node *p_node, const StringName &p_property_name) {
 	List<PropertyInfo> property_list;

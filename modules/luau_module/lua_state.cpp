@@ -58,6 +58,7 @@ VARIANT_ENUM_CAST(luau_module::LuaState::GCOp);
 #include "core/object/object.h"
 #include "core/templates/local_vector.h"
 #include <lualib.h>
+#include "core/string/string_name.h"
 
 using namespace luau_module;
 

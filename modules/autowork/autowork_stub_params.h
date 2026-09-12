@@ -31,6 +31,7 @@
 
 #include "autowork_stubber.h"
 #include "core/object/ref_counted.h"
+#include "core/string/string_name.h"
 
 class AutoworkStubParams : public RefCounted {
 	GDCLASS(AutoworkStubParams, RefCounted);

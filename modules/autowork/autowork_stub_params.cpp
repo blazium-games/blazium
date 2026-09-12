@@ -28,6 +28,8 @@
 /**************************************************************************/
 
 #include "autowork_stub_params.h"
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 void AutoworkStubParams::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("to_return", "value"), &AutoworkStubParams::to_return);

@@ -30,6 +30,7 @@
 #pragma once
 
 #include "editor/plugins/editor_plugin.h"
+#include "core/string/ustring.h"
 
 class Label;
 class ProgressBar;

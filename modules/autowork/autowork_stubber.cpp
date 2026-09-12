@@ -28,6 +28,8 @@
 /**************************************************************************/
 
 #include "autowork_stubber.h"
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 void AutoworkStubber::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_return", "object", "method_name", "return_value", "args"), &AutoworkStubber::set_return, DEFVAL(Variant()));

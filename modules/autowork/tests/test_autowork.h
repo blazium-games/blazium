@@ -15,6 +15,7 @@
 #include "core/object/class_db.h"
 #include "core/os/os.h"
 #include "core/templates/list.h"
+#include "core/string/ustring.h"
 #include "core/variant/dictionary.h"
 #include "modules/autowork/autowork_collector.h"
 #include "modules/autowork/autowork_config.h"

@@ -39,6 +39,7 @@
 #include "scene/gui/control.h"
 #include "scene/main/canvas_item.h"
 #include "scene/main/node.h"
+#include "core/string/string_name.h"
 
 void InterDVDStream::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_kind", "kind"), &InterDVDStream::set_kind);

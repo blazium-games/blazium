@@ -63,6 +63,7 @@
 #ifdef TOOLS_ENABLED
 #include "editor/editor_node.h"
 #include "resource_importer_csv.h"
+#include "core/object/class_db.h"
 
 static void _dotcsv_editor_init() {
 	Ref<ResourceImporterCSV> csv_importer;

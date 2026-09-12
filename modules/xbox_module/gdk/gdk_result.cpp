@@ -35,6 +35,7 @@
 #include "gdk_windows.h"
 
 #include "gdk_result_codes_internal.h"
+#include "core/object/class_db.h"
 
 void GDKResult::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_ok"), &GDKResult::is_ok);

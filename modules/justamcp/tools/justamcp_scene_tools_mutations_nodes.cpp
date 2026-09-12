@@ -46,13 +46,15 @@
 #include "core/os/os.h"
 #include "core/os/thread.h"
 #include "core/templates/hash_map.h"
-#include "editor/editor_file_system.h"
+#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
 #include "editor/editor_undo_redo_manager.h"
 #include "scene/2d/sprite_2d.h"
 #include "scene/3d/sprite_3d.h"
 #include "scene/resources/packed_scene.h"
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 Dictionary JustAMCPSceneTools::add_node(const Dictionary &p_args) {
 	String project_path = p_args.get("projectPath", "");

@@ -29,6 +29,8 @@
 
 #include "blazium_goap_goal.h"
 #include "blazium_goap_agent.h"
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 void BlaziumGoapGoal::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("init", "actor", "world_state"), &BlaziumGoapGoal::init);

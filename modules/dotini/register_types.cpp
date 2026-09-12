@@ -30,6 +30,7 @@
 #include "register_types.h"
 
 #include "dotini_file.h"
+#include "core/object/class_db.h"
 
 void initialize_dotini_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {

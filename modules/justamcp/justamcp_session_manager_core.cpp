@@ -42,10 +42,8 @@
 #include "modules/httpserver/http_server.h"
 
 String MCPSessionManager::_generate_session_id() const {
-	CryptoCore::RandomGenerator rng;
-	ERR_FAIL_COND_V(rng.init() != OK, String());
 	uint8_t bytes[16];
-	ERR_FAIL_COND_V(rng.get_random_bytes(bytes, sizeof(bytes)) != OK, String());
+	ERR_FAIL_COND_V(CryptoCore::generate_random(bytes, sizeof(bytes)) != OK, String());
 	String id;
 	static const char *hex = "0123456789abcdef";
 	for (int i = 0; i < 16; i++) {

@@ -42,7 +42,7 @@
 #include "core/templates/hash_set.h"
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_file_system.h"
+#include "editor/file_system/editor_file_system.h"
 #endif
 
 AssetTagRegistry *AssetTagRegistry::singleton = nullptr;
@@ -154,7 +154,7 @@ Error AssetTagRegistry::_save_index_incremental() {
 	if (!index_dirty && dirty_index_paths.is_empty()) {
 		return OK;
 	}
-	HashSet<String> paths_to_merge = dirty_index_paths;
+	HashSet<String> paths_to_merge(dirty_index_paths);
 	if (paths_to_merge.is_empty()) {
 		for (const KeyValue<String, Vector<String>> &kv : asset_index) {
 			paths_to_merge.insert(kv.key);

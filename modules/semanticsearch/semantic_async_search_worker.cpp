@@ -40,6 +40,7 @@
 #include "core/os/os.h"
 #include "core/os/thread.h"
 #include "core/os/thread_safe.h"
+#include "core/object/class_db.h"
 
 struct SemanticSearchWorkerData {
 	SemanticAsyncSearchWorker *worker = nullptr;

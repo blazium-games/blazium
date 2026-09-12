@@ -32,6 +32,9 @@
 #include "core/os/os.h"
 #include "core/variant/callable.h"
 #include "enet_packet.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
+#include "scene/main/scene_tree.h"
 
 ENetClient *ENetClient::singleton = nullptr;
 
@@ -318,7 +321,7 @@ void ENetClient::_queue_event(const QueuedEvent &p_event) {
 
 void ENetClient::_process_event_queue() {
 	events_mutex.lock();
-	List<QueuedEvent> events = event_queue;
+	List<QueuedEvent> events(event_queue);
 	event_queue.clear();
 	events_mutex.unlock();
 

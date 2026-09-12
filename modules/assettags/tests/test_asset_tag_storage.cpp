@@ -37,6 +37,7 @@
 #include "core/io/file_access.h"
 #include "core/io/json.h"
 #include "tests/test_macros.h"
+#include "core/io/dir_access.h"
 
 void test_asset_tag_storage_roundtrip() {
 	AssetTagStorage::set_test_storage_dir("res://.blazium/test_isolated_storage_roundtrip");
@@ -129,7 +130,7 @@ void test_asset_tag_index_sidecar_roundtrip() {
 	base.insert("res://alpha.tscn", alpha_tags);
 	CHECK(AssetTagStorage::save_index(base));
 
-	HashMap<String, Vector<String>> memory = base;
+	HashMap<String, Vector<String>> memory(base);
 	Vector<String> beta_tags;
 	beta_tags.push_back("Beta");
 	memory.insert("res://beta.tscn", beta_tags);
@@ -178,7 +179,7 @@ void test_asset_tag_undo_sidecar_parity() {
 	base.insert("res://alpha.tscn", alpha_tags);
 	CHECK(AssetTagStorage::save_index(base));
 
-	HashMap<String, Vector<String>> memory = base;
+	HashMap<String, Vector<String>> memory(base);
 	Vector<String> beta_tags;
 	beta_tags.push_back("Beta");
 	memory.insert("res://beta.tscn", beta_tags);
@@ -256,7 +257,7 @@ void test_asset_tag_runtime_sidecar_cache() {
 	CHECK(initial.size() == 1);
 	CHECK(initial[0] == "Alpha");
 
-	HashMap<String, Vector<String>> memory = base;
+	HashMap<String, Vector<String>> memory(base);
 	Vector<String> beta_tags;
 	beta_tags.push_back("Beta");
 	memory.insert("res://beta.tscn", beta_tags);
@@ -306,7 +307,7 @@ void test_asset_tag_runtime_notify_sidecar_dirty() {
 	PackedStringArray initial = AssetTagRuntime::read_tags_for_asset("res://alpha.tscn");
 	CHECK(initial.size() == 1);
 
-	HashMap<String, Vector<String>> memory = base;
+	HashMap<String, Vector<String>> memory(base);
 	Vector<String> gamma_tags;
 	gamma_tags.push_back("Gamma");
 	memory.insert("res://gamma.tscn", gamma_tags);
@@ -330,7 +331,7 @@ void test_asset_tag_sidecar_compact_at_64() {
 	base.insert("res://seed.tscn", seed_tags);
 	CHECK(AssetTagStorage::save_index(base));
 
-	HashMap<String, Vector<String>> memory = base;
+	HashMap<String, Vector<String>> memory(base);
 	for (int i = 0; i < 64; i++) {
 		const String path = vformat("res://asset_%03d.tscn", i);
 		Vector<String> tags;

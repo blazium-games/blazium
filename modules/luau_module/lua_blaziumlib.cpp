@@ -39,6 +39,7 @@
 #include "core/string/print_string.h"
 #include "core/variant/variant_utility.h"
 #include <lualib.h>
+#include "core/string/string_name.h"
 
 using namespace luau_module;
 

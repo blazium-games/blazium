@@ -40,7 +40,10 @@
 #include "scene/main/scene_tree.h"
 #include "scene/resources/image_texture.h"
 #include "scene/resources/sprite_frames.h"
-#include "servers/rendering_server.h"
+#include "servers/rendering/rendering_server.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 Mutex GIFTexture::_active_mutex;
 HashSet<GIFTexture *> GIFTexture::_active_textures;

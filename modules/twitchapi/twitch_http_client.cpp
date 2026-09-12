@@ -30,6 +30,7 @@
 #include "twitch_http_client.h"
 
 #include "core/io/json.h"
+#include "core/object/class_db.h"
 
 void TwitchHTTPClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_base_url", "url"), &TwitchHTTPClient::set_base_url);
@@ -359,7 +360,7 @@ void TwitchHTTPClient::_handle_response() {
 	Dictionary response_data;
 	if (response_body.size() > 0) {
 		String body_text;
-		body_text.parse_utf8((const char *)response_body.ptr(), response_body.size());
+		body_text.append_utf8((const char *)response_body.ptr(), response_body.size());
 
 		Ref<JSON> json;
 		json.instantiate();

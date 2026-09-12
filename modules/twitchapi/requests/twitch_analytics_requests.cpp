@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "twitch_analytics_requests.h"
+#include "core/object/class_db.h"
 
 void TwitchAnalyticsRequests::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_extension_analytics", "params"), &TwitchAnalyticsRequests::get_extension_analytics, DEFVAL(Dictionary()));

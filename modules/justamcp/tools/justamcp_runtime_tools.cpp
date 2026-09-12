@@ -44,7 +44,10 @@
 #include "modules/gdscript/gdscript.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
-#include "servers/display_server.h"
+#include "servers/display/display_server.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 void JustAMCPRuntimeTools::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_process_frame"), &JustAMCPRuntimeTools::_on_process_frame);

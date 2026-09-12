@@ -33,6 +33,7 @@
 #include "core/math/transform_2d.h"
 #include "core/math/vector3.h"
 #include "core/templates/local_vector.h"
+#include "core/string/ustring.h"
 #include "core/variant/dictionary.h"
 #include "scene/3d/mesh_instance_3d.h"
 #include "scene/3d/occluder_instance_3d.h"

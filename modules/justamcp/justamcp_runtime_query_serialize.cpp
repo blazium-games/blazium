@@ -29,6 +29,7 @@
 
 #include "justamcp_runtime.h"
 
+#include "core/templates/local_vector.h"
 #include "core/object/script_language.h"
 #include "core/variant/variant.h"
 #include "scene/main/node.h"
@@ -221,8 +222,7 @@ Variant JustAMCPRuntime::_serialize_value(const Variant &p_value) {
 		case Variant::DICTIONARY: {
 			Dictionary d = p_value;
 			Dictionary res;
-			List<Variant> keys;
-			d.get_key_list(&keys);
+			LocalVector<Variant> keys = d.get_key_list();
 			for (const Variant &k : keys) {
 				res[String(k)] = _serialize_value(d[k]);
 			}
@@ -259,8 +259,7 @@ Variant JustAMCPRuntime::_deserialize_value(const Variant &p_value) {
 		}
 
 		Dictionary res;
-		List<Variant> keys;
-		d.get_key_list(&keys);
+		LocalVector<Variant> keys = d.get_key_list();
 		for (const Variant &k : keys) {
 			res[k] = _deserialize_value(d[k]);
 		}

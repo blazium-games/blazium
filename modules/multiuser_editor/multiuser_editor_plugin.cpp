@@ -43,12 +43,13 @@
 #include "core/io/resource.h"
 #include "core/object/worker_thread_pool.h"
 #include "core/os/os.h"
-#include "editor/editor_file_system.h"
+#include "servers/display/display_server.h"
+#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 #include "editor/editor_undo_redo_manager.h"
-#include "editor/plugins/script_editor_plugin.h"
+#include "editor/script/script_editor_plugin.h"
 #include "modules/autowork/autowork_main.h"
 #include "modules/dotenv/env.h"
 #include "modules/jwttool/jwt.h"
@@ -57,10 +58,13 @@
 #include "scene/resources/material.h"
 #include "scene/resources/shader.h"
 #include "scene/resources/surface_tool.h"
-#include "scene/resources/visual_shader.h"
+#include "modules/visual_shader/visual_shader.h"
 
 #ifdef MODULE_JUSTAMCP_ENABLED
 #include "modules/justamcp/justamcp_server.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
+#include "core/config/engine.h"
 #endif
 
 static const double MULTIUSER_POLL_INTERVAL_SEC = 0.05;
@@ -268,7 +272,7 @@ void MultiuserEditorPlugin::_notification(int p_what) {
 			if (!is_connected("scene_saved", callable_mp(this, &MultiuserEditorPlugin::_on_scene_saved))) {
 				connect("scene_saved", callable_mp(this, &MultiuserEditorPlugin::_on_scene_saved));
 			}
-			EditorFileSystem *efs = EditorInterface::get_singleton()->get_resource_file_system();
+			EditorFileSystem *efs = EditorInterface::get_singleton()->get_resource_filesystem();
 			if (efs) {
 				efs->connect("filesystem_changed", callable_mp(this, &MultiuserEditorPlugin::_on_filesystem_changed));
 				efs->connect("resources_reimported", callable_mp(this, &MultiuserEditorPlugin::_on_resources_reimported));
@@ -407,7 +411,7 @@ void MultiuserEditorPlugin::_notification(int p_what) {
 				ghost_overlay->queue_free();
 				ghost_overlay = nullptr;
 			}
-			if (EditorFileSystem *efs = EditorInterface::get_singleton()->get_resource_file_system()) {
+			if (EditorFileSystem *efs = EditorInterface::get_singleton()->get_resource_filesystem()) {
 				if (efs->is_connected("filesystem_changed", callable_mp(this, &MultiuserEditorPlugin::_on_filesystem_changed))) {
 					efs->disconnect("filesystem_changed", callable_mp(this, &MultiuserEditorPlugin::_on_filesystem_changed));
 				}
@@ -1098,9 +1102,9 @@ void MultiuserEditorPlugin::_route_action(int p_sender_net_id, const Dictionary 
 				String rel_new = new_path.substr(6, new_path.length() - 6);
 				dir->rename(rel_old, rel_new);
 			}
-			if (EditorInterface::get_singleton() && EditorInterface::get_singleton()->get_resource_file_system()) {
-				EditorInterface::get_singleton()->get_resource_file_system()->update_file(new_path);
-				EditorInterface::get_singleton()->get_resource_file_system()->update_file(old_path);
+			if (EditorInterface::get_singleton() && EditorInterface::get_singleton()->get_resource_filesystem()) {
+				EditorInterface::get_singleton()->get_resource_filesystem()->update_file(new_path);
+				EditorInterface::get_singleton()->get_resource_filesystem()->update_file(old_path);
 			}
 			suppress_scene_events = false;
 		}
@@ -1123,14 +1127,14 @@ void MultiuserEditorPlugin::_route_action(int p_sender_net_id, const Dictionary 
 				String rel_path = path.substr(6, path.length() - 6);
 				dir->remove(rel_path);
 			}
-			if (EditorInterface::get_singleton() && EditorInterface::get_singleton()->get_resource_file_system()) {
-				EditorInterface::get_singleton()->get_resource_file_system()->update_file(path);
+			if (EditorInterface::get_singleton() && EditorInterface::get_singleton()->get_resource_filesystem()) {
+				EditorInterface::get_singleton()->get_resource_filesystem()->update_file(path);
 			}
 			suppress_scene_events = false;
 		}
 	} else if (type == multiuser_editor::kActionFsRefresh) {
-		if (EditorInterface::get_singleton() && EditorInterface::get_singleton()->get_resource_file_system()) {
-			EditorInterface::get_singleton()->get_resource_file_system()->scan();
+		if (EditorInterface::get_singleton() && EditorInterface::get_singleton()->get_resource_filesystem()) {
+			EditorInterface::get_singleton()->get_resource_filesystem()->scan();
 		}
 	} else if (type == multiuser_editor::kActionFileApplyDelete || type == multiuser_editor::kActionFileApplyMove ||
 			type == multiuser_editor::kActionFileApplyBegin || type == multiuser_editor::kActionFileApplyChunk || type == multiuser_editor::kActionFileApplyEnd) {
@@ -2862,7 +2866,7 @@ bool MultiuserEditorPlugin::_is_inside_loaded_project(String *r_reason) const {
 		}
 		return false;
 	}
-	if (!ProjectSettings::project_settings_exists("res://") && !FileAccess::exists(String("res://") + ProjectSettings::PROJECT_FILE_BINARY)) {
+	if (!FileAccess::exists("res://project.godot") && !FileAccess::exists("res://project.blazium") && !FileAccess::exists("res://project.binary")) {
 		if (r_reason) {
 			*r_reason = "no project.blazium/project.godot or project.binary at res://";
 		}

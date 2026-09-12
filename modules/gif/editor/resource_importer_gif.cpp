@@ -32,6 +32,7 @@
 #include "modules/gif/gif_texture.h"
 
 #include "core/io/resource_saver.h"
+#include "core/string/string_name.h"
 
 String ResourceImporterGIF::get_importer_name() const {
 	return "gif";

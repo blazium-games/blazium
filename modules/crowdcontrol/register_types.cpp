@@ -36,7 +36,9 @@
 #include "crowd_control_game_pack_meta.h"
 
 #ifdef TOOLS_ENABLED
-#include "editor/crowd_control_game_pack_editor_plugin.h"
+#include "modules/crowdcontrol/editor/crowd_control_game_pack_editor_plugin.h"
+#include "core/config/engine.h"
+#include "core/object/class_db.h"
 #endif
 
 static CrowdControl *crowd_control_singleton = nullptr;

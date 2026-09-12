@@ -47,6 +47,7 @@
 #include "scene/main/node.h"
 #include "scene/main/viewport.h"
 #include <lualib.h>
+#include "core/string/string_name.h"
 
 using namespace luau_module;
 

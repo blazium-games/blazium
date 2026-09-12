@@ -31,7 +31,7 @@
 
 #pragma once
 
-#include "scene/resources/2d/tile_set.h"
+#include "modules/tilemap/tile_set.h"
 
 // Equivalent to TilesetCreator.gd
 
@@ -39,6 +39,7 @@
 #include "tiled_common.h"
 #include "tiled_custom_types.h"
 #include "tileson_gd_bindings.h"
+#include "core/string/ustring.h"
 
 class TiledTilesetCreator {
 private:

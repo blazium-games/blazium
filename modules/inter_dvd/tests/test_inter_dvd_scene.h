@@ -18,6 +18,7 @@
 #include "scene/gui/control.h"
 #include "scene/resources/packed_scene.h"
 #include "tests/test_macros.h"
+#include "scene/main/scene_tree.h"
 
 TEST_CASE("[SceneTree][Modules][InterDVD] disc nodes compile titles menus and first play") {
 	InterDVDDisc *disc = InterDVDDisc::create_starter();

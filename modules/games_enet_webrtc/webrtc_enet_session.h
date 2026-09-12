@@ -37,6 +37,7 @@
 #include "core/templates/hash_set.h"
 #include "modules/enet/enet_multiplayer_peer.h"
 #include "scene/main/node.h"
+#include "core/string/ustring.h"
 
 class WebRTCEnetSession : public Node {
 	GDCLASS(WebRTCEnetSession, Node);

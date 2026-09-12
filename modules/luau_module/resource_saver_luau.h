@@ -30,6 +30,7 @@
 #pragma once
 
 #include "core/io/resource_saver.h"
+#include "core/string/ustring.h"
 
 class ResourceFormatSaverLuau : public ResourceFormatSaver {
 	GDCLASS(ResourceFormatSaverLuau, ResourceFormatSaver);

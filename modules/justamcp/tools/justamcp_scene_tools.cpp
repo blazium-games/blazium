@@ -47,13 +47,15 @@
 #include "core/os/os.h"
 #include "core/templates/hash_map.h"
 #include "core/templates/hash_set.h"
-#include "editor/editor_file_system.h"
+#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
 #include "editor/editor_undo_redo_manager.h"
 #include "scene/2d/sprite_2d.h"
 #include "scene/3d/sprite_3d.h"
 #include "scene/resources/packed_scene.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 
 void JustAMCPSceneTools::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_deferred_refresh_filesystem"), &JustAMCPSceneTools::_deferred_refresh_filesystem);

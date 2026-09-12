@@ -42,7 +42,7 @@
 #include "core/os/mutex.h"
 #include "core/os/os.h"
 #include "core/templates/hash_map.h"
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 
 static Mutex g_oauth_pending_mutex;
 static HashMap<String, Dictionary> g_oauth_pending;

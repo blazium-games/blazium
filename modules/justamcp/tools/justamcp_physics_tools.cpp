@@ -67,6 +67,7 @@
 #include "justamcp_agent_helpers.h"
 #include "justamcp_scene_file_io.h"
 #include "justamcp_tilemap_access.h"
+#include "core/object/class_db.h"
 
 void JustAMCPPhysicsTools::_bind_methods() {}
 

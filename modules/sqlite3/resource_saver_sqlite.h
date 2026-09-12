@@ -32,6 +32,7 @@
 #pragma once
 
 #include "core/io/resource_saver.h"
+#include "core/string/ustring.h"
 
 class ResourceFormatSaverSQLite : public ResourceFormatSaver {
 	GDCLASS(ResourceFormatSaverSQLite, ResourceFormatSaver);

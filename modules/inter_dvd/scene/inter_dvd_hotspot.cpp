@@ -9,6 +9,7 @@
 #include "inter_dvd_hotspot.h"
 
 #include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 void InterDVDHotspot::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_action", "action"), &InterDVDHotspot::set_action);

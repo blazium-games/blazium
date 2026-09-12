@@ -38,6 +38,7 @@
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "tests/test_macros.h"
+#include "core/object/callable_mp.h"
 
 void test_asset_tag_registry_apply() {
 	AssetTagStorage::set_test_storage_dir("res://.blazium/test_isolated_registry");

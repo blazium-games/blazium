@@ -34,6 +34,7 @@
 #include "core/variant/variant.h"
 #include "scene/2d/node_2d.h"
 #include "scene/3d/node_3d.h"
+#include "core/object/class_db.h"
 
 ENetPacketUtils *ENetPacketUtils::singleton = nullptr;
 
@@ -174,7 +175,7 @@ String ENetPacketUtils::decode_json(const PackedByteArray &p_data) {
 	ERR_FAIL_COND_V(len > (uint32_t)(p_data.size() - 5), String());
 
 	String json;
-	Error err = json.parse_utf8((const char *)(p_data.ptr() + 5), (int)len);
+	Error err = json.append_utf8((const char *)(p_data.ptr() + 5), (int)len);
 	ERR_FAIL_COND_V(err != OK, String());
 	return json;
 }
@@ -187,7 +188,7 @@ String ENetPacketUtils::decode_string(const PackedByteArray &p_data) {
 	ERR_FAIL_COND_V(len > (uint32_t)(p_data.size() - 5), String());
 
 	String str;
-	Error err = str.parse_utf8((const char *)(p_data.ptr() + 5), (int)len);
+	Error err = str.append_utf8((const char *)(p_data.ptr() + 5), (int)len);
 	ERR_FAIL_COND_V(err != OK, String());
 	return str;
 }

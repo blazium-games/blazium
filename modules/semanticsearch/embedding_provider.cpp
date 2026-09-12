@@ -38,6 +38,7 @@
 #include "core/math/math_funcs.h"
 #include "core/os/os.h"
 #include "core/os/thread.h"
+#include "editor/editor_node.h"
 
 namespace {
 #ifdef TOOLS_ENABLED
@@ -273,7 +274,7 @@ EmbeddingResult HttpEmbeddingProvider::embed_tokens_result(const Vector<String> 
 	}
 
 	String response_text;
-	response_text.parse_utf8(reinterpret_cast<const char *>(response_bytes.ptr()), response_bytes.size());
+	response_text.append_utf8(reinterpret_cast<const char *>(response_bytes.ptr()), response_bytes.size());
 	Vector<double> embedding = _parse_embedding_response(response_text);
 	if (embedding.is_empty()) {
 		return _http_hash_fallback(p_tokens, "HttpEmbeddingProvider: could not parse embedding response; using hash_vector fallback.");

@@ -33,6 +33,7 @@
 
 // Only include the packet utils - no ENet headers transitively included
 #include "modules/enet_server/enet_packet.h"
+#include "core/string/ustring.h"
 
 namespace TestENetPacketUtils {
 

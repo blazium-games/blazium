@@ -32,7 +32,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "core/object/object.h"
-#include "editor/editor_inspector.h"
+#include "editor/inspector/editor_inspector.h"
 #include "editor/plugins/editor_plugin.h"
 
 class Button;

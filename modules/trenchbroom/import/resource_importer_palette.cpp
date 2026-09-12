@@ -34,6 +34,7 @@
 #include "core/io/resource_saver.h"
 #include "core/string/print_string.h"
 #include "quake_palette_file.h"
+#include "core/string/string_name.h"
 
 String ResourceImporterQuakePalette::get_importer_name() const {
 	return "blazium.trenchbroom.palette";

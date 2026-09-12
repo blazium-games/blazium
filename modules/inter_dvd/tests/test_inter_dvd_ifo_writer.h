@@ -38,6 +38,7 @@
 #include "scene/resources/packed_scene.h"
 #include "tests/test_macros.h"
 #include "tests/test_utils.h"
+#include "core/string/ustring.h"
 
 TEST_CASE("[Modules][InterDVD] IFO writer smoke test") {
 	const String root = TestUtils::get_temp_path("inter_dvd_video_ts");

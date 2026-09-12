@@ -31,6 +31,7 @@
 
 #include "core/os/time.h"
 #include "socketio_client.h"
+#include "core/object/class_db.h"
 
 void SocketIONamespace::_bind_methods() {
 	// Event system

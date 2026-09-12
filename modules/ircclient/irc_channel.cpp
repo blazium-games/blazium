@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "irc_channel.h"
+#include "core/object/class_db.h"
 
 void IRCChannel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_name", "name"), &IRCChannel::set_name);

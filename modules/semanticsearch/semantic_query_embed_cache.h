@@ -30,6 +30,7 @@
 #pragma once
 
 #include "core/os/mutex.h"
+#include "core/string/ustring.h"
 #include "core/templates/hash_map.h"
 #include "core/templates/vector.h"
 

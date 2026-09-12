@@ -33,6 +33,7 @@
 #include "rcon_client.h"
 #include "rcon_packet.h"
 #include "rcon_server.h"
+#include "core/object/class_db.h"
 
 void initialize_rcon_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {

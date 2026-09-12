@@ -32,6 +32,7 @@
 #include "asset_tag_storage.h"
 #include "core/templates/hash_map.h"
 #include "core/templates/hash_set.h"
+#include "core/string/ustring.h"
 
 class AssetTagManager;
 

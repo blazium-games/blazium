@@ -52,10 +52,12 @@
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_node.h"
-#include "editor/gif_editor_plugin.h"
+#include "modules/gif/editor/gif_editor_plugin.h"
 #include "editor/plugins/editor_plugin.h"
-#include "editor/resource_importer_gif.h"
-#include "editor/resource_importer_gif_frames.h"
+#include "modules/gif/editor/resource_importer_gif.h"
+#include "modules/gif/editor/resource_importer_gif_frames.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 #endif
 
 static Ref<ImageLoaderGIF> image_loader_gif;

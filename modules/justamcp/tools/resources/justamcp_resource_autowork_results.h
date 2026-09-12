@@ -32,6 +32,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_resource.h"
+#include "core/string/ustring.h"
 
 class JustAMCPResourceAutoworkResults : public JustAMCPResource {
 	GDCLASS(JustAMCPResourceAutoworkResults, JustAMCPResource);

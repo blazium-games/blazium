@@ -41,6 +41,7 @@
 #include "gdk.h"
 #include "gdk_result.h"
 #include "gdk_runtime.h"
+#include "core/object/class_db.h"
 
 namespace {
 constexpr const char *RUNTIME_NOT_INITIALIZED_ERROR_MESSAGE = "GDK runtime must be initialized before configuring error reporting.";

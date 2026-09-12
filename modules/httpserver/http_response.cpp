@@ -30,6 +30,7 @@
 #include "http_response.h"
 
 #include "core/io/json.h"
+#include "core/object/class_db.h"
 
 void HTTPResponse::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_status", "code"), &HTTPResponse::set_status);

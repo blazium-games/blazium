@@ -50,6 +50,8 @@
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_interface.h"
+#include "core/object/callable_mp.h"
+#include "core/templates/local_vector.h"
 #endif
 
 static const String SIGNATURE = "[MAP]";
@@ -183,8 +185,8 @@ void TrenchbroomMap::build() {
 	}
 	emit_signal("build_progress", "Parsing complete", 0.3);
 
-	LocalVector<EntityData> entities = parse_data.entities;
-	LocalVector<::GroupData> groups = parse_data.groups;
+	LocalVector<EntityData> entities(parse_data.entities);
+	LocalVector<::GroupData> groups(parse_data.groups);
 
 	Ref<TrenchbroomGeometryGenerator> generator = memnew(TrenchbroomGeometryGenerator(map_settings.ptr(), hyperplane_size));
 	if (build_flags & SHOW_PROFILE_INFO) {

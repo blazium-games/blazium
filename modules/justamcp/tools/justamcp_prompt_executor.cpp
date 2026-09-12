@@ -34,7 +34,7 @@
 #include "../justamcp_pagination.h"
 #include "core/config/project_settings.h"
 #include "core/object/class_db.h"
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 #include "justamcp_settings_resolver.h"
 #include "prompts/justamcp_prompt_asset_tagging_workflow.h"
 #include "prompts/justamcp_prompt_autowork_failure_analyzer.h"

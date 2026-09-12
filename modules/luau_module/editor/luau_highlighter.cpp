@@ -29,9 +29,9 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "editor/luau_highlighter.h"
+#include "modules/luau_module/editor/luau_highlighter.h"
 
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 #include "luau_script_language.h"
 #include "scene/gui/text_edit.h"
 

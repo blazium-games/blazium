@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "discord_auth_result.h"
+#include "core/object/class_db.h"
 
 void DiscordAuthResult::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_jwt"), &DiscordAuthResult::get_jwt);

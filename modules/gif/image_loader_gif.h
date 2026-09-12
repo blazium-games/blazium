@@ -30,6 +30,8 @@
 #pragma once
 
 #include "core/io/image_loader.h"
+#include "core/io/file_access.h"
+#include "core/string/ustring.h"
 
 class ImageLoaderGIF : public ImageFormatLoader {
 public:

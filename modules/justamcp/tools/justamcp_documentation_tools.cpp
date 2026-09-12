@@ -32,8 +32,8 @@
 #include "justamcp_documentation_tools.h"
 #include "justamcp_route_helpers.h"
 
-#include "editor/doc_tools.h"
-#include "editor/editor_help.h"
+#include "editor/doc/doc_tools.h"
+#include "editor/doc/editor_help.h"
 
 void JustAMCPDocumentationTools::_bind_methods() {
 }

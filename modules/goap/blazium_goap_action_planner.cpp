@@ -29,6 +29,8 @@
 
 #include "blazium_goap_action_planner.h"
 #include "blazium_goap_world_state.h"
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 void BlaziumGoapActionPlanner::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_actions", "actions"), &BlaziumGoapActionPlanner::set_actions);

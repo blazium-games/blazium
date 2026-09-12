@@ -30,6 +30,9 @@
 #include "kick_api.h"
 
 #include "core/config/engine.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
+#include "scene/main/scene_tree.h"
 
 void KickAPI::_bind_methods() {
 	// Configuration

@@ -32,6 +32,7 @@
 #pragma once
 
 #include "core/io/xml_parser.h"
+#include "core/string/ustring.h"
 
 // Equivalent to DictionaryFromXml.gd and XmlParserCtrl.gd
 

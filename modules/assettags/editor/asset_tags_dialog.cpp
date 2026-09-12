@@ -42,7 +42,8 @@
 #include "scene/gui/button.h"
 #include "scene/gui/label.h"
 #include "scene/gui/line_edit.h"
-#include "servers/display_server.h"
+#include "servers/display/display_server.h"
+#include "core/object/callable_mp.h"
 
 void AssetTagsEditorDialog::_bind_methods() {}
 

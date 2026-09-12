@@ -31,6 +31,7 @@
 
 #include "tileson_gd_bindings.h"
 #include "core/io/file_access.h"
+#include "core/object/class_db.h"
 
 // -------------------------------------------------------------
 // TiledTileson

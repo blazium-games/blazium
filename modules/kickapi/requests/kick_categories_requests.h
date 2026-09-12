@@ -30,6 +30,7 @@
 #pragma once
 
 #include "kick_request_base.h"
+#include "core/string/ustring.h"
 
 class KickCategoriesRequests : public KickRequestBase {
 	GDCLASS(KickCategoriesRequests, KickRequestBase);

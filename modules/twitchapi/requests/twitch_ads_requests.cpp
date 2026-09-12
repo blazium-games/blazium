@@ -30,6 +30,7 @@
 #include "twitch_ads_requests.h"
 
 #include "core/io/json.h"
+#include "core/object/class_db.h"
 
 void TwitchAdsRequests::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("start_commercial", "broadcaster_id", "length"), &TwitchAdsRequests::start_commercial);

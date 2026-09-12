@@ -33,6 +33,7 @@
 #include "blazium_fgd_point_class_display_descriptor.h"
 
 #include "scene/resources/packed_scene.h"
+#include "core/string/ustring.h"
 
 class BlaziumFGDPointClass : public BlaziumFGDEntityClass {
 	GDCLASS(BlaziumFGDPointClass, BlaziumFGDEntityClass);

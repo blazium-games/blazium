@@ -36,7 +36,8 @@
 #include "scene/main/scene_tree.h"
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_file_system.h"
+#include "editor/file_system/editor_file_system.h"
+#include "core/object/callable_mp.h"
 #endif
 
 namespace {
@@ -182,8 +183,8 @@ void AssetTagRegistry::prune_removed_paths() {
 		}
 	}
 
-	const HashMap<String, Vector<String>> backup_index = asset_index;
-	const HashMap<String, HashSet<String>> backup_reverse = reverse_lookup;
+	const HashMap<String, Vector<String>> backup_index(asset_index);
+	const HashMap<String, HashSet<String>> backup_reverse(reverse_lookup);
 
 	HashSet<String> changed;
 	for (int i = 0; i < stale.size(); i++) {

@@ -59,10 +59,12 @@
 #include "gdk/gdk_title_storage.h"
 #ifdef TOOLS_ENABLED
 #include "editor/plugins/editor_plugin.h"
-#include "editor/xbox_editor_plugin.h"
+#include "modules/xbox_module/editor/xbox_editor_plugin.h"
 #endif
 
 #include "gdk/gdk_user.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 
 static GDK *gdk_singleton = nullptr;
 static bool gdk_frame_hook_connected = false;

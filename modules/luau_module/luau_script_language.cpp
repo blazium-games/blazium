@@ -33,7 +33,7 @@
 #include "analysis/luau_typecheck.h"
 #include "bindings/object.h"
 #include "bindings/variant.h"
-#include "editor/luau_completion.h"
+#include "modules/luau_module/editor/luau_completion.h"
 #include "lua_blazium_classes.h"
 #include "lua_state.h"
 #include "luau.h"
@@ -44,8 +44,8 @@
 #include "scheduler/luau_task_scheduler.h"
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_settings.h"
-#include "editor/luau_formatter.h"
+#include "editor/settings/editor_settings.h"
+#include "modules/luau_module/editor/luau_formatter.h"
 #endif
 #include "core/config/project_settings.h"
 #include "core/error/error_macros.h"
@@ -58,6 +58,9 @@
 #include "core/variant/variant_utility.h"
 #include "main/performance.h"
 #include <lualib.h>
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
+#include "editor/file_system/editor_file_system.h"
 
 LuauScriptLanguage *LuauScriptLanguage::singleton = nullptr;
 

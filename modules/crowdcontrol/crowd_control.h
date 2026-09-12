@@ -33,6 +33,7 @@
 #include "core/object/object.h"
 #include "crowd_control_http_client.h"
 #include "modules/websocket/websocket_peer.h"
+#include "core/variant/type_info.h"
 
 class CrowdControl : public Object {
 	GDCLASS(CrowdControl, Object);

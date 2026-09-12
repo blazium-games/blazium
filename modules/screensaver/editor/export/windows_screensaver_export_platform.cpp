@@ -33,6 +33,7 @@
 
 #include "core/io/file_access.h"
 #include "editor/editor_string_names.h"
+#include "core/string/string_name.h"
 
 EditorExportPlatformWindowsScreensaver::EditorExportPlatformWindowsScreensaver() {
 	set_name("Windows Screensaver");
@@ -140,12 +141,12 @@ HashMap<String, Variant> EditorExportPlatformWindowsScreensaver::get_custom_proj
 	return settings;
 }
 
-Error EditorExportPlatformWindowsScreensaver::export_project(const Ref<EditorExportPreset> &p_preset, bool p_debug, const String &p_path, BitField<EditorExportPlatform::DebugFlags> p_flags) {
+Error EditorExportPlatformWindowsScreensaver::export_project(const Ref<EditorExportPreset> &p_preset, bool p_debug, const String &p_path, BitField<EditorExportPlatform::DebugFlags> p_flags, bool p_notify) {
 	String path = p_path;
 	if (!path.get_extension().to_lower().ends_with("zip") && path.get_extension().to_lower() != "scr") {
 		path = path.get_basename() + ".scr";
 	}
-	return EditorExportPlatformWindows::export_project(p_preset, p_debug, path, p_flags);
+	return EditorExportPlatformWindows::export_project(p_preset, p_debug, path, p_flags, p_notify);
 }
 
 #endif

@@ -30,6 +30,7 @@
 #include "twitch_channels_requests.h"
 
 #include "core/io/json.h"
+#include "core/object/class_db.h"
 
 void TwitchChannelsRequests::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_channel_information", "broadcaster_id"), &TwitchChannelsRequests::get_channel_information);

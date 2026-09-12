@@ -37,7 +37,9 @@
 #include "scene/main/scene_tree.h"
 #include "scene/main/viewport.h"
 #include "scene/main/window.h"
-#include "servers/display_server.h"
+#include "servers/display/display_server.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 
 void GIFRecorder::_connect_process(bool p_connect) {
 	MainLoop *ml = OS::get_singleton() ? OS::get_singleton()->get_main_loop() : nullptr;

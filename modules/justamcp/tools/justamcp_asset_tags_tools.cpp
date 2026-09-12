@@ -50,7 +50,7 @@
 
 #include "core/config/project_settings.h"
 #include "core/os/os.h"
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 #include "justamcp_settings_resolver.h"
 
 #ifdef MODULE_ASSETTAGS_ENABLED

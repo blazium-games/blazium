@@ -29,7 +29,7 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "editor/lsp/luau_language_server.h"
+#include "modules/luau_module/editor/lsp/luau_language_server.h"
 
 #include "luau_script_language.h"
 

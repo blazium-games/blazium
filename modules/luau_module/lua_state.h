@@ -34,6 +34,8 @@
 #include <lua.h>
 
 #include "helpers.h"
+#include "core/string/string_name.h"
+#include "core/variant/type_info.h"
 
 namespace luau_module {
 

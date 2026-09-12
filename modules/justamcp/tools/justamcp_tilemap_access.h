@@ -33,7 +33,7 @@
 #include "core/string/ustring.h"
 #include "core/templates/vector.h"
 #include "core/variant/dictionary.h"
-#include "scene/resources/2d/tile_set.h"
+#include "modules/tilemap/tile_set.h"
 
 class Node;
 class TileMap;

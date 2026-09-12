@@ -42,17 +42,17 @@
 #include "scene/main/scene_tree.h"
 #include "scene/main/viewport.h"
 #include "scene/main/window.h"
-#include "servers/display_server.h"
+#include "servers/display/display_server.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/debugger/editor_debugger_node.h"
 #include "editor/debugger/script_editor_debugger.h"
-#include "editor/editor_file_system.h"
+#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_main_screen.h"
 #include "editor/editor_node.h"
-#include "editor/gui/editor_run_bar.h"
-#include "editor/plugins/embedded_process.h"
+#include "editor/run/editor_run_bar.h"
+#include "editor/run/embedded_process.h"
 #include "scene/gui/button.h"
 #endif
 
@@ -61,6 +61,7 @@
 #ifdef MODULE_JUSTAMCP_ENABLED
 #ifdef TOOLS_ENABLED
 #include "modules/justamcp/justamcp_server.h"
+#include "core/object/callable_mp.h"
 #endif
 #endif
 

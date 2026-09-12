@@ -30,6 +30,7 @@
 #include "crowd_control_effect.h"
 
 #include "crowd_control_effect_parameter.h"
+#include "core/object/class_db.h"
 
 void CrowdControlEffect::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_effect_id", "id"), &CrowdControlEffect::set_effect_id);

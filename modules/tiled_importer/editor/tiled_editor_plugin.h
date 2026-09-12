@@ -36,6 +36,7 @@
 #include "scene/gui/button.h"
 #include "scene/gui/label.h"
 #include "scene/gui/panel_container.h"
+#include "core/string/ustring.h"
 
 class TiledEditorPlugin : public EditorPlugin {
 	GDCLASS(TiledEditorPlugin, EditorPlugin);

@@ -36,7 +36,7 @@
 #include "core/object/class_db.h"
 #include "modules/modules_enabled.gen.h"
 
-#include "editor/navimesh_export_editor_plugin.h"
+#include "modules/navimesh_export/editor/navimesh_export_editor_plugin.h"
 #include "editor/plugins/editor_plugin.h"
 #ifdef MODULE_JUSTAMCP_ENABLED
 #include "modules/justamcp/tools/justamcp_toolset_registry.h"
@@ -44,6 +44,7 @@
 #endif
 #ifdef MODULE_REMOTE_CONTROL_ENABLED
 #include "navimesh_export_remote.h"
+#include "core/object/callable_mp.h"
 #endif
 
 static NavimeshExporter *navimesh_exporter_singleton = nullptr;

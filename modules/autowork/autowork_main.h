@@ -37,6 +37,8 @@
 #include "autowork_test.h"
 #include "core/templates/list.h"
 #include "scene/main/node.h"
+#include "scene/main/scene_tree.h"
+#include "core/string/ustring.h"
 
 class SceneTree;
 

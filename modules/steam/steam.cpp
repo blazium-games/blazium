@@ -35,6 +35,7 @@
 #include "core/os/time.h"
 #include "steam_auth_client.h"
 #include "steam_types.h"
+#include "core/object/class_db.h"
 
 Steam *Steam::singleton = nullptr;
 

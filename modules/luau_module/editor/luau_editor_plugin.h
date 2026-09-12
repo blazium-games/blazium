@@ -38,6 +38,7 @@
 #include "scene/gui/label.h"
 #include "scene/gui/panel_container.h"
 #include "scene/gui/text_edit.h"
+#include "core/string/ustring.h"
 
 class LuauEditorPlugin : public EditorPlugin {
 	GDCLASS(LuauEditorPlugin, EditorPlugin)

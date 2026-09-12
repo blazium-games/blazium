@@ -32,6 +32,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_prompt.h"
+#include "core/string/ustring.h"
 
 class JustAMCPPromptBlaziumContext : public JustAMCPPrompt {
 	GDCLASS(JustAMCPPromptBlaziumContext, JustAMCPPrompt);

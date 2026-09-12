@@ -32,6 +32,7 @@
 #include "blazium_goap_action.h"
 #include "blazium_goap_goal.h"
 #include "core/object/ref_counted.h"
+#include "core/variant/typed_array.h"
 
 class BlaziumGoapActionPlanner;
 

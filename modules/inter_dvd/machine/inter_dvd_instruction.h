@@ -32,6 +32,7 @@
 #include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "core/variant/typed_array.h"
+#include "core/variant/type_info.h"
 
 class InterDVDInstruction : public Object {
 	GDCLASS(InterDVDInstruction, Object);

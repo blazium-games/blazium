@@ -51,6 +51,7 @@
 #include "gdk_signal_xasync_context.h"
 #include "gdk_user.h"
 #include "gdk_xbox_services.h"
+#include "core/object/class_db.h"
 
 static String _presence_user_state_to_name(GDKPresenceRecord::UserState p_state) {
 	switch (p_state) {

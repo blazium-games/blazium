@@ -39,7 +39,7 @@
 #include "core/io/zip_io.h"
 #include "core/os/os.h"
 #include "editor/editor_node.h"
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 #include "editor/editor_string_names.h"
 #include "modules/inter_dvd/author/inter_dvd_ifo_writer.h"
 #include "modules/inter_dvd/author/inter_dvd_project.h"
@@ -207,7 +207,8 @@ bool EditorExportPlatformWindowsInterDVD::has_valid_project_configuration(const 
 	return false;
 }
 
-Error EditorExportPlatformWindowsInterDVD::export_project(const Ref<EditorExportPreset> &p_preset, bool p_debug, const String &p_path, BitField<EditorExportPlatform::DebugFlags> p_flags) {
+Error EditorExportPlatformWindowsInterDVD::export_project(const Ref<EditorExportPreset> &p_preset, bool p_debug, const String &p_path, BitField<EditorExportPlatform::DebugFlags> p_flags, bool p_notify) {
+	(void)p_notify;
 	ExportNotifier notifier(*this, p_preset, p_debug, p_path, p_flags);
 
 	Ref<InterDVDProject> project = resolve_authoring_project();

@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "irc_user.h"
+#include "core/object/class_db.h"
 
 void IRCUser::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_nick", "nick"), &IRCUser::set_nick);

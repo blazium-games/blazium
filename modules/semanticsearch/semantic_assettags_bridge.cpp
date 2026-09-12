@@ -42,13 +42,14 @@
 #endif
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_file_system.h"
+#include "editor/file_system/editor_file_system.h"
 #endif
 
 #ifdef MODULE_JUSTAMCP_ENABLED
 #include "modules/justamcp/justamcp_server.h"
 #include "modules/justamcp/tools/justamcp_resource_subscriptions.h"
 #include "modules/justamcp/tools/resources/justamcp_tags_resource_provider.h"
+#include "core/object/callable_mp.h"
 #endif
 
 #ifdef MODULE_ASSETTAGS_ENABLED

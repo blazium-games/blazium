@@ -34,9 +34,11 @@
 #include "screensaver.h"
 
 #ifdef TOOLS_ENABLED
-#include "editor/export/windows_screensaver_export_platform.h"
+#include "modules/screensaver/editor/export/windows_screensaver_export_platform.h"
 #include "editor/plugins/editor_plugin.h"
-#include "editor/screensaver_editor_plugin.h"
+#include "modules/screensaver/editor/screensaver_editor_plugin.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 #endif
 
 static Screensaver *screensaver_singleton = nullptr;

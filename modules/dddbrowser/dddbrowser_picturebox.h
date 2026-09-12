@@ -30,6 +30,7 @@
 #pragma once
 
 #include "scene/3d/node_3d.h"
+#include "core/string/ustring.h"
 
 class DDDBrowserPicturebox : public Node3D {
 	GDCLASS(DDDBrowserPicturebox, Node3D);

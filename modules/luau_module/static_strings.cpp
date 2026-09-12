@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "static_strings.h"
+#include "core/string/string_name.h"
 
 using namespace luau_module;
 

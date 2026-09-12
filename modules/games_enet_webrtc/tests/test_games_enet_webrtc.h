@@ -33,6 +33,7 @@
 #include "../protocol.h"
 
 #include "tests/test_macros.h"
+#include "core/string/ustring.h"
 
 namespace TestGamesEnetWebrtc {
 

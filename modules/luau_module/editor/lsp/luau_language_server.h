@@ -34,7 +34,7 @@
 #include "editor/plugins/editor_plugin.h"
 
 #ifndef LUAU_NO_LSP
-#include "editor/lsp/luau_language_protocol.h"
+#include "modules/luau_module/editor/lsp/luau_language_protocol.h"
 #endif
 
 class LuauLanguageServerPlugin : public EditorPlugin {

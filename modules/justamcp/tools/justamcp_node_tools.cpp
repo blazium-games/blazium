@@ -42,6 +42,7 @@
 
 #include "../justamcp_editor_scene_access.h"
 #include "../justamcp_mcp_tool_macros.h"
+#include "core/object/class_db.h"
 
 void JustAMCPNodeTools::_bind_methods() {}
 

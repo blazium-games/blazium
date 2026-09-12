@@ -43,6 +43,8 @@ using luau_module::LuauBytecodeFormat;
 #include "core/io/resource_loader.h"
 #include "core/object/class_db.h"
 #include "core/object/script_language.h"
+#include "core/string/string_name.h"
+#include "editor/file_system/editor_file_system.h"
 
 namespace {
 
@@ -387,7 +389,7 @@ Error LuauScript::reload(bool p_keep_state) {
 }
 
 #ifdef TOOLS_ENABLED
-#include "editor/doc_tools.h"
+#include "editor/doc/doc_tools.h"
 
 StringName LuauScript::get_doc_class_name() const {
 	return class_info.class_name;

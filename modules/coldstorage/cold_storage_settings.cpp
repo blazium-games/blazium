@@ -32,7 +32,7 @@
 #include "cold_storage_settings.h"
 
 #include "core/config/project_settings.h"
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 
 namespace {
 const char *NS = "blazium/coldstorage/";

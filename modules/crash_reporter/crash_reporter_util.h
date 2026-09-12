@@ -30,6 +30,7 @@
 #pragma once
 
 #include "core/io/file_access.h"
+#include "core/string/ustring.h"
 #include "core/variant/dictionary.h"
 #include "core/variant/typed_array.h"
 

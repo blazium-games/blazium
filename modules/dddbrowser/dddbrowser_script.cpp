@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "dddbrowser_script.h"
+#include "core/object/class_db.h"
 
 void DDDBrowserScript::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_asset_id", "id"), &DDDBrowserScript::set_asset_id);

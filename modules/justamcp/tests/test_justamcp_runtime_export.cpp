@@ -17,7 +17,7 @@
 #include "../tools/justamcp_json_rpc_router.h"
 #include "../tools/justamcp_settings_resolver.h"
 #include "core/config/project_settings.h"
-#include "core/object/callable_method_pointer.h"
+#include "core/object/callable_mp.h"
 #include "core/object/object.h"
 #include "modules/modules_enabled.gen.h"
 #ifdef MODULE_HTTPSERVER_ENABLED

@@ -47,10 +47,11 @@
 #include "scene/main/multiplayer_api.h"
 #include "scene/main/viewport.h"
 #include "scene/main/window.h"
-#include "servers/audio_server.h"
+#include "servers/audio/audio_server.h"
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
+#include "scene/main/scene_tree.h"
 #endif
 
 void JustAMCPRuntime::_inject_event(const Ref<InputEvent> &p_event) {

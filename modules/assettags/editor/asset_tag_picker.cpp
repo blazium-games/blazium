@@ -37,6 +37,7 @@
 #include "editor/themes/editor_scale.h"
 #include "scene/gui/button.h"
 #include "scene/gui/label.h"
+#include "core/object/callable_mp.h"
 
 void AssetTagPicker::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_tags", "tags"), &AssetTagPicker::set_tags);

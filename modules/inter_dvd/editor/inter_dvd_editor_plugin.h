@@ -31,9 +31,10 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "editor/editor_inspector.h"
+#include "editor/inspector/editor_inspector.h"
 #include "editor/export/editor_export_platform.h"
 #include "editor/plugins/editor_plugin.h"
+#include "core/string/ustring.h"
 
 class InterDVDCell;
 class InterDVDButton;

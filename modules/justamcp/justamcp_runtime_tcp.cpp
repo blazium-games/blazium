@@ -43,6 +43,7 @@
 #include "scene/main/scene_tree.h"
 #ifdef TOOLS_ENABLED
 #include "tools/justamcp_tool_executor.h"
+#include "core/object/callable_mp.h"
 #endif
 
 void JustAMCPRuntime::_thread_poll_wrapper(void *p_user) {

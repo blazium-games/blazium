@@ -39,6 +39,7 @@
 #include "scene/resources/3d/convex_polygon_shape_3d.h"
 #include "scene/resources/material.h"
 #include "scene/resources/mesh.h"
+#include "core/templates/local_vector.h"
 
 void TrenchbroomGeometryGenerator::create_patch_mesh(const LocalVector<PatchData> &p_patches, Ref<ArrayMesh> p_mesh, EntityData &p_entity, const BlaziumFGDSolidClass *p_def, PackedVector3Array &r_concave_vertices, Vector<Vector3> &r_convex_points) {
 	ERR_FAIL_NULL(map_settings);

@@ -54,6 +54,7 @@
 #include "core/io/file_access.h"
 #include "core/io/marshalls.h"
 #include "core/os/os.h"
+#include "core/string/ustring.h"
 #include "core/variant/dictionary.h"
 
 namespace TestMultiuserEditor {

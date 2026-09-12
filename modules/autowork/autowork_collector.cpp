@@ -33,6 +33,8 @@
 #include "core/io/resource_loader.h"
 #include "core/object/script_language.h"
 #include "modules/modules_enabled.gen.h"
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 void AutoworkCollector::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_script", "path"), &AutoworkCollector::add_script);

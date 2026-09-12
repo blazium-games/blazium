@@ -32,6 +32,7 @@
 #include "core/object/ref_counted.h"
 #include "core/templates/hash_set.h"
 #include "modules/trenchbroom/core/data.h"
+#include "core/templates/local_vector.h"
 
 class TrenchbroomMapSettings;
 class BlaziumFGDSolidClass;

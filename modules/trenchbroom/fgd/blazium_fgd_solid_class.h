@@ -32,6 +32,7 @@
 #include "blazium_fgd_entity_class.h"
 
 #include "scene/3d/visual_instance_3d.h"
+#include "core/variant/type_info.h"
 
 class BlaziumFGDSolidClass : public BlaziumFGDEntityClass {
 	GDCLASS(BlaziumFGDSolidClass, BlaziumFGDEntityClass);

@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "twitch_clips_requests.h"
+#include "core/object/class_db.h"
 
 void TwitchClipsRequests::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("create_clip", "broadcaster_id", "has_delay"), &TwitchClipsRequests::create_clip, DEFVAL(false));

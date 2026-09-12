@@ -34,10 +34,11 @@
 #include "scene/3d/audio_stream_player_3d.h"
 #include "scene/audio/audio_stream_player.h"
 #include "servers/audio/audio_effect.h"
-#include "servers/audio_server.h"
+#include "servers/audio/audio_server.h"
 
 #include "../justamcp_editor_scene_access.h"
 #include "../justamcp_mcp_tool_macros.h"
+#include "core/object/class_db.h"
 
 void JustAMCPAudioTools::_bind_methods() {}
 

@@ -32,6 +32,11 @@
 #include "justamcp_category_schemas.h"
 
 #include "justamcp_tool_schema_builder.h"
+#include "core/object/class_db.h"
+#include "scene/main/scene_tree.h"
+#include "core/config/project_settings.h"
+#include "editor/settings/editor_settings.h"
+#include "editor/file_system/editor_file_system.h"
 
 void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySchemaContext &p_ctx) {
 	auto add_schema = [&](const String &p_name, const String &p_desc, const Vector<String> &p_props, const Vector<String> &p_req, const String &p_task_support = "forbidden", const String &p_thread_affinity = "") {

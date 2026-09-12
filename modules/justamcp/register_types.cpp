@@ -39,11 +39,12 @@
 
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
+#include "core/object/callable_mp.h"
 
 #ifdef TOOLS_ENABLED
 #include "core/config/project_settings.h"
 #include "core/os/os.h"
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 #include "justamcp_editor_plugin.h"
 #include "justamcp_server.h"
 #include "tools/justamcp_analysis_tools.h"
@@ -77,6 +78,7 @@
 #include "tools/justamcp_scene_tools.h"
 #include "tools/justamcp_script_tools.h"
 #include "tools/justamcp_semantic_search_tools.h"
+#include "core/object/class_db.h"
 #include "tools/justamcp_shader_tools.h"
 #include "tools/justamcp_task_manager.h"
 #include "tools/justamcp_theme_tools.h"

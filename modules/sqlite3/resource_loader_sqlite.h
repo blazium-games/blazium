@@ -32,6 +32,7 @@
 #pragma once
 
 #include "core/io/resource_loader.h"
+#include "core/string/ustring.h"
 
 class ResourceFormatLoaderSQLite : public ResourceFormatLoader {
 	GDCLASS(ResourceFormatLoaderSQLite, ResourceFormatLoader);

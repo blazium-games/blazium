@@ -38,6 +38,8 @@
 #include "quake_palette_file.h"
 #include "quake_wad_file.h"
 #include "scene/resources/image_texture.h"
+#include "core/string/string_name.h"
+#include "core/templates/local_vector.h"
 
 enum {
 	WAD_FORMAT_QUAKE,
@@ -53,7 +55,7 @@ static const int TEXTURE_NAME_LENGTH = 16;
 static const int MAX_MIP_LEVELS = 4;
 
 static String _buffer_to_ascii(const Vector<uint8_t> &p_buffer) {
-	return String((const char *)p_buffer.ptr(), p_buffer.size());
+	return String::utf8((const char *)p_buffer.ptr(), p_buffer.size());
 }
 
 String ResourceImporterQuakeWad::get_importer_name() const {

@@ -31,6 +31,7 @@
 #include "core/variant/variant.h"
 #include "types.hpp"
 #include <functional>
+#include <string>
 
 namespace turnbattle {
 

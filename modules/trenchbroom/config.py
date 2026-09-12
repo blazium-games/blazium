@@ -1,6 +1,3 @@
-from misc.utility.linker import override_mold_linker_with_gold
-
-
 def can_build(env, platform):
     # Mold and gold both fail once this module is linked into the huge GCC sanitizer
     # editor binary. Skip on that CI matrix (same as luau_module).
@@ -14,9 +11,6 @@ def can_build(env, platform):
 
 def configure(env):
     env.Append(CPPDEFINES=["TRENCHBROOM_MODULE_ENABLED"])
-
-    if env["platform"] == "linuxbsd":
-        override_mold_linker_with_gold(env, "trenchbroom")
 
 
 def get_doc_classes():

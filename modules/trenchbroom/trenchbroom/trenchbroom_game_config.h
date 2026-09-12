@@ -35,6 +35,7 @@
 
 #include "modules/trenchbroom/fgd/blazium_fgd_file.h"
 #include "trenchbroom_tag.h"
+#include "core/variant/type_info.h"
 
 class TrenchbroomGameConfig : public Resource {
 	GDCLASS(TrenchbroomGameConfig, Resource);

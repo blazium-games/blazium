@@ -35,6 +35,7 @@
 
 #include "core/io/image.h"
 #include "tests/test_macros.h"
+#include "core/string/ustring.h"
 
 namespace TestSteam {
 

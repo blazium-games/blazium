@@ -46,6 +46,7 @@
 #include "core/error/error_macros.h"
 #include "core/object/class_db.h"
 #include <lualib.h>
+#include "core/string/string_name.h"
 
 using namespace luau_module;
 

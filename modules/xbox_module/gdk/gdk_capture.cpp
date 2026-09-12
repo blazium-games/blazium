@@ -42,6 +42,7 @@
 #include "gdk_pending_signal.h"
 #include "gdk_result.h"
 #include "gdk_runtime.h"
+#include "core/object/class_db.h"
 
 void GDKCaptureMetaData::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_valid"), &GDKCaptureMetaData::is_valid);

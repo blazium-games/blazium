@@ -16,6 +16,7 @@
 
 #include "core/error/error_macros.h"
 #include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 namespace {
 void own_descendants(Node *p_node, Node *p_owner) {

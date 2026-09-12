@@ -35,6 +35,7 @@
 #include "../editor/microsoft_game_config.h"
 #include "../gdk/gdk.h"
 #include "../gdk/gdk_result.h"
+#include "core/string/ustring.h"
 
 namespace TestXboxModule {
 

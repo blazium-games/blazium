@@ -38,6 +38,8 @@
 #include "luau_parser_pool.h"
 #include "luau_script.h"
 #include "scheduler/luau_task_scheduler.h"
+#include "core/string/string_name.h"
+#include "core/string/ustring.h"
 
 class LuauScriptLanguage : public ScriptLanguage {
 	GDCLASS(LuauScriptLanguage, ScriptLanguage);

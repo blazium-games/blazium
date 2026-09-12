@@ -49,6 +49,7 @@
 #include "core/math/math_funcs.h"
 #include "core/os/os.h"
 #include "tests/test_macros.h"
+#include "core/config/project_settings.h"
 
 static SemanticAssetIndex *semantic_test_index() {
 	SemanticAssetIndex *index = SemanticAssetIndex::get_singleton();
@@ -397,7 +398,7 @@ void test_semantic_filter_regex_parity() {
 	index->clear();
 	CHECK(index->upsert_entry("res://characters/hero.tscn") == OK);
 	CHECK(index->upsert_entry("res://props/tree.tscn") == OK);
-	const HashSet<String> filtered = index->collect_paths_matching_metadata("characters/.*", "");
+	const HashSet<String> filtered(index->collect_paths_matching_metadata("characters/.*", ""));
 	CHECK(filtered.has("res://characters/hero.tscn"));
 	CHECK(!filtered.has("res://props/tree.tscn"));
 	ProjectSettings::get_singleton()->set_setting("blazium/semanticsearch/backend", "hybrid");

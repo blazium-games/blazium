@@ -30,6 +30,7 @@
 #include "twitch_message.h"
 
 #include "twitch_constants.h"
+#include "core/object/class_db.h"
 
 void TwitchMessage::_bind_methods() {
 	ClassDB::bind_static_method("TwitchMessage", D_METHOD("is_twitch_command", "message"), &TwitchMessage::is_twitch_command);

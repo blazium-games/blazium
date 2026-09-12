@@ -38,6 +38,7 @@
 #include "core/os/os.h"
 #include "core/os/thread.h"
 #include "core/os/thread_safe.h"
+#include "core/object/class_db.h"
 
 struct SemanticEmbedWorkerData {
 	SemanticAsyncEmbedWorker *worker = nullptr;
@@ -184,9 +185,8 @@ String SemanticAsyncEmbedWorker::enqueue_refresh(bool p_stale_only, bool p_force
 	}
 
 	uint8_t bytes[8];
-	CryptoCore::RandomGenerator rng;
 	String job_id;
-	if (rng.init() == OK && rng.get_random_bytes(bytes, 8) == OK) {
+	if (CryptoCore::generate_random(bytes, 8) == OK) {
 		String hex;
 		for (int i = 0; i < 8; i++) {
 			hex += vformat("%02x", bytes[i]);

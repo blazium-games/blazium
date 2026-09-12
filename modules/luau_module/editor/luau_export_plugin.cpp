@@ -29,9 +29,9 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "editor/luau_export_plugin.h"
+#include "modules/luau_module/editor/luau_export_plugin.h"
 
-#include "editor/luau_formatter.h"
+#include "modules/luau_module/editor/luau_formatter.h"
 #include "luau.h"
 #include "luau_bytecode_format.h"
 

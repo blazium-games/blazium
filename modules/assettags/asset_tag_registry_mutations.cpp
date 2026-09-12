@@ -107,8 +107,8 @@ Error AssetTagRegistry::set_tags_for_asset(const String &p_path, const PackedStr
 		}
 	}
 
-	const HashMap<String, Vector<String>> backup_index = asset_index;
-	const HashMap<String, HashSet<String>> backup_reverse = reverse_lookup;
+	const HashMap<String, Vector<String>> backup_index(asset_index);
+	const HashMap<String, HashSet<String>> backup_reverse(reverse_lookup);
 
 	if (validated.is_empty()) {
 		if (asset_index.has(path)) {
@@ -183,8 +183,8 @@ bool AssetTagRegistry::rename_asset_path(const String &p_old_path, const String 
 		return false;
 	}
 
-	const HashMap<String, Vector<String>> backup_index = asset_index;
-	const HashMap<String, HashSet<String>> backup_reverse = reverse_lookup;
+	const HashMap<String, Vector<String>> backup_index(asset_index);
+	const HashMap<String, HashSet<String>> backup_reverse(reverse_lookup);
 
 	const Vector<String> tags = asset_index[old_path];
 	_remove_path_from_reverse_lookup(old_path, tags);
@@ -208,8 +208,8 @@ int AssetTagRegistry::apply_tag_rename(const String &p_old_name, const String &p
 		return 0;
 	}
 
-	const HashMap<String, Vector<String>> backup_index = asset_index;
-	const HashMap<String, HashSet<String>> backup_reverse = reverse_lookup;
+	const HashMap<String, Vector<String>> backup_index(asset_index);
+	const HashMap<String, HashSet<String>> backup_reverse(reverse_lookup);
 
 	HashSet<String> candidate_paths;
 	for (const KeyValue<String, HashSet<String>> &rl : reverse_lookup) {
@@ -295,8 +295,8 @@ int AssetTagRegistry::apply_tag_remove(const String &p_tag_name) {
 		return false;
 	};
 
-	const HashMap<String, Vector<String>> backup_index = asset_index;
-	const HashMap<String, HashSet<String>> backup_reverse = reverse_lookup;
+	const HashMap<String, Vector<String>> backup_index(asset_index);
+	const HashMap<String, HashSet<String>> backup_reverse(reverse_lookup);
 
 	HashSet<String> candidate_paths;
 	for (const KeyValue<String, HashSet<String>> &rl : reverse_lookup) {

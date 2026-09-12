@@ -32,7 +32,8 @@
 #ifdef TOOLS_ENABLED
 
 #include "core/templates/hash_map.h"
-#include "editor/plugins/script_editor_plugin.h"
+#include "editor/script/script_editor_plugin.h"
+#include "core/string/ustring.h"
 
 class LuauSyntaxHighlighter : public EditorSyntaxHighlighter {
 	GDCLASS(LuauSyntaxHighlighter, EditorSyntaxHighlighter);

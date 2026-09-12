@@ -12,6 +12,7 @@
 #include "inter_dvd_hotspot.h"
 
 #include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 void InterDVDMenuPage::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_menu_type", "type"), &InterDVDMenuPage::set_menu_type);

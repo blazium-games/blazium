@@ -32,6 +32,7 @@
 
 #ifdef DEBUG_ENABLED
 #include "core/debugger/engine_debugger.h"
+#include "core/object/class_db.h"
 
 Error AutoworkVSCodeDebugger::_capture(void *p_user, const String &p_msg, const Array &p_args, bool &r_captured) {
 	AutoworkVSCodeDebugger *debugger = (AutoworkVSCodeDebugger *)p_user;

@@ -30,6 +30,7 @@
 #include "twitch_channel_points_requests.h"
 
 #include "core/io/json.h"
+#include "core/object/class_db.h"
 
 void TwitchChannelPointsRequests::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("create_custom_rewards", "broadcaster_id", "reward_data"), &TwitchChannelPointsRequests::create_custom_rewards);

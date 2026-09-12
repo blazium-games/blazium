@@ -34,6 +34,7 @@
 #include "platform/web/api/javascript_bridge_singleton.h"
 #include "scene/main/node.h"
 #include "youtube_playables_response.h"
+#include "core/string/ustring.h"
 
 // https://developers.google.com/youtube/gaming/playables/reference/sdk
 // https://github.com/google/web-game-samples/blob/main/phaser/src/YouTubePlayables.js

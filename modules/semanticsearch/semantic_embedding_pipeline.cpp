@@ -38,7 +38,7 @@
 
 #ifdef TOOLS_ENABLED
 #include "core/os/thread.h"
-#include "editor/editor_file_system.h"
+#include "editor/file_system/editor_file_system.h"
 #endif
 
 #ifdef MODULE_ASSETTAGS_ENABLED

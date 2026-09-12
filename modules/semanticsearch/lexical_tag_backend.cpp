@@ -30,6 +30,7 @@
 #include "lexical_tag_backend.h"
 
 #include "semantic_asset_index.h"
+#include "core/object/class_db.h"
 
 void LexicalTagBackend::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("rebuild"), &LexicalTagBackend::rebuild);

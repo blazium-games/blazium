@@ -43,6 +43,7 @@
 #include "modules/trenchbroom/trenchbroom_local_config.h"
 #include "scene/3d/node_3d.h"
 #include "scene/resources/packed_scene.h"
+#include "core/object/callable_mp.h"
 
 void BlaziumFGDModelPointClass::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_target_map_editor", "target_map_editor"), &BlaziumFGDModelPointClass::set_target_map_editor);
@@ -257,7 +258,7 @@ void BlaziumFGDModelPointClass::_save_to_file_system(Ref<GLTFDocument> p_gltf_do
 	print_line("Exported model to " + p_path);
 }
 
-AABB BlaziumFGDModelPointClass::_generate_size_from_aabb(const TypedArray<GLTFMesh> &p_meshes, const TypedArray<GLTFNode> &p_nodes) const {
+AABB BlaziumFGDModelPointClass::_generate_size_from_aabb(const Vector<Ref<GLTFMesh>> &p_meshes, const Vector<Ref<GLTFNode>> &p_nodes) const {
 	AABB aabb;
 	for (int i = 0; i < p_meshes.size(); i++) {
 		Ref<GLTFMesh> mesh = p_meshes[i];

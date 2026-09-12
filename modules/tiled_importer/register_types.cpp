@@ -33,11 +33,12 @@
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_node.h"
-#include "editor/tiled_editor_plugin.h"
+#include "modules/tiled_importer/editor/tiled_editor_plugin.h"
 #include "resource_importer_tiled.h"
 #endif
 
 #include "tileson_gd_bindings.h"
+#include "core/object/class_db.h"
 
 void initialize_tiled_importer_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {

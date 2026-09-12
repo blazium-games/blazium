@@ -31,7 +31,7 @@
 
 #include "core/math/vector2i.h"
 #include "core/string/ustring.h"
-#include "servers/display_server.h"
+#include "servers/display/display_server.h"
 
 class LiveWallpaperCmdline {
 public:
@@ -48,7 +48,7 @@ public:
 	static void reset();
 
 	static bool try_consume(const String &p_arg, const String &p_next, bool &r_consumed_next);
-	static void apply_recorded(DisplayServer::WindowMode &r_window_mode, uint32_t &r_window_flags, Vector2i &r_window_position, Size2i &r_window_size, int64_t &r_embed_parent_hwnd, bool &r_use_position);
+	static void apply_recorded(DisplayServerEnums::WindowMode &r_window_mode, uint32_t &r_window_flags, Vector2i &r_window_position, Size2i &r_window_size, int64_t &r_embed_parent_hwnd, bool &r_use_position);
 
 	static String mutex_name();
 	static String quit_event_name();

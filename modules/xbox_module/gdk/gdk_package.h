@@ -49,6 +49,7 @@
 
 #ifdef XBOX_MODULE_GDK_ENABLED
 #include <XPackage.h>
+#include "core/variant/type_info.h"
 #endif
 
 class GDK;

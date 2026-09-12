@@ -40,6 +40,7 @@
 #include "editor/editor_string_names.h"
 #include "scene/gui/label.h"
 #include "scene/gui/progress_bar.h"
+#include "core/object/callable_mp.h"
 
 namespace {
 

@@ -31,6 +31,7 @@
 
 #include "core/crypto/crypto_core.h"
 #include "core/io/json.h"
+#include "core/object/class_db.h"
 
 void IRCMessage::_bind_methods() {
 	ClassDB::bind_static_method("IRCMessage", D_METHOD("parse", "raw_message"), &IRCMessage::parse);
@@ -238,7 +239,7 @@ Ref<IRCMessage> IRCMessage::parse(const String &p_raw_message) {
 	return message;
 }
 
-String IRCMessage::to_string() {
+String IRCMessage::_to_string() {
 	String result;
 
 	// Add tags

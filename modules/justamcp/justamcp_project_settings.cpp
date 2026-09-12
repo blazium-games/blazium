@@ -36,7 +36,7 @@
 #include "tools/justamcp_tool_executor.h"
 
 #include "core/config/project_settings.h"
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 
 void JustAMCPProjectSettings::register_project_settings() {
 	GLOBAL_DEF_BASIC("blazium/justamcp/override_editor_settings", false);

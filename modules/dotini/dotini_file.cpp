@@ -31,6 +31,8 @@
 #include "core/crypto/crypto_core.h"
 #include "core/os/os.h"
 #include "core/variant/variant_parser.h"
+#include "core/object/class_db.h"
+#include "core/io/file_access.h"
 
 Ref<DotIniFile> DotIniFile::global_fallback = nullptr;
 
@@ -1192,7 +1194,7 @@ String DotIniFile::save_to_base64() const {
 
 Error DotIniFile::load_from_buffer(const PackedByteArray &p_buffer, bool p_append) {
 	String parsed;
-	parsed.parse_utf8((const char *)p_buffer.ptr(), p_buffer.size());
+	parsed.append_utf8((const char *)p_buffer.ptr(), p_buffer.size());
 	return load_from_string(parsed, p_append);
 }
 
@@ -1335,11 +1337,9 @@ void DotIniFile::from_config_file(Ref<ConfigFile> p_config) {
 		return;
 	}
 
-	List<String> secs_list;
-	p_config->get_sections(&secs_list);
+	Vector<String> secs_list = p_config->get_sections();
 	for (const String &sec : secs_list) {
-		List<String> keys_list;
-		p_config->get_section_keys(sec, &keys_list);
+		Vector<String> keys_list = p_config->get_section_keys(sec);
 		for (const String &key : keys_list) {
 			set_value(sec, key, p_config->get_value(sec, key));
 		}

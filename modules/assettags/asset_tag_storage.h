@@ -29,6 +29,7 @@
 
 #pragma once
 
+#include "core/string/ustring.h"
 #include "core/templates/hash_map.h"
 #include "core/templates/hash_set.h"
 #include "core/templates/vector.h"

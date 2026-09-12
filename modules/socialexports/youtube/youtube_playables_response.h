@@ -33,6 +33,7 @@
 #include "core/io/json.h"
 #include "core/object/ref_counted.h"
 #include "platform/web/api/javascript_bridge_singleton.h"
+#include "core/object/class_db.h"
 
 class YoutubePlayablesResponse : public RefCounted {
 	GDCLASS(YoutubePlayablesResponse, RefCounted);

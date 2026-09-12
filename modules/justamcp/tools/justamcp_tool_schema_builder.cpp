@@ -35,7 +35,7 @@
 #include "justamcp_settings_resolver.h"
 
 #include "core/config/project_settings.h"
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 
 void JustAMCPToolSchemaBuilder::register_tool_settings(const String &p_category, const String &p_full_name, bool p_is_core, bool p_default_enabled) {
 	const String cat_path = "blazium/justamcp/tools/" + p_category;

@@ -36,7 +36,8 @@
 #include "core/io/ip.h"
 #include "core/os/os.h"
 #include "core/os/time.h"
-#include "modules/regex/regex.h"
+#include "core/string/regex.h"
+#include "core/object/class_db.h"
 
 void IRCClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("connect_to_server", "host", "port", "use_ssl", "nick", "username", "realname", "password"), &IRCClient::connect_to_server, DEFVAL(""));

@@ -38,6 +38,7 @@
 #include "scene/main/scene_tree.h"
 
 #include <enet/enet.h>
+#include "core/variant/type_info.h"
 
 class ENetClient : public Object {
 	GDCLASS(ENetClient, Object);

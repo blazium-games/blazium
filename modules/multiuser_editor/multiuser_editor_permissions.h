@@ -33,6 +33,7 @@
 
 #include "core/object/ref_counted.h"
 #include "core/string/ustring.h"
+#include "core/variant/type_info.h"
 #include "core/templates/hash_map.h"
 #include "core/templates/hash_set.h"
 

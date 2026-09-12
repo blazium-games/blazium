@@ -37,7 +37,7 @@
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #ifdef TOOLS_ENABLED
-#include "editor/plugins/script_editor_plugin.h"
+#include "editor/script/script_editor_plugin.h"
 #endif
 
 static Dictionary _sandbox_path(const String &p_raw, String &r_path) {

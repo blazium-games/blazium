@@ -97,7 +97,7 @@ bool LiveWallpaperCmdline::try_consume(const String &p_arg, const String &p_next
 	return false;
 }
 
-void LiveWallpaperCmdline::apply_recorded(DisplayServer::WindowMode &r_window_mode, uint32_t &r_window_flags, Vector2i &r_window_position, Size2i &r_window_size, int64_t &r_embed_parent_hwnd, bool &r_use_position) {
+void LiveWallpaperCmdline::apply_recorded(DisplayServerEnums::WindowMode &r_window_mode, uint32_t &r_window_flags, Vector2i &r_window_position, Size2i &r_window_size, int64_t &r_embed_parent_hwnd, bool &r_use_position) {
 	r_use_position = false;
 	ProjectSettings *ps = ProjectSettings::get_singleton();
 	if (ps == nullptr || !bool(ps->get_setting("blazium/livewallpaper/enabled", false))) {
@@ -115,15 +115,15 @@ void LiveWallpaperCmdline::apply_recorded(DisplayServer::WindowMode &r_window_mo
 		return;
 	}
 	if (applied == MODE_QUIT) {
-		r_window_mode = DisplayServer::WINDOW_MODE_WINDOWED;
-		r_window_flags &= ~DisplayServer::WINDOW_FLAG_BORDERLESS_BIT;
+		r_window_mode = DisplayServerEnums::WINDOW_MODE_WINDOWED;
+		r_window_flags &= ~DisplayServerEnums::WINDOW_FLAG_BORDERLESS_BIT;
 		r_embed_parent_hwnd = 0;
 		embed_hwnd = 0;
 		return;
 	}
 	if (applied == MODE_PREVIEW) {
-		r_window_mode = DisplayServer::WINDOW_MODE_WINDOWED;
-		r_window_flags |= DisplayServer::WINDOW_FLAG_BORDERLESS_BIT;
+		r_window_mode = DisplayServerEnums::WINDOW_MODE_WINDOWED;
+		r_window_flags |= DisplayServerEnums::WINDOW_FLAG_BORDERLESS_BIT;
 		r_embed_parent_hwnd = 0;
 		embed_hwnd = 0;
 		r_window_size = Size2i(640, 360);
@@ -132,9 +132,9 @@ void LiveWallpaperCmdline::apply_recorded(DisplayServer::WindowMode &r_window_mo
 
 	embed_hwnd = LiveWallpaperWorkerW::find_workerw();
 	r_embed_parent_hwnd = 0;
-	r_window_mode = DisplayServer::WINDOW_MODE_WINDOWED;
-	r_window_flags |= DisplayServer::WINDOW_FLAG_BORDERLESS_BIT;
-	r_window_flags |= DisplayServer::WINDOW_FLAG_NO_FOCUS_BIT;
+	r_window_mode = DisplayServerEnums::WINDOW_MODE_WINDOWED;
+	r_window_flags |= DisplayServerEnums::WINDOW_FLAG_BORDERLESS_BIT;
+	r_window_flags |= DisplayServerEnums::WINDOW_FLAG_NO_FOCUS_BIT;
 	r_window_position = Vector2i(-32000, -32000);
 
 	r_window_size = Size2i(256, 256);

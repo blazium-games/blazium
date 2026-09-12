@@ -753,7 +753,7 @@ void ScreensaverCmdline::ingest_from_os_command_line() {
 	}
 }
 
-void ScreensaverCmdline::apply_recorded(DisplayServer::WindowMode &r_window_mode, uint32_t &r_window_flags, int64_t &r_embed_parent_hwnd, Vector2i &r_window_position, Size2i &r_window_size, int &r_screen, bool &r_use_position) {
+void ScreensaverCmdline::apply_recorded(DisplayServerEnums::WindowMode &r_window_mode, uint32_t &r_window_flags, int64_t &r_embed_parent_hwnd, Vector2i &r_window_position, Size2i &r_window_size, int &r_screen, bool &r_use_position) {
 	r_use_position = false;
 	ingest_from_os_command_line();
 	ProjectSettings *ps = ProjectSettings::get_singleton();
@@ -773,18 +773,18 @@ void ScreensaverCmdline::apply_recorded(DisplayServer::WindowMode &r_window_mode
 				screen_override = r_screen;
 			}
 			const String cover = resolved_cover_mode();
-			r_window_flags |= DisplayServer::WINDOW_FLAG_BORDERLESS_BIT;
+			r_window_flags |= DisplayServerEnums::WINDOW_FLAG_BORDERLESS_BIT;
 			r_embed_parent_hwnd = 0;
 
-			r_window_mode = DisplayServer::WINDOW_MODE_WINDOWED;
-			r_window_flags |= DisplayServer::WINDOW_FLAG_ALWAYS_ON_TOP_BIT;
+			r_window_mode = DisplayServerEnums::WINDOW_MODE_WINDOWED;
+			r_window_flags |= DisplayServerEnums::WINDOW_FLAG_ALWAYS_ON_TOP_BIT;
 			if (cover != "virtual") {
 				r_screen = resolved_target_screen(r_screen);
 			}
 		} break;
 		case MODE_PREVIEW: {
-			r_window_mode = DisplayServer::WINDOW_MODE_WINDOWED;
-			r_window_flags |= DisplayServer::WINDOW_FLAG_BORDERLESS_BIT;
+			r_window_mode = DisplayServerEnums::WINDOW_MODE_WINDOWED;
+			r_window_flags |= DisplayServerEnums::WINDOW_FLAG_BORDERLESS_BIT;
 			r_embed_parent_hwnd = 0;
 			if (parent_hwnd != 0) {
 				r_embed_parent_hwnd = parent_hwnd;
@@ -800,8 +800,8 @@ void ScreensaverCmdline::apply_recorded(DisplayServer::WindowMode &r_window_mode
 		} break;
 		case MODE_CONFIGURE:
 		case MODE_CHANGE_PASSWORD: {
-			r_window_mode = DisplayServer::WINDOW_MODE_WINDOWED;
-			r_window_flags &= ~DisplayServer::WINDOW_FLAG_BORDERLESS_BIT;
+			r_window_mode = DisplayServerEnums::WINDOW_MODE_WINDOWED;
+			r_window_flags &= ~DisplayServerEnums::WINDOW_FLAG_BORDERLESS_BIT;
 			r_embed_parent_hwnd = 0;
 			if (r_window_size.width <= 0 || r_window_size.height <= 0 || r_window_size.width > 520 || r_window_size.height > 360) {
 				r_window_size = Size2i(480, 320);

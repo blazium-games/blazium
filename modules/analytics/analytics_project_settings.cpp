@@ -33,7 +33,7 @@
 #include "core/config/project_settings.h"
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 
 #ifndef ANALYTICS_EDITOR_APP_ID
 #define ANALYTICS_EDITOR_APP_ID ""

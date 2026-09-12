@@ -38,6 +38,7 @@
 #include "modules/enet/enet_connection.h"
 #include "scene/main/node.h"
 #include "scene/main/scene_tree.h"
+#include "core/variant/type_info.h"
 
 class ENetServer : public Object {
 	GDCLASS(ENetServer, Object);

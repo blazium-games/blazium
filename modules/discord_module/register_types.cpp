@@ -30,6 +30,8 @@
 #include "register_types.h"
 
 #include "core/config/engine.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 #include "discord.h"
 #include "discord_auth_result.h"
 #include "discord_frame_hook.h"

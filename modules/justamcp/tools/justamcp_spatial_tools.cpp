@@ -33,10 +33,10 @@
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
 #include "editor/editor_interface.h"
-#include "scene/2d/navigation_agent_2d.h"
-#include "scene/2d/navigation_region_2d.h"
-#include "scene/3d/navigation_agent_3d.h"
-#include "scene/3d/navigation_region_3d.h"
+#include "scene/2d/navigation/navigation_agent_2d.h"
+#include "scene/2d/navigation/navigation_region_2d.h"
+#include "scene/3d/navigation/navigation_agent_3d.h"
+#include "scene/3d/navigation/navigation_region_3d.h"
 
 void JustAMCPSpatialTools::_bind_methods() {}
 

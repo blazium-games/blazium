@@ -31,7 +31,7 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "editor/editor_inspector.h"
+#include "editor/inspector/editor_inspector.h"
 #include "editor/plugins/editor_plugin.h"
 #include "justamcp_server.h"
 #include "tools/justamcp_tool_executor.h"
@@ -43,6 +43,7 @@
 #include "scene/gui/margin_container.h"
 #include "scene/gui/tab_container.h"
 #include "scene/gui/text_edit.h"
+#include "core/string/ustring.h"
 
 class JustAMCPConfigUI : public MarginContainer {
 	GDCLASS(JustAMCPConfigUI, MarginContainer);

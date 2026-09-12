@@ -31,11 +31,12 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "editor/editor_inspector.h"
+#include "editor/inspector/editor_inspector.h"
 #include "editor/plugins/editor_plugin.h"
 #include "modules/crowdcontrol/crowd_control_game_pack.h"
 #include "scene/gui/button.h"
 #include "scene/gui/dialogs.h"
+#include "core/string/ustring.h"
 
 class EditorFileDialog;
 

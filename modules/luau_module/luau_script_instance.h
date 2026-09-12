@@ -32,6 +32,7 @@
 #include "core/object/script_instance.h"
 #include "lua_state.h"
 #include "luau_script.h"
+#include "core/string/string_name.h"
 
 class LuauScriptInstance : public ScriptInstance {
 	Ref<LuauScript> script;

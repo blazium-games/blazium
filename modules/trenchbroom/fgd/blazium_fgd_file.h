@@ -30,6 +30,7 @@
 #pragma once
 
 #include "core/io/resource.h"
+#include "core/variant/type_info.h"
 
 class BlaziumFGDEntityClass;
 

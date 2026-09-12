@@ -32,6 +32,7 @@
 #include "cold_storage_vcs.h"
 
 #include "core/io/file_access.h"
+#include "core/object/class_db.h"
 #include "core/os/os.h"
 #include "core/templates/hash_set.h"
 
@@ -52,7 +53,31 @@
 #include <utility>
 #include <vector>
 
-void ColdStorageVCS::_bind_methods() {}
+void ColdStorageVCS::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("_initialize", "project_path"), &ColdStorageVCS::_initialize);
+	ClassDB::bind_method(D_METHOD("_set_credentials", "username", "password", "ssh_public_key_path", "ssh_private_key_path", "ssh_passphrase"), &ColdStorageVCS::_set_credentials);
+	ClassDB::bind_method(D_METHOD("_get_modified_files_data"), &ColdStorageVCS::_get_modified_files_data);
+	ClassDB::bind_method(D_METHOD("_stage_file", "file_path"), &ColdStorageVCS::_stage_file);
+	ClassDB::bind_method(D_METHOD("_unstage_file", "file_path"), &ColdStorageVCS::_unstage_file);
+	ClassDB::bind_method(D_METHOD("_discard_file", "file_path"), &ColdStorageVCS::_discard_file);
+	ClassDB::bind_method(D_METHOD("_commit", "msg", "amend"), &ColdStorageVCS::_commit);
+	ClassDB::bind_method(D_METHOD("_get_diff", "identifier", "area"), &ColdStorageVCS::_get_diff);
+	ClassDB::bind_method(D_METHOD("_shut_down"), &ColdStorageVCS::_shut_down);
+	ClassDB::bind_method(D_METHOD("_get_vcs_name"), &ColdStorageVCS::_get_vcs_name);
+	ClassDB::bind_method(D_METHOD("_get_previous_commits", "max_commits"), &ColdStorageVCS::_get_previous_commits);
+	ClassDB::bind_method(D_METHOD("_get_branch_list"), &ColdStorageVCS::_get_branch_list);
+	ClassDB::bind_method(D_METHOD("_get_remotes"), &ColdStorageVCS::_get_remotes);
+	ClassDB::bind_method(D_METHOD("_create_branch", "branch_name"), &ColdStorageVCS::_create_branch);
+	ClassDB::bind_method(D_METHOD("_remove_branch", "branch_name"), &ColdStorageVCS::_remove_branch);
+	ClassDB::bind_method(D_METHOD("_create_remote", "remote_name", "remote_url"), &ColdStorageVCS::_create_remote);
+	ClassDB::bind_method(D_METHOD("_remove_remote", "remote_name"), &ColdStorageVCS::_remove_remote);
+	ClassDB::bind_method(D_METHOD("_get_current_branch_name"), &ColdStorageVCS::_get_current_branch_name);
+	ClassDB::bind_method(D_METHOD("_checkout_branch", "branch_name"), &ColdStorageVCS::_checkout_branch);
+	ClassDB::bind_method(D_METHOD("_pull", "remote"), &ColdStorageVCS::_pull);
+	ClassDB::bind_method(D_METHOD("_push", "remote", "force"), &ColdStorageVCS::_push);
+	ClassDB::bind_method(D_METHOD("_fetch", "remote"), &ColdStorageVCS::_fetch);
+	ClassDB::bind_method(D_METHOD("_get_line_diff", "file_path", "text"), &ColdStorageVCS::_get_line_diff);
+}
 
 ColdStorageVCS::ColdStorageVCS() = default;
 
@@ -605,6 +630,121 @@ bool ColdStorageVCS::validate_connection() {
 		popup_error(last_error_);
 		return false;
 	}
+}
+
+bool ColdStorageVCS::_initialize(const String &p_project_path) {
+	return initialize(p_project_path);
+}
+
+void ColdStorageVCS::_set_credentials(const String &p_username, const String &p_password, const String &p_ssh_public_key_path, const String &p_ssh_private_key_path, const String &p_ssh_passphrase) {
+	set_credentials(p_username, p_password, p_ssh_public_key_path, p_ssh_private_key_path, p_ssh_passphrase);
+}
+
+TypedArray<Dictionary> ColdStorageVCS::_get_modified_files_data() {
+	return _collect_modified_files();
+}
+
+void ColdStorageVCS::_stage_file(const String &p_file_path) {
+	stage_file(p_file_path);
+}
+
+void ColdStorageVCS::_unstage_file(const String &p_file_path) {
+	unstage_file(p_file_path);
+}
+
+void ColdStorageVCS::_discard_file(const String &p_file_path) {
+	discard_file(p_file_path);
+}
+
+void ColdStorageVCS::_commit(const String &p_msg, bool p_amend) {
+	(void)p_amend;
+	commit(p_msg);
+}
+
+TypedArray<Dictionary> ColdStorageVCS::_get_diff(const String &p_identifier, int p_area) {
+	(void)p_area;
+	return _build_diff(p_identifier);
+}
+
+bool ColdStorageVCS::_shut_down() {
+	return shut_down();
+}
+
+String ColdStorageVCS::_get_vcs_name() {
+	return get_vcs_name();
+}
+
+TypedArray<Dictionary> ColdStorageVCS::_get_previous_commits(int p_max_commits) {
+	TypedArray<Dictionary> out;
+	List<Commit> commits = get_previous_commits(p_max_commits);
+	for (const Commit &c : commits) {
+		out.push_back(create_commit(c.msg, c.author, c.id, c.unix_timestamp, c.offset_minutes));
+	}
+	return out;
+}
+
+TypedArray<String> ColdStorageVCS::_get_branch_list() {
+	TypedArray<String> out;
+	List<String> branches = get_branch_list();
+	for (const String &b : branches) {
+		out.push_back(b);
+	}
+	return out;
+}
+
+TypedArray<String> ColdStorageVCS::_get_remotes() {
+	TypedArray<String> out;
+	List<String> remotes = get_remotes();
+	for (const String &r : remotes) {
+		out.push_back(r);
+	}
+	return out;
+}
+
+void ColdStorageVCS::_create_branch(const String &p_branch_name) {
+	create_branch(p_branch_name);
+}
+
+void ColdStorageVCS::_remove_branch(const String &p_branch_name) {
+	remove_branch(p_branch_name);
+}
+
+void ColdStorageVCS::_create_remote(const String &p_remote_name, const String &p_remote_url) {
+	create_remote(p_remote_name, p_remote_url);
+}
+
+void ColdStorageVCS::_remove_remote(const String &p_remote_name) {
+	remove_remote(p_remote_name);
+}
+
+String ColdStorageVCS::_get_current_branch_name() {
+	return get_current_branch_name();
+}
+
+bool ColdStorageVCS::_checkout_branch(const String &p_branch_name) {
+	return checkout_branch(p_branch_name);
+}
+
+void ColdStorageVCS::_pull(const String &p_remote) {
+	pull(p_remote);
+}
+
+void ColdStorageVCS::_push(const String &p_remote, bool p_force) {
+	push(p_remote, p_force);
+}
+
+void ColdStorageVCS::_fetch(const String &p_remote) {
+	fetch(p_remote);
+}
+
+TypedArray<Dictionary> ColdStorageVCS::_get_line_diff(const String &p_file_path, const String &p_text) {
+	(void)p_text;
+	TypedArray<Dictionary> files = _build_diff(p_file_path);
+	if (files.is_empty()) {
+		return TypedArray<Dictionary>();
+	}
+	Dictionary file = files[0];
+	return file.get("diff_hunks", TypedArray<Dictionary>());
 }
 
 bool ColdStorageVCS::auto_pull_sync() {

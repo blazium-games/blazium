@@ -47,11 +47,11 @@
 #include "core/os/os.h"
 #include "core/os/thread.h"
 #include "editor/editor_data.h"
-#include "editor/editor_file_system.h"
+#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_log.h"
 #include "editor/editor_node.h"
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 #include "editor/editor_undo_redo_manager.h"
 #include "justamcp_agent_helpers.h"
 #include "justamcp_scene_tree_dump.h"
@@ -62,7 +62,9 @@
 #include "scene/main/viewport.h"
 #include "scene/main/window.h"
 #include "scene/resources/texture.h"
-#include "servers/display_server.h"
+#include "servers/display/display_server.h"
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 static Dictionary g_qa_evidence;
 
@@ -538,8 +540,7 @@ Dictionary JustAMCPEditorTools::editor_get_selected(const Dictionary &p_args) {
 		EditorSelection *selection = editor_plugin->get_editor_interface()->get_selection();
 		if (selection) {
 			Array nodes_arr;
-			for (const KeyValue<Node *, Object *> &E : selection->get_selection()) {
-				Node *node = E.key;
+			for (Node *node : selection->get_full_selected_node_list()) {
 				if (node) {
 					Dictionary properties;
 					properties["name"] = node->get_name();

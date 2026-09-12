@@ -48,9 +48,9 @@
 #include "scene/resources/mesh.h"
 #include "scene/resources/sky.h"
 #include "scene/resources/texture.h"
-#include "servers/audio/audio_stream.h"
+#include "scene/resources/audio/audio_stream.h"
 
-#ifdef MODULE_LUAU_MODULE_ENABLED
+#if 0 // MODULE_LUAU_MODULE_ENABLED — Luau is stubbed on Godot 4.8
 #include "modules/luau_module/luau_script.h"
 #endif
 
@@ -271,7 +271,7 @@ String DDDBrowserExportConvert::resolve_luau_script_path(Node *p_node) {
 	if (script.is_null()) {
 		return String();
 	}
-#ifdef MODULE_LUAU_MODULE_ENABLED
+#if 0 // MODULE_LUAU_MODULE_ENABLED — Luau is stubbed on Godot 4.8
 	if (Object::cast_to<LuauScript>(script.ptr())) {
 		String path = script->get_path();
 		if (!path.is_empty()) {

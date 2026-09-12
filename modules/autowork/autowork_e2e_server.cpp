@@ -46,8 +46,10 @@
 #include "scene/gui/control.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
-#include "servers/audio_server.h"
-#include "servers/display_server.h"
+#include "servers/audio/audio_server.h"
+#include "servers/display/display_server.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 
 const String AutoworkE2EServer::SERVER_VERSION = "1.1.0";
 
@@ -237,7 +239,7 @@ void AutoworkE2EServer::_poll_recv(PeerContext *p_ctx) {
 		}
 
 		String json_str;
-		json_str.parse_utf8((const char *)packet, len);
+		json_str.append_utf8((const char *)packet, len);
 
 		Variant parsed = JSON::parse_string(json_str);
 		if (parsed.get_type() == Variant::NIL) {
@@ -819,8 +821,7 @@ Dictionary AutoworkE2EServer::_cmd_call_method(const Dictionary &p_cmd, const Va
 
 Dictionary AutoworkE2EServer::_cmd_find_by_group(const Dictionary &p_cmd, const Variant &p_id) {
 	String group = p_cmd.get("group", "");
-	List<Node *> nodes;
-	get_tree()->get_nodes_in_group(group, &nodes);
+	Vector<Node *> nodes = get_tree()->get_nodes_in_group(group);
 
 	Array paths;
 	for (Node *node : nodes) {
@@ -848,8 +849,7 @@ Dictionary AutoworkE2EServer::_cmd_query_nodes(const Dictionary &p_cmd, const Va
 	Array results;
 
 	if (!group.is_empty()) {
-		List<Node *> group_nodes;
-		get_tree()->get_nodes_in_group(group, &group_nodes);
+		Vector<Node *> group_nodes = get_tree()->get_nodes_in_group(group);
 
 		if (pattern.is_empty()) {
 			for (Node *node : group_nodes) {

@@ -35,6 +35,8 @@
 #include "core/input/input_map.h"
 #include "core/io/file_access.h"
 #include "core/io/json.h"
+#include "core/string/string_name.h"
+#include "core/variant/typed_array.h"
 
 static bool _justamcp_looks_like_json(const String &p_s) {
 	const String t = p_s.strip_edges();
@@ -316,9 +318,10 @@ Dictionary JustAMCPProjectTools::get_input_actions(const Dictionary &p_args) {
 	}
 
 	bool include_builtin = p_args.get("include_builtin", false);
-	List<StringName> action_names = InputMap::get_singleton()->get_actions();
-	for (const StringName &action_name : action_names) {
-		String action = action_name;
+	TypedArray<StringName> action_names = InputMap::get_singleton()->get_actions();
+	for (const Variant &action_var : action_names) {
+		const StringName action_name = action_var;
+		String action = String(action_name);
 		if (!include_builtin && action.begins_with("ui_")) {
 			continue;
 		}

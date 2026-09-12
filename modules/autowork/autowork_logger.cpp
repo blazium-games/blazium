@@ -32,6 +32,8 @@
 #include "core/io/json.h"
 #include "core/os/os.h"
 #include "core/templates/hash_map.h"
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 void AutoworkLogger::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_pass", "message"), &AutoworkLogger::add_pass);

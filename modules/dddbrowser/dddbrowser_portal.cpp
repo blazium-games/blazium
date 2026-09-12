@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "dddbrowser_portal.h"
+#include "core/object/class_db.h"
 
 void DDDBrowserPortal::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_destination_url", "url"), &DDDBrowserPortal::set_destination_url);

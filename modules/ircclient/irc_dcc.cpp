@@ -30,6 +30,7 @@
 #include "irc_dcc.h"
 
 #include "core/io/file_access.h"
+#include "core/object/class_db.h"
 
 void IRCDCCTransfer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_transfer_type", "type"), &IRCDCCTransfer::set_transfer_type);

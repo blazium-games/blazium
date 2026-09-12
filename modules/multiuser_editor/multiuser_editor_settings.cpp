@@ -33,7 +33,7 @@
 
 #include "multiuser_editor_constants.h"
 
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 
 static const double MULTIUSER_POLL_INTERVAL_SEC = 0.05;
 static const double MULTIUSER_CURSOR_INTERVAL_SEC = 0.08;

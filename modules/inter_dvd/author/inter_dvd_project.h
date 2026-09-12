@@ -36,6 +36,7 @@
 #include "core/string/node_path.h"
 #include "core/variant/typed_array.h"
 #include "scene/resources/packed_scene.h"
+#include "core/variant/type_info.h"
 
 class Node;
 

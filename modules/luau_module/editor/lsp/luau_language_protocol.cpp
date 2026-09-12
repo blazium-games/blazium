@@ -31,11 +31,12 @@
 
 #ifndef LUAU_NO_LSP
 
-#include "editor/lsp/luau_language_protocol.h"
+#include "modules/luau_module/editor/lsp/luau_language_protocol.h"
 
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
 #include "core/os/os.h"
+#include "core/object/class_db.h"
 
 LuauLanguageProtocol *LuauLanguageProtocol::singleton = nullptr;
 

@@ -139,7 +139,7 @@ bool AssetTagIndexPersistence::apply_dirty_sidecars(HashMap<String, Vector<Strin
 }
 
 bool AssetTagIndexPersistence::compact_index_sidecars(const HashMap<String, Vector<String>> &p_full_index) {
-	HashMap<String, Vector<String>> merged = p_full_index;
+	HashMap<String, Vector<String>> merged(p_full_index);
 	if (!apply_dirty_sidecars(merged)) {
 		return false;
 	}

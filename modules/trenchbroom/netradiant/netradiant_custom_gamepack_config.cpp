@@ -36,6 +36,7 @@
 #include "core/io/file_access.h"
 #include "core/object/class_db.h"
 #include "core/string/print_string.h"
+#include "core/object/callable_mp.h"
 
 static Ref<NetRadiantCustomShader> _make_default_shader(const String &p_texture_path, const String &p_attribute) {
 	Ref<NetRadiantCustomShader> shader;

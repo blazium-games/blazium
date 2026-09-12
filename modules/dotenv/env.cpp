@@ -33,6 +33,9 @@
 #include "core/core_bind.h"
 #include "core/io/json.h"
 #include "core/os/os.h"
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
+#include "core/io/file_access.h"
 
 ENV *ENV::env_singleton = nullptr;
 
@@ -332,7 +335,7 @@ Dictionary ENV::parse_buffer(const PackedByteArray &p_data) {
 		return Dictionary();
 	}
 	String s;
-	s.parse_utf8((const char *)p_data.ptr(), p_data.size());
+	s.append_utf8((const char *)p_data.ptr(), p_data.size());
 	return parse(s);
 }
 

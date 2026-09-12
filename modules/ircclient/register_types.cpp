@@ -39,6 +39,7 @@
 #include "twitch/twitch_irc_client.h"
 #include "twitch/twitch_irc_client_node.h"
 #include "twitch/twitch_message.h"
+#include "core/object/class_db.h"
 
 void initialize_ircclient_module(ModuleInitializationLevel p_level) {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {

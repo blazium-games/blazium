@@ -30,6 +30,8 @@
 /**************************************************************************/
 
 #include "node_sqlite.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 
 void SQLite::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_database"), &SQLite::get_database);

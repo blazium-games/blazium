@@ -37,6 +37,7 @@
 #include "core/templates/local_vector.h"
 #include "core/variant/variant_parser.h"
 #include "core/variant/variant_utility.h"
+#include "core/string/string_name.h"
 
 namespace {
 

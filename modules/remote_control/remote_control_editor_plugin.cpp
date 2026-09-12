@@ -35,6 +35,7 @@
 
 #include "editor/debugger/editor_debugger_node.h"
 #include "editor/debugger/script_editor_debugger.h"
+#include "core/object/callable_mp.h"
 
 void RemoteControlEditorPlugin::_try_start() {
 	if (!RemoteControlServer::get_singleton()) {

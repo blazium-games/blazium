@@ -61,6 +61,9 @@ typedef Vector<uint8_t> (*SaveEXRBufferFunc)(const Ref<Image> &p_img, bool p_gra
 typedef Error (*SaveDDSFunc)(const String &p_path, const Ref<Image> &p_img);
 typedef Vector<uint8_t> (*SaveDDSBufferFunc)(const Ref<Image> &p_img);
 
+typedef Error (*SaveGIFFunc)(const String &p_path, const Ref<Image> &p_img);
+typedef Vector<uint8_t> (*SaveGIFBufferFunc)(const Ref<Image> &p_img);
+
 class Image : public Resource {
 	GDCLASS(Image, Resource);
 
@@ -225,11 +228,13 @@ public:
 	static inline SaveEXRFunc save_exr_func = nullptr;
 	static inline SaveWebPFunc save_webp_func = nullptr;
 	static inline SaveDDSFunc save_dds_func = nullptr;
+	static inline SaveGIFFunc save_gif_func = nullptr;
 	static inline SavePNGBufferFunc save_png_buffer_func = nullptr;
 	static inline SaveEXRBufferFunc save_exr_buffer_func = nullptr;
 	static inline SaveJPGBufferFunc save_jpg_buffer_func = nullptr;
 	static inline SaveWebPBufferFunc save_webp_buffer_func = nullptr;
 	static inline SaveDDSBufferFunc save_dds_buffer_func = nullptr;
+	static inline SaveGIFBufferFunc save_gif_buffer_func = nullptr;
 
 	// External loader function pointers.
 
@@ -243,6 +248,7 @@ public:
 	static inline ImageMemLoadFunc _ktx_mem_loader_func = nullptr;
 	static inline ImageMemLoadFunc _dds_mem_loader_func = nullptr;
 	static inline ImageMemLoadFunc _exr_mem_loader_func = nullptr;
+	static inline ImageMemLoadFunc _gif_mem_loader_func = nullptr;
 
 	// External VRAM compression function pointers.
 
@@ -404,6 +410,8 @@ public:
 	Error save_exr(const String &p_path, bool p_grayscale = false, bool p_color_image = false, float p_max_value = -1.0f) const;
 	Error save_webp(const String &p_path, const bool p_lossy = false, const float p_quality = 0.75f) const;
 	Vector<uint8_t> save_webp_to_buffer(const bool p_lossy = false, const float p_quality = 0.75f) const;
+	Error save_gif(const String &p_path) const;
+	Vector<uint8_t> save_gif_to_buffer() const;
 
 	static Ref<Image> create_empty(int p_width, int p_height, bool p_use_mipmaps, Format p_format);
 	static Ref<Image> create_from_data(int p_width, int p_height, bool p_use_mipmaps, Format p_format, const Vector<uint8_t> &p_data);
@@ -463,6 +471,7 @@ public:
 	static uint32_t get_format_component_mask(Format p_format);
 
 	Error load_png_from_buffer(const Vector<uint8_t> &p_array);
+	Error load_gif_from_buffer(const Vector<uint8_t> &p_array);
 	Error load_jpg_from_buffer(const Vector<uint8_t> &p_array);
 	Error load_webp_from_buffer(const Vector<uint8_t> &p_array);
 	Error load_tga_from_buffer(const Vector<uint8_t> &p_array);

@@ -31,6 +31,7 @@
 
 #ifdef TOOLS_ENABLED
 
+#include "core/string/ustring.h"
 #include "core/variant/dictionary.h"
 
 class JustAMCPMCPClientOAuth {

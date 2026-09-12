@@ -12,7 +12,7 @@
 #include "core/string/ustring.h"
 #include "core/templates/list.h"
 #include "core/templates/vector.h"
-#include "servers/display_server.h"
+#include "servers/display/display_server.h"
 
 #ifdef TESTS_ENABLED
 static int _test_mcp_port = -1;

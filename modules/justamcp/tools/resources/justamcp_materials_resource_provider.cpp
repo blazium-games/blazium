@@ -34,7 +34,8 @@
 #include "../../justamcp_pagination.h"
 #include "core/io/json.h"
 #include "core/os/thread.h"
-#include "editor/editor_file_system.h"
+#include "editor/file_system/editor_file_system.h"
+#include "core/string/string_name.h"
 
 static Dictionary g_materials_cache_payload;
 static bool g_materials_cache_valid = false;

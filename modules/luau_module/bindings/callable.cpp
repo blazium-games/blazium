@@ -40,6 +40,7 @@
 #include "core/templates/hashfuncs.h"
 #include "core/variant/variant.h"
 #include <lualib.h>
+#include "core/string/string_name.h"
 
 using namespace luau_module;
 

@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "dddbrowser_font.h"
+#include "core/object/class_db.h"
 
 void DDDBrowserFont::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_asset_id", "id"), &DDDBrowserFont::set_asset_id);

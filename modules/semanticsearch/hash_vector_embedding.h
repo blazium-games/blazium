@@ -30,6 +30,7 @@
 #pragma once
 
 #include "core/templates/vector.h"
+#include "core/string/ustring.h"
 
 class HashVectorEmbedding {
 public:

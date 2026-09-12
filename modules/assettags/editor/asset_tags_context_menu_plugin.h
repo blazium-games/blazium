@@ -32,7 +32,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "core/input/shortcut.h"
-#include "editor/plugins/editor_context_menu_plugin.h"
+#include "editor/inspector/editor_context_menu_plugin.h"
 
 class AssetTagsEditorDialog;
 
@@ -47,7 +47,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	virtual void get_options(const Vector<String> &p_paths) override;
+	virtual void get_options(const OptionsData &p_data) override;
 };
 
 #endif

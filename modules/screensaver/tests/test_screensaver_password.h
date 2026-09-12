@@ -31,6 +31,7 @@
 
 #include "modules/screensaver/screensaver_password.h"
 #include "tests/test_macros.h"
+#include "core/string/ustring.h"
 
 TEST_CASE("[Modules][Screensaver] hash verify set clear") {
 	ScreensaverPassword::reset_for_tests();

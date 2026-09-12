@@ -29,7 +29,8 @@
 
 #include "common/net/tls_cert.h"
 
-#include <mbedtls/sha256.h>
+#include "core/crypto/crypto_core.h"
+
 #include <mbedtls/x509_crt.h>
 
 #include <algorithm>
@@ -58,7 +59,7 @@ std::string getCertFingerprint(const std::string &certPath) {
 		return {};
 	}
 	unsigned char hash[32];
-	if (mbedtls_sha256(crt.raw.p, crt.raw.len, hash, 0) != 0) {
+	if (CryptoCore::sha256(crt.raw.p, crt.raw.len, hash) != OK) {
 		mbedtls_x509_crt_free(&crt);
 		return {};
 	}

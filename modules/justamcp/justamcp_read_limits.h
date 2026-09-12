@@ -30,6 +30,7 @@
 #pragma once
 
 #include "core/io/file_access.h"
+#include "core/string/ustring.h"
 #include "core/variant/dictionary.h"
 
 static const int JUSTAMCP_MAX_SYNC_READ_BYTES = 1048576;

@@ -38,8 +38,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include <mbedtls/md.h>
-#include <mbedtls/sha256.h>
+#include <cstring>
 
 namespace coldstorage {
 
@@ -212,13 +211,36 @@ std::string Sha256OStream::digest() {
 }
 
 std::string hmac_sha256(const std::string &key, const std::string &data) {
-	unsigned char out[32];
-	const mbedtls_md_info_t *info = mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
-	if (!info) {
-		return {};
+	uint8_t key_block[64] = {};
+	if (key.size() > 64) {
+		unsigned char hashed[32];
+		if (CryptoCore::sha256(reinterpret_cast<const uint8_t *>(key.data()), key.size(), hashed) != OK) {
+			return {};
+		}
+		memcpy(key_block, hashed, 32);
+	} else {
+		memcpy(key_block, key.data(), key.size());
 	}
-	mbedtls_md_hmac(info, reinterpret_cast<const unsigned char *>(key.data()), key.size(),
-			reinterpret_cast<const unsigned char *>(data.data()), data.size(), out);
+	uint8_t ipad[64];
+	uint8_t opad[64];
+	for (int i = 0; i < 64; i++) {
+		ipad[i] = key_block[i] ^ 0x36;
+		opad[i] = key_block[i] ^ 0x5c;
+	}
+	uint8_t inner[32];
+	CryptoCore::SHA256Context ictx;
+	ictx.start();
+	ictx.update(ipad, 64);
+	if (!data.empty()) {
+		ictx.update(reinterpret_cast<const uint8_t *>(data.data()), data.size());
+	}
+	ictx.finish(inner);
+	uint8_t out[32];
+	CryptoCore::SHA256Context octx;
+	octx.start();
+	octx.update(opad, 64);
+	octx.update(inner, 32);
+	octx.finish(out);
 	return to_hex(out, 32);
 }
 
@@ -235,8 +257,7 @@ bool verify_password(const std::string &password, const std::string &hash) {
 
 std::string random_token(size_t bytes) {
 	std::vector<uint8_t> buf(bytes);
-	CryptoCore::RandomGenerator rng;
-	if (rng.init() != OK || rng.get_random_bytes(buf.data(), bytes) != OK) {
+	if (CryptoCore::generate_random(buf.data(), bytes) != OK) {
 		throw std::runtime_error("random_token failed");
 	}
 	return to_hex(buf.data(), bytes);

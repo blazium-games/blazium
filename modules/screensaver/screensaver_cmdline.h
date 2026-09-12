@@ -33,7 +33,7 @@
 #include "core/math/vector2i.h"
 #include "core/string/ustring.h"
 #include "core/templates/vector.h"
-#include "servers/display_server.h"
+#include "servers/display/display_server.h"
 
 class ScreensaverCmdline {
 public:
@@ -56,7 +56,7 @@ public:
 
 	static bool try_consume(const String &p_arg, const String &p_next, bool &r_consumed_next);
 
-	static void apply_recorded(DisplayServer::WindowMode &r_window_mode, uint32_t &r_window_flags, int64_t &r_embed_parent_hwnd, Vector2i &r_window_position, Size2i &r_window_size, int &r_screen, bool &r_use_position);
+	static void apply_recorded(DisplayServerEnums::WindowMode &r_window_mode, uint32_t &r_window_flags, int64_t &r_embed_parent_hwnd, Vector2i &r_window_position, Size2i &r_window_size, int &r_screen, bool &r_use_position);
 
 	static bool parse_hwnd_token(const String &p_token, int64_t &r_hwnd);
 	static bool is_hwnd_valid(int64_t p_hwnd);
@@ -70,7 +70,7 @@ public:
 	static void set_host_screensaver_launch_for_tests(bool p_host);
 	static void clear_host_screensaver_launch_for_tests();
 
-	static int resolved_target_screen(int p_current_screen = DisplayServer::SCREEN_PRIMARY);
+	static int resolved_target_screen(int p_current_screen = DisplayServerEnums::SCREEN_PRIMARY);
 
 	static int normalize_screen_index(int p_screen, int p_count);
 

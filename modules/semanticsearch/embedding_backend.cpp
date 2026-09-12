@@ -122,7 +122,7 @@ Array EmbeddingBackend::_hybrid_search(const String &p_query, int p_limit, const
 		index->set_last_filter_error(String());
 	}
 	String filter_error;
-	HashSet<String> allowed_paths = SemanticSearchFilters::resolve_allowed_paths(index, p_tags, p_require_all, p_path_regex, p_class_filter, filter_error);
+	HashSet<String> allowed_paths(SemanticSearchFilters::resolve_allowed_paths(index, p_tags, p_require_all, p_path_regex, p_class_filter, filter_error));
 	if (!filter_error.is_empty()) {
 		if (index) {
 			index->set_last_filter_error(filter_error);

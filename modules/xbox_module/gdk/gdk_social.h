@@ -54,6 +54,7 @@
 
 #include "gdk_pending_signal.h"
 #include "gdk_presence.h"
+#include "core/variant/type_info.h"
 
 class GDK;
 class GDKResult;

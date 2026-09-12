@@ -33,6 +33,9 @@
 #include "core/variant/callable.h"
 #include "core/variant/typed_array.h"
 #include "enet_packet.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
+#include "scene/main/scene_tree.h"
 
 ENetServer *ENetServer::singleton = nullptr;
 
@@ -501,7 +504,7 @@ void ENetServer::_queue_event(const QueuedEvent &p_event) {
 
 void ENetServer::_process_event_queue() {
 	events_mutex.lock();
-	List<QueuedEvent> events = event_queue;
+	List<QueuedEvent> events(event_queue);
 	event_queue.clear();
 	events_mutex.unlock();
 

@@ -42,6 +42,7 @@
 
 #ifdef MODULE_MBEDTLS_ENABLED
 #include "core/io/stream_peer_tls.h"
+#include "core/variant/type_info.h"
 #endif
 
 class IRCClient : public RefCounted {

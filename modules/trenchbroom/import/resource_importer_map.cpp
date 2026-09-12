@@ -33,6 +33,7 @@
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
 #include "quake_map_file.h"
+#include "core/string/string_name.h"
 
 String ResourceImporterQuakeMap::get_importer_name() const {
 	return "blazium.trenchbroom.map";

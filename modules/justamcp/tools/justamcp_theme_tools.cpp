@@ -41,6 +41,7 @@
 #include "scene/resources/theme.h"
 
 #include "../justamcp_mcp_tool_macros.h"
+#include "core/string/string_name.h"
 
 JustAMCPThemeTools::JustAMCPThemeTools() {
 }

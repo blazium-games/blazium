@@ -29,13 +29,13 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "editor/luau_formatter.h"
+#include "modules/luau_module/editor/luau_formatter.h"
 
 #include "core/io/file_access.h"
 #include "core/object/class_db.h"
 #include "core/os/os.h"
 #include "core/string/ustring.h"
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 
 namespace {
 

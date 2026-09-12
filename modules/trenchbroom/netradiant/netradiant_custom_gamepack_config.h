@@ -33,6 +33,7 @@
 #include "core/variant/typed_array.h"
 #include "modules/trenchbroom/fgd/blazium_fgd_file.h"
 #include "netradiant_custom_shader.h"
+#include "core/variant/type_info.h"
 
 class NetRadiantCustomGamePackConfig : public Resource {
 	GDCLASS(NetRadiantCustomGamePackConfig, Resource);

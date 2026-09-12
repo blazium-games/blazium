@@ -30,6 +30,7 @@
 #include "string_cache.h"
 
 #include "core/os/spin_lock.h"
+#include "core/string/string_name.h"
 
 using namespace luau_module;
 

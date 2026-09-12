@@ -33,6 +33,7 @@
 #include "../discord_api_loader.h"
 
 #include "tests/test_macros.h"
+#include "core/string/ustring.h"
 
 namespace TestDiscordModule {
 

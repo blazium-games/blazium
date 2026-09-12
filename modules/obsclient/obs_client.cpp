@@ -33,6 +33,7 @@
 #include "core/io/json.h"
 #include "core/string/ustring.h"
 #include "core/variant/variant.h"
+#include "core/object/class_db.h"
 
 OBSClient *OBSClient::singleton = nullptr;
 
@@ -476,7 +477,7 @@ void OBSClient::poll() {
 				if (ws->get_packet(&buffer, buffer_size) == OK) {
 					if (ws->was_string_packet()) {
 						String msg;
-						msg.parse_utf8((const char *)buffer, buffer_size);
+						msg.append_utf8((const char *)buffer, buffer_size);
 						process_message(msg);
 					}
 				}

@@ -39,6 +39,7 @@
 #include "gdk.h"
 #include "gdk_result.h"
 #include "gdk_runtime.h"
+#include "core/object/class_db.h"
 
 void GDKDisplayTimeoutDeferral::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_valid"), &GDKDisplayTimeoutDeferral::is_valid);

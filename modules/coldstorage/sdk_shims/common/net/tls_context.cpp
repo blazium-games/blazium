@@ -29,12 +29,11 @@
 
 #include "common/net/tls_context.h"
 
-#include <mbedtls/ctr_drbg.h>
-#include <mbedtls/entropy.h>
 #include <mbedtls/error.h>
 #include <mbedtls/pk.h>
 #include <mbedtls/ssl.h>
 #include <mbedtls/x509_crt.h>
+#include <psa/crypto.h>
 
 #include <cstring>
 
@@ -42,35 +41,14 @@ namespace coldstorage {
 
 namespace {
 
-struct DrbgHolders {
-	mbedtls_entropy_context entropy;
-	mbedtls_ctr_drbg_context ctr_drbg;
-	bool ready = false;
-
-	DrbgHolders() {
-		mbedtls_entropy_init(&entropy);
-		mbedtls_ctr_drbg_init(&ctr_drbg);
-		const char *pers = "coldstorage-blazium";
-		if (mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy,
-					reinterpret_cast<const unsigned char *>(pers), std::strlen(pers)) == 0) {
-			ready = true;
-		}
-	}
-	~DrbgHolders() {
-		mbedtls_ctr_drbg_free(&ctr_drbg);
-		mbedtls_entropy_free(&entropy);
-	}
-};
-
-DrbgHolders &drbg() {
-	static DrbgHolders h;
-	return h;
+bool psa_ready() {
+	return psa_crypto_init() == PSA_SUCCESS;
 }
 
 } //namespace
 
 void TLSContext::initLibraries() {
-	(void)drbg();
+	(void)psa_ready();
 }
 
 TLSContext::TLSContext() = default;
@@ -106,7 +84,7 @@ bool TLSContext::configureServer(const std::string &certFile, const std::string 
 		const std::string &caFile) {
 	freeContext();
 	initLibraries();
-	if (!drbg().ready) {
+	if (!psa_ready()) {
 		return false;
 	}
 	mode_ = Mode::Server;
@@ -122,8 +100,6 @@ bool TLSContext::configureServer(const std::string &certFile, const std::string 
 		delete conf;
 		return false;
 	}
-	mbedtls_ssl_conf_rng(conf, mbedtls_ctr_drbg_random, &drbg().ctr_drbg);
-
 	auto *clicert = new mbedtls_x509_crt;
 	mbedtls_x509_crt_init(clicert);
 	if (mbedtls_x509_crt_parse_file(clicert, certFile.c_str()) != 0) {
@@ -135,7 +111,7 @@ bool TLSContext::configureServer(const std::string &certFile, const std::string 
 	}
 	auto *pkey = new mbedtls_pk_context;
 	mbedtls_pk_init(pkey);
-	if (mbedtls_pk_parse_keyfile(pkey, keyFile.c_str(), nullptr, mbedtls_ctr_drbg_random, &drbg().ctr_drbg) != 0) {
+	if (mbedtls_pk_parse_keyfile(pkey, keyFile.c_str(), nullptr) != 0) {
 		mbedtls_pk_free(pkey);
 		delete pkey;
 		mbedtls_x509_crt_free(clicert);
@@ -171,7 +147,7 @@ bool TLSContext::configureClient(const std::string &caFile, bool verifyPeer,
 	// config via setup_client_owned — avoid a dead duplicate conf_ here.
 	freeContext();
 	initLibraries();
-	if (!drbg().ready) {
+	if (!psa_ready()) {
 		return false;
 	}
 	if (verifyPeer && caFile.empty()) {

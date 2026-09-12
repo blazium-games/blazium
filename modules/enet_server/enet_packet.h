@@ -32,6 +32,7 @@
 #include "core/object/object.h"
 #include "core/variant/variant.h"
 #include "scene/main/node.h"
+#include "core/variant/type_info.h"
 
 class ENetPacketUtils : public Object {
 	GDCLASS(ENetPacketUtils, Object);

@@ -43,7 +43,8 @@
 #include "core/config/project_settings.h"
 #include "core/object/worker_thread_pool.h"
 #include "core/os/thread.h"
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
+#include "core/object/class_db.h"
 
 JustAMCPMCPClientBridge *JustAMCPMCPClientBridge::singleton = nullptr;
 

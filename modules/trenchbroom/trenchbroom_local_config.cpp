@@ -36,6 +36,8 @@
 #include "core/io/resource_loader.h"
 #include "core/object/class_db.h"
 #include "core/string/print_string.h"
+#include "core/object/callable_mp.h"
+#include "core/string/string_name.h"
 
 static String _property_key(TrenchbroomLocalConfig::Property p_property) {
 	switch (p_property) {

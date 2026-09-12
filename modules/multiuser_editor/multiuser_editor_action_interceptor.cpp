@@ -39,12 +39,13 @@
 #include "core/io/resource_loader.h"
 #include "core/math/math_funcs.h"
 #include "core/object/script_language.h"
-#include "editor/editor_file_system.h"
+#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_interface.h"
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 #include "editor/editor_undo_redo_manager.h"
 #include "scene/2d/node_2d.h"
 #include "scene/3d/node_3d.h"
+#include "core/object/class_db.h"
 
 static const char *MULTIUSER_SAFE_NODE_BASES[] = {
 	"Node2D",
@@ -925,7 +926,7 @@ void MultiuserEditorActionInterceptor::apply_remote_action(const Dictionary &p_a
 		if (file.is_valid()) {
 			file->store_string(script_content);
 		}
-		EditorFileSystem *efs = EditorInterface::get_singleton() ? EditorInterface::get_singleton()->get_resource_file_system() : nullptr;
+		EditorFileSystem *efs = EditorInterface::get_singleton() ? EditorInterface::get_singleton()->get_resource_filesystem() : nullptr;
 		if (efs) {
 			efs->update_file(script_path);
 		}

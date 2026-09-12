@@ -36,6 +36,7 @@
 #include "core/os/os.h"
 #include "scene/gui/scroll_bar.h"
 #include "scene/resources/font.h"
+#include "core/object/callable_mp.h"
 
 void MultiuserEditorGhostCursorOverlay::_bind_methods() {}
 

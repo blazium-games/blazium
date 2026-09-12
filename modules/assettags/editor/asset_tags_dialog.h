@@ -32,6 +32,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "scene/gui/dialogs.h"
+#include "core/string/ustring.h"
 
 class AssetTagPicker;
 class Label;

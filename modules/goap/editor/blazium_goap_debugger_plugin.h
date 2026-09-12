@@ -33,7 +33,7 @@
 
 #include "core/input/shortcut.h"
 #include "core/object/script_language.h"
-#include "editor/plugins/editor_debugger_plugin.h"
+#include "editor/debugger/editor_debugger_plugin.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/check_box.h"
 #include "scene/gui/item_list.h"
@@ -44,6 +44,7 @@
 #include "scene/gui/scroll_container.h"
 #include "scene/gui/tree.h"
 #include "scene/resources/style_box_flat.h"
+#include "core/string/ustring.h"
 
 // --- Components ---
 

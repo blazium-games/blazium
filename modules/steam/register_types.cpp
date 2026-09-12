@@ -30,6 +30,7 @@
 #include "register_types.h"
 
 #include "core/config/engine.h"
+#include "core/object/callable_mp.h"
 #include "scene/main/scene_tree.h"
 #include "steam.h"
 #include "steam_achievement_info.h"
@@ -40,7 +41,7 @@
 #ifdef TOOLS_ENABLED
 #include "core/object/class_db.h"
 #include "editor/plugins/editor_plugin.h"
-#include "editor/steam_editor_plugin.h"
+#include "modules/steam/editor/steam_editor_plugin.h"
 #endif
 
 #ifdef TESTS_ENABLED

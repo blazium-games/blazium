@@ -44,9 +44,19 @@ env_cs.Prepend(
         shim_dir,  # mbedtls TLS/crypto/version + nlohmann/json.hpp (engine JSON shim)
         cs_src,
         "#thirdparty/zlib",
-        "#thirdparty/mbedtls/include",
+        "#thirdparty/mbedtls/godot/",
+        "#thirdparty/mbedtls/include/",
+        "#thirdparty/mbedtls/tf-psa-crypto/include/",
+        "#thirdparty/mbedtls/tf-psa-crypto/drivers/builtin/include/",
     ]
 )
+if env.get("builtin_mbedtls", True):
+    env_cs.Append(
+        CPPDEFINES=[
+            ("TF_PSA_CRYPTO_CONFIG_FILE", '\\"godot_psa_config.h\\"'),
+            ("MBEDTLS_CONFIG_FILE", '\\"godot_mbedtls_config.h\\"'),
+        ]
+    )
 env_cs.Append(
     CPPDEFINES=[
         "CS_ENABLE_TLS=1",

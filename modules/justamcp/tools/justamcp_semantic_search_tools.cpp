@@ -36,9 +36,9 @@
 #include "justamcp_tool_schema_builder.h"
 
 #include "core/config/project_settings.h"
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 #ifdef TOOLS_ENABLED
-#include "editor/editor_file_system.h"
+#include "editor/file_system/editor_file_system.h"
 #endif
 
 #include "modules/modules_enabled.gen.h"
@@ -48,6 +48,7 @@
 #include "modules/semanticsearch/semantic_async_search_worker.h"
 #include "modules/semanticsearch/semantic_search_backend.h"
 #include "modules/semanticsearch/semantic_search_backend_factory.h"
+#include "core/object/class_db.h"
 #endif
 
 void JustAMCPSemanticSearchTools::_bind_methods() {

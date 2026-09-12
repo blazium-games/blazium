@@ -29,12 +29,12 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "editor/lsp/luau_text_document.h"
+#include "modules/luau_module/editor/lsp/luau_text_document.h"
 
 #include "analysis/luau_analysis.h"
 #include "analysis/luau_typecheck.h"
-#include "editor/luau_completion.h"
-#include "editor/luau_formatter.h"
+#include "modules/luau_module/editor/luau_completion.h"
+#include "modules/luau_module/editor/luau_formatter.h"
 #include "luau.h"
 #include "luau_class_info.h"
 #include "luau_compile_result.h"
@@ -42,12 +42,14 @@
 #include "luau_script_language.h"
 
 #ifndef LUAU_NO_LSP
-#include "editor/lsp/luau_language_protocol.h"
+#include "modules/luau_module/editor/lsp/luau_language_protocol.h"
 #endif
 
 #include "core/io/resource_loader.h"
 #include "core/object/script_language.h"
 #include "core/string/char_utils.h"
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 namespace {
 

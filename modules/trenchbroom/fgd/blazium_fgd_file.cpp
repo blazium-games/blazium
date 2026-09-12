@@ -38,6 +38,7 @@
 #include "core/object/class_db.h"
 #include "core/string/print_string.h"
 #include "modules/trenchbroom/trenchbroom_local_config.h"
+#include "core/object/callable_mp.h"
 
 void BlaziumFGDFile::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("export_fgd"), &BlaziumFGDFile::export_fgd);

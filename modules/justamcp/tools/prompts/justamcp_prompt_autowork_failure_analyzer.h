@@ -32,6 +32,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_prompt.h"
+#include "core/string/ustring.h"
 
 class JustAMCPPromptAutoworkFailureAnalyzer : public JustAMCPPrompt {
 	GDCLASS(JustAMCPPromptAutoworkFailureAnalyzer, JustAMCPPrompt);

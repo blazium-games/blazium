@@ -41,11 +41,12 @@
 #include "core/os/os.h"
 #include "core/os/time.h"
 #include "core/version.h"
-#include "servers/display_server.h"
+#include "servers/display/display_server.h"
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_paths.h"
-#include "editor/editor_settings.h"
+#include "editor/file_system/editor_paths.h"
+#include "editor/settings/editor_settings.h"
+#include "core/object/class_db.h"
 #endif
 
 #ifndef ANALYTICS_EDITOR_APP_ID

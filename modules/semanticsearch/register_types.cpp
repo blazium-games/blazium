@@ -30,6 +30,7 @@
 #include "register_types.h"
 
 #include "core/config/project_settings.h"
+#include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
 #include "embedding_backend.h"
 #include "embedding_provider.h"
@@ -51,7 +52,7 @@
 #endif
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_file_system.h"
+#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_node.h"
 #endif
 

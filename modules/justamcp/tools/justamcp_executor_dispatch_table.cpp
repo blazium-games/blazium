@@ -31,6 +31,7 @@
 
 #include "justamcp_executor_dispatch_table.h"
 
+#include "core/string/string_name.h"
 #include "core/templates/hash_map.h"
 #include "modules/modules_enabled.gen.h"
 

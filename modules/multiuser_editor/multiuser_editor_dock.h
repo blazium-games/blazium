@@ -34,6 +34,7 @@
 #include "core/templates/list.h"
 
 #include "scene/gui/box_container.h"
+#include "core/string/ustring.h"
 
 class Label;
 class Button;

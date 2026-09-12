@@ -51,6 +51,8 @@
 #include <exception>
 #include <memory>
 #include <utility>
+#include "core/object/callable_mp.h"
+#include "core/string/string_name.h"
 
 namespace {
 

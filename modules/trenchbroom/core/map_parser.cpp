@@ -41,6 +41,7 @@
 #include "core/io/resource_uid.h"
 #include "core/object/class_db.h"
 #include "core/string/print_string.h"
+#include "core/string/string_name.h"
 
 void TrenchbroomMapParser::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("parse_map_data", "map_file", "map_settings"), &TrenchbroomMapParser::parse_map_data_dict);

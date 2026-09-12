@@ -33,6 +33,7 @@
 #include "core/crypto/crypto.h"
 #include "core/io/json.h"
 #include "core/os/time.h"
+#include "core/object/class_db.h"
 
 JWT *JWT::jwt_singleton = nullptr;
 
@@ -199,7 +200,7 @@ bool JWT::validate_signature_hs256(const String &p_jwt, const String &p_secret) 
 	Ref<Crypto> crypto = Crypto::create();
 	PackedByteArray hmac = crypto->hmac_digest(HashingContext::HASH_SHA256, secret_bytes, msg_bytes);
 
-	core_bind::Marshalls *singleton = core_bind::Marshalls::get_singleton();
+	CoreBind::Marshalls *singleton = CoreBind::Marshalls::get_singleton();
 	String expected_sig = singleton->raw_to_base64(hmac).replace("+", "-").replace("/", "_").replace("=", "");
 
 	return expected_sig == split[2];
@@ -209,7 +210,7 @@ String JWT::create_jwt_hs256(const Dictionary &p_header, const Dictionary &p_pay
 	String header_str = JSON::stringify(p_header);
 	String payload_str = JSON::stringify(p_payload);
 
-	core_bind::Marshalls *singleton = core_bind::Marshalls::get_singleton();
+	CoreBind::Marshalls *singleton = CoreBind::Marshalls::get_singleton();
 
 	String header_b64 = singleton->utf8_to_base64(header_str).replace("+", "-").replace("/", "_").replace("=", "");
 	String payload_b64 = singleton->utf8_to_base64(payload_str).replace("+", "-").replace("/", "_").replace("=", "");
@@ -246,7 +247,7 @@ bool JWT::validate_signature_rs256(const String &p_jwt, Ref<CryptoKey> p_key) {
 	hash_ctx->update(msg_bytes);
 	PackedByteArray msg_hash = hash_ctx->finish();
 
-	core_bind::Marshalls *singleton = core_bind::Marshalls::get_singleton();
+	CoreBind::Marshalls *singleton = CoreBind::Marshalls::get_singleton();
 
 	String b64_sig = split[2].replace("-", "+").replace("_", "/");
 	while (b64_sig.length() % 4 != 0) {
@@ -264,7 +265,7 @@ String JWT::create_jwt_rs256(const Dictionary &p_header, const Dictionary &p_pay
 	String header_str = JSON::stringify(p_header);
 	String payload_str = JSON::stringify(p_payload);
 
-	core_bind::Marshalls *singleton = core_bind::Marshalls::get_singleton();
+	CoreBind::Marshalls *singleton = CoreBind::Marshalls::get_singleton();
 
 	String header_b64 = singleton->utf8_to_base64(header_str).replace("+", "-").replace("/", "_").replace("=", "");
 	String payload_b64 = singleton->utf8_to_base64(payload_str).replace("+", "-").replace("/", "_").replace("=", "");
@@ -344,12 +345,12 @@ Dictionary JWT::decode(const String &p_jwt) {
 }
 
 String JWT::base64url_encode(const String &p_str) {
-	core_bind::Marshalls *singleton = core_bind::Marshalls::get_singleton();
+	CoreBind::Marshalls *singleton = CoreBind::Marshalls::get_singleton();
 	return singleton->utf8_to_base64(p_str).replace("+", "-").replace("/", "_").replace("=", "");
 }
 
 String JWT::base64url_decode(const String &p_b64url) {
-	core_bind::Marshalls *singleton = core_bind::Marshalls::get_singleton();
+	CoreBind::Marshalls *singleton = CoreBind::Marshalls::get_singleton();
 	String b64 = p_b64url.replace("-", "+").replace("_", "/");
 	while (b64.length() % 4 != 0) {
 		b64 += "=";

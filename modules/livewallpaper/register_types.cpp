@@ -34,9 +34,11 @@
 #include "livewallpaper.h"
 
 #ifdef TOOLS_ENABLED
-#include "editor/export/windows_livewallpaper_export_platform.h"
-#include "editor/livewallpaper_editor_plugin.h"
+#include "modules/livewallpaper/editor/export/windows_livewallpaper_export_platform.h"
+#include "modules/livewallpaper/editor/livewallpaper_editor_plugin.h"
 #include "editor/plugins/editor_plugin.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 #endif
 
 static LiveWallpaper *livewallpaper_singleton = nullptr;

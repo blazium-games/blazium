@@ -32,6 +32,7 @@
 #include "protocol.h"
 
 #include "core/io/json.h"
+#include "core/object/class_db.h"
 
 void SignalClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("configure", "url", "game_id", "auth_token"), &SignalClient::configure);

@@ -32,6 +32,7 @@
 #include "core/io/tcp_server.h"
 #include "core/object/object.h"
 #include "core/os/os.h"
+#include "core/string/ustring.h"
 #include "core/variant/dictionary.h"
 #include "modules/websocket/websocket_peer.h"
 #include "scene/main/node.h"

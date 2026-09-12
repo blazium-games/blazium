@@ -33,7 +33,7 @@
 
 #ifdef TOOLS_ENABLED
 #include "core/config/app_identity.h"
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 
 #ifndef CRASH_REPORTER_EDITOR_APP_ID
 #define CRASH_REPORTER_EDITOR_APP_ID ""

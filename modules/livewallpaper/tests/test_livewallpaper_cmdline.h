@@ -75,29 +75,29 @@ TEST_CASE("[Modules][LiveWallpaper] apply_recorded modes and enabled gate") {
 	LiveWallpaperCmdline::reset();
 	bool consumed_next = false;
 	CHECK(LiveWallpaperCmdline::try_consume("--livewallpaper-preview", "", consumed_next));
-	DisplayServer::WindowMode window_mode = DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
+	DisplayServerEnums::WindowMode window_mode = DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
 	uint32_t flags = 0;
 	Vector2i pos(1, 1);
 	Size2i size(100, 100);
 	int64_t embed = 99;
 	bool use_pos = true;
 	LiveWallpaperCmdline::apply_recorded(window_mode, flags, pos, size, embed, use_pos);
-	CHECK(window_mode == DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN);
+	CHECK(window_mode == DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN);
 	CHECK(embed == 99);
 	CHECK_FALSE(use_pos);
 
 	ps->set_setting("blazium/livewallpaper/enabled", true);
 	LiveWallpaperCmdline::reset();
 	CHECK(LiveWallpaperCmdline::try_consume("--livewallpaper-preview", "", consumed_next));
-	window_mode = DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
+	window_mode = DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
 	flags = 0;
 	pos = Vector2i(1, 1);
 	size = Size2i(100, 100);
 	embed = 99;
 	use_pos = true;
 	LiveWallpaperCmdline::apply_recorded(window_mode, flags, pos, size, embed, use_pos);
-	CHECK(window_mode == DisplayServer::WINDOW_MODE_WINDOWED);
-	CHECK((flags & DisplayServer::WINDOW_FLAG_BORDERLESS_BIT) != 0);
+	CHECK(window_mode == DisplayServerEnums::WINDOW_MODE_WINDOWED);
+	CHECK((flags & DisplayServerEnums::WINDOW_FLAG_BORDERLESS_BIT) != 0);
 	CHECK(embed == 0);
 	CHECK(LiveWallpaperCmdline::get_embed_hwnd() == 0);
 	CHECK(size == Size2i(640, 360));
@@ -105,7 +105,7 @@ TEST_CASE("[Modules][LiveWallpaper] apply_recorded modes and enabled gate") {
 
 	ps->set_setting("blazium/livewallpaper/cover_all_screens", true);
 	LiveWallpaperCmdline::reset();
-	window_mode = DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
+	window_mode = DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
 	flags = 0;
 	pos = Vector2i();
 	size = Size2i();
@@ -113,9 +113,9 @@ TEST_CASE("[Modules][LiveWallpaper] apply_recorded modes and enabled gate") {
 	use_pos = false;
 	LiveWallpaperCmdline::apply_recorded(window_mode, flags, pos, size, embed, use_pos);
 	CHECK(LiveWallpaperCmdline::get_mode() == LiveWallpaperCmdline::MODE_RUN);
-	CHECK(window_mode == DisplayServer::WINDOW_MODE_WINDOWED);
-	CHECK((flags & DisplayServer::WINDOW_FLAG_BORDERLESS_BIT) != 0);
-	CHECK((flags & DisplayServer::WINDOW_FLAG_NO_FOCUS_BIT) != 0);
+	CHECK(window_mode == DisplayServerEnums::WINDOW_MODE_WINDOWED);
+	CHECK((flags & DisplayServerEnums::WINDOW_FLAG_BORDERLESS_BIT) != 0);
+	CHECK((flags & DisplayServerEnums::WINDOW_FLAG_NO_FOCUS_BIT) != 0);
 	CHECK(embed == 0);
 	CHECK(LiveWallpaperCmdline::get_embed_hwnd() == 12345);
 	CHECK(size == Size2i(256, 256));
@@ -123,7 +123,7 @@ TEST_CASE("[Modules][LiveWallpaper] apply_recorded modes and enabled gate") {
 
 	ps->set_setting("blazium/livewallpaper/cover_all_screens", false);
 	LiveWallpaperCmdline::reset();
-	window_mode = DisplayServer::WINDOW_MODE_WINDOWED;
+	window_mode = DisplayServerEnums::WINDOW_MODE_WINDOWED;
 	flags = 0;
 	pos = Vector2i();
 	size = Size2i();

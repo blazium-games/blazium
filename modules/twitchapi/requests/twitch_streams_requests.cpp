@@ -30,6 +30,7 @@
 #include "twitch_streams_requests.h"
 
 #include "core/io/json.h"
+#include "core/object/class_db.h"
 
 void TwitchStreamsRequests::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_stream_key", "broadcaster_id"), &TwitchStreamsRequests::get_stream_key);

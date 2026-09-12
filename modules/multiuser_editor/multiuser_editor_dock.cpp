@@ -35,7 +35,8 @@
 
 #include "core/io/file_access.h"
 #include "core/os/time.h"
-#include "editor/editor_settings.h"
+#include "servers/display/display_server.h"
+#include "editor/settings/editor_settings.h"
 #include "editor/themes/editor_scale.h"
 #include "multiuser_editor_constants.h"
 #include "multiuser_editor_plugin.h"
@@ -50,6 +51,8 @@
 #include "scene/gui/scroll_container.h"
 #include "scene/gui/spin_box.h"
 #include "scene/gui/tree.h"
+#include "core/object/callable_mp.h"
+#include "core/os/os.h"
 
 void MultiuserChatDock::set_module_enabled(bool p_enabled) {
 	chat_input->set_editable(p_enabled);

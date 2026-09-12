@@ -32,10 +32,11 @@
 #ifdef TOOLS_ENABLED
 
 #include "cold_storage_settings.h"
-#include "editor/editor_vcs_interface.h"
+#include "editor/version_control/editor_vcs_interface.h"
 
 #include <memory>
 #include <string>
+#include "core/string/ustring.h"
 
 namespace coldstorage {
 class ColdStorageClient;
@@ -64,29 +65,53 @@ protected:
 	static void _bind_methods();
 
 public:
-	virtual bool initialize(const String &p_project_path) override;
-	virtual void set_credentials(const String &p_username, const String &p_password, const String &p_ssh_public_key_path, const String &p_ssh_private_key_path, const String &p_ssh_passphrase) override;
-	virtual List<StatusFile> get_modified_files_data() override;
-	virtual void stage_file(const String &p_file_path) override;
-	virtual void unstage_file(const String &p_file_path) override;
-	virtual void discard_file(const String &p_file_path) override;
-	virtual void commit(const String &p_msg) override;
-	virtual List<DiffFile> get_diff(const String &p_identifier, TreeArea p_area) override;
-	virtual bool shut_down() override;
-	virtual String get_vcs_name() override;
-	virtual List<Commit> get_previous_commits(int p_max_commits) override;
-	virtual List<String> get_branch_list() override;
-	virtual List<String> get_remotes() override;
-	virtual void create_branch(const String &p_branch_name) override;
-	virtual void remove_branch(const String &p_branch_name) override;
-	virtual void create_remote(const String &p_remote_name, const String &p_remote_url) override;
-	virtual void remove_remote(const String &p_remote_name) override;
-	virtual String get_current_branch_name() override;
-	virtual bool checkout_branch(const String &p_branch_name) override;
-	virtual void pull(const String &p_remote) override;
-	virtual void push(const String &p_remote, bool p_force) override;
-	virtual void fetch(const String &p_remote) override;
-	virtual List<DiffHunk> get_line_diff(const String &p_file_path, const String &p_text) override;
+	bool initialize(const String &p_project_path);
+	void set_credentials(const String &p_username, const String &p_password, const String &p_ssh_public_key_path, const String &p_ssh_private_key_path, const String &p_ssh_passphrase);
+	List<StatusFile> get_modified_files_data();
+	void stage_file(const String &p_file_path);
+	void unstage_file(const String &p_file_path);
+	void discard_file(const String &p_file_path);
+	void commit(const String &p_msg);
+	List<DiffFile> get_diff(const String &p_identifier, TreeArea p_area);
+	bool shut_down();
+	String get_vcs_name();
+	List<Commit> get_previous_commits(int p_max_commits);
+	List<String> get_branch_list();
+	List<String> get_remotes();
+	void create_branch(const String &p_branch_name);
+	void remove_branch(const String &p_branch_name);
+	void create_remote(const String &p_remote_name, const String &p_remote_url);
+	void remove_remote(const String &p_remote_name);
+	String get_current_branch_name();
+	bool checkout_branch(const String &p_branch_name);
+	void pull(const String &p_remote);
+	void push(const String &p_remote, bool p_force);
+	void fetch(const String &p_remote);
+	List<DiffHunk> get_line_diff(const String &p_file_path, const String &p_text);
+
+	bool _initialize(const String &p_project_path);
+	void _set_credentials(const String &p_username, const String &p_password, const String &p_ssh_public_key_path, const String &p_ssh_private_key_path, const String &p_ssh_passphrase);
+	TypedArray<Dictionary> _get_modified_files_data();
+	void _stage_file(const String &p_file_path);
+	void _unstage_file(const String &p_file_path);
+	void _discard_file(const String &p_file_path);
+	void _commit(const String &p_msg, bool p_amend);
+	TypedArray<Dictionary> _get_diff(const String &p_identifier, int p_area);
+	bool _shut_down();
+	String _get_vcs_name();
+	TypedArray<Dictionary> _get_previous_commits(int p_max_commits);
+	TypedArray<String> _get_branch_list();
+	TypedArray<String> _get_remotes();
+	void _create_branch(const String &p_branch_name);
+	void _remove_branch(const String &p_branch_name);
+	void _create_remote(const String &p_remote_name, const String &p_remote_url);
+	void _remove_remote(const String &p_remote_name);
+	String _get_current_branch_name();
+	bool _checkout_branch(const String &p_branch_name);
+	void _pull(const String &p_remote);
+	void _push(const String &p_remote, bool p_force);
+	void _fetch(const String &p_remote);
+	TypedArray<Dictionary> _get_line_diff(const String &p_file_path, const String &p_text);
 
 	void apply_connection_config(const ColdStorageConnectionConfig &p_cfg);
 	bool is_connected_to_server() const;

@@ -33,6 +33,7 @@
 
 #include "asset_tags_context_menu_plugin.h"
 #include "editor/plugins/editor_plugin.h"
+#include "core/string/ustring.h"
 
 class LineEdit;
 class Tree;

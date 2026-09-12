@@ -37,6 +37,7 @@
 #include "modules/trenchbroom/trenchbroom_defaults.h"
 #include "quake_palette_file.h"
 #include "scene/resources/image_texture.h"
+#include "core/string/string_name.h"
 
 static const int TEXTURE_NAME_LENGTH = 32;
 static const int MAX_MIP_LEVELS = 4;

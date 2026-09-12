@@ -46,6 +46,9 @@
 #ifdef TOOLS_ENABLED
 #include "modules/inter_dvd/editor/export/windows_inter_dvd_export_platform.h"
 #include "modules/inter_dvd/editor/inter_dvd_scene_baker.h"
+#include "core/string/string_name.h"
+#include "scene/main/scene_tree.h"
+#include "core/string/ustring.h"
 #endif
 
 TEST_CASE("[Modules][InterDVD] ProjectSettings defaults keep IFO region byte") {

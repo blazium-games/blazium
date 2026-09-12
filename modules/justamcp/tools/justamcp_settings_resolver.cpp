@@ -35,7 +35,7 @@
 
 #ifdef TOOLS_ENABLED
 #include "core/templates/hash_map.h"
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 #endif
 
 #ifdef TOOLS_ENABLED

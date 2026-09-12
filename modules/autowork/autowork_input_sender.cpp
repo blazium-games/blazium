@@ -30,6 +30,8 @@
 #include "autowork_input_sender.h"
 #include "core/input/input.h"
 #include "core/os/keyboard.h"
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 void AutoworkInputSender::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("mouse_down", "button_index", "position", "target"), &AutoworkInputSender::mouse_down, DEFVAL(Vector2()), DEFVAL(Variant()));

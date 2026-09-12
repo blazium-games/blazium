@@ -35,8 +35,9 @@
 #include "modules/screensaver/screensaver.h"
 #include "modules/screensaver/screensaver_cmdline.h"
 #include "tests/test_macros.h"
+#include "core/string/ustring.h"
 
-static void _apply_screensaver(DisplayServer::WindowMode &r_window_mode, uint32_t &r_flags, int64_t &r_embed, Vector2i &r_pos, Size2i &r_size, int &r_screen, bool &r_use_pos) {
+static void _apply_screensaver(DisplayServerEnums::WindowMode &r_window_mode, uint32_t &r_flags, int64_t &r_embed, Vector2i &r_pos, Size2i &r_size, int &r_screen, bool &r_use_pos) {
 	ScreensaverCmdline::apply_recorded(r_window_mode, r_flags, r_embed, r_pos, r_size, r_screen, r_use_pos);
 }
 
@@ -370,15 +371,15 @@ TEST_CASE("[Modules][Screensaver] apply_recorded modes and enabled gate") {
 	ScreensaverCmdline::clear_virtual_rect_for_tests();
 	bool consumed_next = false;
 	CHECK(ScreensaverCmdline::try_consume("/s", "", consumed_next));
-	DisplayServer::WindowMode window_mode = DisplayServer::WINDOW_MODE_WINDOWED;
+	DisplayServerEnums::WindowMode window_mode = DisplayServerEnums::WINDOW_MODE_WINDOWED;
 	uint32_t flags = 0;
 	int64_t embed = 99;
 	Vector2i pos;
 	Size2i size;
-	int screen = DisplayServer::SCREEN_PRIMARY;
+	int screen = DisplayServerEnums::SCREEN_PRIMARY;
 	bool use_pos = true;
 	_apply_screensaver(window_mode, flags, embed, pos, size, screen, use_pos);
-	CHECK(window_mode == DisplayServer::WINDOW_MODE_WINDOWED);
+	CHECK(window_mode == DisplayServerEnums::WINDOW_MODE_WINDOWED);
 	CHECK(embed == 99);
 	CHECK_FALSE(use_pos);
 
@@ -387,70 +388,70 @@ TEST_CASE("[Modules][Screensaver] apply_recorded modes and enabled gate") {
 	ps->set_setting("blazium/screensaver/cover_all_screens", false);
 	ScreensaverCmdline::reset();
 	CHECK(ScreensaverCmdline::try_consume("/s", "", consumed_next));
-	window_mode = DisplayServer::WINDOW_MODE_WINDOWED;
+	window_mode = DisplayServerEnums::WINDOW_MODE_WINDOWED;
 	flags = 0;
 	embed = 7;
-	screen = DisplayServer::SCREEN_PRIMARY;
+	screen = DisplayServerEnums::SCREEN_PRIMARY;
 	use_pos = true;
 	_apply_screensaver(window_mode, flags, embed, pos, size, screen, use_pos);
-	CHECK(window_mode == DisplayServer::WINDOW_MODE_WINDOWED);
-	CHECK(window_mode != DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN);
-	CHECK((flags & DisplayServer::WINDOW_FLAG_BORDERLESS_BIT) != 0);
+	CHECK(window_mode == DisplayServerEnums::WINDOW_MODE_WINDOWED);
+	CHECK(window_mode != DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN);
+	CHECK((flags & DisplayServerEnums::WINDOW_FLAG_BORDERLESS_BIT) != 0);
 	CHECK(embed == 0);
 	CHECK_FALSE(use_pos);
 	CHECK(ScreensaverCmdline::should_clear_create_position());
 
 	ScreensaverCmdline::reset();
 	CHECK(ScreensaverCmdline::try_consume("/p", "1234", consumed_next));
-	window_mode = DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
+	window_mode = DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
 	flags = 0;
 	embed = 0;
 	pos = Vector2i(640, 360);
 	size = Size2i(1920, 1080);
 	use_pos = false;
 	_apply_screensaver(window_mode, flags, embed, pos, size, screen, use_pos);
-	CHECK(window_mode == DisplayServer::WINDOW_MODE_WINDOWED);
-	CHECK((flags & DisplayServer::WINDOW_FLAG_BORDERLESS_BIT) != 0);
+	CHECK(window_mode == DisplayServerEnums::WINDOW_MODE_WINDOWED);
+	CHECK((flags & DisplayServerEnums::WINDOW_FLAG_BORDERLESS_BIT) != 0);
 	CHECK(embed == 1234);
 	CHECK(use_pos);
 	CHECK(pos == Vector2i());
 
 	ScreensaverCmdline::reset();
 	CHECK(ScreensaverCmdline::try_consume("/c", "", consumed_next));
-	window_mode = DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
-	flags = DisplayServer::WINDOW_FLAG_BORDERLESS_BIT;
+	window_mode = DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
+	flags = DisplayServerEnums::WINDOW_FLAG_BORDERLESS_BIT;
 	embed = 5;
 	size = Size2i(1920, 1080);
 	use_pos = true;
 	_apply_screensaver(window_mode, flags, embed, pos, size, screen, use_pos);
-	CHECK(window_mode == DisplayServer::WINDOW_MODE_WINDOWED);
-	CHECK((flags & DisplayServer::WINDOW_FLAG_BORDERLESS_BIT) == 0);
+	CHECK(window_mode == DisplayServerEnums::WINDOW_MODE_WINDOWED);
+	CHECK((flags & DisplayServerEnums::WINDOW_FLAG_BORDERLESS_BIT) == 0);
 	CHECK(embed == 0);
 	CHECK(size == Size2i(480, 320));
 
 	ScreensaverCmdline::reset();
 	CHECK(ScreensaverCmdline::try_consume("/c:1234", "", consumed_next));
-	window_mode = DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
-	flags = DisplayServer::WINDOW_FLAG_BORDERLESS_BIT;
+	window_mode = DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
+	flags = DisplayServerEnums::WINDOW_FLAG_BORDERLESS_BIT;
 	embed = 9;
 	size = Size2i(1920, 1080);
 	use_pos = true;
 	_apply_screensaver(window_mode, flags, embed, pos, size, screen, use_pos);
-	CHECK(window_mode == DisplayServer::WINDOW_MODE_WINDOWED);
-	CHECK((flags & DisplayServer::WINDOW_FLAG_BORDERLESS_BIT) == 0);
+	CHECK(window_mode == DisplayServerEnums::WINDOW_MODE_WINDOWED);
+	CHECK((flags & DisplayServerEnums::WINDOW_FLAG_BORDERLESS_BIT) == 0);
 	CHECK(embed == 0);
 	CHECK(size == Size2i(480, 320));
 
 	ScreensaverCmdline::reset();
 	CHECK(ScreensaverCmdline::try_consume("/a", "88", consumed_next));
-	window_mode = DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
-	flags = DisplayServer::WINDOW_FLAG_BORDERLESS_BIT;
+	window_mode = DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
+	flags = DisplayServerEnums::WINDOW_FLAG_BORDERLESS_BIT;
 	embed = 88;
 	size = Size2i(1920, 1080);
 	use_pos = true;
 	_apply_screensaver(window_mode, flags, embed, pos, size, screen, use_pos);
-	CHECK(window_mode == DisplayServer::WINDOW_MODE_WINDOWED);
-	CHECK((flags & DisplayServer::WINDOW_FLAG_BORDERLESS_BIT) == 0);
+	CHECK(window_mode == DisplayServerEnums::WINDOW_MODE_WINDOWED);
+	CHECK((flags & DisplayServerEnums::WINDOW_FLAG_BORDERLESS_BIT) == 0);
 	CHECK(embed == 0);
 	CHECK(size == Size2i(480, 320));
 
@@ -470,30 +471,30 @@ TEST_CASE("[Modules][Screensaver] flagless .scr defaults to configure not run") 
 
 	ScreensaverCmdline::reset();
 	ScreensaverCmdline::set_executable_is_scr_for_tests(true);
-	DisplayServer::WindowMode window_mode = DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
-	uint32_t flags = DisplayServer::WINDOW_FLAG_BORDERLESS_BIT;
+	DisplayServerEnums::WindowMode window_mode = DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
+	uint32_t flags = DisplayServerEnums::WINDOW_FLAG_BORDERLESS_BIT;
 	int64_t embed = 9;
 	Vector2i pos;
 	Size2i size;
-	int screen = DisplayServer::SCREEN_PRIMARY;
+	int screen = DisplayServerEnums::SCREEN_PRIMARY;
 	bool use_pos = true;
 	_apply_screensaver(window_mode, flags, embed, pos, size, screen, use_pos);
 	CHECK(ScreensaverCmdline::get_mode() == ScreensaverCmdline::MODE_CONFIGURE);
-	CHECK(window_mode == DisplayServer::WINDOW_MODE_WINDOWED);
-	CHECK((flags & DisplayServer::WINDOW_FLAG_BORDERLESS_BIT) == 0);
+	CHECK(window_mode == DisplayServerEnums::WINDOW_MODE_WINDOWED);
+	CHECK((flags & DisplayServerEnums::WINDOW_FLAG_BORDERLESS_BIT) == 0);
 	CHECK(embed == 0);
 
 	ScreensaverCmdline::reset();
 	ScreensaverCmdline::set_executable_is_scr_for_tests(true);
 	bool consumed_next = false;
 	CHECK(ScreensaverCmdline::try_consume("/s", "", consumed_next));
-	window_mode = DisplayServer::WINDOW_MODE_WINDOWED;
+	window_mode = DisplayServerEnums::WINDOW_MODE_WINDOWED;
 	flags = 0;
 	embed = 3;
 	use_pos = true;
 	_apply_screensaver(window_mode, flags, embed, pos, size, screen, use_pos);
 	CHECK(ScreensaverCmdline::get_mode() == ScreensaverCmdline::MODE_RUN);
-	CHECK((flags & DisplayServer::WINDOW_FLAG_BORDERLESS_BIT) != 0);
+	CHECK((flags & DisplayServerEnums::WINDOW_FLAG_BORDERLESS_BIT) != 0);
 	CHECK(embed == 0);
 
 	ScreensaverCmdline::clear_executable_is_scr_for_tests();
@@ -516,18 +517,18 @@ TEST_CASE("[Modules][Screensaver] cover_mode virtual records windowed run withou
 	bool consumed_next = false;
 	CHECK(ScreensaverCmdline::try_consume("/s", "", consumed_next));
 
-	DisplayServer::WindowMode window_mode = DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
+	DisplayServerEnums::WindowMode window_mode = DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
 	uint32_t flags = 0;
 	int64_t embed = 7;
 	Vector2i pos;
 	Size2i size;
-	int screen = DisplayServer::SCREEN_PRIMARY;
+	int screen = DisplayServerEnums::SCREEN_PRIMARY;
 	bool use_pos = false;
 	_apply_screensaver(window_mode, flags, embed, pos, size, screen, use_pos);
-	CHECK(window_mode == DisplayServer::WINDOW_MODE_WINDOWED);
-	CHECK(window_mode != DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN);
-	CHECK((flags & DisplayServer::WINDOW_FLAG_BORDERLESS_BIT) != 0);
-	CHECK((flags & DisplayServer::WINDOW_FLAG_ALWAYS_ON_TOP_BIT) != 0);
+	CHECK(window_mode == DisplayServerEnums::WINDOW_MODE_WINDOWED);
+	CHECK(window_mode != DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN);
+	CHECK((flags & DisplayServerEnums::WINDOW_FLAG_BORDERLESS_BIT) != 0);
+	CHECK((flags & DisplayServerEnums::WINDOW_FLAG_ALWAYS_ON_TOP_BIT) != 0);
 	CHECK_FALSE(use_pos);
 	CHECK(ScreensaverCmdline::should_clear_create_position());
 	CHECK(ScreensaverCmdline::virtual_os_rect().size == Size2i(5760, 1080));
@@ -538,13 +539,13 @@ TEST_CASE("[Modules][Screensaver] cover_mode virtual records windowed run withou
 	ScreensaverCmdline::reset();
 	ScreensaverCmdline::set_virtual_rect_for_tests(virt);
 	CHECK(ScreensaverCmdline::try_consume("/s", "", consumed_next));
-	window_mode = DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
+	window_mode = DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
 	flags = 0;
-	screen = DisplayServer::SCREEN_PRIMARY;
+	screen = DisplayServerEnums::SCREEN_PRIMARY;
 	use_pos = false;
 	_apply_screensaver(window_mode, flags, embed, pos, size, screen, use_pos);
-	CHECK(window_mode == DisplayServer::WINDOW_MODE_WINDOWED);
-	CHECK(window_mode != DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN);
+	CHECK(window_mode == DisplayServerEnums::WINDOW_MODE_WINDOWED);
+	CHECK(window_mode != DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN);
 	CHECK_FALSE(use_pos);
 	CHECK(ScreensaverCmdline::should_clear_create_position());
 
@@ -571,17 +572,17 @@ TEST_CASE("[Modules][Screensaver] cover_mode single honors screen index") {
 	bool consumed_next = false;
 	CHECK(ScreensaverCmdline::try_consume("/s:2", "", consumed_next));
 
-	DisplayServer::WindowMode window_mode = DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
+	DisplayServerEnums::WindowMode window_mode = DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
 	uint32_t flags = 0;
 	int64_t embed = 7;
 	Vector2i pos;
 	Size2i size;
-	int screen = DisplayServer::SCREEN_PRIMARY;
+	int screen = DisplayServerEnums::SCREEN_PRIMARY;
 	bool use_pos = false;
 	_apply_screensaver(window_mode, flags, embed, pos, size, screen, use_pos);
-	CHECK(window_mode == DisplayServer::WINDOW_MODE_WINDOWED);
-	CHECK(window_mode != DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN);
-	CHECK(window_mode != DisplayServer::WINDOW_MODE_FULLSCREEN);
+	CHECK(window_mode == DisplayServerEnums::WINDOW_MODE_WINDOWED);
+	CHECK(window_mode != DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN);
+	CHECK(window_mode != DisplayServerEnums::WINDOW_MODE_FULLSCREEN);
 	CHECK(screen == 2);
 	CHECK_FALSE(use_pos);
 	CHECK(embed == 0);
@@ -590,11 +591,11 @@ TEST_CASE("[Modules][Screensaver] cover_mode single honors screen index") {
 	ScreensaverCmdline::set_monitor_rect_for_tests(1, Rect2i(0, 0, 1280, 1024));
 	ps->set_setting("blazium/screensaver/screen", 1);
 	CHECK(ScreensaverCmdline::try_consume("/s", "", consumed_next));
-	window_mode = DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
-	screen = DisplayServer::SCREEN_PRIMARY;
+	window_mode = DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
+	screen = DisplayServerEnums::SCREEN_PRIMARY;
 	use_pos = false;
 	_apply_screensaver(window_mode, flags, embed, pos, size, screen, use_pos);
-	CHECK(window_mode == DisplayServer::WINDOW_MODE_WINDOWED);
+	CHECK(window_mode == DisplayServerEnums::WINDOW_MODE_WINDOWED);
 	CHECK(screen == 1);
 	CHECK_FALSE(use_pos);
 
@@ -620,16 +621,16 @@ TEST_CASE("[Modules][Screensaver] cover_mode clone records run without spawning"
 	CHECK(ScreensaverCmdline::get_mode() == ScreensaverCmdline::MODE_RUN);
 	CHECK(ScreensaverCmdline::resolved_cover_mode() == "clone");
 
-	DisplayServer::WindowMode window_mode = DisplayServer::WINDOW_MODE_WINDOWED;
+	DisplayServerEnums::WindowMode window_mode = DisplayServerEnums::WINDOW_MODE_WINDOWED;
 	uint32_t flags = 0;
 	int64_t embed = 7;
 	Vector2i pos;
 	Size2i size;
-	int screen = DisplayServer::SCREEN_PRIMARY;
+	int screen = DisplayServerEnums::SCREEN_PRIMARY;
 	bool use_pos = true;
 	_apply_screensaver(window_mode, flags, embed, pos, size, screen, use_pos);
-	CHECK(window_mode == DisplayServer::WINDOW_MODE_WINDOWED);
-	CHECK(window_mode != DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN);
+	CHECK(window_mode == DisplayServerEnums::WINDOW_MODE_WINDOWED);
+	CHECK(window_mode != DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN);
 	CHECK_FALSE(use_pos);
 
 	CHECK_FALSE(ScreensaverCmdline::should_spawn_clone_windows());
@@ -658,16 +659,16 @@ TEST_CASE("[Modules][Screensaver] Main --screen notify overrides virtual cover")
 	CHECK(ScreensaverCmdline::try_consume("/s", "", consumed_next));
 	CHECK(ScreensaverCmdline::resolved_cover_mode() == "single");
 
-	DisplayServer::WindowMode window_mode = DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
+	DisplayServerEnums::WindowMode window_mode = DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
 	uint32_t flags = 0;
 	int64_t embed = 7;
 	Vector2i pos;
 	Size2i size;
-	int screen = DisplayServer::SCREEN_PRIMARY;
+	int screen = DisplayServerEnums::SCREEN_PRIMARY;
 	bool use_pos = false;
 	_apply_screensaver(window_mode, flags, embed, pos, size, screen, use_pos);
-	CHECK(window_mode == DisplayServer::WINDOW_MODE_WINDOWED);
-	CHECK(window_mode != DisplayServer::WINDOW_MODE_FULLSCREEN);
+	CHECK(window_mode == DisplayServerEnums::WINDOW_MODE_WINDOWED);
+	CHECK(window_mode != DisplayServerEnums::WINDOW_MODE_FULLSCREEN);
 	CHECK(screen == 2);
 	CHECK_FALSE(use_pos);
 	CHECK(ScreensaverCmdline::should_clear_create_position());
@@ -692,7 +693,7 @@ TEST_CASE("[Modules][Screensaver] --screen N overrides virtual cover") {
 	bool consumed_next = false;
 	CHECK(ScreensaverCmdline::try_consume("/s", "", consumed_next));
 
-	DisplayServer::WindowMode window_mode = DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
+	DisplayServerEnums::WindowMode window_mode = DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN;
 	uint32_t flags = 0;
 	int64_t embed = 7;
 	Vector2i pos;
@@ -701,9 +702,9 @@ TEST_CASE("[Modules][Screensaver] --screen N overrides virtual cover") {
 	bool use_pos = false;
 	_apply_screensaver(window_mode, flags, embed, pos, size, screen, use_pos);
 	CHECK(ScreensaverCmdline::resolved_cover_mode() == "single");
-	CHECK(window_mode == DisplayServer::WINDOW_MODE_WINDOWED);
-	CHECK(window_mode != DisplayServer::WINDOW_MODE_FULLSCREEN);
-	CHECK(window_mode != DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN);
+	CHECK(window_mode == DisplayServerEnums::WINDOW_MODE_WINDOWED);
+	CHECK(window_mode != DisplayServerEnums::WINDOW_MODE_FULLSCREEN);
+	CHECK(window_mode != DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN);
 	CHECK(screen == 2);
 	CHECK_FALSE(use_pos);
 

@@ -32,6 +32,8 @@
 #ifdef TOOLS_ENABLED
 
 #include "editor/export/editor_export_platform.h"
+#include "core/string/ustring.h"
+#include "scene/resources/image_texture.h"
 
 class EditorExportPlatformWindowsInterDVD : public EditorExportPlatform {
 	GDCLASS(EditorExportPlatformWindowsInterDVD, EditorExportPlatform);
@@ -52,7 +54,7 @@ public:
 	virtual bool has_valid_export_configuration(const Ref<EditorExportPreset> &p_preset, String &r_error, bool &r_missing_templates, bool p_debug = false) const override;
 	virtual bool has_valid_project_configuration(const Ref<EditorExportPreset> &p_preset, String &r_error) const override;
 	virtual List<String> get_binary_extensions(const Ref<EditorExportPreset> &p_preset) const override;
-	virtual Error export_project(const Ref<EditorExportPreset> &p_preset, bool p_debug, const String &p_path, BitField<EditorExportPlatform::DebugFlags> p_flags = 0) override;
+	virtual Error export_project(const Ref<EditorExportPreset> &p_preset, bool p_debug, const String &p_path, BitField<EditorExportPlatform::DebugFlags> p_flags = 0, bool p_notify = true) override;
 	virtual void get_platform_features(List<String> *r_features) const override;
 };
 

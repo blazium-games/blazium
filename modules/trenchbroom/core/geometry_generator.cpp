@@ -37,7 +37,7 @@
 #include "core/math/aabb.h"
 #include "core/math/convex_hull.h"
 #include "core/math/geometry_3d.h"
-#include "core/object/callable_method_pointer.h"
+#include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
 #include "core/object/worker_thread_pool.h"
 #include "core/templates/hash_set.h"
@@ -45,6 +45,7 @@
 #include "scene/resources/3d/convex_polygon_shape_3d.h"
 #include "scene/resources/material.h"
 #include "scene/resources/mesh.h"
+#include "core/templates/local_vector.h"
 
 static Vector3i _vertex_snap_key(const Vector3 &p_vertex, real_t p_epsilon) {
 	const real_t inv = p_epsilon > 0.0 ? (1.0 / p_epsilon) : 1.0;
@@ -63,7 +64,7 @@ static HashSet<Vector3i> _face_vertex_keys(const PackedVector3Array &p_vertices,
 }
 
 static bool _face_vertices_subset(const FaceData *p_inner, const FaceData *p_outer, real_t p_epsilon) {
-	const HashSet<Vector3i> outer_keys = _face_vertex_keys(p_outer->vertices, p_epsilon);
+	const HashSet<Vector3i> outer_keys(_face_vertex_keys(p_outer->vertices, p_epsilon));
 	for (int i = 0; i < p_inner->vertices.size(); i++) {
 		if (!outer_keys.has(_vertex_snap_key(p_inner->vertices[i], p_epsilon))) {
 			return false;

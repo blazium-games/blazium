@@ -31,6 +31,7 @@
 
 #include "modules/device_autorun/autorun_inf.h"
 #include "tests/test_macros.h"
+#include "core/string/ustring.h"
 
 TEST_CASE("[Modules][DeviceAutorun] builds autorun.inf") {
 	Ref<AutorunInf> inf;

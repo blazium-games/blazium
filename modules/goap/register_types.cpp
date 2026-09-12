@@ -37,7 +37,7 @@
 #include "blazium_goap_world_state.h"
 
 #ifdef TOOLS_ENABLED
-#include "editor/blazium_goap_editor_plugin.h"
+#include "modules/goap/editor/blazium_goap_editor_plugin.h"
 #include "editor/editor_node.h"
 #include "editor/plugins/editor_plugin.h"
 #endif

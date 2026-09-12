@@ -36,7 +36,7 @@
 #include "modules/trenchbroom/util/trenchbroom_util.h"
 #include "scene/resources/material.h"
 #include "scene/resources/texture.h"
-#include "servers/audio/audio_stream.h"
+#include "scene/resources/audio/audio_stream.h"
 
 void BlaziumFGDEntityClass::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_prefix", "prefix"), &BlaziumFGDEntityClass::set_prefix);

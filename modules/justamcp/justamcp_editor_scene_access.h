@@ -30,11 +30,13 @@
 #pragma once
 
 #include "scene/main/node.h"
+#include "scene/main/scene_tree.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
 #include "justamcp_test_scene_root.h"
+#include "core/string/ustring.h"
 #endif
 
 namespace JustAMCPEditorSceneAccess {
@@ -79,9 +81,14 @@ inline String safe_path_to(Node *p_root, Node *p_node) {
 		return String();
 	}
 	if (p_node == p_root || p_root->is_ancestor_of(p_node)) {
-		return p_root->get_path_to(p_node);
+		return String(p_root->get_path_to(p_node));
 	}
 	return String(p_node->get_name());
+}
+
+inline bool is_project_settings_file(const String &p_path) {
+	const String file = p_path.get_file();
+	return file == "project.godot" || file == "project.blazium" || file == "project.binary";
 }
 
 } //namespace JustAMCPEditorSceneAccess

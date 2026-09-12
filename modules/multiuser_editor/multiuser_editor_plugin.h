@@ -42,6 +42,7 @@
 #include "multiuser_editor_permissions.h"
 #include "multiuser_editor_script_sync.h"
 #include "multiuser_editor_settings_inspector_plugin.h"
+#include "editor/settings/editor_settings.h"
 
 #ifndef MULTIUSER_GET
 #define MULTIUSER_GET(m_var, m_default) \

@@ -30,6 +30,7 @@
 #include "twitch_moderation_requests.h"
 
 #include "core/io/json.h"
+#include "core/object/class_db.h"
 
 void TwitchModerationRequests::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("check_automod_status", "broadcaster_id", "messages"), &TwitchModerationRequests::check_automod_status);

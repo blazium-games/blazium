@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "dddbrowser_level.h"
+#include "core/object/class_db.h"
 
 void DDDBrowserLevel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_scene_name", "name"), &DDDBrowserLevel::set_scene_name);

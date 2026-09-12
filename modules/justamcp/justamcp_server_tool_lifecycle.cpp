@@ -39,6 +39,7 @@
 #include "tools/justamcp_json_rpc_helpers.h"
 #include "tools/justamcp_settings_resolver.h"
 #include "tools/justamcp_task_manager.h"
+#include "core/object/callable_mp.h"
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 

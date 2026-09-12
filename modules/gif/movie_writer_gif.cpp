@@ -36,8 +36,8 @@ uint32_t MovieWriterGIF::get_audio_mix_rate() const {
 	return 48000;
 }
 
-AudioServer::SpeakerMode MovieWriterGIF::get_audio_speaker_mode() const {
-	return AudioServer::SPEAKER_MODE_STEREO;
+AuSE::SpeakerMode MovieWriterGIF::get_audio_speaker_mode() const {
+	return AuSE::SPEAKER_MODE_STEREO;
 }
 
 void MovieWriterGIF::get_supported_extensions(List<String> *r_extensions) const {

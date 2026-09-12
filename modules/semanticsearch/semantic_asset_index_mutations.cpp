@@ -44,7 +44,8 @@
 #endif
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_file_system.h"
+#include "editor/file_system/editor_file_system.h"
+#include "core/io/file_access.h"
 #endif
 
 Error SemanticAssetIndex::rebuild_index() {

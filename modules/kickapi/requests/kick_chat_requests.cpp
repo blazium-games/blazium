@@ -30,6 +30,7 @@
 #include "kick_chat_requests.h"
 
 #include "core/io/json.h"
+#include "core/object/class_db.h"
 
 void KickChatRequests::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("send_message", "content", "type", "broadcaster_user_id", "reply_to_message_id"),

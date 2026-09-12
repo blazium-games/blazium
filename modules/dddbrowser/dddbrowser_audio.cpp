@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "dddbrowser_audio.h"
+#include "core/object/class_db.h"
 
 void DDDBrowserAudio::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_source_path", "path"), &DDDBrowserAudio::set_source_path);

@@ -35,8 +35,12 @@
 #include "autowork_spy.h"
 #include "autowork_stub_params.h"
 #include "autowork_stubber.h"
-#include "core/object/gdvirtual.gen.inc"
 #include "scene/main/node.h"
+#include "scene/main/scene_tree.h"
+#include "core/object/callable_mp.h"
+#include "core/string/string_name.h"
+#include "core/string/ustring.h"
+#include "core/variant/type_info.h"
 
 class AutoworkTest : public Node {
 	GDCLASS(AutoworkTest, Node);

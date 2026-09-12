@@ -33,6 +33,8 @@
 #include "core/io/json.h"
 #include "core/os/os.h"
 #include "core/os/time.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 
 void CrowdControl::_bind_methods() {
 	// Connection Management
@@ -487,7 +489,7 @@ void CrowdControl::_process_messages() {
 		if (ws->get_packet(&buffer, buffer_size) == OK) {
 			if (ws->was_string_packet()) {
 				String message;
-				message.parse_utf8((const char *)buffer, buffer_size);
+				message.append_utf8((const char *)buffer, buffer_size);
 				_handle_message(message);
 			}
 		}
@@ -727,9 +729,9 @@ void CrowdControl::_handle_http_response(const String &p_signal_name, int p_resp
 			if (parts.size() >= 2) {
 				String payload_b64 = parts[1];
 				// Decode base64 JWT payload
-				Vector<uint8_t> decoded = core_bind::Marshalls::get_singleton()->base64_to_raw(payload_b64);
+				Vector<uint8_t> decoded = CoreBind::Marshalls::get_singleton()->base64_to_raw(payload_b64);
 				String payload_str;
-				payload_str.parse_utf8((const char *)decoded.ptr(), decoded.size());
+				payload_str.append_utf8((const char *)decoded.ptr(), decoded.size());
 
 				Ref<JSON> jwt_json;
 				jwt_json.instantiate();

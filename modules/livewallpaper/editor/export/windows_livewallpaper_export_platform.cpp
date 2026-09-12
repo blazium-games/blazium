@@ -110,12 +110,12 @@ HashMap<String, Variant> EditorExportPlatformWindowsLiveWallpaper::get_custom_pr
 	return settings;
 }
 
-Error EditorExportPlatformWindowsLiveWallpaper::export_project(const Ref<EditorExportPreset> &p_preset, bool p_debug, const String &p_path, BitField<EditorExportPlatform::DebugFlags> p_flags) {
+Error EditorExportPlatformWindowsLiveWallpaper::export_project(const Ref<EditorExportPreset> &p_preset, bool p_debug, const String &p_path, BitField<EditorExportPlatform::DebugFlags> p_flags, bool p_notify) {
 	String path = p_path;
 	if (!path.get_extension().to_lower().ends_with("zip") && path.get_extension().to_lower() != "exe") {
 		path = path.get_basename() + ".exe";
 	}
-	return EditorExportPlatformWindows::export_project(p_preset, p_debug, path, p_flags);
+	return EditorExportPlatformWindows::export_project(p_preset, p_debug, path, p_flags, p_notify);
 }
 
 #endif

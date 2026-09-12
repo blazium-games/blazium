@@ -28,6 +28,8 @@
 /**************************************************************************/
 
 #include "blazium_goap_world_state.h"
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 void BlaziumGoapWorldState::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_elements"), &BlaziumGoapWorldState::get_elements);

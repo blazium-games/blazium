@@ -30,6 +30,7 @@
 
 #pragma once
 
+#include "core/string/ustring.h"
 #include "core/variant/dictionary.h"
 #include "scene/debugger/scene_debugger_object.h"
 

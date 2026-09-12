@@ -33,6 +33,7 @@
 
 #include "core/io/resource_saver.h"
 #include "scene/resources/sprite_frames.h"
+#include "core/string/string_name.h"
 
 String ResourceImporterGIFFrames::get_importer_name() const {
 	return "gif_sprite_frames";

@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "dddbrowser_picturebox.h"
+#include "core/object/class_db.h"
 
 void DDDBrowserPicturebox::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_texture_path", "path"), &DDDBrowserPicturebox::set_texture_path);

@@ -48,6 +48,7 @@
 #include "justamcp_notification_bus.h"
 #include "mcp_tool_queue.h"
 #include "mcp_tool_queue_entry.h"
+#include "core/string/ustring.h"
 
 class JustAMCPNotificationBus;
 

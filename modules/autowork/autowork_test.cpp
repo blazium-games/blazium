@@ -36,6 +36,9 @@
 #include "core/variant/variant.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 void AutoworkTest::_bind_methods() {
 	GDVIRTUAL_BIND(_before_all);

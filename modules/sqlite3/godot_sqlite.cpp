@@ -36,6 +36,9 @@
 #include "thirdparty/sqlite/sqlite3.h"
 
 #include "godot_sqlite.h"
+#include "core/object/class_db.h"
+#include "core/config/engine.h"
+#include "core/io/file_access.h"
 
 Array fast_parse_row(sqlite3_stmt *stmt) {
 	Array result;
@@ -876,7 +879,7 @@ Ref<SQLiteQuery> SQLiteAccess::create_query(String p_query, Array p_args) {
 	query.instantiate();
 	query->init(this, p_query, p_args);
 
-	Ref<WeakRef> wr;
+	Ref<CoreBind::WeakRef> wr;
 	wr.instantiate();
 	wr->set_obj(query.ptr());
 	queries.push_back(wr);

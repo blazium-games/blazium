@@ -29,7 +29,7 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "editor/lsp/luau_workspace.h"
+#include "modules/luau_module/editor/lsp/luau_workspace.h"
 
 #include "core/config/project_settings.h"
 #include "core/object/script_language.h"

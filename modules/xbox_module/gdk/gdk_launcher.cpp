@@ -38,6 +38,7 @@
 #include "gdk_result.h"
 #include "gdk_runtime.h"
 #include "gdk_user.h"
+#include "core/object/class_db.h"
 
 void GDKLauncher::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("launch_uri", "uri", "user"), &GDKLauncher::launch_uri, DEFVAL(Ref<GDKUser>()));

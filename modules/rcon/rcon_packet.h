@@ -31,6 +31,7 @@
 
 #include "core/object/class_db.h"
 #include "core/object/ref_counted.h"
+#include "core/variant/type_info.h"
 
 class RCONPacket : public RefCounted {
 	GDCLASS(RCONPacket, RefCounted);

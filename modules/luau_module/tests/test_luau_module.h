@@ -38,6 +38,8 @@
 #include "modules/luau_module/luau_codegen.h"
 #include "modules/luau_module/luau_compile_result.h"
 #include "modules/luau_module/luau_script_language.h"
+#include "core/string/string_name.h"
+#include "core/string/ustring.h"
 
 namespace TestLuauModule {
 

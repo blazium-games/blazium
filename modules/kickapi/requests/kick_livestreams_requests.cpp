@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "kick_livestreams_requests.h"
+#include "core/object/class_db.h"
 
 void KickLivestreamsRequests::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_livestreams", "params"), &KickLivestreamsRequests::get_livestreams, DEFVAL(Dictionary()));

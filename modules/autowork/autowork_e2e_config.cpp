@@ -33,7 +33,8 @@
 #include "core/os/os.h"
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
+#include "core/object/class_db.h"
 #endif
 
 bool AutoworkE2EConfig::parsed = false;

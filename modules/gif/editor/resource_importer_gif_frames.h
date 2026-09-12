@@ -30,6 +30,8 @@
 #pragma once
 
 #include "core/io/resource_importer.h"
+#include "core/string/string_name.h"
+#include "core/string/ustring.h"
 
 class ResourceImporterGIFFrames : public ResourceImporter {
 	GDCLASS(ResourceImporterGIFFrames, ResourceImporter);

@@ -29,6 +29,8 @@
 
 #include "lexical_index_builder.h"
 
+#include "core/string/ustring.h"
+
 void LexicalIndexBuilder::index_tokens_for_entry(
 		const String &p_path,
 		const Vector<String> &p_tokens,

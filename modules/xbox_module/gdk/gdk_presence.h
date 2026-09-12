@@ -54,6 +54,7 @@
 #ifdef XBOX_MODULE_GDK_ENABLED
 #include <XUser.h>
 #include <xsapi-c/services_c.h>
+#include "core/variant/type_info.h"
 #endif
 
 class GDK;

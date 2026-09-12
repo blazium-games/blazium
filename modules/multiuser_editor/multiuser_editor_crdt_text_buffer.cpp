@@ -33,7 +33,7 @@
 
 #include "multiuser_editor_constants.h"
 
-#include "editor/editor_settings.h"
+#include "editor/settings/editor_settings.h"
 
 int MultiuserEditorCRDTTextBuffer::_compare_positions(const Vector<int> &p_a, const Vector<int> &p_b) {
 	int count = MAX(p_a.size(), p_b.size());

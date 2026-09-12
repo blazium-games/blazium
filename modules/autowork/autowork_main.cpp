@@ -45,8 +45,11 @@
 #include "core/object/script_language.h"
 #include "core/os/os.h"
 #include "modules/gdscript/gdscript.h"
+#include "servers/display/display_server.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 
 void Autowork::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_directory", "path", "prefix", "suffix"), &Autowork::add_directory, DEFVAL(""), DEFVAL(""));

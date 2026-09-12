@@ -41,7 +41,7 @@
 #include "test_justamcp_fixture.h"
 
 #include "core/config/project_settings.h"
-#include "core/object/callable_method_pointer.h"
+#include "core/object/callable_mp.h"
 #include "modules/modules_enabled.gen.h"
 #include "tests/test_macros.h"
 

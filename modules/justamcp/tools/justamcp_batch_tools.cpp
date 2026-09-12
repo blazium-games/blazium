@@ -44,10 +44,12 @@
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
 #include "core/math/expression.h"
-#include "modules/regex/regex.h"
+#include "core/string/regex.h"
 #include "scene/resources/packed_scene.h"
 
 #include "../justamcp_mcp_tool_macros.h"
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 void JustAMCPBatchTools::_bind_methods() {}
 

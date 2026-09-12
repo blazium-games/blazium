@@ -12,6 +12,7 @@
 #include "modules/inter_dvd/scene/inter_dvd_chapter.h"
 #include "scene/gui/control.h"
 #include "scene/resources/packed_scene.h"
+#include "core/string/ustring.h"
 
 class InterDVDHotspot;
 
