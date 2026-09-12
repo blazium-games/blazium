@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="EditorExportDeviceAutorun" inherits="EditorExportPlugin" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Writes [code]autorun.inf[/code] beside Windows exports (including ZIP staging).
+	</brief_description>
+	<description>
+		Options appear on export platforms whose OS name is [code]Windows[/code] (Windows Desktop, Windows Screensaver, and Windows Interactive DVD). The plugin writes [code]autorun.inf[/code] next to the staged binary during [code]_export_end[/code], so a later ZIP step includes it at archive root.
+		CD/DVD media may still honor [code]OPEN=[/code]. USB flash drives on Windows 7 and later ignore [code]OPEN=[/code] and [code]ACTION=[/code]; [code]LABEL=[/code] and [code]ICON=[/code] still apply. This plugin does not change AutoRun policy.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

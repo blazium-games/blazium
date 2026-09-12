@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPInputTools" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Provides MCP tools for inspecting and simulating input.
+	</brief_description>
+	<description>
+		Registers input-oriented tool schemas used by [JustAMCPToolExecutor]. These tools expose input map data and controlled input injection helpers for editor automation and runtime testing workflows.
+	</description>
+	<tutorials>
+		<link title="Model Context Protocol (MCP)">https://modelcontextprotocol.io/</link>
+	</tutorials>
+</class>

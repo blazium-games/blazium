@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPMCPAppsHost" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Host for MCP Apps UI iframes served from the local JustAMCP HTTP server.
+	</brief_description>
+	<description>
+		Detects [code]_meta.ui.resourceUri[/code] on remote tools, enforces deny-by-default CSP and permissions, and proxies App Bridge [code]tools/call[/code] messages through [JustAMCPMCPClientBridge] after user consent. The host page is served at [code]/mcp-apps/host[/code].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="host_url" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the loopback URL for the MCP Apps host page.
+			</description>
+		</method>
+		<method name="list_open_apps" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns the currently registered MCP Apps (HTML payloads omitted).
+			</description>
+		</method>
+		<method name="open_app">
+			<return type="Dictionary" />
+			<param index="0" name="bridge_name" type="String" />
+			<param index="1" name="ui_meta" type="Dictionary" />
+			<param index="2" name="html" type="String" />
+			<description>
+				Registers an MCP App and returns the loopback host URL. The browser is opened only when the JustAMCP HTTP server is listening and the process is not headless or running unit tests.
+			</description>
+		</method>
+		<method name="proxy_tools_call">
+			<return type="Dictionary" />
+			<param index="0" name="bridge_name" type="String" />
+			<param index="1" name="tool_name" type="String" />
+			<param index="2" name="arguments" type="Dictionary" />
+			<param index="3" name="user_consented" type="bool" />
+			<description>
+				Forwards an App Bridge [code]tools/call[/code] through the outbound MCP client after consent.
+			</description>
+		</method>
+	</methods>
+</class>

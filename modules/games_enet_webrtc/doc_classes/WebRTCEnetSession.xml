@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="WebRTCEnetSession" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Coordinates a Blazium lobby session that carries ENet over WebRTC DataChannels.
+	</brief_description>
+	<description>
+		[WebRTCEnetSession] talks only to an example signaling service (see [SignalClient]). It assigns fake addresses in [code]10.66.0.0/16[/code], installs a per-host ENet socket backend, and returns a normal [ENetMultiplayerPeer] for RPCs and scene replication.
+		Add this node to the tree so it can poll. LAN [ENetMultiplayerPeer] games that never construct a session keep UDP.
+		Native DataChannels need a [WebRTCPeerConnection] backend (webrtc-native on desktop). The WSS relay path still works without it; call [method set_force_relay] from tests.
+	</description>
+	<tutorials>
+		<link title="games_enet_webrtc Module Tests">https://github.com/blazium-games/games_enet_webrtc_module_tests</link>
+		<link title="Example signaling service">https://github.com/blazium-games/blazium-signal</link>
+		<link title="Example TURN service">https://github.com/blazium-games/blazium-turn</link>
+	</tutorials>
+	<methods>
+		<method name="close">
+			<return type="void" />
+			<description>
+				Sends LEAVE if the signaling socket is still open, then tears down links, the ENet peer, and the socket. Does not affect other ENet hosts in this process.
+			</description>
+		</method>
+		<method name="configure">
+			<return type="int" enum="Error" />
+			<param index="0" name="signal_url" type="String" />
+			<param index="1" name="game_id" type="String" />
+			<param index="2" name="auth_token" type="String" />
+			<description>
+				Sets the signaling WebSocket URL ([code]ws://[/code] or [code]wss://[/code]), game namespace ([code]A-Za-z0-9._-[/code]), and optional bearer token. Rejects CR/LF in any field. Open example servers accept an empty token.
+			</description>
+		</method>
+		<method name="create_room">
+			<return type="Signal" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="max_clients" type="int" default="8" />
+			<param index="2" name="password" type="String" default="&quot;&quot;" />
+			<param index="3" name="hidden" type="bool" default="false" />
+			<param index="4" name="tags" type="PackedStringArray" default="PackedStringArray()" />
+			<description>
+				Starts an async host flow. Await the returned [signal session_ready] signal, then assign [method get_peer] to [member MultiplayerAPI.multiplayer_peer].
+			</description>
+		</method>
+		<method name="get_force_relay" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns whether WSS relay is forced.
+			</description>
+		</method>
+		<method name="get_ice_timeout_msec" qualifiers="const">
+			<return type="int" />
+			<description>
+				Current ICE timeout in milliseconds.
+			</description>
+		</method>
+		<method name="get_local_fake_ip" qualifiers="const">
+			<return type="String" />
+			<description>
+				Logical address in [code]10.66.0.0/16[/code]. Host is [code]10.66.0.1[/code].
+			</description>
+		</method>
+		<method name="get_local_fake_port" qualifiers="const">
+			<return type="int" />
+			<description>
+				Logical ENet port (always 1 in v1).
+			</description>
+		</method>
+		<method name="get_local_signal_id" qualifiers="const">
+			<return type="int" />
+			<description>
+				Signaling id. Host is always 1.
+			</description>
+		</method>
+		<method name="get_peer" qualifiers="const">
+			<return type="ENetMultiplayerPeer" />
+			<description>
+				The ENet peer created after [signal session_ready]. Null before the session is ready.
+			</description>
+		</method>
+		<method name="get_room_code" qualifiers="const">
+			<return type="String" />
+			<description>
+				Short room code assigned by the signaling service.
+			</description>
+		</method>
+		<method name="is_in_room" qualifiers="const">
+			<return type="bool" />
+			<description>
+				True after [signal session_ready] until [method close] or [method leave].
+			</description>
+		</method>
+		<method name="join_room">
+			<return type="Signal" />
+			<param index="0" name="room_code" type="String" />
+			<param index="1" name="password" type="String" default="&quot;&quot;" />
+			<param index="2" name="display_name" type="String" default="&quot;&quot;" />
+			<description>
+				Starts an async joiner flow. Optional [param display_name] is stripped of controls and ignored if empty or invalid. Does not create the ENet client until the host DataChannel (or relay) is ready.
+			</description>
+		</method>
+		<method name="kick">
+			<return type="int" enum="Error" />
+			<param index="0" name="signal_id" type="int" />
+			<description>
+				Host-only. Drops [param signal_id] from the room. [param signal_id] must be 1–254, in the room, and not the host.
+			</description>
+		</method>
+		<method name="leave">
+			<return type="int" enum="Error" />
+			<description>
+				Sends LEAVE and tears the session down. Safe to call when not in a room.
+			</description>
+		</method>
+		<method name="list_rooms">
+			<return type="Signal" />
+			<description>
+				Requests visible rooms for the configured [code]game_id[/code]. Await [signal rooms_listed].
+			</description>
+		</method>
+		<method name="seal">
+			<return type="int" enum="Error" />
+			<description>
+				Host-only. Stops new joins. Existing members stay.
+			</description>
+		</method>
+		<method name="set_force_relay">
+			<return type="void" />
+			<param index="0" name="enable" type="bool" />
+			<description>
+				Skip ICE and send ENet datagrams on the signaling WebSocket. For tests and environments without a native WebRTC backend.
+			</description>
+		</method>
+		<method name="set_ice_timeout_msec">
+			<return type="void" />
+			<param index="0" name="msec" type="int" />
+			<description>
+				Milliseconds to wait for a DataChannel before switching a pair onto WSS relay. Default 8000.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="failed">
+			<param index="0" name="reason" type="String" />
+			<description>
+				The session could not start or the signaling service returned an error.
+			</description>
+		</signal>
+		<signal name="peer_link_down">
+			<param index="0" name="fake_ip" type="String" />
+			<param index="1" name="fake_port" type="int" />
+			<param index="2" name="signal_id" type="int" />
+			<description>
+				A remote peer left the room.
+			</description>
+		</signal>
+		<signal name="peer_link_up">
+			<param index="0" name="fake_ip" type="String" />
+			<param index="1" name="fake_port" type="int" />
+			<param index="2" name="signal_id" type="int" />
+			<description>
+				A remote peer's DataChannel or relay path is ready.
+			</description>
+		</signal>
+		<signal name="rooms_listed">
+			<param index="0" name="rooms" type="Array" />
+			<description>
+				Visible rooms for this [code]game_id[/code].
+			</description>
+		</signal>
+		<signal name="session_ready">
+			<param index="0" name="local_fake_ip" type="String" />
+			<param index="1" name="local_fake_port" type="int" />
+			<param index="2" name="room_code" type="String" />
+			<description>
+				Emitted when the ENet peer is created and transport is ready.
+			</description>
+		</signal>
+		<signal name="using_relay">
+			<param index="0" name="signal_id" type="int" />
+			<description>
+				The pair fell back to the signaling WSS datagram relay.
+			</description>
+		</signal>
+		<signal name="using_turn">
+			<param index="0" name="signal_id" type="int" />
+			<description>
+				ICE selected a TURN relay candidate. This is not a failure.
+			</description>
+		</signal>
+	</signals>
+</class>

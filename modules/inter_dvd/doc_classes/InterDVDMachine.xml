@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="InterDVDMachine" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Constants for the DVD-Video Interaction Machine register file.
+	</brief_description>
+	<description>
+		Documents the 16 GPRMs, 24 SPRMs, and 8-byte instruction size used when authoring IFO command streams. This class does not interpret or play discs.
+	</description>
+	<tutorials>
+	</tutorials>
+	<constants>
+		<constant name="GPRM_COUNT" value="16">
+			Number of 16-bit general parameter registers.
+		</constant>
+		<constant name="SPRM_COUNT" value="24">
+			Number of 16-bit system parameter registers.
+		</constant>
+		<constant name="INSTRUCTION_SIZE" value="8">
+			Size of one VM command in bytes.
+		</constant>
+	</constants>
+</class>

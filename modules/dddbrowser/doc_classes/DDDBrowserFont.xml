@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DDDBrowserFont" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Font asset referenced by DDDBrowser textboxes.
+	</brief_description>
+	<description>
+		Asset-only node. Place under a [DDDBrowserTextbox] or reference via font asset id.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="asset_id" type="String" setter="set_asset_id" getter="get_asset_id" default="&quot;&quot;">
+		</member>
+		<member name="size" type="float" setter="set_size" getter="get_size" default="16.0">
+		</member>
+		<member name="source_path" type="String" setter="set_source_path" getter="get_source_path" default="&quot;&quot;">
+		</member>
+		<member name="style" type="int" setter="set_style" getter="get_style" enum="DDDBrowserFont.Style" default="0">
+		</member>
+	</members>
+	<constants>
+		<constant name="STYLE_NORMAL" value="0" enum="Style">
+		</constant>
+		<constant name="STYLE_BOLD" value="1" enum="Style">
+		</constant>
+		<constant name="STYLE_ITALIC" value="2" enum="Style">
+		</constant>
+	</constants>
+</class>

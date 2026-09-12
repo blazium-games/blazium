@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CrowdControlGamePack" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A collection of effects, parameters, and metadata defining a CrowdControl session.
+	</brief_description>
+	<description>
+		[CrowdControlGamePack] encapsulates all the [CrowdControlEffect]s available in your game. It also stores metadata through [CrowdControlGamePackMeta]. This pack can be exported to JSON for use in the CrowdControl Developer Portal.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_effect">
+			<return type="void" />
+			<param index="0" name="effect" type="CrowdControlEffect" />
+			<description>
+				Adds a new [CrowdControlEffect] to the game pack. Alternatively, you can edit the [member effects] array directly.
+			</description>
+		</method>
+		<method name="export_to_json">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Exports the entire game pack (including all effects and metadata) to a JSON file at [param path]. The generated file can be uploaded directly to the CrowdControl Developer Portal to rapidly define your game's interactivity schema.
+			</description>
+		</method>
+		<method name="get_effect" qualifiers="const">
+			<return type="CrowdControlEffect" />
+			<param index="0" name="effect_id" type="String" />
+			<description>
+				Searches the pack and returns the [CrowdControlEffect] with the matching [param effect_id]. Returns [code]null[/code] if none is found.
+			</description>
+		</method>
+		<method name="remove_effect">
+			<return type="void" />
+			<param index="0" name="effect_id" type="String" />
+			<description>
+				Removes the [CrowdControlEffect] matching the given [param effect_id] from the pack.
+			</description>
+		</method>
+		<method name="to_json" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Serializes this [CrowdControlGamePack] into a JSON-compatible dictionary. Normally called internally by [method export_to_json].
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="effects" type="CrowdControlEffect[]" setter="set_effects" getter="get_effects" default="[]">
+			Array of individual interactivity effects in the pack.
+		</member>
+		<member name="pack_meta" type="CrowdControlGamePackMeta" setter="set_pack_meta" getter="get_pack_meta">
+			Stores the metadata for the pack.
+		</member>
+	</members>
+</class>

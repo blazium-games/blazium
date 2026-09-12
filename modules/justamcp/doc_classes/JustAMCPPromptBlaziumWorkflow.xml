@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPPromptBlaziumWorkflow" inherits="JustAMCPPrompt" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Provides built-in Blazium workflow prompts.
+	</brief_description>
+	<description>
+		[JustAMCPPromptBlaziumWorkflow] backs the high-value JustAMCP workflow prompts for project intake, scene building, runtime testing, Autowork repair, and diagnostics triage. The prompts embed relevant [code]blazium://[/code] resources and guide MCP clients through deterministic tool sequences.
+	</description>
+	<tutorials>
+		<link title="Model Context Protocol Prompts">https://modelcontextprotocol.io/specification/2025-11-25/server/prompts</link>
+	</tutorials>
+</class>

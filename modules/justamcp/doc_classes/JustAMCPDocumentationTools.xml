@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPDocumentationTools" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Provides MCP tools for reading Blazium class documentation.
+	</brief_description>
+	<description>
+		Registers documentation lookup tool schemas used by [JustAMCPToolExecutor]. These tools expose the same class, method, property, signal, constant, enum, and annotation information used by Blazium's built-in help system.
+	</description>
+	<tutorials>
+		<link title="Model Context Protocol (MCP)">https://modelcontextprotocol.io/</link>
+	</tutorials>
+</class>

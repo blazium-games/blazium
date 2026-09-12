@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AutoworkVSCodeDebugger" inherits="RefCounted" experimental="Some methods may not be implemented and may be changed in future versions." xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Integrates Autowork test execution with VS Code debugging.
+	</brief_description>
+	<description>
+		The AutoworkVSCodeDebugger provides integration between the Autowork testing framework and Visual Studio Code debugging tools.
+
+		It allows test execution to be attached to a debugging session, enabling breakpoints, step-through execution, and inspection of test runtime behavior directly from the editor.
+		This is useful for diagnosing failing tests or understanding complex test flows.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="set_runner">
+			<return type="void" />
+			<param index="0" name="runner" type="Object" />
+			<description>
+				Sets the test runner instance to be used by the debugger.
+			</description>
+		</method>
+		<method name="setup">
+			<return type="void" />
+			<description>
+				Initializes the debugger integration.
+			</description>
+		</method>
+	</methods>
+</class>

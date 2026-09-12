@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CSVChunkProcessor" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Chunked CSV file utilities.
+	</brief_description>
+	<description>
+		CSVChunkProcessor provides helpers for processing large CSV files in bounded chunks, sampling rows, counting rows, splitting files, and merging files. When no dialect is provided, the default CSV dialect is used.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="count_rows" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="dialect" type="CSVDialect" default="null" />
+			<description>
+				Counts rows in [param path] using [param dialect]. Returns [code]-1[/code] on error.
+			</description>
+		</method>
+		<method name="merge_files" qualifiers="static">
+			<return type="int" enum="Error" />
+			<param index="0" name="paths" type="PackedStringArray" />
+			<param index="1" name="output_path" type="String" />
+			<param index="2" name="dialect" type="CSVDialect" default="null" />
+			<param index="3" name="include_headers" type="bool" default="true" />
+			<description>
+				Merges [param paths] into [param output_path] using [param dialect]. If [param include_headers] is [code]true[/code] and the dialect has headers, one header row is written to the output.
+			</description>
+		</method>
+		<method name="process_file" qualifiers="static">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="callable" type="Callable" />
+			<param index="2" name="chunk_size" type="int" default="1000" />
+			<param index="3" name="dialect" type="CSVDialect" default="null" />
+			<description>
+				Reads [param path] in chunks of [param chunk_size] rows and calls [param callable] with [code](chunk, chunk_index)[/code].
+			</description>
+		</method>
+		<method name="sample_file" qualifiers="static">
+			<return type="Array" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="count" type="int" default="10" />
+			<param index="2" name="dialect" type="CSVDialect" default="null" />
+			<description>
+				Returns up to [param count] rows from the start of [param path] using [param dialect].
+			</description>
+		</method>
+		<method name="split_file" qualifiers="static">
+			<return type="PackedStringArray" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="output_dir" type="String" />
+			<param index="2" name="rows_per_file" type="int" />
+			<param index="3" name="dialect" type="CSVDialect" default="null" />
+			<param index="4" name="include_headers" type="bool" default="true" />
+			<description>
+				Splits [param path] into files in [param output_dir], writing up to [param rows_per_file] rows per output file.
+			</description>
+		</method>
+	</methods>
+</class>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SteamAchievementInfo" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Metadata for a single Steam achievement.
+	</brief_description>
+	<description>
+		Returned by [method Steam.get_achievement_info] and [method Steam.get_all_achievements]. Includes localized display data and an optional [Image] icon converted from Steam RGBA image data.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_api_name" qualifiers="const">
+			<return type="String" />
+			<description>
+				Steamworks API name for the achievement.
+			</description>
+		</method>
+		<method name="get_description" qualifiers="const">
+			<return type="String" />
+			<description>
+				Localized achievement description.
+			</description>
+		</method>
+		<method name="get_display_name" qualifiers="const">
+			<return type="String" />
+			<description>
+				Localized achievement title.
+			</description>
+		</method>
+		<method name="get_icon" qualifiers="const">
+			<return type="Image" />
+			<description>
+				Achievement icon as an RGBA [Image], or [code]null[/code] if unavailable.
+			</description>
+		</method>
+		<method name="get_unlock_time" qualifiers="const">
+			<return type="int" />
+			<description>
+				Unix timestamp when the achievement was unlocked, or [code]0[/code] if not unlocked or unknown.
+			</description>
+		</method>
+		<method name="is_achieved" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Whether the local user has unlocked this achievement.
+			</description>
+		</method>
+		<method name="is_hidden" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Whether the achievement is hidden in the Steam community UI until unlocked.
+			</description>
+		</method>
+	</methods>
+</class>

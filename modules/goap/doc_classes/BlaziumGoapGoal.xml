@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="BlaziumGoapGoal" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A goal that an agent attempts to satisfy using a sequence of actions.
+	</brief_description>
+	<description>
+		[BlaziumGoapGoal] defines a desired state that an AI agent wants to reach. When evaluated, the action planner attempts to find a path of [BlaziumGoapAction] sequences whose combined effects fulfill this goal's [member desired_state]. The agent automatically prioritizes the goal with the highest [member priority].
+		Example usage:
+		[codeblock]
+		class_name GoalSurvive extends BlaziumGoapGoal
+
+		var achieved := false
+
+		func _init():
+		    set_name("SurviveGoal")
+		    priority = 10
+		    desired_state = {"has_campfire": true}
+
+		func _on_goal_achieved():
+		    achieved = true
+		[/codeblock]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_enter" qualifiers="virtual">
+			<return type="void" />
+			<description>
+				Called natively right before the agent actively begins following the plan for this goal.
+			</description>
+		</method>
+		<method name="_exit" qualifiers="virtual">
+			<return type="void" />
+			<description>
+				Called natively right after the agent stops following the plan for this goal.
+			</description>
+		</method>
+		<method name="_get_cost" qualifiers="virtual const">
+			<return type="int" />
+			<param index="0" name="blackboard" type="Dictionary" />
+			<description>
+				Calculates dynamic cost evaluations. Used natively if the goal incorporates variable state weights.
+			</description>
+		</method>
+		<method name="_get_priority" qualifiers="virtual const">
+			<return type="int" />
+			<description>
+				Called conditionally when the Agent sorts goals. Returning a dynamic number here allows the goal to spike in priority dynamically based on health or real-time world events.
+			</description>
+		</method>
+		<method name="_is_valid" qualifiers="virtual const">
+			<return type="bool" />
+			<description>
+				Evaluated continuously while the goal is active or queued. Natively aborts the plan entirely if this suddenly returns false.
+			</description>
+		</method>
+		<method name="_on_goal_achieved" qualifiers="virtual">
+			<return type="void" />
+			<description>
+				Invoked securely exactly when all sequence actions finish cleanly natively matching the desired state organically.
+			</description>
+		</method>
+		<method name="_on_goal_failed" qualifiers="virtual">
+			<return type="void" />
+			<description>
+				Invoked securely when the A* planner cannot resolve a path, or an action breaks midway invalidating the sequence.
+			</description>
+		</method>
+		<method name="_perform" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="delta" type="float" />
+			<description>
+				A tick function executing recursively inside the active Godot process frame while this specific goal manages the active plan natively.
+			</description>
+		</method>
+		<method name="_prepare" qualifiers="virtual">
+			<return type="void" />
+			<description>
+				Calculates variables linearly right before resolving dynamic traits in the agent loop natively.
+			</description>
+		</method>
+		<method name="enter">
+			<return type="void" />
+			<description>
+				C++ wrapper triggering [method _enter].
+			</description>
+		</method>
+		<method name="exit">
+			<return type="void" />
+			<description>
+				C++ wrapper triggering [method _exit].
+			</description>
+		</method>
+		<method name="get_action_name" qualifiers="const">
+			<return type="StringName" />
+			<description>
+				Returns the object's configured node name natively.
+			</description>
+		</method>
+		<method name="get_agent" qualifiers="const">
+			<return type="BlaziumGoapAgent" />
+			<description>
+				Returns the [BlaziumGoapAgent] natively resolving this Goal.
+			</description>
+		</method>
+		<method name="get_cost" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="blackboard" type="Dictionary" />
+			<description>
+				Evaluates the cost dynamically through [method _get_cost] and base [member cost].
+			</description>
+		</method>
+		<method name="get_priority" qualifiers="const">
+			<return type="int" />
+			<description>
+				Calculates final execution priority natively mapping [method _get_priority].
+			</description>
+		</method>
+		<method name="init">
+			<return type="void" />
+			<param index="0" name="actor" type="Node" />
+			<param index="1" name="world_state" type="BlaziumGoapWorldState" />
+			<description>
+				Links references directly with the parent orchestration Agent.
+			</description>
+		</method>
+		<method name="is_performing" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns true if this Goal currently holds control asynchronously.
+			</description>
+		</method>
+		<method name="is_valid" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Internal validity checker wrapping [method _is_valid].
+			</description>
+		</method>
+		<method name="on_goal_achieved">
+			<return type="void" />
+			<description>
+				C++ callback directly invoking [method _on_goal_achieved].
+			</description>
+		</method>
+		<method name="on_goal_failed">
+			<return type="void" />
+			<description>
+				C++ callback directly invoking [method _on_goal_failed].
+			</description>
+		</method>
+		<method name="perform">
+			<return type="void" />
+			<param index="0" name="delta" type="float" />
+			<description>
+				C++ frame loop invoking [method _perform].
+			</description>
+		</method>
+		<method name="prepare">
+			<return type="void" />
+			<description>
+				Internal setup resolving [method _prepare].
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="cost" type="int" setter="set_base_cost" getter="get_base_cost" default="0">
+			A static cost modifier utilized by the A* calculation metric pathing.
+		</member>
+		<member name="default_valid_state" type="bool" setter="set_default_valid_state" getter="get_default_valid_state" default="true">
+			Determines baseline validity for tracking natively if no GDScript override acts upon the goal.
+		</member>
+		<member name="desired_state" type="Dictionary" setter="set_desired_state" getter="get_desired_state" default="{}">
+			The explicit dictionary requirements necessary to satisfy this goal natively through the action loop planner.
+		</member>
+		<member name="enabled" type="bool" setter="set_enabled" getter="is_enabled" default="true">
+			Flags whether the goal can natively be selected by the agent for processing.
+		</member>
+		<member name="priority" type="int" setter="set_base_priority" getter="get_base_priority" default="0">
+			The raw priority used when calculating which goal assumes control. Higher priority takes precedent.
+		</member>
+	</members>
+</class>

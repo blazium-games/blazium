@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SignalClient" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		WebSocket client for the Blazium lobby and signaling protocol.
+	</brief_description>
+	<description>
+		Speaks protocol v1 JSON envelopes to an example [code]blazium-signal[/code] service: rooms, SDP/ICE, fake addresses, and last-resort datagram relay. [WebRTCEnetSession] owns one of these. Game code can also use it to build other utilities against the same contract.
+		This client never talks to TURN's internal session API.
+	</description>
+	<tutorials>
+		<link title="games_enet_webrtc Module Tests">https://github.com/blazium-games/games_enet_webrtc_module_tests</link>
+		<link title="Example signaling service">https://github.com/blazium-games/blazium-signal</link>
+		<link title="Example TURN service">https://github.com/blazium-games/blazium-turn</link>
+	</tutorials>
+	<methods>
+		<method name="close">
+			<return type="void" />
+			<description>
+				Closes the signaling WebSocket.
+			</description>
+		</method>
+		<method name="configure">
+			<return type="int" enum="Error" />
+			<param index="0" name="url" type="String" />
+			<param index="1" name="game_id" type="String" />
+			<param index="2" name="auth_token" type="String" />
+			<description>
+				Sets [code]ws://[/code] or [code]wss://[/code] URL, game namespace, and optional bearer token.
+			</description>
+		</method>
+		<method name="connect_to_signal">
+			<return type="int" enum="Error" />
+			<description>
+				Opens the WebSocket. Sends [code]X-Game-Id[/code] and optional [code]Authorization[/code] headers.
+			</description>
+		</method>
+		<method name="is_open" qualifiers="const">
+			<return type="bool" />
+			<description>
+				True when the signaling WebSocket is open.
+			</description>
+		</method>
+		<method name="poll">
+			<return type="void" />
+			<description>
+				Must be called regularly. [WebRTCEnetSession] does this from [method Node._process].
+			</description>
+		</method>
+		<method name="send_message">
+			<return type="int" enum="Error" />
+			<param index="0" name="type" type="int" />
+			<param index="1" name="data" type="Dictionary" />
+			<param index="2" name="id" type="int" default="0" />
+			<description>
+				Sends a protocol v1 envelope [code]{ "v": 1, "type": type, "id": id, "data": data }[/code].
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="connected">
+			<description>
+				The signaling WebSocket is open.
+			</description>
+		</signal>
+		<signal name="disconnected">
+			<description>
+				The signaling WebSocket closed after having been open.
+			</description>
+		</signal>
+		<signal name="message_received">
+			<param index="0" name="type" type="int" />
+			<param index="1" name="id" type="int" />
+			<param index="2" name="data" type="Dictionary" />
+			<description>
+				A parsed protocol envelope from the server.
+			</description>
+		</signal>
+	</signals>
+</class>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AutorunInf" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Builds an [code]autorun.inf[/code] document for Windows disc and USB packaging.
+	</brief_description>
+	<description>
+		Assembles the [code][autorun][/code] section used by [EditorExportDeviceAutorun]. USB flash drives on Windows 7 and later ignore [code]OPEN=[/code] and [code]ACTION=[/code]; this class does not change AutoRun policy.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="build" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the [code]autorun.inf[/code] text, including optional [code]shell\verb[/code] command pairs.
+			</description>
+		</method>
+		<method name="usb_note_text" qualifiers="static">
+			<return type="String" />
+			<description>
+				Returns the USB AutoPlay limitation note written as [code]START.txt[/code] when [code]autorun/write_usb_note[/code] is enabled.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="action" type="String" setter="set_action" getter="get_action" default="&quot;&quot;">
+			Maps to [code]ACTION=[/code].
+		</member>
+		<member name="icon" type="String" setter="set_icon" getter="get_icon" default="&quot;&quot;">
+			Maps to [code]ICON=[/code].
+		</member>
+		<member name="label" type="String" setter="set_label" getter="get_label" default="&quot;&quot;">
+			Maps to [code]LABEL=[/code].
+		</member>
+		<member name="open" type="String" setter="set_open" getter="get_open" default="&quot;&quot;">
+			Maps to [code]OPEN=[/code].
+		</member>
+		<member name="shell" type="String" setter="set_shell" getter="get_shell" default="&quot;&quot;">
+			Default shortcut-menu verb ([code]shell=[/code]).
+		</member>
+		<member name="shell_verbs" type="Dictionary" setter="set_shell_verbs" getter="get_shell_verbs" default="{}">
+			Extra [code]shell\verb[/code] / [code]shell\verb\command[/code] pairs. Keys are verb names; values are commands.
+		</member>
+	</members>
+</class>

@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CSVAsyncTask" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Asynchronous CSV and DSV load/save task.
+	</brief_description>
+	<description>
+		CSVAsyncTask runs CSV or DSV load/save work on a background thread. Use the static constructors to configure a task, call [method start], then poll state or wait with [method wait_to_finish]. Load tasks expose rows with [method get_rows] and [method get_table].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="cancel">
+			<return type="void" />
+			<description>
+				Requests cancellation. The task stops between row operations.
+			</description>
+		</method>
+		<method name="get_error" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the task error message, or an empty string when no error occurred.
+			</description>
+		</method>
+		<method name="get_progress" qualifiers="const">
+			<return type="float" />
+			<description>
+				Returns progress in the range [code]0.0[/code] to [code]1.0[/code].
+			</description>
+		</method>
+		<method name="get_rows" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns loaded rows for load tasks. Save tasks return an empty array.
+			</description>
+		</method>
+		<method name="get_table" qualifiers="const">
+			<return type="CSVTable" />
+			<description>
+				Returns loaded rows wrapped in a [CSVTable].
+			</description>
+		</method>
+		<method name="is_cancelled" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the task finished due to cancellation.
+			</description>
+		</method>
+		<method name="is_done" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when the task has finished, failed, or been cancelled.
+			</description>
+		</method>
+		<method name="is_running" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] while the background thread is active.
+			</description>
+		</method>
+		<method name="load_csv" qualifiers="static">
+			<return type="CSVAsyncTask" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="delimiter" type="String" default="&quot;,&quot;" />
+			<param index="2" name="headers" type="bool" default="false" />
+			<param index="3" name="cast_fields" type="bool" default="true" />
+			<param index="4" name="options" type="Dictionary" default="{}" />
+			<description>
+				Creates a task that loads typed CSV rows from [param path].
+			</description>
+		</method>
+		<method name="load_dsv" qualifiers="static">
+			<return type="CSVAsyncTask" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="delimiter" type="String" default="&quot;,&quot;" />
+			<param index="2" name="options" type="Dictionary" default="{}" />
+			<description>
+				Creates a task that loads raw DSV rows from [param path].
+			</description>
+		</method>
+		<method name="save_csv" qualifiers="static">
+			<return type="CSVAsyncTask" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="rows" type="Array" />
+			<param index="2" name="delimiter" type="String" default="&quot;,&quot;" />
+			<param index="3" name="headers" type="bool" default="false" />
+			<param index="4" name="options" type="Dictionary" default="{}" />
+			<description>
+				Creates a task that saves CSV rows to [param path]. [param options] may include [code]header_names[/code], [code]color_as_hex[/code], and [code]hex_include_alpha[/code].
+			</description>
+		</method>
+		<method name="save_dsv" qualifiers="static">
+			<return type="CSVAsyncTask" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="rows" type="Array" />
+			<param index="2" name="delimiter" type="String" default="&quot;,&quot;" />
+			<description>
+				Creates a task that saves raw DSV rows to [param path].
+			</description>
+		</method>
+		<method name="start">
+			<return type="int" enum="Error" />
+			<description>
+				Starts the background task.
+			</description>
+		</method>
+		<method name="wait_to_finish">
+			<return type="void" />
+			<description>
+				Blocks until the background thread finishes. This is useful for tests or command-line workflows.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="cancelled">
+			<description>
+				Emitted when the task finishes due to cancellation.
+			</description>
+		</signal>
+		<signal name="completed">
+			<description>
+				Emitted when the task finishes successfully.
+			</description>
+		</signal>
+		<signal name="failed">
+			<param index="0" name="error" type="String" />
+			<description>
+				Emitted when the task fails.
+			</description>
+		</signal>
+		<signal name="progress_changed">
+			<param index="0" name="progress" type="float" />
+			<description>
+				Emitted when task progress changes.
+			</description>
+		</signal>
+	</signals>
+</class>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AutoworkDoubler" inherits="RefCounted" experimental="Some methods may not be implemented and may be changed in future versions." xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Creates test doubles for scenes and scripts.
+	</brief_description>
+	<description>
+		The AutoworkDoubler is responsible for generating test doubles, such as mocks and stubs, for use in unit tests.
+
+		Test doubles allow developers to replace real scenes or scripts with controlled substitutes, making it easier to isolate behavior and simulate specific conditions during testing.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="double_scene">
+			<return type="Variant" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Creates a test double for the scene at the given [param path].
+			</description>
+		</method>
+		<method name="double_script">
+			<return type="Variant" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Creates a test double for the script at the given [param path].
+			</description>
+		</method>
+		<method name="set_spy">
+			<return type="void" />
+			<param index="0" name="spy" type="AutoworkSpy" />
+			<description>
+				Sets the [AutoworkSpy] instance used by the doubler.
+			</description>
+		</method>
+		<method name="set_stubber">
+			<return type="void" />
+			<param index="0" name="stubber" type="AutoworkStubber" />
+			<description>
+				Sets the [AutoworkStubber] instance used by the doubler.
+			</description>
+		</method>
+	</methods>
+</class>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="YoutubePlayablesResponse" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Generic response from a [YoutubePlayablesClient] call.
+	</brief_description>
+	<description>
+		Generic response from a [YoutubePlayablesClient] call. Await on [signal finished] signal to get the [YoutubePlayablesResult].
+	</description>
+	<tutorials>
+	</tutorials>
+	<signals>
+		<signal name="finished">
+			<param index="0" name="result" type="YoutubePlayablesResult" />
+			<description>
+				Signal emitted when the request has finished.
+			</description>
+		</signal>
+	</signals>
+</class>

@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JWT" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Singleton for JSON Web Token (JWT) encoding, decoding, validation, and cryptographic operations.
+	</brief_description>
+	<description>
+		The JWT singleton provides a toolkit for Godot to handle RFC-7519 JSON Web Tokens. It supports encoding, decoding, and validation of JWTs using RS256 and HS256 algorithms. It also provides functionality for key rotation, and token revocation via JTIs.
+		[codeblock]
+		var builder = JWTBuilder.new().set_algorithm('HS256').add_claim('user', 'admin')
+		var token = builder.sign('secret')
+		print(JWT.parse(token).get_claim_as_string('user'))
+		[/codeblock]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="base64url_decode">
+			<return type="String" />
+			<param index="0" name="b64url" type="String" />
+			<description>
+				Decodes a Base64Url-encoded string into a standard String.
+			</description>
+		</method>
+		<method name="base64url_encode">
+			<return type="String" />
+			<param index="0" name="str" type="String" />
+			<description>
+				Encodes a String into a Base64Url-encoded string.
+			</description>
+		</method>
+		<method name="clear_revoked">
+			<return type="void" />
+			<description>
+				Clears all revoked JTIs from the internal blacklist cache.
+			</description>
+		</method>
+		<method name="create_jwt">
+			<return type="String" />
+			<param index="0" name="header" type="Dictionary" />
+			<param index="1" name="payload" type="Dictionary" />
+			<param index="2" name="key" type="Variant" />
+			<description>
+				Creates a JWT from a header and payload dictionary. The key type depends on the algorithm.
+			</description>
+		</method>
+		<method name="create_jwt_hs256">
+			<return type="String" />
+			<param index="0" name="header" type="Dictionary" />
+			<param index="1" name="payload" type="Dictionary" />
+			<param index="2" name="secret" type="String" />
+			<description>
+				Creates a JWT signed with HMAC SHA-256 (HS256) using a given secret string.
+			</description>
+		</method>
+		<method name="create_jwt_rs256">
+			<return type="String" />
+			<param index="0" name="header" type="Dictionary" />
+			<param index="1" name="payload" type="Dictionary" />
+			<param index="2" name="key" type="CryptoKey" />
+			<description>
+				Creates a JWT signed with RSA (RS256) using a CryptoKey.
+			</description>
+		</method>
+		<method name="create_jwt_timed">
+			<return type="String" />
+			<param index="0" name="header" type="Dictionary" />
+			<param index="1" name="payload" type="Dictionary" />
+			<param index="2" name="key" type="Variant" />
+			<param index="3" name="validity_seconds" type="float" />
+			<description>
+				Deprecated. Prefer using [JWTBuilder] with [method JWTBuilder.set_expiration] instead.
+			</description>
+		</method>
+		<method name="decode">
+			<return type="Dictionary" />
+			<param index="0" name="jwt" type="String" />
+			<description>
+				Decodes the JWT payload into a dictionary without validating the signature. Do not use for authentication.
+			</description>
+		</method>
+		<method name="get_algorithm">
+			<return type="String" />
+			<param index="0" name="jwt" type="String" />
+			<description>
+				Extracts the algorithm (`alg`) from the unverified JWT header.
+			</description>
+		</method>
+		<method name="get_claim">
+			<return type="Variant" />
+			<param index="0" name="jwt" type="String" />
+			<param index="1" name="claim" type="String" />
+			<description>
+				Extracts a specific claim from the unverified JWT payload.
+			</description>
+		</method>
+		<method name="get_header">
+			<return type="Dictionary" />
+			<param index="0" name="jwt" type="String" />
+			<description>
+				Decodes and returns the JWT header as a dictionary without validating the signature.
+			</description>
+		</method>
+		<method name="get_kid">
+			<return type="String" />
+			<param index="0" name="jwt" type="String" />
+			<description>
+				Extracts the Key ID (`kid`) from the unverified JWT header.
+			</description>
+		</method>
+		<method name="get_payload">
+			<return type="Dictionary" />
+			<param index="0" name="jwt" type="String" />
+			<description>
+				Decodes and returns the JWT payload as a dictionary without validating the signature.
+			</description>
+		</method>
+		<method name="get_signature">
+			<return type="String" />
+			<param index="0" name="jwt" type="String" />
+			<description>
+				Extracts the signature portion of the JWT.
+			</description>
+		</method>
+		<method name="has_claim">
+			<return type="bool" />
+			<param index="0" name="jwt" type="String" />
+			<param index="1" name="claim" type="String" />
+			<description>
+				Returns `true` if the unverified JWT payload contains the specified claim.
+			</description>
+		</method>
+		<method name="is_expired">
+			<return type="bool" />
+			<param index="0" name="jwt" type="String" />
+			<description>
+				Checks whether the JWT is expired based on its `exp` claim. Does not validate the signature.
+			</description>
+		</method>
+		<method name="is_revoked" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="jti" type="String" />
+			<description>
+				Checks whether the specified JTI has been explicitly revoked in the internal blacklist.
+			</description>
+		</method>
+		<method name="parse">
+			<return type="DecodedJWT" />
+			<param index="0" name="jwt" type="String" />
+			<description>
+				Parses an encoded JWT string and returns a [DecodedJWT] object for easier inspection. Does not validate the signature.
+			</description>
+		</method>
+		<method name="revoke_jti">
+			<return type="void" />
+			<param index="0" name="jti" type="String" />
+			<description>
+				Adds a JTI claim to the internal blacklist. Any future validation of tokens containing this JTI will fail.
+			</description>
+		</method>
+		<method name="validate">
+			<return type="bool" />
+			<param index="0" name="jwt" type="String" />
+			<param index="1" name="key" type="Variant" />
+			<description>
+				Validates the JWT's signature against the provided key. The key must be a [String] for HS256 or a [CryptoKey] for RS256.
+			</description>
+		</method>
+		<method name="validate_any">
+			<return type="bool" />
+			<param index="0" name="jwt" type="String" />
+			<param index="1" name="keys" type="Array" />
+			<description>
+				Validates the JWT's signature against an array of keys. It returns `true` if any key correctly validates the token.
+			</description>
+		</method>
+		<method name="validate_claims">
+			<return type="bool" />
+			<param index="0" name="jwt" type="String" />
+			<param index="1" name="expected_claims" type="Dictionary" />
+			<description>
+				Validates that the JWT payload contains the exact claims specified in the `expected_claims` dictionary.
+			</description>
+		</method>
+		<method name="validate_claims_diagnostic">
+			<return type="PackedStringArray" />
+			<param index="0" name="jwt" type="String" />
+			<param index="1" name="expected_claims" type="Dictionary" />
+			<description>
+				Validates claims against the `expected_claims` dictionary and returns an array of keys that failed validation.
+			</description>
+		</method>
+		<method name="validate_diagnostic">
+			<return type="Dictionary" />
+			<param index="0" name="jwt" type="String" />
+			<param index="1" name="key" type="Variant" />
+			<description>
+				Evaluates the JWT signature and structural validity, returning a dictionary detailing `valid`, `error`, and internal constraints.
+			</description>
+		</method>
+		<method name="validate_header_claims">
+			<return type="bool" />
+			<param index="0" name="jwt" type="String" />
+			<param index="1" name="expected_claims" type="Dictionary" />
+			<description>
+				Validates that the JWT header contains the exact claims specified in the `expected_claims` dictionary.
+			</description>
+		</method>
+		<method name="validate_signature_hs256">
+			<return type="bool" />
+			<param index="0" name="jwt" type="String" />
+			<param index="1" name="secret" type="String" />
+			<description>
+				Validates an HS256 JWT signature using the explicit string secret.
+			</description>
+		</method>
+		<method name="validate_signature_rs256">
+			<return type="bool" />
+			<param index="0" name="jwt" type="String" />
+			<param index="1" name="key" type="CryptoKey" />
+			<description>
+				Validates an RS256 JWT signature using the provided [CryptoKey].
+			</description>
+		</method>
+		<method name="validate_timing">
+			<return type="bool" />
+			<param index="0" name="jwt" type="String" />
+			<param index="1" name="leeway_seconds" type="float" default="0.0" />
+			<description>
+				Validates the `exp` (expiration) and `nbf` (not before) claims against the current time, with an optional clock leeway in seconds.
+			</description>
+		</method>
+		<method name="validate_with_map">
+			<return type="bool" />
+			<param index="0" name="jwt" type="String" />
+			<param index="1" name="key_map" type="Dictionary" />
+			<description>
+				Validates the JWT using a map of keys. It automatically selects the correct key from the `key_map` dictionary based on the token's `kid` header.
+			</description>
+		</method>
+	</methods>
+</class>

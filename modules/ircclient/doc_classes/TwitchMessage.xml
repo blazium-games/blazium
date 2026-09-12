@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TwitchMessage" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Represents a fully parsed raw Twitch IRC protocol message.
+	</brief_description>
+	<description>
+		Extends the standardized IRC message to incorporate Twitch-specific capabilities such as badges, emotes, cheer tracking, and native broadcaster flags seamlessly mapped into a standalone node wrapper natively.
+	</description>
+	<tutorials>
+		<link title="IRCClient Developer Examples">https://github.com/blazium-games/irc_module_tests</link>
+	</tutorials>
+	<methods>
+		<method name="get_color" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="tags" type="Dictionary" />
+			<description>
+				Returns a hexadecimal hex code string signifying the external user's customizable chat display aesthetic coloration naturally.
+			</description>
+		</method>
+		<method name="get_display_name" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="tags" type="Dictionary" />
+			<description>
+				Returns the localized Twitch identifier handle ensuring perfectly accurate case-sensitivity for accurate API tracking parameters.
+			</description>
+		</method>
+		<method name="get_msg_id" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="tags" type="Dictionary" />
+			<description>
+				Returns the msg id. [param tags] - Tags.
+			</description>
+		</method>
+		<method name="get_room_id" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="tags" type="Dictionary" />
+			<description>
+				Returns the Twitch specific channel identifier natively binding the network elements to a standardized backend channel database layer securely.
+			</description>
+		</method>
+		<method name="get_twitch_command" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="message" type="IRCMessage" />
+			<description>
+				Returns the twitch command. [param message] - Message.
+			</description>
+		</method>
+		<method name="get_user_id" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="tags" type="Dictionary" />
+			<description>
+				Returns the sender's explicit numerical Twitch networking UUID identifier securely matching standard user configurations effectively.
+			</description>
+		</method>
+		<method name="is_moderator" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="tags" type="Dictionary" />
+			<description>
+				Returns [code]true[/code] if the target message sender structurally possesses generalized external channel administration flags securely.
+			</description>
+		</method>
+		<method name="is_subscriber" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="tags" type="Dictionary" />
+			<description>
+				Returns [code]true[/code] if the sender object registers perfectly natively inside the Twitch channel subscriber data configuration layer.
+			</description>
+		</method>
+		<method name="is_turbo" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="tags" type="Dictionary" />
+			<description>
+				Returns [code]true[/code] if turbo. [param tags] - Tags.
+			</description>
+		</method>
+		<method name="is_twitch_command" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="message" type="IRCMessage" />
+			<description>
+				Returns [code]true[/code] if twitch command. [param message] - Message.
+			</description>
+		</method>
+		<method name="is_vip" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="tags" type="Dictionary" />
+			<description>
+				Returns [code]true[/code] if the sequence client evaluates correctly against internal Twitch broadcasting administration privileges as a localized VIP.
+			</description>
+		</method>
+		<method name="parse_badges" qualifiers="static">
+			<return type="Dictionary" />
+			<param index="0" name="badges_string" type="String" />
+			<description>
+				Returns parse badges. [param badges_string] - Badges string.
+			</description>
+		</method>
+		<method name="parse_emote_sets" qualifiers="static">
+			<return type="Array" />
+			<param index="0" name="emote_sets_string" type="String" />
+			<description>
+				Returns parse emote sets. [param emote_sets_string] - Emote sets string.
+			</description>
+		</method>
+		<method name="parse_emotes" qualifiers="static">
+			<return type="Dictionary" />
+			<param index="0" name="emotes_string" type="String" />
+			<description>
+				Returns parse emotes. [param emotes_string] - Emotes string.
+			</description>
+		</method>
+		<method name="parse_system_message" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="system_msg" type="String" />
+			<description>
+				Returns parse system message. [param system_msg] - System msg.
+			</description>
+		</method>
+	</methods>
+</class>

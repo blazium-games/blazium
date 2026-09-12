@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GDK" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Native Xbox GDK runtime singleton for Xbox on PC.
+	</brief_description>
+	<description>
+		Access via [code]Engine.get_singleton("GDK")[/code]. Provides Xbox Game Runtime initialization, task-queue dispatch, and Xbox Live service namespaces.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="initialize">
+			<return type="GDKResult" />
+			<param index="0" name="config" type="Variant" default="null" />
+			<description>
+				Initializes the GDK runtime and shared task queue.
+			</description>
+		</method>
+		<method name="shutdown">
+			<return type="void" />
+			<description>
+				Shuts down the active GDK session (process-lifetime runtime remains until exit).
+			</description>
+		</method>
+		<method name="is_available">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when this build was compiled with GDK support.
+			</description>
+		</method>
+		<method name="is_initialized">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] after a successful [method initialize] call.
+			</description>
+		</method>
+		<method name="dispatch">
+			<return type="int" />
+			<description>
+				Pumps the GDK completion port; call each frame or enable [code]gdk/runtime/embed_dispatch[/code].
+			</description>
+		</method>
+	</methods>
+</class>

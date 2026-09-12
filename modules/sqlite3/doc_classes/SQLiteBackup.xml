@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SQLiteBackup" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Provides control over an ongoing database backup or restore operation.
+	</brief_description>
+	<description>
+		Represents a backup process between two databases. It allows copying data incrementally, making it suitable for non-blocking or asynchronous backup and restore operations.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="finish">
+			<return type="void" />
+			<description>
+				Completes the backup operation and releases associated resources.
+				This should be called when the backup is no longer needed or has finished.
+			</description>
+		</method>
+		<method name="get_page_count" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the total number of pages in the source database being backed up.
+			</description>
+		</method>
+		<method name="get_remaining" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the number of pages that still need to be copied to complete the backup.
+			</description>
+		</method>
+		<method name="step">
+			<return type="int" />
+			<param index="0" name="pages" type="int" default="100" />
+			<description>
+				Copies up to [param pages] pages from the source database to the destination.
+
+				Returns a result code indicating the current state of the operation.
+				Repeated calls can be made until all pages are copied.
+			</description>
+		</method>
+	</methods>
+</class>

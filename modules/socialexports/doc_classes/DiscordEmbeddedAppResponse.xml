@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DiscordEmbeddedAppResponse" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Generic response from a [DiscordEmbeddedAppClient] call.
+	</brief_description>
+	<description>
+		Generic response from a [DiscordEmbeddedAppClient] call. Await on [signal finished] signal to get the [DiscordEmbeddedAppResult].
+	</description>
+	<tutorials>
+	</tutorials>
+	<signals>
+		<signal name="finished">
+			<param index="0" name="result" type="DiscordEmbeddedAppResult" />
+			<description>
+				Signal emitted when the request is finished.
+			</description>
+		</signal>
+	</signals>
+</class>

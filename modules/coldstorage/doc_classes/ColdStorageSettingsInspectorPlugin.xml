@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ColdStorageSettingsInspectorPlugin" inherits="EditorInspectorPlugin" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Inspector plugin that injects ColdStorage connection controls.
+	</brief_description>
+	<description>
+		Replaces the [code]blazium/coldstorage/z_connection_controls[/code] sentinel property with [ColdStorageSettingsUI].
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

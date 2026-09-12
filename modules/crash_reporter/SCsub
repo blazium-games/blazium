@@ -1,0 +1,85 @@
+#!/usr/bin/env python
+from misc.utility.scons_hints import *
+
+Import("env")
+Import("env_modules")
+
+env_crash = env_modules.Clone()
+
+env_crash.add_source_files(env.modules_sources, "register_types.cpp")
+env_crash.add_source_files(env.modules_sources, "crash_reporter.cpp")
+env_crash.add_source_files(env.modules_sources, "crash_reporter_project_settings.cpp")
+env_crash.add_source_files(env.modules_sources, "crash_reporter_util.cpp")
+env_crash.add_source_files(env.modules_sources, "crash_reporter_http.cpp")
+
+if (
+    env.get("use_breakpad")
+    or "USE_BREAKPAD" in env.get("CPPDEFINES", [])
+    or "CRASH_REPORTER_ENABLED" in [d if isinstance(d, str) else "" for d in env.get("CPPDEFINES", [])]
+):
+    pass
+
+use_breakpad = False
+for d in env.get("CPPDEFINES", []):
+    name = d[0] if isinstance(d, tuple) else d
+    if name in ("USE_BREAKPAD", "CRASH_REPORTER_ENABLED"):
+        use_breakpad = True
+        break
+
+if env.get("crash_reporter") and not env.editor_build:
+    use_breakpad = True
+if env.get("editor_crash_reporter") and env.editor_build:
+    use_breakpad = True
+
+if use_breakpad:
+    env_crash.Prepend(CPPPATH=["#thirdparty/breakpad/src"])
+    env_crash.add_source_files(env.modules_sources, "breakpad_linuxbsd_windows.cpp")
+
+    env_bp = env_crash.Clone()
+    env_bp.disable_warnings()
+    env_bp.Append(CPPDEFINES=["_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING"])
+
+    thirdparty_dir = "#thirdparty/breakpad/"
+    # In-process client only. minidump_file_writer.cc is Linux (unistd.h).
+    # Out-of-process crash_generation_server / minidump_generator are omitted.
+    if env["platform"] == "windows":
+        # Breakpad Windows sources pass wchar_t* to TCHAR-mapped APIs.
+        env_bp.Append(CPPDEFINES=["UNICODE", "_UNICODE"])
+        thirdparty_sources = [
+            "src/client/windows/handler/exception_handler.cc",
+            "src/client/windows/crash_generation/crash_generation_client.cc",
+            "src/common/windows/guid_string.cc",
+            "src/common/windows/string_utils.cc",
+        ]
+    else:
+        thirdparty_sources = [
+            "src/common/convert_UTF.cc",
+            "src/common/md5.cc",
+            "src/common/string_conversion.cc",
+            "src/client/minidump_file_writer.cc",
+            "src/client/linux/handler/exception_handler.cc",
+            "src/client/linux/handler/minidump_descriptor.cc",
+            "src/client/linux/minidump_writer/minidump_writer.cc",
+            "src/client/linux/minidump_writer/linux_dumper.cc",
+            "src/client/linux/minidump_writer/linux_ptrace_dumper.cc",
+            "src/client/linux/dump_writer_common/thread_info.cc",
+            "src/client/linux/dump_writer_common/ucontext_reader.cc",
+            "src/client/linux/microdump_writer/microdump_writer.cc",
+            "src/client/linux/log/log.cc",
+            "src/client/linux/crash_generation/crash_generation_client.cc",
+            "src/common/linux/elfutils.cc",
+            "src/common/linux/file_id.cc",
+            "src/common/linux/guid_creator.cc",
+            "src/common/linux/linux_libc_support.cc",
+            "src/common/linux/memory_mapped_file.cc",
+            "src/common/linux/safe_readlink.cc",
+            "src/common/linux/breakpad_getcontext.S",
+        ]
+
+    env_bp.add_source_files(env.modules_sources, [thirdparty_dir + s for s in thirdparty_sources])
+
+if env["tests"]:
+    env_crash.Append(CPPDEFINES=["TESTS_ENABLED"])
+    env_crash.add_source_files(env.modules_sources, "tests/test_crash_reporter.cpp")
+    if env["disable_exceptions"]:
+        env_crash.Append(CPPDEFINES=["DOCTEST_CONFIG_NO_EXCEPTIONS_BUT_WITH_ALL_ASSERTS"])

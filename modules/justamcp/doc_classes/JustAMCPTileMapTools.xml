@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPTileMapTools" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Provides MCP tools for TileMap and tileset workflows.
+	</brief_description>
+	<description>
+		Registers tilemap-oriented tool schemas used by [JustAMCPToolExecutor]. These tools expose tile maps, tilesets, cells, layers, and related 2D level data to MCP clients.
+	</description>
+	<tutorials>
+		<link title="Model Context Protocol (MCP)">https://modelcontextprotocol.io/</link>
+	</tutorials>
+</class>

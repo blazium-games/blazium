@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AssetTagRuntime" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Runtime helpers for reading and baking asset tags outside the editor.
+	</brief_description>
+	<description>
+		Provides static APIs to read cached project tag assignments at runtime and to bake per-asset tag sidecars into an export output directory.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="bake_tags_for_export" qualifiers="static">
+			<return type="int" enum="Error" />
+			<param index="0" name="export_output_dir" type="String" />
+			<description>
+				Writes per-asset tag sidecar JSON files under [param export_output_dir]. Returns [constant OK] on success, or an [enum Error] if the bake fails.
+			</description>
+		</method>
+		<method name="invalidate_cache" qualifiers="static">
+			<return type="void" />
+			<description>
+				Clears the in-memory runtime tag index cache so the next read reloads from disk.
+			</description>
+		</method>
+		<method name="notify_sidecar_dirty" qualifiers="static">
+			<return type="void" />
+			<description>
+				Marks dirty sidecars for merge into the runtime cache on the next read.
+			</description>
+		</method>
+		<method name="read_tags_for_asset" qualifiers="static">
+			<return type="PackedStringArray" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Returns the cached tags assigned to the project asset at [param path].
+			</description>
+		</method>
+		<method name="read_tags_for_export_bake" qualifiers="static">
+			<return type="PackedStringArray" />
+			<param index="0" name="export_output_dir" type="String" />
+			<param index="1" name="path" type="String" />
+			<description>
+				Reads baked tags for [param path] from sidecars under [param export_output_dir].
+			</description>
+		</method>
+	</methods>
+</class>

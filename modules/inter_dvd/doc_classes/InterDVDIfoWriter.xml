@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="InterDVDIfoWriter" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Writes a VIDEO_TS / AUDIO_TS DVD-Video volume from an [InterDVDProject].
+	</brief_description>
+	<description>
+		Creates unencrypted IFO/BUP/VOB files for burning. There is no in-engine disc player. Dummy title VOBs are for tests only when no MPEG-2 cell is available.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="copy_extras" qualifiers="static">
+			<return type="int" enum="Error" />
+			<param index="0" name="work_dir" type="String" />
+			<param index="1" name="project" type="InterDVDProject" />
+			<description>
+				Copies [member InterDVDProject.extras] and [member InterDVDProject.extras_dir] onto the disc root next to [code]VIDEO_TS[/code].
+			</description>
+		</method>
+		<method name="toolchain_iso_args" qualifiers="static">
+			<return type="PackedStringArray" />
+			<param index="0" name="work_dir" type="String" />
+			<param index="1" name="iso_path" type="String" />
+			<param index="2" name="meta_path" type="String" />
+			<description>
+				Argument list for [code]blazium-toolchain interdvd iso[/code] ([code]--dir[/code], [code]--out[/code], [code]--meta[/code], [code]--write-meta[/code], [code]--json[/code]). Does not invoke mkisofs or oscdimg.
+			</description>
+		</method>
+		<method name="write_disc_meta" qualifiers="static">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="project" type="InterDVDProject" />
+			<description>
+				Writes [code]disc.interdvd.json[/code] with schema [code]blazium.interdvd.meta/v1[/code] from [param project] extras and identity fields.
+			</description>
+		</method>
+		<method name="write_video_ts" qualifiers="static">
+			<return type="int" enum="Error" />
+			<param index="0" name="root" type="String" />
+			<param index="1" name="project" type="InterDVDProject" />
+			<param index="2" name="allow_dummy_vob" type="bool" default="false" />
+			<param index="3" name="ffmpeg" type="String" default="&quot;&quot;" />
+			<param index="4" name="auto_find_ffmpeg" type="bool" default="true" />
+			<param index="5" name="progress" type="InterDVDExportProgress" default="null" />
+			<description>
+				Writes [code]VIDEO_TS[/code], [code]AUDIO_TS[/code], extras, and [code]disc.interdvd.json[/code] under [param root]. Returns [constant OK] on success. Every [InterDVDCell] on a title is muxed into [code]VTS_01_1.VOB[/code] (append + reindex). Cell N is chapter N (PGN N / PTT N). A cell can use [member InterDVDCell.encoded_path], bake [member InterDVDCell.packed_scene] for [member InterDVDCell.duration_sec], copy an already-encoded MPEG-2/VOB [member InterDVDCell.source_path], or transcode other sources through [code]blazium-toolchain interdvd ffmpeg[/code]. [param ffmpeg] and [param auto_find_ffmpeg] are unused; encoding always goes through the toolchain. When [param allow_dummy_vob] is [code]true[/code], a dummy title VOB is written if no cell or toolchain is available. [param progress] receives step/total/label updates and prints elapsed plus ETA.
+			</description>
+		</method>
+	</methods>
+</class>

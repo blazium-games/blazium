@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPPrompt" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Base class for prompts exposed through the MCP prompt API.
+	</brief_description>
+	<description>
+		[JustAMCPPrompt] defines the prompt interface used by [JustAMCPPromptExecutor]. Subclasses provide a prompt schema, render prompt messages from arguments, and optionally provide completions for prompt argument values.
+		[codeblock]
+		var prompt = JustAMCPPromptBlaziumContext.new()
+		print(prompt.get_name())
+		print(prompt.get_prompt())
+		[/codeblock]
+	</description>
+	<tutorials>
+		<link title="Model Context Protocol (MCP)">https://modelcontextprotocol.io/</link>
+	</tutorials>
+	<methods>
+		<method name="complete">
+			<return type="Dictionary" />
+			<param index="0" name="argument" type="Dictionary" />
+			<description>
+				Returns completion suggestions for one prompt argument. The [param argument] dictionary follows the MCP completion request shape and usually contains the argument name and current value.
+			</description>
+		</method>
+		<method name="get_messages">
+			<return type="Dictionary" />
+			<param index="0" name="args" type="Dictionary" />
+			<description>
+				Renders this prompt with [param args] and returns an MCP-compatible prompt result dictionary containing message content or an error.
+			</description>
+		</method>
+		<method name="get_name" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the stable prompt name used by [method JustAMCPPromptExecutor.get_prompt] and MCP prompt references.
+			</description>
+		</method>
+		<method name="get_prompt" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns this prompt's MCP schema dictionary, including its name, description, and accepted arguments.
+			</description>
+		</method>
+	</methods>
+</class>

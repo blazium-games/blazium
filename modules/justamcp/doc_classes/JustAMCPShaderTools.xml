@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPShaderTools" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Provides MCP tools for shader inspection and authoring workflows.
+	</brief_description>
+	<description>
+		Registers shader-oriented tool schemas used by [JustAMCPToolExecutor]. These tools expose shader resources, material shader assignments, and shader code helpers for MCP clients.
+	</description>
+	<tutorials>
+		<link title="Model Context Protocol (MCP)">https://modelcontextprotocol.io/</link>
+	</tutorials>
+</class>

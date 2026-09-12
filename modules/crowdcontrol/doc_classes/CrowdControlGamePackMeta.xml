@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CrowdControlGamePackMeta" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Stores the metadata for a [CrowdControlGamePack].
+	</brief_description>
+	<description>
+		[CrowdControlGamePackMeta] represents the public-facing information about your game context in CrowdControl, such as its name, description, selected platform, and optional Steam ID.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="to_json" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Serializes this [CrowdControlGamePackMeta] into a JSON-compatible dictionary to be embedded into the GamePack export.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="connector" type="PackedStringArray" setter="set_connector" getter="get_connector" default="PackedStringArray(&quot;ExternalUnity&quot;)">
+			List of connectors supported by this game pack.
+		</member>
+		<member name="description" type="String" setter="set_description" getter="get_description" default="&quot;&quot;">
+			Human-readable description of the game pack.
+		</member>
+		<member name="game_name" type="Variant" setter="set_game_name" getter="get_game_name" default="null">
+			Display name of the game.
+		</member>
+		<member name="guide_url" type="String" setter="set_guide_url" getter="get_guide_url" default="&quot;&quot;">
+			URL to an external guide or documentation.
+		</member>
+		<member name="platform" type="String" setter="set_platform" getter="get_platform" default="&quot;PC&quot;">
+			Target platform for the game.
+		</member>
+		<member name="release_date" type="String" setter="set_release_date" getter="get_release_date" default="&quot;&quot;">
+			Release date of the game.
+		</member>
+		<member name="steam_id" type="int" setter="set_steam_id" getter="get_steam_id" default="0">
+			Steam application ID for the game.
+		</member>
+	</members>
+</class>

@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SemanticAssetIndex" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Lexical semantic index for tagged project assets.
+	</brief_description>
+	<description>
+		Builds and queries a lightweight token index from asset tags and metadata. Used by JustAMCP semantic search tools.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="begin_batch">
+			<return type="void" />
+			<description>
+				Starts a nested index batch so multiple upserts or removals can be saved together.
+			</description>
+		</method>
+		<method name="clear">
+			<return type="void" />
+			<description>
+				Clears the in-memory index.
+			</description>
+		</method>
+		<method name="commit_batch">
+			<return type="void" />
+			<description>
+				Ends one batch level and schedules a deferred save when the outermost batch closes.
+			</description>
+		</method>
+		<method name="find_similar" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="limit" type="int" default="10" />
+			<description>
+				Finds assets similar to the indexed asset at [param path].
+			</description>
+		</method>
+		<method name="find_similar_with_filters" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="limit" type="int" default="10" />
+			<param index="2" name="path_regex" type="String" default="&quot;&quot;" />
+			<param index="3" name="class_filter" type="String" default="&quot;&quot;" />
+			<description>
+				Finds assets similar to [param path], optionally filtered by [param path_regex] and [param class_filter].
+			</description>
+		</method>
+		<method name="get_asset_entry" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Returns index entry details for an asset path.
+			</description>
+		</method>
+		<method name="get_stats" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns index statistics.
+			</description>
+		</method>
+		<method name="load">
+			<return type="int" enum="Error" />
+			<description>
+				Loads the persisted index from disk.
+			</description>
+		</method>
+		<method name="rebuild_index">
+			<return type="int" enum="Error" />
+			<description>
+				Rebuilds the index from asset tags.
+			</description>
+		</method>
+		<method name="remove_entry">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Removes one asset from the index.
+			</description>
+		</method>
+		<method name="remove_paths">
+			<return type="void" />
+			<param index="0" name="paths" type="PackedStringArray" />
+			<description>
+				Removes each path in [param paths] from the index inside a batch.
+			</description>
+		</method>
+		<method name="save">
+			<return type="int" enum="Error" />
+			<description>
+				Persists the index to disk.
+			</description>
+		</method>
+		<method name="search" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="query" type="String" />
+			<param index="1" name="limit" type="int" default="20" />
+			<description>
+				Searches indexed assets by lexical query.
+			</description>
+		</method>
+		<method name="search_filtered" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="query" type="String" />
+			<param index="1" name="limit" type="int" default="20" />
+			<param index="2" name="tags" type="PackedStringArray" default="PackedStringArray()" />
+			<param index="3" name="require_all" type="bool" default="false" />
+			<description>
+				Searches indexed assets for [param query], optionally requiring matches against [param tags].
+			</description>
+		</method>
+		<method name="search_with_filters" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="query" type="String" />
+			<param index="1" name="limit" type="int" default="20" />
+			<param index="2" name="tags" type="PackedStringArray" default="PackedStringArray()" />
+			<param index="3" name="require_all" type="bool" default="false" />
+			<param index="4" name="path_regex" type="String" default="&quot;&quot;" />
+			<param index="5" name="class_filter" type="String" default="&quot;&quot;" />
+			<description>
+				Searches indexed assets with tag, path regex, and class filters applied to the results.
+			</description>
+		</method>
+		<method name="upsert_entry">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Upserts one asset into the index.
+			</description>
+		</method>
+		<method name="upsert_paths">
+			<return type="void" />
+			<param index="0" name="paths" type="PackedStringArray" />
+			<description>
+				Upserts each path in [param paths] into the index inside a batch.
+			</description>
+		</method>
+	</methods>
+</class>

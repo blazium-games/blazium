@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DDDBrowserAudio" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Spatial or ambient audio source for DDDBrowser levels.
+	</brief_description>
+	<description>
+		Exports an audio asset (wav/ogg) and an audio instance with loop, volume, and autoPlay.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="ambient" type="bool" setter="set_ambient" getter="get_ambient" default="false">
+		</member>
+		<member name="auto_play" type="bool" setter="set_auto_play" getter="get_auto_play" default="false">
+		</member>
+		<member name="format" type="int" setter="set_format" getter="get_format" enum="DDDBrowserAudio.Format" default="0">
+		</member>
+		<member name="loop" type="bool" setter="set_loop" getter="get_loop" default="false">
+		</member>
+		<member name="source_path" type="String" setter="set_source_path" getter="get_source_path" default="&quot;&quot;">
+		</member>
+		<member name="volume" type="float" setter="set_volume" getter="get_volume" default="1.0">
+		</member>
+	</members>
+	<constants>
+		<constant name="FORMAT_WAV" value="0" enum="Format">
+		</constant>
+		<constant name="FORMAT_OGG" value="1" enum="Format">
+		</constant>
+	</constants>
+</class>

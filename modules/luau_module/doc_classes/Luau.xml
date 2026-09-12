@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Luau" inherits="Object" experimental="" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Static Luau compiler utilities.
+	</brief_description>
+	<description>
+		Provides compile() for Luau source to bytecode conversion.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="clock" qualifiers="static">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="compile" qualifiers="static">
+			<return type="PackedByteArray" />
+			<param index="0" name="source_code" type="String" />
+			<param index="1" name="options" type="LuaCompileOptions" />
+			<description>
+			</description>
+		</method>
+		<method name="is_pseudo" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="upvalue_index" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="upvalue" type="int" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="LUA_MULTRET" value="-1">
+		</constant>
+		<constant name="LUA_REGISTRYINDEX" value="-10000">
+		</constant>
+		<constant name="LUA_ENVIRONINDEX" value="-10001">
+		</constant>
+		<constant name="LUA_GLOBALSINDEX" value="-10002">
+		</constant>
+		<constant name="LUA_OK" value="0">
+		</constant>
+		<constant name="LUA_YIELD" value="1">
+		</constant>
+		<constant name="LUA_ERRRUN" value="2">
+		</constant>
+		<constant name="LUA_ERRSYNTAX" value="3">
+		</constant>
+		<constant name="LUA_ERRMEM" value="4">
+		</constant>
+		<constant name="LUA_ERRERR" value="5">
+		</constant>
+		<constant name="LUA_BREAK" value="6">
+		</constant>
+		<constant name="LUA_CORUN" value="0">
+		</constant>
+		<constant name="LUA_COSUS" value="1">
+		</constant>
+		<constant name="LUA_CONOR" value="2">
+		</constant>
+		<constant name="LUA_COFIN" value="3">
+		</constant>
+		<constant name="LUA_COERR" value="4">
+		</constant>
+		<constant name="LUA_TNONE" value="-1">
+		</constant>
+		<constant name="LUA_TNIL" value="0">
+		</constant>
+		<constant name="LUA_TBOOLEAN" value="1">
+		</constant>
+		<constant name="LUA_TLIGHTUSERDATA" value="2">
+		</constant>
+		<constant name="LUA_TNUMBER" value="3">
+		</constant>
+		<constant name="LUA_TVECTOR" value="4">
+		</constant>
+		<constant name="LUA_TSTRING" value="5">
+		</constant>
+		<constant name="LUA_TTABLE" value="6">
+		</constant>
+		<constant name="LUA_TFUNCTION" value="7">
+		</constant>
+		<constant name="LUA_TUSERDATA" value="8">
+		</constant>
+		<constant name="LUA_TTHREAD" value="9">
+		</constant>
+		<constant name="LUA_TBUFFER" value="10">
+		</constant>
+		<constant name="LUA_TPROTO" value="11">
+		</constant>
+		<constant name="LUA_TUPVAL" value="12">
+		</constant>
+		<constant name="LUA_TDEADKEY" value="13">
+		</constant>
+		<constant name="LUA_NOREF" value="-1">
+		</constant>
+		<constant name="LUA_REFNIL" value="0">
+		</constant>
+		<constant name="LUA_NOTAG" value="-1">
+		</constant>
+	</constants>
+</class>

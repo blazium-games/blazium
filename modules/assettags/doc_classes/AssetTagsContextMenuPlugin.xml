@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AssetTagsContextMenuPlugin" inherits="EditorContextMenuPlugin" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		FileSystem dock context menu entry for editing asset tags.
+	</brief_description>
+	<description>
+		Adds [b]Edit Asset Tags...[/b] to the FileSystem dock right-click menu for taggable assets. Opens the asset tags editor dialog so selected files can have tags assigned or removed. Registered by [AssetTagsEditorPlugin].
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

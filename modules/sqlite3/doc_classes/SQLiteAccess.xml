@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SQLiteAccess" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Wrapper class for SQLite databases.
+	</brief_description>
+	<description>
+		A wrapper class that lets you perform SQL statements on an SQLite database file.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="backup">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Creates a backup of the database at the location specified by [param path].
+				Returns [code]true[/code] if the operation succeeds.
+			</description>
+		</method>
+		<method name="backup_async">
+			<return type="SQLiteBackup" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Creates an asynchronous backup of the database to [param path].
+				Returns a [SQLiteBackup] object used to monitor and control the operation.
+			</description>
+		</method>
+		<method name="close">
+			<return type="bool" />
+			<description>
+				Closes the database connection and releases all associated resources.
+				Returns [code]true[/code] if the database was successfully closed.
+			</description>
+		</method>
+		<method name="create_collation">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="callable" type="Callable" />
+			<description>
+				Creates a custom collation function named [param name] using [param callable] for string comparison logic.
+			</description>
+		</method>
+		<method name="create_function">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="argc" type="int" />
+			<param index="2" name="callable" type="Callable" />
+			<description>
+				Registers a custom SQL function named [param name] that accepts [param argc] arguments and executes [param callable].
+			</description>
+		</method>
+		<method name="create_query">
+			<return type="SQLiteQuery" />
+			<param index="0" name="statement" type="String" />
+			<param index="1" name="arguments" type="Array" default="[]" />
+			<description>
+				Creates a prepared SQL query using [param statement] and optional [param arguments].
+			</description>
+		</method>
+		<method name="enable_load_extension">
+			<return type="bool" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				Enables or disables the ability to load SQLite extensions.
+			</description>
+		</method>
+		<method name="execute_script">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Executes an SQL script located at [param path].
+				Returns [code]true[/code] if execution succeeds.
+			</description>
+		</method>
+		<method name="get_changes" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the number of rows affected by the most recent SQL statement.
+			</description>
+		</method>
+		<method name="get_database_filename" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="db_name" type="String" default="&quot;main&quot;" />
+			<description>
+				Returns the filename associated with the database identified by [param db_name].
+			</description>
+		</method>
+		<method name="get_db_config" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="op" type="int" />
+			<description>
+				Returns the current configuration value for the database option identified by [param op].
+			</description>
+		</method>
+		<method name="get_db_status" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="op" type="int" />
+			<param index="1" name="reset" type="bool" default="false" />
+			<description>
+				Returns the current database status counter for [param op].
+				If [param reset] is [code]true[/code], the counter is reset after reading.
+			</description>
+		</method>
+		<method name="get_global_status" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="op" type="int" />
+			<param index="1" name="reset" type="bool" />
+			<description>
+				Returns a global SQLite status counter identified by [param op].
+				If [param reset] is [code]true[/code], the counter is reset after reading.
+			</description>
+		</method>
+		<method name="get_last_error_code" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the last SQLite error code.
+			</description>
+		</method>
+		<method name="get_last_error_message" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the last SQLite error message.
+			</description>
+		</method>
+		<method name="get_last_insert_rowid" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the row ID of the last inserted row.
+			</description>
+		</method>
+		<method name="get_limit" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="id" type="int" />
+			<description>
+				Returns the SQLite limit value identified by [param id].
+			</description>
+		</method>
+		<method name="get_total_changes" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the total number of rows changed since the database was opened.
+			</description>
+		</method>
+		<method name="interrupt">
+			<return type="void" />
+			<description>
+				Interrupts any currently running query.
+			</description>
+		</method>
+		<method name="is_autocommit" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the database is in autocommit mode.
+			</description>
+		</method>
+		<method name="is_readonly" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="db_name" type="String" default="&quot;main&quot;" />
+			<description>
+				Returns [code]true[/code] if the database identified by [param db_name] is read-only.
+			</description>
+		</method>
+		<method name="open">
+			<return type="bool" />
+			<param index="0" name="database" type="String" />
+			<description>
+				Opens the database file at [param database]. Returns [code]true[/code] on success.
+				If the path starts with [code]res://[/code], an in-memory or buffered version may be used automatically.
+			</description>
+		</method>
+		<method name="open_blob">
+			<return type="SQLiteBlob" />
+			<param index="0" name="db_name" type="String" />
+			<param index="1" name="table_name" type="String" />
+			<param index="2" name="column_name" type="String" />
+			<param index="3" name="rowid" type="int" />
+			<param index="4" name="read_write" type="bool" default="false" />
+			<description>
+				Opens a BLOB handle for incremental access to binary data stored in a table.
+			</description>
+		</method>
+		<method name="open_buffered">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="buffers" type="PackedByteArray" />
+			<param index="2" name="size" type="int" />
+			<description>
+				Opens a database from an in-memory buffer. Changes are not persisted to disk.
+			</description>
+		</method>
+		<method name="open_in_memory">
+			<return type="bool" />
+			<description>
+				Opens a temporary in-memory database.
+			</description>
+		</method>
+		<method name="release_memory" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="bytes" type="int" />
+			<description>
+				Attempts to release up to [param bytes] of memory used by SQLite.
+			</description>
+		</method>
+		<method name="restore">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Restores the database from the file at [param path].
+			</description>
+		</method>
+		<method name="restore_async">
+			<return type="SQLiteBackup" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Restores the database asynchronously from [param path].
+			</description>
+		</method>
+		<method name="set_authorizer">
+			<return type="void" />
+			<param index="0" name="callable" type="Callable" />
+			<description>
+				Sets an authorizer callback used to approve or deny SQL operations.
+			</description>
+		</method>
+		<method name="set_busy_timeout">
+			<return type="bool" />
+			<param index="0" name="ms" type="int" />
+			<description>
+				Sets the busy timeout in milliseconds.
+			</description>
+		</method>
+		<method name="set_db_config">
+			<return type="bool" />
+			<param index="0" name="op" type="int" />
+			<param index="1" name="val" type="int" />
+			<description>
+				Sets a database configuration option.
+			</description>
+		</method>
+		<method name="set_foreign_keys_enabled">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				Enables or disables foreign key enforcement.
+			</description>
+		</method>
+		<method name="set_limit">
+			<return type="int" />
+			<param index="0" name="id" type="int" />
+			<param index="1" name="new_val" type="int" />
+			<description>
+				Sets a SQLite runtime limit.
+			</description>
+		</method>
+		<method name="set_progress_handler">
+			<return type="void" />
+			<param index="0" name="instructions" type="int" />
+			<description>
+				Sets a progress handler invoked during long-running queries.
+			</description>
+		</method>
+		<method name="set_soft_heap_limit" qualifiers="static">
+			<return type="void" />
+			<param index="0" name="bytes" type="int" />
+			<description>
+				Sets SQLite's soft heap memory limit.
+			</description>
+		</method>
+		<method name="set_trace">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				Enables or disables SQL tracing.
+			</description>
+		</method>
+		<method name="vacuum">
+			<return type="bool" />
+			<description>
+				Rebuilds and optimizes the database file.
+			</description>
+		</method>
+		<method name="wal_checkpoint">
+			<return type="bool" />
+			<param index="0" name="db_name" type="String" default="&quot;main&quot;" />
+			<description>
+				Performs a WAL checkpoint operation.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="query_profiled">
+			<param index="0" name="query_string" type="String" />
+			<param index="1" name="execution_time_ns" type="int" />
+			<description>
+				Emitted when a query is profiled with execution time information.
+			</description>
+		</signal>
+		<signal name="query_progress">
+			<description>
+				Emitted periodically during long-running queries to report progress.
+			</description>
+		</signal>
+		<signal name="row_updated">
+			<param index="0" name="update_operation" type="int" />
+			<param index="1" name="db_name" type="String" />
+			<param index="2" name="table_name" type="String" />
+			<param index="3" name="rowid" type="int" />
+			<description>
+				Emitted when a row is inserted, updated, or deleted.
+			</description>
+		</signal>
+		<signal name="transaction_committed">
+			<description>
+				Emitted when a transaction is committed.
+			</description>
+		</signal>
+		<signal name="transaction_rolled_back">
+			<description>
+				Emitted when a transaction is rolled back.
+			</description>
+		</signal>
+		<signal name="wal_updated">
+			<param index="0" name="db_name" type="String" />
+			<param index="1" name="pages_in_wal" type="int" />
+			<description>
+				Emitted when the WAL file is updated.
+			</description>
+		</signal>
+	</signals>
+</class>

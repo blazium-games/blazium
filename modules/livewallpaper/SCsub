@@ -1,0 +1,22 @@
+#!/usr/bin/env python
+from misc.utility.scons_hints import *
+
+Import("env")
+Import("env_modules")
+
+env_livewallpaper = env_modules.Clone()
+
+env_livewallpaper.add_source_files(env.modules_sources, "register_types.cpp")
+env_livewallpaper.add_source_files(env.modules_sources, "livewallpaper_cmdline.cpp")
+env_livewallpaper.add_source_files(env.modules_sources, "livewallpaper_workerw.cpp")
+env_livewallpaper.add_source_files(env.modules_sources, "livewallpaper.cpp")
+
+if env.editor_build:
+    env_livewallpaper.add_source_files(env.modules_sources, "editor/*.cpp")
+    env_livewallpaper.add_source_files(env.modules_sources, "editor/export/*.cpp")
+
+if env["tests"]:
+    env_livewallpaper.Append(CPPDEFINES=["TESTS_ENABLED"])
+    env_livewallpaper.add_source_files(env.modules_sources, "tests/*.cpp")
+    if env["disable_exceptions"]:
+        env_livewallpaper.Append(CPPDEFINES=["DOCTEST_CONFIG_NO_EXCEPTIONS_BUT_WITH_ALL_ASSERTS"])

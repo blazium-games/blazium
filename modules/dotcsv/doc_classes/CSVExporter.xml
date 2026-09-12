@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CSVExporter" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		High-level CSV exporter with Variant stringification.
+	</brief_description>
+	<description>
+		CSVExporter converts arrays and dictionaries of Variants into delimiter-separated text. Values are stringified with engine Variant formatting where appropriate.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="export" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="data" type="Array" />
+			<param index="1" name="file_path" type="String" />
+			<param index="2" name="delimiter" type="String" default="&quot;,&quot;" />
+			<param index="3" name="color_as_hex" type="bool" default="false" />
+			<param index="4" name="hex_include_alpha" type="bool" default="false" />
+			<description>
+				Writes typed row arrays to a file.
+			</description>
+		</method>
+		<method name="export_string" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="data" type="Array" />
+			<param index="1" name="delimiter" type="String" default="&quot;,&quot;" />
+			<param index="2" name="color_as_hex" type="bool" default="false" />
+			<param index="3" name="hex_include_alpha" type="bool" default="false" />
+			<description>
+				Converts typed row arrays to delimiter-separated text.
+			</description>
+		</method>
+		<method name="export_string_with_headers" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="data" type="Array" />
+			<param index="1" name="delimiter" type="String" default="&quot;,&quot;" />
+			<param index="2" name="color_as_hex" type="bool" default="false" />
+			<param index="3" name="hex_include_alpha" type="bool" default="false" />
+			<description>
+				Converts dictionaries to delimiter-separated text, using dictionary keys as headers.
+			</description>
+		</method>
+		<method name="export_with_headers" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="data" type="Array" />
+			<param index="1" name="file_path" type="String" />
+			<param index="2" name="delimiter" type="String" default="&quot;,&quot;" />
+			<param index="3" name="color_as_hex" type="bool" default="false" />
+			<param index="4" name="hex_include_alpha" type="bool" default="false" />
+			<description>
+				Writes dictionaries to a file, using dictionary keys as headers.
+			</description>
+		</method>
+		<method name="stringify" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="value" type="Variant" />
+			<param index="1" name="color_as_hex" type="bool" default="false" />
+			<param index="2" name="hex_include_alpha" type="bool" default="false" />
+			<description>
+				Converts one Variant to a CSV field string.
+			</description>
+		</method>
+	</methods>
+</class>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SemanticAsyncEmbedWorker" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Background worker that refreshes asset embedding vectors.
+	</brief_description>
+	<description>
+		Queues asynchronous embedding refresh jobs against [SemanticAssetIndex]. Poll jobs with [method poll_refresh] until they finish or are cancelled.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="cancel_refresh">
+			<return type="bool" />
+			<param index="0" name="job_id" type="String" />
+			<description>
+				Requests cancellation of the refresh job identified by [param job_id]. Returns [code]true[/code] when the job existed.
+			</description>
+		</method>
+		<method name="enqueue_refresh">
+			<return type="String" />
+			<param index="0" name="stale_only" type="bool" default="true" />
+			<param index="1" name="force" type="bool" default="false" />
+			<description>
+				Starts a background embedding refresh and returns a job id, or an empty string if the job could not be queued.
+			</description>
+		</method>
+		<method name="poll_refresh">
+			<return type="Dictionary" />
+			<param index="0" name="job_id" type="String" />
+			<description>
+				Returns status for [param job_id], including [code]ok[/code], [code]finished[/code], [code]cancelled[/code], and [code]refreshed_count[/code].
+			</description>
+		</method>
+	</methods>
+</class>

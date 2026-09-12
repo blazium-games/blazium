@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TiledProject" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_data" qualifiers="const">
+			<return type="TiledProjectData" />
+			<description>
+			</description>
+		</method>
+		<method name="get_enum_definition" qualifiers="const">
+			<return type="TiledEnumDefinition" />
+			<param index="0" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_folders" qualifiers="const">
+			<return type="Array" />
+			<description>
+			</description>
+		</method>
+		<method name="get_path" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_tiled_class" qualifiers="const">
+			<return type="TiledClass" />
+			<param index="0" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="parse">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

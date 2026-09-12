@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SQLiteQueryResult" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A result from a [SQLiteQuery] run.
+	</brief_description>
+	<description>
+		A result from a [SQLiteQuery] run.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="arguments" type="Variant" setter="" getter="get_arguments" default="[]">
+			The arguments used when executing the query.
+			These correspond to the bound parameters passed into the [SQLiteQuery] when it was run.
+		</member>
+		<member name="error" type="String" setter="" getter="get_error" default="&quot;&quot;">
+			Contains the error message if the query execution failed.
+			If no error occurred, this will be an empty string.
+		</member>
+		<member name="error_code" type="int" setter="" getter="get_error_code" default="0">
+			The SQLite error code returned by the last executed query.
+			A value of [code]0[/code] typically indicates success.
+		</member>
+		<member name="query" type="String" setter="" getter="get_query" default="&quot;&quot;">
+			The original SQL query string that was executed to produce this result.
+		</member>
+		<member name="result" type="Dictionary[]" setter="" getter="get_result" default="[]">
+			The rows returned by the query, stored as an array of dictionaries where each dictionary represents a row mapping column names to values.
+		</member>
+	</members>
+</class>

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AssetTagCoordinator" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Coordinates dictionary and asset-index mutations for asset tags.
+	</brief_description>
+	<description>
+		[AssetTagCoordinator] wraps [AssetTagRegistry] batch transactions for rename/remove operations and exposes undo snapshots via [method undo_last_change].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="abort_transaction">
+			<return type="void" />
+			<description>
+				Aborts the active registry batch.
+			</description>
+		</method>
+		<method name="add_tag">
+			<return type="int" enum="Error" />
+			<param index="0" name="tag_name" type="String" />
+			<param index="1" name="comment" type="String" default="&quot;&quot;" />
+			<description>
+				Adds [param tag_name] to the tag dictionary inside a coordinated transaction. Returns [constant OK] on success, or an [enum Error] code if the manager/registry is unavailable or the add fails.
+			</description>
+		</method>
+		<method name="begin_transaction">
+			<return type="int" enum="Error" />
+			<description>
+				Starts a coordinated registry batch and captures an undo snapshot.
+			</description>
+		</method>
+		<method name="can_undo" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when an undo snapshot is available.
+			</description>
+		</method>
+		<method name="commit_transaction">
+			<return type="int" enum="Error" />
+			<description>
+				Commits the active registry batch.
+			</description>
+		</method>
+		<method name="remove_tag">
+			<return type="int" enum="Error" />
+			<param index="0" name="tag_name" type="String" />
+			<description>
+				Removes [param tag_name] from the dictionary and strips it from indexed assets. Returns [constant OK] on success, or an [enum Error] code from [method remove_tag_result].
+			</description>
+		</method>
+		<method name="remove_tag_result">
+			<return type="Dictionary" />
+			<param index="0" name="tag_name" type="String" />
+			<description>
+				Removes [param tag_name] and returns a result dictionary with [code]ok[/code], optional [code]error[/code]/[code]error_code[/code], and [code]affected_assets[/code] on success.
+			</description>
+		</method>
+		<method name="rename_tag">
+			<return type="int" enum="Error" />
+			<param index="0" name="old_name" type="String" />
+			<param index="1" name="new_name" type="String" />
+			<description>
+				Renames [param old_name] to [param new_name] in the dictionary and remaps indexed asset tags. Returns [constant OK] on success, or an [enum Error] code from [method rename_tag_result].
+			</description>
+		</method>
+		<method name="rename_tag_result">
+			<return type="Dictionary" />
+			<param index="0" name="old_name" type="String" />
+			<param index="1" name="new_name" type="String" />
+			<description>
+				Renames a tag and returns a result dictionary with [code]ok[/code], optional [code]error[/code]/[code]error_code[/code], and [code]affected_assets[/code] on success.
+			</description>
+		</method>
+		<method name="schedule_prune_removed_paths">
+			<return type="void" />
+			<description>
+				Schedules a debounced prune of index entries whose asset paths no longer exist.
+			</description>
+		</method>
+		<method name="undo_last_change">
+			<return type="int" enum="Error" />
+			<description>
+				Restores the last undo snapshot to disk and reloads manager/registry state.
+			</description>
+		</method>
+		<method name="update_tag_comment">
+			<return type="int" enum="Error" />
+			<param index="0" name="tag_name" type="String" />
+			<param index="1" name="comment" type="String" />
+			<description>
+				Updates the comment for [param tag_name] inside a coordinated transaction. Returns [constant OK] on success, or an [enum Error] code if the update fails.
+			</description>
+		</method>
+	</methods>
+</class>

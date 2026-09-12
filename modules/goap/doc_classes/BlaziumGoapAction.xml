@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="BlaziumGoapAction" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		An action that an agent can perform to satisfy preconditions and apply effects to the world state.
+	</brief_description>
+	<description>
+		[BlaziumGoapAction] represents a single capability of an AI entity. The planner chains actions together if their [member effects] satisfy another action's [member preconditions] in order to reach the current goal. Action validity and costs can be modified dynamically via GDScript overrides.
+		Example usage:
+		[codeblock]
+		class_name GatherWood extends BlaziumGoapAction
+		func _init():
+		    set_name("GatherWood")
+		    cost = 1
+		    effects = {"has_wood": true}
+
+		func _perform(_delta: float) -&gt; bool:
+		    # Returning true indicates the action completed successfully.
+		    return true
+		[/codeblock]
+		[codeblock]
+		class_name BuildCampfire extends BlaziumGoapAction
+		func _init():
+		    set_name("BuildCampfire")
+		    cost = 2
+		    preconditions = {"has_wood": true}
+		    effects = {"has_campfire": true}
+
+		func _perform(_delta: float) -&gt; bool:
+		    return true
+		[/codeblock]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_enter" qualifiers="virtual">
+			<return type="void" />
+			<description>
+				Called securely by the Agent right before this action starts executing its [method _perform] loop natively. Use this to prepare state cleanly.
+			</description>
+		</method>
+		<method name="_exit" qualifiers="virtual">
+			<return type="void" />
+			<description>
+				Called securely by the Agent immediately after the action finishes or aborts. Use this to clean up dynamically managed objects.
+			</description>
+		</method>
+		<method name="_get_cost" qualifiers="virtual const">
+			<return type="int" />
+			<param index="0" name="blackboard" type="Dictionary" />
+			<description>
+				Calculates and returns the pathing cost. Override this to calculate dynamically contextual cost paths based on the simulated [param blackboard].
+			</description>
+		</method>
+		<method name="_is_valid" qualifiers="virtual const">
+			<return type="bool" />
+			<description>
+				Called constantly on every process frame directly from the Agent's traversal monitor. If this returns false dynamically, the current Goap plan natively breaks and forces a complete replan instantly.
+			</description>
+		</method>
+		<method name="_perform" qualifiers="virtual">
+			<return type="bool" />
+			<param index="0" name="delta" type="float" />
+			<description>
+				Executes the action logic per process tick. Return true when the action resolves its purpose cleanly.
+			</description>
+		</method>
+		<method name="_prepare_action" qualifiers="virtual">
+			<return type="void" />
+			<description>
+				Evaluated exactly once linearly BEFORE the A* planner actively generates branches. Use this to bind calculated preconditions/effects dynamically instead of processing them iteratively inside the planner's engine loop.
+			</description>
+		</method>
+		<method name="apply_effects">
+			<return type="void" />
+			<description>
+				Writes the [member effects] statically directly into the Agent's configured [BlaziumGoapWorldState].
+			</description>
+		</method>
+		<method name="enter">
+			<return type="void" />
+			<description>
+				Internal C++ binding triggering [method _enter].
+			</description>
+		</method>
+		<method name="exit">
+			<return type="void" />
+			<description>
+				Internal C++ binding triggering [method _exit].
+			</description>
+		</method>
+		<method name="get_action_name" qualifiers="const">
+			<return type="StringName" />
+			<description>
+				Returns the object's configured node name natively.
+			</description>
+		</method>
+		<method name="get_agent" qualifiers="const">
+			<return type="BlaziumGoapAgent" />
+			<description>
+				Returns the [BlaziumGoapAgent] natively resolving this action.
+			</description>
+		</method>
+		<method name="get_cost" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="blackboard" type="Dictionary" />
+			<description>
+				Internal C++ cost evaluator wrapping around [method _get_cost] and base [member cost].
+			</description>
+		</method>
+		<method name="get_goal" qualifiers="const">
+			<return type="BlaziumGoapGoal" />
+			<description>
+				Returns the exact goal currently orchestrating this instantiated process.
+			</description>
+		</method>
+		<method name="get_state" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="key" type="StringName" />
+			<param index="1" name="default" type="Variant" default="null" />
+			<description>
+				Reads values natively from the Agent's linked [BlaziumGoapWorldState].
+			</description>
+		</method>
+		<method name="init">
+			<return type="void" />
+			<param index="0" name="actor" type="Node" />
+			<param index="1" name="world_state" type="BlaziumGoapWorldState" />
+			<description>
+				Registers internal pointers explicitly tying the agent bounds together natively.
+			</description>
+		</method>
+		<method name="is_valid" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Internal C++ valid checker tying into [method _is_valid].
+			</description>
+		</method>
+		<method name="perform">
+			<return type="bool" />
+			<param index="0" name="delta" type="float" />
+			<description>
+				Internal C++ wrapper signaling [method _perform].
+			</description>
+		</method>
+		<method name="prepare_action">
+			<return type="void" />
+			<description>
+				Internal C++ wrapper signaling [method _prepare_action].
+			</description>
+		</method>
+		<method name="set_state">
+			<return type="void" />
+			<param index="0" name="key" type="StringName" />
+			<param index="1" name="value" type="Variant" />
+			<description>
+				Writes values natively mapping down directly into the Agent's linked [BlaziumGoapWorldState].
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="cost" type="int" setter="set_base_cost" getter="get_base_cost" default="1">
+			Static execution path cost calculated by the `AStar` planner logic.
+		</member>
+		<member name="effects" type="Dictionary" setter="set_effects_dict" getter="get_effects" default="{}">
+			Output property variables mapped automatically backward through the plan tracking into preconditions or goal state desires.
+		</member>
+		<member name="enabled" type="bool" setter="set_enabled" getter="is_enabled" default="true">
+			Determines cleanly whether this node is passed natively into the ActionPlanner's iteration tree graph!
+		</member>
+		<member name="preconditions" type="Dictionary" setter="set_preconditions" getter="get_preconditions" default="{}">
+			Required state values natively expected to exist before this Action can actually execute natively.
+		</member>
+	</members>
+</class>

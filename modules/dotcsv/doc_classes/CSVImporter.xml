@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CSVImporter" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		High-level CSV importer with Variant conversion.
+	</brief_description>
+	<description>
+		CSVImporter parses delimiter-separated text and converts fields to Variants such as Nil, bool, int, float, Color, vectors, arrays, and dictionaries when possible. Parser options can trim fields, skip empty or commented rows, change row-length handling, and customize null and boolean values.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="import" qualifiers="static">
+			<return type="Array" />
+			<param index="0" name="file_path" type="String" />
+			<param index="1" name="delimiter" type="String" default="&quot;,&quot;" />
+			<param index="2" name="cast_fields_to_same_type" type="bool" default="true" />
+			<param index="3" name="options" type="Dictionary" default="{}" />
+			<description>
+				Parses a file into typed row arrays. Supports [param options] keys [code]trim_fields[/code], [code]skip_empty_rows[/code], [code]comment_prefixes[/code], [code]row_length_mode[/code], [code]null_values[/code], [code]true_values[/code], and [code]false_values[/code].
+			</description>
+		</method>
+		<method name="import_string" qualifiers="static">
+			<return type="Array" />
+			<param index="0" name="string" type="String" />
+			<param index="1" name="delimiter" type="String" default="&quot;,&quot;" />
+			<param index="2" name="cast_fields_to_same_type" type="bool" default="true" />
+			<param index="3" name="options" type="Dictionary" default="{}" />
+			<description>
+				Parses a string into typed row arrays. Supports [param options] keys [code]trim_fields[/code], [code]skip_empty_rows[/code], [code]comment_prefixes[/code], [code]row_length_mode[/code], [code]null_values[/code], [code]true_values[/code], and [code]false_values[/code].
+			</description>
+		</method>
+		<method name="import_string_with_dialect" qualifiers="static">
+			<return type="Array" />
+			<param index="0" name="string" type="String" />
+			<param index="1" name="dialect" type="CSVDialect" />
+			<description>
+				Imports [param string] using [param dialect].
+			</description>
+		</method>
+		<method name="import_string_with_headers" qualifiers="static">
+			<return type="Array" />
+			<param index="0" name="string" type="String" />
+			<param index="1" name="delimiter" type="String" default="&quot;,&quot;" />
+			<param index="2" name="cast_fields_to_same_type" type="bool" default="true" />
+			<param index="3" name="options" type="Dictionary" default="{}" />
+			<description>
+				Parses a string into dictionaries using the first row as headers. Supports [param options] keys [code]trim_fields[/code], [code]skip_empty_rows[/code], [code]comment_prefixes[/code], [code]row_length_mode[/code], [code]null_values[/code], [code]true_values[/code], and [code]false_values[/code].
+			</description>
+		</method>
+		<method name="import_with_dialect" qualifiers="static">
+			<return type="Array" />
+			<param index="0" name="file_path" type="String" />
+			<param index="1" name="dialect" type="CSVDialect" />
+			<description>
+				Imports [param file_path] using [param dialect].
+			</description>
+		</method>
+		<method name="import_with_headers" qualifiers="static">
+			<return type="Array" />
+			<param index="0" name="file_path" type="String" />
+			<param index="1" name="delimiter" type="String" default="&quot;,&quot;" />
+			<param index="2" name="cast_fields_to_same_type" type="bool" default="true" />
+			<param index="3" name="options" type="Dictionary" default="{}" />
+			<description>
+				Parses a file into dictionaries using the first row as headers. Supports [param options] keys [code]trim_fields[/code], [code]skip_empty_rows[/code], [code]comment_prefixes[/code], [code]row_length_mode[/code], [code]null_values[/code], [code]true_values[/code], and [code]false_values[/code].
+			</description>
+		</method>
+		<method name="parse_record" qualifiers="static">
+			<return type="Variant" />
+			<param index="0" name="record" type="String" />
+			<param index="1" name="options" type="Dictionary" default="{}" />
+			<description>
+				Converts one field string to a Variant when possible. [param options] may customize [code]null_values[/code], [code]true_values[/code], and [code]false_values[/code].
+			</description>
+		</method>
+	</methods>
+</class>

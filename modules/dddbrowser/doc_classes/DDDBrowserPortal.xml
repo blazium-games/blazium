@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DDDBrowserPortal" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Portal instance for DDDBrowser travel.
+	</brief_description>
+	<description>
+		Exports as a [code]portal[/code] instance with destination URL and trigger mode.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="destination_url" type="String" setter="set_destination_url" getter="get_destination_url" default="&quot;&quot;">
+		</member>
+		<member name="radius" type="float" setter="set_radius" getter="get_radius" default="1.0">
+		</member>
+		<member name="trigger_mode" type="int" setter="set_trigger_mode" getter="get_trigger_mode" enum="DDDBrowserPortal.TriggerMode" default="1">
+		</member>
+	</members>
+	<constants>
+		<constant name="TRIGGER_AUTO" value="0" enum="TriggerMode">
+		</constant>
+		<constant name="TRIGGER_MANUAL" value="1" enum="TriggerMode">
+		</constant>
+		<constant name="TRIGGER_SCRIPT" value="2" enum="TriggerMode">
+		</constant>
+	</constants>
+</class>

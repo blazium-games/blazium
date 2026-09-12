@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DecodedJWT" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		An object-oriented wrapper for parsed JSON Web Tokens.
+	</brief_description>
+	<description>
+		Returned by `JWT.parse(jwt_str)`, this wrapper caches the decoded header and payload, and provides explicit type checking methods to extract claims.
+		[codeblock]
+		var t = JWT.parse(jwt_string)
+		if not t.is_expired():
+		    var roles = t.get_claim_as_array('roles')
+		[/codeblock]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_algorithm" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the algorithm (`alg`) specified in the token's header.
+			</description>
+		</method>
+		<method name="get_audience" qualifiers="const">
+			<return type="Variant" />
+			<description>
+				Extracts the audience (`aud`) claim. May return a String or an Array depending on the token.
+			</description>
+		</method>
+		<method name="get_claim" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="key" type="String" />
+			<description>
+				Extracts a claim from the payload as an untyped Variant.
+			</description>
+		</method>
+		<method name="get_claim_as_array" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="key" type="String" />
+			<description>
+				Extracts a claim from the payload and casts it to an Array. Returns an empty Array if the claim does not exist or is not an array.
+			</description>
+		</method>
+		<method name="get_claim_as_bool" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="key" type="String" />
+			<description>
+				Extracts a claim from the payload and casts it to a boolean. Returns `false` if the claim does not exist.
+			</description>
+		</method>
+		<method name="get_claim_as_dictionary" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="key" type="String" />
+			<description>
+				Extracts a claim from the payload and casts it to a Dictionary.
+			</description>
+		</method>
+		<method name="get_claim_as_int" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="key" type="String" />
+			<description>
+				Extracts a claim from the payload and casts it to an integer.
+			</description>
+		</method>
+		<method name="get_claim_as_string" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="key" type="String" />
+			<description>
+				Extracts a claim from the payload and casts it to a String.
+			</description>
+		</method>
+		<method name="get_expiration_time" qualifiers="const">
+			<return type="float" />
+			<description>
+				Returns the expiration time (`exp`) claim as a float representing UNIX time in seconds.
+			</description>
+		</method>
+		<method name="get_header" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns the entire decoded JWT header as a dictionary.
+			</description>
+		</method>
+		<method name="get_header_claim" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="key" type="String" />
+			<description>
+				Extracts a specific claim from the JWT header.
+			</description>
+		</method>
+		<method name="get_header_claim_as_string" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="key" type="String" />
+			<description>
+				Extracts a specific claim from the JWT header and casts it to a String.
+			</description>
+		</method>
+		<method name="get_issued_at" qualifiers="const">
+			<return type="float" />
+			<description>
+				Returns the issued at (`iat`) claim as a float representing UNIX time in seconds.
+			</description>
+		</method>
+		<method name="get_issuer" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the issuer (`iss`) claim as a String.
+			</description>
+		</method>
+		<method name="get_jwt_id" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the JWT ID (`jti`) claim as a String.
+			</description>
+		</method>
+		<method name="get_kid" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the Key ID (`kid`) from the header.
+			</description>
+		</method>
+		<method name="get_not_before" qualifiers="const">
+			<return type="float" />
+			<description>
+				Returns the not before (`nbf`) claim as a float representing UNIX time in seconds.
+			</description>
+		</method>
+		<method name="get_payload" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns the entire decoded JWT payload as a dictionary.
+			</description>
+		</method>
+		<method name="get_signature" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the trailing Base64Url-encoded signature portion of the token.
+			</description>
+		</method>
+		<method name="get_subject" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the subject (`sub`) claim as a String.
+			</description>
+		</method>
+		<method name="has_claim" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="key" type="String" />
+			<description>
+				Returns `true` if the payload contains the specified claim.
+			</description>
+		</method>
+		<method name="has_header_claim" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="key" type="String" />
+			<description>
+				Returns `true` if the header contains the specified claim.
+			</description>
+		</method>
+		<method name="is_expired" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Checks whether the JWT is expired based on the `exp` claim against the current system time.
+			</description>
+		</method>
+		<method name="parse">
+			<return type="void" />
+			<param index="0" name="jwt" type="String" />
+			<description>
+				Parses the given JWT string and caches its header and payload. Internal use mostly, prefer `JWT.parse(jwt)`.
+			</description>
+		</method>
+	</methods>
+</class>

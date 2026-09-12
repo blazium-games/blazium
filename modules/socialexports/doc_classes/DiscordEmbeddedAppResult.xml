@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DiscordEmbeddedAppResult" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A result from a [DiscordEmbeddedAppResponse].
+	</brief_description>
+	<description>
+		A result from a [DiscordEmbeddedAppResponse]. Contains either nothing or error.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="has_error" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns true if there is an error.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="data" type="Dictionary" setter="" getter="get_data" default="{}">
+			The data returned. Check the discord documentation for more info.
+		</member>
+		<member name="error" type="String" setter="" getter="get_error" default="&quot;&quot;">
+			The error message.
+		</member>
+	</members>
+</class>

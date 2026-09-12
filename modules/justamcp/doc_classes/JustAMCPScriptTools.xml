@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPScriptTools" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Provides MCP tools for script inspection and editing workflows.
+	</brief_description>
+	<description>
+		Registers script-oriented tool schemas used by [JustAMCPToolExecutor]. These tools expose script files, class metadata, validation results, and code-related editor operations to MCP clients.
+	</description>
+	<tutorials>
+		<link title="Model Context Protocol (MCP)">https://modelcontextprotocol.io/</link>
+	</tutorials>
+</class>

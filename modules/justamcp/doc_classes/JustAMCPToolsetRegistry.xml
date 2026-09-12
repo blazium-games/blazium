@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPToolsetRegistry" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Registry for modular JustAMCP toolsets and lazy discovery meta-tools.
+	</brief_description>
+	<description>
+		Allows modules to register named toolsets with schema providers and executors. When [code]blazium/justamcp/enable_toolset_discovery[/code] is enabled, clients discover tools via [code]blazium_list_toolsets[/code], [code]blazium_describe_toolset[/code], and [code]blazium_call_toolset[/code].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="call_toolset" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="toolset_name" type="String" />
+			<param index="1" name="tool_name" type="String" />
+			<param index="2" name="arguments" type="Dictionary" />
+			<description>
+				Executes [param tool_name] inside [param toolset_name] with [param arguments] and returns the tool response dictionary. Unknown or disabled toolsets return an error dictionary.
+			</description>
+		</method>
+		<method name="describe_toolset" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Returns a dictionary describing [param name], including tool schemas when the toolset is enabled. Unknown or disabled toolsets return an error dictionary.
+			</description>
+		</method>
+		<method name="is_discovery_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when [code]blazium/justamcp/enable_toolset_discovery[/code] is enabled in project or editor settings.
+			</description>
+		</method>
+		<method name="list_toolset_names" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns the sorted list of registered toolset names.
+			</description>
+		</method>
+		<method name="list_toolsets" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns a result dictionary with [code]ok[/code], [code]toolsets[/code], and [code]count[/code] describing each registered toolset.
+			</description>
+		</method>
+		<method name="register_toolset">
+			<return type="void" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="description" type="String" />
+			<param index="2" name="get_schemas" type="Callable" />
+			<param index="3" name="execute_tool" type="Callable" />
+			<description>
+				Registers a toolset named [param name] with [param description], schema provider [param get_schemas], and executor [param execute_tool].
+			</description>
+		</method>
+		<method name="unregister_toolset">
+			<return type="void" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Removes the toolset named [param name] and frees any owned provider object.
+			</description>
+		</method>
+	</methods>
+</class>

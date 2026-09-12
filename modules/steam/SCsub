@@ -1,0 +1,12 @@
+#!/usr/bin/env python
+from misc.utility.scons_hints import *
+
+Import("env")
+Import("env_modules")
+
+env_steam = env_modules.Clone()
+
+env_steam.add_source_files(env.modules_sources, "*.cpp")
+
+if env.editor_build:
+    env_steam.add_source_files(env.modules_sources, "editor/*.cpp")

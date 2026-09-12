@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ResourceImporterGIFFrames" inherits="ResourceImporter" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Imports a [code].gif[/code] file as a [SpriteFrames] resource.
+	</brief_description>
+	<description>
+		Alternative importer for [code].gif[/code] files, selectable via the Import dock's Import As dropdown. Decodes the animation into a [SpriteFrames] with the animation named [code]default[/code], suitable for [AnimatedSprite2D] and [AnimationPlayer] workflows. For standard texture playback instead, use the default GIF importer ([ResourceImporterGIF]).
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

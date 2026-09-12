@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="InterDVDMenuPage" inherits="Control" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A VMGM or VTSM menu page that compiles to [InterDVDMenu].
+	</brief_description>
+	<description>
+		720×480 Control. [constant InterDVDMenu.MENU_TITLE] menus mux into [code]VIDEO_TS.VOB[/code]. Other types mux into [code]VTS_01_0.VOB[/code]. Default [member still_time] is 0 so VLC does not freeze on the title menu. Child [InterDVDHotspot] nodes are the menu buttons.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_hotspot">
+			<return type="InterDVDHotspot" />
+			<param index="0" name="name" type="String" default="&quot;Play&quot;" />
+			<description>
+				Appends a hotspot child and returns it.
+			</description>
+		</method>
+		<method name="compile_menu" qualifiers="const">
+			<return type="InterDVDMenu" />
+			<description>
+				Builds the menu resource (destinations are resolved by [method InterDVDDisc.build_project]).
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="duration_sec" type="float" setter="set_duration_sec" getter="get_duration_sec" default="4.0">
+			Bake length when [member source] is [constant InterDVDChapter.SOURCE_SCENE].
+		</member>
+		<member name="menu_type" type="int" setter="set_menu_type" getter="get_menu_type" enum="InterDVDMenu.MenuType" default="2">
+			Title (VMGM) or Root/Audio/Subpicture/Angle/Chapter (VTSM).
+		</member>
+		<member name="motion" type="bool" setter="set_motion" getter="is_motion" default="false">
+			Motion menu flag.
+		</member>
+		<member name="packed_scene" type="PackedScene" setter="set_packed_scene" getter="get_packed_scene">
+			Background scene when [member source] is [constant InterDVDChapter.SOURCE_SCENE].
+		</member>
+		<member name="source" type="int" setter="set_source" getter="get_source" enum="InterDVDChapter.Source" default="1">
+			Video file or PackedScene for the menu cell.
+		</member>
+		<member name="source_path" type="String" setter="set_source_path" getter="get_source_path" default="&quot;&quot;">
+			Background video when [member source] is [constant InterDVDChapter.SOURCE_VIDEO].
+		</member>
+		<member name="still_time" type="int" setter="set_still_time" getter="get_still_time" default="0">
+			Menu PGC still time. Keep 0 on VMGM title menus.
+		</member>
+	</members>
+</class>

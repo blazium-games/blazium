@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JWTBuilder" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A fluent builder for constructing formatted JSON Web Tokens.
+	</brief_description>
+	<description>
+		Provides a chained syntax for configuring and signing JWTs, automatically handling UNIX timestamps and claim formatting.
+		[codeblock]
+		var b = JWTBuilder.new().set_issuer('auth.local').set_subject('admin')
+		var str = b.sign('my_secret')
+		[/codeblock]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_claim">
+			<return type="JWTBuilder" />
+			<param index="0" name="key" type="String" />
+			<param index="1" name="val" type="Variant" />
+			<description>
+				Adds a custom key-value claim to the token's payload. Methods can be chained.
+			</description>
+		</method>
+		<method name="set_algorithm">
+			<return type="JWTBuilder" />
+			<param index="0" name="alg" type="String" />
+			<description>
+				Sets the algorithm (`alg`) in the token's header. Common values are `HS256` or `RS256`.
+			</description>
+		</method>
+		<method name="set_audience">
+			<return type="JWTBuilder" />
+			<param index="0" name="aud" type="String" />
+			<description>
+				Sets the audience (`aud`) claim in the payload indicating the intended recipients.
+			</description>
+		</method>
+		<method name="set_expiration">
+			<return type="JWTBuilder" />
+			<param index="0" name="seconds_from_now" type="float" />
+			<description>
+				Sets the expiration time (`exp`) claim in the payload to the specified number of seconds from now.
+			</description>
+		</method>
+		<method name="set_issuer">
+			<return type="JWTBuilder" />
+			<param index="0" name="iss" type="String" />
+			<description>
+				Sets the issuer (`iss`) claim in the payload identifying the principal that issued the JWT.
+			</description>
+		</method>
+		<method name="set_jwt_id">
+			<return type="JWTBuilder" />
+			<param index="0" name="jti" type="String" />
+			<description>
+				Sets the JWT ID (`jti`) claim in the payload, which provides a unique identifier for the token.
+			</description>
+		</method>
+		<method name="set_subject">
+			<return type="JWTBuilder" />
+			<param index="0" name="sub" type="String" />
+			<description>
+				Sets the subject (`sub`) claim in the payload identifying the principal that is the subject of the JWT.
+			</description>
+		</method>
+		<method name="sign">
+			<return type="String" />
+			<param index="0" name="key" type="Variant" />
+			<description>
+				Constructs and signs the JWT using the configured claims and header. Requires a String secret for HS256 or a CryptoKey for RS256.
+			</description>
+		</method>
+	</methods>
+</class>

@@ -1,0 +1,136 @@
+#!/usr/bin/env python
+from misc.utility.scons_hints import *
+
+import os
+import sys
+
+Import("env")
+Import("env_modules")
+
+# Shared resolver from config.py (same module directory).
+sys.path.insert(0, Dir(".").abspath)
+from config import resolve_coldstorage_sdk_path  # noqa: E402
+
+env_cs = env_modules.Clone()
+
+
+def enable_exceptions(target_env):
+    # ColdStorage SDK uses C++ exceptions.
+    if env.msvc:
+        target_env.Append(CXXFLAGS=["/EHsc"])
+        target_env["CPPDEFINES"] = [
+            d for d in target_env["CPPDEFINES"] if not (isinstance(d, tuple) and d[0] == "_HAS_EXCEPTIONS")
+        ]
+        target_env.Append(CPPDEFINES=[("_HAS_EXCEPTIONS", 1)])
+    else:
+        if "-fno-exceptions" in target_env["CXXFLAGS"]:
+            target_env["CXXFLAGS"].remove("-fno-exceptions")
+        target_env.Append(CXXFLAGS=["-fexceptions"])
+
+
+module_dir = Dir(".").abspath
+cs_path = env.get("coldstorage_sdk_resolved", "")
+if not cs_path:
+    cs_path = resolve_coldstorage_sdk_path(env, Dir("#").abspath, module_dir)
+if not cs_path or not os.path.isdir(os.path.join(cs_path, "src", "client", "sdk")):
+    print("modules/coldstorage: ColdStorage SDK not found; module should have been disabled by can_build().")
+    Return()
+
+cs_src = os.path.join(cs_path, "src")
+shim_dir = os.path.join(module_dir, "sdk_shims")
+
+env_cs.Prepend(
+    CPPPATH=[
+        shim_dir,  # mbedtls TLS/crypto/version + nlohmann/json.hpp (engine JSON shim)
+        cs_src,
+        "#thirdparty/zlib",
+        "#thirdparty/mbedtls/include",
+    ]
+)
+env_cs.Append(
+    CPPDEFINES=[
+        "CS_ENABLE_TLS=1",
+    ]
+)
+if env["platform"] == "windows":
+    # Do not redefine _WIN32_WINNT — platform/windows already sets it (clang-cl -Werror).
+    env_cs.Append(
+        CPPDEFINES=[
+            "WIN32_LEAN_AND_MEAN",
+            "NOMINMAX",
+        ]
+    )
+elif env["platform"] == "macos":
+    # std::filesystem needs macOS 10.15+; engine x86_64 default is 10.13.
+    env_cs.Append(CCFLAGS=["-mmacosx-version-min=10.15"])
+
+enable_exceptions(env_cs)
+
+# --- SDK sources (trimmed client + common; TLS/crypto via sdk_shims) ---
+sdk_sources = [
+    os.path.join(cs_src, "client", "sdk", "connection.cpp"),
+    os.path.join(cs_src, "client", "sdk", "client_sdk.cpp"),
+    os.path.join(cs_src, "client", "sdk", "sdk_admin.cpp"),
+    os.path.join(cs_src, "client", "sdk", "sdk_paths.cpp"),
+    os.path.join(cs_src, "client", "sdk", "sdk_print.cpp"),
+    os.path.join(cs_src, "client", "sdk", "sdk_transfer.cpp"),
+    os.path.join(cs_src, "client", "sdk", "workspace.cpp"),
+    os.path.join(cs_src, "client", "sdk", "workspace_filters.cpp"),
+    os.path.join(cs_src, "client", "sdk", "workspace_status.cpp"),
+    os.path.join(cs_src, "client", "sdk", "workspace_view.cpp"),
+    os.path.join(cs_src, "client", "sdk", "trust_store.cpp"),
+    os.path.join(cs_src, "client", "sdk", "tls_trust.cpp"),
+    os.path.join(cs_src, "common", "protocol", "framing.cpp"),
+    os.path.join(cs_src, "common", "protocol", "messages.cpp"),
+    os.path.join(cs_src, "common", "protocol", "session.cpp"),
+    os.path.join(cs_src, "common", "net", "plain_transport.cpp"),
+    os.path.join(cs_src, "common", "ignore", "ignore_matcher.cpp"),
+    os.path.join(cs_src, "common", "ignore", "csignore_parser.cpp"),
+    os.path.join(cs_src, "common", "ignore", "ignore_loader.cpp"),
+    os.path.join(cs_src, "common", "attributes", "attributes_map.cpp"),
+    os.path.join(cs_src, "common", "attributes", "eol_normalize.cpp"),
+    os.path.join(cs_src, "common", "util", "text_diff.cpp"),
+    os.path.join(cs_src, "common", "util", "sync_target.cpp"),
+]
+
+shim_sources = [
+    os.path.join(shim_dir, "common", "util", "crypto.cpp"),
+    os.path.join(shim_dir, "common", "net", "tls_context.cpp"),
+    os.path.join(shim_dir, "common", "net", "tls_transport.cpp"),
+    os.path.join(shim_dir, "common", "net", "tls_cert.cpp"),
+]
+
+sdk_obj = []
+env_sdk = env_cs.Clone()
+env_sdk.disable_warnings()
+enable_exceptions(env_sdk)
+
+# Object outputs under sdk_obj/ so names stay unique across client/common trees.
+sdk_obj_dir = Dir("sdk_obj")
+
+
+def _compile_external(target_env, out_list, paths):
+    for src in paths:
+        parent = os.path.basename(os.path.dirname(src))
+        base = os.path.splitext(os.path.basename(src))[0]
+        tgt = sdk_obj_dir.File(f"{parent}_{base}" + target_env["OBJSUFFIX"])
+        out_list.extend(target_env.Object(target=tgt, source=File(src)))
+
+
+_compile_external(env_sdk, sdk_obj, sdk_sources + shim_sources)
+env.modules_sources += sdk_obj
+
+# --- Module Godot/Blazium wrappers ---
+module_obj = []
+env_mod = env_cs.Clone()
+enable_exceptions(env_mod)
+env_mod.add_source_files(module_obj, "*.cpp")
+env.modules_sources += module_obj
+env.Depends(module_obj, sdk_obj)
+
+# Windows system libs (ws2_32, bcrypt, crypt32, …) come from platform/windows already.
+# Do not Append LIBS here — after LIBSUFFIX rewrite SCons would look for
+# ws2_32.windows.editor.x86_64.lib and fail the link.
+
+if env["tests"]:
+    env_mod.Append(CPPDEFINES=["TESTS_ENABLED"])

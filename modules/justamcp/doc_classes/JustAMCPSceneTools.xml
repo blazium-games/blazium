@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPSceneTools" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Provides MCP tools for traversing and editing scene trees.
+	</brief_description>
+	<description>
+		Registers scene-oriented tool schemas used by [JustAMCPToolExecutor]. These tools let MCP clients inspect the edited [SceneTree], create or delete nodes, read properties, and perform safe editor automation against the active scene.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

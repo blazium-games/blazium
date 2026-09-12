@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="InterDVDExportProgress" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Step, elapsed, and ETA reporting for Interactive DVD export.
+	</brief_description>
+	<description>
+		[method InterDVDIfoWriter.write_video_ts] and editor export call [method report] for each bake/mux/IFO/finalize step. Headless prints [code]export_dvd: [n/N] label  elapsed mm:ss  eta mm:ss[/code]. Optional [member notify] receives [code](step, total, label, line)[/code].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="begin">
+			<return type="void" />
+			<param index="0" name="total" type="int" />
+			<description>
+				Sets the step total when it is still zero and records the start timestamp.
+			</description>
+		</method>
+		<method name="format_clock" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="usec" type="int" />
+			<description>
+				Formats a microsecond duration as [code]mm:ss[/code] or [code]hh:mm:ss[/code].
+			</description>
+		</method>
+		<method name="format_line" qualifiers="const">
+			<return type="String" />
+			<description>
+				Current [code][step/total] label  elapsed …  eta …[/code] line.
+			</description>
+		</method>
+		<method name="get_label" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_started_usec" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_step" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_total" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="report">
+			<return type="void" />
+			<param index="0" name="label" type="String" />
+			<description>
+				Increments the current step, prints elapsed/ETA, and calls [member notify] if set.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="notify" type="Callable" setter="set_notify" getter="get_notify" default="Callable()">
+			Optional callback [code](step, total, label, line)[/code].
+		</member>
+	</members>
+</class>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AutoworkE2EConfig" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Configuration provider for the Autowork End-to-End WebSocket framework.
+	</brief_description>
+	<description>
+		This class parses the [code]--aw-e2e[/code] environment configuration injected from the command line, exposing it globally for the testing servers to resolve port assignments and authentication keys.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_host" qualifiers="static">
+			<return type="String" />
+			<description>
+				Returns the host address currently assigned to the E2E instance. By default, this is dynamically determined unless explicitly overridden.
+			</description>
+		</method>
+		<method name="get_port" qualifiers="static">
+			<return type="int" />
+			<description>
+				Returns the TCP/WebSocket port the orchestrator is demanding. Configurable via [code]--aw-e2e-port[/code].
+			</description>
+		</method>
+		<method name="get_port_file" qualifiers="static">
+			<return type="String" />
+			<description>
+				Returns the absolute location of the ephemeral [code].port[/code] file if the orchestrator requested file-based port acquisition over standard stdout parsing.
+			</description>
+		</method>
+		<method name="get_token" qualifiers="static">
+			<return type="String" />
+			<description>
+				Returns the secure runtime token (shared HMAC key) that client script orchestrators must provide inside their payloads for successful WebSocket handshakes. Configured via [code]--aw-e2e-token[/code].
+			</description>
+		</method>
+		<method name="is_enabled" qualifiers="static">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if Autowork E2E routing is fully initialized. Typically, this is achieved by either explicitly setting Project Settings or passing the [code]--aw-e2e[/code] command line parameter.
+			</description>
+		</method>
+		<method name="is_logging" qualifiers="static">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if granular socket and command dispatch logging output is permitted to print into the [code]stdout[/code] log file. Triggered via [code]--aw-e2e-log[/code].
+			</description>
+		</method>
+	</methods>
+</class>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DDDBrowserPreviewServer" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Serves an exported DDDBrowser page via [HTTPServer] for local testing.
+	</brief_description>
+	<description>
+		Registers GET routes and uses [method HTTPResponse.set_file]. Enable Allow HTTP in DDDBrowser when loading [code]http://127.0.0.1[/code] URLs.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_index_url" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_port" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_root_dir" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="is_running" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="start">
+			<return type="int" enum="Error" />
+			<param index="0" name="root_dir" type="String" />
+			<param index="1" name="port" type="int" default="8081" />
+			<description>
+			</description>
+		</method>
+		<method name="stop">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

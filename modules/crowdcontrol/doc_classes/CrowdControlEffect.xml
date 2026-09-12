@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CrowdControlEffect" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Represents an individual interactivity effect in the CrowdControl system.
+	</brief_description>
+	<description>
+		[CrowdControlEffect] defines a single effect that a viewer can trigger in your game, such as giving coins, changing player color, or dealing damage.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="to_json" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Serializes this [CrowdControlEffect] into a JSON-compatible dictionary for sending to the CrowdControl API.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="category" type="PackedStringArray" setter="set_category" getter="get_category" default="PackedStringArray()">
+			List of categories this effect belongs to.
+		</member>
+		<member name="description" type="String" setter="set_description" getter="get_description" default="&quot;&quot;">
+			Human-readable description of the effect.
+		</member>
+		<member name="duration" type="int" setter="set_duration" getter="get_duration" default="0">
+			Duration of the effect in milliseconds.
+			A value of 0 usually indicates an instant effect with no lasting duration.
+		</member>
+		<member name="effect_id" type="String" setter="set_effect_id" getter="get_effect_id" default="&quot;&quot;">
+			Unique identifier for this effect.
+		</member>
+		<member name="effect_name" type="Variant" setter="set_effect_name" getter="get_effect_name" default="null">
+			Display name of the effect.
+		</member>
+		<member name="group" type="PackedStringArray" setter="set_group" getter="get_group" default="PackedStringArray()">
+			List of groups this effect belongs to.
+		</member>
+		<member name="inactive" type="bool" setter="set_inactive" getter="is_inactive" default="false">
+			Whether the effect is currently inactive.
+		</member>
+		<member name="note" type="String" setter="set_note" getter="get_note" default="&quot;&quot;">
+			Additional notes or internal comments about the effect.
+		</member>
+		<member name="parameters" type="Dictionary" setter="set_parameters" getter="get_parameters" default="{}">
+			Dictionary of configurable parameters for the effect.
+		</member>
+		<member name="price" type="int" setter="set_price" getter="get_price" default="100">
+			Cost required to trigger the effect.
+			Typically expressed in platform-specific currency (e.g., points, coins).
+		</member>
+		<member name="quantity_max" type="int" setter="set_quantity_max" getter="get_quantity_max" default="1">
+			Maximum quantity that can be applied in a single trigger.
+		</member>
+		<member name="quantity_min" type="int" setter="set_quantity_min" getter="get_quantity_min" default="1">
+			Minimum quantity required to trigger the effect.
+		</member>
+	</members>
+</class>

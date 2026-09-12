@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ReactClient" inherits="ThirdPartyClient" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A client for bidirectional communication between the engine and a React frontend.
+	</brief_description>
+	<description>
+		Provides a simple messaging interface for integrating a React-based frontend with the engine.
+		It allows the engine to send structured events to a React application via [method emit_to_react], and to receive events from React through the on_react_event signal.
+		This is commonly used in web export environments where a React UI is responsible for presentation while the engine handles game or application logic.
+		Security is enforced through the [member allowed_origin] property, which restricts which web origins are permitted to send or receive messages.
+		The [member app_key] property can be used to namespace or identify the application instance when multiple clients are communicating on the same page or platform.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="emit_to_react">
+			<return type="void" />
+			<param index="0" name="event_name" type="String" />
+			<param index="1" name="payload" type="Dictionary" default="{}" />
+			<description>
+				Sends an event to the connected React frontend.
+				[param event_name] identifies the type of event being emitted, and [param payload] contains optional structured data associated with the event.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="allowed_origin" type="String" setter="set_allowed_origin" getter="get_allowed_origin" default="&quot;*&quot;">
+			Defines which web origin(s) are allowed to communicate with this client.
+			A value of "*" allows all origins, but for production use it is recommended to restrict this to a specific domain for security reasons.
+		</member>
+		<member name="app_key" type="String" setter="set_app_key" getter="get_app_key" default="&quot;&quot;">
+			An optional application identifier used to namespace messages between multiple clients or instances.
+			This can help distinguish between different React integrations running on the same page or platform.
+		</member>
+	</members>
+	<signals>
+		<signal name="on_react_event">
+			<param index="0" name="event_name" type="String" />
+			<param index="1" name="payload" type="Dictionary" />
+			<description>
+				Emitted when an event is received from the React frontend.
+				[param event_name] indicates the type of event sent by React, and [param payload] contains the associated data.
+			</description>
+		</signal>
+	</signals>
+</class>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AssetTagsEditorPlugin" inherits="EditorPlugin" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Editor plugin for managing asset tags.
+	</brief_description>
+	<description>
+		Adds an [b]Asset Tags[/b] tab to the Project Settings dialog for managing the project tag dictionary: browsing the tag tree, editing comments, renaming or removing tags, and cleaning up unused tags. Per-asset tag assignment is available from the FileSystem dock context menu via [b]Edit Asset Tags...[/b]. Coordinates with [AssetTagManager], [AssetTagRegistry], and [AssetTagCoordinator] for undo-aware mutations.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

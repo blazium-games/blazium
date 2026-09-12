@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CrowdControl" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A client for interacting with the CrowdControl API natively in Blazium.
+	</brief_description>
+	<description>
+		The [CrowdControl] singleton allows you to connect your Blazium game to the CrowdControl interactivity service. Using this module, streamers can allow their viewers to trigger in-game effects either instantly or over a timed duration.
+
+		[CrowdControl] uses WebSockets for real-time interaction and HTTP polling as a fallback or auxiliary authentication context.
+
+		You must register your application on the CrowdControl Developer Portal to obtain an App ID and Secret.
+	</description>
+	<tutorials>
+		<link title="CrowdControl Module Tests Example">https://github.com/blazium-games/crowdcontrol_module_tests</link>
+		<link title="CrowdControl API Overview">https://crowdcontrol.live/developer</link>
+	</tutorials>
+	<methods>
+		<method name="close">
+			<return type="void" />
+			<description>
+				Closes the active CrowdControl WebSocket connection and stops polling.
+			</description>
+		</method>
+		<method name="connect_to_crowdcontrol">
+			<return type="int" enum="Error" />
+			<param index="0" name="url" type="String" default="&quot;wss://pubsub.crowdcontrol.live/&quot;" />
+			<description>
+				Initiates the WebSocket connection to the CrowdControl PubSub servers. By default, it uses the production wss url. Emits [signal connection_established] on success.
+			</description>
+		</method>
+		<method name="get_auth_token" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the current authentication token obtained after a successful login. It can be cached and restored later using [method set_auth_token].
+			</description>
+		</method>
+		<method name="get_authentication_url" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the URL that the player must visit to authorize the game with CrowdControl. Usually emitted via [signal authentication_url_ready].
+			</description>
+		</method>
+		<method name="get_cc_uid" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the CrowdControl unique identifier for the authenticated user.
+			</description>
+		</method>
+		<method name="get_connection_id" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the active WebSocket connection ID.
+			</description>
+		</method>
+		<method name="get_game_session_id" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the ID of the currently active game session, or an empty string if no session is active.
+			</description>
+		</method>
+		<method name="get_refresh_token" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the refresh token, if any, that can be used to seamlessly renew an expired authentication session via [method refresh_token].
+			</description>
+		</method>
+		<method name="get_username" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the display name of the authenticated user.
+			</description>
+		</method>
+		<method name="is_authenticated" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if a valid authentication token is currently held.
+			</description>
+		</method>
+		<method name="is_websocket_connected" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the underlying WebSocket is currently connected to the PubSub servers.
+			</description>
+		</method>
+		<method name="poll">
+			<return type="void" />
+			<description>
+				Polls the underlying WebSocket connections and message queues. You must call this every frame (e.g., in [method Node._process]) to ensure CrowdControl receives and processes messages.
+			</description>
+		</method>
+		<method name="refresh_token">
+			<return type="int" enum="Error" />
+			<param index="0" name="refresh_token" type="String" default="&quot;&quot;" />
+			<description>
+				Attempts to seamlessly renew the current authentication session using a previously cached refresh token, or the provided [param refresh_token].
+			</description>
+		</method>
+		<method name="report_effects">
+			<return type="int" enum="Error" />
+			<param index="0" name="effect_ids" type="PackedStringArray" />
+			<param index="1" name="status" type="int" enum="CrowdControl.EffectReportStatus" />
+			<param index="2" name="identifier_type" type="String" default="&quot;effect&quot;" />
+			<description>
+				Informs the CrowdControl service that the specified effects are now available, unavailable, visible, or hidden based on their [param status]. Useful for dynamic game states (e.g., hiding a "Spawn Enemy" effect while the player is in a safe-zone).
+			</description>
+		</method>
+		<method name="request_authentication_http">
+			<return type="int" enum="Error" />
+			<param index="0" name="scopes" type="Array" default="[]" />
+			<param index="1" name="packs" type="Array" default="[]" />
+			<description>
+				Requests an authentication session through traditional HTTP polling. Use this as an alternative to [method request_authentication_websocket]. Wait for the [signal authentication_url_ready] signal for the authorization link.
+			</description>
+		</method>
+		<method name="request_authentication_websocket">
+			<return type="int" enum="Error" />
+			<param index="0" name="scopes" type="Array" default="[]" />
+			<param index="1" name="packs" type="Array" default="[]" />
+			<description>
+				Requests an authentication session through the active WebSocket. Wait for the [signal authentication_url_ready] signal, which provides a link you must present to the player to authorize the game.
+
+				[codeblocks]
+				[gdscript]
+				CrowdControl.request_authentication_websocket()
+				var url = await CrowdControl.authentication_url_ready
+				print("Please authorize: ", url)
+				await CrowdControl.authenticated
+				print("Authenticated!")
+				[/gdscript]
+				[/codeblocks]
+			</description>
+		</method>
+		<method name="request_interact_link">
+			<return type="void" />
+			<description>
+				Requests a public interactivity link that viewers can visit to interact with the game. Connect to [signal interact_link_received] to get the generated link.
+			</description>
+		</method>
+		<method name="respond_to_effect_instant">
+			<return type="int" enum="Error" />
+			<param index="0" name="request_id" type="String" />
+			<param index="1" name="status" type="int" enum="CrowdControl.EffectStatus" />
+			<param index="2" name="message" type="String" default="&quot;&quot;" />
+			<description>
+				Responds to an immediate effect request triggered by [signal effect_requested]. Send [constant STATUS_SUCCESS] if the effect fired, or [constant STATUS_FAILURE] if it failed.
+
+				[codeblocks]
+				[gdscript]
+				func _on_effect_requested(data):
+				    var req_id = data["reqId"]
+				    var code = data["code"]
+				    if code == "givecoins":
+				        # give coins
+				        CrowdControl.respond_to_effect_instant(req_id, CrowdControl.STATUS_SUCCESS, "Coins given!")
+				[/gdscript]
+				[/codeblocks]
+			</description>
+		</method>
+		<method name="respond_to_effect_timed">
+			<return type="int" enum="Error" />
+			<param index="0" name="request_id" type="String" />
+			<param index="1" name="status" type="int" enum="CrowdControl.EffectStatus" />
+			<param index="2" name="time_remaining" type="int" />
+			<param index="3" name="message" type="String" default="&quot;&quot;" />
+			<description>
+				Responds to a timed effect request (an effect that lasts for [param time_remaining] milliseconds). Start the effect with [constant STATUS_TIMED_BEGIN], and when the time expires, call this again with [constant STATUS_TIMED_END].
+
+				[codeblocks]
+				[gdscript]
+				# Start the effect
+				CrowdControl.respond_to_effect_timed(req_id, CrowdControl.STATUS_TIMED_BEGIN, 30000, "Invert Controls started.")
+
+				# Later, when the effect wears off
+				CrowdControl.respond_to_effect_timed(req_id, CrowdControl.STATUS_TIMED_END, 0, "Controls restored.")
+				[/gdscript]
+				[/codeblocks]
+			</description>
+		</method>
+		<method name="set_auth_token">
+			<return type="void" />
+			<param index="0" name="token" type="String" />
+			<param index="1" name="refresh_token" type="String" default="&quot;&quot;" />
+			<description>
+				Restores a previously saved authentication session. This allows your game to remember the user's login without requiring them to authorize in their browser again.
+			</description>
+		</method>
+		<method name="set_credentials">
+			<return type="void" />
+			<param index="0" name="app_id" type="String" />
+			<param index="1" name="secret" type="String" />
+			<description>
+				Configures the CrowdControl client with your Developer app ID and Secret. Must be called before connecting or authenticating.
+			</description>
+		</method>
+		<method name="set_http_base_url">
+			<return type="void" />
+			<param index="0" name="url" type="String" />
+			<description>
+				Overrides the default REST HTTP base URL (which defaults to [code]https://openapi.crowdcontrol.live[/code]).
+			</description>
+		</method>
+		<method name="start_game_session">
+			<return type="int" enum="Error" />
+			<param index="0" name="game_pack_id" type="String" />
+			<description>
+				Notifies the server that a new game session has begun, bound to the specified [param game_pack_id] (which dictates the available effects).
+			</description>
+		</method>
+		<method name="stop_game_session">
+			<return type="int" enum="Error" />
+			<description>
+				Stops the currently active game session.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="authenticated">
+			<param index="0" name="token" type="String" />
+			<param index="1" name="cc_uid" type="String" />
+			<param index="2" name="username" type="String" />
+			<description>
+				Emitted when the authentication flow successfully finishes and the user is logged in. Provides the access [param token], unique [param cc_uid], and display [param username].
+			</description>
+		</signal>
+		<signal name="authentication_url_ready">
+			<param index="0" name="url" type="String" />
+			<description>
+				Emitted after requesting authentication. The game must display or open this [param url] for the player to log in via their browser.
+			</description>
+		</signal>
+		<signal name="connection_closed">
+			<param index="0" name="code" type="int" />
+			<param index="1" name="reason" type="String" />
+			<description>
+				Emitted when the persistent WebSocket connection closes. Includes the status [param code] and string [param reason].
+			</description>
+		</signal>
+		<signal name="connection_error">
+			<param index="0" name="error" type="String" />
+			<description>
+				Emitted when the WebSocket connection to the CrowdControl PubSub servers encounters an error.
+			</description>
+		</signal>
+		<signal name="connection_established">
+			<description>
+				Emitted when [method connect_to_crowdcontrol] successfully establishes a WebSocket connection.
+			</description>
+		</signal>
+		<signal name="effect_requested">
+			<param index="0" name="effect_data" type="Dictionary" />
+			<description>
+				Emitted when a viewer triggers an effect. The [param effect_data] dictionary contains properties like [code]reqId[/code], [code]code[/code], and [code]parameters[/code]. Check the [code]code[/code] to determine which effect to apply, and respond using [method respond_to_effect_instant] or [method respond_to_effect_timed].
+			</description>
+		</signal>
+		<signal name="game_session_started">
+			<param index="0" name="session_id" type="String" />
+			<description>
+				Emitted when a game session has been successfully created. Effects can now be requested by viewers.
+			</description>
+		</signal>
+		<signal name="game_session_stopped">
+			<description>
+				Emitted when a game session ends.
+			</description>
+		</signal>
+		<signal name="interact_link_received">
+			<param index="0" name="link" type="String" />
+			<description>
+				Emitted after [method request_interact_link] finishes with the [param link] players can give viewers to interact with the current game state via the browser.
+			</description>
+		</signal>
+		<signal name="rpc_error">
+			<param index="0" name="method" type="String" />
+			<param index="1" name="error" type="String" />
+			<description>
+				Emitted when an RPC call receives an error payload.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="STATUS_SUCCESS" value="0" enum="EffectStatus">
+			The effect executed successfully.
+		</constant>
+		<constant name="STATUS_FAILURE" value="1" enum="EffectStatus">
+			The effect failed to execute.
+		</constant>
+		<constant name="STATUS_UNAVAILABLE" value="2" enum="EffectStatus">
+			The effect is currently unavailable and cannot be triggered.
+		</constant>
+		<constant name="STATUS_RETRY" value="3" enum="EffectStatus">
+			The effect execution failed but may succeed if retried.
+		</constant>
+		<constant name="STATUS_QUEUE" value="4" enum="EffectStatus">
+			The effect has been queued and will execute later.
+		</constant>
+		<constant name="STATUS_TIMED_BEGIN" value="5" enum="EffectStatus">
+			A timed effect has started.
+		</constant>
+		<constant name="STATUS_TIMED_PAUSE" value="6" enum="EffectStatus">
+			A timed effect has been paused.
+		</constant>
+		<constant name="STATUS_TIMED_RESUME" value="7" enum="EffectStatus">
+			A timed effect has resumed after being paused.
+		</constant>
+		<constant name="STATUS_TIMED_END" value="8" enum="EffectStatus">
+			A timed effect has completed or ended.
+		</constant>
+		<constant name="MENU_VISIBLE" value="0" enum="EffectReportStatus">
+			The effect is visible in the menu.
+		</constant>
+		<constant name="MENU_HIDDEN" value="1" enum="EffectReportStatus">
+			The effect is hidden from the menu.
+		</constant>
+		<constant name="MENU_AVAILABLE" value="2" enum="EffectReportStatus">
+			The effect is available for selection or triggering.
+		</constant>
+		<constant name="MENU_UNAVAILABLE" value="3" enum="EffectReportStatus">
+			The effect is visible but currently unavailable for triggering.
+		</constant>
+	</constants>
+</class>

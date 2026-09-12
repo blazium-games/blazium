@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ScreensaverEditorPlugin" inherits="EditorPlugin" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Registers the Windows Screensaver export platform.
+	</brief_description>
+	<description>
+		Adds [EditorExportPlatformWindowsScreensaver]. Starter scenes live in the screensaver_module_tests project, not in the engine.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

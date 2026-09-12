@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MultiuserEditorPermissions" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Configurable role-based action matrix for the Multiuser Editor module.
+	</brief_description>
+	<description>
+		[MultiuserEditorPermissions] holds the per-action role allowlist used by [MultiuserEditorPlugin] to gate replication on [b]emit[/b] (local), [b]relay[/b] (host), and [b]receive[/b] (every peer). Roles are [code]Viewer[/code], [code]Editor[/code], and [code]Admin[/code], stored as a bitmask. Some action types are also flagged as [i]host-only[/i], meaning only the session host (network id [code]1[/code]) is allowed to send them, regardless of role.
+		Defaults are set up by [method load_defaults] and may be customized via the editor setting [code]blazium/multiuser_editor/permissions/overrides[/code], parsed by [method apply_overrides]. The override format is [code]action=role,role[@host_only|any];...[/code], for example [code]chat=Editor,Admin;scene_sync=Editor,Admin@any[/code].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="apply_overrides">
+			<return type="void" />
+			<param index="0" name="overrides" type="String" />
+			<description>
+				Apply a semicolon-separated list of [code]action=role,role[@host_only|any][/code] overrides on top of the current matrix.
+			</description>
+		</method>
+		<method name="can_perform" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="action" type="String" />
+			<param index="1" name="role" type="String" />
+			<description>
+				Returns [code]true[/code] when the given role string ([code]Viewer[/code]/[code]Editor[/code]/[code]Admin[/code]) is allowed to send or apply the named action.
+			</description>
+		</method>
+		<method name="can_perform_mask" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="action" type="String" />
+			<param index="1" name="role_mask" type="int" />
+			<description>
+				Returns [code]true[/code] when at least one role bit set in [param role_mask] (a bitwise-OR of the [code]ROLE_*[/code] constants) is permitted to send the named [param action]. Composite masks are accepted, so a peer holding [code]ROLE_EDITOR | ROLE_ADMIN[/code] satisfies any [code]EDITOR[/code]-or-higher action. Returns [code]false[/code] for unknown actions or when [param role_mask] equals [constant ROLE_NONE].
+			</description>
+		</method>
+		<method name="get_action_mask" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="action" type="String" />
+			<description>
+				Returns the role bitmask currently registered for [param action] (a bitwise-OR of the [code]ROLE_*[/code] constants), or [code]0[/code] when the action is unknown. Useful for inspecting the active permission matrix after [method load_defaults] and any [method apply_overrides] calls.
+			</description>
+		</method>
+		<method name="get_allow_widen_host_only" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns whether the editor settings have authorized [method apply_overrides] to relax host-only actions to [code]@any[/code]. Mirrors the [code]blazium/multiuser_editor/permissions/allow_widen_host_only[/code] editor setting after the most recent refresh.
+			</description>
+		</method>
+		<method name="is_host_only" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="action" type="String" />
+			<description>
+				Returns [code]true[/code] when only the session host may send the action (regardless of role).
+			</description>
+		</method>
+		<method name="is_known_action" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="action" type="String" />
+			<description>
+				Returns [code]true[/code] when the action is registered in the matrix.
+			</description>
+		</method>
+		<method name="load_defaults">
+			<return type="void" />
+			<description>
+				Reset the matrix to the built-in three-tier defaults.
+			</description>
+		</method>
+		<method name="role_from_string" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="role" type="String" />
+			<description>
+				Parses a role string such as [code]Viewer[/code], [code]Editor[/code], [code]Admin[/code] (case-sensitive canonical forms, plus the lower-case aliases [code]viewer[/code]/[code]editor[/code]/[code]admin[/code] and the legacy alias [code]Host[/code] for [code]Admin[/code]) and returns the matching [code]ROLE_*[/code] constant. Returns [constant ROLE_NONE] for unknown or empty input.
+			</description>
+		</method>
+		<method name="role_to_string" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="role_bit" type="int" />
+			<description>
+				Returns the canonical string form of a single role bit ([constant ROLE_VIEWER] -&gt; [code]"Viewer"[/code], [constant ROLE_EDITOR] -&gt; [code]"Editor"[/code], [constant ROLE_ADMIN] -&gt; [code]"Admin"[/code]). [constant ROLE_NONE] and any other unrecognized value (including composite bitmasks) return [code]"None"[/code].
+			</description>
+		</method>
+		<method name="set_allow_widen_host_only">
+			<return type="void" />
+			<param index="0" name="allow" type="bool" />
+			<description>
+				When [param allow] is [code]true[/code], subsequent [method apply_overrides] calls are permitted to relax actions tagged as host-only by the defaults to [code]@any[/code] (any sender). When [code]false[/code] (the secure default), such overrides are warned about and skipped. Mirrors the [code]blazium/multiuser_editor/permissions/allow_widen_host_only[/code] editor setting; the plugin refreshes this flag whenever the editor settings change.
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="ROLE_NONE" value="0" enum="Role">
+			Sentinel value for an unrecognized role string. Peers reported with this role are treated as unauthenticated and cannot perform any action.
+		</constant>
+		<constant name="ROLE_VIEWER" value="1" enum="Role">
+			Read-only role. Viewers may receive replication and observe the session, but cannot send mutating actions. Bitmask value [code]1[/code].
+		</constant>
+		<constant name="ROLE_EDITOR" value="2" enum="Role">
+			Standard contributor role. Editors may send most non-host-only actions (scene/script edits, chat, cursor updates, file proposals). Bitmask value [code]2[/code].
+		</constant>
+		<constant name="ROLE_ADMIN" value="4" enum="Role">
+			Full-privilege role granted to the session host. Admins may send every action, including host-only actions such as [code]magic_repair_*[/code], [code]team_play_*[/code], and force-push git operations. Bitmask value [code]4[/code].
+		</constant>
+	</constants>
+</class>

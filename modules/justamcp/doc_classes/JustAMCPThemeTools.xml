@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPThemeTools" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Provides MCP tools for reading and editing UI theme data.
+	</brief_description>
+	<description>
+		Registers theme-oriented tool schemas used by [JustAMCPToolExecutor]. These tools expose [Theme] resources, control styling, theme constants, colors, fonts, and related UI appearance data.
+	</description>
+	<tutorials>
+		<link title="Model Context Protocol (MCP)">https://modelcontextprotocol.io/</link>
+	</tutorials>
+</class>

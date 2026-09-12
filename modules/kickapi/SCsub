@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+from misc.utility.scons_hints import *
+
+Import("env")
+Import("env_modules")
+
+env_kickapi = env_modules.Clone()
+
+# Blazium source files
+env_kickapi.add_source_files(env.modules_sources, "*.cpp")
+env_kickapi.add_source_files(env.modules_sources, "requests/*.cpp")

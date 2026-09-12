@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DSVExporter" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Low-level delimiter-separated value exporter.
+	</brief_description>
+	<description>
+		DSVExporter writes string rows as delimiter-separated text. Fields containing delimiters, quotes, or line breaks are quoted and quotes are escaped by doubling them.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="export" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="data" type="Array" />
+			<param index="1" name="file_path" type="String" />
+			<param index="2" name="delimiter" type="String" default="&quot;,&quot;" />
+			<description>
+				Writes string rows from [param data] to [param file_path].
+			</description>
+		</method>
+		<method name="export_string" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="data" type="Array" />
+			<param index="1" name="delimiter" type="String" default="&quot;,&quot;" />
+			<description>
+				Converts string rows from [param data] into delimiter-separated text.
+			</description>
+		</method>
+	</methods>
+</class>

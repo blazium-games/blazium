@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CSVWriter" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Streaming CSV writer with Variant stringification.
+	</brief_description>
+	<description>
+		CSVWriter wraps [DSVWriter] and converts Variants with [method CSVExporter.stringify] while writing rows incrementally.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="close">
+			<return type="void" />
+			<description>
+				Closes the current output file.
+			</description>
+		</method>
+		<method name="get_error" qualifiers="const">
+			<return type="int" enum="Error" />
+			<description>
+				Returns the last error from the underlying [DSVWriter].
+			</description>
+		</method>
+		<method name="open">
+			<return type="int" enum="Error" />
+			<param index="0" name="file_path" type="String" />
+			<param index="1" name="delimiter" type="String" default="&quot;,&quot;" />
+			<param index="2" name="append" type="bool" default="false" />
+			<description>
+				Opens [param file_path] for streaming writes. If [param append] is [code]true[/code], rows are appended to an existing file when possible.
+			</description>
+		</method>
+		<method name="write_row">
+			<return type="bool" />
+			<param index="0" name="row" type="Variant" />
+			<description>
+				Writes one row. If [member headers] is enabled and [param row] is a [Dictionary], [member header_names] controls the output field order.
+			</description>
+		</method>
+		<method name="write_rows">
+			<return type="bool" />
+			<param index="0" name="rows" type="Array" />
+			<description>
+				Writes each row in [param rows].
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="color_as_hex" type="bool" setter="set_color_as_hex" getter="get_color_as_hex" default="false">
+			If [code]true[/code], [Color] values are written as HTML color strings.
+		</member>
+		<member name="header_names" type="PackedStringArray" setter="set_header_names" getter="get_header_names" default="PackedStringArray()">
+			Header names and dictionary output order used when [member headers] is enabled.
+		</member>
+		<member name="headers" type="bool" setter="set_headers" getter="get_headers" default="false">
+			If [code]true[/code], writes one header row before the first data row.
+		</member>
+		<member name="hex_include_alpha" type="bool" setter="set_hex_include_alpha" getter="get_hex_include_alpha" default="false">
+			If [code]true[/code], HTML color strings include alpha when [member color_as_hex] is enabled.
+		</member>
+	</members>
+</class>

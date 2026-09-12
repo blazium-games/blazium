@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="InterDVDInstruction" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Encodes 8-byte DVD-Video Interaction Machine commands for IFO authoring.
+	</brief_description>
+	<description>
+		Compiles on-disc VM instructions (groups 0-6, GPRM/SPRM, Link/Jump/Call/RSM). The DVD player executes them after burn. There is no in-engine interpreter or disc player.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="encode" qualifiers="static">
+			<return type="PackedByteArray" />
+			<param index="0" name="group" type="int" />
+			<param index="1" name="op" type="int" />
+			<param index="2" name="cmp" type="int" />
+			<param index="3" name="dest_reg" type="int" />
+			<param index="4" name="dest_sprm" type="bool" />
+			<param index="5" name="src" type="int" />
+			<param index="6" name="src_reg" type="bool" />
+			<param index="7" name="src_sprm" type="bool" />
+			<param index="8" name="link" type="int" />
+			<param index="9" name="from_domain" type="int" />
+			<param index="10" name="to_domain" type="int" />
+			<param index="11" name="link_target" type="int" />
+			<description>
+				Encodes one 8-byte instruction. Returns an empty array when the domain transfer is illegal.
+			</description>
+		</method>
+		<method name="encode_break" qualifiers="static">
+			<return type="PackedByteArray" />
+			<description>
+				Encodes Break ([code]00 02[/code]).
+			</description>
+		</method>
+		<method name="encode_exit" qualifiers="static">
+			<return type="PackedByteArray" />
+			<description>
+				Encodes Exit ([code]30 01[/code]).
+			</description>
+		</method>
+		<method name="encode_goto" qualifiers="static">
+			<return type="PackedByteArray" />
+			<param index="0" name="line" type="int" />
+			<description>
+				Encodes Goto to instruction line [param line] (1-128).
+			</description>
+		</method>
+		<method name="encode_jump_vts_ptt" qualifiers="static">
+			<return type="PackedByteArray" />
+			<param index="0" name="from_domain" type="int" />
+			<param index="1" name="title" type="int" />
+			<param index="2" name="ptt" type="int" />
+			<description>
+				Encodes JumpVTS_PTT to [param title] / [param ptt] after validating the domain matrix.
+			</description>
+		</method>
+		<method name="encode_link" qualifiers="static">
+			<return type="PackedByteArray" />
+			<param index="0" name="kind" type="int" />
+			<param index="1" name="from_domain" type="int" />
+			<param index="2" name="to_domain" type="int" />
+			<param index="3" name="target" type="int" />
+			<description>
+				Encodes a Link, Jump, Call, or RSM command after validating the domain matrix.
+			</description>
+		</method>
+		<method name="encode_nop" qualifiers="static">
+			<return type="PackedByteArray" />
+			<description>
+				Returns eight zero bytes (NOP).
+			</description>
+		</method>
+		<method name="encode_rsm" qualifiers="static">
+			<return type="PackedByteArray" />
+			<param index="0" name="from_domain" type="int" />
+			<description>
+				Encodes Resume. Legal only from VMG or VTSM.
+			</description>
+		</method>
+		<method name="encode_set" qualifiers="static">
+			<return type="PackedByteArray" />
+			<param index="0" name="op" type="int" />
+			<param index="1" name="gprm" type="int" />
+			<param index="2" name="src" type="int" />
+			<param index="3" name="src_reg" type="bool" />
+			<param index="4" name="src_sprm" type="bool" />
+			<description>
+				Encodes a set-op targeting a GPRM (assign, swap, add, [constant SET_RANDOM] in the range 1 through [param src], and, or, xor, and similar ops).
+			</description>
+		</method>
+		<method name="encode_set_gprmmd" qualifiers="static">
+			<return type="PackedByteArray" />
+			<param index="0" name="gprm" type="int" />
+			<param index="1" name="value" type="int" />
+			<param index="2" name="counter" type="bool" />
+			<description>
+				Encodes SetGPRMMD for GPRM [param gprm].
+			</description>
+		</method>
+		<method name="encode_set_hl_btnn" qualifiers="static">
+			<return type="PackedByteArray" />
+			<param index="0" name="button" type="int" />
+			<description>
+				Encodes SetHL_BTNN for button 1-36.
+			</description>
+		</method>
+		<method name="encode_set_nvtmr" qualifiers="static">
+			<return type="PackedByteArray" />
+			<param index="0" name="seconds" type="int" />
+			<param index="1" name="pgc" type="int" />
+			<description>
+				Encodes SetNVTMR.
+			</description>
+		</method>
+		<method name="encode_set_stn" qualifiers="static">
+			<return type="PackedByteArray" />
+			<param index="0" name="audio" type="int" />
+			<param index="1" name="subtitle" type="int" />
+			<param index="2" name="subtitle_on" type="bool" />
+			<param index="3" name="angle" type="int" />
+			<description>
+				Encodes SetSTN. Pass [code]-1[/code] for a stream that should not change.
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="GROUP_SPECIAL" value="0" enum="Group">
+		</constant>
+		<constant name="GROUP_LINK" value="1" enum="Group">
+		</constant>
+		<constant name="GROUP_SET_SYSTEM" value="2" enum="Group">
+		</constant>
+		<constant name="GROUP_SET" value="3" enum="Group">
+		</constant>
+		<constant name="GROUP_SET_LINK" value="4" enum="Group">
+		</constant>
+		<constant name="GROUP_CMP_SET_SYSTEM" value="5" enum="Group">
+		</constant>
+		<constant name="GROUP_CMP_SET_LINK" value="6" enum="Group">
+		</constant>
+		<constant name="CMP_ALWAYS" value="0" enum="Compare">
+		</constant>
+		<constant name="CMP_AND" value="1" enum="Compare">
+		</constant>
+		<constant name="CMP_EQ" value="2" enum="Compare">
+		</constant>
+		<constant name="CMP_NE" value="3" enum="Compare">
+		</constant>
+		<constant name="CMP_GE" value="4" enum="Compare">
+		</constant>
+		<constant name="CMP_GT" value="5" enum="Compare">
+		</constant>
+		<constant name="CMP_LE" value="6" enum="Compare">
+		</constant>
+		<constant name="CMP_LT" value="7" enum="Compare">
+		</constant>
+		<constant name="SET_NOP" value="0" enum="SetOp">
+		</constant>
+		<constant name="SET_ASSIGN" value="1" enum="SetOp">
+		</constant>
+		<constant name="SET_SWAP" value="2" enum="SetOp">
+		</constant>
+		<constant name="SET_ADD" value="3" enum="SetOp">
+		</constant>
+		<constant name="SET_SUB" value="4" enum="SetOp">
+		</constant>
+		<constant name="SET_MUL" value="5" enum="SetOp">
+		</constant>
+		<constant name="SET_DIV" value="6" enum="SetOp">
+		</constant>
+		<constant name="SET_MOD" value="7" enum="SetOp">
+		</constant>
+		<constant name="SET_RANDOM" value="8" enum="SetOp">
+		</constant>
+		<constant name="SET_AND" value="9" enum="SetOp">
+		</constant>
+		<constant name="SET_OR" value="10" enum="SetOp">
+		</constant>
+		<constant name="SET_XOR" value="11" enum="SetOp">
+		</constant>
+		<constant name="LINK_NONE" value="0" enum="LinkKind">
+		</constant>
+		<constant name="LINK_PGCN" value="1" enum="LinkKind">
+		</constant>
+		<constant name="LINK_PGN" value="2" enum="LinkKind">
+		</constant>
+		<constant name="LINK_PTT" value="3" enum="LinkKind">
+		</constant>
+		<constant name="LINK_RSM" value="4" enum="LinkKind">
+		</constant>
+		<constant name="JUMP_TT" value="5" enum="LinkKind">
+		</constant>
+		<constant name="JUMP_VTS_TT" value="6" enum="LinkKind">
+		</constant>
+		<constant name="JUMP_VTS_PTT" value="7" enum="LinkKind">
+		</constant>
+		<constant name="CALL_SS" value="8" enum="LinkKind">
+		</constant>
+		<constant name="JUMP_SS" value="9" enum="LinkKind">
+		</constant>
+		<constant name="LINK_CN" value="10" enum="LinkKind">
+		</constant>
+		<constant name="DOMAIN_FPC" value="0" enum="Domain">
+		</constant>
+		<constant name="DOMAIN_VMG" value="1" enum="Domain">
+		</constant>
+		<constant name="DOMAIN_VTSM" value="2" enum="Domain">
+		</constant>
+		<constant name="DOMAIN_VTST" value="3" enum="Domain">
+		</constant>
+		<constant name="SPRM_M_ASN" value="0" enum="SPRM">
+		</constant>
+		<constant name="SPRM_ASTN" value="1" enum="SPRM">
+		</constant>
+		<constant name="SPRM_SPSTN" value="2" enum="SPRM">
+		</constant>
+		<constant name="SPRM_AGL_N" value="3" enum="SPRM">
+		</constant>
+		<constant name="SPRM_TT_N" value="4" enum="SPRM">
+		</constant>
+		<constant name="SPRM_VTS_TT_N" value="5" enum="SPRM">
+		</constant>
+		<constant name="SPRM_TT_VTS_N" value="6" enum="SPRM">
+		</constant>
+		<constant name="SPRM_PTT_N" value="7" enum="SPRM">
+		</constant>
+		<constant name="SPRM_HL_BTNN" value="8" enum="SPRM">
+		</constant>
+		<constant name="SPRM_NVTMR" value="9" enum="SPRM">
+		</constant>
+		<constant name="SPRM_NV_PGC" value="10" enum="SPRM">
+		</constant>
+		<constant name="SPRM_P_N" value="11" enum="SPRM">
+		</constant>
+		<constant name="SPRM_PTT_N2" value="12" enum="SPRM">
+		</constant>
+		<constant name="SPRM_CN" value="13" enum="SPRM">
+		</constant>
+		<constant name="SPRM_VIDEO_CFG" value="14" enum="SPRM">
+		</constant>
+		<constant name="SPRM_AUDIO_CFG" value="15" enum="SPRM">
+		</constant>
+		<constant name="SPRM_INI_AUD_LANG" value="16" enum="SPRM">
+		</constant>
+		<constant name="SPRM_INI_AUD_EXT" value="17" enum="SPRM">
+		</constant>
+		<constant name="SPRM_INI_SP_LANG" value="18" enum="SPRM">
+		</constant>
+		<constant name="SPRM_INI_SP_EXT" value="19" enum="SPRM">
+		</constant>
+		<constant name="SPRM_REGION" value="20" enum="SPRM">
+		</constant>
+		<constant name="SPRM_RESERVED_21" value="21" enum="SPRM">
+		</constant>
+		<constant name="SPRM_RESERVED_22" value="22" enum="SPRM">
+		</constant>
+		<constant name="SPRM_RESERVED_23" value="23" enum="SPRM">
+		</constant>
+	</constants>
+</class>

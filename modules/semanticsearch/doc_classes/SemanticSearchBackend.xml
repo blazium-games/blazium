@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SemanticSearchBackend" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Abstract backend interface for semantic asset search.
+	</brief_description>
+	<description>
+		Base class for search backends such as [LexicalTagBackend] and [EmbeddingBackend]. Concrete backends implement rebuild, search, find-similar, and stats operations used by JustAMCP and editor tooling.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="IRCDCCTransfer" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Represents an active or pending Direct Client-to-Client file transfer.
+	</brief_description>
+	<description>
+		Handles the status, metrics, tracking, and port mapping logic required to initiate or receive an outgoing DCC SEND block over the networking protocol layer safely utilizing asynchronous connections.
+	</description>
+	<tutorials>
+		<link title="IRCClient Developer Examples">https://github.com/blazium-games/irc_module_tests</link>
+	</tutorials>
+	<methods>
+		<method name="accept">
+			<return type="int" enum="Error" />
+			<description>
+				Confirms an inbound request connection asynchronously by initializing an available receiver socket and commencing the binary byte stream buffer processing immediately.
+			</description>
+		</method>
+		<method name="cancel">
+			<return type="int" enum="Error" />
+			<description>
+				Aborts an active byte transmission connection natively, closing underlying stream peers and socket structures to prevent further buffer leaking.
+			</description>
+		</method>
+		<method name="get_error_message" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the error message.
+			</description>
+		</method>
+		<method name="get_progress" qualifiers="const">
+			<return type="float" />
+			<description>
+				Returns the calculated progression of the byte payload transition over the active stream, expressed as a generalized percentage.
+			</description>
+		</method>
+		<method name="get_resume_position" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the resume position.
+			</description>
+		</method>
+		<method name="reject">
+			<return type="int" enum="Error" />
+			<description>
+				Returns reject.
+			</description>
+		</method>
+		<method name="set_resume_position">
+			<return type="void" />
+			<param index="0" name="position" type="int" />
+			<description>
+				Sets the resume position. [param position] - Position.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="address" type="String" setter="set_address" getter="get_address" default="&quot;&quot;">
+			Remote IP address used for the DCC connection.
+		</member>
+		<member name="file_size" type="int" setter="set_file_size" getter="get_file_size" default="0">
+			Total size of the file being transferred in bytes.
+		</member>
+		<member name="filename" type="String" setter="set_filename" getter="get_filename" default="&quot;&quot;">
+			Name of the file being sent or received.
+		</member>
+		<member name="local_path" type="String" setter="set_local_path" getter="get_local_path" default="&quot;&quot;">
+			Local filesystem path where the file will be saved or read from.
+		</member>
+		<member name="port" type="int" setter="set_port" getter="get_port" default="0">
+			Port used for the DCC connection.
+		</member>
+		<member name="remote_nick" type="String" setter="set_remote_nick" getter="get_remote_nick" default="&quot;&quot;">
+			Nickname of the remote IRC user involved in the transfer.
+		</member>
+		<member name="status" type="int" setter="set_status" getter="get_status" enum="IRCDCCTransfer.Status" default="0">
+			Current status of the transfer.
+		</member>
+		<member name="transferred" type="int" setter="" getter="get_transferred" default="0">
+			Number of bytes transferred so far.
+		</member>
+		<member name="type" type="int" setter="set_transfer_type" getter="get_transfer_type" enum="IRCDCCTransfer.Type" default="0">
+			Type of DCC transfer.
+		</member>
+		<member name="use_ipv6" type="bool" setter="set_use_ipv6" getter="get_use_ipv6" default="false">
+			Whether to use IPv6 for the connection.
+		</member>
+	</members>
+	<constants>
+		<constant name="TYPE_FILE_SEND" value="0" enum="Type">
+			Represents an outgoing file transfer (sending a file to a remote user).
+		</constant>
+		<constant name="TYPE_FILE_RECEIVE" value="1" enum="Type">
+			Represents an incoming file transfer (receiving a file from a remote user).
+		</constant>
+		<constant name="TYPE_CHAT" value="2" enum="Type">
+			Represents a DCC chat session (direct peer-to-peer messaging).
+		</constant>
+		<constant name="DCC_STATUS_PENDING" value="0" enum="Status">
+			The transfer has been created but not yet started.
+		</constant>
+		<constant name="DCC_STATUS_CONNECTING" value="1" enum="Status">
+			The transfer is attempting to establish a connection.
+		</constant>
+		<constant name="DCC_STATUS_TRANSFERRING" value="2" enum="Status">
+			The transfer is actively sending or receiving data.
+		</constant>
+		<constant name="DCC_STATUS_COMPLETED" value="3" enum="Status">
+			The transfer completed successfully.
+		</constant>
+		<constant name="DCC_STATUS_FAILED" value="4" enum="Status">
+			The transfer encountered an error and failed.
+		</constant>
+		<constant name="DCC_STATUS_CANCELLED" value="5" enum="Status">
+			The transfer was cancelled before completion.
+		</constant>
+	</constants>
+</class>

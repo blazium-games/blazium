@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DiscordAuthResult" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Result of [method Discord.authenticate_with_server].
+	</brief_description>
+	<description>
+		Contains the JWT and user metadata returned by the discord-auth-golang backend, or error details on failure.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_client_id" qualifiers="const">
+			<return type="int" />
+			<description>
+				Discord application client ID echoed by the auth server.
+			</description>
+		</method>
+		<method name="get_discord_id" qualifiers="const">
+			<return type="String" />
+			<description>
+				Discord user snowflake ID verified by the auth server.
+			</description>
+		</method>
+		<method name="get_error_message" qualifiers="const">
+			<return type="String" />
+			<description>
+				Human-readable error when [method is_success] is [code]false[/code].
+			</description>
+		</method>
+		<method name="get_http_status" qualifiers="const">
+			<return type="int" />
+			<description>
+				HTTP status code from the auth server response.
+			</description>
+		</method>
+		<method name="get_jwt" qualifiers="const">
+			<return type="String" />
+			<description>
+				Signed JWT issued by the auth server on success.
+			</description>
+		</method>
+		<method name="get_username" qualifiers="const">
+			<return type="String" />
+			<description>
+				Discord username verified by the auth server.
+			</description>
+		</method>
+		<method name="is_success" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when authentication succeeded.
+			</description>
+		</method>
+	</methods>
+</class>

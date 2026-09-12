@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+from misc.utility.scons_hints import *
+
+Import("env")
+Import("env_modules")
+
+env_semanticsearch = env_modules.Clone()
+env_semanticsearch.add_source_files(env.modules_sources, "*.cpp")
+
+if env["tests"]:
+    env_semanticsearch.Append(CPPDEFINES=["TESTS_ENABLED"])
+
+    if env["disable_exceptions"]:
+        env_semanticsearch.Append(CPPDEFINES=["DOCTEST_CONFIG_NO_EXCEPTIONS_BUT_WITH_ALL_ASSERTS"])

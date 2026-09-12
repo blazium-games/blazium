@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="EditorExportPlatformWindowsInterDVD" inherits="EditorExportPlatform" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Exports a burnable VIDEO_TS / AUDIO_TS folder, ZIP, or ISO.
+	</brief_description>
+	<description>
+		Compiles an [InterDVDDisc] from the edited or main scene, or loads [code]blazium/inter_dvd/project[/code]. Disc identity and encode settings come from the disc node or resource, not this preset. Scene encode and ISO mastering spawn [code]blazium-toolchain[/code]. Dummy-VOB export works without the toolchain.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="inter_dvd/allow_dummy_vob" type="bool" setter="" getter="">
+			When [code]true[/code], export writes a dummy title VOB if no MPEG-2 cell is configured. Keep [code]false[/code] for production discs.
+		</member>
+		<member name="inter_dvd/toolchain" type="String" setter="" getter="">
+			Optional path to [code]blazium-toolchain[/code]. Leave empty to use [code]BLAZIUM_TOOLCHAIN[/code] or [code]PATH[/code]. Required for ISO export.
+		</member>
+		<member name="inter_dvd/output_kind" type="int" setter="" getter="">
+			Folder, Zip, or ISO.
+		</member>
+	</members>
+</class>

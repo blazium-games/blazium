@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CSV" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Resource containing delimiter-separated values parsed as dictionaries.
+	</brief_description>
+	<description>
+		CSV stores rows parsed from CSV, TSV, PSV, or other delimiter-separated text. When [member headers] is enabled, the first row is used as dictionary keys. Otherwise rows are stored with numeric column indexes.
+	</description>
+	<tutorials>
+		<link title="DotCSV Module Test">https://github.com/blazium-games/dotcsv_module_tests</link>
+	</tutorials>
+	<methods>
+		<method name="convert_to_variant" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="text" type="String" />
+			<description>
+				Converts a field string to a Variant using the same conversion rules as [method CSVImporter.parse_record].
+			</description>
+		</method>
+		<method name="get_parser_options" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns the parser options generated from this resource's parser properties. The dictionary can be passed to [method DSVImporter.import_string], [method CSVImporter.import_string], or [method CSVImporter.parse_record].
+			</description>
+		</method>
+		<method name="load_file">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Loads delimiter-separated data from [param path] into [member rows].
+			</description>
+		</method>
+		<method name="load_string">
+			<return type="int" enum="Error" />
+			<param index="0" name="string" type="String" />
+			<description>
+				Loads delimiter-separated data from [param string] into [member rows].
+			</description>
+		</method>
+		<method name="save_to_string" qualifiers="const">
+			<return type="String" />
+			<description>
+				Serializes [member rows] as delimiter-separated text.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="comment_prefixes" type="PackedStringArray" setter="set_comment_prefixes" getter="get_comment_prefixes" default="PackedStringArray()">
+			Lines whose first parsed field begins with any of these prefixes are skipped while loading.
+		</member>
+		<member name="delimiter" type="String" setter="set_delimiter" getter="get_delimiter" default="&quot;,&quot;">
+			The one-character delimiter used while loading and saving.
+		</member>
+		<member name="false_values" type="PackedStringArray" setter="set_false_values" getter="get_false_values" default="PackedStringArray(&quot;false&quot;, &quot;False&quot;, &quot;FALSE&quot;)">
+			Field values that [method convert_to_variant] and CSV importer methods convert to [code]false[/code].
+		</member>
+		<member name="headers" type="bool" setter="set_headers" getter="get_headers" default="false">
+			If [code]true[/code], the first parsed row is used as dictionary keys.
+		</member>
+		<member name="null_values" type="PackedStringArray" setter="set_null_values" getter="get_null_values" default="PackedStringArray(&quot;&quot;)">
+			Field values that [method convert_to_variant] and CSV importer methods convert to [code]null[/code].
+		</member>
+		<member name="row_length_mode" type="int" setter="set_row_length_mode" getter="get_row_length_mode" default="0">
+			Controls how rows with fewer or more fields than the first accepted row are handled. See [enum RowLengthMode].
+		</member>
+		<member name="rows" type="Dictionary[]" setter="set_rows" getter="get_rows" default="[]">
+			Parsed row dictionaries.
+		</member>
+		<member name="skip_empty_rows" type="bool" setter="set_skip_empty_rows" getter="get_skip_empty_rows" default="false">
+			If [code]true[/code], rows containing only empty fields are skipped while loading.
+		</member>
+		<member name="trim_fields" type="bool" setter="set_trim_fields" getter="get_trim_fields" default="false">
+			If [code]true[/code], leading and trailing whitespace is removed from unquoted fields while loading.
+		</member>
+		<member name="true_values" type="PackedStringArray" setter="set_true_values" getter="get_true_values" default="PackedStringArray(&quot;true&quot;, &quot;True&quot;, &quot;TRUE&quot;)">
+			Field values that [method convert_to_variant] and CSV importer methods convert to [code]true[/code].
+		</member>
+	</members>
+	<constants>
+		<constant name="ROW_LENGTH_STRICT" value="0" enum="RowLengthMode">
+			Rejects input when any accepted row has a different field count than the first accepted row.
+		</constant>
+		<constant name="ROW_LENGTH_PAD_SHORT" value="1" enum="RowLengthMode">
+			Pads short rows with empty fields and rejects rows that have too many fields.
+		</constant>
+		<constant name="ROW_LENGTH_PAD_OR_TRUNCATE" value="2" enum="RowLengthMode">
+			Pads short rows with empty fields and truncates rows that have too many fields.
+		</constant>
+		<constant name="ROW_LENGTH_JAGGED" value="3" enum="RowLengthMode">
+			Allows rows to keep their original field counts.
+		</constant>
+	</constants>
+</class>

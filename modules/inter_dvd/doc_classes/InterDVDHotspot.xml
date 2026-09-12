@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="InterDVDHotspot" inherits="Control" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 720×480 highlight button that compiles to [InterDVDButton].
+	</brief_description>
+	<description>
+		Place under [InterDVDTitle] or [InterDVDMenuPage]. The Control rect becomes the PCI highlight. [member destination] points at a sibling title, chapter, or menu page; [method InterDVDDisc.build_project] resolves it to a title number.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="compile_button" qualifiers="const">
+			<return type="InterDVDButton" />
+			<description>
+				Builds an [InterDVDButton] from this Control's rect, [member action], and stream fields.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="action" type="int" setter="set_action" getter="get_action" enum="InterDVDButton.Action" default="0">
+			DVD navigation action written on the compiled button.
+		</member>
+		<member name="destination" type="NodePath" setter="set_destination" getter="get_destination" default="NodePath(&quot;&quot;)">
+			Target [InterDVDTitle], [InterDVDChapter], or [InterDVDMenuPage]. Empty keeps [member target].
+		</member>
+		<member name="stream" type="int" setter="set_stream" getter="get_stream" default="0">
+			Stream index for Set Audio / Subtitle / Angle.
+		</member>
+		<member name="subtitle_on" type="bool" setter="set_subtitle_on" getter="get_subtitle_on" default="true">
+			On/off for Set Subtitle.
+		</member>
+		<member name="target" type="int" setter="set_target" getter="get_target" default="1">
+			Numeric destination when [member destination] is empty (chapter, PGC, or cell). Jump Menu defaults to Title Menu (2).
+		</member>
+		<member name="auto_action" type="bool" setter="set_auto_action" getter="get_auto_action" default="false">
+			Activate the button when highlighted.
+		</member>
+		<member name="hidden" type="bool" setter="set_hidden" getter="is_hidden" default="false">
+			Hide the highlight until selected.
+		</member>
+		<member name="forced_selected" type="bool" setter="set_forced_selected" getter="is_forced_selected" default="false">
+			Force this button as the selected highlight.
+		</member>
+		<member name="forced_activated" type="bool" setter="set_forced_activated" getter="is_forced_activated" default="false">
+			Force-activate this button.
+		</member>
+		<member name="numeric_select" type="bool" setter="set_numeric_select" getter="get_numeric_select" default="true">
+			Allow numeric remote selection.
+		</member>
+		<member name="select_color" type="Color" setter="set_select_color" getter="get_select_color" default="Color(1, 0.92, 0.2, 1)">
+			Highlight color when selected.
+		</member>
+		<member name="action_color" type="Color" setter="set_action_color" getter="get_action_color" default="Color(1, 0.35, 0.1, 1)">
+			Highlight color when activated.
+		</member>
+		<member name="command" type="PackedByteArray" setter="set_command" getter="get_command" default="PackedByteArray()">
+			Raw 8-byte VM command when [member action] is Custom.
+		</member>
+	</members>
+</class>

@@ -1,0 +1,481 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Steam" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Steamworks integration for Web API session ticket generation and backend authentication.
+	</brief_description>
+	<description>
+		The Steam singleton dynamically loads the Steam API library at runtime. If the library is not found, all methods fail gracefully without crashing.
+		Use [method request_web_api_ticket] to obtain a ticket for [code]ISteamUserAuth/AuthenticateUserTicket[/code], then [method authenticate_with_server] to exchange it for a JWT from your backend.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_promo_item">
+			<return type="bool" />
+			<param index="0" name="def_id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="add_promo_items">
+			<return type="bool" />
+			<param index="0" name="def_ids" type="PackedInt32Array" />
+			<description>
+			</description>
+		</method>
+		<method name="authenticate_with_server">
+			<return type="SteamAuthResult" />
+			<param index="0" name="url" type="String" />
+			<param index="1" name="ticket" type="String" />
+			<param index="2" name="app_id" type="int" />
+			<description>
+				POSTs the hex-encoded session ticket to the auth server and returns the parsed response.
+			</description>
+		</method>
+		<method name="cancel_auth_ticket">
+			<return type="void" />
+			<param index="0" name="handle" type="int" />
+			<description>
+				Cancels a previously issued auth ticket handle.
+			</description>
+		</method>
+		<method name="clear_achievement">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Clears an achievement for the local user in memory. Call [method store_stats] to persist.
+			</description>
+		</method>
+		<method name="clear_debug_log">
+			<return type="void" />
+			<description>
+				Clears the in-memory debug log buffer.
+			</description>
+		</method>
+		<method name="clear_stat">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Sets a numeric stat to [code]0[/code] in memory. Call [method store_stats] to persist.
+			</description>
+		</method>
+		<method name="consume_item">
+			<return type="bool" />
+			<param index="0" name="instance_id" type="int" />
+			<param index="1" name="quantity" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="deserialize_inventory">
+			<return type="int" />
+			<param index="0" name="bytes" type="PackedByteArray" />
+			<param index="1" name="expected_steam_id" type="int" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="exchange_items">
+			<return type="bool" />
+			<param index="0" name="generate_def_ids" type="PackedInt32Array" />
+			<param index="1" name="generate_quantities" type="PackedInt32Array" />
+			<param index="2" name="destroy_instance_ids" type="PackedInt64Array" />
+			<param index="3" name="destroy_quantities" type="PackedInt32Array" />
+			<description>
+			</description>
+		</method>
+		<method name="find_items_by_def_id">
+			<return type="Array" />
+			<param index="0" name="def_id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_achievement" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Returns whether the local user has unlocked the named achievement.
+			</description>
+		</method>
+		<method name="get_achievement_info">
+			<return type="SteamAchievementInfo" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="include_icon" type="bool" default="true" />
+			<description>
+				Returns metadata and optional icon for a single achievement.
+			</description>
+		</method>
+		<method name="get_all_achievements">
+			<return type="Array" />
+			<param index="0" name="include_icons" type="bool" default="false" />
+			<description>
+				Returns an array of [SteamAchievementInfo] for every achievement defined for the app.
+			</description>
+		</method>
+		<method name="get_all_item_definitions">
+			<return type="Array" />
+			<description>
+			</description>
+		</method>
+		<method name="get_all_items">
+			<return type="Array" />
+			<description>
+			</description>
+		</method>
+		<method name="get_avatar_image">
+			<return type="Image" />
+			<param index="0" name="steam_id" type="int" default="0" />
+			<param index="1" name="size" type="int" enum="Steam.AvatarSize" default="2" />
+			<description>
+				Returns the user's avatar as an RGBA [Image]. [param steam_id] [code]0[/code] uses the local user.
+			</description>
+		</method>
+		<method name="get_debug_log" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns recent debug log lines when debug logging is enabled.
+			</description>
+		</method>
+		<method name="get_eligible_promo_item_definition_ids">
+			<return type="PackedInt32Array" />
+			<param index="0" name="steam_id" type="int" default="0" />
+			<description>
+				Returns item definition IDs for promo items the user can still receive. [param steam_id] [code]0[/code] uses the local user.
+			</description>
+		</method>
+		<method name="get_inventory_result_items">
+			<return type="Array" />
+			<param index="0" name="result_handle" type="int" />
+			<description>
+				Parses [SteamInventoryItem] entries from a valid inventory result handle (before [method serialize_inventory_result] or destroy).
+			</description>
+		</method>
+		<method name="get_inventory_result_status">
+			<return type="int" />
+			<param index="0" name="result_handle" type="int" />
+			<description>
+				Returns the Steam result code for an inventory result handle ([code]k_EResult[/code] values).
+			</description>
+		</method>
+		<method name="get_item_definition">
+			<return type="SteamItemDefinition" />
+			<param index="0" name="def_id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_item_definition_icon">
+			<return type="Image" />
+			<param index="0" name="def_id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_item_definition_ids">
+			<return type="PackedInt32Array" />
+			<description>
+			</description>
+		</method>
+		<method name="get_items_by_id">
+			<return type="Array" />
+			<param index="0" name="instance_ids" type="PackedInt64Array" />
+			<description>
+			</description>
+		</method>
+		<method name="get_local_steam_id" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the local user's 64-bit Steam ID, or [code]0[/code] if unavailable.
+			</description>
+		</method>
+		<method name="get_pending_auth_ticket_handle" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the auth ticket handle from the last ticket request.
+			</description>
+		</method>
+		<method name="get_pending_hex_ticket" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the hex-encoded ticket from the last successful ticket request.
+			</description>
+		</method>
+		<method name="get_pending_ticket_error" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the error message from the last failed ticket request.
+			</description>
+		</method>
+		<method name="get_persona_name" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the local user's Steam persona (display) name.
+			</description>
+		</method>
+		<method name="get_stat_float" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Returns the current float stat value, or [code]0.0[/code] if unavailable.
+			</description>
+		</method>
+		<method name="get_stat_int" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Returns the current integer stat value, or [code]-1[/code] if unavailable.
+			</description>
+		</method>
+		<method name="get_ticket_state" qualifiers="const">
+			<return type="int" enum="Steam.TicketState" />
+			<description>
+				Returns the current ticket request state.
+			</description>
+		</method>
+		<method name="grant_promo_items">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="has_inventory_support" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="increment_stat_int">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="delta" type="int" />
+			<description>
+				Increments an integer stat in memory by [code]1[/code]. [param delta] must be [code]1[/code]. Call [method store_stats] to persist.
+			</description>
+		</method>
+		<method name="initialize">
+			<return type="int" enum="Error" />
+			<param index="0" name="app_id" type="int" default="0" />
+			<description>
+				Loads and initializes the Steam API. [param app_id] sets [code]SteamAppId[/code] when greater than zero.
+			</description>
+		</method>
+		<method name="is_available">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when the Steam API library was found and loaded.
+			</description>
+		</method>
+		<method name="is_debug_logging_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns whether debug logging is enabled.
+			</description>
+		</method>
+		<method name="is_initialized" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] after a successful [method initialize] call.
+			</description>
+		</method>
+		<method name="is_logged_on" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns whether the local Steam user is logged on.
+			</description>
+		</method>
+		<method name="load_item_definitions">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="poll_callbacks">
+			<return type="void" />
+			<description>
+				Pumps the Steam manual callback dispatch queue.
+			</description>
+		</method>
+		<method name="refresh_current_stats">
+			<return type="bool" />
+			<description>
+				Waits for a fresh user-stats callback from Steam, for example after server-side achievement changes. Uses cached data if no callback arrives in time.
+			</description>
+		</method>
+		<method name="remove_property">
+			<return type="bool" />
+			<param index="0" name="instance_id" type="int" />
+			<param index="1" name="property_name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="request_current_stats">
+			<return type="bool" />
+			<description>
+				Ensures local achievement and stat data is loaded. Returns immediately when stats are already available.
+			</description>
+		</method>
+		<method name="request_item_definitions">
+			<return type="bool" />
+			<param index="0" name="timeout_sec" type="float" default="15.0" />
+			<description>
+			</description>
+		</method>
+		<method name="request_web_api_ticket">
+			<return type="void" />
+			<param index="0" name="identity" type="String" default="&quot;blazium&quot;" />
+			<description>
+				Requests a Web API session ticket and emits [signal web_api_ticket_ready] on success.
+			</description>
+		</method>
+		<method name="serialize_inventory_result">
+			<return type="PackedByteArray" />
+			<param index="0" name="result_handle" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_achievement">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Unlocks an achievement for the local user in memory. Call [method store_stats] to persist.
+			</description>
+		</method>
+		<method name="set_debug_logging">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				Enables or disables verbose debug logging.
+			</description>
+		</method>
+		<method name="set_property_bool">
+			<return type="bool" />
+			<param index="0" name="instance_id" type="int" />
+			<param index="1" name="property_name" type="String" />
+			<param index="2" name="value" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_property_float">
+			<return type="bool" />
+			<param index="0" name="instance_id" type="int" />
+			<param index="1" name="property_name" type="String" />
+			<param index="2" name="value" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_property_int64">
+			<return type="bool" />
+			<param index="0" name="instance_id" type="int" />
+			<param index="1" name="property_name" type="String" />
+			<param index="2" name="value" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_property_string">
+			<return type="bool" />
+			<param index="0" name="instance_id" type="int" />
+			<param index="1" name="property_name" type="String" />
+			<param index="2" name="value" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="set_stat_float">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="value" type="float" />
+			<description>
+				Sets a float stat to an absolute value in memory. Call [method store_stats] to persist.
+			</description>
+		</method>
+		<method name="set_stat_int">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="value" type="int" />
+			<description>
+				Sets an integer stat to an absolute value in memory. Call [method store_stats] to persist.
+			</description>
+		</method>
+		<method name="shutdown">
+			<return type="void" />
+			<description>
+				Shuts down the Steam API session.
+			</description>
+		</method>
+		<method name="start_property_update">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="store_stats">
+			<return type="bool" />
+			<description>
+				Uploads pending achievement and stat changes to Steam.
+			</description>
+		</method>
+		<method name="submit_property_update">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="transfer_item_quantity">
+			<return type="bool" />
+			<param index="0" name="source_instance_id" type="int" />
+			<param index="1" name="quantity" type="int" />
+			<param index="2" name="dest_instance_id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="trigger_item_drop">
+			<return type="bool" />
+			<param index="0" name="drop_list_definition" type="int" />
+			<description>
+				Triggers a playtime item drop for a [code]playtimegenerator[/code] item definition. Waits for the async inventory result.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="inventory_definitions_updated">
+			<description>
+			</description>
+		</signal>
+		<signal name="inventory_full_update">
+			<param index="0" name="result_handle" type="int" />
+			<description>
+			</description>
+		</signal>
+		<signal name="inventory_result_ready">
+			<param index="0" name="result_handle" type="int" />
+			<param index="1" name="result_code" type="int" />
+			<description>
+			</description>
+		</signal>
+		<signal name="web_api_ticket_failed">
+			<param index="0" name="error_message" type="String" />
+			<description>
+				Emitted when [method request_web_api_ticket] fails.
+			</description>
+		</signal>
+		<signal name="web_api_ticket_ready">
+			<param index="0" name="hex_ticket" type="String" />
+			<param index="1" name="auth_ticket_handle" type="int" />
+			<description>
+				Emitted when a Web API session ticket is ready.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="TICKET_STATE_IDLE" value="0" enum="TicketState">
+			No ticket request is active.
+		</constant>
+		<constant name="TICKET_STATE_PENDING" value="1" enum="TicketState">
+			A ticket request is in progress.
+		</constant>
+		<constant name="TICKET_STATE_READY" value="2" enum="TicketState">
+			The latest ticket request succeeded.
+		</constant>
+		<constant name="TICKET_STATE_FAILED" value="3" enum="TicketState">
+			The latest ticket request failed.
+		</constant>
+		<constant name="AVATAR_SIZE_SMALL" value="0" enum="AvatarSize">
+			Small avatar (32x32).
+		</constant>
+		<constant name="AVATAR_SIZE_MEDIUM" value="1" enum="AvatarSize">
+			Medium avatar (64x64).
+		</constant>
+		<constant name="AVATAR_SIZE_LARGE" value="2" enum="AvatarSize">
+			Large avatar (184x184).
+		</constant>
+	</constants>
+</class>

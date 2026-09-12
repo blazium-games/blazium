@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MultiuserEditorGhostCursorOverlay" inherits="Control" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Draws remote peer cursors over the active script editor.
+	</brief_description>
+	<description>
+		[MultiuserEditorGhostCursorOverlay] renders transient cursor markers for remote peers in the active [CodeEdit]. It uses editor-derived line and column geometry so cursor markers follow wrapping, scrolling, and font metrics, and it removes stale cursor entries when peers stop broadcasting cursor updates.
+		The overlay is managed by [MultiuserEditorPlugin] and is enabled by the [code]blazium/multiuser_editor/show_remote_cursors[/code] editor setting.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

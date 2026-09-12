@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPToolExecutor" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Routes MCP tool calls to the matching JustAMCP tool implementation.
+	</brief_description>
+	<description>
+		[JustAMCPToolExecutor] builds the available tool schema list and dispatches validated tool calls to specialized tool groups such as [JustAMCPSceneTools], [JustAMCPResourceTools], [JustAMCPScriptTools], and [JustAMCPDocumentationTools]. Use it when code needs the same tool surface exposed to MCP clients.
+		Long-running tools expose [code]execution.taskSupport: optional[/code] in schemas (autowork, export, batch, editor play/reload) for MCP task-augmented [code]tools/call[/code].
+		[codeblock]
+		var schemas = JustAMCPToolExecutor.get_tool_schemas()
+		var executor = JustAMCPToolExecutor.new()
+		var response = executor.execute_tool("scene_tree", {})
+		print(response)
+		[/codeblock]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="execute_tool">
+			<return type="Dictionary" />
+			<param index="0" name="tool_name" type="String" />
+			<param index="1" name="args" type="Dictionary" />
+			<description>
+				Executes the tool named by [param tool_name] with [param args] and returns the tool response dictionary. Unknown or unavailable tools return an error dictionary.
+			</description>
+		</method>
+		<method name="get_tool_schemas" qualifiers="static">
+			<return type="Array" />
+			<param index="0" name="register_only" type="bool" default="false" />
+			<param index="1" name="ignore_settings" type="bool" default="false" />
+			<param index="2" name="apply_discovery_filter" type="bool" default="true" />
+			<param index="3" name="include_disabled_tools" type="bool" default="false" />
+			<description>
+				Returns MCP JSON schema dictionaries for the available tools. Set [param register_only] to return registration metadata only, or [param ignore_settings] to bypass editor filtering.
+			</description>
+		</method>
+		<method name="list_tools" qualifiers="static">
+			<return type="Dictionary" />
+			<param index="0" name="cursor" type="String" default="&quot;&quot;" />
+			<description>
+				Returns a paginated MCP [code]tools/list[/code] result dictionary with [code]tools[/code] and optional [code]nextCursor[/code]. [param cursor] is an opaque token from a previous page.
+			</description>
+		</method>
+		<method name="set_test_scene_root" qualifiers="static">
+			<return type="void" />
+			<param index="0" name="node" type="Node" />
+			<description>
+				Overrides the scene root used by scene-related tools. This is intended for tests and headless validation that need a deterministic root [Node].
+			</description>
+		</method>
+	</methods>
+</class>

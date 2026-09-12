@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPMultiuserTools" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		MCP tool bindings for controlling Multiuser Editor collaboration sessions.
+	</brief_description>
+	<description>
+		[JustAMCPMultiuserTools] exposes MCP-callable helpers that bridge JustAMCP to the native Multiuser Editor module. These tools let an MCP client inspect collaboration status, send chat messages to the current session, request peer removal, and trigger autowork across connected peers.
+		This class is only available when the [code]multiuser_editor[/code] module is built together with [code]justamcp[/code]. Each method returns a [Dictionary] containing at least an [code]ok[/code] field, and may include an [code]error[/code], [code]message[/code], or session-specific fields depending on the operation.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="multiuser_get_status">
+			<return type="Dictionary" />
+			<param index="0" name="args" type="Dictionary" />
+			<description>
+				Returns the current Multiuser Editor session status. The returned dictionary includes [code]ok[/code], [code]is_connected[/code], and [code]local_peer_id[/code] when the Multiuser Editor plugin is available. [param args] is reserved for future filters and may be empty.
+			</description>
+		</method>
+		<method name="multiuser_kick_peer">
+			<return type="Dictionary" />
+			<param index="0" name="args" type="Dictionary" />
+			<description>
+				Requests removal of the peer identified by [code]peer_id[/code] in [param args]. The request is ignored by the Multiuser Editor plugin when the local editor is not hosting or the peer cannot be found.
+			</description>
+		</method>
+		<method name="multiuser_send_chat">
+			<return type="Dictionary" />
+			<param index="0" name="args" type="Dictionary" />
+			<description>
+				Sends the [code]message[/code] string from [param args] to the active Multiuser Editor session. Returns an error dictionary when the editor is not connected to a session.
+			</description>
+		</method>
+		<method name="multiuser_trigger_autowork">
+			<return type="Dictionary" />
+			<param index="0" name="args" type="Dictionary" />
+			<description>
+				Triggers autowork execution through the Multiuser Editor plugin for connected peers. [param args] is currently unused and may be empty.
+			</description>
+		</method>
+	</methods>
+</class>

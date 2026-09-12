@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPResourceTools" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Provides MCP tools for reading and editing project resources.
+	</brief_description>
+	<description>
+		Registers resource-oriented tool schemas used by [JustAMCPToolExecutor]. These tools expose resource loading, saving, generation, and mutation helpers for project assets such as scenes, materials, scripts, and imported files.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

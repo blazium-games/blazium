@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DDDBrowserVolume" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Trigger / interaction volume marker for DDDBrowser levels.
+	</brief_description>
+	<description>
+		Exports as one of the schema volume instance types. Inspector fields adapt to the selected volume type (eventName, cooldown, teleport target, interaction prompt, etc.). Extra properties merge for forward compatibility.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="action" type="String" setter="set_action" getter="get_action" default="&quot;interact&quot;">
+		</member>
+		<member name="auto_remove_on_fire" type="bool" setter="set_auto_remove_on_fire" getter="get_auto_remove_on_fire" default="false">
+		</member>
+		<member name="auto_reset_after_fire" type="bool" setter="set_auto_reset_after_fire" getter="get_auto_reset_after_fire" default="false">
+		</member>
+		<member name="cooldown_seconds" type="float" setter="set_cooldown_seconds" getter="get_cooldown_seconds" default="1.0">
+		</member>
+		<member name="counter_word" type="String" setter="set_counter_word" getter="get_counter_word" default="&quot;count&quot;">
+		</member>
+		<member name="event_name" type="String" setter="set_event_name" getter="get_event_name" default="&quot;on_trigger&quot;">
+		</member>
+		<member name="extra_props" type="Dictionary" setter="set_extra_props" getter="get_extra_props" default="{}">
+		</member>
+		<member name="fire_once_when_reached" type="bool" setter="set_fire_once_when_reached" getter="get_fire_once_when_reached" default="false">
+		</member>
+		<member name="fov_degrees" type="float" setter="set_fov_degrees" getter="get_fov_degrees" default="30.0">
+		</member>
+		<member name="is_on" type="bool" setter="set_is_on" getter="get_is_on" default="false">
+		</member>
+		<member name="keep_velocity" type="bool" setter="set_keep_velocity" getter="get_keep_velocity" default="false">
+		</member>
+		<member name="max_fires" type="int" setter="set_max_fires" getter="get_max_fires" default="0">
+		</member>
+		<member name="on_activate_event" type="String" setter="set_on_activate_event" getter="get_on_activate_event" default="&quot;&quot;">
+		</member>
+		<member name="on_deactivate_event" type="String" setter="set_on_deactivate_event" getter="get_on_deactivate_event" default="&quot;&quot;">
+		</member>
+		<member name="radius" type="float" setter="set_radius" getter="get_radius" default="1.0">
+		</member>
+		<member name="required_count" type="int" setter="set_required_count" getter="get_required_count" default="1">
+		</member>
+		<member name="required_stay_time" type="float" setter="set_required_stay_time" getter="get_required_stay_time" default="1.0">
+		</member>
+		<member name="reset_if_wrong" type="bool" setter="set_reset_if_wrong" getter="get_reset_if_wrong" default="true">
+		</member>
+		<member name="sequence_group_id" type="String" setter="set_sequence_group_id" getter="get_sequence_group_id" default="&quot;seq&quot;">
+		</member>
+		<member name="sequence_index" type="int" setter="set_sequence_index" getter="get_sequence_index" default="0">
+		</member>
+		<member name="single_use" type="bool" setter="set_single_use" getter="get_single_use" default="false">
+		</member>
+		<member name="stay_interval" type="float" setter="set_stay_interval" getter="get_stay_interval" default="1.0">
+		</member>
+		<member name="target_instance_id" type="String" setter="set_target_instance_id" getter="get_target_instance_id" default="&quot;&quot;">
+		</member>
+		<member name="target_position" type="Vector3" setter="set_target_position" getter="get_target_position" default="Vector3(0, 0, 0)">
+		</member>
+		<member name="volume_type" type="int" setter="set_volume_type" getter="get_volume_type" enum="DDDBrowserVolume.VolumeType" default="3">
+		</member>
+	</members>
+	<constants>
+		<constant name="VOLUME_AUTOSAVE" value="0" enum="VolumeType">
+		</constant>
+		<constant name="VOLUME_LOOK_AT" value="1" enum="VolumeType">
+		</constant>
+		<constant name="VOLUME_LOOKED_AT" value="2" enum="VolumeType">
+		</constant>
+		<constant name="VOLUME_SINGLE_TRIGGER" value="3" enum="VolumeType">
+		</constant>
+		<constant name="VOLUME_MULTI_TRIGGER" value="4" enum="VolumeType">
+		</constant>
+		<constant name="VOLUME_COOLDOWN_TRIGGER" value="5" enum="VolumeType">
+		</constant>
+		<constant name="VOLUME_EXIT_TRIGGER" value="6" enum="VolumeType">
+		</constant>
+		<constant name="VOLUME_STAY_TRIGGER" value="7" enum="VolumeType">
+		</constant>
+		<constant name="VOLUME_TIMED_ENTRY_TRIGGER" value="8" enum="VolumeType">
+		</constant>
+		<constant name="VOLUME_COUNTER_TRIGGER" value="9" enum="VolumeType">
+		</constant>
+		<constant name="VOLUME_SEQUENCE_TRIGGER" value="10" enum="VolumeType">
+		</constant>
+		<constant name="VOLUME_TOGGLE_TRIGGER" value="11" enum="VolumeType">
+		</constant>
+		<constant name="VOLUME_TELEPORT" value="12" enum="VolumeType">
+		</constant>
+		<constant name="VOLUME_INTERACTION" value="13" enum="VolumeType">
+		</constant>
+	</constants>
+</class>

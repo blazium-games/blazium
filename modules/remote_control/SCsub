@@ -1,0 +1,23 @@
+#!/usr/bin/env python
+from misc.utility.scons_hints import *
+
+Import("env")
+Import("env_modules")
+
+env_remote_control = env_modules.Clone()
+
+# Soft dependency: Luau eval needs LuaState headers + VM include path.
+if env["module_luau_module_enabled"]:
+    thirdparty_dir = "#thirdparty/luau/"
+    env_remote_control.Prepend(
+        CPPPATH=[
+            "#modules/luau_module/",
+            thirdparty_dir + "Common/include",
+            thirdparty_dir + "Ast/include",
+            thirdparty_dir + "Compiler/include",
+            thirdparty_dir + "VM/include",
+            thirdparty_dir + "VM/src",
+        ]
+    )
+
+env_remote_control.add_source_files(env.modules_sources, "*.cpp")

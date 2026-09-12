@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="LuauFormatter" inherits="Object" experimental="" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="format_selection" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="source" type="String" />
+			<param index="1" name="from" type="int" />
+			<param index="2" name="to" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="format_source" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="source" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="format_with_stylua" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="source" type="String" />
+			<param index="1" name="path" type="String" default="&quot;&quot;" />
+			<description>
+			</description>
+		</method>
+		<method name="minify_source" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="source" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="tree_shake_source" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="source" type="String" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

@@ -1,0 +1,548 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DotIniFile" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		INI configuration file handler with macros, type constraints, and serialization utilities.
+	</brief_description>
+	<description>
+		Provides an extended INI configuration system with support for sections, keys, macros, type constraints, and multiple serialization formats.
+
+		It can load and save configuration data from files, strings, buffers, and encrypted sources.
+		It also supports value interpolation, comments, automatic saving, and merging with other DotIniFile instances.
+
+		This class is designed as a more powerful alternative to ConfigFile, adding features such as macro expansion, typed values, and include handling.
+	</description>
+	<tutorials>
+		<link title="DotINI Module Test">https://github.com/blazium-games/dotini_module_tests</link>
+	</tutorials>
+	<methods>
+		<method name="add_macro">
+			<return type="void" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="value" type="String" />
+			<description>
+				Defines a macro with the given [param name] and [param value].
+			</description>
+		</method>
+		<method name="add_type_constraint">
+			<return type="void" />
+			<param index="0" name="section" type="String" />
+			<param index="1" name="key" type="String" />
+			<param index="2" name="type" type="int" enum="Variant.Type" />
+			<description>
+				Adds a type constraint for the specified [param section] and [param key].
+			</description>
+		</method>
+		<method name="append_value">
+			<return type="void" />
+			<param index="0" name="section" type="String" />
+			<param index="1" name="key" type="String" />
+			<param index="2" name="value" type="Variant" />
+			<description>
+				Appends [param value] to an existing key.
+				If the key does not store an array, it will be converted into one.
+			</description>
+		</method>
+		<method name="check_for_updates">
+			<return type="bool" />
+			<description>
+				Checks whether the underlying file has changed on disk.
+				Returns [code]true[/code] if it has been modified.
+			</description>
+		</method>
+		<method name="clear">
+			<return type="void" />
+			<description>
+				Removes all sections, keys, macros, and constraints.
+			</description>
+		</method>
+		<method name="clear_section">
+			<return type="void" />
+			<param index="0" name="section" type="String" />
+			<description>
+				Removes all keys from the specified [param section] without deleting the section itself.
+			</description>
+		</method>
+		<method name="clone" qualifiers="const">
+			<return type="DotIniFile" />
+			<description>
+				Returns a deep copy of this [DotIniFile] instance.
+			</description>
+		</method>
+		<method name="ensure_value">
+			<return type="Variant" />
+			<param index="0" name="section" type="String" />
+			<param index="1" name="key" type="String" />
+			<param index="2" name="default_value" type="Variant" />
+			<description>
+				Returns the value at [param section]/[param key], creating it with [param default_value] if it does not exist.
+			</description>
+		</method>
+		<method name="erase_section">
+			<return type="void" />
+			<param index="0" name="section" type="String" />
+			<description>
+				Removes the entire section and all its keys.
+			</description>
+		</method>
+		<method name="erase_section_key">
+			<return type="void" />
+			<param index="0" name="section" type="String" />
+			<param index="1" name="key" type="String" />
+			<description>
+				Removes a specific key from a section.
+			</description>
+		</method>
+		<method name="from_config_file">
+			<return type="void" />
+			<param index="0" name="config" type="ConfigFile" />
+			<description>
+				Populates this instance using data from a [ConfigFile].
+			</description>
+		</method>
+		<method name="from_dictionary">
+			<return type="void" />
+			<param index="0" name="dict" type="Dictionary" />
+			<description>
+				Populates this instance from a nested dictionary structure.
+			</description>
+		</method>
+		<method name="get_global_fallback" qualifiers="static">
+			<return type="DotIniFile" />
+			<description>
+				Returns the global fallback [DotIniFile] used when a value is missing.
+			</description>
+		</method>
+		<method name="get_included_files" qualifiers="const">
+			<return type="DotIniFile[]" />
+			<description>
+				Returns a list of included [DotIniFile] instances.
+			</description>
+		</method>
+		<method name="get_key_comment" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="section" type="String" />
+			<param index="1" name="key" type="String" />
+			<description>
+				Returns the comment associated with the specified key.
+			</description>
+		</method>
+		<method name="get_keys_matching" qualifiers="const">
+			<return type="PackedStringArray" />
+			<param index="0" name="section" type="String" />
+			<param index="1" name="match_pattern" type="String" />
+			<description>
+				Returns keys in a section matching the given pattern.
+			</description>
+		</method>
+		<method name="get_macro" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Returns the value of a defined macro.
+			</description>
+		</method>
+		<method name="get_section_as_dict" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="section" type="String" />
+			<description>
+				Returns all key-value pairs in a section as a dictionary.
+			</description>
+		</method>
+		<method name="get_section_comment" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="section" type="String" />
+			<description>
+				Returns the comment associated with a section.
+			</description>
+		</method>
+		<method name="get_section_keys" qualifiers="const">
+			<return type="PackedStringArray" />
+			<param index="0" name="section" type="String" />
+			<description>
+				Returns all keys within a section.
+			</description>
+		</method>
+		<method name="get_sections" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				Returns all section names.
+			</description>
+		</method>
+		<method name="get_value" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="section" type="String" />
+			<param index="1" name="key" type="String" />
+			<param index="2" name="default" type="Variant" default="null" />
+			<param index="3" name="interpolate" type="bool" default="true" />
+			<description>
+				Returns the value for a key, optionally performing macro interpolation.
+				Returns [param default] if not found.
+			</description>
+		</method>
+		<method name="get_value_array" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="section" type="String" />
+			<param index="1" name="key" type="String" />
+			<param index="2" name="interpolate" type="bool" default="true" />
+			<description>
+				Returns the value as an [Array].
+				If the stored value is not an array, it may be converted.
+				If [param interpolate] is [code]true[/code], macro interpolation is applied.
+			</description>
+		</method>
+		<method name="get_value_b64" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="section" type="String" />
+			<param index="1" name="key" type="String" />
+			<param index="2" name="default" type="String" default="&quot;&quot;" />
+			<description>
+				Returns the value decoded from Base64.
+				If the key is not found, returns [param default].
+			</description>
+		</method>
+		<method name="get_value_bool" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="section" type="String" />
+			<param index="1" name="key" type="String" />
+			<param index="2" name="default" type="bool" default="false" />
+			<param index="3" name="interpolate" type="bool" default="true" />
+			<description>
+				Returns the value converted to a [bool].
+				If the key is not found, returns [param default].
+				If [param interpolate] is [code]true[/code], macro interpolation is applied.
+			</description>
+		</method>
+		<method name="get_value_float" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="section" type="String" />
+			<param index="1" name="key" type="String" />
+			<param index="2" name="default" type="float" default="0.0" />
+			<param index="3" name="interpolate" type="bool" default="true" />
+			<description>
+				Returns the value converted to a [float].
+				If the key is not found, returns [param default].
+				If [param interpolate] is [code]true[/code], macro interpolation is applied.
+			</description>
+		</method>
+		<method name="get_value_int" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="section" type="String" />
+			<param index="1" name="key" type="String" />
+			<param index="2" name="default" type="int" default="0" />
+			<param index="3" name="interpolate" type="bool" default="true" />
+			<description>
+				Returns the value converted to an [int].
+				If the key is not found, returns [param default].
+				If [param interpolate] is [code]true[/code], macro interpolation is applied.
+			</description>
+		</method>
+		<method name="get_value_raw" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="section" type="String" />
+			<param index="1" name="key" type="String" />
+			<param index="2" name="default" type="String" default="&quot;&quot;" />
+			<description>
+				Returns the raw string value without applying interpolation.
+				If the key is not found, returns [param default].
+			</description>
+		</method>
+		<method name="get_value_string" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="section" type="String" />
+			<param index="1" name="key" type="String" />
+			<param index="2" name="default" type="String" default="&quot;&quot;" />
+			<param index="3" name="interpolate" type="bool" default="true" />
+			<description>
+				Returns the value as a [String].
+				If the key is not found, returns [param default].
+				If [param interpolate] is [code]true[/code], macro interpolation is applied.
+			</description>
+		</method>
+		<method name="has_section" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="section" type="String" />
+			<description>
+				Returns [code]true[/code] if the section exists.
+			</description>
+		</method>
+		<method name="has_section_key" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="section" type="String" />
+			<param index="1" name="key" type="String" />
+			<description>
+				Returns [code]true[/code] if the specified key exists.
+			</description>
+		</method>
+		<method name="is_autosave_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if autosave is enabled.
+				When enabled, changes to the configuration are automatically written to disk.
+			</description>
+		</method>
+		<method name="is_read_only" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the file is in read-only mode.
+				When read-only, modifications to values or structure are not allowed.
+			</description>
+		</method>
+		<method name="load">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="append" type="bool" default="false" />
+			<description>
+				Loads configuration data from a file.
+				If [param append] is [code]true[/code], merges with existing data.
+			</description>
+		</method>
+		<method name="load_encrypted">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="key" type="PackedByteArray" />
+			<param index="2" name="append" type="bool" default="false" />
+			<description>
+				Loads configuration data from an encrypted file at [param path] using the provided binary [param key].
+				If [param append] is [code]true[/code], the loaded data is merged with existing data instead of replacing it.
+				Returns an [enum Error] code.
+			</description>
+		</method>
+		<method name="load_encrypted_pass">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="pass" type="String" />
+			<param index="2" name="append" type="bool" default="false" />
+			<description>
+				Loads configuration data from an encrypted file at [param path] using the provided password [param pass].
+				If [param append] is [code]true[/code], the loaded data is merged with existing data instead of replacing it.
+				Returns an [enum Error] code.
+			</description>
+		</method>
+		<method name="load_from_base64">
+			<return type="int" enum="Error" />
+			<param index="0" name="base64" type="String" />
+			<param index="1" name="append" type="bool" default="false" />
+			<description>
+				Loads configuration data from a Base64-encoded string.
+				If [param append] is [code]true[/code], the loaded data is merged with existing data instead of replacing it.
+				Returns an [enum Error] code.
+			</description>
+		</method>
+		<method name="load_from_buffer">
+			<return type="int" enum="Error" />
+			<param index="0" name="buffer" type="PackedByteArray" />
+			<param index="1" name="append" type="bool" default="false" />
+			<description>
+				Loads configuration data from a binary buffer.
+				If [param append] is [code]true[/code], the loaded data is merged with existing data instead of replacing it.
+				Returns an [enum Error] code.
+			</description>
+		</method>
+		<method name="load_from_string">
+			<return type="int" enum="Error" />
+			<param index="0" name="string" type="String" />
+			<param index="1" name="append" type="bool" default="false" />
+			<description>
+				Loads configuration data from a plain text string in INI format.
+				If [param append] is [code]true[/code], the loaded data is merged with existing data instead of replacing it.
+				Returns an [enum Error] code.
+			</description>
+		</method>
+		<method name="merge_with">
+			<return type="void" />
+			<param index="0" name="other" type="DotIniFile" />
+			<param index="1" name="overwrite" type="bool" default="true" />
+			<description>
+				Merges another [DotIniFile] into this one.
+				If [param overwrite] is [code]true[/code], existing values are replaced.
+			</description>
+		</method>
+		<method name="remove_type_constraint">
+			<return type="void" />
+			<param index="0" name="section" type="String" />
+			<param index="1" name="key" type="String" />
+			<description>
+				Removes any type constraint associated with the specified [param section] and [param key], allowing values of any type to be assigned.
+			</description>
+		</method>
+		<method name="rename_key">
+			<return type="void" />
+			<param index="0" name="section" type="String" />
+			<param index="1" name="old_key" type="String" />
+			<param index="2" name="new_key" type="String" />
+			<description>
+				Renames a key from [param old_key] to [param new_key] within the given [param section], preserving its value and metadata.
+			</description>
+		</method>
+		<method name="rename_section">
+			<return type="void" />
+			<param index="0" name="old_section" type="String" />
+			<param index="1" name="new_section" type="String" />
+			<description>
+				Renames a section from [param old_section] to [param new_section], preserving all contained keys and metadata.
+			</description>
+		</method>
+		<method name="save">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" default="&quot;&quot;" />
+			<description>
+				Saves the configuration to disk.
+				If [param path] is empty, uses the last loaded path.
+			</description>
+		</method>
+		<method name="save_all">
+			<return type="int" enum="Error" />
+			<description>
+				Saves this configuration and all included files to their respective paths.
+				Returns an [enum Error] code.
+			</description>
+		</method>
+		<method name="save_encrypted">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="key" type="PackedByteArray" />
+			<description>
+				Saves the configuration to an encrypted file at [param path] using the provided binary [param key].
+				Returns an [enum Error] code.
+			</description>
+		</method>
+		<method name="save_encrypted_pass">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="pass" type="String" />
+			<description>
+				Saves the configuration to an encrypted file at [param path] using the provided password [param pass].
+				Returns an [enum Error] code.
+			</description>
+		</method>
+		<method name="save_to_base64" qualifiers="const">
+			<return type="String" />
+			<description>
+				Serializes the configuration to a Base64-encoded string.
+			</description>
+		</method>
+		<method name="save_to_buffer" qualifiers="const">
+			<return type="PackedByteArray" />
+			<description>
+				Serializes the configuration to a binary buffer.
+			</description>
+		</method>
+		<method name="save_to_string" qualifiers="const">
+			<return type="String" />
+			<description>
+				Serializes the configuration to a plain text string in INI format.
+			</description>
+		</method>
+		<method name="set_autosave">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				Enables or disables autosave.
+				When enabled, changes to the configuration are automatically written to disk.
+			</description>
+		</method>
+		<method name="set_default_padding">
+			<return type="void" />
+			<param index="0" name="pre_key" type="String" />
+			<param index="1" name="post_key" type="String" />
+			<param index="2" name="pre_val" type="String" />
+			<param index="3" name="post_val" type="String" />
+			<description>
+				Sets the default formatting padding used when saving keys and values.
+				This controls spacing before and after keys and values.
+			</description>
+		</method>
+		<method name="set_global_fallback" qualifiers="static">
+			<return type="void" />
+			<param index="0" name="fallback" type="DotIniFile" />
+			<description>
+				Sets the global [param fallback] [DotIniFile] used when a value is not found in the current instance.
+			</description>
+		</method>
+		<method name="set_key_comment">
+			<return type="void" />
+			<param index="0" name="section" type="String" />
+			<param index="1" name="key" type="String" />
+			<param index="2" name="comment" type="String" />
+			<description>
+				Sets a comment for the specified key within a section.
+			</description>
+		</method>
+		<method name="set_read_only">
+			<return type="void" />
+			<param index="0" name="read_only" type="bool" />
+			<description>
+				Enables or disables read-only mode.
+				When enabled, modifications to the configuration are not allowed.
+			</description>
+		</method>
+		<method name="set_section_comment">
+			<return type="void" />
+			<param index="0" name="section" type="String" />
+			<param index="1" name="comment" type="String" />
+			<description>
+				Sets a comment for the specified section.
+			</description>
+		</method>
+		<method name="set_value">
+			<return type="void" />
+			<param index="0" name="section" type="String" />
+			<param index="1" name="key" type="String" />
+			<param index="2" name="value" type="Variant" />
+			<description>
+				Sets the value for a given section and key.
+			</description>
+		</method>
+		<method name="set_value_b64">
+			<return type="void" />
+			<param index="0" name="section" type="String" />
+			<param index="1" name="key" type="String" />
+			<param index="2" name="utf8_string" type="String" />
+			<description>
+				Encodes the given [param utf8_string] as Base64 and stores it as the value for the specified [param section] and [param key].
+			</description>
+		</method>
+		<method name="sort_section_keys">
+			<return type="void" />
+			<param index="0" name="section" type="String" />
+			<param index="1" name="ascending" type="bool" default="true" />
+			<description>
+				Sorts the keys within the specified [param section] alphabetically.
+				If [param ascending] is [code]false[/code], keys are sorted in descending order.
+			</description>
+		</method>
+		<method name="to_config_file" qualifiers="const">
+			<return type="ConfigFile" />
+			<description>
+				Converts this [DotIniFile] into a [ConfigFile] instance containing the same sections and key-value pairs.
+			</description>
+		</method>
+		<method name="to_dictionary" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Exports the entire configuration as a dictionary.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="file_reloaded">
+			<description>
+				Emitted when the file is reloaded after detecting external changes.
+			</description>
+		</signal>
+		<signal name="section_erased">
+			<param index="0" name="section" type="String" />
+			<description>
+				Emitted when a section is removed.
+			</description>
+		</signal>
+		<signal name="value_changed">
+			<param index="0" name="section" type="String" />
+			<param index="1" name="key" type="String" />
+			<param index="2" name="new_value" type="Variant" />
+			<description>
+				Emitted when a value is modified.
+			</description>
+		</signal>
+	</signals>
+</class>

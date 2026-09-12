@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TiledEnumDefinition" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_id" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_max_value" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_name" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_storage_type" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_values">
+			<return type="Array" />
+			<param index="0" name="num" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="has_value" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="str" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="has_value_id" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="num" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="has_values_as_flags" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

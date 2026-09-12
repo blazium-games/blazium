@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JustAMCPProjectTools" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Provides MCP tools for reading project configuration and metadata.
+	</brief_description>
+	<description>
+		Registers project-oriented tool schemas used by [JustAMCPToolExecutor]. These tools expose project settings, filesystem metadata, autoloads, and other high-level project information to MCP clients.
+	</description>
+	<tutorials>
+		<link title="Model Context Protocol (MCP)">https://modelcontextprotocol.io/</link>
+	</tutorials>
+</class>

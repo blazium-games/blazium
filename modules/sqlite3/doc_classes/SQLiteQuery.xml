@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SQLiteQuery" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Class for executing SQL queries on an SQLite database.
+	</brief_description>
+	<description>
+		A class that allows you to execute SQL queries on an SQLite database. It provides methods for both single and batch execution of queries. It also provides a method to retrieve the column names from the last executed query and a method to get the last error message, if any.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="batch_execute">
+			<return type="SQLiteQueryResult[]" />
+			<param index="0" name="rows" type="Array" />
+			<description>
+				Executes a batch of SQL queries. The queries are provided as an array of strings. Returns the result of the last query in the batch.
+			</description>
+		</method>
+		<method name="execute">
+			<return type="SQLiteQueryResult" />
+			<param index="0" name="arguments" type="Variant" default="null" />
+			<description>
+				Executes a single SQL query. The query is provided as a string. If the query requires arguments, they can be provided as an array. Returns the result of the query.
+			</description>
+		</method>
+		<method name="finalize_query">
+			<return type="void" />
+			<description>
+				Finalizes and cleans up the prepared query statement.
+			</description>
+		</method>
+		<method name="get_columns">
+			<return type="SQLiteColumnSchema[]" />
+			<description>
+				Returns an array of column names from the last executed query.
+			</description>
+		</method>
+		<method name="get_last_error_message" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the last error message, if any. If there was no error, returns an empty string.
+			</description>
+		</method>
+		<method name="get_stmt_status">
+			<return type="int" />
+			<param index="0" name="op" type="int" />
+			<param index="1" name="reset" type="bool" default="false" />
+			<description>
+				Returns the current value of a statement status counter identified by [param op].
+				These counters track how many times specific operations were performed by the prepared statement and can be used to analyze its performance characteristics.
+
+				If [param reset] is [code]true[/code], the selected counter is reset to zero after its value is retrieved. Otherwise, the counter value is left unchanged.
+			</description>
+		</method>
+		<method name="is_ready" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns true if the statement is prepared.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="arguments" type="Variant" setter="set_arguments" getter="get_arguments" default="null">
+			Arguments for the query.
+		</member>
+		<member name="query" type="String" setter="" getter="get_query" default="&quot;&quot;">
+			The query executed.
+		</member>
+	</members>
+</class>

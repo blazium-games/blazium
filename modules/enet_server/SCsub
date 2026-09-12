@@ -1,0 +1,23 @@
+#!/usr/bin/env python
+from misc.utility.scons_hints import *
+
+Import("env")
+Import("env_modules")
+
+env_enet_server = env_modules.Clone()
+
+# Add ENet include path (same as enet module)
+if env["builtin_enet"]:
+    thirdparty_dir = "#thirdparty/enet/"
+    env_enet_server.Prepend(CPPPATH=[thirdparty_dir])
+    # Add to base env so tests can find enet headers
+    if thirdparty_dir not in env["CPPPATH"]:
+        env.Prepend(CPPPATH=[thirdparty_dir])
+
+# Module source files
+module_obj = []
+
+env_enet_server.add_source_files(module_obj, "*.cpp")
+env.modules_sources += module_obj
+
+# Tests are auto-discovered by the build system when they have the test_ prefix

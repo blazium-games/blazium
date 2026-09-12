@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AutoworkStubber" inherits="RefCounted" experimental="Some methods may not be implemented and may be changed in future versions." xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Defines and manages stubbed method behavior for test doubles.
+	</brief_description>
+	<description>
+		The AutoworkStubber is responsible for overriding method behavior during tests by defining custom return values.
+
+		It allows tests to replace real method implementations with controlled responses, enabling deterministic and isolated testing.
+		Stubs can be defined globally for a method or conditionally based on arguments.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="clear">
+			<return type="void" />
+			<description>
+				Clears all defined stubs.
+
+				After calling this method, no methods will have overridden return values and all behavior will revert to default implementation.
+			</description>
+		</method>
+		<method name="get_return">
+			<return type="Variant" />
+			<param index="0" name="object" type="Variant" />
+			<param index="1" name="method_name" type="StringName" />
+			<param index="2" name="args" type="Array" default="[]" />
+			<description>
+				Returns the stubbed return value for a method call.
+
+				If a stub exists for the given [param object], [param method_name], and optional [param args], the configured return value is returned.
+				Otherwise, [code]null[/code] is returned or the original method behavior is used depending on context.
+			</description>
+		</method>
+		<method name="set_return">
+			<return type="void" />
+			<param index="0" name="object" type="Variant" />
+			<param index="1" name="method_name" type="StringName" />
+			<param index="2" name="return_value" type="Variant" />
+			<param index="3" name="args" type="Variant" default="null" />
+			<description>
+				Defines a stubbed return value for a method.
+
+				When [param method_name] is called on [param object], the provided [param return_value] will be returned instead of executing the original method.
+				If [param args] is specified, the stub only applies when the arguments match.
+			</description>
+		</method>
+		<method name="should_call_super">
+			<return type="bool" />
+			<param index="0" name="object" type="Variant" />
+			<param index="1" name="method_name" type="StringName" />
+			<param index="2" name="args" type="Array" default="[]" />
+			<description>
+				Returns whether the original method implementation should still be called.
+
+				If [code]true[/code], the stub allows execution of the original method in addition to or instead of returning a stubbed value.
+				This is useful for partial stubbing or wrapping behavior.
+			</description>
+		</method>
+	</methods>
+</class>

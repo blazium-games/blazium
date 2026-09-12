@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="InterDVDDisc" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Scene-tree root for an Interactive DVD. Compiles to [InterDVDProject] at export.
+	</brief_description>
+	<description>
+		Author titles, menus, and encode settings on this node instead of ProjectSettings. Child [InterDVDTitle] and [InterDVDTitleSet] nodes become VTS titles. Child [InterDVDMenuPage] nodes become VMGM/VTSM menus. [method build_project] is the export IR. Project → Tools → Create Interactive DVD Scene inserts a VLC-safe skeleton (title menu, main title, menu title).
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_chapter_to_last">
+			<return type="InterDVDChapter" />
+			<param index="0" name="name" type="String" default="&quot;Chapter&quot;" />
+			<description>
+				Appends a chapter to the last title, creating a title if needed.
+			</description>
+		</method>
+		<method name="add_menu_title">
+			<return type="InterDVDTitle" />
+			<param index="0" name="name" type="String" default="&quot;Menu&quot;" />
+			<description>
+				Appends a VLC-safe menu title PGC ([member InterDVDTitle.menu_title], still 255).
+			</description>
+		</method>
+		<method name="add_title">
+			<return type="InterDVDTitle" />
+			<param index="0" name="name" type="String" default="&quot;Title&quot;" />
+			<description>
+				Appends a title child and returns it.
+			</description>
+		</method>
+		<method name="add_title_menu">
+			<return type="InterDVDMenuPage" />
+			<param index="0" name="name" type="String" default="&quot;TitleMenu&quot;" />
+			<description>
+				Appends a VMGM title menu with still time 0.
+			</description>
+		</method>
+		<method name="add_root_menu">
+			<return type="InterDVDMenuPage" />
+			<param index="0" name="name" type="String" default="&quot;RootMenu&quot;" />
+			<description>
+				Appends a VTSM root menu on the last title set, or as a disc child.
+			</description>
+		</method>
+		<method name="add_title_set">
+			<return type="InterDVDTitleSet" />
+			<param index="0" name="name" type="String" default="&quot;TitleSet&quot;" />
+			<description>
+				Appends an [InterDVDTitleSet] (one [code]VTS_NN[/code]).
+			</description>
+		</method>
+		<method name="apply_settings_to">
+			<return type="void" />
+			<param index="0" name="project" type="InterDVDProject" />
+			<description>
+				Copies disc identity, encode, extras, and languages onto [param project]. Used by [method build_project].
+			</description>
+		</method>
+		<method name="apply_scene_owner">
+			<return type="void" />
+			<param index="0" name="owner" type="Node" />
+			<description>
+				Sets [param owner] on this node (if it is not the owner) and every descendant so the scene tree saves children.
+			</description>
+		</method>
+		<method name="build_project" qualifiers="const">
+			<return type="InterDVDProject" />
+			<description>
+				Walks children and returns the authored disc graph. Resolves hotspot [member InterDVDHotspot.destination] paths to title numbers. [constant FIRST_PLAY_TITLE_MENU] leaves First Play empty when a title menu has buttons (export JumpSS). [constant FIRST_PLAY_MAIN_TITLE] writes JumpTT to the first non-menu title.
+			</description>
+		</method>
+		<method name="create_starter" qualifiers="static">
+			<return type="InterDVDDisc" />
+			<description>
+				Builds Disc / TitleMenu+Play / Main+Chapter1 / Menu+Play with Play jumping to Main.
+			</description>
+		</method>
+		<method name="find_in_tree" qualifiers="static">
+			<return type="InterDVDDisc" />
+			<param index="0" name="root" type="Node" />
+			<description>
+				Returns [param root] if it is an [InterDVDDisc], otherwise the first descendant disc, or [code]null[/code].
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="ac3_bitrate_k" type="int" setter="set_ac3_bitrate_k" getter="get_ac3_bitrate_k" default="192">
+			AC3 encode bitrate in kbps.
+		</member>
+		<member name="ac3_channels" type="int" setter="set_ac3_channels" getter="get_ac3_channels" default="2">
+			AC3 channel count (1–6).
+		</member>
+		<member name="audio_language" type="String" setter="set_audio_language" getter="get_audio_language" default="&quot;en&quot;">
+			Default title audio language.
+		</member>
+		<member name="author" type="String" setter="set_author" getter="get_author" default="&quot;&quot;">
+			Disc metadata author.
+		</member>
+		<member name="autorun_icon" type="String" setter="set_autorun_icon" getter="get_autorun_icon" default="&quot;&quot;">
+			Optional AUTORUN.INF icon path.
+		</member>
+		<member name="autorun_label" type="String" setter="set_autorun_label" getter="get_autorun_label" default="&quot;&quot;">
+			Optional AUTORUN.INF label.
+		</member>
+		<member name="autorun_open" type="String" setter="set_autorun_open" getter="get_autorun_open" default="&quot;&quot;">
+			Optional AUTORUN.INF open target.
+		</member>
+		<member name="bake_warmup_frames" type="int" setter="set_bake_warmup_frames" getter="get_bake_warmup_frames" default="2">
+			Viewport frames skipped before the first captured bake frame.
+		</member>
+		<member name="copyright" type="String" setter="set_copyright" getter="get_copyright" default="&quot;&quot;">
+			Copyright text packed by the toolchain.
+		</member>
+		<member name="copyright_file" type="String" setter="set_copyright_file" getter="get_copyright_file" default="&quot;&quot;">
+			Copyright file copied onto the disc root.
+		</member>
+		<member name="credits" type="String" setter="set_credits" getter="get_credits" default="&quot;&quot;">
+			Credits text packed by the toolchain.
+		</member>
+		<member name="credits_file" type="String" setter="set_credits_file" getter="get_credits_file" default="&quot;&quot;">
+			Credits file copied onto the disc root.
+		</member>
+		<member name="disc_title" type="String" setter="set_disc_title" getter="get_disc_title" default="&quot;&quot;">
+			Human title written into TXTDT_MGI.
+		</member>
+		<member name="extras" type="PackedStringArray" setter="set_extras" getter="get_extras" default="PackedStringArray()">
+			Host paths to pack beside VIDEO_TS.
+		</member>
+		<member name="extras_dir" type="String" setter="set_extras_dir" getter="get_extras_dir" default="&quot;&quot;">
+			Host folder merged onto the disc root.
+		</member>
+		<member name="first_play" type="int" setter="set_first_play" getter="get_first_play" enum="InterDVDDisc.FirstPlay" default="0">
+			Boot command: title menu, main title, or [member first_play_path].
+		</member>
+		<member name="first_play_path" type="NodePath" setter="set_first_play_path" getter="get_first_play_path" default="NodePath(&quot;&quot;)">
+			Title to JumpTT when [member first_play] is [constant FIRST_PLAY_PATH].
+		</member>
+		<member name="gop_size" type="int" setter="set_gop_size" getter="get_gop_size" default="15">
+			MPEG GOP size passed to ffmpeg [code]-g[/code].
+		</member>
+		<member name="license" type="String" setter="set_license" getter="get_license" default="&quot;&quot;">
+			License text packed by the toolchain.
+		</member>
+		<member name="license_file" type="String" setter="set_license_file" getter="get_license_file" default="&quot;&quot;">
+			License file copied onto the disc root.
+		</member>
+		<member name="menu_language" type="String" setter="set_menu_language" getter="get_menu_language" default="&quot;en&quot;">
+			ISO 639-1 code on VMGM/VTSM language units.
+		</member>
+		<member name="parental_level" type="int" setter="set_parental_level" getter="get_parental_level" default="1">
+			Parental level stored in disc metadata.
+		</member>
+		<member name="pip_blackdetect_sec" type="float" setter="set_pip_blackdetect_sec" getter="get_pip_blackdetect_sec" default="2.5">
+			Seconds scanned for PiP lead-in black.
+		</member>
+		<member name="pip_blackdetect_pix_th" type="float" setter="set_pip_blackdetect_pix_th" getter="get_pip_blackdetect_pix_th" default="0.12">
+			PiP black-detect pixel threshold.
+		</member>
+		<member name="provider_id" type="String" setter="set_provider_id" getter="get_provider_id" default="&quot;BLAZIUM INTER-DVD&quot;">
+			32-byte VMGI provider identifier.
+		</member>
+		<member name="publisher" type="String" setter="set_publisher" getter="get_publisher" default="&quot;&quot;">
+			ISO9660 publisher identifier.
+		</member>
+		<member name="readme" type="String" setter="set_readme" getter="get_readme" default="&quot;&quot;">
+			Readme text packed by the toolchain.
+		</member>
+		<member name="readme_file" type="String" setter="set_readme_file" getter="get_readme_file" default="&quot;&quot;">
+			Readme file copied onto the disc root.
+		</member>
+		<member name="region_mask" type="int" setter="set_region_mask" getter="get_region_mask" default="1">
+			Region mask written into the VMG.
+		</member>
+		<member name="serial" type="String" setter="set_serial" getter="get_serial" default="&quot;&quot;">
+			Optional disc serial (max 15 characters).
+		</member>
+		<member name="studio" type="String" setter="set_studio" getter="get_studio" default="&quot;&quot;">
+			Studio name in disc metadata.
+		</member>
+		<member name="subtitle_language" type="String" setter="set_subtitle_language" getter="get_subtitle_language" default="&quot;en&quot;">
+			Default subtitle language.
+		</member>
+		<member name="title_safe_bottom" type="int" setter="set_title_safe_bottom" getter="get_title_safe_bottom" default="432">
+			NTSC title-safe bottom scanline for HLI clamp.
+		</member>
+		<member name="version" type="String" setter="set_version" getter="get_version" default="&quot;&quot;">
+			Disc version string.
+		</member>
+		<member name="volume_id" type="String" setter="set_volume_id" getter="get_volume_id" default="&quot;BLAZIUM_DVD&quot;">
+			ISO9660 volume label.
+		</member>
+		<member name="website" type="String" setter="set_website" getter="get_website" default="&quot;&quot;">
+			Studio or product website.
+		</member>
+	</members>
+	<constants>
+		<constant name="FIRST_PLAY_TITLE_MENU" value="0" enum="FirstPlay">
+			Boot the VMGM title menu when it has buttons; otherwise JumpTT to the main title.
+		</constant>
+		<constant name="FIRST_PLAY_MAIN_TITLE" value="1" enum="FirstPlay">
+			First Play JumpTT to the first title that is not a menu title.
+		</constant>
+		<constant name="FIRST_PLAY_PATH" value="2" enum="FirstPlay">
+			First Play JumpTT to [member first_play_path].
+		</constant>
+	</constants>
+</class>

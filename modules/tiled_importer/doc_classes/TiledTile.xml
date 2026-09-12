@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TiledTile" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_animation" qualifiers="const">
+			<return type="TiledAnimation" />
+			<description>
+			</description>
+		</method>
+		<method name="get_class_type" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_drawing_rect" qualifiers="const">
+			<return type="Rect2i" />
+			<description>
+			</description>
+		</method>
+		<method name="get_flip_flags" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_gid" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_id" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_image" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_image_size" qualifiers="const">
+			<return type="Vector2i" />
+			<description>
+			</description>
+		</method>
+		<method name="get_objectgroup" qualifiers="const">
+			<return type="TiledLayer" />
+			<description>
+			</description>
+		</method>
+		<method name="get_properties">
+			<return type="Array" />
+			<description>
+			</description>
+		</method>
+		<method name="get_sub_rectangle" qualifiers="const">
+			<return type="Rect2i" />
+			<description>
+			</description>
+		</method>
+		<method name="get_terrain" qualifiers="const">
+			<return type="Array" />
+			<description>
+			</description>
+		</method>
+		<method name="get_tson_type" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

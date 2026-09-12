@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MultiuserEditorSettingsUI" inherits="MarginContainer" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Settings panel UI for Multiuser Editor connection controls.
+	</brief_description>
+	<description>
+		[MultiuserEditorSettingsUI] is the embedded editor settings panel used by the Multiuser Editor module. It presents host, port, join, and stop controls alongside connection status text, allowing users to configure and control collaborative editor sessions from the Blazium editor settings page.
+		The panel is editor-only and delegates session operations to [MultiuserEditorPlugin].
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

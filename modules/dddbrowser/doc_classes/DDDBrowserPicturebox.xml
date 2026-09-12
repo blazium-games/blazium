@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DDDBrowserPicturebox" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		In-world picturebox (textured quad) for DDDBrowser levels.
+	</brief_description>
+	<description>
+		Exports a texture asset, picturebox asset, and picturebox instance from a local path or remote URI.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="height" type="float" setter="set_height" getter="get_height" default="1.0">
+		</member>
+		<member name="texture_path" type="String" setter="set_texture_path" getter="get_texture_path" default="&quot;&quot;">
+		</member>
+		<member name="width" type="float" setter="set_width" getter="get_width" default="1.0">
+		</member>
+	</members>
+</class>

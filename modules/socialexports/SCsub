@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+from misc.utility.scons_hints import *
+
+Import("env")
+Import("env_modules")
+
+env_socialexports = env_modules.Clone()
+env_socialexports.add_source_files(env.modules_sources, "discord/*.cpp")
+env_socialexports.add_source_files(env.modules_sources, "react/*.cpp")
+env_socialexports.add_source_files(env.modules_sources, "youtube/*.cpp")
+env_socialexports.add_source_files(env.modules_sources, "*.cpp")

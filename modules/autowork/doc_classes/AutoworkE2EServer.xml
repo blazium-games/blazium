@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AutoworkE2EServer" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Internal WebSocket orchestration server for the Autowork framework.
+	</brief_description>
+	<description>
+		An internal engine singleton deployed globally when the application is launched with E2E capabilities. It binds directly to the active [SceneTree] and opens a strictly formatted WebSocket server, listening defensively for HMAC-authenticated UI orchestration and node querying payloads from web runners like Playwright and Jest.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

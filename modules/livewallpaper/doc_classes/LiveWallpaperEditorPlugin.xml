@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="LiveWallpaperEditorPlugin" inherits="EditorPlugin" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Registers the Windows Live Wallpaper export platform.
+	</brief_description>
+	<description>
+		Adds [EditorExportPlatformWindowsLiveWallpaper]. Starter scenes live in the livewallpaper_module_tests project, not in the engine.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>
