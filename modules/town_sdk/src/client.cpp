@@ -144,6 +144,7 @@ struct Client::Impl {
 	OnAdminKickCallback on_admin_kick;
 	OnAdminStatsCallback on_admin_stats;
 	OnAdminBroadcastCallback on_admin_broadcast;
+	OnAdminBankCallback on_admin_bank;
 
 	bool debug_capture = false;
 	size_t debug_history_limit = 64;
@@ -604,6 +605,16 @@ void Client::admin_broadcast(const std::string &message, bool is_alert) {
 	send_message(protocol::MessageType::ADMIN_BROADCAST, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
 
+void Client::admin_bank(const std::string &op, const std::string &username, int amount,
+		const std::string &pin) {
+	Dictionary payload;
+	payload["op"] = String::utf8(op.c_str());
+	payload["username"] = String::utf8(username.c_str());
+	payload["amount"] = amount;
+	payload["pin"] = String::utf8(pin.c_str());
+	send_message(protocol::MessageType::ADMIN_BANK, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
 // Callback setters
 void Client::on_snapshot(OnSnapshotCallback cb) {
 	impl_->on_snapshot = cb;
@@ -692,6 +703,9 @@ void Client::on_admin_stats(OnAdminStatsCallback cb) {
 }
 void Client::on_admin_broadcast(OnAdminBroadcastCallback cb) {
 	impl_->on_admin_broadcast = cb;
+}
+void Client::on_admin_bank(OnAdminBankCallback cb) {
+	impl_->on_admin_bank = cb;
 }
 
 void Client::set_auto_reconnect(bool enabled) {
@@ -987,6 +1001,12 @@ void Client::handle_message(uint16_t type, const std::string &payload) {
 		case protocol::MessageType::ADMIN_BROADCAST:
 			if (impl_->on_admin_broadcast) {
 				impl_->on_admin_broadcast(parsed);
+			}
+			break;
+
+		case protocol::MessageType::ADMIN_BANK:
+			if (impl_->on_admin_bank) {
+				impl_->on_admin_bank(parsed);
 			}
 			break;
 

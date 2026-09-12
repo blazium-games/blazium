@@ -94,6 +94,8 @@ public:
 	void admin_kick(const String &p_username, const String &p_reason = String());
 	void admin_stats_request();
 	void admin_broadcast(const String &p_message, bool p_is_alert = false);
+	void admin_bank(const String &p_op, const String &p_username, int p_amount = 0,
+			const String &p_pin = String());
 
 	void set_auto_reconnect(bool p_enabled);
 	void manual_reconnect();

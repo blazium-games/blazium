@@ -68,5 +68,6 @@ using OnAdminReloadCallback = VariantCallback;
 using OnAdminKickCallback = VariantCallback;
 using OnAdminStatsCallback = VariantCallback;
 using OnAdminBroadcastCallback = VariantCallback;
+using OnAdminBankCallback = VariantCallback;
 
 } // namespace turnbattle

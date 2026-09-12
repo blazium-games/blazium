@@ -85,6 +85,8 @@ public:
 	void admin_kick(const std::string &username, const std::string &reason = "");
 	void admin_stats_request();
 	void admin_broadcast(const std::string &message, bool is_alert = false);
+	void admin_bank(const std::string &op, const std::string &username, int amount = 0,
+			const std::string &pin = "");
 
 	// Callbacks
 	void on_snapshot(OnSnapshotCallback cb);
@@ -121,6 +123,7 @@ public:
 	void on_admin_kick(OnAdminKickCallback cb);
 	void on_admin_stats(OnAdminStatsCallback cb);
 	void on_admin_broadcast(OnAdminBroadcastCallback cb);
+	void on_admin_bank(OnAdminBankCallback cb);
 
 	// Update (call each frame)
 	void update(float dt);

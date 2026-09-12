@@ -218,6 +218,10 @@ void TownSdkClient::_attach_callbacks() {
 	client->on_admin_broadcast([this](const Variant &p_payload) {
 		emit_signal("admin_broadcast_received", p_payload);
 	});
+
+	client->on_admin_bank([this](const Variant &p_payload) {
+		emit_signal("admin_bank_received", p_payload);
+	});
 }
 
 std::string TownSdkClient::_string_to_std(const String &p_string) {
@@ -403,6 +407,14 @@ void TownSdkClient::admin_broadcast(const String &p_message, bool p_is_alert) {
 	}
 }
 
+void TownSdkClient::admin_bank(const String &p_op, const String &p_username, int p_amount,
+		const String &p_pin) {
+	if (client) {
+		client->admin_bank(_string_to_std(p_op), _string_to_std(p_username), p_amount,
+				_string_to_std(p_pin));
+	}
+}
+
 void TownSdkClient::set_auto_reconnect(bool p_enabled) {
 	if (client) {
 		client->set_auto_reconnect(p_enabled);
@@ -493,6 +505,7 @@ void TownSdkClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("admin_kick", "username", "reason"), &TownSdkClient::admin_kick, DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("admin_stats_request"), &TownSdkClient::admin_stats_request);
 	ClassDB::bind_method(D_METHOD("admin_broadcast", "message", "is_alert"), &TownSdkClient::admin_broadcast, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("admin_bank", "op", "username", "amount", "pin"), &TownSdkClient::admin_bank, DEFVAL(0), DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("set_auto_reconnect", "enabled"), &TownSdkClient::set_auto_reconnect);
 	ClassDB::bind_method(D_METHOD("manual_reconnect"), &TownSdkClient::manual_reconnect);
 	ClassDB::bind_method(D_METHOD("poll", "delta"), &TownSdkClient::poll);
@@ -534,6 +547,7 @@ void TownSdkClient::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("admin_kick_received", PropertyInfo(Variant::DICTIONARY, "payload")));
 	ADD_SIGNAL(MethodInfo("admin_stats_received", PropertyInfo(Variant::DICTIONARY, "payload")));
 	ADD_SIGNAL(MethodInfo("admin_broadcast_received", PropertyInfo(Variant::DICTIONARY, "payload")));
+	ADD_SIGNAL(MethodInfo("admin_bank_received", PropertyInfo(Variant::DICTIONARY, "payload")));
 
 	BIND_ENUM_CONSTANT(GAME_TYPE_TURN_BASED);
 	BIND_ENUM_CONSTANT(GAME_TYPE_FPS);
