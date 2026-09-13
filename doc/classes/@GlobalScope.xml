@@ -1644,6 +1644,9 @@
 		<member name="NavigationServer3D" type="NavigationServer3D" setter="" getter="">
 			The [NavigationServer3D] singleton.
 		</member>
+		<member name="NavimeshExporter" type="NavimeshExporter" setter="" getter="">
+			The [NavimeshExporter] singleton.
+		</member>
 		<member name="OBSClient" type="OBSClient" setter="" getter="">
 			The [OBSClient] singleton.
 		</member>

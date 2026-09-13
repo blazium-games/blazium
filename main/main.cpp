@@ -137,6 +137,10 @@
 #ifdef MODULE_SCREENSAVER_ENABLED
 #include "modules/screensaver/screensaver_cmdline.h"
 #endif
+#ifdef MODULE_NAVIMESH_EXPORT_ENABLED
+#include "modules/navimesh_export/navimesh_export_batch.h"
+#include "modules/navimesh_export/navimesh_export_cmdline.h"
+#endif
 
 #if defined(MODULE_MONO_ENABLED) && defined(TOOLS_ENABLED)
 #include "modules/mono/editor/bindings_generator.h"
@@ -213,6 +217,9 @@ static bool show_help = false;
 static uint64_t quit_after = 0;
 static OS::ProcessID editor_pid = 0;
 #ifdef TOOLS_ENABLED
+#ifdef MODULE_NAVIMESH_EXPORT_ENABLED
+static bool export_navmesh_cli = false;
+#endif
 static bool found_project = false;
 static bool recovery_mode = false;
 static bool auto_build_solutions = false;
@@ -662,6 +669,14 @@ void Main::print_help(const char *p_binary) {
 	print_help_option("--export-pack <preset> <path>", "Export the project data only using the given preset and output path. The <path> extension determines whether it will be in PCK or ZIP format.\n", CLI_OPTION_AVAILABILITY_EDITOR);
 	print_help_option("--export-patch <preset> <path>", "Export pack with changed files only. See --export-pack description for other considerations.\n", CLI_OPTION_AVAILABILITY_EDITOR);
 	print_help_option("--patches <paths>", "List of patches to use with --export-patch. The list is comma-separated.\n", CLI_OPTION_AVAILABILITY_EDITOR);
+#ifdef MODULE_NAVIMESH_EXPORT_ENABLED
+	print_help_option("--export-navmesh", "Bake and export 2D/3D navigation meshes from project scenes to JSON and binary files.\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--export-navmesh-scenes <path>", "Scene path, directory, glob-like folder, or comma-separated list (default: res://).\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--export-navmesh-output <dir>", "Output directory (default: res://.navimesh_export/).\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--export-navmesh-mode <individual|combined>", "Write one file pair per scene or a single bundle (default: individual).\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--export-navmesh-format <json|bin|both>", "Export format (default: both).\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--export-navmesh-dimension <2d|3d|both>", "Filter navigation dimension (default: both).\n", CLI_OPTION_AVAILABILITY_EDITOR);
+#endif
 	print_help_option("--install-android-build-template", "Install the Android build template. Used in conjunction with --export-release or --export-debug.\n", CLI_OPTION_AVAILABILITY_EDITOR);
 #ifndef DISABLE_DEPRECATED
 	// Commands are long; split the description to a second line.
@@ -1645,6 +1660,16 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			cmdline_tool = true;
 			wait_for_import = true;
 			main_args.push_back(arg);
+#ifdef MODULE_NAVIMESH_EXPORT_ENABLED
+		} else if (arg == "--export-navmesh" || arg.begins_with("--export-navmesh-")) {
+			editor = true;
+			cmdline_tool = true;
+			wait_for_import = true;
+			export_navmesh_cli = true;
+			if (!arg.contains("=") && N && !N->get().begins_with("-")) {
+				N = N->next();
+			}
+#endif
 		} else if (arg == "--patches") {
 			if (N) {
 				// Actually handling is done in start().
@@ -3908,6 +3933,10 @@ int Main::start() {
 			recovery_mode = true;
 		} else if (E->get() == "--install-android-build-template") {
 			install_android_build_template = true;
+#ifdef MODULE_NAVIMESH_EXPORT_ENABLED
+		} else if (E->get() == "--export-navmesh" || E->get().begins_with("--export-navmesh-")) {
+			// Handled by the navimesh_export module after the editor is ready.
+#endif
 #endif // TOOLS_ENABLED
 		} else if (E->get() == "--scene") {
 			E = E->next();
@@ -3976,6 +4005,12 @@ int Main::start() {
 				export_patch = true;
 			} else if (E->get() == "--patches") {
 				patches = E->next()->get().split(",", false);
+#ifdef MODULE_NAVIMESH_EXPORT_ENABLED
+			} else if (E->get() == "--export-navmesh" || E->get().begins_with("--export-navmesh-")) {
+				if (E->get().contains("=") || !E->next() || E->next()->get().begins_with("-")) {
+					parsed_pair = false;
+				}
+#endif
 #endif
 			} else {
 				// The parameter does not match anything known, don't skip the next argument
@@ -4437,6 +4472,12 @@ int Main::start() {
 				editor_node->export_preset(_export_preset, positional_arg, export_debug, export_pack_only, install_android_build_template, export_patch, patches);
 				game_path = ""; // Do not load anything.
 			}
+#ifdef MODULE_NAVIMESH_EXPORT_ENABLED
+			if (export_navmesh_cli) {
+				game_path = "";
+				return NavimeshExportBatch::run_and_quit();
+			}
+#endif
 
 			OS::get_singleton()->benchmark_end_measure("Startup", "Editor");
 		}

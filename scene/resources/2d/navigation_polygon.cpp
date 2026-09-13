@@ -219,29 +219,35 @@ void NavigationPolygon::get_data(Vector<Vector2> &r_vertices, Vector<Vector<int>
 }
 
 Ref<NavigationMesh> NavigationPolygon::get_navigation_mesh() {
-	MutexLock lock(navigation_mesh_generation);
+	{
+		MutexLock lock(navigation_mesh_generation);
+		if (navigation_mesh.is_valid()) {
+			return navigation_mesh;
+		}
+	}
 
+	// Copy geometry without holding navigation_mesh_generation. Nested RWLock + mutex
+	// in the opposite order of set_data() is a TSAN lock-order inversion.
+	Vector<Vector3> verts;
+	Vector<Vector<int>> polys;
+	real_t mesh_cell_size;
+	{
+		RWLockRead read_lock(rwlock);
+		verts.resize(vertices.size());
+		Vector3 *w = verts.ptrw();
+		const Vector2 *r = vertices.ptr();
+		for (int i = 0; i < vertices.size(); i++) {
+			w[i] = Vector3(r[i].x, 0.0, r[i].y);
+		}
+		polys = polygons;
+		mesh_cell_size = cell_size;
+	}
+
+	MutexLock lock(navigation_mesh_generation);
 	if (navigation_mesh.is_null()) {
 		navigation_mesh.instantiate();
-		Vector<Vector3> verts;
-		Vector<Vector<int>> polys;
-		{
-			verts.resize(get_vertices().size());
-			Vector3 *w = verts.ptrw();
-
-			const Vector2 *r = get_vertices().ptr();
-
-			for (int i(0); i < get_vertices().size(); i++) {
-				w[i] = Vector3(r[i].x, 0.0, r[i].y);
-			}
-		}
-
-		for (int i(0); i < get_polygon_count(); i++) {
-			polys.push_back(get_polygon(i));
-		}
-
 		navigation_mesh->set_data(verts, polys);
-		navigation_mesh->set_cell_size(cell_size); // Needed to not fail the cell size check on the server
+		navigation_mesh->set_cell_size(mesh_cell_size); // Needed to not fail the cell size check on the server
 	}
 
 	return navigation_mesh;
