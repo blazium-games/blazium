@@ -38,6 +38,17 @@ using VariantCallback = std::function<void(const Variant &)>;
 
 using OnSnapshotCallback = VariantCallback;
 using OnMoveStateCallback = VariantCallback;
+using OnEntitySpawnCallback = VariantCallback;
+using OnEntityDespawnCallback = VariantCallback;
+using OnInteractableStateCallback = VariantCallback;
+using OnInventoryUpdateCallback = VariantCallback;
+using OnShotCallback = VariantCallback;
+using OnHealthCallback = VariantCallback;
+using OnDeathCallback = VariantCallback;
+using OnRespawnCallback = VariantCallback;
+using OnPointsCallback = VariantCallback;
+using OnScoreboardCallback = VariantCallback;
+using OnPickupStateCallback = VariantCallback;
 using OnBattleStartCallback = VariantCallback;
 using OnBattleStateCallback = VariantCallback;
 using OnBattleLogCallback = std::function<void(const std::string &log)>;
@@ -57,5 +68,6 @@ using OnAdminReloadCallback = VariantCallback;
 using OnAdminKickCallback = VariantCallback;
 using OnAdminStatsCallback = VariantCallback;
 using OnAdminBroadcastCallback = VariantCallback;
+using OnAdminBankCallback = VariantCallback;
 
 } // namespace turnbattle

@@ -47,9 +47,29 @@ inline constexpr uint16_t VERSION_MISMATCH = 4;
 inline constexpr uint16_t REGION_ENTER = 10;
 inline constexpr uint16_t REGION_LEAVE = 11;
 inline constexpr uint16_t MOVE_INPUT = 12;
+inline constexpr uint16_t EQUIP = 13;
+inline constexpr uint16_t USE = 14;
+
+inline constexpr uint16_t INVENTORY_GET = 15;
+inline constexpr uint16_t INVENTORY_UPDATE = 16;
+inline constexpr uint16_t INTERACT = 17;
+inline constexpr uint16_t FIRE = 18;
+inline constexpr uint16_t RELOAD = 19;
 
 inline constexpr uint16_t REGION_SNAPSHOT = 20;
+inline constexpr uint16_t ENTITY_SPAWN = 21;
+inline constexpr uint16_t ENTITY_DESPAWN = 22;
 inline constexpr uint16_t MOVE_STATE = 23;
+inline constexpr uint16_t INTERACTABLE_STATE = 24;
+inline constexpr uint16_t SHOT = 25;
+inline constexpr uint16_t HEALTH = 26;
+inline constexpr uint16_t DEATH = 27;
+inline constexpr uint16_t RESPAWN = 28;
+inline constexpr uint16_t POINTS = 29;
+
+inline constexpr uint16_t SCOREBOARD = 40;
+inline constexpr uint16_t PICKUP = 41;
+inline constexpr uint16_t PICKUP_STATE = 42;
 
 inline constexpr uint16_t BATTLE_INDICATOR_SPAWN = 30;
 inline constexpr uint16_t BATTLE_INDICATOR_DESPAWN = 31;
@@ -67,6 +87,7 @@ inline constexpr uint16_t ADMIN_KICK = 102;
 inline constexpr uint16_t ADMIN_STATS_REQUEST = 103;
 inline constexpr uint16_t ADMIN_STATS_RESPONSE = 104;
 inline constexpr uint16_t ADMIN_BROADCAST = 105;
+inline constexpr uint16_t ADMIN_BANK = 106;
 
 inline constexpr uint16_t ERROR_MSG = 200;
 } //namespace MessageType

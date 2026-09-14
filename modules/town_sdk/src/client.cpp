@@ -101,6 +101,19 @@ struct Client::Impl {
 	// Callbacks
 	OnSnapshotCallback on_snapshot;
 	OnMoveStateCallback on_move_state;
+	OnEntitySpawnCallback on_entity_spawn;
+	OnEntityDespawnCallback on_entity_despawn;
+	OnInteractableStateCallback on_interactable_state;
+	OnInventoryUpdateCallback on_inventory_update;
+	OnShotCallback on_shot;
+	OnHealthCallback on_health;
+	OnDeathCallback on_death;
+	OnRespawnCallback on_respawn;
+	OnPointsCallback on_points;
+	OnScoreboardCallback on_scoreboard;
+	OnPickupStateCallback on_pickup_state;
+	std::string game_type = "turn_based";
+	std::string last_username;
 	OnBattleStartCallback on_battle_start;
 	OnBattleStateCallback on_battle_state;
 	OnBattleLogCallback on_battle_log;
@@ -131,6 +144,7 @@ struct Client::Impl {
 	OnAdminKickCallback on_admin_kick;
 	OnAdminStatsCallback on_admin_stats;
 	OnAdminBroadcastCallback on_admin_broadcast;
+	OnAdminBankCallback on_admin_bank;
 
 	bool debug_capture = false;
 	size_t debug_history_limit = 64;
@@ -325,6 +339,17 @@ bool Client::perform_version_check() {
 								if (data_dict.has("version")) {
 									impl_->server_version = to_std_string((Variant)data_dict["version"]);
 								}
+								if (data_dict.has("game_type")) {
+									const std::string server_gt = to_std_string((Variant)data_dict["game_type"]);
+									if (!server_gt.empty() && server_gt != impl_->game_type) {
+										log_error("game_type_mismatch");
+										if (impl_->on_error) {
+											impl_->on_error("game_type_mismatch");
+										}
+										enet_packet_destroy(event.packet);
+										return false;
+									}
+								}
 								enet_packet_destroy(event.packet);
 								return true;
 							}
@@ -399,12 +424,31 @@ bool Client::is_connected() const {
 	return impl_->connected;
 }
 
+void Client::set_game_type(const std::string &game_type) {
+	impl_->game_type = game_type.empty() ? "turn_based" : game_type;
+}
+
+std::string Client::get_game_type() const {
+	return impl_->game_type;
+}
+
 void Client::auth(const std::string &jwt_token) {
 	// Store for reconnection
 	impl_->last_jwt_token = jwt_token;
+	impl_->last_username.clear();
 
 	Dictionary payload;
 	payload["jwt"] = String::utf8(jwt_token.c_str());
+	payload["game_type"] = String::utf8(impl_->game_type.c_str());
+	send_message(protocol::MessageType::HELLO, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::auth_username(const std::string &username) {
+	impl_->last_username = username;
+	impl_->last_jwt_token.clear();
+	Dictionary payload;
+	payload["username"] = String::utf8(username.c_str());
+	payload["game_type"] = String::utf8(impl_->game_type.c_str());
 	send_message(protocol::MessageType::HELLO, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
 
@@ -424,6 +468,84 @@ void Client::send_move(uint8_t held, float dt) {
 	payload["held"] = (int)held;
 	payload["dt"] = dt;
 	send_message(protocol::MessageType::MOVE_INPUT, variant_to_json_string(payload), protocol::Channel::REGION);
+}
+
+void Client::send_move(uint8_t held, float dt, float yaw, float pitch, bool flashlight,
+		bool weapon_light) {
+	Dictionary payload;
+	payload["held"] = (int)held;
+	payload["dt"] = dt;
+	payload["yaw"] = yaw;
+	payload["pitch"] = pitch;
+	payload["flashlight"] = flashlight;
+	payload["weapon_light"] = weapon_light;
+	send_message(protocol::MessageType::MOVE_INPUT, variant_to_json_string(payload), protocol::Channel::REGION);
+}
+
+void Client::send_interact(const std::string &interactable_id) {
+	send_interact(interactable_id, Dictionary());
+}
+
+void Client::send_interact(const std::string &interactable_id, const Dictionary &extra) {
+	if (interactable_id.empty()) {
+		return;
+	}
+	Dictionary payload = extra.duplicate();
+	payload["id"] = String::utf8(interactable_id.c_str());
+	send_message(protocol::MessageType::INTERACT, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::request_inventory() {
+	Dictionary payload;
+	send_message(protocol::MessageType::INVENTORY_GET, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::send_fire() {
+	Dictionary payload;
+	send_message(protocol::MessageType::FIRE, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::send_pickup(const std::string &pickup_id) {
+	if (pickup_id.empty()) {
+		return;
+	}
+	Dictionary payload;
+	payload["id"] = String::utf8(pickup_id.c_str());
+	send_message(protocol::MessageType::PICKUP, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::send_equip(int slot) {
+	Dictionary payload;
+	payload["slot"] = slot;
+	send_message(protocol::MessageType::EQUIP, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::send_use(int slot) {
+	Dictionary payload;
+	payload["slot"] = slot;
+	send_message(protocol::MessageType::USE, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::send_craft(const std::string &recipe) {
+	if (recipe.empty()) {
+		return;
+	}
+	Dictionary payload;
+	payload["recipe"] = String::utf8(recipe.c_str());
+	send_message(protocol::MessageType::USE, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::send_drop(const std::string &kind, int slot) {
+	Dictionary payload;
+	payload["drop"] = true;
+	payload["kind"] = String::utf8(kind.empty() ? "bag" : kind.c_str());
+	payload["slot"] = slot;
+	send_message(protocol::MessageType::USE, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::send_reload() {
+	Dictionary payload;
+	send_message(protocol::MessageType::RELOAD, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
 
 void Client::battle_action(const std::string &battle_id, Action action, const std::string &target_id) {
@@ -483,12 +605,55 @@ void Client::admin_broadcast(const std::string &message, bool is_alert) {
 	send_message(protocol::MessageType::ADMIN_BROADCAST, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
 
+void Client::admin_bank(const std::string &op, const std::string &username, int amount,
+		const std::string &pin) {
+	Dictionary payload;
+	payload["op"] = String::utf8(op.c_str());
+	payload["username"] = String::utf8(username.c_str());
+	payload["amount"] = amount;
+	payload["pin"] = String::utf8(pin.c_str());
+	send_message(protocol::MessageType::ADMIN_BANK, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
 // Callback setters
 void Client::on_snapshot(OnSnapshotCallback cb) {
 	impl_->on_snapshot = cb;
 }
 void Client::on_move_state(OnMoveStateCallback cb) {
 	impl_->on_move_state = cb;
+}
+void Client::on_entity_spawn(OnEntitySpawnCallback cb) {
+	impl_->on_entity_spawn = cb;
+}
+void Client::on_entity_despawn(OnEntityDespawnCallback cb) {
+	impl_->on_entity_despawn = cb;
+}
+void Client::on_interactable_state(OnInteractableStateCallback cb) {
+	impl_->on_interactable_state = cb;
+}
+void Client::on_inventory_update(OnInventoryUpdateCallback cb) {
+	impl_->on_inventory_update = cb;
+}
+void Client::on_shot(OnShotCallback cb) {
+	impl_->on_shot = cb;
+}
+void Client::on_health(OnHealthCallback cb) {
+	impl_->on_health = cb;
+}
+void Client::on_death(OnDeathCallback cb) {
+	impl_->on_death = cb;
+}
+void Client::on_respawn(OnRespawnCallback cb) {
+	impl_->on_respawn = cb;
+}
+void Client::on_points(OnPointsCallback cb) {
+	impl_->on_points = cb;
+}
+void Client::on_scoreboard(OnScoreboardCallback cb) {
+	impl_->on_scoreboard = cb;
+}
+void Client::on_pickup_state(OnPickupStateCallback cb) {
+	impl_->on_pickup_state = cb;
 }
 void Client::on_battle_start(OnBattleStartCallback cb) {
 	impl_->on_battle_start = cb;
@@ -538,6 +703,9 @@ void Client::on_admin_stats(OnAdminStatsCallback cb) {
 }
 void Client::on_admin_broadcast(OnAdminBroadcastCallback cb) {
 	impl_->on_admin_broadcast = cb;
+}
+void Client::on_admin_bank(OnAdminBankCallback cb) {
+	impl_->on_admin_bank = cb;
 }
 
 void Client::set_auto_reconnect(bool enabled) {
@@ -706,6 +874,72 @@ void Client::handle_message(uint16_t type, const std::string &payload) {
 			}
 			break;
 
+		case protocol::MessageType::ENTITY_SPAWN:
+			if (impl_->on_entity_spawn) {
+				impl_->on_entity_spawn(parsed);
+			}
+			break;
+
+		case protocol::MessageType::ENTITY_DESPAWN:
+			if (impl_->on_entity_despawn) {
+				impl_->on_entity_despawn(parsed);
+			}
+			break;
+
+		case protocol::MessageType::INTERACTABLE_STATE:
+			if (impl_->on_interactable_state) {
+				impl_->on_interactable_state(parsed);
+			}
+			break;
+
+		case protocol::MessageType::INVENTORY_UPDATE:
+			if (impl_->on_inventory_update) {
+				impl_->on_inventory_update(parsed);
+			}
+			break;
+
+		case protocol::MessageType::SHOT:
+			if (impl_->on_shot) {
+				impl_->on_shot(parsed);
+			}
+			break;
+
+		case protocol::MessageType::HEALTH:
+			if (impl_->on_health) {
+				impl_->on_health(parsed);
+			}
+			break;
+
+		case protocol::MessageType::DEATH:
+			if (impl_->on_death) {
+				impl_->on_death(parsed);
+			}
+			break;
+
+		case protocol::MessageType::RESPAWN:
+			if (impl_->on_respawn) {
+				impl_->on_respawn(parsed);
+			}
+			break;
+
+		case protocol::MessageType::POINTS:
+			if (impl_->on_points) {
+				impl_->on_points(parsed);
+			}
+			break;
+
+		case protocol::MessageType::SCOREBOARD:
+			if (impl_->on_scoreboard) {
+				impl_->on_scoreboard(parsed);
+			}
+			break;
+
+		case protocol::MessageType::PICKUP_STATE:
+			if (impl_->on_pickup_state) {
+				impl_->on_pickup_state(parsed);
+			}
+			break;
+
 		case protocol::MessageType::BATTLE_INDICATOR_SPAWN:
 			if (impl_->on_battle_indicator_spawn) {
 				impl_->on_battle_indicator_spawn(parsed);
@@ -767,6 +1001,12 @@ void Client::handle_message(uint16_t type, const std::string &payload) {
 		case protocol::MessageType::ADMIN_BROADCAST:
 			if (impl_->on_admin_broadcast) {
 				impl_->on_admin_broadcast(parsed);
+			}
+			break;
+
+		case protocol::MessageType::ADMIN_BANK:
+			if (impl_->on_admin_bank) {
+				impl_->on_admin_bank(parsed);
 			}
 			break;
 

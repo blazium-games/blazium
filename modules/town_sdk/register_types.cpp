@@ -32,6 +32,7 @@
 #include "town_sdk_client.h"
 
 #include "core/config/engine.h"
+#include "core/config/project_settings.h"
 #include "core/object/class_db.h"
 
 static TownSdkClient *townsdk_singleton = nullptr;
@@ -42,6 +43,8 @@ void initialize_town_sdk_module(ModuleInitializationLevel p_level) {
 	}
 
 	GDREGISTER_CLASS(TownSdkClient);
+
+	GLOBAL_DEF(PropertyInfo(Variant::INT, "town_sdk/game_type", PROPERTY_HINT_ENUM, "Turn Based,FPS"), 0);
 
 	if (!townsdk_singleton) {
 		townsdk_singleton = memnew(TownSdkClient);

@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #pragma once
+#include "core/variant/dictionary.h"
 #include "handlers.hpp"
 #include "types.hpp"
 #include <memory>
@@ -52,12 +53,27 @@ public:
 	std::string get_server_version() const;
 
 	// Auth
+	void set_game_type(const std::string &game_type);
+	std::string get_game_type() const;
 	void auth(const std::string &jwt_token);
+	void auth_username(const std::string &username);
 
 	// Region
 	void enter_region(const std::string &region_id);
 	void leave_region();
 	void send_move(uint8_t held, float dt);
+	void send_move(uint8_t held, float dt, float yaw, float pitch,
+			bool flashlight = false, bool weapon_light = false);
+	void send_interact(const std::string &interactable_id);
+	void send_interact(const std::string &interactable_id, const Dictionary &extra);
+	void send_pickup(const std::string &pickup_id);
+	void request_inventory();
+	void send_fire();
+	void send_equip(int slot);
+	void send_use(int slot);
+	void send_craft(const std::string &recipe);
+	void send_drop(const std::string &kind, int slot);
+	void send_reload();
 
 	// Battle
 	void battle_action(const std::string &battle_id, Action action,
@@ -69,10 +85,23 @@ public:
 	void admin_kick(const std::string &username, const std::string &reason = "");
 	void admin_stats_request();
 	void admin_broadcast(const std::string &message, bool is_alert = false);
+	void admin_bank(const std::string &op, const std::string &username, int amount = 0,
+			const std::string &pin = "");
 
 	// Callbacks
 	void on_snapshot(OnSnapshotCallback cb);
 	void on_move_state(OnMoveStateCallback cb);
+	void on_entity_spawn(OnEntitySpawnCallback cb);
+	void on_entity_despawn(OnEntityDespawnCallback cb);
+	void on_interactable_state(OnInteractableStateCallback cb);
+	void on_inventory_update(OnInventoryUpdateCallback cb);
+	void on_shot(OnShotCallback cb);
+	void on_health(OnHealthCallback cb);
+	void on_death(OnDeathCallback cb);
+	void on_respawn(OnRespawnCallback cb);
+	void on_points(OnPointsCallback cb);
+	void on_scoreboard(OnScoreboardCallback cb);
+	void on_pickup_state(OnPickupStateCallback cb);
 	void on_battle_start(OnBattleStartCallback cb);
 	void on_battle_state(OnBattleStateCallback cb);
 	void on_battle_log(OnBattleLogCallback cb);
@@ -94,6 +123,7 @@ public:
 	void on_admin_kick(OnAdminKickCallback cb);
 	void on_admin_stats(OnAdminStatsCallback cb);
 	void on_admin_broadcast(OnAdminBroadcastCallback cb);
+	void on_admin_bank(OnAdminBankCallback cb);
 
 	// Update (call each frame)
 	void update(float dt);
