@@ -50,11 +50,23 @@ bool WarcryOpusCodec::init() {
 	opus_encoder_ctl(encoder, OPUS_SET_BITRATE(BITRATE));
 	opus_encoder_ctl(encoder, OPUS_SET_SIGNAL(OPUS_SIGNAL_VOICE));
 
-	decoder = opus_decoder_create(SAMPLE_RATE, CHANNELS, &err);
+	return init_decoder(CHANNELS);
+}
+
+bool WarcryOpusCodec::init_decoder(int p_channels) {
+	const int channels = (p_channels == 2) ? 2 : CHANNELS;
+	if (decoder) {
+		opus_decoder_destroy(decoder);
+		decoder = nullptr;
+	}
+	int err = OPUS_OK;
+	decoder = opus_decoder_create(SAMPLE_RATE, channels, &err);
 	if (!decoder || err != OPUS_OK) {
-		close();
+		decoder = nullptr;
+		decoder_channels_ = CHANNELS;
 		return false;
 	}
+	decoder_channels_ = channels;
 	return true;
 }
 
@@ -67,6 +79,7 @@ void WarcryOpusCodec::close() {
 		opus_decoder_destroy(decoder);
 		decoder = nullptr;
 	}
+	decoder_channels_ = CHANNELS;
 }
 
 bool WarcryOpusCodec::encode_frame(const int16_t *p_pcm, int p_samples, Vector<uint8_t> &r_out) {
@@ -83,16 +96,37 @@ bool WarcryOpusCodec::encode_frame(const int16_t *p_pcm, int p_samples, Vector<u
 	return true;
 }
 
+bool WarcryOpusCodec::encode_interleaved(const int16_t *p_pcm, int p_channels, Vector<uint8_t> &r_out) {
+	if (!p_pcm || (p_channels != 1 && p_channels != 2)) {
+		return false;
+	}
+	int err = OPUS_OK;
+	OpusEncoder *enc = opus_encoder_create(SAMPLE_RATE, p_channels, OPUS_APPLICATION_VOIP, &err);
+	if (!enc || err != OPUS_OK) {
+		return false;
+	}
+	opus_encoder_ctl(enc, OPUS_SET_BITRATE(BITRATE));
+	r_out.resize(4000);
+	const int bytes = opus_encode(enc, p_pcm, FRAME_SAMPLES, r_out.ptrw(), r_out.size());
+	opus_encoder_destroy(enc);
+	if (bytes < 0) {
+		r_out.clear();
+		return false;
+	}
+	r_out.resize(bytes);
+	return true;
+}
+
 bool WarcryOpusCodec::decode_frame(const uint8_t *p_data, int p_size, Vector<int16_t> &r_out) {
 	if (!decoder || !p_data || p_size <= 0) {
 		return false;
 	}
-	r_out.resize(FRAME_SAMPLES);
+	r_out.resize(FRAME_SAMPLES * decoder_channels_);
 	const int decoded = opus_decode(decoder, p_data, p_size, r_out.ptrw(), FRAME_SAMPLES, 0);
 	if (decoded < 0) {
 		r_out.clear();
 		return false;
 	}
-	r_out.resize(decoded);
+	r_out.resize(decoded * decoder_channels_);
 	return true;
 }
