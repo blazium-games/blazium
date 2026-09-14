@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="BlaziumFGDFile" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Master FGD resource containing entity class definitions for map builds and editor export.
+	</brief_description>
+	<description>
+		Stores [BlaziumFGDEntityClass] definitions and exports `.fgd` text for TrenchBroom, Jack, and NetRadiant Custom.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="build_class_text" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="target_editor" type="int" enum="BlaziumFGDFile.TargetMapEditor" default="1" />
+			<description>
+			</description>
+		</method>
+		<method name="do_export_file">
+			<return type="int" enum="Error" />
+			<param index="0" name="target_editor" type="int" enum="BlaziumFGDFile.TargetMapEditor" default="1" />
+			<param index="1" name="fgd_output_folder" type="String" default="&quot;&quot;" />
+			<description>
+			</description>
+		</method>
+		<method name="export_fgd">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="get_entity_definitions" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns entity definitions keyed by classname.
+			</description>
+		</method>
+		<method name="get_fgd_classes" qualifiers="const">
+			<return type="Array" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="_export_fgd_func" type="Callable" setter="" getter="_get_export_fgd_func" default="Callable()">
+		</member>
+		<member name="base_fgd_files" type="Array" setter="set_base_fgd_files" getter="get_base_fgd_files" default="[]">
+		</member>
+		<member name="entity_definitions" type="Array" setter="set_entity_definitions" getter="get_entity_definitions_array" default="[]">
+			Array of entity class resources included in this FGD file.
+		</member>
+		<member name="fgd_name" type="String" setter="set_fgd_name" getter="get_fgd_name" default="&quot;Blazium&quot;">
+		</member>
+		<member name="generate_model_point_class_models" type="bool" setter="set_generate_model_point_class_models" getter="get_generate_model_point_class_models" default="true">
+		</member>
+		<member name="target_map_editor" type="int" setter="set_target_map_editor" getter="get_target_map_editor" enum="BlaziumFGDFile.TargetMapEditor" default="1">
+		</member>
+	</members>
+	<constants>
+		<constant name="EDITOR_OTHER" value="0" enum="TargetMapEditor">
+		</constant>
+		<constant name="EDITOR_TRENCHBROOM" value="1" enum="TargetMapEditor">
+		</constant>
+		<constant name="EDITOR_JACK" value="2" enum="TargetMapEditor">
+		</constant>
+		<constant name="EDITOR_NET_RADIANT_CUSTOM" value="3" enum="TargetMapEditor">
+		</constant>
+	</constants>
+</class>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="BlaziumFGDSolidClass" inherits="BlaziumFGDEntityClass" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		FGD solid class for brush entities.
+	</brief_description>
+	<description>
+		Defines how brush entities are spawned, meshed, collided, and exported. Solid classes drive map geometry generation and entity assembly during [method TrenchbroomMap.build].
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="add_collision_shape_to_face_indices_metadata" type="bool" setter="set_add_collision_shape_to_face_indices_metadata" getter="get_add_collision_shape_to_face_indices_metadata" default="false">
+		</member>
+		<member name="add_face_normal_metadata" type="bool" setter="set_add_face_normal_metadata" getter="get_add_face_normal_metadata" default="false">
+		</member>
+		<member name="add_face_position_metadata" type="bool" setter="set_add_face_position_metadata" getter="get_add_face_position_metadata" default="false">
+		</member>
+		<member name="add_textures_metadata" type="bool" setter="set_add_textures_metadata" getter="get_add_textures_metadata" default="false">
+		</member>
+		<member name="add_vertex_metadata" type="bool" setter="set_add_vertex_metadata" getter="get_add_vertex_metadata" default="false">
+		</member>
+		<member name="build_occlusion" type="bool" setter="set_build_occlusion" getter="get_build_occlusion" default="false">
+		</member>
+		<member name="build_visuals" type="bool" setter="set_build_visuals" getter="get_build_visuals" default="true">
+			When false, skips mesh generation for this entity.
+		</member>
+		<member name="collision_layer" type="int" setter="set_collision_layer" getter="get_collision_layer" default="1">
+		</member>
+		<member name="collision_mask" type="int" setter="set_collision_mask" getter="get_collision_mask" default="1">
+		</member>
+		<member name="collision_priority" type="float" setter="set_collision_priority" getter="get_collision_priority" default="1.0">
+		</member>
+		<member name="collision_shape_margin" type="float" setter="set_collision_shape_margin" getter="get_collision_shape_margin" default="0.04">
+		</member>
+		<member name="collision_shape_type" type="int" setter="set_collision_shape_type" getter="get_collision_shape_type" enum="BlaziumFGDSolidClass.CollisionShapeType" default="1">
+			Convex, concave, or no collision shape generation.
+		</member>
+		<member name="global_illumination_mode" type="int" setter="set_global_illumination_mode" getter="get_global_illumination_mode" enum="GeometryInstance3D.GIMode" default="1">
+		</member>
+		<member name="origin_type" type="int" setter="set_origin_type" getter="get_origin_type" enum="BlaziumFGDSolidClass.OriginType" default="0">
+		</member>
+		<member name="prefix" type="String" setter="set_prefix" getter="get_prefix" overrides="BlaziumFGDEntityClass" default="&quot;@SolidClass&quot;" />
+		<member name="render_layers" type="int" setter="set_render_layers" getter="get_render_layers" default="1">
+		</member>
+		<member name="script_class" type="Script" setter="set_script_class" getter="get_script_class">
+			Optional script attached to the generated node after build.
+		</member>
+		<member name="shadow_casting_setting" type="int" setter="set_shadow_casting_setting" getter="get_shadow_casting_setting" enum="GeometryInstance3D.ShadowCastingSetting" default="1">
+		</member>
+		<member name="spawn_type" type="int" setter="set_spawn_type" getter="get_spawn_type" enum="BlaziumFGDSolidClass.SpawnType" default="2">
+			Worldspawn, entity, or hidden spawn behavior.
+		</member>
+	</members>
+	<constants>
+		<constant name="SPAWN_WORLDSPAWN" value="0" enum="SpawnType">
+		</constant>
+		<constant name="SPAWN_MERGE_WORLDSPAWN" value="1" enum="SpawnType">
+		</constant>
+		<constant name="SPAWN_ENTITY" value="2" enum="SpawnType">
+		</constant>
+		<constant name="ORIGIN_AVERAGED" value="0" enum="OriginType">
+		</constant>
+		<constant name="ORIGIN_ABSOLUTE" value="1" enum="OriginType">
+		</constant>
+		<constant name="ORIGIN_RELATIVE" value="2" enum="OriginType">
+		</constant>
+		<constant name="ORIGIN_BRUSH" value="3" enum="OriginType">
+		</constant>
+		<constant name="ORIGIN_BOUNDS_CENTER" value="4" enum="OriginType">
+		</constant>
+		<constant name="ORIGIN_BOUNDS_MINS" value="5" enum="OriginType">
+		</constant>
+		<constant name="ORIGIN_BOUNDS_MAXS" value="6" enum="OriginType">
+		</constant>
+		<constant name="COLLISION_NONE" value="0" enum="CollisionShapeType">
+		</constant>
+		<constant name="COLLISION_CONVEX" value="1" enum="CollisionShapeType">
+		</constant>
+		<constant name="COLLISION_CONCAVE" value="2" enum="CollisionShapeType">
+		</constant>
+	</constants>
+</class>

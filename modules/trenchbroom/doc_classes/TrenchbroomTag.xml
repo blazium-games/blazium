@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TrenchbroomTag" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Pattern matching tag for TrenchBroom game configs.
+	</brief_description>
+	<description>
+		Pattern matching tag for TrenchBroom game configs. Portions derived from func-godot (MIT License).
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_match_key" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="tag_match_type" type="int" enum="TrenchbroomTag.TagMatchType" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="tag_attributes" type="String[]" setter="set_tag_attributes" getter="get_tag_attributes" default="[]">
+		</member>
+		<member name="tag_match_type" type="int" setter="set_tag_match_type" getter="get_tag_match_type" enum="TrenchbroomTag.TagMatchType" default="0">
+		</member>
+		<member name="tag_name" type="String" setter="set_tag_name" getter="get_tag_name" default="&quot;&quot;">
+		</member>
+		<member name="tag_pattern" type="String" setter="set_tag_pattern" getter="get_tag_pattern" default="&quot;&quot;">
+		</member>
+		<member name="texture_name" type="String" setter="set_texture_name" getter="get_texture_name" default="&quot;&quot;">
+		</member>
+	</members>
+	<constants>
+		<constant name="TAG_MATCH_TEXTURE" value="0" enum="TagMatchType">
+		</constant>
+		<constant name="TAG_MATCH_CLASSNAME" value="1" enum="TagMatchType">
+		</constant>
+	</constants>
+</class>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TrenchbroomLocalConfig" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Local editor configuration for Trenchbroom export paths.
+	</brief_description>
+	<description>
+		Local machine project-wide settings for Trenchbroom exports. Do not create a new resource for each project; use the premade [code]{defaults_path}/trenchbroom_local_config.tres[/code] entry point from your [code]blazium/trenchbroom/defaults_path[/code] ProjectSettings checkout.
+		Settings are stored in [code]user://trenchbroom_config.json[/code] when exported via the inspector Export button.
+		Export local settings before using [method TrenchbroomGameConfig.export_file] or [method NetRadiantCustomGamePackConfig.export_file], which read paths through [method TrenchbroomLocalConfig.get_setting].
+		Portions derived from func-godot (MIT License).
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="export_trenchbroom_settings">
+			<return type="void" />
+			<description>
+				Writes current export folder paths to user://trenchbroom_config.json.
+			</description>
+		</method>
+		<method name="get_setting" qualifiers="static">
+			<return type="Variant" />
+			<param index="0" name="name" type="int" enum="TrenchbroomLocalConfig.Property" />
+			<description>
+				Returns an export folder path from [code]user://trenchbroom_config.json[/code] for the given property.
+			</description>
+		</method>
+		<method name="reload_trenchbroom_settings">
+			<return type="void" />
+			<description>
+				Reloads export folder paths from user://trenchbroom_config.json.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="fgd_output_folder" type="String" setter="set_fgd_output_folder" getter="get_fgd_output_folder" default="&quot;&quot;">
+			Destination folder for exported FGD files.
+		</member>
+		<member name="map_editor_game_path" type="String" setter="set_map_editor_game_path" getter="get_map_editor_game_path" default="&quot;&quot;">
+		</member>
+		<member name="netradiant_custom_gamepacks_folder" type="String" setter="set_netradiant_custom_gamepacks_folder" getter="get_netradiant_custom_gamepacks_folder" default="&quot;&quot;">
+		</member>
+		<member name="trenchbroom_game_config_folder" type="String" setter="set_trenchbroom_game_config_folder" getter="get_trenchbroom_game_config_folder" default="&quot;&quot;">
+			Destination folder for exported TrenchBroom GameConfig.cfg files.
+		</member>
+	</members>
+	<constants>
+		<constant name="PROPERTY_FGD_OUTPUT_FOLDER" value="0" enum="Property">
+			FGD export folder property key for [method TrenchbroomLocalConfig.get_setting].
+		</constant>
+		<constant name="PROPERTY_TRENCHBROOM_GAME_CONFIG_FOLDER" value="1" enum="Property">
+			TrenchBroom game config export folder property key for [method TrenchbroomLocalConfig.get_setting].
+		</constant>
+		<constant name="PROPERTY_NETRADIANT_CUSTOM_GAMEPACKS_FOLDER" value="2" enum="Property">
+			NetRadiant Custom gamepack export folder property key for [method TrenchbroomLocalConfig.get_setting].
+		</constant>
+		<constant name="PROPERTY_MAP_EDITOR_GAME_PATH" value="3" enum="Property">
+			Map editor game path property key for [method TrenchbroomLocalConfig.get_setting].
+		</constant>
+	</constants>
+</class>

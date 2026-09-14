@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TrenchbroomGameConfig" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		TrenchBroom game configuration export resource.
+	</brief_description>
+	<description>
+		Exports TrenchBroom GameConfig.cfg, icon, FGD, and tag definitions for map editor integration.
+	</description>
+	<tutorials>
+		<link title="Trenchbroom Module Tests">https://github.com/blazium-games/trenchbroom_module_tests</link>
+	</tutorials>
+	<methods>
+		<method name="build_class_text" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="export_file">
+			<return type="void" />
+			<description>
+				Exports the full TrenchBroom game configuration to the local config folder.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="_export_file_func" type="Callable" setter="" getter="_get_export_file_func" default="Callable()">
+		</member>
+		<member name="brush_tags" type="TrenchbroomTag[]" setter="set_brush_tags" getter="get_brush_tags" default="[Object(TrenchbroomTag,&quot;resource_local_to_scene&quot;:false,&quot;resource_name&quot;:&quot;&quot;,&quot;tag_name&quot;:&quot;Func&quot;,&quot;tag_attributes&quot;:Array[String]([]),&quot;tag_match_type&quot;:1,&quot;tag_pattern&quot;:&quot;func*&quot;,&quot;texture_name&quot;:&quot;&quot;,&quot;script&quot;:null) , Object(TrenchbroomTag,&quot;resource_local_to_scene&quot;:false,&quot;resource_name&quot;:&quot;&quot;,&quot;tag_name&quot;:&quot;Trigger&quot;,&quot;tag_attributes&quot;:Array[String]([]),&quot;tag_match_type&quot;:1,&quot;tag_pattern&quot;:&quot;trigger*&quot;,&quot;texture_name&quot;:&quot;&quot;,&quot;script&quot;:null) ]">
+			Brush classname tag patterns for TrenchBroom.
+		</member>
+		<member name="brushface_tags" type="TrenchbroomTag[]" setter="set_brushface_tags" getter="get_brushface_tags" default="[Object(TrenchbroomTag,&quot;resource_local_to_scene&quot;:false,&quot;resource_name&quot;:&quot;&quot;,&quot;tag_name&quot;:&quot;Clip&quot;,&quot;tag_attributes&quot;:Array[String]([&quot;transparent&quot;]),&quot;tag_match_type&quot;:0,&quot;tag_pattern&quot;:&quot;clip&quot;,&quot;texture_name&quot;:&quot;&quot;,&quot;script&quot;:null) , Object(TrenchbroomTag,&quot;resource_local_to_scene&quot;:false,&quot;resource_name&quot;:&quot;&quot;,&quot;tag_name&quot;:&quot;Skip&quot;,&quot;tag_attributes&quot;:Array[String]([&quot;transparent&quot;]),&quot;tag_match_type&quot;:0,&quot;tag_pattern&quot;:&quot;skip&quot;,&quot;texture_name&quot;:&quot;&quot;,&quot;script&quot;:null) , Object(TrenchbroomTag,&quot;resource_local_to_scene&quot;:false,&quot;resource_name&quot;:&quot;&quot;,&quot;tag_name&quot;:&quot;Origin&quot;,&quot;tag_attributes&quot;:Array[String]([&quot;transparent&quot;]),&quot;tag_match_type&quot;:0,&quot;tag_pattern&quot;:&quot;origin&quot;,&quot;texture_name&quot;:&quot;&quot;,&quot;script&quot;:null) ]">
+			Face texture tag patterns for TrenchBroom.
+		</member>
+		<member name="default_uv_scale" type="Vector2" setter="set_default_uv_scale" getter="get_default_uv_scale" default="Vector2(1, 1)">
+		</member>
+		<member name="entity_scale" type="String" setter="set_entity_scale" getter="get_entity_scale" default="&quot;32&quot;">
+		</member>
+		<member name="fgd_file" type="BlaziumFGDFile" setter="set_fgd_file" getter="get_fgd_file">
+			FGD resource exported alongside the game config.
+		</member>
+		<member name="game_config_version" type="int" setter="set_game_config_version" getter="get_game_config_version" enum="TrenchbroomGameConfig.GameConfigVersion" default="0">
+			TrenchBroom GameConfig format version. [constant CONFIG_LATEST] and [constant CONFIG_VERSION9] export v9 ([code]material[/code] key); [constant CONFIG_VERSION8] exports v8 ([code]texture[/code] key); [constant CONFIG_VERSION4] exports legacy v4 ([code]brushface[/code] tags).
+		</member>
+		<member name="game_name" type="String" setter="set_game_name" getter="get_game_name" default="&quot;Blazium&quot;">
+			Display name written to GameConfig.cfg.
+		</member>
+		<member name="generate_model_point_class_models" type="bool" setter="set_generate_model_point_class_models" getter="get_generate_model_point_class_models" default="true">
+		</member>
+		<member name="icon" type="Texture2D" setter="set_icon" getter="get_icon">
+		</member>
+		<member name="map_formats" type="Array" setter="set_map_formats" getter="get_map_formats" default="[{ &quot;format&quot;: &quot;Valve&quot;, &quot;initialmap&quot;: &quot;initial_valve.map&quot; }, { &quot;format&quot;: &quot;Standard&quot;, &quot;initialmap&quot;: &quot;initial_standard.map&quot; }, { &quot;format&quot;: &quot;Quake2&quot;, &quot;initialmap&quot;: &quot;initial_quake2.map&quot; }, { &quot;format&quot;: &quot;Quake3&quot; }]">
+		</member>
+		<member name="palette_path" type="String" setter="set_palette_path" getter="get_palette_path" default="&quot;textures/palette.lmp&quot;">
+		</member>
+		<member name="set_default_properties" type="bool" setter="set_set_default_properties" getter="get_set_default_properties" default="false">
+		</member>
+		<member name="texture_exclusion_patterns" type="String[]" setter="set_texture_exclusion_patterns" getter="get_texture_exclusion_patterns" default="[&quot;*_albedo&quot;, &quot;*_ao&quot;, &quot;*_emission&quot;, &quot;*_height&quot;, &quot;*_metallic&quot;, &quot;*_normal&quot;, &quot;*_orm&quot;, &quot;*_roughness&quot;, &quot;*_sss&quot;]">
+		</member>
+		<member name="textures_root_folder" type="String" setter="set_textures_root_folder" getter="get_textures_root_folder" default="&quot;textures&quot;">
+		</member>
+	</members>
+	<constants>
+		<constant name="CONFIG_LATEST" value="0" enum="GameConfigVersion">
+			Uses the latest supported TrenchBroom GameConfig format.
+		</constant>
+		<constant name="CONFIG_VERSION4" value="1" enum="GameConfigVersion">
+			Legacy v4 format with [code]brushface[/code] tags.
+		</constant>
+		<constant name="CONFIG_VERSION8" value="2" enum="GameConfigVersion">
+			v8 format with [code]texture[/code] key.
+		</constant>
+		<constant name="CONFIG_VERSION9" value="3" enum="GameConfigVersion">
+			v9 format with [code]material[/code] key.
+		</constant>
+	</constants>
+</class>

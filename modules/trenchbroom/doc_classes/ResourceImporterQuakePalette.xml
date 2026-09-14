@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ResourceImporterQuakePalette" inherits="ResourceImporter" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Imports Quake palette files.
+	</brief_description>
+	<description>
+		Imports Quake palette files. Portions derived from func-godot (MIT License).
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

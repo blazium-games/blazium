@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="QuakeWadFile" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Imported Quake WAD texture archive.
+	</brief_description>
+	<description>
+		Imported Quake WAD texture archive. Portions derived from func-godot (MIT License).
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_textures" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="set_textures">
+			<return type="void" />
+			<param index="0" name="textures" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

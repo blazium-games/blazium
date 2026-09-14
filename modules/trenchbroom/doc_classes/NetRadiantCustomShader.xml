@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="NetRadiantCustomShader" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		NetRadiant Custom shader definition resource.
+	</brief_description>
+	<description>
+		NetRadiant Custom shader definition resource. Portions derived from func-godot (MIT License).
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="shader_attributes" type="String[]" setter="set_shader_attributes" getter="get_shader_attributes" default="[]">
+		</member>
+		<member name="texture_path" type="String" setter="set_texture_path" getter="get_texture_path" default="&quot;&quot;">
+		</member>
+	</members>
+</class>

@@ -1,5 +1,7 @@
 from SCons.Script import ARGUMENTS
 
+from misc.utility.linker import override_mold_linker_with_gold
+
 
 def _codegen_platform_supported(env, platform):
     arch = env.get("arch", "")
@@ -35,30 +37,14 @@ def can_build(env, platform):
         env.module_add_dependencies("luau_module", ["jsonrpc"], False)
 
     # Mold and gold both fail to link luau_module into the huge GCC sanitizer editor
-    # binary (relocation overflow). Skip the module on that CI matrix only.
+    # binary (relocation overflow). Skip luau on that CI matrix; trenchbroom applies
+    # override_mold_linker_with_gold when enabled instead.
     if platform == "linuxbsd" and env.get("linker") == "mold":
         if env.get("use_asan") or env.get("use_ubsan"):
             print("luau_module: disabled for mold+sanitizer builds (linker relocation limit on large editor binaries)")
             return False
 
     return True
-
-
-def _override_mold_linker_for_luau(env):
-    # Mold cannot link very large sanitizer editor binaries (PLT32 out of range).
-    # CI setup-mold symlinks ld.bfd to mold, so -fuse-ld=bfd still invokes mold.
-    if env.get("linker") != "mold":
-        return
-    env["LINKFLAGS"] = [
-        flag
-        for flag in env["LINKFLAGS"]
-        if not (
-            isinstance(flag, str)
-            and ("-fuse-ld=mold" in flag or "-fuse-ld=bfd" in flag or (flag.startswith("-B") and "/mold" in flag))
-        )
-    ]
-    env.Append(LINKFLAGS=["-fuse-ld=gold"])
-    print("luau_module: overriding mold linker with gold for final link")
 
 
 def configure(env):
@@ -84,7 +70,7 @@ def configure(env):
         env.Append(CPPDEFINES=["LUAU_MODULE_WEB_BRIDGE_ENABLED"])
         _enable_web_luau_exceptions(env)
     elif platform == "linuxbsd":
-        _override_mold_linker_for_luau(env)
+        override_mold_linker_with_gold(env, "luau_module")
 
 
 def get_opts(platform):
