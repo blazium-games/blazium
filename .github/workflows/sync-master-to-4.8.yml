@@ -52,21 +52,42 @@ jobs:
           source_ref="${SOURCE_REMOTE}/${SOURCE_BRANCH}"
           target_ref="origin/${TARGET_BRANCH}"
           all_count="$(git rev-list --count "${target_ref}..${source_ref}")"
-          mapfile -t missing < <(git log --reverse --no-merges --format=%H "${target_ref}..${source_ref}")
+          mapfile -t candidates < <(git log --reverse --no-merges --format=%H "${target_ref}..${source_ref}")
+          if [ "${#candidates[@]}" -eq 1 ] && [ -z "${candidates[0]:-}" ]; then
+            candidates=()
+          fi
+
+          # Same patch-id on 4.8 (already cherry-picked) is skipped even when the SHA differs.
+          # git cherry "-" = equivalent exists; "+" = still missing. Apply oldest-first.
+          already=()
+          while read -r mark sha _rest; do
+            [ -z "${mark:-}" ] && continue
+            if [ "${mark}" = "-" ]; then
+              already+=("${sha}")
+            fi
+          done < <(git cherry "${target_ref}" "${source_ref}")
+          mapfile -t missing < <(git log --reverse --cherry-pick --right-only --no-merges --format=%H "${target_ref}...${source_ref}")
           if [ "${#missing[@]}" -eq 1 ] && [ -z "${missing[0]:-}" ]; then
             missing=()
           fi
 
           echo "GitHub compare (all commits, including merges): ${all_count}"
-          echo "Cherry-pick set (--no-merges): ${#missing[@]}"
+          echo "Non-merge commits not in 4.8 history: ${#candidates[@]}"
+          echo "Already equivalent on 4.8 (skip): ${#already[@]}"
+          echo "Still missing (cherry-pick): ${#missing[@]}"
+
+          if [ "${#already[@]}" -gt 0 ]; then
+            echo "Already cherry-picked or equivalent (same patch-id), skipping:"
+            git cherry -v "${target_ref}" "${source_ref}" | awk '/^- / { print }'
+          fi
 
           if [ "${#missing[@]}" -eq 0 ]; then
-            echo "No commits on ${source_ref} are missing from ${target_ref}."
+            echo "No new commits on ${source_ref} are missing from ${target_ref}."
             exit 0
           fi
 
-          echo "Missing non-merge commits:"
-          git log --reverse --no-merges --oneline "${target_ref}..${source_ref}"
+          echo "Commits to cherry-pick:"
+          git cherry -v "${target_ref}" "${source_ref}" | awk '/^\+ / { print }'
 
           if [ "${DRY_RUN}" = "true" ]; then
             echo "Dry run: skipping cherry-pick, push, and PR."
@@ -76,10 +97,15 @@ jobs:
           git checkout -B "${SYNC_BRANCH}" "origin/${TARGET_BRANCH}"
 
           applied=0
+          skipped_empty=0
           failed_sha=""
           for sha in "${missing[@]}"; do
             if git cherry-pick -x "${sha}"; then
               applied=$((applied + 1))
+            elif git diff --quiet && git diff --cached --quiet; then
+              echo "Skipping ${sha}: patch is empty on ${TARGET_BRANCH} (already present)."
+              git cherry-pick --skip || git cherry-pick --abort
+              skipped_empty=$((skipped_empty + 1))
             else
               failed_sha="${sha}"
               git cherry-pick --abort
@@ -87,9 +113,13 @@ jobs:
             fi
           done
 
-          if [ "${applied}" -eq 0 ]; then
+          if [ -n "${failed_sha}" ] && [ "${applied}" -eq 0 ]; then
             echo "Cherry-pick stopped on ${failed_sha}; nothing applied, skipping PR."
             exit 1
+          fi
+          if [ "${applied}" -eq 0 ]; then
+            echo "Nothing new to push (${skipped_empty} empty pick(s) already on ${TARGET_BRANCH})."
+            exit 0
           fi
 
           git push --force-with-lease origin "${SYNC_BRANCH}"
