@@ -101,6 +101,64 @@ TEST_CASE("[Warcry] opus sine encode/decode") {
 	CHECK(decoded.size() == WarcryOpusCodec::FRAME_SAMPLES);
 }
 
+TEST_CASE("[Warcry] HELLO_ACK downlinkChannels stereo") {
+	Dictionary data;
+	data["userId"] = 4;
+	data["downlinkChannels"] = 2;
+	const Vector<uint8_t> bytes = WarcryProtocol::serialize_control(WarcryProtocol::MsgType::HELLO_ACK, data);
+	WarcryProtocol::MsgType type = WarcryProtocol::MsgType::INVALID;
+	Dictionary parsed;
+	CHECK(WarcryProtocol::deserialize_control(bytes.ptr(), bytes.size(), type, parsed));
+	CHECK(type == WarcryProtocol::MsgType::HELLO_ACK);
+	CHECK((int)parsed.get("downlinkChannels", 0) == 2);
+	CHECK((int)parsed.get("userId", 0) == 4);
+}
+
+TEST_CASE("[Warcry] opus encode stays mono") {
+	CHECK(WarcryOpusCodec::CHANNELS == 1);
+	WarcryOpusCodec codec;
+	REQUIRE(codec.init());
+	CHECK(codec.decoder_channels() == 1);
+
+	Vector<int16_t> sine;
+	sine.resize(WarcryOpusCodec::FRAME_SAMPLES);
+	for (int i = 0; i < sine.size(); i++) {
+		sine.ptrw()[i] = (int16_t)(sinf((float)i * 0.1f) * 16000.0f);
+	}
+	Vector<uint8_t> opus;
+	REQUIRE(codec.encode_frame(sine.ptr(), sine.size(), opus));
+	CHECK(opus.size() > 0);
+}
+
+TEST_CASE("[Warcry] opus stereo decode interleaved") {
+	WarcryOpusCodec codec;
+	REQUIRE(codec.init());
+	REQUIRE(codec.init_decoder(2));
+	CHECK(codec.decoder_channels() == 2);
+
+	Vector<int16_t> stereo;
+	stereo.resize(WarcryOpusCodec::FRAME_SAMPLES * 2);
+	for (int i = 0; i < WarcryOpusCodec::FRAME_SAMPLES; i++) {
+		stereo.ptrw()[i * 2] = (int16_t)(sinf((float)i * 0.1f) * 16000.0f);
+		stereo.ptrw()[i * 2 + 1] = (int16_t)(sinf((float)i * 0.1f) * -4000.0f);
+	}
+
+	Vector<uint8_t> opus;
+	REQUIRE(WarcryOpusCodec::encode_interleaved(stereo.ptr(), 2, opus));
+
+	Vector<int16_t> decoded;
+	REQUIRE(codec.decode_frame(opus.ptr(), opus.size(), decoded));
+	CHECK(decoded.size() == WarcryOpusCodec::FRAME_SAMPLES * 2);
+	bool channels_differ = false;
+	for (int i = 0; i < WarcryOpusCodec::FRAME_SAMPLES; i++) {
+		if (decoded[i * 2] != decoded[i * 2 + 1]) {
+			channels_differ = true;
+			break;
+		}
+	}
+	CHECK(channels_differ);
+}
+
 TEST_CASE("[Warcry] optional live connection") {
 	OS *os = OS::get_singleton();
 	REQUIRE(os);

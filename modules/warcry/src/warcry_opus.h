@@ -46,11 +46,15 @@ public:
 	~WarcryOpusCodec();
 
 	bool init();
+	bool init_decoder(int p_channels);
 	void close();
 	bool encode_frame(const int16_t *p_pcm, int p_samples, Vector<uint8_t> &r_out);
+	static bool encode_interleaved(const int16_t *p_pcm, int p_channels, Vector<uint8_t> &r_out);
 	bool decode_frame(const uint8_t *p_data, int p_size, Vector<int16_t> &r_out);
+	int decoder_channels() const { return decoder_channels_; }
 
 private:
 	OpusEncoder *encoder = nullptr;
 	OpusDecoder *decoder = nullptr;
+	int decoder_channels_ = CHANNELS;
 };
