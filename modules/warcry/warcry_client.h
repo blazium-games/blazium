@@ -131,6 +131,7 @@ private:
 	String username;
 	int local_user_id = 0;
 	int current_channel = 0;
+	int downlink_channels = 1;
 	bool muted = false;
 	bool deaf = false;
 	bool speaking = false;

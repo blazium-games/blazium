@@ -112,6 +112,10 @@ void WarcryClient::disconnect_from_server() {
 	local_user_id = 0;
 	current_channel = 0;
 	hello_sent = false;
+	if (downlink_channels != 1) {
+		downlink_channels = 1;
+		codec.init_decoder(1);
+	}
 	users.clear();
 	channels.clear();
 	if (was_connected) {
@@ -385,6 +389,14 @@ void WarcryClient::_handle_control(WarcryProtocol::MsgType p_type, const Diction
 			if (p_data.has("channelId")) {
 				current_channel = (int)p_data.get("channelId", 0);
 			}
+			const int ack_channels = ((int)p_data.get("downlinkChannels", 1) == 2) ? 2 : 1;
+			if (ack_channels != downlink_channels) {
+				downlink_channels = ack_channels;
+				if (!codec.init_decoder(downlink_channels)) {
+					downlink_channels = 1;
+					codec.init_decoder(1);
+				}
+			}
 			emit_signal(SNAME("connected"));
 			break;
 		}
@@ -462,11 +474,22 @@ void WarcryClient::_handle_voice(const uint8_t *p_data, int p_size) {
 	}
 	if (playback.is_valid()) {
 		PackedVector2Array frames;
-		frames.resize(pcm.size());
-		Vector2 *out = frames.ptrw();
-		for (int i = 0; i < pcm.size(); i++) {
-			const float s = CLAMP((float)pcm[i] / 32768.0f * master_volume, -1.0f, 1.0f);
-			out[i] = Vector2(s, s);
+		if (downlink_channels == 2 && pcm.size() >= 2) {
+			const int frame_count = pcm.size() / 2;
+			frames.resize(frame_count);
+			Vector2 *out = frames.ptrw();
+			for (int i = 0; i < frame_count; i++) {
+				const float left = CLAMP((float)pcm[i * 2] / 32768.0f * master_volume, -1.0f, 1.0f);
+				const float right = CLAMP((float)pcm[i * 2 + 1] / 32768.0f * master_volume, -1.0f, 1.0f);
+				out[i] = Vector2(left, right);
+			}
+		} else {
+			frames.resize(pcm.size());
+			Vector2 *out = frames.ptrw();
+			for (int i = 0; i < pcm.size(); i++) {
+				const float s = CLAMP((float)pcm[i] / 32768.0f * master_volume, -1.0f, 1.0f);
+				out[i] = Vector2(s, s);
+			}
 		}
 		if (playback->can_push_buffer(frames.size())) {
 			playback->push_buffer(frames);
