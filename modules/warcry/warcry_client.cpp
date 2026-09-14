@@ -100,7 +100,7 @@ bool WarcryClient::connect_to_server(const String &p_host, int p_port, const Str
 }
 
 void WarcryClient::disconnect_from_server() {
-	const bool was_connected = is_connected() || hello_sent;
+	const bool was_connected = is_client_connected() || hello_sent;
 	if (peer.is_valid()) {
 		peer->peer_disconnect_now();
 		peer.unref();
@@ -119,12 +119,12 @@ void WarcryClient::disconnect_from_server() {
 	}
 }
 
-bool WarcryClient::is_connected() const {
+bool WarcryClient::is_client_connected() const {
 	return peer.is_valid() && peer->is_active() && peer->get_state() == ENetPacketPeer::STATE_CONNECTED;
 }
 
 void WarcryClient::_send_control(WarcryProtocol::MsgType p_type, const Dictionary &p_data) {
-	if (!is_connected()) {
+	if (!is_client_connected()) {
 		return;
 	}
 	const Vector<uint8_t> bytes = WarcryProtocol::serialize_control(p_type, p_data);
@@ -140,7 +140,7 @@ void WarcryClient::_send_user_state() {
 }
 
 void WarcryClient::_send_voice(const Vector<uint8_t> &p_opus) {
-	if (!is_connected() || muted || p_opus.is_empty()) {
+	if (!is_client_connected() || muted || p_opus.is_empty()) {
 		return;
 	}
 	WarcryProtocol::VoiceFrameHeader header;
@@ -153,7 +153,7 @@ void WarcryClient::_send_voice(const Vector<uint8_t> &p_opus) {
 }
 
 bool WarcryClient::authenticate(const String &p_username, const String &p_password) {
-	if (!is_connected()) {
+	if (!is_client_connected()) {
 		return false;
 	}
 	Dictionary data;
@@ -167,14 +167,14 @@ bool WarcryClient::join_channel(int p_channel_id) {
 	Dictionary data;
 	data["channelId"] = p_channel_id;
 	_send_control(WarcryProtocol::MsgType::JOIN_CHANNEL, data);
-	return is_connected();
+	return is_client_connected();
 }
 
 bool WarcryClient::leave_channel(int p_channel_id) {
 	Dictionary data;
 	data["channelId"] = p_channel_id;
 	_send_control(WarcryProtocol::MsgType::LEAVE_CHANNEL, data);
-	return is_connected();
+	return is_client_connected();
 }
 
 void WarcryClient::set_muted(bool p_muted) {
@@ -209,7 +209,7 @@ bool WarcryClient::set_user_preference(int p_user_id, float p_volume, bool p_mut
 	data["volume"] = p_volume;
 	data["muted"] = p_muted;
 	_send_control(WarcryProtocol::MsgType::USER_PREFERENCE, data);
-	return is_connected();
+	return is_client_connected();
 }
 
 void WarcryClient::start_speaking() {
@@ -475,7 +475,7 @@ void WarcryClient::_handle_voice(const uint8_t *p_data, int p_size) {
 }
 
 void WarcryClient::_capture_and_send() {
-	if (!speaking || muted || capture.is_null() || !is_connected()) {
+	if (!speaking || muted || capture.is_null() || !is_client_connected()) {
 		return;
 	}
 	const int needed = WarcryOpusCodec::FRAME_SAMPLES;
@@ -499,7 +499,7 @@ void WarcryClient::_capture_and_send() {
 void WarcryClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("connect_to_server", "host", "port", "username"), &WarcryClient::connect_to_server);
 	ClassDB::bind_method(D_METHOD("disconnect_from_server"), &WarcryClient::disconnect_from_server);
-	ClassDB::bind_method(D_METHOD("is_client_connected"), &WarcryClient::is_connected);
+	ClassDB::bind_method(D_METHOD("is_client_connected"), &WarcryClient::is_client_connected);
 	ClassDB::bind_method(D_METHOD("authenticate", "username", "password"), &WarcryClient::authenticate);
 	ClassDB::bind_method(D_METHOD("join_channel", "channel_id"), &WarcryClient::join_channel);
 	ClassDB::bind_method(D_METHOD("leave_channel", "channel_id"), &WarcryClient::leave_channel);

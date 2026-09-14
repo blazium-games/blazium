@@ -106,7 +106,7 @@ void WarcryEditorPlugin::_refresh_lists() {
 	}
 
 	if (status_label) {
-		status_label->set_text(vformat("user=%d channel=%d %s", client->get_local_user_id(), client->get_current_channel(), client->is_connected() ? "connected" : "offline"));
+		status_label->set_text(vformat("user=%d channel=%d %s", client->get_local_user_id(), client->get_current_channel(), client->is_client_connected() ? "connected" : "offline"));
 	}
 }
 
