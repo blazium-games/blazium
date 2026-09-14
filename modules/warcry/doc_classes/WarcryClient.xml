@@ -107,7 +107,7 @@
 		<method name="poll">
 			<return type="void" />
 			<description>
-				Services ENet and encodes a capture frame when speaking. The module also hooks [code]SceneTree.process_frame[/code] when a tree exists.
+				Services ENet and encodes a capture frame when speaking. The module also hooks [code skip-lint]SceneTree.process_frame[/code] when a tree exists.
 			</description>
 		</method>
 		<method name="set_capture_effect">
