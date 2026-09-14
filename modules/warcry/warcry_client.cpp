@@ -389,9 +389,9 @@ void WarcryClient::_handle_control(WarcryProtocol::MsgType p_type, const Diction
 			if (p_data.has("channelId")) {
 				current_channel = (int)p_data.get("channelId", 0);
 			}
-			const int channels = ((int)p_data.get("downlinkChannels", 1) == 2) ? 2 : 1;
-			if (channels != downlink_channels) {
-				downlink_channels = channels;
+			const int ack_channels = ((int)p_data.get("downlinkChannels", 1) == 2) ? 2 : 1;
+			if (ack_channels != downlink_channels) {
+				downlink_channels = ack_channels;
 				if (!codec.init_decoder(downlink_channels)) {
 					downlink_channels = 1;
 					codec.init_decoder(1);
