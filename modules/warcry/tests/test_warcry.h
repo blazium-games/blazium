@@ -36,7 +36,6 @@
 #include "core/os/os.h"
 #include "modules/warcry/src/warcry_opus.h"
 #include "modules/warcry/src/warcry_protocol.h"
-#include "modules/warcry/warcry_client.h"
 
 #include <cmath>
 
@@ -121,17 +120,19 @@ TEST_CASE("[Warcry] optional live connection") {
 		username = "warcry_test";
 	}
 
-	WarcryClient *client = WarcryClient::get_singleton();
+	// Call through Object so this header never includes ENet/windows.h.
+	// test_main.cpp already pulled gdscript_tokenizer.h, which #undef CONST/VOID.
+	Object *client = Engine::get_singleton()->get_singleton_object("Warcry");
 	REQUIRE(client);
-	CHECK(client->connect_to_server(host, port, username));
+	CHECK(bool(client->call("connect_to_server", host, port, username)));
 
 	const uint64_t start = os->get_ticks_msec();
-	while (!client->is_connected() && os->get_ticks_msec() - start < 2000) {
-		client->poll();
+	while (!bool(client->call("is_client_connected")) && os->get_ticks_msec() - start < 2000) {
+		client->call("poll");
 		os->delay_usec(10000);
 	}
-	CHECK_MESSAGE(client->is_connected(), "WarcryClient failed to connect to politeia_server.");
-	client->disconnect_from_server();
+	CHECK_MESSAGE(bool(client->call("is_client_connected")), "WarcryClient failed to connect to politeia_server.");
+	client->call("disconnect_from_server");
 }
 
 } // namespace TestWarcry

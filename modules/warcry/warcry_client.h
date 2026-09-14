@@ -63,7 +63,7 @@ public:
 
 	bool connect_to_server(const String &p_host, int p_port, const String &p_username);
 	void disconnect_from_server();
-	bool is_connected() const;
+	bool is_client_connected() const;
 
 	bool authenticate(const String &p_username, const String &p_password);
 	bool join_channel(int p_channel_id);
