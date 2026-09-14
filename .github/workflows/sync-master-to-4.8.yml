@@ -1,0 +1,96 @@
+name: Sync master into 4.8
+
+on:
+  schedule:
+    - cron: "0 12 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sync-master-into-4.8
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Cherry-pick missing master commits
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TARGET_BRANCH: blazium_4.8
+      SOURCE_BRANCH: master
+      SYNC_BRANCH: ci/sync-master-into-4.8
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch source and target
+        run: git fetch origin "${SOURCE_BRANCH}" "${TARGET_BRANCH}"
+
+      - name: Cherry-pick missing commits and open or update PR
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          mapfile -t missing < <(git log --reverse --no-merges --format=%H "origin/${TARGET_BRANCH}..origin/${SOURCE_BRANCH}")
+          if [ "${#missing[@]}" -eq 0 ] || [ -z "${missing[0]:-}" ]; then
+            echo "No commits on origin/${SOURCE_BRANCH} are missing from origin/${TARGET_BRANCH}."
+            exit 0
+          fi
+
+          echo "Missing commits (${#missing[@]}):"
+          git log --reverse --no-merges --oneline "origin/${TARGET_BRANCH}..origin/${SOURCE_BRANCH}"
+
+          git checkout -B "${SYNC_BRANCH}" "origin/${TARGET_BRANCH}"
+
+          applied=0
+          failed_sha=""
+          for sha in "${missing[@]}"; do
+            if git cherry-pick -x "${sha}"; then
+              applied=$((applied + 1))
+            else
+              failed_sha="${sha}"
+              git cherry-pick --abort
+              break
+            fi
+          done
+
+          if [ "${applied}" -eq 0 ]; then
+            echo "Cherry-pick stopped on ${failed_sha}; nothing applied, skipping PR."
+            exit 1
+          fi
+
+          git push --force-with-lease origin "${SYNC_BRANCH}"
+
+          existing="$(gh pr list --base "${TARGET_BRANCH}" --head "${SYNC_BRANCH}" --state open --json number --jq '.[0].number // empty')"
+          if [ -z "${existing}" ]; then
+            gh pr create --base "${TARGET_BRANCH}" --head "${SYNC_BRANCH}" \
+              --title "chore: sync Godot master into blazium_4.8" \
+              --body "$(cat <<EOF
+          Daily cherry-pick of commits that are on \`master\` but not yet on \`blazium_4.8\`.
+
+          This is a standing PR: the next scheduled run resets the branch onto current \`blazium_4.8\` and reapplies still-missing commits.
+
+          Source: \`origin/master\`
+          Target: \`blazium_4.8\`
+          Applied this run: ${applied}
+          EOF
+          )"
+            existing="$(gh pr list --base "${TARGET_BRANCH}" --head "${SYNC_BRANCH}" --state open --json number --jq '.[0].number // empty')"
+          fi
+
+          if [ -n "${failed_sha}" ]; then
+            if [ -n "${existing}" ]; then
+              gh pr comment "${existing}" --body "Cherry-pick stopped on \`${failed_sha}\` after ${applied} commit(s). Resolve conflicts or skip that commit and re-run the workflow."
+            fi
+            echo "Cherry-pick stopped on ${failed_sha} after ${applied} commit(s)."
+            exit 1
+          fi
+
+          echo "Opened or updated PR #${existing} with ${applied} cherry-picked commit(s)."
