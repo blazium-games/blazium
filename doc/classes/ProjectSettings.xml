@@ -2303,6 +2303,18 @@
 		</member>
 		<member name="blazium/semanticsearch/scan_filesystem" type="bool" setter="" getter="" default="false">
 		</member>
+		<member name="blazium/warcry/host" type="String" setter="" getter="" default="&quot;127.0.0.1&quot;">
+			Default Politeia / Warcry server hostname used by [WarcryClient] and the editor admin dock.
+		</member>
+		<member name="blazium/warcry/password" type="String" setter="" getter="" default="&quot;&quot;">
+			Optional password sent with [method WarcryClient.authenticate].
+		</member>
+		<member name="blazium/warcry/port" type="int" setter="" getter="" default="27015">
+			Default Politeia / Warcry server port.
+		</member>
+		<member name="blazium/warcry/username" type="String" setter="" getter="" default="&quot;editor&quot;">
+			Default username for [method WarcryClient.connect_to_server] and [method WarcryClient.authenticate].
+		</member>
 		<member name="collada/use_ambient" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], ambient lights will be imported from COLLADA models as [DirectionalLight3D]. If [code]false[/code], ambient lights will be ignored.
 		</member>
