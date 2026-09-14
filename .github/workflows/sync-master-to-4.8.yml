@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "0 12 * * *"
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "List missing commits only; do not cherry-pick, push, or open a PR"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -23,6 +28,7 @@ jobs:
       SOURCE_BRANCH: master
       SYNC_BRANCH: ci/sync-master-into-4.8
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,6 +52,11 @@ jobs:
 
           echo "Missing commits (${#missing[@]}):"
           git log --reverse --no-merges --oneline "origin/${TARGET_BRANCH}..origin/${SOURCE_BRANCH}"
+
+          if [ "${DRY_RUN}" = "true" ]; then
+            echo "Dry run: skipping cherry-pick, push, and PR."
+            exit 0
+          fi
 
           git checkout -B "${SYNC_BRANCH}" "origin/${TARGET_BRANCH}"
 
