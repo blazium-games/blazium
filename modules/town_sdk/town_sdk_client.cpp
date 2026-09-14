@@ -33,11 +33,11 @@
 
 #include "core/error/error_macros.h"
 #include "core/math/math_funcs.h"
+#include "core/object/class_db.h"
 #include "core/string/print_string.h"
 #include "core/variant/variant.h"
 
 #include <vector>
-#include "core/object/class_db.h"
 
 namespace {
 std::string string_to_std(const String &p_string) {

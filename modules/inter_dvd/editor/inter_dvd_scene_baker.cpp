@@ -31,10 +31,6 @@
 
 #include "inter_dvd_scene_baker.h"
 
-#include "modules/inter_dvd/author/inter_dvd_project.h"
-#include "modules/inter_dvd/author/inter_dvd_vob_mux.h"
-#include "modules/inter_dvd/editor/inter_dvd_toolchain.h"
-
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
@@ -50,6 +46,10 @@
 #include "scene/2d/mesh_instance_2d.h"
 #include "scene/2d/polygon_2d.h"
 #include "scene/2d/sprite_2d.h"
+
+#include "modules/inter_dvd/author/inter_dvd_project.h"
+#include "modules/inter_dvd/author/inter_dvd_vob_mux.h"
+#include "modules/inter_dvd/editor/inter_dvd_toolchain.h"
 #include "modules/tilemap/tile_map.h"
 #include "modules/tilemap/tile_map_layer.h"
 #ifndef _3D_DISABLED
@@ -57,6 +57,7 @@
 #include "scene/3d/camera_3d.h"
 #include "scene/3d/node_3d.h"
 #endif
+#include "core/string/string_name.h"
 #include "scene/animation/animation_player.h"
 #include "scene/audio/audio_stream_player.h"
 #include "scene/gui/button.h"
@@ -76,21 +77,20 @@
 #include "scene/gui/texture_button.h"
 #include "scene/gui/texture_rect.h"
 #include "scene/gui/video_stream_player.h"
-#include "modules/tilemap/tile_set.h"
+#include "scene/main/scene_tree.h"
+#include "scene/main/viewport.h"
+#include "scene/main/window.h"
+#include "scene/resources/audio/audio_stream_wav.h"
 #include "scene/resources/packed_scene.h"
 #include "scene/resources/sprite_frames.h"
 #include "scene/resources/style_box.h"
 #include "scene/resources/style_box_flat.h"
 #include "scene/resources/style_box_texture.h"
-
-#include "scene/main/scene_tree.h"
-#include "scene/main/viewport.h"
-#include "scene/main/window.h"
-#include "scene/resources/audio/audio_stream_wav.h"
 #include "scene/resources/texture.h"
 #include "servers/rendering/rendering_server.h"
 #include "servers/text/text_server.h"
-#include "core/string/string_name.h"
+
+#include "modules/tilemap/tile_set.h"
 namespace {
 
 constexpr int BAKE_WIDTH = 720;

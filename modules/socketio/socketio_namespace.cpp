@@ -29,9 +29,10 @@
 
 #include "socketio_namespace.h"
 
-#include "core/os/time.h"
 #include "socketio_client.h"
+
 #include "core/object/class_db.h"
+#include "core/os/time.h"
 
 void SocketIONamespace::_bind_methods() {
 	// Event system

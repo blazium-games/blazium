@@ -31,9 +31,10 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "platform/windows/export/export_plugin.h"
 #include "core/string/string_name.h"
 #include "core/string/ustring.h"
+
+#include "platform/windows/export/export_plugin.h"
 
 class EditorExportPlatformWindowsScreensaver : public EditorExportPlatformWindows {
 	GDCLASS(EditorExportPlatformWindowsScreensaver, EditorExportPlatformWindows);

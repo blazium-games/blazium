@@ -31,12 +31,13 @@
 
 #include "modules/luau_module/editor/luau_export_plugin.h"
 
-#include "modules/luau_module/editor/luau_formatter.h"
 #include "luau.h"
 #include "luau_bytecode_format.h"
 
 #include "core/io/compression.h"
 #include "core/io/file_access.h"
+
+#include "modules/luau_module/editor/luau_formatter.h"
 
 using namespace luau_module;
 
@@ -99,8 +100,7 @@ void EditorExportLuau::_export_file(const String &p_path, const String &p_type, 
 		return;
 	}
 
-	String source;
-	source.parse_utf8(reinterpret_cast<const char *>(file.ptr()), file.size());
+	String source = String::utf8(reinterpret_cast<const char *>(file.ptr()), file.size());
 	if (source.is_empty()) {
 		return;
 	}

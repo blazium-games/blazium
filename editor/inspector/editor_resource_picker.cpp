@@ -183,6 +183,16 @@ void EditorResourcePicker::_update_resource() {
 	quick_load_button->set_visible(editable && edited_resource.is_null());
 }
 
+void EditorResourcePicker::_preview_invalidated(const String &p_path) {
+	if (!edited_resource.is_valid()) {
+		return;
+	}
+
+	if (p_path == "ID:" + itos(edited_resource->get_instance_id())) {
+		_update_resource();
+	}
+}
+
 void EditorResourcePicker::_update_resource_preview(const String &p_path, const Ref<Texture2D> &p_preview, const Ref<Texture2D> &p_small_preview, ObjectID p_obj) {
 	if (edited_resource.is_null() || edited_resource->get_instance_id() != p_obj) {
 		return;
@@ -1084,6 +1094,10 @@ void EditorResourcePicker::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE: {
 			EditorNode::get_singleton()->connect("resource_counter_changed", callable_mp(this, &EditorResourcePicker::_update_resource));
+			EditorResourcePreview *preview = EditorResourcePreview::get_singleton();
+			if (preview && !preview->is_connected(SNAME("preview_invalidated"), callable_mp(this, &EditorResourcePicker::_preview_invalidated))) {
+				preview->connect(SNAME("preview_invalidated"), callable_mp(this, &EditorResourcePicker::_preview_invalidated));
+			}
 			_update_resource();
 			[[fallthrough]];
 		}
@@ -1129,6 +1143,11 @@ void EditorResourcePicker::_notification(int p_what) {
 			}
 			if (EditorNode::get_singleton()->is_connected("resource_counter_changed", resource_counter_changed)) {
 				EditorNode::get_singleton()->disconnect("resource_counter_changed", resource_counter_changed);
+			}
+			EditorResourcePreview *preview = EditorResourcePreview::get_singleton();
+			Callable preview_invalidated = callable_mp(this, &EditorResourcePicker::_preview_invalidated);
+			if (preview && preview->is_connected(SNAME("preview_invalidated"), preview_invalidated)) {
+				preview->disconnect(SNAME("preview_invalidated"), preview_invalidated);
 			}
 		} break;
 	}

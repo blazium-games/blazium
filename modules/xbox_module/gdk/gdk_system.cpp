@@ -34,16 +34,18 @@
 #endif
 #ifdef XBOX_MODULE_GDK_ENABLED
 #include "gdk_windows.h"
+
 #include <XGame.h>
 #include <XSystem.h>
 #endif
 
-#include <cstdio>
-
 #include "gdk.h"
 #include "gdk_result.h"
 #include "gdk_xbox_services.h"
+
 #include "core/object/class_db.h"
+
+#include <cstdio>
 
 namespace {
 

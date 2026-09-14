@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "autowork_vscode_debugger.h"
+
 #include "modules/autowork/autowork_main.h"
 
 #ifdef DEBUG_ENABLED

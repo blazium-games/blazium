@@ -113,6 +113,8 @@ public:
 	FUNCRID(space);
 	FUNC2(space_set_active, RID, bool);
 	FUNC1RC(bool, space_is_active, RID);
+	FUNC2(space_step, RID, real_t);
+	FUNC1(space_flush_queries, RID);
 
 	FUNC3(space_set_param, RID, PS3DE::SpaceParameter, real_t);
 	FUNC2RC(real_t, space_get_param, RID, PS3DE::SpaceParameter);
@@ -344,6 +346,9 @@ public:
 	FUNCRID(joint)
 
 	FUNC1(joint_clear, RID)
+
+	FUNC2(joint_set_enabled, RID, bool)
+	FUNC1RC(bool, joint_is_enabled, RID)
 
 	FUNC5(joint_make_pin, RID, RID, const Vector3 &, RID, const Vector3 &)
 

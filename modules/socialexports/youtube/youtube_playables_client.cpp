@@ -29,10 +29,13 @@
 /**************************************************************************/
 
 #include "youtube_playables_client.h"
-#include "platform/web/api/javascript_bridge_singleton.h"
+
 #include "youtube_playables_response.h"
+
 #include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
+
+#include "platform/web/api/javascript_bridge_singleton.h"
 
 void YoutubePlayablesClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_emit_audio_enabled_change"), &YoutubePlayablesClient::_emit_audio_enabled_change);

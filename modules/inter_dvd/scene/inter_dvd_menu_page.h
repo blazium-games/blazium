@@ -8,11 +8,12 @@
 
 #pragma once
 
-#include "modules/inter_dvd/author/inter_dvd_project.h"
-#include "modules/inter_dvd/scene/inter_dvd_chapter.h"
+#include "core/string/ustring.h"
 #include "scene/gui/control.h"
 #include "scene/resources/packed_scene.h"
-#include "core/string/ustring.h"
+
+#include "modules/inter_dvd/author/inter_dvd_project.h"
+#include "modules/inter_dvd/scene/inter_dvd_chapter.h"
 
 class InterDVDHotspot;
 

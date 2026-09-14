@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "twitch_analytics_requests.h"
+
 #include "core/object/class_db.h"
 
 void TwitchAnalyticsRequests::_bind_methods() {

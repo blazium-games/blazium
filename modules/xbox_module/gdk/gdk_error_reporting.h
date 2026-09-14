@@ -38,19 +38,20 @@
 #include "gdk_windows.h"
 #endif
 
+#include "core/error/error_macros.h"
+#include "core/object/class_db.h"
+#include "core/object/ref_counted.h"
+
 #include <atomic>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
 
-#include "core/error/error_macros.h"
-#include "core/object/class_db.h"
-#include "core/object/ref_counted.h"
-
 #ifdef XBOX_MODULE_GDK_ENABLED
-#include <XError.h>
 #include "core/variant/type_info.h"
+
+#include <XError.h>
 #endif
 
 class GDK;

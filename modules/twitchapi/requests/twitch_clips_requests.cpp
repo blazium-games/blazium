@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "twitch_clips_requests.h"
+
 #include "core/object/class_db.h"
 
 void TwitchClipsRequests::_bind_methods() {

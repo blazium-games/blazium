@@ -175,6 +175,39 @@ bool GodotPhysicsServer3D::space_is_active(RID p_space) const {
 	return active_spaces.has(space);
 }
 
+void GodotPhysicsServer3D::space_step(RID p_space, real_t p_delta) {
+	GodotSpace3D *space = space_owner.get_or_null(p_space);
+	ERR_FAIL_NULL(space);
+	ERR_FAIL_COND_MSG(active_spaces.has(space), "An active Godot space can't be stepped manually.");
+
+	SelfList<GodotCollisionObject3D> *collision_object_self = pending_shape_update_list.first();
+	while (collision_object_self) {
+		if (collision_object_self->self()->get_space() == space) {
+			collision_object_self->self()->_shape_changed();
+
+			SelfList<GodotCollisionObject3D> *to_remove = collision_object_self;
+			collision_object_self = collision_object_self->next();
+
+			pending_shape_update_list.remove(to_remove);
+		} else {
+			collision_object_self = collision_object_self->next();
+		}
+	}
+
+	stepper->step(space, p_delta);
+}
+
+void GodotPhysicsServer3D::space_flush_queries(RID p_space) {
+	flushing_queries = true;
+
+	GodotSpace3D *space = space_owner.get_or_null(p_space);
+	ERR_FAIL_NULL(space);
+	ERR_FAIL_COND_MSG(active_spaces.has(space), "An active Godot space should not flush queries manually.");
+	space->call_queries();
+
+	flushing_queries = false;
+}
+
 void GodotPhysicsServer3D::space_set_param(RID p_space, PS3DE::SpaceParameter p_param, real_t p_value) {
 	GodotSpace3D *space = space_owner.get_or_null(p_space);
 	ERR_FAIL_NULL(space);
@@ -1261,6 +1294,20 @@ void GodotPhysicsServer3D::joint_clear(RID p_joint) {
 		joint_owner.replace(p_joint, empty_joint);
 		memdelete(joint);
 	}
+}
+
+void GodotPhysicsServer3D::joint_set_enabled(RID p_joint, bool p_enabled) {
+	GodotJoint3D *joint = joint_owner.get_or_null(p_joint);
+	ERR_FAIL_NULL(joint);
+
+	joint->set_enabled(p_enabled);
+}
+
+bool GodotPhysicsServer3D::joint_is_enabled(RID p_joint) const {
+	const GodotJoint3D *joint = joint_owner.get_or_null(p_joint);
+	ERR_FAIL_NULL_V(joint, false);
+
+	return joint->is_enabled();
 }
 
 void GodotPhysicsServer3D::joint_make_pin(RID p_joint, RID p_body_A, const Vector3 &p_local_A, RID p_body_B, const Vector3 &p_local_B) {

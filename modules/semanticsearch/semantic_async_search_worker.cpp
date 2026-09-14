@@ -35,12 +35,12 @@
 #include "semantic_search_filters.h"
 
 #include "core/config/project_settings.h"
+#include "core/object/class_db.h"
 #include "core/object/worker_thread_pool.h"
 #include "core/os/mutex.h"
 #include "core/os/os.h"
 #include "core/os/thread.h"
 #include "core/os/thread_safe.h"
-#include "core/object/class_db.h"
 
 struct SemanticSearchWorkerData {
 	SemanticAsyncSearchWorker *worker = nullptr;

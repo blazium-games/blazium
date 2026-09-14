@@ -30,6 +30,7 @@
 #include "autowork_e2e_server.h"
 
 #include "autowork_e2e_config.h"
+
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/crypto/crypto.h"
@@ -41,6 +42,8 @@
 #include "core/io/json.h"
 #include "core/math/expression.h"
 #include "core/math/random_number_generator.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 #include "core/os/time.h"
 #include "scene/2d/node_2d.h"
 #include "scene/gui/control.h"
@@ -48,8 +51,6 @@
 #include "scene/main/window.h"
 #include "servers/audio/audio_server.h"
 #include "servers/display/display_server.h"
-#include "core/object/callable_mp.h"
-#include "core/object/class_db.h"
 
 const String AutoworkE2EServer::SERVER_VERSION = "1.1.0";
 

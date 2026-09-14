@@ -99,6 +99,13 @@ if lib_arch_dir != "" and host_subpath != "":
     out_dir = jni_libs_dir + lib_arch_dir
     env_android.CommandNoCache(out_dir + "/libgodot_android.so", lib, Move("$TARGET", "$SOURCE"))
 
+    for mipmap_dir_name in ["mipmap", "mipmap-hdpi", "mipmap-mdpi", "mipmap-xhdpi", "mipmap-xxhdpi", "mipmap-xxxhdpi"]:
+        env_android.Command(
+            "#platform/android/java/lib/src/main/res/" + mipmap_dir_name,
+            "#platform/android/icons/" + env.version_info["external_status"] + "/" + mipmap_dir_name,
+            Copy("$TARGET", "$SOURCE"),
+        )
+
     stl_lib_path = f"{env['ANDROID_NDK_ROOT']}/toolchains/llvm/prebuilt/{host_subpath}/sysroot/usr/lib/{triple_target_dir}/libc++_shared.so"
     env_android.CommandNoCache(out_dir + "/libc++_shared.so", stl_lib_path, Copy("$TARGET", "$SOURCE"))
 

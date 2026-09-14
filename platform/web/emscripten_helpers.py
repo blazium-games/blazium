@@ -1,5 +1,7 @@
 import json
 import os
+import shutil
+import subprocess
 
 from SCons.Util import WhereIs
 
@@ -31,7 +33,7 @@ def create_engine_file(env, target, source, externs, threads_enabled):
 
 
 def create_template_zip(env, js, wasm, side):
-    binary_name = "godot.editor" if env.editor_build else "godot"
+    binary_name = "blazium.editor" if env.editor_build else "blazium"
     zip_dir = env.Dir(env.GetTemplateZipPath())
     in_files = [
         js,
@@ -55,27 +57,27 @@ def create_template_zip(env, js, wasm, side):
         # HTML
         html = "#misc/dist/html/editor.html"
         cache = [
-            "godot.editor.html",
+            "blazium.editor.html",
             "offline.html",
-            "godot.editor.js",
-            "godot.editor.audio.worklet.js",
-            "godot.editor.audio.position.worklet.js",
+            "blazium.editor.js",
+            "blazium.editor.audio.worklet.js",
+            "blazium.editor.audio.position.worklet.js",
             "logo.svg",
             "favicon.png",
             "inter-regular.woff2",
             "inter-bold.woff2",
         ]
-        opt_cache = ["godot.editor.wasm"]
+        opt_cache = ["blazium.editor.wasm"]
         subst_dict = {
             "___GODOT_VERSION___": get_build_version(False),
-            "___GODOT_NAME___": "GodotEngine",
+            "___GODOT_NAME___": "BlaziumEngine",
             "___GODOT_CACHE___": json.dumps(cache),
             "___GODOT_OPT_CACHE___": json.dumps(opt_cache),
             "___GODOT_OFFLINE_PAGE___": "offline.html",
             "___GODOT_THREADS_ENABLED___": "true" if env["threads"] else "false",
             "___GODOT_ENSURE_CROSSORIGIN_ISOLATION_HEADERS___": "true",
         }
-        html = env.Substfile(target="#bin/godot${PROGSUFFIX}.html", source=html, SUBST_DICT=subst_dict)
+        html = env.Substfile(target="#bin/blazium${PROGSUFFIX}.html", source=html, SUBST_DICT=subst_dict)
         in_files.append(html)
         out_files.append(zip_dir.File(binary_name + ".html"))
         # And logo/favicon
@@ -85,7 +87,7 @@ def create_template_zip(env, js, wasm, side):
         out_files.append(zip_dir.File("favicon.png"))
         # PWA
         service_worker = env.Substfile(
-            target="#bin/godot${PROGSUFFIX}.service.worker.js",
+            target="#bin/blazium${PROGSUFFIX}.service.worker.js",
             source=service_worker,
             SUBST_DICT=subst_dict,
         )
@@ -106,17 +108,38 @@ def create_template_zip(env, js, wasm, side):
         in_files.append(service_worker)
         out_files.append(zip_dir.File(binary_name + ".service.worker.js"))
         in_files.append("#misc/dist/html/offline-export.html")
-        out_files.append(zip_dir.File("godot.offline.html"))
+        out_files.append(zip_dir.File("blazium.offline.html"))
+        in_files.append("#misc/dist/html/engine-starter.js")
+        out_files.append(zip_dir.File(binary_name + ".engine.starter.js"))
+        in_files.append("#misc/dist/html/third_party_services/discord-embed.js")
+        out_files.append(zip_dir.File(binary_name + ".discord.embed.js"))
+        in_files.append("#misc/dist/html/third_party_services/youtube-playables.js")
+        out_files.append(zip_dir.File(binary_name + ".youtube.playables.js"))
 
     zip_files = env.NoCache(env.InstallAs(out_files, in_files))
-    env.NoCache(
-        env.Zip(
-            "#bin/godot",
-            zip_files,
-            ZIPROOT=zip_dir,
-            ZIPSUFFIX="${PROGSUFFIX}${ZIPSUFFIX}",
+
+    # Prefer 7z-created ZIP (better DEFLATE) over SCons Zip / Info-ZIP; keep .zip format.
+    zip_root_path = zip_dir.get_abspath()
+
+    def zip_with_7z(target, source, env):
+        sevenz = shutil.which("7z") or shutil.which("7za")
+        if not sevenz:
+            raise RuntimeError(
+                "7z/7za is required to create web template ZIP archives. "
+                "Install p7zip-full (Linux) or sevenzip (Homebrew)."
+            )
+        archive = target[0].get_abspath()
+        if os.path.isfile(archive):
+            os.remove(archive)
+        subprocess.check_call(
+            [sevenz, "a", "-tzip", "-bso0", "-bd", "-mx=9", archive, "."],
+            cwd=zip_root_path,
         )
-    )
+
+    if "ZIPSUFFIX" not in env:
+        env["ZIPSUFFIX"] = ".zip"
+    zip_target = "#bin/blazium${PROGSUFFIX}${ZIPSUFFIX}"
+    env.NoCache(env.Command(zip_target, zip_files, env.Action(zip_with_7z, "Compressing $TARGET with 7z...")))
 
 
 def get_template_zip_path(env):

@@ -35,6 +35,7 @@ TEST_FORCE_LINK(test_code_edit)
 #ifndef ADVANCED_GUI_DISABLED
 
 #include "core/input/input_map.h"
+#include "core/object/message_queue.h"
 #include "scene/gui/code_edit.h"
 #include "scene/main/scene_tree.h"
 #include "tests/display_server_mock.h"
@@ -4525,15 +4526,21 @@ TEST_CASE("[SceneTree][CodeEdit] symbol lookup") {
 
 	if (TS->has_feature(TextServer::FEATURE_FONT_DYNAMIC) && TS->has_feature(TextServer::FEATURE_SIMPLE_LAYOUT)) {
 		/* Set size for mouse input. */
-		code_edit->set_size(Size2(100, 100));
+		code_edit->set_size(Size2(400, 100));
 
 		code_edit->set_text("this is some text");
-
-		Point2 caret_pos = code_edit->get_caret_draw_pos();
-		caret_pos.x += 60;
+		MessageQueue::get_singleton()->flush();
+		// Click inside "some" using layout rects, not a Godot-font pixel offset.
+		const Rect2i some_start = code_edit->get_rect_at_line_column(0, 8);
+		const Rect2i some_end = code_edit->get_rect_at_line_column(0, 12);
+		const Point2 caret_pos((some_start.position.x + some_end.position.x) * 0.5f, some_start.get_center().y);
 
 		SEND_GUI_MOUSE_MOTION_EVENT(caret_pos, MouseButtonMask::NONE, Key::NONE);
-		CHECK(code_edit->get_text_for_symbol_lookup() == "this is s" + String::chr(0xFFFF) + "ome text");
+		const String lookup = code_edit->get_text_for_symbol_lookup();
+		const int marker = lookup.find(String::chr(0xFFFF));
+		CHECK(marker >= 8);
+		CHECK(marker <= 12);
+		CHECK(lookup.replace(String::chr(0xFFFF), "") == "this is some text");
 
 		SIGNAL_WATCH(code_edit, "symbol_validate");
 

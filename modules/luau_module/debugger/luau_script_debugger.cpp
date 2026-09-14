@@ -31,6 +31,7 @@
 
 #include "bindings/object.h"
 #include "bindings/variant.h"
+#include "lua_state.h"
 #include "luau_script.h"
 #include "luau_script_instance.h"
 #include "luau_script_language.h"
@@ -38,10 +39,10 @@
 #include "core/debugger/engine_debugger.h"
 #include "core/debugger/script_debugger.h"
 #include "core/error/error_macros.h"
-#include "core/variant/variant.h"
-#include "lua_state.h"
-#include <lualib.h>
 #include "core/string/string_name.h"
+#include "core/variant/variant.h"
+
+#include <lualib.h>
 
 using namespace luau_module;
 

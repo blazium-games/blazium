@@ -29,11 +29,11 @@
 
 #pragma once
 
+#include "core/string/ustring.h"
 #include "tests/test_macros.h"
 
 #include "modules/rcon/rcon_client.h"
 #include "modules/rcon/rcon_packet.h"
-#include "core/string/ustring.h"
 
 namespace TestRCONClient {
 

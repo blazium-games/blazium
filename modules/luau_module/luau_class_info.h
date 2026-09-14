@@ -29,13 +29,13 @@
 
 #pragma once
 
+#include "lua_state.h"
+
 #include "core/object/class_db.h"
 #include "core/object/ref_counted.h"
+#include "core/string/string_name.h"
 #include "core/templates/hash_map.h"
 #include "core/variant/variant.h"
-
-#include "lua_state.h"
-#include "core/string/string_name.h"
 
 #define LUAU_CLASS_MT_SCRIPT "__script"
 #define LUAU_CLASS_KEY_PROPERTY "__property"

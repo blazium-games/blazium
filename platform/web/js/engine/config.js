@@ -64,14 +64,14 @@ const InternalConfig = function (initConfig) { // eslint-disable-line no-unused-
 		 */
 		locale: null,
 		/**
-		 * The canvas resize policy determines how the canvas should be resized by Godot.
+		 * The canvas resize policy determines how the canvas should be resized by Blazium.
 		 *
-		 * ``0`` means Godot won't do any resizing. This is useful if you want to control the canvas size from
+		 * ``0`` means Blazium won't do any resizing. This is useful if you want to control the canvas size from
 		 * javascript code in your template.
 		 *
-		 * ``1`` means Godot will resize the canvas on start, and when changing window size via engine functions.
+		 * ``1`` means Blazium will resize the canvas on start, and when changing window size via engine functions.
 		 *
-		 * ``2`` means Godot will adapt the canvas size to match the whole browser window.
+		 * ``2`` means Blazium will adapt the canvas size to match the whole browser window.
 		 *
 		 * @memberof EngineConfig
 		 * @type {number}
@@ -306,22 +306,27 @@ const InternalConfig = function (initConfig) { // eslint-disable-line no-unused-
 				return {};
 			},
 			'locateFile': function (path) {
+				let locatedPath = path;
 				if (!path.startsWith('godot.')) {
-					return path;
+					locatedPath = path;
 				} else if (path.endsWith('.audio.worklet.js')) {
-					return `${loadPath}.audio.worklet.js`;
+					locatedPath = `${loadPath}.audio.worklet.js`;
 				} else if (path.endsWith('.audio.position.worklet.js')) {
-					return `${loadPath}.audio.position.worklet.js`;
+					locatedPath = `${loadPath}.audio.position.worklet.js`;
 				} else if (path.endsWith('.js')) {
-					return `${loadPath}.js`;
+					locatedPath = `${loadPath}.js`;
 				} else if (path in gdext) {
-					return path;
+					locatedPath = path;
 				} else if (path.endsWith('.side.wasm')) {
-					return `${loadPath}.side.wasm`;
+					locatedPath = `${loadPath}.side.wasm`;
 				} else if (path.endsWith('.wasm')) {
-					return `${loadPath}.wasm`;
+					locatedPath = `${loadPath}.wasm`;
 				}
-				return path;
+				// Prepend .proxy/ to the locatedPath value if needed
+				if (window.DiscordEmbed?.isDiscordEmbed()) {
+					locatedPath = `.proxy/${locatedPath}`;
+				}
+				return locatedPath;
 			},
 		};
 	};

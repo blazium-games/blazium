@@ -29,13 +29,14 @@
 
 #pragma once
 
+#include "helpers.h"
+
 #include "core/object/object.h"
 #include "core/object/ref_counted.h"
-#include <lua.h>
-
-#include "helpers.h"
 #include "core/string/string_name.h"
 #include "core/variant/type_info.h"
+
+#include <lua.h>
 
 namespace luau_module {
 

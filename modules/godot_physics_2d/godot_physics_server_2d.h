@@ -107,6 +107,8 @@ public:
 	virtual RID space_create() override;
 	virtual void space_set_active(RID p_space, bool p_active) override;
 	virtual bool space_is_active(RID p_space) const override;
+	virtual void space_step(RID p_space, real_t p_delta) override;
+	virtual void space_flush_queries(RID p_space) override;
 
 	virtual void space_set_param(RID p_space, PS2DE::SpaceParameter p_param, real_t p_value) override;
 	virtual real_t space_get_param(RID p_space, PS2DE::SpaceParameter p_param) const override;
@@ -263,6 +265,9 @@ public:
 	virtual RID joint_create() override;
 
 	virtual void joint_clear(RID p_joint) override;
+
+	virtual void joint_set_enabled(RID p_joint, bool p_enabled) override;
+	virtual bool joint_is_enabled(RID p_joint) const override;
 
 	virtual void joint_set_param(RID p_joint, PS2DE::JointParam p_param, real_t p_value) override;
 	virtual real_t joint_get_param(RID p_joint, PS2DE::JointParam p_param) const override;

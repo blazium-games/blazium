@@ -29,9 +29,10 @@
 
 #include "rcon_server.h"
 
-#include "core/os/os.h"
 #include "rcon_packet.h"
+
 #include "core/object/class_db.h"
+#include "core/os/os.h"
 
 void RCONServer::_bind_methods() {
 	// High-level API

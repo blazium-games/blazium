@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "irc_client_node.h"
+
 #include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
 

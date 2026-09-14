@@ -31,9 +31,6 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "core/object/ref_counted.h"
-#include "core/os/mutex.h"
-#include "editor/plugins/editor_plugin.h"
 #include "multiuser_editor_access_list.h"
 #include "multiuser_editor_action_interceptor.h"
 #include "multiuser_editor_filesystem_sync.h"
@@ -42,6 +39,10 @@
 #include "multiuser_editor_permissions.h"
 #include "multiuser_editor_script_sync.h"
 #include "multiuser_editor_settings_inspector_plugin.h"
+
+#include "core/object/ref_counted.h"
+#include "core/os/mutex.h"
+#include "editor/plugins/editor_plugin.h"
 #include "editor/settings/editor_settings.h"
 
 #ifndef MULTIUSER_GET

@@ -39,7 +39,7 @@
 OsLogLogger::OsLogLogger(const char *p_subsystem) {
 	const char *subsystem = p_subsystem;
 	if (!subsystem) {
-		subsystem = "org.godotengine.godot";
+		subsystem = "app.blazium.godot";
 		os_log_info(OS_LOG_DEFAULT, "Missing subsystem for os_log logging; using %{public}s", subsystem);
 	}
 

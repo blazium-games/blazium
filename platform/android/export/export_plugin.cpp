@@ -961,7 +961,7 @@ void EditorExportPlatformAndroid::_create_editor_debug_keystore_if_needed() {
 		args.push_back("-validity");
 		args.push_back("10000");
 		args.push_back("-dname");
-		args.push_back("cn=Godot, ou=Godot Engine, o=Stichting Godot, c=NL");
+		args.push_back("cn=Blazium, ou=Blazium Engine, o=Blazium Games, c=US");
 		Error error = OS::get_singleton()->execute(keytool_path, args, &output, nullptr, true);
 		print_verbose(output);
 		if (error != OK) {
@@ -1019,13 +1019,13 @@ void EditorExportPlatformAndroid::_get_manifest_info(const Ref<EditorExportPrese
 	}
 
 	MetadataInfo rendering_method_metadata = {
-		"org.godotengine.rendering.method",
+		"app.blazium.rendering.method",
 		p_preset->get_project_setting("rendering/renderer/rendering_method.mobile")
 	};
 	r_metadata.append(rendering_method_metadata);
 
 	MetadataInfo editor_version_metadata = {
-		"org.godotengine.editor.version",
+		"app.blazium.editor.version",
 		String(GODOT_VERSION_FULL_CONFIG)
 	};
 	r_metadata.append(editor_version_metadata);
@@ -1124,7 +1124,7 @@ void EditorExportPlatformAndroid::_fix_themes_xml(const Ref<EditorExportPreset> 
 	if (!splash_branding_image_path.is_empty()) {
 		splash_theme_attributes["android:windowSplashScreenBrandingImage"] = "@drawable/splash_branding_image";
 	}
-	splash_theme_attributes["postSplashScreenTheme"] = "@style/GodotAppMainTheme";
+	splash_theme_attributes["postSplashScreenTheme"] = "@style/BlaziumAppMainTheme";
 	splash_theme_attributes["android:windowIsTranslucent"] = bool_to_string(transparency_allowed);
 
 	PackedStringArray reserved_splash_keys;
@@ -1164,18 +1164,18 @@ void EditorExportPlatformAndroid::_fix_themes_xml(const Ref<EditorExportPreset> 
 	for (int i = 0; i < lines.size(); i++) {
 		String line = lines[i];
 
-		if (line.contains("<style name=\"GodotAppMainTheme\"")) {
+		if (line.contains("<style name=\"BlaziumAppMainTheme\"")) {
 			inside_main_theme = true;
 			new_lines.append(line);
 			continue;
 		}
-		if (line.contains("<style name=\"GodotAppSplashTheme\"")) {
+		if (line.contains("<style name=\"BlaziumAppSplashTheme\"")) {
 			inside_splash_theme = true;
 			new_lines.append(line);
 			continue;
 		}
 
-		// Inject GodotAppMainTheme attributes.
+		// Inject BlaziumAppMainTheme attributes.
 		if (inside_main_theme && line.contains("</style>")) {
 			for (const Variant &attribute : main_theme_attributes.keys()) {
 				String value = main_theme_attributes[attribute];
@@ -1187,7 +1187,7 @@ void EditorExportPlatformAndroid::_fix_themes_xml(const Ref<EditorExportPreset> 
 			continue;
 		}
 
-		// Inject GodotAppSplashTheme attributes.
+		// Inject BlaziumAppSplashTheme attributes.
 		if (inside_splash_theme && line.contains("</style>")) {
 			for (const Variant &attribute : splash_theme_attributes.keys()) {
 				String value = splash_theme_attributes[attribute];
@@ -2121,7 +2121,7 @@ String EditorExportPlatformAndroid::get_export_option_warning(const EditorExport
 				} else {
 					int min_sdk_int = min_sdk_str.to_int();
 					if (min_sdk_int < AndroidSDKManager::DEFAULT_MIN_SDK_VERSION) {
-						return vformat(TTR("\"Min SDK\" cannot be lower than %d, which is the version needed by the Godot library."), AndroidSDKManager::DEFAULT_MIN_SDK_VERSION);
+						return vformat(TTR("\"Min SDK\" cannot be lower than %d, which is the version needed by the Blazium library."), AndroidSDKManager::DEFAULT_MIN_SDK_VERSION);
 					}
 				}
 			}
@@ -2649,7 +2649,7 @@ Error EditorExportPlatformAndroid::run(const Ref<EditorExportPreset> &p_preset, 
 		print_verbose(output);
 		if (err || rv != 0 || output.contains("Error: Activity not started")) {
 			// The implicit launch failed, let's try an explicit launch by specifying the component name before giving up.
-			const String component_name = get_package_name(p_preset, package_name) + "/com.godot.game.GodotAppLauncher";
+			const String component_name = get_package_name(p_preset, package_name) + "/com.godot.game.BlaziumAppLauncher";
 			print_line("Implicit launch failed... Trying explicit launch using", component_name);
 			args.erase(get_package_name(p_preset, package_name));
 			args.push_back("-n");

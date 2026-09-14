@@ -38,18 +38,19 @@
 #include "gdk_windows.h"
 #endif
 
-#include <cstdint>
-#include <functional>
-#include <vector>
-
 #include "core/object/class_db.h"
 #include "core/object/ref_counted.h"
 #include "core/string/ustring.h"
 #include "core/variant/dictionary.h"
 
+#include <cstdint>
+#include <functional>
+#include <vector>
+
 #ifdef XBOX_MODULE_GDK_ENABLED
-#include <XGameActivation.h>
 #include "core/variant/type_info.h"
+
+#include <XGameActivation.h>
 #endif
 
 class GDK;

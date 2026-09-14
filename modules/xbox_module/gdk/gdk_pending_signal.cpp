@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "gdk_pending_signal.h"
+
 #include "core/object/class_db.h"
 
 void GDKPendingSignal::_bind_methods() {

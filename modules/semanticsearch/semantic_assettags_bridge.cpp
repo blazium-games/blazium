@@ -34,6 +34,7 @@
 #include "core/io/file_access.h"
 #include "core/templates/hash_map.h"
 #include "core/templates/hash_set.h"
+
 #include "modules/modules_enabled.gen.h"
 
 #ifdef MODULE_ASSETTAGS_ENABLED
@@ -46,10 +47,11 @@
 #endif
 
 #ifdef MODULE_JUSTAMCP_ENABLED
+#include "core/object/callable_mp.h"
+
 #include "modules/justamcp/justamcp_server.h"
 #include "modules/justamcp/tools/justamcp_resource_subscriptions.h"
 #include "modules/justamcp/tools/resources/justamcp_tags_resource_provider.h"
-#include "core/object/callable_mp.h"
 #endif
 
 #ifdef MODULE_ASSETTAGS_ENABLED

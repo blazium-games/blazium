@@ -28,14 +28,15 @@
 /**************************************************************************/
 
 #include "lua_blazium_classes.h"
-#include "luau_class_info.h"
 
+#include "luau_class_info.h"
 #include "string_cache.h"
 
 #include "core/error/error_macros.h"
 #include "core/object/class_db.h"
-#include <lua.h>
 #include "core/string/string_name.h"
+
+#include <lua.h>
 
 using namespace luau_module;
 

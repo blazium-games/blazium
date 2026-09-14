@@ -8,6 +8,11 @@
 
 #pragma once
 
+#include "scene/gui/control.h"
+#include "scene/main/scene_tree.h"
+#include "scene/resources/packed_scene.h"
+#include "tests/test_macros.h"
+
 #include "modules/inter_dvd/author/inter_dvd_project.h"
 #include "modules/inter_dvd/scene/inter_dvd_chapter.h"
 #include "modules/inter_dvd/scene/inter_dvd_disc.h"
@@ -15,10 +20,6 @@
 #include "modules/inter_dvd/scene/inter_dvd_menu_page.h"
 #include "modules/inter_dvd/scene/inter_dvd_title.h"
 #include "modules/inter_dvd/scene/inter_dvd_title_set.h"
-#include "scene/gui/control.h"
-#include "scene/resources/packed_scene.h"
-#include "tests/test_macros.h"
-#include "scene/main/scene_tree.h"
 
 TEST_CASE("[SceneTree][Modules][InterDVD] disc nodes compile titles menus and first play") {
 	InterDVDDisc *disc = InterDVDDisc::create_starter();

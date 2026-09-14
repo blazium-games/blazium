@@ -10,10 +10,48 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="add_user_icon">
+			<return type="int" enum="Error" />
+			<param index="0" name="icon_name" type="String" />
+			<param index="1" name="icon_source" type="String" />
+			<description>
+				Add an Icon to the default theme, which will make it change colors and scale when the default theme is changed from [ProjectSettings].
+				[param icon_source] should be a valid SVG [String].
+				In SVG source "red" and "#0f0" are replaced with font and accent colors when they are changed from [ProjectSettings].
+				[b]Note:[/b] Editor plugins need to remove their user icon(s) when unloaded.
+				[codeblock]
+				func _enter_tree():
+				    var source = FileAccess.get_file_as_string("res://icon.svg")
+				    ThemeDB.add_user_icon("my_icon", source)
+
+				func _exit_tree():
+				    ThemeDB.remove_user_icon("my_icon")
+				[/codeblock]
+			</description>
+		</method>
+		<method name="freeze_default_theme">
+			<return type="void" />
+			<description>
+				Prevents the default theme from emitting changed. This prevents Nodes using the theme from being updated until [method unfreeze_default_theme] is called.
+			</description>
+		</method>
 		<method name="get_default_theme">
 			<return type="Theme" />
 			<description>
 				Returns a reference to the default engine [Theme]. This theme resource is responsible for the out-of-the-box look of [Control] nodes and cannot be overridden.
+			</description>
+		</method>
+		<method name="get_icon">
+			<return type="ImageTexture" />
+			<param index="0" name="icon_name" type="String" />
+			<description>
+				Returns an internal icon from the fallback theme, internal theme icons are the default icons that comes with Blazium.
+			</description>
+		</method>
+		<method name="get_icon_list">
+			<return type="PackedStringArray" />
+			<description>
+				Returns a list for all the icon names that are used internally for the default theme.
 			</description>
 		</method>
 		<method name="get_project_theme">
@@ -21,6 +59,52 @@
 			<description>
 				Returns a reference to the custom project [Theme]. This theme resources allows to override the default engine theme for every control node in the project.
 				To set the project theme, see [member ProjectSettings.gui/theme/custom].
+			</description>
+		</method>
+		<method name="get_user_icon">
+			<return type="ImageTexture" />
+			<param index="0" name="icon_name" type="String" />
+			<description>
+				Returns a user icon from the default theme.
+			</description>
+		</method>
+		<method name="get_user_icon_list">
+			<return type="PackedStringArray" />
+			<description>
+				Returns a list for all the user icon names.
+			</description>
+		</method>
+		<method name="has_icon">
+			<return type="bool" />
+			<param index="0" name="icon_name" type="String" />
+			<description>
+				Returns whether the default theme has an internal icon with [param icon_name].
+			</description>
+		</method>
+		<method name="has_user_icon">
+			<return type="bool" />
+			<param index="0" name="icon_name" type="String" />
+			<description>
+				Returns whether the default theme has a user icon with [param icon_name].
+			</description>
+		</method>
+		<method name="is_default_theme_frozen" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns whether the default theme is frozen.
+			</description>
+		</method>
+		<method name="remove_user_icon">
+			<return type="int" enum="Error" />
+			<param index="0" name="icon_name" type="String" />
+			<description>
+				Removes a user icon that was previously added to the default theme.
+			</description>
+		</method>
+		<method name="unfreeze_default_theme">
+			<return type="void" />
+			<description>
+				Emits [signal Resource.changed] if the default theme was already frozen. Also check [method freeze_default_theme].
 			</description>
 		</method>
 	</methods>
@@ -38,7 +122,7 @@
 			See also [member Theme.default_font_size].
 		</member>
 		<member name="fallback_icon" type="Texture2D" setter="set_fallback_icon" getter="get_fallback_icon">
-			The fallback icon of every [Control] node and [Theme] resource. Used when no other value is available to the control.
+			The fallback icon of every [Control] node and [Theme] resource. Used when no other value is available to the control. Internal theme icons are the default icons that comes with Blazium.
 		</member>
 		<member name="fallback_stylebox" type="StyleBox" setter="set_fallback_stylebox" getter="get_fallback_stylebox">
 			The fallback stylebox of every [Control] node and [Theme] resource. Used when no other value is available to the control.

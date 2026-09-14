@@ -47,8 +47,6 @@
 #include "../multiuser_editor_security_sink.h"
 #include "../multiuser_editor_settings.h"
 
-#include "modules/jwttool/jwt.h"
-
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
@@ -56,6 +54,8 @@
 #include "core/os/os.h"
 #include "core/string/ustring.h"
 #include "core/variant/dictionary.h"
+
+#include "modules/jwttool/jwt.h"
 
 namespace TestMultiuserEditor {
 
@@ -1394,11 +1394,7 @@ TEST_CASE("[MultiuserEditor] sensitive setting prefix list contains expected cat
 }
 
 TEST_CASE("[MultiuserEditor] is_safe_remote_value caps Variant decoded payload") {
-	String big_string;
-	big_string.resize(2 * 1024 * 1024);
-	for (int i = 0; i < big_string.length(); i++) {
-		big_string[i] = 'a';
-	}
+	const String big_string = String("a").repeat(2 * 1024 * 1024);
 	CHECK_FALSE(MultiuserEditorActionInterceptor::is_safe_remote_value(big_string, 1024 * 1024));
 	CHECK(MultiuserEditorActionInterceptor::is_safe_remote_value(String("ok"), 1024 * 1024));
 }
@@ -1421,11 +1417,7 @@ TEST_CASE("[MultiuserEditor][Pass5][T2] script_sync rejects script_attach above 
 	MultiuserEditorScriptSync ss;
 	ss.set_local_peer_id("peer_x");
 	ss.set_script_attach_max_bytes(64);
-	String oversized;
-	oversized.resize(128);
-	for (int i = 0; i < oversized.length(); i++) {
-		oversized[i] = 'a';
-	}
+	const String oversized = String("a").repeat(128);
 	ss.initialize_buffer_from_content("res://test_oversize.gd", oversized);
 
 	CHECK(ss.has_buffer("res://test_oversize.gd"));
@@ -1507,11 +1499,7 @@ TEST_CASE("[MultiuserEditor][Pass5][T7] select.paths cap and unsafe filter") {
 }
 
 TEST_CASE("[MultiuserEditor][Pass5][T8] git_response truncation helpers cap output") {
-	String long_op;
-	long_op.resize(64);
-	for (int i = 0; i < long_op.length(); i++) {
-		long_op[i] = 'a';
-	}
+	const String long_op = String("a").repeat(64);
 	String capped = long_op;
 	if (capped.length() > 32) {
 		capped = capped.substr(0, 29) + "...";
@@ -1520,11 +1508,7 @@ TEST_CASE("[MultiuserEditor][Pass5][T8] git_response truncation helpers cap outp
 }
 
 TEST_CASE("[MultiuserEditor][Pass5][T9] project_setting name length cap") {
-	String name;
-	name.resize(512);
-	for (int i = 0; i < name.length(); i++) {
-		name[i] = 'a';
-	}
+	const String name = String("a").repeat(512);
 	const int cap = 256;
 	CHECK(name.length() > cap);
 }
@@ -1629,22 +1613,14 @@ TEST_CASE("[MultiuserEditor][Pass6][T14] AccessList rejects invalid role/codenam
 	MultiuserEditorAccessList::Entry bad_role{ "alice", "p", "NotARole", "" };
 	CHECK(al->add_or_update(bad_role) == ERR_INVALID_PARAMETER);
 
-	String long_codename;
-	long_codename.resize(128);
-	for (int i = 0; i < long_codename.length(); i++) {
-		long_codename[i] = 'a';
-	}
+	const String long_codename = String("a").repeat(128);
 	MultiuserEditorAccessList::Entry bad_cn{ long_codename, "p", "Editor", "" };
 	CHECK(al->add_or_update(bad_cn) == ERR_INVALID_PARAMETER);
 
 	MultiuserEditorAccessList::Entry bad_chars{ "with space", "p", "Editor", "" };
 	CHECK(al->add_or_update(bad_chars) == ERR_INVALID_PARAMETER);
 
-	String long_pw;
-	long_pw.resize(2048);
-	for (int i = 0; i < long_pw.length(); i++) {
-		long_pw[i] = 'x';
-	}
+	const String long_pw = String("x").repeat(2048);
 	MultiuserEditorAccessList::Entry bad_pw{ "alice", long_pw, "Editor", "" };
 	CHECK(al->add_or_update(bad_pw) == ERR_INVALID_PARAMETER);
 
@@ -1676,11 +1652,7 @@ TEST_CASE("[MultiuserEditor][Pass6][T15] AccessList load rejects oversize and co
 		Ref<FileAccess> f = FileAccess::open(path_huge, FileAccess::WRITE);
 		REQUIRE_FALSE(f.is_null());
 		const int over_cap = 1024 * 1024 + 16;
-		String pad;
-		pad.resize(over_cap);
-		for (int i = 0; i < pad.length(); i++) {
-			pad[i] = ' ';
-		}
+		const String pad = String(" ").repeat(over_cap);
 		f->store_string(pad);
 		f->close();
 	}
@@ -1716,11 +1688,7 @@ TEST_CASE("[MultiuserEditor][Pass6][T17] find_match_for_hmac returns false for w
 TEST_CASE("[MultiuserEditor][Pass6][T18/T19] _is_safe_simple_value rejects/caps untrusted leaves") {
 	const int kStringCharCap = 1 * 1024 * 1024;
 	const int kPackedByteCap = 4 * 1024 * 1024;
-	String huge;
-	huge.resize(kStringCharCap + 8);
-	for (int i = 0; i < huge.length(); i++) {
-		huge[i] = 'x';
-	}
+	const String huge = String("x").repeat(kStringCharCap + 8);
 	CHECK(huge.length() > kStringCharCap);
 	PackedByteArray big;
 	big.resize(kPackedByteCap + 8);
@@ -2866,13 +2834,8 @@ TEST_CASE("[MultiuserEditor][Pass11][T68] is_safe_remote_value rejects oversize 
 	CHECK(MultiuserEditorActionInterceptor::is_safe_remote_value(String("ok"), cap));
 
 	{
-		String big;
 		const int len = multiuser_editor::kRemoteStringMaxChars + 1;
-		big.resize(len + 1);
-		for (int i = 0; i < len; i++) {
-			big[i] = 'a';
-		}
-		big[len] = 0;
+		const String big = String("a").repeat(len);
 		CHECK_FALSE(MultiuserEditorActionInterceptor::is_safe_remote_value(big, cap));
 	}
 

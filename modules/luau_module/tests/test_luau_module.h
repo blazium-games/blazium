@@ -29,6 +29,8 @@
 
 #pragma once
 
+#include "core/string/string_name.h"
+#include "core/string/ustring.h"
 #include "tests/test_macros.h"
 
 #include "modules/luau_module/analysis/luau_typecheck.h"
@@ -38,8 +40,6 @@
 #include "modules/luau_module/luau_codegen.h"
 #include "modules/luau_module/luau_compile_result.h"
 #include "modules/luau_module/luau_script_language.h"
-#include "core/string/string_name.h"
-#include "core/string/ustring.h"
 
 namespace TestLuauModule {
 
@@ -103,9 +103,9 @@ return TableDslNode
 }
 
 TEST_CASE("[Modules][LuauModule] typecheck recognizes gdclass global") {
-	List<ScriptLanguage::ScriptError> errors;
+	List<luau_module::LuauScriptError> errors;
 	const bool ok = luau_module::LuauTypecheck::analyze("return gdclass({})", "res://gdclass_fixture.luau", &errors, nullptr);
-	for (const ScriptLanguage::ScriptError &err : errors) {
+	for (const luau_module::LuauScriptError &err : errors) {
 		CHECK(err.message.find("Unknown global 'gdclass'") < 0);
 	}
 #ifdef LUAU_MODULE_ANALYSIS_ENABLED
@@ -129,7 +129,7 @@ return NodeScript
 )";
 
 	List<String> functions;
-	List<ScriptLanguage::ScriptError> errors;
+	List<luau_module::LuauScriptError> errors;
 	const bool ok = lang->validate(source, "res://validate_line_fixture.luau", &functions, &errors, nullptr, nullptr);
 	CHECK(ok);
 

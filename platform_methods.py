@@ -256,7 +256,7 @@ def lipo_and_copy_apple_embedded(
 def generate_bundle_apple_embedded(platform, framework_dir, framework_dir_sim, use_mkv, target, source, env):
     # Template bundle.
     extra_suffix = env.extra_suffix.replace(".simulator", "")
-    app_prefix = "godot." + platform
+    app_prefix = "blazium." + platform
     rel_prefix = platform + "." + "template_release"
     dbg_prefix = platform + "." + "template_debug"
     if env.dev_build:

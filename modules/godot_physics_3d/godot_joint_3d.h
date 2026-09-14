@@ -34,9 +34,29 @@
 #include "godot_constraint_3d.h"
 
 class GodotJoint3D : public GodotConstraint3D {
+	bool enabled = true;
+
 protected:
 	bool dynamic_A = false;
 	bool dynamic_B = false;
+
+	void add_constraint_to_bodies() {
+		for (int i = 0; i < get_body_count(); i++) {
+			GodotBody3D *body = get_body_ptr()[i];
+			if (body) {
+				body->add_constraint(this, i);
+			}
+		}
+	}
+
+	void remove_constraint_from_bodies() {
+		for (int i = 0; i < get_body_count(); i++) {
+			GodotBody3D *body = get_body_ptr()[i];
+			if (body) {
+				body->remove_constraint(this);
+			}
+		}
+	}
 
 	void plane_space(const Vector3 &n, Vector3 &p, Vector3 &q) {
 		if (Math::abs(n.z) > Math::SQRT12) {
@@ -72,6 +92,16 @@ protected:
 	}
 
 public:
+	_FORCE_INLINE_ void set_enabled(bool p_enabled) {
+		enabled = p_enabled;
+		if (enabled) {
+			add_constraint_to_bodies();
+		} else {
+			remove_constraint_from_bodies();
+		}
+	}
+	_FORCE_INLINE_ bool is_enabled() const { return enabled; }
+
 	virtual bool setup(real_t p_step) override { return false; }
 	virtual bool pre_solve(real_t p_step) override { return true; }
 	virtual void solve(real_t p_step) override {}
@@ -80,6 +110,7 @@ public:
 		set_self(p_joint->get_self());
 		set_priority(p_joint->get_priority());
 		disable_collisions_between_bodies(p_joint->is_disabled_collisions_between_bodies());
+		set_enabled(p_joint->is_enabled());
 	}
 
 	virtual PS3DE::JointType get_type() const { return PS3DE::JOINT_TYPE_MAX; }

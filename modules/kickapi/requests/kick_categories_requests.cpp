@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "kick_categories_requests.h"
+
 #include "core/object/class_db.h"
 
 void KickCategoriesRequests::_bind_methods() {

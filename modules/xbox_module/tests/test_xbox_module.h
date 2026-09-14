@@ -29,13 +29,13 @@
 
 #pragma once
 
-#include "tests/test_macros.h"
-
 #include "../editor/gdk_toolchain.h"
 #include "../editor/microsoft_game_config.h"
 #include "../gdk/gdk.h"
 #include "../gdk/gdk_result.h"
+
 #include "core/string/ustring.h"
+#include "tests/test_macros.h"
 
 namespace TestXboxModule {
 

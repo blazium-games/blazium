@@ -34,12 +34,12 @@
 #endif
 #include "gdk_windows.h"
 
+#include "core/io/image.h"
+
 #include <algorithm>
 #include <cstring>
 #include <string>
 #include <vector>
-
-#include "core/io/image.h"
 
 #ifdef XBOX_MODULE_GDK_ENABLED
 #include <XGameErr.h>
@@ -50,6 +50,7 @@
 #include "gdk_result.h"
 #include "gdk_runtime.h"
 #include "gdk_signal_xasync_context.h"
+
 #include "core/object/class_db.h"
 
 #ifdef XBOX_MODULE_GDK_ENABLED

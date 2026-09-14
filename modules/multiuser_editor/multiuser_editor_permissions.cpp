@@ -32,6 +32,7 @@
 #include "multiuser_editor_permissions.h"
 
 #include "multiuser_editor_constants.h"
+
 #include "core/object/class_db.h"
 
 void MultiuserEditorPermissions::_bind_methods() {

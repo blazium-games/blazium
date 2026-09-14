@@ -74,6 +74,8 @@ namespace GodotTools.Ides
                     return "MonoDevelop";
                 case ExternalEditorId.CustomEditor:
                     return "CustomEditor";
+                case ExternalEditorId.Codium:
+                    return "Codium";
                 default:
                     throw new NotImplementedException();
             }
@@ -108,6 +110,7 @@ namespace GodotTools.Ides
                 case ExternalEditorId.None:
                 case ExternalEditorId.VisualStudio:
                 case ExternalEditorId.VsCode:
+                case ExternalEditorId.Codium:
                 case ExternalEditorId.Rider:
                 case ExternalEditorId.Fleet:
                 case ExternalEditorId.CustomEditor:

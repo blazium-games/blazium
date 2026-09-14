@@ -32,10 +32,10 @@
 #include "../dotcsv.h"
 
 #include "core/io/file_access.h"
-#include "tests/test_macros.h"
-#include "tests/test_utils.h"
 #include "core/object/callable_mp.h"
 #include "core/string/ustring.h"
+#include "tests/test_macros.h"
+#include "tests/test_utils.h"
 
 namespace TestDotCSV {
 

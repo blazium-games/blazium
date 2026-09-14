@@ -75,26 +75,29 @@ private:
 	Luau::Config default_config;
 };
 
-static void push_type_error(const Luau::TypeError &p_error, const String &p_path, List<ScriptLanguage::ScriptError> *r_errors) {
+static void push_type_error(const Luau::TypeError &p_error, const String &p_path, List<LuauScriptError> *r_errors) {
 	if (!r_errors) {
 		return;
 	}
-	ScriptLanguage::ScriptError err;
+	LuauScriptError err;
 	err.path = p_path;
-	err.line = p_error.location.begin.line + 1;
-	err.column = p_error.location.begin.column + 1;
+	err.start_line = p_error.location.begin.line + 1;
+	err.start_column = p_error.location.begin.column + 1;
+	err.end_line = p_error.location.end.line + 1;
+	err.end_column = p_error.location.end.column + 1;
 	err.message = String(Luau::toString(p_error).c_str());
 	r_errors->push_back(err);
 }
 
-static void push_lint_warning(const Luau::LintWarning &p_warning, List<ScriptLanguage::Warning> *r_warnings) {
+static void push_lint_warning(const Luau::LintWarning &p_warning, List<LuauWarning> *r_warnings) {
 	if (!r_warnings) {
 		return;
 	}
-	ScriptLanguage::Warning warning;
+	LuauWarning warning;
 	warning.start_line = p_warning.location.begin.line + 1;
+	warning.start_column = p_warning.location.begin.column + 1;
 	warning.end_line = p_warning.location.end.line + 1;
-	warning.code = static_cast<int>(p_warning.code);
+	warning.end_column = p_warning.location.end.column + 1;
 	warning.string_code = String(Luau::LintWarning::getName(p_warning.code));
 	warning.message = String(p_warning.text.c_str());
 	r_warnings->push_back(warning);
@@ -123,7 +126,7 @@ static void register_blazium_globals(Luau::Frontend &p_frontend) {
 
 #endif
 
-bool LuauTypecheck::analyze(const String &p_source, const String &p_path, List<ScriptLanguage::ScriptError> *r_errors, List<ScriptLanguage::Warning> *r_warnings) {
+bool LuauTypecheck::analyze(const String &p_source, const String &p_path, List<LuauScriptError> *r_errors, List<LuauWarning> *r_warnings) {
 #ifdef LUAU_MODULE_ANALYSIS_ENABLED
 	CharString utf8 = p_source.utf8();
 	const std::string module_name = p_path.is_empty() ? "luau_script" : p_path.utf8().get_data();

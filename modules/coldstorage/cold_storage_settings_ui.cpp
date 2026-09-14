@@ -35,8 +35,12 @@
 #include "cold_storage_editor_plugin.h"
 #include "cold_storage_settings.h"
 #include "cold_storage_vcs.h"
+
 #include "core/config/project_settings.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 #include "core/os/os.h"
+#include "editor/settings/editor_settings.h"
 #include "editor/version_control/editor_vcs_interface.h"
 #include "editor/version_control/version_control_editor_plugin.h"
 #include "scene/gui/box_container.h"
@@ -45,9 +49,6 @@
 #include "scene/gui/label.h"
 #include "scene/gui/line_edit.h"
 #include "scene/gui/spin_box.h"
-#include "core/object/callable_mp.h"
-#include "core/object/class_db.h"
-#include "editor/settings/editor_settings.h"
 
 void ColdStorageSettingsUI::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_connect"), &ColdStorageSettingsUI::_on_connect);

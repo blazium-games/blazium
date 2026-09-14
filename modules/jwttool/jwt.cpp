@@ -29,11 +29,12 @@
 /**************************************************************************/
 
 #include "jwt.h"
+
 #include "core/core_bind.h"
 #include "core/crypto/crypto.h"
 #include "core/io/json.h"
-#include "core/os/time.h"
 #include "core/object/class_db.h"
+#include "core/os/time.h"
 
 JWT *JWT::jwt_singleton = nullptr;
 

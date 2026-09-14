@@ -29,12 +29,13 @@
 
 #pragma once
 
-#include "core/object/object.h"
-#include "core/string/ustring.h"
-#include "core/variant/dictionary.h"
 #include "discord_api_loader.h"
 #include "discord_auth_result.h"
 #include "discord_types.h"
+
+#include "core/object/object.h"
+#include "core/string/ustring.h"
+#include "core/variant/dictionary.h"
 #include "core/variant/type_info.h"
 
 class DiscordAuthClient;

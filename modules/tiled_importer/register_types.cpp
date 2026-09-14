@@ -32,12 +32,15 @@
 #include "register_types.h"
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_node.h"
-#include "modules/tiled_importer/editor/tiled_editor_plugin.h"
 #include "resource_importer_tiled.h"
+
+#include "editor/editor_node.h"
+
+#include "modules/tiled_importer/editor/tiled_editor_plugin.h"
 #endif
 
 #include "tileson_gd_bindings.h"
+
 #include "core/object/class_db.h"
 
 void initialize_tiled_importer_module(ModuleInitializationLevel p_level) {

@@ -35,6 +35,8 @@
 #include "../asset_tag_manager.h"
 #include "../asset_tag_registry.h"
 #include "asset_tags_context_menu_plugin.h"
+
+#include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
 #include "editor/inspector/editor_context_menu_plugin.h"
 #include "editor/settings/project_settings_editor.h"
@@ -44,7 +46,6 @@
 #include "scene/gui/line_edit.h"
 #include "scene/gui/tab_container.h"
 #include "scene/gui/tree.h"
-#include "core/object/callable_mp.h"
 
 void AssetTagsEditorPlugin::_bind_methods() {}
 

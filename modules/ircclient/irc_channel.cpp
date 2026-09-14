@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "irc_channel.h"
+
 #include "core/object/class_db.h"
 
 void IRCChannel::_bind_methods() {

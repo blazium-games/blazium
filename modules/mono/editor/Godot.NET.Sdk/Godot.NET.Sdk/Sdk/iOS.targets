@@ -1,6 +1,6 @@
 <Project>
   <ItemGroup>
-    <TrimmerRootAssembly Include="GodotSharp" Condition="'$(EnableGodotDotNetPreview)' != 'true' and '$(DisableImplicitGodotSharpReferences)' != 'true'" />
+    <TrimmerRootAssembly Include="BlaziumSharp" Condition="'$(EnableGodotDotNetPreview)' != 'true' and '$(DisableImplicitGodotSharpReferences)' != 'true'" />
     <TrimmerRootAssembly Include="Godot.Bindings" Condition="'$(EnableGodotDotNetPreview)' == 'true'" />
     <TrimmerRootAssembly Include="$(TargetName)" />
     <LinkerArg Include="-install_name '@rpath/$(TargetName)$(NativeBinaryExt)'" />

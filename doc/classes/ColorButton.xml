@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ColorButton" inherits="BaseButton" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+		A Button That displays a color.
+	</brief_description>
+	<description>
+		A Button That displays a color.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="set_color">
+			<return type="void" />
+			<param index="0" name="color" type="Color" />
+			<description>
+				Changes the button's color and emits [signal color_changed].
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="color" type="Color" setter="set_color_no_signal" getter="get_color" default="Color(1, 1, 1, 1)">
+			The button's display color.
+		</member>
+		<member name="edit_alpha" type="bool" setter="set_edit_alpha" getter="is_editing_alpha" default="true">
+			If [code]true[/code], shows an alpha channel slider (opacity).
+		</member>
+		<member name="edit_intensity" type="bool" setter="set_edit_intensity" getter="is_editing_intensity" default="true">
+			If [code]true[/code], shows an intensity slider. The intensity is applied as follows: multiply the color by [code]2 ** intensity[/code] in linear RGB space, and then convert it back to sRGB.
+		</member>
+		<member name="flat" type="bool" setter="set_flat" getter="is_flat" default="false">
+			Draws the buttons without the styles.
+		</member>
+	</members>
+	<signals>
+		<signal name="color_changed">
+			<param index="0" name="color" type="Color" />
+			<description>
+				Emitted when the color is changed.
+			</description>
+		</signal>
+	</signals>
+	<theme_items>
+		<theme_item name="bg" data_type="icon" type="Texture2D">
+			The background image displayed behind the color when the color alpha is less than one.
+		</theme_item>
+		<theme_item name="overbright_indicator" data_type="icon" type="Texture2D">
+			The indicator used to signalize that the color value is outside the 0-1 range.
+		</theme_item>
+		<theme_item name="disabled" data_type="style" type="StyleBox">
+			[StyleBox] used when the [Button] is disabled.
+		</theme_item>
+		<theme_item name="focus" data_type="style" type="StyleBox">
+			[StyleBox] used when the [Button] is focused. The [theme_item focus] [StyleBox] is displayed [i]over[/i] the base [StyleBox], so a partially transparent [StyleBox] should be used to ensure the base [StyleBox] remains visible. A [StyleBox] that represents an outline or an underline works well for this purpose. To disable the focus visual effect, assign a [StyleBoxEmpty] resource. Note that disabling the focus visual effect will harm keyboard/controller navigation usability, so this is not recommended for accessibility reasons.
+		</theme_item>
+		<theme_item name="hover" data_type="style" type="StyleBox">
+			[StyleBox] used when the [Button] is being hovered.
+		</theme_item>
+		<theme_item name="hover_pressed" data_type="style" type="StyleBox">
+			[StyleBox] used when the [Button] is being pressed and hovered at the same time.
+		</theme_item>
+		<theme_item name="normal" data_type="style" type="StyleBox">
+			Default [StyleBox] for the [Button].
+		</theme_item>
+		<theme_item name="pressed" data_type="style" type="StyleBox">
+			[StyleBox] used when the [Button] is being pressed.
+		</theme_item>
+	</theme_items>
+</class>

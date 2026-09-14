@@ -304,10 +304,10 @@ String _get_activity_tag(const Ref<EditorExportPlatform> &p_export_platform, con
 		}
 	}
 
-	// Update the GodotApp activity tag.
+	// Update the BlaziumApp activity tag.
 	String orientation = _get_android_orientation_label(DisplayServerEnums::ScreenOrientation(int(p_export_platform->get_project_setting(p_preset, "display/window/handheld/orientation"))));
 	String manifest_activity_text = vformat(
-			"        <activity android:name=\".GodotApp\" "
+			"        <activity android:name=\".BlaziumApp\" "
 			"tools:replace=\"android:screenOrientation,android:excludeFromRecents,android:resizeableActivity\" "
 			"tools:node=\"mergeOnlyAttributes\" "
 			"android:excludeFromRecents=\"%s\" "
@@ -324,11 +324,11 @@ String _get_activity_tag(const Ref<EditorExportPlatform> &p_export_platform, con
 
 	manifest_activity_text += "        </activity>\n";
 
-	// Update the GodotAppLauncher activity tag.
+	// Update the BlaziumAppLauncher activity tag.
 	manifest_activity_text += "        <activity-alias\n"
 							  "            tools:node=\"mergeOnlyAttributes\"\n"
-							  "            android:name=\".GodotAppLauncher\"\n"
-							  "            android:targetActivity=\".GodotApp\"\n"
+							  "            android:name=\".BlaziumAppLauncher\"\n"
+							  "            android:targetActivity=\".BlaziumApp\"\n"
 							  "            android:exported=\"true\">\n";
 
 	manifest_activity_text += "            <intent-filter>\n"
@@ -352,8 +352,8 @@ String _get_activity_tag(const Ref<EditorExportPlatform> &p_export_platform, con
 
 	manifest_activity_text += "            </intent-filter>\n";
 
-	// Hybrid categories should only go to the actual 'GodotApp' activity.
-	Ref<RegEx> activity_alias_content_to_remove_regex = RegEx::create_from_string(R"delim(<category\s+android:name\s*=\s*"org.godotengine.xr.hybrid.(IMMERSIVE|PANEL)"\s*\/>)delim");
+	// Hybrid categories should only go to the actual 'BlaziumApp' activity.
+	Ref<RegEx> activity_alias_content_to_remove_regex = RegEx::create_from_string(R"delim(<category\s+android:name\s*=\s*"app.blazium.xr.hybrid.(IMMERSIVE|PANEL)"\s*\/>)delim");
 	String updated_export_plugins_activity_alias_element_contents = activity_alias_content_to_remove_regex->sub(export_plugins_activity_element_contents, "", true);
 	manifest_activity_text += updated_export_plugins_activity_alias_element_contents;
 

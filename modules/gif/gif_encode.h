@@ -30,8 +30,8 @@
 #pragma once
 
 #include "core/io/image.h"
-#include "core/templates/vector.h"
 #include "core/string/ustring.h"
+#include "core/templates/vector.h"
 
 struct GIFEncodeFrame {
 	Ref<Image> image;

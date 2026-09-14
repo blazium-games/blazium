@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "clickertools_bignum.h"
+
 #include "core/object/class_db.h"
 
 BlaziumBigNum::BlaziumBigNum() {

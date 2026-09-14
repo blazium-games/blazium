@@ -34,10 +34,11 @@
 #include "../asset_tag_runtime.h"
 #include "../asset_tag_sidecar_io.h"
 #include "../asset_tag_storage.h"
+
+#include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/io/json.h"
 #include "tests/test_macros.h"
-#include "core/io/dir_access.h"
 
 void test_asset_tag_storage_roundtrip() {
 	AssetTagStorage::set_test_storage_dir("res://.blazium/test_isolated_storage_roundtrip");

@@ -46,7 +46,7 @@ Ref<Resource> ResourceFormatLoaderLuau::load(const String &p_path, const String 
 	}
 
 	if (r_error) {
-		*r_error = luau_script.is_valid() && luau_script->is_valid() ? OK : err;
+		*r_error = luau_script.is_valid() && luau_script->is_script_valid() ? OK : err;
 	}
 	return luau_script;
 }

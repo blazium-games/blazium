@@ -96,6 +96,7 @@ class EditorRunBar;
 class EditorSceneTabs;
 class EditorSelectionHistory;
 class EditorSettingsDialog;
+class EditorHScrollBox;
 class EditorTitleBar;
 class ExportTemplateManager;
 class EditorQuickOpenDialog;
@@ -344,6 +345,7 @@ private:
 	Control *menu_btn_spacer = nullptr;
 	MenuButton *main_menu_button = nullptr;
 	MenuBar *main_menu_bar = nullptr;
+	EditorHScrollBox *menu_scroll_box = nullptr;
 
 	PopupMenu *apple_menu = nullptr;
 	PopupMenu *file_menu = nullptr;
@@ -763,6 +765,7 @@ public:
 
 	static EditorNode *get_singleton() { return singleton; }
 
+	static bool is_path_excluded_from_external_change_check(const String &p_path);
 	static EditorLog *get_log() { return singleton->log; }
 	static EditorData &get_editor_data() { return singleton->editor_data; }
 	static EditorFolding &get_editor_folding() { return singleton->editor_folding; }

@@ -33,23 +33,25 @@
 
 #include "analysis/luau_analysis.h"
 #include "analysis/luau_typecheck.h"
-#include "modules/luau_module/editor/luau_completion.h"
-#include "modules/luau_module/editor/luau_formatter.h"
 #include "luau.h"
 #include "luau_class_info.h"
 #include "luau_compile_result.h"
 #include "luau_script.h"
 #include "luau_script_language.h"
 
+#include "modules/luau_module/editor/luau_completion.h"
+#include "modules/luau_module/editor/luau_formatter.h"
+
 #ifndef LUAU_NO_LSP
 #include "modules/luau_module/editor/lsp/luau_language_protocol.h"
 #endif
 
 #include "core/io/resource_loader.h"
+#include "core/object/class_db.h"
 #include "core/object/script_language.h"
 #include "core/string/char_utils.h"
-#include "core/object/class_db.h"
 #include "core/string/string_name.h"
+#include "core/templates/local_vector.h"
 
 namespace {
 
@@ -327,7 +329,7 @@ void LuauTextDocument::did_save(const String &p_uri, const String &p_text) {
 	if (LuauScriptLanguage *lang = LuauScriptLanguage::get_singleton()) {
 		Ref<Script> scr = ResourceLoader::load(uri_to_path(p_uri));
 		if (scr.is_valid()) {
-			lang->reload_tool_script(scr, false);
+			lang->reload_tool_script(scr);
 		}
 	}
 }
@@ -363,7 +365,9 @@ Array LuauTextDocument::publish_diagnostics(const String &p_uri) const {
 	}
 
 	const String source = open_documents[p_uri];
+#ifdef LUAU_MODULE_ANALYSIS_ENABLED
 	const String path = uri_to_path(p_uri);
+#endif
 	const luau_module::LuauCompileResult compile_result = luau_module::Luau::compile_with_diagnostics(source);
 	if (compile_result.is_error() || compile_result.bytecode.is_empty()) {
 		Dictionary diag;
@@ -376,19 +380,19 @@ Array LuauTextDocument::publish_diagnostics(const String &p_uri) const {
 	}
 
 #ifdef LUAU_MODULE_ANALYSIS_ENABLED
-	List<ScriptLanguage::ScriptError> errors;
-	List<ScriptLanguage::Warning> warnings;
+	List<luau_module::LuauScriptError> errors;
+	List<luau_module::LuauWarning> warnings;
 	luau_module::LuauTypecheck::analyze(source, path, &errors, &warnings);
-	for (const ScriptLanguage::ScriptError &err : errors) {
+	for (const luau_module::LuauScriptError &err : errors) {
 		Dictionary diag;
-		const int line = MAX(err.line - 1, 0);
-		diag["range"] = make_range(line, MAX(err.column - 1, 0));
+		const int line = MAX(err.start_line - 1, 0);
+		diag["range"] = make_range(line, MAX(err.start_column - 1, 0));
 		diag["severity"] = 1;
 		diag["message"] = err.message;
 		diag["source"] = "luau";
 		diagnostics.push_back(diag);
 	}
-	for (const ScriptLanguage::Warning &warning : warnings) {
+	for (const luau_module::LuauWarning &warning : warnings) {
 		Dictionary diag;
 		const int line = MAX(warning.start_line - 1, 0);
 		diag["range"] = make_range(line, 0, MAX(warning.end_line - 1, 0), 1);
@@ -457,15 +461,13 @@ Array LuauTextDocument::complete_at(const String &p_uri, int p_line, int p_chara
 		}
 
 		if (LuauScriptLanguage *lang = LuauScriptLanguage::get_singleton()) {
-			List<String> words;
-			lang->get_reserved_words(&words);
-			for (const String &w : words) {
+			for (const String &w : lang->get_reserved_words()) {
 				add_item(w, 14);
 			}
 		}
 
-		List<StringName> global_classes;
-		ScriptServer::get_global_class_list(&global_classes);
+		LocalVector<StringName> global_classes;
+		ScriptServer::get_global_class_list(global_classes);
 		for (const StringName &class_name : global_classes) {
 			add_item(class_name, 7);
 		}
@@ -505,7 +507,6 @@ Dictionary LuauTextDocument::lookup_definition(const String &p_uri, const String
 	}
 
 	const String source = open_documents[p_uri];
-	const String path = uri_to_path(p_uri);
 	const int line = LuauScript::find_member_line_in_source(source, StringName(p_symbol));
 
 	LuauClassInfo info;

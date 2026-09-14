@@ -29,12 +29,14 @@
 
 #pragma once
 
+#include "obs_enums.h"
+
 #include "core/object/object.h"
 #include "core/templates/hash_map.h"
 #include "core/templates/vector.h"
-#include "modules/websocket/websocket_peer.h"
-#include "obs_enums.h"
 #include "core/variant/type_info.h"
+
+#include "modules/websocket/websocket_peer.h"
 
 class OBSClient : public Object {
 	GDCLASS(OBSClient, Object);

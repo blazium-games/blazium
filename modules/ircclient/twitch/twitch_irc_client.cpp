@@ -30,6 +30,7 @@
 #include "twitch_irc_client.h"
 
 #include "twitch_constants.h"
+
 #include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
 

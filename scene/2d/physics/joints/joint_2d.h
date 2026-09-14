@@ -37,6 +37,13 @@ class PhysicsBody2D;
 class Joint2D : public Node2D {
 	GDCLASS(Joint2D, Node2D);
 
+public:
+	enum DisableMode {
+		DISABLE_MODE_REMOVE,
+		DISABLE_MODE_KEEP_ACTIVE,
+	};
+
+private:
 	RID joint;
 	RID ba, bb;
 
@@ -47,15 +54,21 @@ class Joint2D : public Node2D {
 	bool exclude_from_collision = true;
 	bool configured = false;
 	String warning;
+	DisableMode disable_mode = DISABLE_MODE_REMOVE;
 
 protected:
 	void _disconnect_signals();
 	void _body_exit_tree();
 	void _update_joint(bool p_only_free = false);
 
+	void _apply_disabled();
+	void _apply_enabled();
+
 	void _notification(int p_what);
 	virtual void _configure_joint(RID p_joint, PhysicsBody2D *body_a, PhysicsBody2D *body_b) = 0;
 
+	void set_disable_mode(DisableMode p_mode);
+	DisableMode get_disable_mode() const;
 	static void _bind_methods();
 
 	_FORCE_INLINE_ bool is_configured() const { return configured; }
@@ -79,3 +92,5 @@ public:
 	Joint2D();
 	~Joint2D();
 };
+
+VARIANT_ENUM_CAST(Joint2D::DisableMode);

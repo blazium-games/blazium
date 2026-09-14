@@ -31,10 +31,10 @@
 
 #include "semantic_index_store.h"
 
+#include "core/string/ustring.h"
 #include "core/templates/hash_map.h"
 #include "core/templates/hash_set.h"
 #include "core/variant/array.h"
-#include "core/string/ustring.h"
 
 class LexicalSearchEngine {
 public:

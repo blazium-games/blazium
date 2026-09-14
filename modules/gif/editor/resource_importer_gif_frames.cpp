@@ -29,11 +29,11 @@
 
 #include "resource_importer_gif_frames.h"
 
-#include "modules/gif/gif_texture.h"
-
 #include "core/io/resource_saver.h"
-#include "scene/resources/sprite_frames.h"
 #include "core/string/string_name.h"
+#include "scene/resources/sprite_frames.h"
+
+#include "modules/gif/gif_texture.h"
 
 String ResourceImporterGIFFrames::get_importer_name() const {
 	return "gif_sprite_frames";

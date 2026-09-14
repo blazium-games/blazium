@@ -35,7 +35,10 @@
 #include "cold_storage_settings.h"
 #include "cold_storage_settings_ui.h"
 #include "cold_storage_vcs.h"
+
 #include "core/config/project_settings.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 #include "core/os/os.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
@@ -44,8 +47,6 @@
 #include "editor/version_control/version_control_editor_plugin.h"
 #include "scene/gui/dialogs.h"
 #include "scene/gui/label.h"
-#include "core/object/callable_mp.h"
-#include "core/object/class_db.h"
 
 ColdStorageEditorPlugin *ColdStorageEditorPlugin::singleton = nullptr;
 

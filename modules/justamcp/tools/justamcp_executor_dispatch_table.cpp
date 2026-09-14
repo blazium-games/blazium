@@ -33,6 +33,7 @@
 
 #include "core/string/string_name.h"
 #include "core/templates/hash_map.h"
+
 #include "modules/modules_enabled.gen.h"
 
 static const JustAMCPToolPrefixRoute PREFIX_ROUTES[] = {

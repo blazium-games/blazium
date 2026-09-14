@@ -237,6 +237,8 @@ public:
 	EXBIND0R(RID, space_create)
 	EXBIND2(space_set_active, RID, bool)
 	EXBIND1RC(bool, space_is_active, RID)
+	EXBIND2(space_step, RID, real_t)
+	EXBIND1(space_flush_queries, RID)
 
 	EXBIND3(space_set_param, RID, PS3DE::SpaceParameter, real_t)
 	EXBIND2RC(real_t, space_get_param, RID, PS3DE::SpaceParameter)
@@ -483,6 +485,9 @@ public:
 
 	EXBIND0R(RID, joint_create)
 	EXBIND1(joint_clear, RID)
+
+	EXBIND2(joint_set_enabled, RID, bool)
+	EXBIND1RC(bool, joint_is_enabled, RID)
 
 	EXBIND5(joint_make_pin, RID, RID, const Vector3 &, RID, const Vector3 &)
 

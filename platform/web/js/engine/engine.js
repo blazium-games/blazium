@@ -93,7 +93,7 @@ const Engine = (function () {
 					return new Promise(function (resolve, reject) {
 						promise.then(function (response) {
 							const cloned = new Response(response.clone().body, { 'headers': [['content-type', 'application/wasm']] });
-							Godot(me.config.getModuleConfig(loadPath, cloned)).then(function (module) {
+							Blazium(me.config.getModuleConfig(loadPath, cloned)).then(function (module) {
 								const paths = me.config.persistentPaths;
 								module['initFS'](paths).then(function (err) {
 									me.rtenv = module;
@@ -242,7 +242,12 @@ const Engine = (function () {
 			installServiceWorker: function () {
 				if (this.config.serviceWorker && 'serviceWorker' in navigator) {
 					try {
-						return navigator.serviceWorker.register(this.config.serviceWorker);
+						let serviceWorkerPath = this.config.serviceWorker;
+						// Prepend .proxy/ to the serviceWorkerPath value if needed
+						if (window.DiscordEmbed?.isDiscordEmbed()) {
+							serviceWorkerPath = `.proxy/${serviceWorkerPath}`;
+						}
+						return navigator.serviceWorker.register(serviceWorkerPath);
 					} catch (e) {
 						return Promise.reject(e);
 					}

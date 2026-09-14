@@ -31,14 +31,15 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "editor/plugins/editor_plugin.h"
 #include "lua_state.h"
+
+#include "core/string/ustring.h"
+#include "editor/plugins/editor_plugin.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/button.h"
 #include "scene/gui/label.h"
 #include "scene/gui/panel_container.h"
 #include "scene/gui/text_edit.h"
-#include "core/string/ustring.h"
 
 class LuauEditorPlugin : public EditorPlugin {
 	GDCLASS(LuauEditorPlugin, EditorPlugin)

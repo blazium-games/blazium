@@ -13,7 +13,7 @@ def generate_bundle(target, source, env):
 
     if env.editor_build:
         # Editor bundle.
-        prefix = "godot." + env["platform"] + "." + env["target"]
+        prefix = "blazium." + env["platform"] + "." + env["target"]
         if env.dev_build:
             prefix += ".dev"
         if env["precision"] == "double":
@@ -42,7 +42,7 @@ def generate_bundle(target, source, env):
         if not os.path.isdir(app_dir + "/Contents/MacOS"):
             os.mkdir(app_dir + "/Contents/MacOS")
         if target_bin != "":
-            shutil.copy(target_bin, app_dir + "/Contents/MacOS/Godot")
+            shutil.copy(target_bin, app_dir + "/Contents/MacOS/Blazium")
         if "mono" in env.module_version_string:
             shutil.copytree(env.Dir("#bin/GodotSharp").abspath, app_dir + "/Contents/Resources/GodotSharp")
         version = get_version_info("", True)
@@ -52,7 +52,7 @@ def generate_bundle(target, source, env):
                     line = line.replace("$version", "{major}.{minor}.{patch}.{status}.{build}".format(**version))
                     line = line.replace("$short_version", "{major}.{minor}.{patch}".format(**version))
                     if version["build"] != "official" and version["build"] != "steam":
-                        line = line.replace("org.godotengine.godot", "org.godotengine.godot." + version["build"])
+                        line = line.replace("app.blazium.editor", "app.blazium.editor." + version["build"])
                     fout.write(line)
 
         # Sign .app bundle.
@@ -75,9 +75,9 @@ def generate_bundle(target, source, env):
 
     else:
         # Template bundle.
-        app_prefix = "godot." + env["platform"]
-        rel_prefix = "godot." + env["platform"] + "." + "template_release"
-        dbg_prefix = "godot." + env["platform"] + "." + "template_debug"
+        app_prefix = "blazium." + env["platform"]
+        rel_prefix = "blazium." + env["platform"] + "." + "template_release"
+        dbg_prefix = "blazium." + env["platform"] + "." + "template_debug"
         if env.dev_build:
             app_prefix += ".dev"
             rel_prefix += ".dev"
@@ -100,9 +100,9 @@ def generate_bundle(target, source, env):
         if not os.path.isdir(app_dir + "/Contents/MacOS"):
             os.mkdir(app_dir + "/Contents/MacOS")
         if rel_target_bin != "":
-            shutil.copy(rel_target_bin, app_dir + "/Contents/MacOS/godot_macos_release.universal")
+            shutil.copy(rel_target_bin, app_dir + "/Contents/MacOS/blazium_macos_release.universal")
         if dbg_target_bin != "":
-            shutil.copy(dbg_target_bin, app_dir + "/Contents/MacOS/godot_macos_debug.universal")
+            shutil.copy(dbg_target_bin, app_dir + "/Contents/MacOS/blazium_macos_debug.universal")
 
         # ZIP .app bundle.
         zip_dir = env.Dir(

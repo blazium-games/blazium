@@ -158,6 +158,7 @@ InsertBraces: true
 #   Hex: 0
 #   HexMinDigits: 0
 JavaImportGroups:
+  - app.blazium
   - org.godotengine
   - android
   - androidx

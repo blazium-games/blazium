@@ -38,6 +38,7 @@
 #include "core/os/thread.h"
 #include "scene/main/node.h"
 #include "scene/main/scene_tree.h"
+
 #include <atomic>
 
 class JustAMCPRuntime : public Object {

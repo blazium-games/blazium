@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "kick_oauth_requests.h"
+
 #include "core/object/class_db.h"
 
 void KickOAuthRequests::_bind_methods() {

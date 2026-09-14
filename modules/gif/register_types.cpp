@@ -44,6 +44,8 @@
 #include "core/io/image_loader.h"
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 #include "core/os/os.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/viewport.h"
@@ -52,12 +54,11 @@
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_node.h"
-#include "modules/gif/editor/gif_editor_plugin.h"
 #include "editor/plugins/editor_plugin.h"
+
+#include "modules/gif/editor/gif_editor_plugin.h"
 #include "modules/gif/editor/resource_importer_gif.h"
 #include "modules/gif/editor/resource_importer_gif_frames.h"
-#include "core/object/callable_mp.h"
-#include "core/object/class_db.h"
 #endif
 
 static Ref<ImageLoaderGIF> image_loader_gif;

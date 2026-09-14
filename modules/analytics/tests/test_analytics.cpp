@@ -203,7 +203,7 @@ void test_analytics_shared_identity() {
 		ProjectSettings::get_singleton()->set("application/crash_reporter/build_id", "crash-ns-build");
 	}
 	CHECK(AppIdentity::editor_fallback_app_id() == "custom_blazium_engine");
-	CHECK(AppIdentity::editor_fallback_build_id() == String(VERSION_HASH));
+	CHECK(AppIdentity::editor_fallback_build_id() == String(GODOT_VERSION_HASH));
 	CHECK(AppIdentity::resolve_app_id(String(), "fallback") == "crash-ns-app");
 	CHECK(AppIdentity::resolve_build_id(String(), "fallback") == "crash-ns-build");
 	if (ProjectSettings::get_singleton()) {

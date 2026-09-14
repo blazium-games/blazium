@@ -194,6 +194,7 @@ bool GDScriptEditorLanguage::validate(const String &p_script, const String &p_pa
 			w.end_column = warn.end_column;
 			w.string_code = GDScriptWarning::get_name_from_code(warn.code);
 			w.message = warn.get_message();
+			w.is_style = GDScriptWarning::is_style_warning(warn.code);
 			r_warnings->push_back(w);
 		}
 	}

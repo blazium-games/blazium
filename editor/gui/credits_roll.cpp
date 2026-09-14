@@ -237,7 +237,7 @@ void CreditsRoll::roll_credits() {
 		_create_label(String::utf8(GODOT_LICENSE_TEXT));
 
 		_create_nothing(400 * EDSCALE);
-		_create_label(TTRC("Thank you for choosing Godot Engine!"), LabelSize::BIG_HEADER);
+		_create_label(TTRC("Thank you for choosing Blazium Engine!"), LabelSize::BIG_HEADER);
 	}
 	// Needs to be set here, otherwise the starting position will be incorrect.
 	content->set_anchors_and_offsets_preset(Control::PRESET_VCENTER_WIDE);

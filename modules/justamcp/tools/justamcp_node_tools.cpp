@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "justamcp_node_tools.h"
+
 #include "justamcp_agent_helpers.h"
 #include "justamcp_scene_file_io.h"
 
@@ -35,14 +36,14 @@
 #include "editor/editor_undo_redo_manager.h"
 #endif
 
-#include "core/config/project_settings.h"
-#include "core/io/resource_loader.h"
-#include "core/object/script_language.h"
-#include "scene/gui/control.h"
-
 #include "../justamcp_editor_scene_access.h"
 #include "../justamcp_mcp_tool_macros.h"
+
+#include "core/config/project_settings.h"
+#include "core/io/resource_loader.h"
 #include "core/object/class_db.h"
+#include "core/object/script_language.h"
+#include "scene/gui/control.h"
 
 void JustAMCPNodeTools::_bind_methods() {}
 

@@ -31,14 +31,14 @@
 
 #include "gif_editor_plugin.h"
 
-#include "modules/gif/gif_texture.h"
-
 #include "core/config/engine.h"
+#include "core/object/callable_mp.h"
 #include "core/os/os.h"
+#include "core/string/string_name.h"
 #include "editor/editor_data.h"
-#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
+#include "editor/file_system/editor_file_system.h"
 #include "editor/gui/editor_file_dialog.h"
 #include "editor/run/editor_run_bar.h"
 #include "editor/run/game_view_plugin.h"
@@ -56,8 +56,8 @@
 #include "scene/resources/animation.h"
 #include "scene/resources/image_texture.h"
 #include "servers/display/display_server.h"
-#include "core/object/callable_mp.h"
-#include "core/string/string_name.h"
+
+#include "modules/gif/gif_texture.h"
 
 class GIFInspectorControls : public VBoxContainer {
 	GDCLASS(GIFInspectorControls, VBoxContainer);

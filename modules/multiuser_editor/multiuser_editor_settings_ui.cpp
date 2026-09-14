@@ -31,15 +31,16 @@
 
 #include "multiuser_editor_settings_ui.h"
 
-#include "core/io/json.h"
-#include "core/io/marshalls.h"
-#include "core/os/time.h"
-#include "servers/display/display_server.h"
-#include "editor/settings/editor_settings.h"
-#include "modules/jwttool/jwt.h"
 #include "multiuser_editor_access_list.h"
 #include "multiuser_editor_dock.h"
 #include "multiuser_editor_plugin.h"
+
+#include "core/io/json.h"
+#include "core/io/marshalls.h"
+#include "core/object/callable_mp.h"
+#include "core/os/os.h"
+#include "core/os/time.h"
+#include "editor/settings/editor_settings.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/button.h"
 #include "scene/gui/check_box.h"
@@ -53,8 +54,9 @@
 #include "scene/gui/spin_box.h"
 #include "scene/gui/tab_container.h"
 #include "scene/gui/tree.h"
-#include "core/object/callable_mp.h"
-#include "core/os/os.h"
+#include "servers/display/display_server.h"
+
+#include "modules/jwttool/jwt.h"
 
 void MultiuserEditorSettingsUI::_bind_methods() {}
 

@@ -61,6 +61,7 @@ void GodotJoint2D::copy_settings_from(GodotJoint2D *p_joint) {
 	set_bias(p_joint->get_bias());
 	set_max_bias(p_joint->get_max_bias());
 	disable_collisions_between_bodies(p_joint->is_disabled_collisions_between_bodies());
+	set_enabled(p_joint->is_enabled());
 }
 
 static inline real_t k_scalar(GodotBody2D *a, GodotBody2D *b, const Vector2 &rA, const Vector2 &rB, const Vector2 &n) {

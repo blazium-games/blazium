@@ -32,13 +32,12 @@
 #include "core/crypto/crypto_core.h"
 
 #include <algorithm>
+#include <cstring>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
-
-#include <cstring>
 
 namespace coldstorage {
 

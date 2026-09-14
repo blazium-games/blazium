@@ -45,6 +45,7 @@ class LuauTextDocument : public RefCounted {
 protected:
 	static void _bind_methods();
 
+public:
 	void didOpen(const Dictionary &p_params);
 	void didClose(const Dictionary &p_params);
 	void didChange(const Dictionary &p_params);
@@ -54,8 +55,6 @@ protected:
 	Variant hover(const Dictionary &p_params);
 	Array documentSymbol(const Dictionary &p_params);
 	Array formatting(const Dictionary &p_params);
-
-public:
 	void initialize();
 	void did_open(const String &p_uri, const String &p_text);
 	void did_change(const String &p_uri, const String &p_text);

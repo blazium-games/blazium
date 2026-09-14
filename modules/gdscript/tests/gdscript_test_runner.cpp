@@ -46,6 +46,7 @@
 #include "core/object/class_db.h"
 #include "core/os/os.h"
 #include "core/string/string_builder.h"
+#include "core/templates/hash_map.h"
 #include "scene/resources/packed_scene.h"
 #include "tests/test_macros.h"
 
@@ -151,7 +152,7 @@ GDScriptTestRunner::GDScriptTestRunner(const String &p_source_dir, bool p_init_l
 	// Set all warning levels to "Warn" in order to test them properly, even the ones that default to error.
 	ProjectSettings::get_singleton()->set_setting("debug/gdscript/warnings/enable", true);
 	for (int i = 0; i < (int)GDScriptWarning::WARNING_MAX; i++) {
-		if (i == GDScriptWarning::UNTYPED_DECLARATION || i == GDScriptWarning::INFERRED_DECLARATION) {
+		if (i == GDScriptWarning::UNTYPED_DECLARATION || i == GDScriptWarning::INFERRED_DECLARATION || GDScriptWarning::is_style_warning((GDScriptWarning::Code)i)) {
 			// TODO: Add ability for test scripts to specify which warnings to enable/disable for testing.
 			continue;
 		}
@@ -513,7 +514,46 @@ String GDScriptTest::get_text_for_status(GDScriptTest::TestStatus p_status) cons
 	return "";
 }
 
+#ifdef DEBUG_ENABLED
+namespace {
+class StyleWarningTestScope {
+	HashMap<String, int> saved_levels;
+	bool active = false;
+
+public:
+	explicit StyleWarningTestScope(const String &p_path) {
+		active = p_path.contains("style_checks");
+		if (!active) {
+			return;
+		}
+		for (int i = 0; i < (int)GDScriptWarning::WARNING_MAX; i++) {
+			GDScriptWarning::Code code = (GDScriptWarning::Code)i;
+			String path = GDScriptWarning::get_setting_path_from_code(code);
+			if (!saved_levels.has(path)) {
+				saved_levels[path] = (int)ProjectSettings::get_singleton()->get_setting(path);
+			}
+			ProjectSettings::get_singleton()->set_setting(path, (int)(GDScriptWarning::is_style_warning(code) ? GDScriptWarning::WARN : GDScriptWarning::IGNORE));
+		}
+		GDScriptParser::update_project_settings();
+	}
+
+	~StyleWarningTestScope() {
+		if (!active) {
+			return;
+		}
+		for (const KeyValue<String, int> &E : saved_levels) {
+			ProjectSettings::get_singleton()->set_setting(E.key, E.value);
+		}
+		GDScriptParser::update_project_settings();
+	}
+};
+} // namespace
+#endif // DEBUG_ENABLED
+
 GDScriptTest::TestResult GDScriptTest::execute_test_code(bool p_is_generating) {
+#ifdef DEBUG_ENABLED
+	StyleWarningTestScope _style_warning_test_scope(source_file);
+#endif
 	disable_stdout();
 
 	TestResult result;

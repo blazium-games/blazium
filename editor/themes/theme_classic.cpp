@@ -1027,6 +1027,11 @@ void ThemeClassic::populate_standard_styles(const Ref<EditorTheme> &p_theme, Edi
 		p_theme->set_icon("folded_arrow", "FoldableContainer", p_theme->get_icon(SNAME("GuiTreeArrowRight"), EditorStringName(EditorIcons)));
 		p_theme->set_icon("folded_arrow_mirrored", "FoldableContainer", p_theme->get_icon(SNAME("GuiTreeArrowLeft"), EditorStringName(EditorIcons)));
 
+		p_theme->set_icon("arrow_left", "EditorScrollBox", p_theme->get_icon(SNAME("GuiTreeArrowLeft"), EditorStringName(EditorIcons)));
+		p_theme->set_icon("arrow_right", "EditorScrollBox", p_theme->get_icon(SNAME("GuiTreeArrowRight"), EditorStringName(EditorIcons)));
+		p_theme->set_icon("arrow_up", "EditorScrollBox", p_theme->get_icon(SNAME("GuiArrowUp"), EditorStringName(EditorIcons)));
+		p_theme->set_icon("arrow_down", "EditorScrollBox", p_theme->get_icon(SNAME("GuiTreeArrowDown"), EditorStringName(EditorIcons)));
+
 		p_theme->set_constant("outline_size", "FoldableContainer", 0);
 		p_theme->set_constant("h_separation", "FoldableContainer", p_config.separation_margin);
 	}
@@ -1566,6 +1571,20 @@ void ThemeClassic::populate_standard_styles(const Ref<EditorTheme> &p_theme, Edi
 
 		// ColorPickerButton.
 		p_theme->set_icon("bg", "ColorPickerButton", p_theme->get_icon(SNAME("GuiMiniCheckerboard"), EditorStringName(EditorIcons)));
+
+		// ColorButton.
+		const int x6_scale = EDSCALE_RND(6);
+		p_theme->set_stylebox(CoreStringName(normal), "ColorButton", EditorThemeManager::make_flat_stylebox(p_config.dark_color_1, x6_scale, x6_scale, x6_scale, x6_scale, p_config.corner_radius));
+		p_theme->set_stylebox("hover", "ColorButton", EditorThemeManager::make_flat_stylebox(p_config.mono_color * Color(1, 1, 1, 0.11), x6_scale, x6_scale, x6_scale, x6_scale, p_config.corner_radius));
+		p_theme->set_stylebox("disabled", "ColorButton", EditorThemeManager::make_flat_stylebox(p_config.disabled_bg_color, x6_scale, x6_scale, x6_scale, x6_scale, p_config.corner_radius));
+		p_theme->set_stylebox(SceneStringName(pressed), "ColorButton", EditorThemeManager::make_flat_stylebox(p_config.dark_color_1, x6_scale, x6_scale, x6_scale, x6_scale, p_config.corner_radius));
+		Ref<StyleBoxFlat> color_button_focus = EditorThemeManager::make_flat_stylebox(p_config.accent_color, 0, 0, 0, 0, MAX(p_config.corner_radius - 1, 0));
+		color_button_focus->set_draw_center(false);
+		color_button_focus->set_border_width_all(EDSCALE_RND(2));
+		color_button_focus->set_border_color(p_config.accent_color);
+		p_theme->set_stylebox("focus", "ColorButton", color_button_focus);
+		p_theme->set_icon("bg", "ColorButton", p_theme->get_icon(SNAME("GuiMiniCheckerboard"), EditorStringName(EditorIcons)));
+		p_theme->set_icon("overbright_indicator", "ColorButton", p_theme->get_icon(SNAME("OverbrightIndicator"), EditorStringName(EditorIcons)));
 
 		// ColorPresetButton.
 		p_theme->set_stylebox("preset_fg", "ColorPresetButton", EditorThemeManager::make_flat_stylebox(Color(1, 1, 1), 2, 2, 2, 2, 2));

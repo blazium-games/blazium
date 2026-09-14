@@ -1385,6 +1385,8 @@ private:
 	bool for_completion = false;
 	bool parse_body = true;
 	bool panic_mode = false;
+	int last_list_separator_line = -1;
+	int last_list_separator_column = -1;
 	bool can_break = false;
 	bool can_continue = false;
 	List<bool> multiline_stack;
@@ -1563,6 +1565,10 @@ public:
 private:
 	void apply_pending_warnings();
 	void evaluate_warning_directory_rules_for_script_path();
+	void check_identifier_style(const IdentifierNode *p_identifier, GDScriptWarning::Code p_code);
+	void check_file_style();
+	void check_trailing_comma(const Node *p_list, const Node *p_last_element, bool p_has_trailing_comma, const String &p_kind);
+	void check_hexadecimal_case(const Node *p_source, const String &p_text);
 #endif // DEBUG_ENABLED
 
 	// Setting p_force to false will prevent the completion context from being update if a context was already set before.
@@ -1581,6 +1587,7 @@ private:
 	bool match(GDScriptTokenizer::Token::Type p_token_type);
 	bool check(GDScriptTokenizer::Token::Type p_token_type) const;
 	bool consume(GDScriptTokenizer::Token::Type p_token_type, const String &p_error_message);
+	bool match_list_separator(const String &p_context, GDScriptTokenizer::Token::Type p_terminator = GDScriptTokenizer::Token::TK_MAX);
 	bool is_at_end() const;
 	bool is_statement_end_token() const;
 	bool is_statement_end() const;

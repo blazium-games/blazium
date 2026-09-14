@@ -29,10 +29,11 @@
 
 #pragma once
 
+#include "core/string/ustring.h"
+#include "tests/test_macros.h"
+
 #include "modules/inter_dvd/machine/inter_dvd_instruction.h"
 #include "modules/inter_dvd/machine/inter_dvd_machine.h"
-#include "tests/test_macros.h"
-#include "core/string/ustring.h"
 
 TEST_CASE("[Modules][InterDVD] groups 0-6 encode 8-byte commands") {
 	for (int g = 0; g <= 6; g++) {

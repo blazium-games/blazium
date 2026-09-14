@@ -32,13 +32,14 @@
 #include "core/object/object.h"
 #include "core/os/mutex.h"
 #include "core/os/thread.h"
-#include "modules/enet/enet_connection.h"
-#include "modules/enet/enet_packet_peer.h"
+#include "core/variant/type_info.h"
 #include "scene/main/node.h"
 #include "scene/main/scene_tree.h"
 
+#include "modules/enet/enet_connection.h"
+#include "modules/enet/enet_packet_peer.h"
+
 #include <enet/enet.h>
-#include "core/variant/type_info.h"
 
 class ENetClient : public Object {
 	GDCLASS(ENetClient, Object);

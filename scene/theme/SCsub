@@ -5,7 +5,15 @@ Import("env")
 
 import default_theme_builders
 
-env.add_source_files(env.scene_sources, "*.cpp")
+# Compile both the Godot 4.8 default theme (extra controls / fill_default_theme)
+# and the always-on Blazium runtime theme used by ThemeDB.
+sources = [
+    "theme_db.cpp",
+    "theme_owner.cpp",
+    "default_theme.cpp",
+    "blazium_default_theme.cpp",
+]
+env.add_source_files(env.scene_sources, sources)
 
 SConscript("icons/SCsub")
 

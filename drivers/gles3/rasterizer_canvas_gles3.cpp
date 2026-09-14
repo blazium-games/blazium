@@ -329,10 +329,10 @@ void RasterizerCanvasGLES3::canvas_render_items(RID p_to_render_target, Item *p_
 		// We're probably rendering directly to an XR device.
 		float y_scale = texture_storage->render_target_get_override_color(p_to_render_target).is_valid() ? -2.0f : 2.0f;
 
-		Transform3D screen_transform;
-		screen_transform.translate_local(-(ssize.width / 2.0f), -(ssize.height / 2.0f), 0.0f);
-		screen_transform.scale(Vector3(2.0f / ssize.width, y_scale / ssize.height, 1.0f));
-		_update_transform_to_mat4(screen_transform, state_buffer.screen_transform);
+		Transform2D screen_transform;
+		screen_transform.translate_local(-(ssize.width / 2.0f), -(ssize.height / 2.0f));
+		screen_transform.scale(Vector2(2.0f / ssize.width, y_scale / ssize.height));
+		_update_transform_2d_to_mat4(screen_transform, state_buffer.screen_transform);
 		_update_transform_2d_to_mat4(p_canvas_transform, state_buffer.canvas_transform);
 
 		Transform2D normal_transform = p_canvas_transform;
@@ -471,7 +471,12 @@ void RasterizerCanvasGLES3::canvas_render_items(RID p_to_render_target, Item *p_
 				_render_items(p_to_render_target, item_count, canvas_transform_inverse, p_light_list, r_sdf_used, false, r_render_info, material_screen_texture_mipmaps_cached);
 				item_count = 0;
 
-				if (ci->canvas_group_owner->canvas_group->mode != RSE::CANVAS_GROUP_MODE_TRANSPARENT) {
+				const bool owner_uses_clear =
+						ci->canvas_group_owner->canvas_group->mode == RSE::CANVAS_GROUP_MODE_TRANSPARENT ||
+						ci->canvas_group_owner->canvas_group->mode == RSE::CANVAS_GROUP_MODE_MASK_PARENT ||
+						ci->canvas_group_owner->canvas_group->mode == RSE::CANVAS_GROUP_MODE_MASK_PARENT_SUBTRACT;
+
+				if (!owner_uses_clear) {
 					Rect2i group_rect = ci->canvas_group_owner->global_rect_cache;
 					texture_storage->render_target_copy_to_back_buffer(p_to_render_target, group_rect, false);
 					if (ci->canvas_group_owner->canvas_group->mode == RSE::CANVAS_GROUP_MODE_CLIP_AND_DRAW) {
@@ -609,6 +614,10 @@ void RasterizerCanvasGLES3::_render_items(RID p_to_render_target, int p_item_cou
 		if (ci->use_canvas_group) {
 			if (ci->canvas_group->mode == RSE::CANVAS_GROUP_MODE_CLIP_AND_DRAW) {
 				material = default_clip_children_material;
+			} else if (ci->canvas_group->mode == RSE::CANVAS_GROUP_MODE_MASK_PARENT) {
+				material = default_mask_parent_material;
+			} else if (ci->canvas_group->mode == RSE::CANVAS_GROUP_MODE_MASK_PARENT_SUBTRACT) {
+				material = default_mask_parent_subtract_material;
 			} else {
 				if (material.is_null()) {
 					if (ci->canvas_group->mode == RSE::CANVAS_GROUP_MODE_CLIP_ONLY) {
@@ -2885,6 +2894,48 @@ void fragment() {
 		material_storage->material_set_shader(default_clip_children_material, default_clip_children_shader);
 	}
 
+	{
+		default_mask_parent_shader = material_storage->shader_allocate();
+		material_storage->shader_initialize(default_mask_parent_shader);
+
+		material_storage->shader_set_code(default_mask_parent_shader, R"(
+shader_type canvas_item;
+render_mode unshaded;
+
+uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_nearest;
+
+void fragment() {
+	vec4 c = textureLod(screen_texture, SCREEN_UV, 0.0);
+	COLOR.a *= c.a;
+}
+)");
+		default_mask_parent_material = material_storage->material_allocate();
+		material_storage->material_initialize(default_mask_parent_material);
+
+		material_storage->material_set_shader(default_mask_parent_material, default_mask_parent_shader);
+	}
+
+	{
+		default_mask_parent_subtract_shader = material_storage->shader_allocate();
+		material_storage->shader_initialize(default_mask_parent_subtract_shader);
+
+		material_storage->shader_set_code(default_mask_parent_subtract_shader, R"(
+shader_type canvas_item;
+render_mode unshaded;
+
+uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_nearest;
+
+void fragment() {
+	vec4 c = textureLod(screen_texture, SCREEN_UV, 0.0);
+	COLOR.a *= 1.0 - c.a;
+}
+)");
+		default_mask_parent_subtract_material = material_storage->material_allocate();
+		material_storage->material_initialize(default_mask_parent_subtract_material);
+
+		material_storage->material_set_shader(default_mask_parent_subtract_material, default_mask_parent_subtract_shader);
+	}
+
 	default_canvas_texture = texture_storage->canvas_texture_allocate();
 	texture_storage->canvas_texture_initialize(default_canvas_texture);
 
@@ -2901,6 +2952,10 @@ RasterizerCanvasGLES3::~RasterizerCanvasGLES3() {
 	material_storage->shader_free(default_canvas_group_shader);
 	material_storage->material_free(default_clip_children_material);
 	material_storage->shader_free(default_clip_children_shader);
+	material_storage->material_free(default_mask_parent_material);
+	material_storage->shader_free(default_mask_parent_shader);
+	material_storage->material_free(default_mask_parent_subtract_material);
+	material_storage->shader_free(default_mask_parent_subtract_shader);
 	singleton = nullptr;
 
 	glDeleteBuffers(1, &data.canvas_quad_vertices);

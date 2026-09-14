@@ -32,14 +32,15 @@
 #pragma once
 
 #include "core/core_bind.h"
+#include "core/object/class_db.h"
 #include "core/object/ref_counted.h"
 #include "core/templates/hash_map.h"
 #include "core/templates/local_vector.h"
 #include "core/variant/callable.h"
 #include "core/variant/typed_array.h"
-#include "thirdparty/spmemvfs/spmemvfs.h"
-#include "thirdparty/sqlite/sqlite3.h"
-#include "core/object/class_db.h"
+
+#include "modules/sqlite3/thirdparty/spmemvfs/spmemvfs.h"
+#include "modules/sqlite3/thirdparty/sqlite/sqlite3.h"
 
 class SQLiteColumnSchema : public RefCounted {
 	GDCLASS(SQLiteColumnSchema, RefCounted);
@@ -261,7 +262,7 @@ public:
 	Callable authorizer_callable;
 	static int _sqlite_trace_callback(unsigned int mask, void *ctx, void *p, void *x);
 	static int _sqlite_authorizer_callback(void *p_user, int p_action, const char *p_arg1, const char *p_arg2, const char *p_db_name, const char *p_trigger_name);
-	static void _sqlite_update_hook_callback(void *p_arg, int p_op, char const *p_db_name, char const *p_table_name, sqlite3_int64 p_rowid);
+	static void _sqlite_update_hook_callback(void *p_arg, int p_op, const char *p_db_name, const char *p_table_name, sqlite3_int64 p_rowid);
 	static int _sqlite_commit_hook_callback(void *p_arg);
 	static void _sqlite_rollback_hook_callback(void *p_arg);
 	static int _sqlite_progress_handler_callback(void *p_arg);

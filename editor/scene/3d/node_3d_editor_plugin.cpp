@@ -412,6 +412,7 @@ Dictionary Node3DEditor::get_state() const {
 
 		pd["environ_sky_color"] = environ_sky_color->get_pick_color();
 		pd["environ_ground_color"] = environ_ground_color->get_pick_color();
+		pd["environ_hz_color"] = environ_hz_color->get_pick_color();
 		pd["environ_energy"] = environ_energy->get_value();
 		pd["environ_glow_enabled"] = environ_glow_button->is_pressed();
 		pd["environ_tonemap_enabled"] = environ_tonemap_button->is_pressed();
@@ -571,6 +572,9 @@ void Node3DEditor::set_state(const Dictionary &p_state) {
 
 		environ_sky_color->set_pick_color(pd["environ_sky_color"]);
 		environ_ground_color->set_pick_color(pd["environ_ground_color"]);
+		if (pd.has("environ_hz_color")) {
+			environ_hz_color->set_pick_color(pd["environ_hz_color"]);
+		}
 		environ_energy->set_value_no_signal(pd["environ_energy"]);
 		environ_glow_button->set_pressed_no_signal(pd["environ_glow_enabled"]);
 		environ_tonemap_button->set_pressed_no_signal(pd["environ_tonemap_enabled"]);
@@ -2551,6 +2555,7 @@ void Node3DEditor::_update_theme() {
 	sun_color->set_custom_minimum_size(Size2(0, get_theme_constant(SNAME("inspector_property_height"), EditorStringName(Editor))));
 	environ_sky_color->set_custom_minimum_size(Size2(0, get_theme_constant(SNAME("inspector_property_height"), EditorStringName(Editor))));
 	environ_ground_color->set_custom_minimum_size(Size2(0, get_theme_constant(SNAME("inspector_property_height"), EditorStringName(Editor))));
+	environ_hz_color->set_custom_minimum_size(Size2(0, get_theme_constant(SNAME("inspector_property_height"), EditorStringName(Editor))));
 
 	context_toolbar_panel->add_theme_style_override(SceneStringName(panel), get_theme_stylebox(SNAME("ContextualToolbar"), EditorStringName(EditorStyles)));
 }
@@ -3122,7 +3127,7 @@ void Node3DEditor::_preview_settings_changed() {
 
 	{ //preview env
 		sky_material->set_energy_multiplier(environ_energy->get_value());
-		Color hz_color = environ_sky_color->get_pick_color().lerp(environ_ground_color->get_pick_color(), 0.5);
+		Color hz_color = environ_sky_color->get_pick_color().lerp(environ_ground_color->get_pick_color(), 0.5).lerp(environ_hz_color->get_pick_color(), 0.5);
 		float hz_lum = hz_color.get_luminance() * 3.333;
 		hz_color = hz_color.lerp(Color(hz_lum, hz_lum, hz_lum), 0.5);
 		sky_material->set_sky_top_color(environ_sky_color->get_pick_color());
@@ -3153,6 +3158,7 @@ void Node3DEditor::_load_default_preview_settings() {
 	sun_direction->queue_redraw();
 	environ_sky_color->set_pick_color(Color(0.385, 0.454, 0.55));
 	environ_ground_color->set_pick_color(Color(0.2, 0.169, 0.133));
+	environ_hz_color->set_pick_color(Color(0.447, 0.443, 0.612));
 	environ_energy->set_value_no_signal(1.0);
 	if (OS::get_singleton()->get_current_rendering_method() != "gl_compatibility" && OS::get_singleton()->get_current_rendering_method() != "dummy") {
 		environ_glow_button->set_pressed_no_signal(true);
@@ -3311,6 +3317,16 @@ void Node3DEditor::_environ_set_ground_color(const Color &p_color) {
 	undo_redo->create_action(TTR("Set Preview Environment Ground Color"), UndoRedo::MergeMode::MERGE_ENDS);
 	undo_redo->add_do_method(environ_ground_color, "set_pick_color", p_color);
 	undo_redo->add_undo_method(environ_ground_color, "set_pick_color", sky_material->get_ground_bottom_color());
+	undo_redo->add_do_method(this, "_preview_settings_changed");
+	undo_redo->add_undo_method(this, "_preview_settings_changed");
+	undo_redo->commit_action();
+}
+
+void Node3DEditor::_environ_set_hz_color(const Color &p_color) {
+	EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
+	undo_redo->create_action(TTR("Set Preview Environment Horizon Color"), UndoRedo::MergeMode::MERGE_ENDS);
+	undo_redo->add_do_method(environ_hz_color, "set_pick_color", p_color);
+	undo_redo->add_undo_method(environ_hz_color, "set_pick_color", sky_material->get_sky_horizon_color());
 	undo_redo->add_do_method(this, "_preview_settings_changed");
 	undo_redo->add_undo_method(this, "_preview_settings_changed");
 	undo_redo->commit_action();
@@ -4074,6 +4090,11 @@ void fragment() {
 		environ_ground_color->set_edit_alpha(false);
 		environ_ground_color->get_popup()->connect("about_to_popup", callable_mp(EditorNode::get_singleton(), &EditorNode::setup_color_picker).bind(environ_ground_color->get_picker()));
 		environ_vb->add_margin_child(TTRC("Ground Color"), environ_ground_color);
+		environ_hz_color = memnew(ColorPickerButton);
+		environ_hz_color->set_edit_alpha(false);
+		environ_hz_color->connect("color_changed", callable_mp(this, &Node3DEditor::_environ_set_hz_color));
+		environ_hz_color->get_popup()->connect("about_to_popup", callable_mp(EditorNode::get_singleton(), &EditorNode::setup_color_picker).bind(environ_hz_color->get_picker()));
+		environ_vb->add_margin_child(TTRC("Horizon Color"), environ_hz_color);
 		environ_energy = memnew(EditorSpinSlider);
 		environ_energy->set_max(8.0);
 		environ_energy->set_min(0);

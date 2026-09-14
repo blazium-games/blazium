@@ -8,15 +8,15 @@
 
 #pragma once
 
-#include "tests/test_macros.h"
-
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/object/class_db.h"
 #include "core/os/os.h"
-#include "core/templates/list.h"
 #include "core/string/ustring.h"
+#include "core/templates/list.h"
 #include "core/variant/dictionary.h"
+#include "tests/test_macros.h"
+
 #include "modules/autowork/autowork_collector.h"
 #include "modules/autowork/autowork_config.h"
 #include "modules/autowork/autowork_logger.h"

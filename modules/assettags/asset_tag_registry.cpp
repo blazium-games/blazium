@@ -34,6 +34,7 @@
 #include "asset_tag_query.h"
 #include "asset_tag_registry_commit_policy.h"
 #include "asset_tag_runtime.h"
+
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"

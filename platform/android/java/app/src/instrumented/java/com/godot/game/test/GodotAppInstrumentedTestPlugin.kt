@@ -32,10 +32,10 @@ package com.godot.game.test
 
 import android.util.Log
 import android.widget.Toast
-import org.godotengine.godot.Godot
-import org.godotengine.godot.plugin.GodotPlugin
-import org.godotengine.godot.plugin.UsedByGodot
-import org.godotengine.godot.plugin.SignalInfo
+import app.blazium.godot.Godot
+import app.blazium.godot.plugin.GodotPlugin
+import app.blazium.godot.plugin.UsedByGodot
+import app.blazium.godot.plugin.SignalInfo
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit

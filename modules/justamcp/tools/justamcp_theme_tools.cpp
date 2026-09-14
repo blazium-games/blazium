@@ -30,18 +30,19 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_theme_tools.h"
+
 #include "../justamcp_editor_filesystem.h"
 #include "../justamcp_editor_scene_access.h"
+#include "../justamcp_mcp_tool_macros.h"
+
 #include "core/io/resource_saver.h"
 #include "core/math/expression.h"
+#include "core/string/string_name.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/control.h"
 #include "scene/gui/margin_container.h"
 #include "scene/resources/style_box_flat.h"
 #include "scene/resources/theme.h"
-
-#include "../justamcp_mcp_tool_macros.h"
-#include "core/string/string_name.h"
 
 JustAMCPThemeTools::JustAMCPThemeTools() {
 }

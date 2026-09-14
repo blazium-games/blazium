@@ -417,7 +417,7 @@ public:
 	static bool is_available();
 	static EditorAssetLibrary *get_library() { return addon_library; }
 
-	virtual String get_plugin_name() const override { return "Asset Store"; }
+	virtual String get_plugin_name() const override { return "Asset Library"; }
 	virtual void edit(Object *p_object) override {}
 	virtual bool handles(Object *p_object) const override { return false; }
 	virtual void make_visible(bool p_visible) override;

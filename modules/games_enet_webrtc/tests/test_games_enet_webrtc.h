@@ -32,8 +32,8 @@
 #include "../fake_address_map.h"
 #include "../protocol.h"
 
-#include "tests/test_macros.h"
 #include "core/string/ustring.h"
+#include "tests/test_macros.h"
 
 namespace TestGamesEnetWebrtc {
 

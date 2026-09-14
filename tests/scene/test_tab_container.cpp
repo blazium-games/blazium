@@ -38,6 +38,7 @@ TEST_FORCE_LINK(test_tab_container)
 #include "scene/gui/tab_container.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
+#include "scene/resources/style_box.h"
 #include "tests/display_server_mock.h"
 #include "tests/signal_watcher.h"
 
@@ -585,7 +586,11 @@ TEST_CASE("[SceneTree][TabContainer] layout and offset") {
 
 	SUBCASE("[TabContainer] tab position") {
 		float tab_height = tab_rects[0].size.y;
-		Ref<StyleBox> panel_style = tab_container->get_theme_stylebox("panel_style");
+		Ref<StyleBox> panel_style = tab_container->get_theme_stylebox("panel");
+		const float panel_top = panel_style.is_valid() ? panel_style->get_margin(SIDE_TOP) : 0;
+		const float panel_bottom = panel_style.is_valid() ? panel_style->get_margin(SIDE_BOTTOM) : 0;
+		const float panel_left = panel_style.is_valid() ? panel_style->get_margin(SIDE_LEFT) : 0;
+		const float panel_right = panel_style.is_valid() ? panel_style->get_margin(SIDE_RIGHT) : 0;
 
 		// Initial position, same as top position.
 		// Tab bar is at the top.
@@ -598,15 +603,15 @@ TEST_CASE("[SceneTree][TabContainer] layout and offset") {
 		CHECK(internal_container->get_offset(SIDE_LEFT) == side_margin);
 		CHECK(internal_container->get_offset(SIDE_RIGHT) == 0);
 
-		// Child is expanded and below the tab bar.
+		// Child is expanded and below the tab bar (plus panel stylebox margins).
 		CHECK(tab0->get_anchor(SIDE_TOP) == 0);
 		CHECK(tab0->get_anchor(SIDE_BOTTOM) == 1);
 		CHECK(tab0->get_anchor(SIDE_LEFT) == 0);
 		CHECK(tab0->get_anchor(SIDE_RIGHT) == 1);
-		CHECK(tab0->get_offset(SIDE_TOP) == tab_height);
-		CHECK(tab0->get_offset(SIDE_BOTTOM) == 0);
-		CHECK(tab0->get_offset(SIDE_LEFT) == 0);
-		CHECK(tab0->get_offset(SIDE_RIGHT) == 0);
+		CHECK(tab0->get_offset(SIDE_TOP) == tab_height + panel_top);
+		CHECK(tab0->get_offset(SIDE_BOTTOM) == -panel_bottom);
+		CHECK(tab0->get_offset(SIDE_LEFT) == panel_left);
+		CHECK(tab0->get_offset(SIDE_RIGHT) == -panel_right);
 
 		// Bottom position.
 		tab_container->set_tabs_position(TabContainer::POSITION_BOTTOM);
@@ -623,15 +628,15 @@ TEST_CASE("[SceneTree][TabContainer] layout and offset") {
 		CHECK(internal_container->get_offset(SIDE_LEFT) == side_margin);
 		CHECK(internal_container->get_offset(SIDE_RIGHT) == 0);
 
-		// Child is expanded and above the tab bar.
+		// Child is expanded and above the tab bar (plus panel stylebox margins).
 		CHECK(tab0->get_anchor(SIDE_TOP) == 0);
 		CHECK(tab0->get_anchor(SIDE_BOTTOM) == 1);
 		CHECK(tab0->get_anchor(SIDE_LEFT) == 0);
 		CHECK(tab0->get_anchor(SIDE_RIGHT) == 1);
-		CHECK(tab0->get_offset(SIDE_TOP) == 0);
-		CHECK(tab0->get_offset(SIDE_BOTTOM) == -tab_height);
-		CHECK(tab0->get_offset(SIDE_LEFT) == 0);
-		CHECK(tab0->get_offset(SIDE_RIGHT) == 0);
+		CHECK(tab0->get_offset(SIDE_TOP) == panel_top);
+		CHECK(tab0->get_offset(SIDE_BOTTOM) == -tab_height - panel_bottom);
+		CHECK(tab0->get_offset(SIDE_LEFT) == panel_left);
+		CHECK(tab0->get_offset(SIDE_RIGHT) == -panel_right);
 
 		// Top position.
 		tab_container->set_tabs_position(TabContainer::POSITION_TOP);
@@ -648,15 +653,15 @@ TEST_CASE("[SceneTree][TabContainer] layout and offset") {
 		CHECK(internal_container->get_offset(SIDE_LEFT) == side_margin);
 		CHECK(internal_container->get_offset(SIDE_RIGHT) == 0);
 
-		// Child is expanded and below the tab bar.
+		// Child is expanded and below the tab bar (plus panel stylebox margins).
 		CHECK(tab0->get_anchor(SIDE_TOP) == 0);
 		CHECK(tab0->get_anchor(SIDE_BOTTOM) == 1);
 		CHECK(tab0->get_anchor(SIDE_LEFT) == 0);
 		CHECK(tab0->get_anchor(SIDE_RIGHT) == 1);
-		CHECK(tab0->get_offset(SIDE_TOP) == tab_height);
-		CHECK(tab0->get_offset(SIDE_BOTTOM) == 0);
-		CHECK(tab0->get_offset(SIDE_LEFT) == 0);
-		CHECK(tab0->get_offset(SIDE_RIGHT) == 0);
+		CHECK(tab0->get_offset(SIDE_TOP) == tab_height + panel_top);
+		CHECK(tab0->get_offset(SIDE_BOTTOM) == -panel_bottom);
+		CHECK(tab0->get_offset(SIDE_LEFT) == panel_left);
+		CHECK(tab0->get_offset(SIDE_RIGHT) == -panel_right);
 	}
 
 	memdelete(tab_container);
@@ -716,8 +721,8 @@ TEST_CASE("[SceneTree][TabContainer] Mouse interaction") {
 		SIGNAL_CHECK_FALSE("tab_changed");
 		SIGNAL_CHECK("tab_clicked", { { 1 } });
 
-		// Click outside of tabs.
-		SEND_GUI_MOUSE_BUTTON_EVENT(Point2(0, 0), MouseButton::LEFT, MouseButtonMask::LEFT, Key::NONE);
+		// Click outside of tabs (below the tab bar; (0,0) can hit a tab when side_margin is 0).
+		SEND_GUI_MOUSE_BUTTON_EVENT(Point2(0, tab_rects[0].size.y + 8), MouseButton::LEFT, MouseButtonMask::LEFT, Key::NONE);
 		CHECK(tab_container->get_current_tab() == 1);
 		CHECK(tab_container->get_previous_tab() == 1);
 		SIGNAL_CHECK_FALSE("tab_selected");

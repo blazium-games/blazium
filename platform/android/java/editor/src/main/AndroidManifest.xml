@@ -71,7 +71,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="org.godotengine.xr.hybrid.PANEL" />
+                <category android:name="app.blazium.xr.hybrid.PANEL" />
             </intent-filter>
 
             <!-- Intent filter used to intercept hybrid IMMERSIVE launch for the current editor project, and route it
@@ -79,7 +79,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="org.godotengine.xr.hybrid.IMMERSIVE" />
+                <category android:name="app.blazium.xr.hybrid.IMMERSIVE" />
             </intent-filter>
         </activity>
         <activity-alias

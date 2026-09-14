@@ -29,9 +29,10 @@
 
 #pragma once
 
-#include "core/object/script_instance.h"
 #include "lua_state.h"
 #include "luau_script.h"
+
+#include "core/object/script_instance.h"
 #include "core/string/string_name.h"
 
 class LuauScriptInstance : public ScriptInstance {
@@ -71,6 +72,7 @@ public:
 
 	virtual Ref<Script> get_script() const override;
 	virtual ScriptLanguage *get_language() override;
+	virtual const Variant get_rpc_config() const override;
 
 	Object *get_owner() override { return owner; }
 };

@@ -40,14 +40,15 @@
 #include "core/object/object.h"
 #include "core/os/main_loop.h"
 #include "core/os/time.h"
+#include "core/string/string_name.h"
 #include "core/templates/list.h"
 #include "core/variant/array.h"
 #include "scene/gui/control.h"
 #include "scene/main/canvas_item.h"
 #include "scene/main/node.h"
 #include "scene/main/viewport.h"
+
 #include <lualib.h>
-#include "core/string/string_name.h"
 
 using namespace luau_module;
 
@@ -628,4 +629,8 @@ Ref<Script> LuauScriptInstance::get_script() const {
 
 ScriptLanguage *LuauScriptInstance::get_language() {
 	return LuauScriptLanguage::get_singleton();
+}
+
+const Variant LuauScriptInstance::get_rpc_config() const {
+	return script.is_valid() ? script->get_rpc_config() : Variant();
 }

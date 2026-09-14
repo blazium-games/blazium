@@ -105,9 +105,9 @@ void godot_cleanup_profiler();
 
 PERFETTO_DEFINE_CATEGORIES(
 		perfetto::Category("godot")
-				.SetDescription("Godot Engine Events"),
+				.SetDescription("Blazium Engine Events"),
 		perfetto::Category("godot_scripting")
-				.SetDescription("Godot Scripting Events"), );
+				.SetDescription("Blazium Scripting Events"), );
 
 // See PERFETTO_INTERNAL_SCOPED_EVENT_FINALIZER
 struct PerfettoGroupedEventEnder {

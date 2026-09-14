@@ -849,7 +849,7 @@ void EditorInterface::get_argument_options(const StringName &p_function, int p_i
 	if (p_idx == 0) {
 #ifndef DISABLE_DEPRECATED
 		if (pf == "set_main_screen_editor") {
-			for (String E : { "\"2D\"", "\"3D\"", "\"Script\"", "\"Game\"", "\"Asset Store\"" }) {
+			for (String E : { "\"2D\"", "\"3D\"", "\"Script\"", "\"Game\"", "\"Asset Library\"" }) {
 				r_options->push_back(E);
 			}
 		}

@@ -33,9 +33,9 @@
 #include "nav_rid_3d.h"
 
 #include "core/math/vector3.h"
+#include "core/string/ustring.h"
 #include "core/templates/self_list.h"
 #include "core/variant/callable.h"
-#include "core/string/ustring.h"
 #include "core/variant/dictionary.h"
 #include "servers/navigation_3d/navigation_constants_3d.h"
 

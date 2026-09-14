@@ -29,14 +29,16 @@
 
 #pragma once
 
-#include "core/object/script_language.h"
-#include "core/templates/hash_set.h"
-#include "core/templates/self_list.h"
 #include "lua_state.h"
 #include "luau_class_info.h"
-#include <lua.h>
+
+#include "core/object/script_language.h"
 #include "core/string/string_name.h"
 #include "core/string/ustring.h"
+#include "core/templates/hash_set.h"
+#include "core/templates/self_list.h"
+
+#include <lua.h>
 
 class LuauScriptLanguage;
 class LuauScriptInstance;
@@ -82,7 +84,7 @@ public:
 #ifdef TOOLS_ENABLED
 	virtual PlaceHolderScriptInstance *placeholder_instance_create(Object *p_this) override;
 #endif
-	virtual bool instance_has(const Object *p_this) const override;
+	bool instance_has(const Object *p_this) const;
 
 	virtual bool has_source_code() const override;
 	virtual String get_source_code() const override;
@@ -100,7 +102,7 @@ public:
 	virtual MethodInfo get_method_info(const StringName &p_method) const override;
 
 	virtual bool is_tool() const override;
-	virtual bool is_valid() const override;
+	virtual bool is_script_valid() const override;
 	virtual bool is_abstract() const override;
 
 	virtual ScriptLanguage *get_language() const override;
@@ -113,7 +115,7 @@ public:
 	virtual void get_script_method_list(List<MethodInfo> *r_list) const override;
 	virtual void get_script_property_list(List<PropertyInfo> *r_list) const override;
 
-	virtual Variant get_rpc_config() const override;
+	virtual const Variant get_rpc_config() const override;
 
 	void _placeholder_erased(PlaceHolderScriptInstance *p_placeholder) override;
 

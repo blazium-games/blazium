@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "twitch_irc_client_node.h"
+
 #include "core/object/class_db.h"
 
 void TwitchIRCClientNode::_bind_methods() {

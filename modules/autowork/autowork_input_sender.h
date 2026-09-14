@@ -31,8 +31,8 @@
 
 #include "core/input/input_event.h"
 #include "core/object/ref_counted.h"
-#include "scene/main/node.h"
 #include "core/string/string_name.h"
+#include "scene/main/node.h"
 
 class AutoworkInputSender : public RefCounted {
 	GDCLASS(AutoworkInputSender, RefCounted);

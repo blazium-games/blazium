@@ -45,13 +45,13 @@
 #include "scene/gui/base_button.h"
 #include "scene/gui/control.h"
 #include "scene/main/multiplayer_api.h"
+#include "scene/main/scene_tree.h"
 #include "scene/main/viewport.h"
 #include "scene/main/window.h"
 #include "servers/audio/audio_server.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/settings/editor_settings.h"
-#include "scene/main/scene_tree.h"
 #endif
 
 void JustAMCPRuntime::_find_nodes_recursive(Node *p_node, const String &p_name, const String &p_type, const String &p_group, int p_limit, Array &r_results) {

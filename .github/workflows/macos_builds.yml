@@ -5,36 +5,51 @@ on:
 
 # Global Settings
 env:
-  SCONS_FLAGS: >-
-    dev_mode=yes
-    module_text_server_fb_enabled=yes
+  # Used for the cache key. Add version suffix to force clean build.
+  BLAZIUM_BASE_BRANCH: blazium_4.8
+  SCONSFLAGS: verbose=yes warnings=extra werror=yes module_text_server_fb_enabled=yes strict_checks=yes
+
+concurrency:
+  group: ci-pr-${{ github.event.pull_request.number || github.ref_name }}-macos
+  cancel-in-progress: true
 
 jobs:
   build-macos:
-    # From https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job#choosing-github-hosted-runners
-    runs-on: macos-26
+    runs-on: macos-15
     name: ${{ matrix.name }}
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: Editor (target=editor)
+          - name: Editor (target=editor, tests=yes)
             cache-name: macos-editor
             target: editor
-            bin: ./bin/godot.macos.editor.universal
+            tests: true
+            bin: ./bin/blazium.macos.editor.universal
+            cache-limit: 1
 
-          - name: Template (target=template_release)
+          - name: Template (target=template_release, tests=yes)
             cache-name: macos-template
             target: template_release
-            scons-flags: debug_symbols=no
-            bin: ./bin/godot.macos.template_release.universal
+            tests: true
+            sconsflags: debug_symbols=no tests=yes
+            bin: ./bin/blazium.macos.template_release.universal
+            cache-limit: 1
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           submodules: recursive
+
+      - name: Select Xcode 16.2
+        run: sudo xcode-select -switch /Applications/Xcode_16.2.app/Contents/Developer
+
+      - name: Verify Xcode selection
+        run: |
+          xcode-select -p
+          xcodebuild -version
 
       - name: Restore Godot build cache
         uses: ./.github/actions/godot-cache-restore
@@ -82,16 +97,20 @@ jobs:
         uses: ./.github/actions/godot-build
         with:
           # Silence warning about Metal not being supported in x86_64 builds using `metal=no`.
-          scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.scons-flags }} arch=x86_64 vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }} accesskit=${{ steps.accesskit-sdk.outputs.ACCESSKIT_ENABLED }} angle=${{ steps.angle-sdk.outputs.ANGLE_ENABLED }} metal=no
+          sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }} arch=x86_64 vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }} accesskit=${{ steps.accesskit-sdk.outputs.ACCESSKIT_ENABLED }} angle=${{ steps.angle-sdk.outputs.ANGLE_ENABLED }} metal=no
           platform: macos
           target: ${{ matrix.target }}
+          tests: ${{ matrix.tests }}
+          scons-cache-limit: 0 # Only cap on second run to avoid purging unnecessarily
 
       - name: Compilation (arm64)
         uses: ./.github/actions/godot-build
         with:
-          scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.scons-flags }} arch=arm64 vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }} accesskit=${{ steps.accesskit-sdk.outputs.ACCESSKIT_ENABLED }} angle=${{ steps.angle-sdk.outputs.ANGLE_ENABLED }}
+          sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }} arch=arm64 vulkan=${{ steps.vulkan-sdk.outputs.VULKAN_ENABLED }} accesskit=${{ steps.accesskit-sdk.outputs.ACCESSKIT_ENABLED }} angle=${{ steps.angle-sdk.outputs.ANGLE_ENABLED }}
           platform: macos
           target: ${{ matrix.target }}
+          tests: ${{ matrix.tests }}
+          scons-cache-limit: ${{ matrix.cache-limit }}
 
       - name: Save Godot build cache
         uses: ./.github/actions/godot-cache-save
@@ -101,11 +120,11 @@ jobs:
 
       - name: Prepare artifact
         run: |
-          lipo -create ./bin/godot.macos.${{ matrix.target }}.x86_64 ./bin/godot.macos.${{ matrix.target }}.arm64 -output ./bin/godot.macos.${{ matrix.target }}.universal
-          rm ./bin/godot.macos.${{ matrix.target }}.x86_64 ./bin/godot.macos.${{ matrix.target }}.arm64
+          lipo -create ./bin/blazium.macos.${{ matrix.target }}.x86_64 ./bin/blazium.macos.${{ matrix.target }}.arm64 -output ./bin/blazium.macos.${{ matrix.target }}.universal
+          rm ./bin/blazium.macos.${{ matrix.target }}.x86_64 ./bin/blazium.macos.${{ matrix.target }}.arm64
           rm -rf ./bin/build_deps
-          strip bin/godot.*
-          chmod +x bin/godot.*
+          strip bin/blazium.*
+          chmod +x bin/blazium.*
 
       - name: Upload artifact
         uses: ./.github/actions/upload-artifact
@@ -113,6 +132,7 @@ jobs:
           name: ${{ matrix.cache-name }}
 
       - name: Unit tests
+        if: matrix.tests
         run: |
           ${{ matrix.bin }} --version
           ${{ matrix.bin }} --help

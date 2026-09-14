@@ -29,6 +29,7 @@
 
 #include "justamcp_runtime.h"
 
+#include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/crypto/crypto_core.h"
 #include "core/input/input.h"
@@ -37,6 +38,7 @@
 #include "core/io/image.h"
 #include "core/io/json.h"
 #include "core/math/expression.h"
+#include "core/object/callable_mp.h"
 #include "core/object/message_queue.h"
 #include "core/object/script_language.h"
 #include "core/os/os.h"
@@ -52,8 +54,6 @@
 
 #ifdef TOOLS_ENABLED
 #include "editor/settings/editor_settings.h"
-#include "core/object/callable_mp.h"
-#include "core/config/engine.h"
 #endif
 
 Dictionary JustAMCPRuntime::_cmd_get_metrics(const Dictionary &p_params) {

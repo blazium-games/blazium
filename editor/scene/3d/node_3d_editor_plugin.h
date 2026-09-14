@@ -350,6 +350,7 @@ private:
 	VBoxContainer *environ_vb = nullptr;
 	ColorPickerButton *environ_sky_color = nullptr;
 	ColorPickerButton *environ_ground_color = nullptr;
+	ColorPickerButton *environ_hz_color = nullptr;
 	EditorSpinSlider *environ_energy = nullptr;
 	Button *environ_ao_button = nullptr;
 	Button *environ_glow_button = nullptr;
@@ -416,6 +417,7 @@ private:
 
 	void _environ_set_sky_color(const Color &p_color);
 	void _environ_set_ground_color(const Color &p_color);
+	void _environ_set_hz_color(const Color &p_color);
 	void _environ_set_sky_energy(float p_energy);
 	void _environ_set_ao();
 	void _environ_set_glow();

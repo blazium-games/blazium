@@ -204,6 +204,12 @@ def get_opts():
 
     return [
         ("mingw_prefix", "MinGW prefix", mingw),
+        # Targeted Windows version: 7 (and later), minimum supported version
+        (
+            "target_win_version",
+            "Targeted Windows version, >= 0x0A00 (Windows 10)",
+            "0x0A00",
+        ),
         EnumVariable("windows_subsystem", "Windows subsystem", "gui", ["gui", "console"], ignorecase=2),
         ("msvc_version", "MSVC version to use. Handled automatically by SCons if omitted.", ""),
         ("mssdk_version", "Windows SDK version to use. Handled automatically by SCons if omitted.", ""),
@@ -397,8 +403,8 @@ def configure_msvc(env: "SConsEnvironment"):
             "WINMIDI_ENABLED",
             "TYPED_METHOD_BIND",
             "WIN32",
-            ("WINVER", "0x0A00"),
-            ("_WIN32_WINNT", "0x0A00"),
+            ("WINVER", env["target_win_version"]),
+            ("_WIN32_WINNT", env["target_win_version"]),
         ]
     )
     env.AppendUnique(CPPDEFINES=["NOMINMAX"])  # disable bogus min/max WinDef.h macros
@@ -446,7 +452,7 @@ def configure_msvc(env: "SConsEnvironment"):
         "mincore",
     ]
 
-    if env.debug_features:
+    if env.debug_features or env.get("crash_reporter") or env.get("editor_crash_reporter"):
         LIBS += ["psapi", "dbghelp"]
 
     if env["accesskit"]:
@@ -473,7 +479,7 @@ def configure_msvc(env: "SConsEnvironment"):
                 "The screen reader support driver requires dependencies to be installed.\n"
                 f"You can install them by running `python {os.path.join('misc', 'scripts', 'install_accesskit.py')}`.\n"
                 "See the documentation for more information:\n\t"
-                "https://docs.godotengine.org/en/latest/engine_details/development/compiling/compiling_for_windows.html#compiling-with-accesskit-support"
+                "https://docs.blazium.app/contributing/development/compiling/compiling_for_windows.html#compiling-with-accesskit-support"
                 "\nAlternatively, disable this driver by compiling with `accesskit=no` explicitly."
             )
             env["accesskit"] = False
@@ -532,7 +538,7 @@ def configure_msvc(env: "SConsEnvironment"):
                     "The ANGLE rendering driver requires dependencies to be installed.\n"
                     f"You can install them by running `python {os.path.join('misc', 'scripts', 'install_angle.py')}`.\n"
                     "See the documentation for more information:\n\t"
-                    "https://docs.godotengine.org/en/latest/engine_details/development/compiling/compiling_for_windows.html#compiling-with-angle-support"
+                    "https://docs.blazium.app/contributing/development/compiling/compiling_for_windows.html#compiling-with-angle-support"
                     "\nAlternatively, disable this driver by compiling with `angle=no` explicitly."
                 )
                 env["angle"] = False
@@ -807,8 +813,8 @@ def configure_mingw(env: "SConsEnvironment"):
     env.Append(CPPDEFINES=["WINDOWS_ENABLED", "WASAPI_ENABLED", "WINMIDI_ENABLED"])
     env.Append(
         CPPDEFINES=[
-            ("WINVER", "0x0A00"),
-            ("_WIN32_WINNT", "0x0A00"),
+            ("WINVER", env["target_win_version"]),
+            ("_WIN32_WINNT", env["target_win_version"]),
         ]
     )
     env.Append(
@@ -879,12 +885,12 @@ def configure_mingw(env: "SConsEnvironment"):
                 "The screen reader support driver requires dependencies to be installed.\n"
                 f"You can install them by running `python {os.path.join('misc', 'scripts', 'install_accesskit.py')}`.\n"
                 "See the documentation for more information:\n\t"
-                "https://docs.godotengine.org/en/latest/engine_details/development/compiling/compiling_for_windows.html#compiling-with-accesskit-support"
+                "https://docs.blazium.app/contributing/development/compiling/compiling_for_windows.html#compiling-with-accesskit-support"
                 "\nAlternatively, disable this driver by compiling with `accesskit=no` explicitly."
             )
             env["accesskit"] = False
 
-    if env.debug_features:
+    if env.debug_features or env.get("crash_reporter") or env.get("editor_crash_reporter"):
         env.Append(LIBS=["psapi", "dbghelp"])
 
     if env["vulkan"]:
@@ -948,7 +954,7 @@ def configure_mingw(env: "SConsEnvironment"):
                     "The ANGLE rendering driver requires dependencies to be installed.\n"
                     f"You can install them by running `python {os.path.join('misc', 'scripts', 'install_angle.py')}`.\n"
                     "See the documentation for more information:\n\t"
-                    "https://docs.godotengine.org/en/latest/engine_details/development/compiling/compiling_for_windows.html#compiling-with-angle-support"
+                    "https://docs.blazium.app/contributing/development/compiling/compiling_for_windows.html#compiling-with-angle-support"
                     "\nAlternatively, disable this driver by compiling with `angle=no` explicitly."
                 )
                 env["angle"] = False
@@ -960,6 +966,7 @@ def configure(env: "SConsEnvironment"):
     # Validate arch.
     supported_arches = ["x86_32", "x86_64", "arm32", "arm64"]
     validate_arch(env["arch"], get_name(), supported_arches)
+    validate_win_version(env)
 
     # At this point the env has been set up with basic tools/compilers.
     env.Prepend(CPPPATH=["#platform/windows"])
@@ -974,13 +981,19 @@ def configure(env: "SConsEnvironment"):
         configure_mingw(env)
 
 
+def validate_win_version(env):
+    if int(env["target_win_version"], 16) < 0x0A00:
+        print_error("`target_win_version` should be 0x0A00 or higher (Windows 10).")
+        sys.exit(255)
+
+
 def check_d3d12_installed(env, suffix):
     if not os.path.exists(env["mesa_libs"]) and not os.path.exists(env["mesa_libs"] + "-" + suffix):
         print_error(
             "The Direct3D 12 rendering driver requires dependencies to be installed.\n"
             f"You can install them by running `python {os.path.join('misc', 'scripts', 'install_d3d12_sdk_windows.py')}`.\n"
             "See the documentation for more information:\n\t"
-            "https://docs.godotengine.org/en/latest/engine_details/development/compiling/compiling_for_windows.html#installing-direct3d-12-requirements"
+            "https://docs.blazium.app/contributing/development/compiling/compiling_for_windows.html#installing-direct3d-12-requirements"
             "\nAlternatively, disable this driver by compiling with `d3d12=no` explicitly."
         )
         sys.exit(255)

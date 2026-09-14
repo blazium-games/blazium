@@ -372,6 +372,55 @@ namespace Godot
         /// <value>Equivalent to <c>new Vector2I(-1, 0)</c>.</value>
         public static Vector2I Left { get { return _left; } }
 
+#pragma warning disable CS1591 // Disable warning: "Missing XML comment for publicly visible type or member"
+        public readonly Vector2I XX => new(X, X);
+        public Vector2I XY
+        {
+            readonly get => new(X, Y);
+            set
+            {
+                X = value.X;
+                Y = value.Y;
+            }
+        }
+        public Vector2I YX
+        {
+            readonly get => new(Y, X);
+            set
+            {
+                Y = value.X;
+                X = value.Y;
+            }
+        }
+        public readonly Vector2I YY => new(Y, Y);
+
+        public readonly Vector3I XXX => new(X, X, X);
+        public readonly Vector3I XXY => new(X, X, Y);
+        public readonly Vector3I XYX => new(X, Y, X);
+        public readonly Vector3I XYY => new(X, Y, Y);
+        public readonly Vector3I YXX => new(Y, X, X);
+        public readonly Vector3I YXY => new(Y, X, Y);
+        public readonly Vector3I YYX => new(Y, Y, X);
+        public readonly Vector3I YYY => new(Y, Y, Y);
+
+        public readonly Vector4I XXXX => new(X, X, X, X);
+        public readonly Vector4I XXXY => new(X, X, X, Y);
+        public readonly Vector4I XXYX => new(X, X, Y, X);
+        public readonly Vector4I XXYY => new(X, X, Y, Y);
+        public readonly Vector4I XYXX => new(X, Y, X, X);
+        public readonly Vector4I XYXY => new(X, Y, X, Y);
+        public readonly Vector4I XYYX => new(X, Y, Y, X);
+        public readonly Vector4I XYYY => new(X, Y, Y, Y);
+        public readonly Vector4I YXXX => new(Y, X, X, X);
+        public readonly Vector4I YXXY => new(Y, X, X, Y);
+        public readonly Vector4I YXYX => new(Y, X, Y, X);
+        public readonly Vector4I YXYY => new(Y, X, Y, Y);
+        public readonly Vector4I YYXX => new(Y, Y, X, X);
+        public readonly Vector4I YYXY => new(Y, Y, X, Y);
+        public readonly Vector4I YYYX => new(Y, Y, Y, X);
+        public readonly Vector4I YYYY => new(Y, Y, Y, Y);
+#pragma warning restore CS1591
+
         /// <summary>
         /// Constructs a new <see cref="Vector2I"/> with the given components.
         /// </summary>

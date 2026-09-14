@@ -29,13 +29,14 @@
 /**************************************************************************/
 
 #include "env.h"
+
 #include "core/config/engine.h"
 #include "core/core_bind.h"
-#include "core/io/json.h"
-#include "core/os/os.h"
-#include "core/object/class_db.h"
-#include "core/string/string_name.h"
 #include "core/io/file_access.h"
+#include "core/io/json.h"
+#include "core/object/class_db.h"
+#include "core/os/os.h"
+#include "core/string/string_name.h"
 
 ENV *ENV::env_singleton = nullptr;
 

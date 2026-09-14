@@ -35,10 +35,12 @@
 #include "core/io/file_access.h"
 #include "core/io/resource_loader.h"
 #include "core/io/resource_uid.h"
+#include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
 #include "core/os/time.h"
 #include "core/string/print_string.h"
 #include "core/variant/variant_utility.h"
+
 #include "modules/trenchbroom/core/data.h"
 #include "modules/trenchbroom/core/entity_assembler.h"
 #include "modules/trenchbroom/core/geometry_generator.h"
@@ -49,9 +51,8 @@
 #include "modules/trenchbroom/util/trenchbroom_util.h"
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_interface.h"
-#include "core/object/callable_mp.h"
 #include "core/templates/local_vector.h"
+#include "editor/editor_interface.h"
 #endif
 
 static const String SIGNATURE = "[MAP]";

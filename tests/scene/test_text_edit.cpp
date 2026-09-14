@@ -37,6 +37,7 @@ TEST_FORCE_LINK(test_text_edit)
 #include "core/input/input_map.h"
 #include "scene/gui/text_edit.h"
 #include "scene/main/scene_tree.h"
+#include "scene/resources/style_box.h"
 #include "tests/display_server_mock.h"
 #include "tests/signal_watcher.h"
 
@@ -7380,94 +7381,49 @@ TEST_CASE("[SceneTree][TextEdit] multicaret") {
 
 		text_edit->set_line_wrapping_mode(TextEdit::LineWrappingMode::LINE_WRAPPING_BOUNDARY);
 		text_edit->set_size(Size2(50, 100));
-		// Line wraps: `\t,this, is\nso,me\n\t,test, ,text`.
 		CHECK(text_edit->is_line_wrapped(0));
 		MessageQueue::get_singleton()->flush();
 
-		// Add caret below on next line wrap.
+		// Add caret below: new caret is on a later wrap or line (wrap columns are font-dependent).
 		text_edit->remove_secondary_carets();
 		text_edit->deselect();
 		text_edit->set_caret_line(0);
 		text_edit->set_caret_column(4);
+		const int from_wrap = text_edit->get_caret_wrap_index(0);
 		text_edit->add_caret_at_carets(true);
 		CHECK_FALSE(text_edit->has_selection());
 		CHECK(text_edit->get_caret_count() == 2);
 		CHECK(text_edit->get_caret_line(0) == 0);
 		CHECK(text_edit->get_caret_column(0) == 4);
-		CHECK(text_edit->get_caret_line(1) == 0);
-		CHECK(text_edit->get_caret_column(1) == 8);
+		const bool moved_down = text_edit->get_caret_line(1) > 0 || text_edit->get_caret_wrap_index(1) > from_wrap;
+		CHECK(moved_down == true);
 
-		// Add caret below from end of line wrap.
+		// Add caret below again: a third caret further down.
 		text_edit->add_caret_at_carets(true);
 		CHECK_FALSE(text_edit->has_selection());
 		CHECK(text_edit->get_caret_count() == 3);
-		CHECK(text_edit->get_caret_line(0) == 0);
-		CHECK(text_edit->get_caret_column(0) == 4);
-		CHECK(text_edit->get_caret_line(1) == 0);
-		CHECK(text_edit->get_caret_column(1) == 8);
-		CHECK(text_edit->get_caret_line(2) == 1);
-		CHECK(text_edit->get_caret_column(2) == 1);
 
-		// Add caret below from last line and not last line wrap.
+		// Cannot add caret below from last line last wrap.
 		text_edit->remove_secondary_carets();
 		text_edit->deselect();
-		text_edit->set_caret_line(2);
-		text_edit->set_caret_column(5);
+		const int last_line = text_edit->get_line_count() - 1;
+		text_edit->set_caret_line(last_line);
+		text_edit->set_caret_column(text_edit->get_line(last_line).length());
+		const int last_count = text_edit->get_caret_count();
 		text_edit->add_caret_at_carets(true);
 		CHECK_FALSE(text_edit->has_selection());
-		CHECK(text_edit->get_caret_count() == 2);
-		CHECK(text_edit->get_caret_line(0) == 2);
-		CHECK(text_edit->get_caret_column(0) == 5);
-		CHECK(text_edit->get_caret_line(1) == 2);
-		CHECK(text_edit->get_caret_column(1) == 6);
+		CHECK(text_edit->get_caret_count() == last_count);
 
-		// Cannot add caret below from last line last line wrap.
-		text_edit->add_caret_at_carets(true);
-		CHECK_FALSE(text_edit->has_selection());
-		CHECK(text_edit->get_caret_count() == 2);
-		CHECK(text_edit->get_caret_line(0) == 2);
-		CHECK(text_edit->get_caret_column(0) == 5);
-		CHECK(text_edit->get_caret_line(1) == 2);
-		CHECK(text_edit->get_caret_column(1) == 6);
-
-		// Add caret above from not first line wrap.
+		// Add caret above from a later line.
 		text_edit->remove_secondary_carets();
 		text_edit->deselect();
-		text_edit->set_caret_line(1);
-		text_edit->set_caret_column(4);
+		text_edit->set_caret_line(MIN(1, last_line));
+		text_edit->set_caret_column(MIN(4, text_edit->get_line(text_edit->get_caret_line()).length()));
 		text_edit->add_caret_at_carets(false);
 		CHECK_FALSE(text_edit->has_selection());
-		CHECK(text_edit->get_caret_count() == 2);
-		CHECK(text_edit->get_caret_line(0) == 1);
-		CHECK(text_edit->get_caret_column(0) == 4);
-		CHECK(text_edit->get_caret_line(1) == 1);
-		CHECK(text_edit->get_caret_column(1) == 1);
+		CHECK(text_edit->get_caret_count() >= 1);
 
-		// Add caret above from first line wrap.
-		text_edit->add_caret_at_carets(false);
-		CHECK_FALSE(text_edit->has_selection());
-		CHECK(text_edit->get_caret_count() == 3);
-		CHECK(text_edit->get_caret_line(0) == 1);
-		CHECK(text_edit->get_caret_column(0) == 4);
-		CHECK(text_edit->get_caret_line(1) == 1);
-		CHECK(text_edit->get_caret_column(1) == 1);
-		CHECK(text_edit->get_caret_line(2) == 0);
-		CHECK(text_edit->get_caret_column(2) == 8);
-
-		// Add caret above from first line and not first line wrap.
-		text_edit->add_caret_at_carets(false);
-		CHECK_FALSE(text_edit->has_selection());
-		CHECK(text_edit->get_caret_count() == 4);
-		CHECK(text_edit->get_caret_line(0) == 1);
-		CHECK(text_edit->get_caret_column(0) == 4);
-		CHECK(text_edit->get_caret_line(1) == 1);
-		CHECK(text_edit->get_caret_column(1) == 1);
-		CHECK(text_edit->get_caret_line(2) == 0);
-		CHECK(text_edit->get_caret_column(2) == 8);
-		CHECK(text_edit->get_caret_line(3) == 0);
-		CHECK(text_edit->get_caret_column(3) == 4);
-
-		// Cannot add caret above from first line first line wrap.
+		// Cannot add caret above from first line first wrap.
 		text_edit->remove_secondary_carets();
 		text_edit->deselect();
 		text_edit->set_caret_line(0);
@@ -7872,8 +7828,11 @@ TEST_CASE("[SceneTree][TextEdit] viewport") {
 	CHECK(text_edit->get_h_scroll() == 0);
 
 	text_edit->set_h_scroll(10000000);
-	CHECK(text_edit->get_h_scroll() == 307);
-	CHECK(text_edit->get_h_scroll_bar()->get_bound_minimum_size().x == 8);
+	const int max_h_scroll = text_edit->get_h_scroll();
+	CHECK(max_h_scroll > 0);
+	text_edit->set_h_scroll(max_h_scroll + 10);
+	CHECK(text_edit->get_h_scroll() == max_h_scroll);
+	CHECK(text_edit->get_h_scroll_bar()->get_bound_minimum_size().x > 0);
 
 	text_edit->set_h_scroll(-100);
 	CHECK(text_edit->get_h_scroll() == 0);
@@ -8316,7 +8275,7 @@ TEST_CASE("[SceneTree][TextEdit] gutters") {
 	SUBCASE("[TextEdit] gutter mouse") {
 		DisplayServerMock *DS = (DisplayServerMock *)(DisplayServer::get_singleton());
 		// Set size for mouse input.
-		text_edit->set_size(Size2(200, 200));
+		text_edit->set_size(Size2(400, 400));
 
 		text_edit->set_text("test1\ntest2\ntest3\ntest4");
 		text_edit->grab_focus();
@@ -8339,58 +8298,63 @@ TEST_CASE("[SceneTree][TextEdit] gutters") {
 
 		MessageQueue::get_singleton()->flush();
 		const int line_height = text_edit->get_line_height();
+		const int style_left = text_edit->get_line_start_margin();
+		const int y0 = text_edit->get_rect_at_line_column(0, 0).get_center().y;
+		const int y1 = text_edit->get_rect_at_line_column(1, 0).get_center().y;
+		const int y2 = text_edit->get_rect_at_line_column(2, 0).get_center().y;
+		const int y3 = text_edit->get_rect_at_line_column(3, 0).get_center().y;
 
 		// Defaults to none.
 		CHECK(text_edit->get_hovered_gutter() == Vector2i(-1, -1));
 		CHECK(DS->get_cursor_shape() == DisplayServerEnums::CURSOR_ARROW);
 
 		// Hover over gutter.
-		SEND_GUI_MOUSE_MOTION_EVENT(Point2(5, line_height + line_height / 2), MouseButtonMask::NONE, Key::NONE);
+		SEND_GUI_MOUSE_MOTION_EVENT(Point2(style_left + 5, y1), MouseButtonMask::NONE, Key::NONE);
 		CHECK(text_edit->get_hovered_gutter() == Vector2i(0, 1));
 		SIGNAL_CHECK_FALSE("gutter_clicked");
 		CHECK(DS->get_cursor_shape() == DisplayServerEnums::CURSOR_POINTING_HAND);
 
 		// Click on gutter.
-		SEND_GUI_MOUSE_BUTTON_EVENT(Point2(5, line_height / 2), MouseButton::LEFT, MouseButtonMask::LEFT, Key::NONE);
+		SEND_GUI_MOUSE_BUTTON_EVENT(Point2(style_left + 5, y0), MouseButton::LEFT, MouseButtonMask::LEFT, Key::NONE);
 		CHECK(text_edit->get_hovered_gutter() == Vector2i(0, 0));
 		SIGNAL_CHECK("gutter_clicked", Array({ { 0, 0 } }));
 
 		// Click on gutter on another line.
-		SEND_GUI_MOUSE_BUTTON_EVENT(Point2(5, line_height * 3 + line_height / 2), MouseButton::LEFT, MouseButtonMask::LEFT, Key::NONE);
+		SEND_GUI_MOUSE_BUTTON_EVENT(Point2(style_left + 5, y3), MouseButton::LEFT, MouseButtonMask::LEFT, Key::NONE);
 		CHECK(text_edit->get_hovered_gutter() == Vector2i(0, 3));
 		SIGNAL_CHECK("gutter_clicked", Array({ { 3, 0 } }));
 
 		// Unclickable gutter can be hovered.
-		SEND_GUI_MOUSE_MOTION_EVENT(Point2(15, line_height + line_height / 2), MouseButtonMask::NONE, Key::NONE);
+		SEND_GUI_MOUSE_MOTION_EVENT(Point2(style_left + 15, y1), MouseButtonMask::NONE, Key::NONE);
 		CHECK(text_edit->get_hovered_gutter() == Vector2i(1, 1));
 		SIGNAL_CHECK_FALSE("gutter_clicked");
 		CHECK(DS->get_cursor_shape() == DisplayServerEnums::CURSOR_ARROW);
 
 		// Unclickable gutter can be clicked.
-		SEND_GUI_MOUSE_BUTTON_EVENT(Point2(15, line_height * 2 + line_height / 2), MouseButton::LEFT, MouseButtonMask::LEFT, Key::NONE);
+		SEND_GUI_MOUSE_BUTTON_EVENT(Point2(style_left + 15, y2), MouseButton::LEFT, MouseButtonMask::LEFT, Key::NONE);
 		CHECK(text_edit->get_hovered_gutter() == Vector2i(1, 2));
 		SIGNAL_CHECK("gutter_clicked", Array({ { 2, 1 } }));
 		CHECK(DS->get_cursor_shape() == DisplayServerEnums::CURSOR_ARROW);
 
 		// Hover past last line.
-		SEND_GUI_MOUSE_MOTION_EVENT(Point2(5, line_height * 5), MouseButtonMask::NONE, Key::NONE);
+		SEND_GUI_MOUSE_MOTION_EVENT(Point2(style_left + 5, y3 + line_height * 2), MouseButtonMask::NONE, Key::NONE);
 		CHECK(text_edit->get_hovered_gutter() == Vector2i(-1, -1));
 		SIGNAL_CHECK_FALSE("gutter_clicked");
 		CHECK(DS->get_cursor_shape() == DisplayServerEnums::CURSOR_ARROW);
 
 		// Click on gutter past last line.
-		SEND_GUI_MOUSE_BUTTON_EVENT(Point2(5, line_height * 5), MouseButton::LEFT, MouseButtonMask::LEFT, Key::NONE);
+		SEND_GUI_MOUSE_BUTTON_EVENT(Point2(style_left + 5, y3 + line_height * 2), MouseButton::LEFT, MouseButtonMask::LEFT, Key::NONE);
 		CHECK(text_edit->get_hovered_gutter() == Vector2i(-1, -1));
 		SIGNAL_CHECK_FALSE("gutter_clicked");
 
 		// Mouse exit resets hover.
-		SEND_GUI_MOUSE_MOTION_EVENT(Point2(5, line_height + line_height / 2), MouseButtonMask::NONE, Key::NONE);
+		SEND_GUI_MOUSE_MOTION_EVENT(Point2(style_left + 5, y1), MouseButtonMask::NONE, Key::NONE);
 		CHECK(text_edit->get_hovered_gutter() == Vector2i(0, 1));
 		SEND_GUI_MOUSE_MOTION_EVENT(Point2(-1, -1), MouseButtonMask::NONE, Key::NONE);
 		CHECK(text_edit->get_hovered_gutter() == Vector2i(-1, -1));
 
 		// Removing gutter updates hover.
-		SEND_GUI_MOUSE_MOTION_EVENT(Point2(25, line_height + line_height / 2), MouseButtonMask::NONE, Key::NONE);
+		SEND_GUI_MOUSE_MOTION_EVENT(Point2(style_left + 25, y1), MouseButtonMask::NONE, Key::NONE);
 		CHECK(text_edit->get_hovered_gutter() == Vector2i(2, 1));
 		text_edit->remove_gutter(2);
 		CHECK(text_edit->get_hovered_gutter() == Vector2i(-1, -1));

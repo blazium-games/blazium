@@ -35,17 +35,19 @@
 
 // Equivalent to TilemapCreator.gd
 
+#include "tiled_common.h"
+#include "tiled_custom_types.h"
+#include "tileson_gd_bindings.h"
+
+#include "core/string/ustring.h"
 #include "scene/2d/node_2d.h"
 #include "scene/2d/parallax_2d.h"
 #include "scene/2d/parallax_background.h"
 #include "scene/2d/parallax_layer.h"
-#include "modules/tilemap/tile_map_layer.h"
 #include "scene/gui/color_rect.h"
 #include "scene/gui/texture_rect.h"
-#include "tiled_common.h"
-#include "tiled_custom_types.h"
-#include "tileson_gd_bindings.h"
-#include "core/string/ustring.h"
+
+#include "modules/tilemap/tile_map_layer.h"
 
 class Sprite2D;
 class CollisionObject2D;

@@ -39,7 +39,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-#if defined(ASAN_ENABLED)
+#if defined(ASAN_ENABLED) || defined(TSAN_ENABLED)
 #include <sys/resource.h>
 #endif
 
@@ -75,23 +75,24 @@ int main(int argc, char *argv[]) {
 	if (!(cpuinfo[2] & (1 << 20))) {
 		printf("A CPU with SSE4.2 instruction set support is required.\n");
 
-		int ret = system("zenity --warning --title \"Godot Engine\" --text \"A CPU with SSE4.2 instruction set support is required.\" 2> /dev/null");
+		int ret = system("zenity --warning --title \"Blazium Engine\" --text \"A CPU with SSE4.2 instruction set support is required.\" 2> /dev/null");
 		if (ret != 0) {
-			ret = system("kdialog --title \"Godot Engine\" --sorry \"A CPU with SSE4.2 instruction set support is required.\" 2> /dev/null");
+			ret = system("kdialog --title \"Blazium Engine\" --sorry \"A CPU with SSE4.2 instruction set support is required.\" 2> /dev/null");
 		}
 		if (ret != 0) {
-			ret = system("Xdialog --title \"Godot Engine\" --msgbox \"A CPU with SSE4.2 instruction set support is required.\" 0 0 2> /dev/null");
+			ret = system("Xdialog --title \"Blazium Engine\" --msgbox \"A CPU with SSE4.2 instruction set support is required.\" 0 0 2> /dev/null");
 		}
 		if (ret != 0) {
-			ret = system("xmessage -center -title \"Godot Engine\" \"A CPU with SSE4.2 instruction set support is required.\" 2> /dev/null");
+			ret = system("xmessage -center -title \"Blazium Engine\" \"A CPU with SSE4.2 instruction set support is required.\" 2> /dev/null");
 		}
 		abort();
 	}
 #endif
 
-#if defined(ASAN_ENABLED)
-	// Note: Set stack size to be at least 30 MB (vs 8 MB default) to avoid overflow, address sanitizer can increase stack usage up to 3 times.
-	struct rlimit stack_lim = { 0x1E00000, 0x1E00000 };
+#if defined(ASAN_ENABLED) || defined(TSAN_ENABLED)
+	// Sanitizers inflate stack frames (TSan more than ASan). Default 8 MB
+	// overflows in JustAMCPServer / doctest under --test.
+	struct rlimit stack_lim = { 0x4000000, 0x4000000 }; // 64 MB
 	setrlimit(RLIMIT_STACK, &stack_lim);
 #endif
 

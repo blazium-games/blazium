@@ -30,11 +30,12 @@
 #pragma once
 
 #include "core/io/file_access.h"
-#include "modules/inter_dvd/author/inter_dvd_project.h"
-#include "modules/inter_dvd/author/inter_dvd_vob_mux.h"
+#include "core/string/ustring.h"
 #include "tests/test_macros.h"
 #include "tests/test_utils.h"
-#include "core/string/ustring.h"
+
+#include "modules/inter_dvd/author/inter_dvd_project.h"
+#include "modules/inter_dvd/author/inter_dvd_vob_mux.h"
 
 TEST_CASE("[Modules][InterDVD] finalize rewrites empty ffmpeg NAV vobu_ea") {
 	const String path = TestUtils::get_temp_path("inter_dvd_rewrite_nav.vob");

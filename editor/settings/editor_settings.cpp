@@ -64,6 +64,8 @@
 #include "scene/resources/animation.h"
 #include "servers/display/display_server.h"
 
+#include "modules/modules_enabled.gen.h" // For justamcp Array editor settings.
+
 // PRIVATE METHODS
 
 Ref<EditorSettings> EditorSettings::singleton = nullptr;
@@ -619,7 +621,7 @@ void EditorSettings::_load_defaults(Ref<ConfigFile> p_extra_config) {
 	// Theme
 	EDITOR_SETTING_BASIC(Variant::BOOL, PROPERTY_HINT_ENUM, "interface/theme/follow_system_theme", false, "")
 	EDITOR_SETTING_BASIC(Variant::STRING, PROPERTY_HINT_ENUM, "interface/theme/style", "Modern", "Modern,Classic")
-	EDITOR_SETTING_BASIC(Variant::STRING, PROPERTY_HINT_ENUM, "interface/theme/color_preset", "Default", "Default,Breeze Dark,Godot 2,Godot 3,Gray,Light,Solarized (Dark),Solarized (Light),Black (OLED),Custom")
+	EDITOR_SETTING_BASIC(Variant::STRING, PROPERTY_HINT_ENUM, "interface/theme/color_preset", "Default", "Default,Breeze Dark,Godot 2,Godot 3,Gray,Indigo,Light,Solarized (Dark),Solarized (Light),Black (OLED),Custom")
 	EDITOR_SETTING_BASIC(Variant::STRING, PROPERTY_HINT_ENUM, "interface/theme/spacing_preset", "Default", "Compact,Default,Spacious,Custom")
 	EDITOR_SETTING(Variant::INT, PROPERTY_HINT_ENUM, "interface/theme/icon_and_font_color", 0, "Auto,Dark,Light")
 	EDITOR_SETTING_BASIC(Variant::COLOR, PROPERTY_HINT_NONE, "interface/theme/base_color", Color(0.14, 0.14, 0.14), "")
@@ -682,7 +684,13 @@ void EditorSettings::_load_defaults(Ref<ConfigFile> p_extra_config) {
 
 	// Directories
 	EDITOR_SETTING(Variant::STRING, PROPERTY_HINT_GLOBAL_DIR, "filesystem/directories/autoscan_project_path", "", "")
-	const String fs_dir_default_project_path = OS::get_singleton()->has_environment("HOME") ? OS::get_singleton()->get_environment("HOME") : OS::get_singleton()->get_system_dir(OS::SYSTEM_DIR_DOCUMENTS);
+	String fs_dir_default_project_path = OS::get_singleton()->has_environment("HOME") ? OS::get_singleton()->get_environment("HOME") : OS::get_singleton()->get_system_dir(OS::SYSTEM_DIR_DOCUMENTS);
+	// On Macos sandboxed, don't get HOME as it points to sandboxed place. Get Documents.
+#ifdef MACOS_ENABLED
+	if (OS::get_singleton()->is_sandboxed()) {
+		fs_dir_default_project_path = OS::get_singleton()->get_system_dir(OS::SYSTEM_DIR_DOCUMENTS);
+	}
+#endif
 	EDITOR_SETTING_BASIC(Variant::STRING, PROPERTY_HINT_GLOBAL_DIR, "filesystem/directories/default_project_path", fs_dir_default_project_path, "")
 
 	// On save
@@ -1223,6 +1231,13 @@ void EditorSettings::_load_defaults(Ref<ConfigFile> p_extra_config) {
 	const String default_renderer = "gl_compatibility";
 #endif
 	EDITOR_SETTING_BASIC(Variant::STRING, PROPERTY_HINT_ENUM, "project_manager/default_renderer", default_renderer, "forward_plus,mobile,gl_compatibility")
+
+#ifdef MODULE_JUSTAMCP_ENABLED
+	// Array-typed JustAMCP settings must exist before editor_settings-*.tres is applied:
+	// resource_format_text probes Arrays with get() before set() and would otherwise miss them.
+	EDITOR_SETTING(Variant::ARRAY, PROPERTY_HINT_NONE, "blazium/justamcp/mcp_clients", Array(), "")
+	EDITOR_SETTING(Variant::ARRAY, PROPERTY_HINT_NONE, "blazium/justamcp/bridge_url_allow_hosts", Array(), "")
+#endif
 
 #undef EDITOR_SETTING
 #undef EDITOR_SETTING_BASIC

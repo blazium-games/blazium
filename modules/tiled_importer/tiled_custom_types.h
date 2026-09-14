@@ -32,8 +32,8 @@
 #pragma once
 
 #include "core/object/ref_counted.h"
-#include "core/variant/array.h"
 #include "core/string/ustring.h"
+#include "core/variant/array.h"
 #include "core/variant/dictionary.h"
 
 // Equivalent to CustomTypes.gd

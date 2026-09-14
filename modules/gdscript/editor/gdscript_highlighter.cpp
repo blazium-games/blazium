@@ -42,6 +42,13 @@
 Dictionary GDScriptSyntaxHighlighter::_get_line_syntax_highlighting_impl(int p_line) {
 	Dictionary color_map;
 
+	const uint32_t text_version = text_edit->get_version();
+	if (local_symbols_dirty || text_version != local_symbols_version) {
+		local_symbols_dirty = false;
+		local_symbols_version = text_version;
+		_update_local_symbols();
+	}
+
 	Type next_type = NONE;
 	Type current_type = NONE;
 	Type prev_type = NONE;
@@ -488,6 +495,8 @@ Dictionary GDScriptSyntaxHighlighter::_get_line_syntax_highlighting_impl(int p_l
 			} else if (member_keywords.has(word)) {
 				col = member_keywords[word];
 				in_member_variable = true;
+			} else if (local_enum_values.has(word)) {
+				col = member_variable_color;
 			}
 
 			if (col != Color()) {
@@ -758,6 +767,93 @@ PackedStringArray GDScriptSyntaxHighlighter::_get_supported_languages() const {
 	return languages;
 }
 
+void GDScriptSyntaxHighlighter::_update_local_symbols() {
+	local_types.clear();
+	local_enum_values.clear();
+
+	GDScriptTokenizerText tokenizer;
+	tokenizer.set_source_code(text_edit->get_text());
+
+	enum PendingDeclaration {
+		PENDING_NONE,
+		PENDING_ENUM,
+		PENDING_TYPE_NAME,
+	};
+
+	PendingDeclaration pending = PENDING_NONE;
+	bool in_unnamed_enum = false;
+	bool expect_enum_value = false;
+	int enum_nesting = 0;
+
+	for (GDScriptTokenizer::Token token = tokenizer.scan(); token.type != GDScriptTokenizer::Token::TK_EOF; token = tokenizer.scan()) {
+		if (in_unnamed_enum) {
+			switch (token.type) {
+				case GDScriptTokenizer::Token::IDENTIFIER:
+					if (expect_enum_value && enum_nesting == 0) {
+						local_enum_values.insert(token.get_identifier());
+					}
+					expect_enum_value = false;
+					break;
+				case GDScriptTokenizer::Token::COMMA:
+					expect_enum_value = enum_nesting == 0;
+					break;
+				case GDScriptTokenizer::Token::PARENTHESIS_OPEN:
+				case GDScriptTokenizer::Token::BRACKET_OPEN:
+				case GDScriptTokenizer::Token::BRACE_OPEN:
+					enum_nesting++;
+					break;
+				case GDScriptTokenizer::Token::PARENTHESIS_CLOSE:
+				case GDScriptTokenizer::Token::BRACKET_CLOSE:
+					enum_nesting--;
+					break;
+				case GDScriptTokenizer::Token::BRACE_CLOSE:
+					if (enum_nesting > 0) {
+						enum_nesting--;
+					} else {
+						in_unnamed_enum = false;
+					}
+					break;
+				default:
+					break;
+			}
+			continue;
+		}
+
+		if (pending != PENDING_NONE) {
+			const PendingDeclaration declaration = pending;
+			pending = PENDING_NONE;
+
+			if (token.type == GDScriptTokenizer::Token::IDENTIFIER) {
+				local_types.insert(token.get_identifier());
+				continue;
+			}
+			if (declaration == PENDING_ENUM && token.type == GDScriptTokenizer::Token::BRACE_OPEN) {
+				in_unnamed_enum = true;
+				expect_enum_value = true;
+				enum_nesting = 0;
+				continue;
+			}
+		}
+
+		switch (token.type) {
+			case GDScriptTokenizer::Token::ENUM:
+				pending = PENDING_ENUM;
+				break;
+			case GDScriptTokenizer::Token::CLASS:
+			case GDScriptTokenizer::Token::CLASS_NAME:
+				pending = PENDING_TYPE_NAME;
+				break;
+			default:
+				break;
+		}
+	}
+
+	const Color usertype_color = EDITOR_GET("text_editor/theme/highlighting/user_type_color");
+	for (const StringName &local_type : local_types) {
+		class_names[local_type] = usertype_color;
+	}
+}
+
 void GDScriptSyntaxHighlighter::_update_cache() {
 	class_names.clear();
 	reserved_keywords.clear();
@@ -765,6 +861,7 @@ void GDScriptSyntaxHighlighter::_update_cache() {
 	global_functions.clear();
 	color_regions.clear();
 	color_region_cache.clear();
+	local_symbols_dirty = true;
 
 	font_color = text_edit->get_theme_color(SceneStringName(font_color));
 	symbol_color = EDITOR_GET("text_editor/theme/highlighting/symbol_color");

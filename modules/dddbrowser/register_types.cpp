@@ -29,7 +29,6 @@
 
 #include "register_types.h"
 
-#include "core/object/class_db.h"
 #include "dddbrowser_audio.h"
 #include "dddbrowser_exporter.h"
 #include "dddbrowser_font.h"
@@ -43,9 +42,12 @@
 #include "dddbrowser_textbox.h"
 #include "dddbrowser_volume.h"
 
+#include "core/object/class_db.h"
+
 #ifdef TOOLS_ENABLED
-#include "modules/dddbrowser/editor/dddbrowser_editor_plugin.h"
 #include "editor/plugins/editor_plugin.h"
+
+#include "modules/dddbrowser/editor/dddbrowser_editor_plugin.h"
 #endif
 
 void initialize_dddbrowser_module(ModuleInitializationLevel p_level) {

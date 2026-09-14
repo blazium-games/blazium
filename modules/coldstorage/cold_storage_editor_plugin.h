@@ -33,8 +33,9 @@
 
 #include "cold_storage_cli.h"
 #include "cold_storage_settings.h"
-#include "editor/plugins/editor_plugin.h"
+
 #include "core/string/ustring.h"
+#include "editor/plugins/editor_plugin.h"
 
 class AcceptDialog;
 class Label;

@@ -32,8 +32,8 @@
 #include "windows_screensaver_export_platform.h"
 
 #include "core/io/file_access.h"
-#include "editor/editor_string_names.h"
 #include "core/string/string_name.h"
+#include "editor/editor_string_names.h"
 
 EditorExportPlatformWindowsScreensaver::EditorExportPlatformWindowsScreensaver() {
 	set_name("Windows Screensaver");

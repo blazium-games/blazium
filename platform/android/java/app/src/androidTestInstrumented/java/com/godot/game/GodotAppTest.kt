@@ -38,9 +38,9 @@ import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.godot.game.test.GodotAppInstrumentedTestPlugin
-import org.godotengine.godot.Godot
-import org.godotengine.godot.GodotActivity.Companion.EXTRA_COMMAND_LINE_PARAMS
-import org.godotengine.godot.plugin.GodotPluginRegistry
+import app.blazium.godot.Godot
+import app.blazium.godot.GodotActivity.Companion.EXTRA_COMMAND_LINE_PARAMS
+import app.blazium.godot.plugin.GodotPluginRegistry
 import org.junit.Test
 import org.junit.runner.RunWith
 import kotlin.collections.contentEquals
@@ -50,7 +50,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * This instrumented test will launch the `instrumented` version of GodotApp and run a set of tests against it.
+ * This instrumented test will launch the `instrumented` version of BlaziumApp and run a set of tests against it.
  */
 @RunWith(AndroidJUnit4::class)
 class GodotAppTest {
@@ -58,8 +58,8 @@ class GodotAppTest {
 	companion object {
 		private val TAG = GodotAppTest::class.java.simpleName
 
-		private const val GODOT_APP_LAUNCHER_CLASS_NAME = "com.godot.game.GodotAppLauncher"
-		private const val GODOT_APP_CLASS_NAME = "com.godot.game.GodotApp"
+		private const val GODOT_APP_LAUNCHER_CLASS_NAME = "com.godot.game.BlaziumAppLauncher"
+		private const val GODOT_APP_CLASS_NAME = "com.godot.game.BlaziumApp"
 
 		private val TEST_COMMAND_LINE_PARAMS = arrayOf("This is a test")
 		private val VULKAN_RENDERER_COMMAND_LINE_PARAMS = arrayOf("--rendering-method","mobile")
@@ -75,7 +75,7 @@ class GodotAppTest {
 	 */
 	@Test
 	fun runJavaClassWrapperTests() {
-		ActivityScenario.launch(GodotApp::class.java).use { scenario ->
+		ActivityScenario.launch(BlaziumApp::class.java).use { scenario ->}
 			scenario.onActivity { activity ->
 				val testPlugin = getTestPlugin()
 				assertNotNull(testPlugin)
@@ -98,7 +98,7 @@ class GodotAppTest {
 	 */
 	@Test
 	fun runFileAccessTests() {
-		ActivityScenario.launch(GodotApp::class.java).use { scenario ->
+		ActivityScenario.launch(BlaziumApp::class.java).use { scenario ->}
 			scenario.onActivity { activity ->
 				val testPlugin = getTestPlugin()
 				assertNotNull(testPlugin)
@@ -120,7 +120,7 @@ class GodotAppTest {
 	 */
 	@Test
 	fun runPluginSignalTests() {
-		ActivityScenario.launch(GodotApp::class.java).use { scenario ->
+		ActivityScenario.launch(BlaziumApp::class.java).use { scenario ->}
 			scenario.onActivity { activity ->
 				val testPlugin = getTestPlugin()
 				assertNotNull(testPlugin)
@@ -148,7 +148,7 @@ class GodotAppTest {
 			addCategory(Intent.CATEGORY_LAUNCHER)
 			putExtra(EXTRA_COMMAND_LINE_PARAMS, TEST_COMMAND_LINE_PARAMS)
 		}
-		ActivityScenario.launch<GodotApp>(implicitLaunchIntent).use { scenario ->
+		ActivityScenario.launch<BlaziumApp>(implicitLaunchIntent).use { scenario ->
 			scenario.onActivity { activity ->
 				assertEquals(activity.intent.component?.className, GODOT_APP_LAUNCHER_CLASS_NAME)
 
@@ -167,7 +167,7 @@ class GodotAppTest {
 			component = ComponentName(BuildConfig.APPLICATION_ID, GODOT_APP_LAUNCHER_CLASS_NAME)
 			putExtra(EXTRA_COMMAND_LINE_PARAMS, TEST_COMMAND_LINE_PARAMS)
 		}
-		ActivityScenario.launch<GodotApp>(explicitIntent).use { scenario ->
+		ActivityScenario.launch<BlaziumApp>(explicitIntent).use { scenario ->}
 			scenario.onActivity { activity ->
 				assertEquals(activity.intent.component?.className, GODOT_APP_LAUNCHER_CLASS_NAME)
 
@@ -186,7 +186,7 @@ class GodotAppTest {
 			component = ComponentName(BuildConfig.APPLICATION_ID, GODOT_APP_CLASS_NAME)
 			putExtra(EXTRA_COMMAND_LINE_PARAMS, TEST_COMMAND_LINE_PARAMS)
 		}
-		ActivityScenario.launch<GodotApp>(explicitIntent).use { scenario ->
+		ActivityScenario.launch<BlaziumApp>(explicitIntent).use { scenario ->}
 			scenario.onActivity { activity ->
 				assertEquals(activity.intent.component?.className, GODOT_APP_CLASS_NAME)
 
@@ -206,7 +206,7 @@ class GodotAppTest {
 			component = ComponentName(BuildConfig.APPLICATION_ID, GODOT_APP_CLASS_NAME)
 			putExtra(EXTRA_COMMAND_LINE_PARAMS, VULKAN_RENDERER_COMMAND_LINE_PARAMS)
 		}
-		ActivityScenario.launch<GodotApp>(appIntent).use { scenario ->
+		ActivityScenario.launch<BlaziumApp>(appIntent).use { scenario ->
 			val testPlugin = getTestPlugin()
 			assertNotNull(testPlugin)
 
@@ -228,7 +228,7 @@ class GodotAppTest {
 	 */
 	@Test
 	fun testGameNotQuittingOnBackPress() {
-		ActivityScenario.launch(GodotApp::class.java).use { scenario ->
+		ActivityScenario.launch(BlaziumApp::class.java).use { scenario ->}
 			val testPlugin = getTestPlugin()
 			assertNotNull(testPlugin)
 
@@ -254,7 +254,7 @@ class GodotAppTest {
 	 */
 	@Test
 	fun testGameQuittingOnBackPress() {
-		ActivityScenario.launch(GodotApp::class.java).use { scenario ->
+		ActivityScenario.launch(BlaziumApp::class.java).use { scenario ->}
 			val testPlugin = getTestPlugin()
 			assertNotNull(testPlugin)
 

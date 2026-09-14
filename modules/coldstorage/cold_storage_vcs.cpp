@@ -31,14 +31,14 @@
 
 #include "cold_storage_vcs.h"
 
+#include "client/sdk/client_sdk.h"
+#include "client/sdk/tls_options.h"
+#include "common/util/text_diff.h"
+
 #include "core/io/file_access.h"
 #include "core/object/class_db.h"
 #include "core/os/os.h"
 #include "core/templates/hash_set.h"
-
-#include "client/sdk/client_sdk.h"
-#include "client/sdk/tls_options.h"
-#include "common/util/text_diff.h"
 #ifdef CONNECT
 #undef CONNECT
 #endif

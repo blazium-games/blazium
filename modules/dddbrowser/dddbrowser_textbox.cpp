@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "dddbrowser_textbox.h"
+
 #include "core/object/class_db.h"
 
 void DDDBrowserTextbox::_bind_methods() {

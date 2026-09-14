@@ -29,8 +29,10 @@
 /**************************************************************************/
 
 #include "register_types.h"
-#include "core/config/engine.h"
+
 #include "env.h"
+
+#include "core/config/engine.h"
 #include "core/object/class_db.h"
 
 static ENV *env_singleton_global = nullptr;

@@ -34,12 +34,13 @@
 #include "microsoft_game_config.h"
 
 #include "core/config/engine.h"
-#include "editor/editor_node.h"
-#include "editor/export/editor_export.h"
-#include "modules/xbox_module/gdk/gdk.h"
 #include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
 #include "core/os/os.h"
+#include "editor/editor_node.h"
+#include "editor/export/editor_export.h"
+
+#include "modules/xbox_module/gdk/gdk.h"
 
 void XboxEditorPlugin::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_create_game_config"), &XboxEditorPlugin::_create_game_config);

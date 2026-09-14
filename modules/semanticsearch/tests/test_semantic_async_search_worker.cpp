@@ -33,6 +33,7 @@
 #include "../semantic_async_search_worker.h"
 #include "../semantic_index_store.h"
 #include "../semantic_search_backend_factory.h"
+
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
 #include "core/os/os.h"
@@ -64,9 +65,9 @@ void test_semantic_async_search_worker_enqueue_filters() {
 
 void test_semantic_async_drain_jobs() {
 	SemanticAsyncSearchWorker worker;
-	worker.enqueue_search("hero", 5);
+	const String job_id = worker.enqueue_search("hero", 5);
+	(void)job_id;
 	worker.drain_jobs();
-	CHECK(true);
 }
 
 void test_semantic_async_http_provider_rejected() {

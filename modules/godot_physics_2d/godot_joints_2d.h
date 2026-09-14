@@ -37,10 +37,29 @@ class GodotJoint2D : public GodotConstraint2D {
 	real_t bias = 0;
 	real_t max_bias = 3.40282e+38;
 	real_t max_force = 3.40282e+38;
+	bool enabled = true;
 
 protected:
 	bool dynamic_A = false;
 	bool dynamic_B = false;
+
+	void add_constraint_to_bodies() {
+		for (int i = 0; i < get_body_count(); i++) {
+			GodotBody2D *body = get_body_ptr()[i];
+			if (body) {
+				body->add_constraint(this, i);
+			}
+		}
+	}
+
+	void remove_constraint_from_bodies() {
+		for (int i = 0; i < get_body_count(); i++) {
+			GodotBody2D *body = get_body_ptr()[i];
+			if (body) {
+				body->remove_constraint(this, i);
+			}
+		}
+	}
 
 public:
 	_FORCE_INLINE_ void set_max_force(real_t p_force) { max_force = p_force; }
@@ -51,6 +70,16 @@ public:
 
 	_FORCE_INLINE_ void set_max_bias(real_t p_bias) { max_bias = p_bias; }
 	_FORCE_INLINE_ real_t get_max_bias() const { return max_bias; }
+
+	_FORCE_INLINE_ void set_enabled(bool p_enabled) {
+		enabled = p_enabled;
+		if (enabled) {
+			add_constraint_to_bodies();
+		} else {
+			remove_constraint_from_bodies();
+		}
+	}
+	_FORCE_INLINE_ bool is_enabled() const { return enabled; }
 
 	virtual bool setup(real_t p_step) override { return false; }
 	virtual bool pre_solve(real_t p_step) override { return false; }

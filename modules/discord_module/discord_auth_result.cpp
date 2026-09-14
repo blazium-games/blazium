@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "discord_auth_result.h"
+
 #include "core/object/class_db.h"
 
 void DiscordAuthResult::_bind_methods() {

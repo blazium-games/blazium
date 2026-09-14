@@ -31,10 +31,12 @@
 
 #include "autorun_inf.h"
 
-#ifdef TOOLS_ENABLED
-#include "modules/device_autorun/editor/device_autorun_export_plugin.h"
-#include "editor/plugins/editor_plugin.h"
 #include "core/object/class_db.h"
+
+#ifdef TOOLS_ENABLED
+#include "editor/plugins/editor_plugin.h"
+
+#include "modules/device_autorun/editor/device_autorun_export_plugin.h"
 #endif
 
 void initialize_device_autorun_module(ModuleInitializationLevel p_level) {

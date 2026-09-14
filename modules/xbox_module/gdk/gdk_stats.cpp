@@ -32,21 +32,21 @@
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-#include "gdk_windows.h"
-
-#include <algorithm>
-#include <cerrno>
-#include <cstdlib>
-#include <cstring>
-
 #include "gdk.h"
 #include "gdk_pending_signal.h"
 #include "gdk_result.h"
 #include "gdk_runtime.h"
 #include "gdk_signal_xasync_context.h"
 #include "gdk_user.h"
+#include "gdk_windows.h"
 #include "gdk_xbox_services.h"
+
 #include "core/object/class_db.h"
+
+#include <algorithm>
+#include <cerrno>
+#include <cstdlib>
+#include <cstring>
 
 #ifdef XBOX_MODULE_GDK_ENABLED
 

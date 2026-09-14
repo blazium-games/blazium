@@ -29,8 +29,8 @@
 
 #include "justamcp_runtime.h"
 
-#include "core/templates/local_vector.h"
 #include "core/object/script_language.h"
+#include "core/templates/local_vector.h"
 #include "core/variant/variant.h"
 #include "scene/main/node.h"
 

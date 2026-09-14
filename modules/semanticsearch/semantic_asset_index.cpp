@@ -28,23 +28,25 @@
 /**************************************************************************/
 
 #include "semantic_asset_index.h"
+
+#include "hash_vector_embedding.h"
+#include "lexical_index_builder.h"
+#include "lexical_search_engine.h"
 #include "semantic_asset_index_helpers.h"
+#include "semantic_embedding_pipeline.h"
+#include "semantic_index_store.h"
+#include "semantic_search_backend.h"
+#include "semantic_search_backend_factory.h"
+#include "semantic_search_filters.h"
 
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/io/json.h"
 #include "core/math/math_funcs.h"
-#include "hash_vector_embedding.h"
-#include "lexical_index_builder.h"
-#include "lexical_search_engine.h"
-#include "modules/modules_enabled.gen.h"
 #include "core/string/regex.h"
-#include "semantic_embedding_pipeline.h"
-#include "semantic_index_store.h"
-#include "semantic_search_backend.h"
-#include "semantic_search_backend_factory.h"
-#include "semantic_search_filters.h"
+
+#include "modules/modules_enabled.gen.h"
 
 #ifdef MODULE_ASSETTAGS_ENABLED
 #include "modules/assettags/asset_tag_manager.h"
@@ -52,9 +54,10 @@
 #include "modules/assettags/asset_tag_storage.h"
 #endif
 
+#include "core/object/class_db.h"
+
 #ifdef TOOLS_ENABLED
 #include "editor/file_system/editor_file_system.h"
-#include "core/object/class_db.h"
 #endif
 
 SemanticAssetIndex *SemanticAssetIndex::singleton = nullptr;

@@ -140,7 +140,7 @@ const tracy::SourceLocationData *intern_source_location(const void *p_function_p
 	_data->source_location_data.name = _data->name->name_utf8.get_data();
 
 	_data->source_location_data.line = p_line;
-	_data->source_location_data.color = p_is_script ? 0x478cbf : 0; // godot_logo_blue
+	_data->source_location_data.color = p_is_script ? 0x6000bf : 0; // blazium_logo_purple
 
 	_data->next = TracyInternTable::source_location_table[idx];
 	_data->prev = nullptr;
@@ -225,11 +225,11 @@ void godot_init_profiler() {
 		return;
 	}
 	initialized = true;
-	apple::instruments::LOG = os_log_create("org.godotengine.godot", OS_LOG_CATEGORY_POINTS_OF_INTEREST);
+	apple::instruments::LOG = os_log_create("app.blazium.godot", OS_LOG_CATEGORY_POINTS_OF_INTEREST);
 #ifdef INSTRUMENTS_SAMPLE_CALLSTACKS
-	apple::instruments::LOG_TRACING = os_log_create("org.godotengine.godot", OS_LOG_CATEGORY_DYNAMIC_STACK_TRACING);
+	apple::instruments::LOG_TRACING = os_log_create("app.blazium.godot", OS_LOG_CATEGORY_DYNAMIC_STACK_TRACING);
 #else
-	apple::instruments::LOG_TRACING = os_log_create("org.godotengine.godot", "tracing");
+	apple::instruments::LOG_TRACING = os_log_create("app.blazium.godot", "tracing");
 #endif
 }
 

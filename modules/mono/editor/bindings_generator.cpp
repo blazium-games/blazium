@@ -146,6 +146,8 @@ const Vector<String> prop_allowed_inherited_member_hiding = {
 	// Included for the sake of CI, with the understanding that they *deserve* warnings.
 	"GltfAccessor.GetType",
 	"GltfAccessor.MethodName.GetType",
+	"SQLiteColumnSchema.GetType",
+	"SQLiteColumnSchema.MethodName.GetType",
 };
 
 // We force the following enums to always add the 'Enum' suffix which is usually
@@ -2107,7 +2109,7 @@ Error BindingsGenerator::generate_cs_api(const String &p_output_dir) {
 		return proj_err;
 	}
 
-	_log("The Godot API sources were successfully generated\n");
+	_log("The Blazium API sources were successfully generated\n");
 
 	return OK;
 }

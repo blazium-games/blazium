@@ -1983,6 +1983,9 @@ bool ColorPicker::is_hex_visible() const {
 void ColorPicker::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_pick_color", "color"), &ColorPicker::set_pick_color);
 	ClassDB::bind_method(D_METHOD("get_pick_color"), &ColorPicker::get_pick_color);
+	ClassDB::bind_method(D_METHOD("set_old_color", "color"), &ColorPicker::set_old_color);
+	ClassDB::bind_method(D_METHOD("set_display_old_color", "display"), &ColorPicker::set_display_old_color);
+	ClassDB::bind_method(D_METHOD("is_displaying_old_color"), &ColorPicker::is_displaying_old_color);
 	ClassDB::bind_method(D_METHOD("set_deferred_mode", "mode"), &ColorPicker::set_deferred_mode);
 	ClassDB::bind_method(D_METHOD("is_deferred_mode"), &ColorPicker::is_deferred_mode);
 	ClassDB::bind_method(D_METHOD("set_color_mode", "color_mode"), &ColorPicker::set_color_mode);

@@ -1,10 +1,11 @@
 #include "core/version.h"
+#include "godot_rc_defs.gen.h"
 
 #ifndef RT_MANIFEST
 #define RT_MANIFEST 24
 #endif
 
-GODOT_ICON ICON platform/windows/godot_console.ico
+GODOT_ICON ICON ICON_WRAP_PATH
 1 RT_MANIFEST "platform/windows/godot.manifest"
 
 1 VERSIONINFO
@@ -17,13 +18,13 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "CompanyName",            "Godot Engine"
+            VALUE "CompanyName",            "Blazium Engine"
             VALUE "FileDescription",        GODOT_VERSION_NAME " (Console)"
             VALUE "FileVersion",            GODOT_VERSION_NUMBER
             VALUE "ProductName",            GODOT_VERSION_NAME " (Console)"
             VALUE "Licence",                "MIT"
-            VALUE "LegalCopyright",         "(c) 2007-present Juan Linietsky, Ariel Manzur and Godot Engine contributors"
-            VALUE "Info",                   "https://godotengine.org"
+            VALUE "LegalCopyright",         "(c) 2024-present Blazium Engine contributors, 2007-present Juan Linietsky, Ariel Manzur and Godot Engine contributors"
+            VALUE "Info",                   "https://blazium.app"
             VALUE "ProductVersion",         GODOT_VERSION_FULL_BUILD
         END
     END

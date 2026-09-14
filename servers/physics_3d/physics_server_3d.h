@@ -90,6 +90,8 @@ public:
 	virtual RID space_create() = 0;
 	virtual void space_set_active(RID p_space, bool p_active) = 0;
 	virtual bool space_is_active(RID p_space) const = 0;
+	virtual void space_step(RID p_space, real_t p_delta) = 0;
+	virtual void space_flush_queries(RID p_space) = 0;
 
 	virtual void space_set_param(RID p_space, PS3DE::SpaceParameter p_param, real_t p_value) = 0;
 	virtual real_t space_get_param(RID p_space, PS3DE::SpaceParameter p_param) const = 0;
@@ -318,6 +320,9 @@ public:
 	virtual RID joint_create() = 0;
 
 	virtual void joint_clear(RID p_joint) = 0;
+
+	virtual void joint_set_enabled(RID p_joint, bool p_enabled) = 0;
+	virtual bool joint_is_enabled(RID p_joint) const = 0;
 
 	virtual PS3DE::JointType joint_get_type(RID p_joint) const = 0;
 

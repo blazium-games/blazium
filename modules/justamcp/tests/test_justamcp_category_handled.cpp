@@ -42,8 +42,9 @@
 
 #include "core/config/project_settings.h"
 #include "core/object/callable_mp.h"
-#include "modules/modules_enabled.gen.h"
 #include "tests/test_macros.h"
+
+#include "modules/modules_enabled.gen.h"
 
 void test_justamcp_ok_false_stays_handled() {
 	JustAMCPToolExecutor executor;
@@ -122,6 +123,7 @@ void test_justamcp_crash_guards_bundle() {
 	CHECK(!bool(bridge_err.get("ok", true)));
 	CHECK(bridge_err.has("error"));
 
+	const Variant prev_main_scene = ProjectSettings::get_singleton()->get_setting("application/run/main_scene");
 	ProjectSettings::get_singleton()->set_setting("application/run/main_scene", "res://main.tscn");
 	JustAMCPSceneTools scene_tools;
 	Dictionary del_args;
@@ -149,6 +151,7 @@ void test_justamcp_crash_guards_bundle() {
 	Dictionary via = executor.execute_tool("blazium_validate_script", bad_script);
 	CHECK(via.has("ok"));
 	CHECK(!bool(via.get("ok", true)));
+	ProjectSettings::get_singleton()->set_setting("application/run/main_scene", prev_main_scene);
 }
 
 #endif

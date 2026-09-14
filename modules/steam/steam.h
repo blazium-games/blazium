@@ -29,12 +29,13 @@
 
 #pragma once
 
-#include "core/object/object.h"
 #include "steam_achievement_info.h"
 #include "steam_api_loader.h"
 #include "steam_auth_result.h"
 #include "steam_inventory_item.h"
 #include "steam_item_definition.h"
+
+#include "core/object/object.h"
 #include "core/variant/type_info.h"
 
 class SteamAuthClient;

@@ -1814,7 +1814,7 @@ Error EditorExportPlatform::export_project_files(const Ref<EditorExportPreset> &
 	DirAccess::remove_file_or_error(engine_cfb);
 
 	save_info.path = "res://" + config_file;
-	save_info.source_path = "res://project.godot";
+	save_info.source_path = String("res://") + ProjectSettings::get_singleton()->get_project_settings_text_file();
 	err = save_proxy.save_file(p_preset, p_udata, save_info, data);
 	if (err != OK) {
 		return err;

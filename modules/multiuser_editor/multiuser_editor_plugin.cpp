@@ -43,28 +43,30 @@
 #include "core/io/resource.h"
 #include "core/object/worker_thread_pool.h"
 #include "core/os/os.h"
-#include "servers/display/display_server.h"
-#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
-#include "editor/settings/editor_settings.h"
 #include "editor/editor_undo_redo_manager.h"
+#include "editor/file_system/editor_file_system.h"
 #include "editor/script/script_editor_plugin.h"
-#include "modules/autowork/autowork_main.h"
-#include "modules/dotenv/env.h"
-#include "modules/jwttool/jwt.h"
+#include "editor/settings/editor_settings.h"
 #include "scene/gui/label.h"
 #include "scene/main/timer.h"
 #include "scene/resources/material.h"
 #include "scene/resources/shader.h"
 #include "scene/resources/surface_tool.h"
+#include "servers/display/display_server.h"
+
+#include "modules/autowork/autowork_main.h"
+#include "modules/dotenv/env.h"
+#include "modules/jwttool/jwt.h"
 #include "modules/visual_shader/visual_shader.h"
 
 #ifdef MODULE_JUSTAMCP_ENABLED
-#include "modules/justamcp/justamcp_server.h"
+#include "core/config/engine.h"
 #include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
-#include "core/config/engine.h"
+
+#include "modules/justamcp/justamcp_server.h"
 #endif
 
 static const double MULTIUSER_POLL_INTERVAL_SEC = 0.05;

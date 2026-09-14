@@ -8,9 +8,10 @@
 
 #pragma once
 
-#include "modules/inter_dvd/author/inter_dvd_project.h"
-#include "scene/gui/control.h"
 #include "core/string/ustring.h"
+#include "scene/gui/control.h"
+
+#include "modules/inter_dvd/author/inter_dvd_project.h"
 
 class InterDVDChapter;
 class InterDVDHotspot;

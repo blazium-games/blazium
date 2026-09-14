@@ -36,7 +36,6 @@
 #include "core/io/resource_loader.h"
 #include "core/object/class_db.h"
 #include "core/os/os.h"
-#include "modules/screensaver/screensaver_password.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/button.h"
 #include "scene/gui/check_box.h"
@@ -49,9 +48,12 @@
 #include "scene/main/window.h"
 #include "servers/display/display_server.h"
 
+#include "modules/screensaver/screensaver_password.h"
+
 #ifdef WINDOWS_ENABLED
-#include <windows.h>
 #include "core/object/callable_mp.h"
+
+#include <windows.h>
 #endif
 
 Screensaver *Screensaver::singleton = nullptr;

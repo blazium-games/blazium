@@ -10,6 +10,10 @@ on:
         value: ${{ jobs.static-checks.outputs.sources-changed }}
   workflow_dispatch:
 
+concurrency:
+  group: ci-pr-${{ github.event.pull_request.number || github.ref_name }}-static
+  cancel-in-progress: true
+
 jobs:
   static-checks:
     name: Code style, file formatting, and docs
@@ -48,3 +52,9 @@ jobs:
             || 'HEAD~1' }}
         with:
           extra-args: --from-ref ${{ env.FROM_REF }}
+
+      - name: Class reference schema checks
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxml2-utils
+          xmllint --quiet --noout --schema doc/class.xsd doc/classes/*.xml modules/*/doc_classes/*.xml platform/*/doc_classes/*.xml

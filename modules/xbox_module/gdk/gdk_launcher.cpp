@@ -32,12 +32,12 @@
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-#include "gdk_windows.h"
-
 #include "gdk.h"
 #include "gdk_result.h"
 #include "gdk_runtime.h"
 #include "gdk_user.h"
+#include "gdk_windows.h"
+
 #include "core/object/class_db.h"
 
 void GDKLauncher::_bind_methods() {

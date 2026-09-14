@@ -36,14 +36,6 @@
 #include "gdk_windows.h"
 #endif
 
-#include <algorithm>
-#include <cerrno>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <vector>
-
 #include "gdk.h"
 #include "gdk_pending_signal.h"
 #include "gdk_result.h"
@@ -51,7 +43,16 @@
 #include "gdk_signal_xasync_context.h"
 #include "gdk_user.h"
 #include "gdk_xbox_services.h"
+
 #include "core/object/class_db.h"
+
+#include <algorithm>
+#include <cerrno>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <vector>
 
 static String _presence_user_state_to_name(GDKPresenceRecord::UserState p_state) {
 	switch (p_state) {

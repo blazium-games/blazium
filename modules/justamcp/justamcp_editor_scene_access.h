@@ -33,10 +33,11 @@
 #include "scene/main/scene_tree.h"
 
 #ifdef TOOLS_ENABLED
+#include "justamcp_test_scene_root.h"
+
+#include "core/string/ustring.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
-#include "justamcp_test_scene_root.h"
-#include "core/string/ustring.h"
 #endif
 
 namespace JustAMCPEditorSceneAccess {

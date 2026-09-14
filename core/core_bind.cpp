@@ -372,18 +372,18 @@ String OS::get_executable_path() const {
 
 Error OS::shell_open(const String &p_uri) {
 	if (p_uri.begins_with("res://")) {
-		WARN_PRINT("Attempting to open an URL with the \"res://\" protocol. Use `ProjectSettings.globalize_path()` to convert a Godot-specific path to a system path before opening it with `OS.shell_open()`.");
+		WARN_PRINT("Attempting to open an URL with the \"res://\" protocol. Use `ProjectSettings.globalize_path()` to convert a Blazium-specific path to a system path before opening it with `OS.shell_open()`.");
 	} else if (p_uri.begins_with("user://")) {
-		WARN_PRINT("Attempting to open an URL with the \"user://\" protocol. Use `ProjectSettings.globalize_path()` to convert a Godot-specific path to a system path before opening it with `OS.shell_open()`.");
+		WARN_PRINT("Attempting to open an URL with the \"user://\" protocol. Use `ProjectSettings.globalize_path()` to convert a Blazium-specific path to a system path before opening it with `OS.shell_open()`.");
 	}
 	return ::OS::get_singleton()->shell_open(p_uri);
 }
 
 Error OS::shell_show_in_file_manager(const String &p_path, bool p_open_folder) {
 	if (p_path.begins_with("res://")) {
-		WARN_PRINT("Attempting to explore file path with the \"res://\" protocol. Use `ProjectSettings.globalize_path()` to convert a Godot-specific path to a system path before opening it with `OS.shell_show_in_file_manager()`.");
+		WARN_PRINT("Attempting to explore file path with the \"res://\" protocol. Use `ProjectSettings.globalize_path()` to convert a Blazium-specific path to a system path before opening it with `OS.shell_show_in_file_manager()`.");
 	} else if (p_path.begins_with("user://")) {
-		WARN_PRINT("Attempting to explore file path with the \"user://\" protocol. Use `ProjectSettings.globalize_path()` to convert a Godot-specific path to a system path before opening it with `OS.shell_show_in_file_manager()`.");
+		WARN_PRINT("Attempting to explore file path with the \"user://\" protocol. Use `ProjectSettings.globalize_path()` to convert a Blazium-specific path to a system path before opening it with `OS.shell_show_in_file_manager()`.");
 	}
 	return ::OS::get_singleton()->shell_show_in_file_manager(p_path, p_open_folder);
 }
@@ -789,6 +789,7 @@ void OS::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_executable_path"), &OS::get_executable_path);
 
 	ClassDB::bind_method(D_METHOD("read_string_from_stdin", "buffer_size"), &OS::read_string_from_stdin, DEFVAL(1024));
+	ClassDB::bind_method(D_METHOD("read_string_from_stdin2", "buffer_size"), &OS::read_string_from_stdin, DEFVAL(1024));
 	ClassDB::bind_method(D_METHOD("read_buffer_from_stdin", "buffer_size"), &OS::read_buffer_from_stdin, DEFVAL(1024));
 	ClassDB::bind_method(D_METHOD("get_stdin_type"), &OS::get_stdin_type);
 	ClassDB::bind_method(D_METHOD("get_stdout_type"), &OS::get_stdout_type);
@@ -1439,6 +1440,7 @@ void Semaphore::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("wait"), &Semaphore::wait);
 	ClassDB::bind_method(D_METHOD("try_wait"), &Semaphore::try_wait);
 	ClassDB::bind_method(D_METHOD("post", "count"), &Semaphore::post, DEFVAL(1));
+	ClassDB::bind_method(D_METHOD("post2", "count"), &Semaphore::post, DEFVAL(1));
 }
 
 ////// Mutex //////
@@ -1639,6 +1641,19 @@ ClassDB::APIType ClassDB::class_get_api_type(const StringName &p_class) const {
 	return (APIType)api_type;
 }
 
+Error ClassDB::class_override_api_type(const StringName &p_class, ClassDB::APIType p_api) const {
+	return ::ClassDB::override_api_type(p_class, (::ClassDB::APIType)p_api);
+}
+
+ClassDB::APIType ClassDB::get_current_api() const {
+	::ClassDB::APIType api_type = ::ClassDB::get_current_api();
+	return (APIType)api_type;
+}
+
+void ClassDB::set_current_api(ClassDB::APIType p_api) const {
+	::ClassDB::set_current_api((::ClassDB::APIType)p_api);
+}
+
 bool ClassDB::class_has_signal(const StringName &p_class, const StringName &p_signal) const {
 	return ::ClassDB::has_signal(p_class, p_signal);
 }
@@ -1830,7 +1845,7 @@ void ClassDB::get_argument_options(const StringName &p_function, int p_idx, List
 				pf == "class_has_method" || pf == "class_get_method_list" ||
 				pf == "class_get_integer_constant_list" || pf == "class_has_integer_constant" || pf == "class_get_integer_constant" ||
 				pf == "class_has_enum" || pf == "class_get_enum_list" || pf == "class_get_enum_constants" || pf == "class_get_integer_constant_enum" ||
-				pf == "is_class_enabled" || pf == "is_class_enum_bitfield" || pf == "class_get_api_type");
+				pf == "is_class_enabled" || pf == "is_class_enum_bitfield" || pf == "class_get_api_type" || pf == "class_override_api_type");
 	}
 	if (first_argument_is_class || pf == "is_parent_class") {
 		LocalVector<StringName> classes;
@@ -1856,6 +1871,9 @@ void ClassDB::_bind_methods() {
 	::ClassDB::bind_method(D_METHOD("instantiate", "class"), &ClassDB::instantiate);
 
 	::ClassDB::bind_method(D_METHOD("class_get_api_type", "class"), &ClassDB::class_get_api_type);
+	::ClassDB::bind_method(D_METHOD("class_override_api_type", "class", "api"), &ClassDB::class_override_api_type);
+	::ClassDB::bind_method(D_METHOD("get_current_api"), &ClassDB::get_current_api);
+	::ClassDB::bind_method(D_METHOD("set_current_api", "api"), &ClassDB::set_current_api);
 
 	::ClassDB::bind_method(D_METHOD("class_has_signal", "class", "signal"), &ClassDB::class_has_signal);
 	::ClassDB::bind_method(D_METHOD("class_get_signal", "class", "signal"), &ClassDB::class_get_signal);
@@ -1960,6 +1978,10 @@ double Engine::get_time_scale() {
 
 int Engine::get_frames_drawn() {
 	return ::Engine::get_singleton()->get_frames_drawn();
+}
+
+uint64_t Engine::get_frame_ticks() const {
+	return ::Engine::get_singleton()->get_frame_ticks();
 }
 
 MainLoop *Engine::get_main_loop() const {
@@ -2121,6 +2143,7 @@ void Engine::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_time_scale", "time_scale"), &Engine::set_time_scale);
 	ClassDB::bind_method(D_METHOD("get_time_scale"), &Engine::get_time_scale);
 
+	ClassDB::bind_method(D_METHOD("get_frame_ticks"), &Engine::get_frame_ticks);
 	ClassDB::bind_method(D_METHOD("get_frames_drawn"), &Engine::get_frames_drawn);
 	ClassDB::bind_method(D_METHOD("get_frames_per_second"), &Engine::get_frames_per_second);
 	ClassDB::bind_method(D_METHOD("get_physics_frames"), &Engine::get_physics_frames);

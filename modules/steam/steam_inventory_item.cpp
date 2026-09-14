@@ -31,6 +31,7 @@
 
 #include "steam.h"
 #include "steam_item_definition.h"
+
 #include "core/object/class_db.h"
 
 void SteamInventoryItem::_bind_methods() {

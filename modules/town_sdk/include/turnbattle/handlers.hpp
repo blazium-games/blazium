@@ -28,8 +28,10 @@
 /**************************************************************************/
 
 #pragma once
-#include "core/variant/variant.h"
 #include "types.hpp"
+
+#include "core/variant/variant.h"
+
 #include <functional>
 #include <string>
 

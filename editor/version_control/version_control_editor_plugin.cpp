@@ -1026,6 +1026,7 @@ VersionControlEditorPlugin::VersionControlEditorPlugin() {
 	metadata_selection = memnew(OptionButton);
 	metadata_selection->set_custom_minimum_size(Size2(100, 20));
 	metadata_selection->add_item("Git", (int)EditorVCSInterface::VCSMetadata::GIT);
+	metadata_selection->add_item("ColdStorage", (int)EditorVCSInterface::VCSMetadata::COLDSTORAGE);
 	metadata_selection->select(metadata_selection->get_item_index((int)EditorVCSInterface::VCSMetadata::GIT));
 	metadata_hb->add_child(metadata_selection);
 

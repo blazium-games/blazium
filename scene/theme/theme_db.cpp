@@ -40,13 +40,26 @@
 #include "scene/main/node.h"
 #include "scene/main/window.h"
 #include "scene/resources/font.h"
+#include "scene/resources/image_texture.h"
 #include "scene/resources/style_box.h"
 #include "scene/resources/texture.h"
-#include "scene/theme/default_theme.h"
+#include "scene/theme/blazium_default_theme.h"
 #include "servers/rendering/rendering_server.h"
 #include "servers/text/text_server.h"
 
 // Default engine theme creation and configuration.
+
+Color ThemeDB::_get_font_color() const {
+	Color fcolor = Color(0.875, 0.875, 0.875);
+	FontColorOverride fcolor_override = (FontColorOverride)(int)GLOBAL_GET("gui/theme/font_color_override");
+	bool is_dark_theme = ((Color)GLOBAL_GET("gui/theme/base_color")).get_luminance() <= 0.5;
+	if (fcolor_override == FONT_COLOR_OVERRIDE_DARK || (fcolor_override == FONT_COLOR_OVERRIDE_AUTO && !is_dark_theme)) {
+		fcolor = Color(0.05, 0.05, 0.05);
+	} else if (fcolor_override == FONT_COLOR_OVERRIDE_CUSTOM) {
+		fcolor = GLOBAL_GET("gui/theme/custom_font_color");
+	}
+	return fcolor;
+}
 
 void ThemeDB::initialize_theme() {
 	// Default theme-related project settings.
@@ -60,6 +73,7 @@ void ThemeDB::initialize_theme() {
 	TextServer::FontAntialiasing font_antialiasing = (TextServer::FontAntialiasing)(int)GLOBAL_GET("gui/theme/default_font_antialiasing");
 	TextServer::Hinting font_hinting = (TextServer::Hinting)(int)GLOBAL_GET("gui/theme/default_font_hinting");
 	TextServer::SubpixelPositioning font_subpixel_positioning = (TextServer::SubpixelPositioning)(int)GLOBAL_GET("gui/theme/default_font_subpixel_positioning");
+	TextServer::FontLCDSubpixelLayout lcd_subpixel_layout = (TextServer::FontLCDSubpixelLayout)(int)GLOBAL_GET("gui/theme/lcd_subpixel_layout");
 
 	const bool font_msdf = GLOBAL_GET("gui/theme/default_font_multichannel_signed_distance_field");
 	const bool font_generate_mipmaps = GLOBAL_GET("gui/theme/default_font_generate_mipmaps");
@@ -88,7 +102,35 @@ void ThemeDB::initialize_theme() {
 	// Always generate the default theme to serve as a fallback for all required theme definitions.
 
 	if (RenderingServer::get_singleton()) {
-		make_default_theme(default_theme_scale, project_font, font_subpixel_positioning, font_hinting, font_antialiasing, font_msdf, font_generate_mipmaps);
+		ThemeTemplate theme_template;
+		theme_template.base_color = GLOBAL_GET("gui/theme/base_color");
+		theme_template.accent_color = GLOBAL_GET("gui/theme/accent_color");
+		theme_template.font_color = _get_font_color();
+		theme_template.font_outline_color = GLOBAL_GET("gui/theme/font_outline_color");
+		theme_template.scale = default_theme_scale;
+		theme_template.contrast = GLOBAL_GET("gui/theme/contrast");
+		theme_template.bg_contrast = GLOBAL_GET("gui/theme/bg_contrast");
+		theme_template.normal_contrast = GLOBAL_GET("gui/theme/normal_contrast");
+		theme_template.hover_contrast = GLOBAL_GET("gui/theme/hover_contrast");
+		theme_template.pressed_contrast = GLOBAL_GET("gui/theme/pressed_contrast");
+		theme_template.margin = GLOBAL_GET("gui/theme/margin");
+		theme_template.padding = GLOBAL_GET("gui/theme/padding");
+		theme_template.border_width = GLOBAL_GET("gui/theme/border_width");
+		theme_template.corner_radius = GLOBAL_GET("gui/theme/corner_radius");
+		theme_template.font_embolden = GLOBAL_GET("gui/theme/font_embolden");
+		theme_template.font_size = GLOBAL_GET("gui/theme/font_size");
+		theme_template.font_outline_size = GLOBAL_GET("gui/theme/font_outline_size");
+		theme_template.font_spacing_glyph = GLOBAL_GET("gui/theme/font_spacing_glyph");
+		theme_template.font_spacing_space = GLOBAL_GET("gui/theme/font_spacing_space");
+		theme_template.font_spacing_top = GLOBAL_GET("gui/theme/font_spacing_top");
+		theme_template.font_spacing_bottom = GLOBAL_GET("gui/theme/font_spacing_bottom");
+		theme_template.font_subpixel = font_subpixel_positioning;
+		theme_template.font_hinting = font_hinting;
+		theme_template.font_antialiasing = font_antialiasing;
+		theme_template.font_lcd_subpixel_layout = lcd_subpixel_layout;
+		theme_template.font_msdf = font_msdf;
+		theme_template.font_generate_mipmaps = font_generate_mipmaps;
+		make_default_theme(project_font, theme_template);
 	}
 
 	_init_default_theme_context();
@@ -96,7 +138,8 @@ void ThemeDB::initialize_theme() {
 
 void ThemeDB::initialize_theme_noproject() {
 	if (RenderingServer::get_singleton()) {
-		make_default_theme(1.0, Ref<Font>());
+		ThemeTemplate theme_template;
+		make_default_theme(Ref<Font>(), theme_template);
 	}
 
 	_init_default_theme_context();
@@ -108,6 +151,7 @@ void ThemeDB::finalize_theme() {
 	}
 
 	_finalize_theme_contexts();
+	finalize_default_theme();
 	default_theme.unref();
 
 	fallback_font.unref();
@@ -414,6 +458,54 @@ void ThemeDB::_sort_theme_items() {
 	}
 }
 
+void ThemeDB::freeze_default_theme() {
+	ERR_FAIL_COND(default_theme.is_null());
+	default_theme->freeze_change_propagation();
+}
+
+void ThemeDB::unfreeze_default_theme() {
+	ERR_FAIL_COND(default_theme.is_null());
+	default_theme->unfreeze_and_propagate_changes();
+}
+
+bool ThemeDB::is_default_theme_frozen() const {
+	ERR_FAIL_COND_V(default_theme.is_null(), false);
+	return default_theme->is_frozen();
+}
+
+Error ThemeDB::theme_add_user_icon(const String &p_icon_name, const String &p_icon_source) {
+	const float scale = MAX((float)GLOBAL_GET("gui/theme/default_theme_scale"), 0.5f);
+	return add_user_icon(p_icon_name, p_icon_source, scale, _get_font_color(), GLOBAL_GET("gui/theme/accent_color"));
+}
+
+Error ThemeDB::theme_remove_user_icon(const String &p_icon_name) {
+	return remove_user_icon(p_icon_name);
+}
+
+bool ThemeDB::theme_has_user_icon(const String &p_icon_name) {
+	return has_user_icon(p_icon_name);
+}
+
+Ref<ImageTexture> ThemeDB::theme_get_user_icon(const String &p_icon_name) {
+	return get_user_icon(p_icon_name);
+}
+
+PackedStringArray ThemeDB::theme_get_user_icons_list() {
+	return get_user_icons_list();
+}
+
+bool ThemeDB::theme_has_icon(const String &p_icon_name) {
+	return has_icon(p_icon_name);
+}
+
+Ref<ImageTexture> ThemeDB::theme_get_icon(const String &p_icon_name) {
+	return get_icon(p_icon_name);
+}
+
+PackedStringArray ThemeDB::theme_get_icons_list() {
+	return get_icons_list();
+}
+
 // Object methods.
 
 void ThemeDB::_bind_methods() {
@@ -430,6 +522,18 @@ void ThemeDB::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_fallback_icon"), &ThemeDB::get_fallback_icon);
 	ClassDB::bind_method(D_METHOD("set_fallback_stylebox", "stylebox"), &ThemeDB::set_fallback_stylebox);
 	ClassDB::bind_method(D_METHOD("get_fallback_stylebox"), &ThemeDB::get_fallback_stylebox);
+
+	ClassDB::bind_method(D_METHOD("freeze_default_theme"), &ThemeDB::freeze_default_theme);
+	ClassDB::bind_method(D_METHOD("unfreeze_default_theme"), &ThemeDB::unfreeze_default_theme);
+	ClassDB::bind_method(D_METHOD("is_default_theme_frozen"), &ThemeDB::is_default_theme_frozen);
+	ClassDB::bind_method(D_METHOD("add_user_icon", "icon_name", "icon_source"), &ThemeDB::theme_add_user_icon);
+	ClassDB::bind_method(D_METHOD("remove_user_icon", "icon_name"), &ThemeDB::theme_remove_user_icon);
+	ClassDB::bind_method(D_METHOD("has_user_icon", "icon_name"), &ThemeDB::theme_has_user_icon);
+	ClassDB::bind_method(D_METHOD("get_user_icon", "icon_name"), &ThemeDB::theme_get_user_icon);
+	ClassDB::bind_method(D_METHOD("get_user_icon_list"), &ThemeDB::theme_get_user_icons_list);
+	ClassDB::bind_method(D_METHOD("has_icon", "icon_name"), &ThemeDB::theme_has_icon);
+	ClassDB::bind_method(D_METHOD("get_icon", "icon_name"), &ThemeDB::theme_get_icon);
+	ClassDB::bind_method(D_METHOD("get_icon_list"), &ThemeDB::theme_get_icons_list);
 
 	ADD_GROUP("Fallback values", "fallback_");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fallback_base_scale", PROPERTY_HINT_RANGE, "0.0,2.0,0.01,or_greater"), "set_fallback_base_scale", "get_fallback_base_scale");
@@ -451,6 +555,29 @@ ThemeDB *ThemeDB::get_singleton() {
 
 ThemeDB::ThemeDB() {
 	singleton = this;
+
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::COLOR, "gui/theme/base_color", PROPERTY_HINT_COLOR_NO_ALPHA), Color(0.188, 0.188, 0.188));
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::COLOR, "gui/theme/accent_color", PROPERTY_HINT_COLOR_NO_ALPHA), Color(0.226, 0.478, 0.921));
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "gui/theme/font_color_override", PROPERTY_HINT_ENUM, "Auto,Light,Dark,Custom"), 0);
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::COLOR, "gui/theme/custom_font_color", PROPERTY_HINT_COLOR_NO_ALPHA), Color(0.875, 0.875, 0.875));
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::COLOR, "gui/theme/font_outline_color"), Color(0, 0, 0, 1));
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::FLOAT, "gui/theme/contrast", PROPERTY_HINT_RANGE, "-1.0, 1.0, 0.01"), -0.6);
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::FLOAT, "gui/theme/normal_contrast", PROPERTY_HINT_RANGE, "-1.0, 1.0, 0.01"), 0.4);
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::FLOAT, "gui/theme/hover_contrast", PROPERTY_HINT_RANGE, "-1.0, 1.0, 0.01"), -0.2);
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::FLOAT, "gui/theme/pressed_contrast", PROPERTY_HINT_RANGE, "-1.0, 1.0, 0.01"), 0.6);
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::FLOAT, "gui/theme/bg_contrast", PROPERTY_HINT_RANGE, "-1.0, 1.0, 0.01"), 0.2);
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "gui/theme/margin", PROPERTY_HINT_RANGE, "0, 32, 1"), 4);
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "gui/theme/padding", PROPERTY_HINT_RANGE, "0, 32, 1"), 4);
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "gui/theme/border_width", PROPERTY_HINT_RANGE, "0, 32, 1"), 2);
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "gui/theme/corner_radius", PROPERTY_HINT_RANGE, "0, 32, 1"), 6);
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "gui/theme/font_size", PROPERTY_HINT_RANGE, "0, 64, 1"), 16);
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "gui/theme/font_outline_size", PROPERTY_HINT_RANGE, "0, 64, 1"), 0);
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::FLOAT, "gui/theme/font_embolden", PROPERTY_HINT_RANGE, "-2.0, 2.0, 0.01"), 0.0);
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "gui/theme/font_spacing_glyph", PROPERTY_HINT_RANGE, "-64, 64, 1"), 0);
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "gui/theme/font_spacing_space", PROPERTY_HINT_RANGE, "-64, 64, 1"), 0);
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "gui/theme/font_spacing_top", PROPERTY_HINT_RANGE, "-64, 64, 1"), 0);
+	GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "gui/theme/font_spacing_bottom", PROPERTY_HINT_RANGE, "-64, 64, 1"), 0);
+
 	if (MessageQueue::get_singleton()) { // May not exist in tests etc.
 		callable_mp(this, &ThemeDB::_sort_theme_items).call_deferred();
 	}
@@ -462,6 +589,7 @@ ThemeDB::~ThemeDB() {
 	// frees any objects that can be recreated by initialize_theme*().
 
 	_finalize_theme_contexts();
+	finalize_default_theme();
 
 	default_theme.unref();
 	project_theme.unref();

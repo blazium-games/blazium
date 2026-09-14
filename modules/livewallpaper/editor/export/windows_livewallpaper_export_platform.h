@@ -31,8 +31,9 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "platform/windows/export/export_plugin.h"
 #include "core/string/ustring.h"
+
+#include "platform/windows/export/export_plugin.h"
 
 class EditorExportPlatformWindowsLiveWallpaper : public EditorExportPlatformWindows {
 	GDCLASS(EditorExportPlatformWindowsLiveWallpaper, EditorExportPlatformWindows);

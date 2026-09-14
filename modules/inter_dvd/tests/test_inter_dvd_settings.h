@@ -34,8 +34,6 @@
 #include "core/io/file_access.h"
 #include "core/io/resource_loader.h"
 #include "core/os/os.h"
-#include "modules/inter_dvd/author/inter_dvd_ifo_writer.h"
-#include "modules/inter_dvd/author/inter_dvd_project.h"
 #include "scene/2d/sprite_2d.h"
 #include "scene/gui/control.h"
 #include "scene/resources/packed_scene.h"
@@ -43,12 +41,16 @@
 #include "tests/test_macros.h"
 #include "tests/test_utils.h"
 
+#include "modules/inter_dvd/author/inter_dvd_ifo_writer.h"
+#include "modules/inter_dvd/author/inter_dvd_project.h"
+
 #ifdef TOOLS_ENABLED
+#include "core/string/string_name.h"
+#include "core/string/ustring.h"
+#include "scene/main/scene_tree.h"
+
 #include "modules/inter_dvd/editor/export/windows_inter_dvd_export_platform.h"
 #include "modules/inter_dvd/editor/inter_dvd_scene_baker.h"
-#include "core/string/string_name.h"
-#include "scene/main/scene_tree.h"
-#include "core/string/ustring.h"
 #endif
 
 TEST_CASE("[Modules][InterDVD] ProjectSettings defaults keep IFO region byte") {

@@ -31,10 +31,9 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "core/templates/list.h"
-
-#include "scene/gui/box_container.h"
 #include "core/string/ustring.h"
+#include "core/templates/list.h"
+#include "scene/gui/box_container.h"
 
 class Label;
 class Button;

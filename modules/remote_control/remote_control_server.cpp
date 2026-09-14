@@ -37,16 +37,18 @@
 #include "core/io/file_access.h"
 #include "core/io/json.h"
 #include "core/math/expression.h"
+#include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
 #include "core/os/mutex.h"
 #include "core/os/os.h"
 #include "core/os/time.h"
 #include "core/string/print_string.h"
-#include "modules/httpserver/http_server.h"
-#include "modules/modules_enabled.gen.h"
 #include "scene/main/node.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
+
+#include "modules/httpserver/http_server.h"
+#include "modules/modules_enabled.gen.h"
 
 #if defined(MODULE_AUTOWORK_ENABLED)
 #include "modules/autowork/autowork_main.h"
@@ -58,7 +60,6 @@
 
 #ifdef TOOLS_ENABLED
 #include "editor/settings/editor_settings.h"
-#include "core/object/callable_mp.h"
 #endif
 
 RemoteControlServer *RemoteControlServer::singleton = nullptr;
@@ -74,6 +75,7 @@ static const char *_EVAL_BLOCKED_PATTERNS[] = {
 	nullptr
 };
 
+#if 0 // Used only when Luau eval is enabled (see _eval_luau).
 static const char *_LUAU_EVAL_BLOCKED_PATTERNS[] = {
 	"os.execute",
 	"os.remove",
@@ -85,6 +87,7 @@ static const char *_LUAU_EVAL_BLOCKED_PATTERNS[] = {
 	"package.loadlib",
 	nullptr
 };
+#endif
 
 RemoteControlServer *RemoteControlServer::get_singleton() {
 	return singleton;

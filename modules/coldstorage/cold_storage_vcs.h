@@ -32,11 +32,12 @@
 #ifdef TOOLS_ENABLED
 
 #include "cold_storage_settings.h"
+
+#include "core/string/ustring.h"
 #include "editor/version_control/editor_vcs_interface.h"
 
 #include <memory>
 #include <string>
-#include "core/string/ustring.h"
 
 namespace coldstorage {
 class ColdStorageClient;

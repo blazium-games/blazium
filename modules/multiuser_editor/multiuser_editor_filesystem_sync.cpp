@@ -44,8 +44,8 @@
 #include "core/os/os.h"
 #include "core/string/ustring.h"
 #include "core/templates/hash_set.h"
-#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_interface.h"
+#include "editor/file_system/editor_file_system.h"
 
 #define RECENT_APPLY_MAX (multiuser_editor::kFilesystemSyncRecentApplyMax)
 

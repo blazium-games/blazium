@@ -31,8 +31,8 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "editor/inspector/editor_inspector.h"
 #include "core/string/ustring.h"
+#include "editor/inspector/editor_inspector.h"
 
 class MultiuserEditorSettingsInspectorPlugin : public EditorInspectorPlugin {
 	GDCLASS(MultiuserEditorSettingsInspectorPlugin, EditorInspectorPlugin);

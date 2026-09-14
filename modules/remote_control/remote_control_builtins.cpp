@@ -36,6 +36,7 @@
 #include "core/crypto/crypto_core.h"
 #include "core/io/file_access.h"
 #include "core/io/image.h"
+#include "core/object/callable_mp.h"
 #include "core/os/os.h"
 #include "scene/gui/control.h"
 #include "scene/main/node.h"
@@ -47,10 +48,10 @@
 #ifdef TOOLS_ENABLED
 #include "editor/debugger/editor_debugger_node.h"
 #include "editor/debugger/script_editor_debugger.h"
-#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_main_screen.h"
 #include "editor/editor_node.h"
+#include "editor/file_system/editor_file_system.h"
 #include "editor/run/editor_run_bar.h"
 #include "editor/run/embedded_process.h"
 #include "scene/gui/button.h"
@@ -61,7 +62,6 @@
 #ifdef MODULE_JUSTAMCP_ENABLED
 #ifdef TOOLS_ENABLED
 #include "modules/justamcp/justamcp_server.h"
-#include "core/object/callable_mp.h"
 #endif
 #endif
 

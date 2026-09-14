@@ -34,14 +34,9 @@
 #endif
 #ifdef XBOX_MODULE_GDK_ENABLED
 #include "gdk_windows.h"
+
 #include <XGameUI.h>
 #endif
-
-#include <algorithm>
-#include <cstdlib>
-#include <cstring>
-#include <string>
-#include <vector>
 
 #include "gdk.h"
 #include "gdk_activation.h"
@@ -51,7 +46,14 @@
 #include "gdk_signal_xasync_context.h"
 #include "gdk_user.h"
 #include "gdk_xbox_services.h"
+
 #include "core/object/class_db.h"
+
+#include <algorithm>
+#include <cstdlib>
+#include <cstring>
+#include <string>
+#include <vector>
 
 #ifdef XBOX_MODULE_GDK_ENABLED
 

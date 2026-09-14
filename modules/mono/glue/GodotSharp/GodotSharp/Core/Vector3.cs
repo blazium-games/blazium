@@ -907,6 +907,231 @@ namespace Godot
         /// </summary>
         public static Vector3 ModelRear { get { return _modelRear; } }
 
+#pragma warning disable CS1591 // Disable warning: "Missing XML comment for publicly visible type or member"
+        public readonly Vector2 XX => new(X, X);
+        public Vector2 XY
+        {
+            readonly get => new(X, Y);
+            set
+            {
+                X = value.X;
+                Y = value.Y;
+            }
+        }
+        public Vector2 XZ
+        {
+            readonly get => new(X, Z);
+            set
+            {
+                X = value.X;
+                Z = value.Y;
+            }
+        }
+        public Vector2 YX
+        {
+            readonly get => new(Y, X);
+            set
+            {
+                Y = value.X;
+                X = value.Y;
+            }
+        }
+        public readonly Vector2 YY => new(Y, Y);
+        public Vector2 YZ
+        {
+            readonly get => new(Y, Z);
+            set
+            {
+                Y = value.X;
+                Z = value.Y;
+            }
+        }
+        public Vector2 ZX
+        {
+            readonly get => new(Z, X);
+            set
+            {
+                Z = value.X;
+                X = value.Y;
+            }
+        }
+        public Vector2 ZY
+        {
+            readonly get => new(Z, Y);
+            set
+            {
+                Z = value.X;
+                Y = value.Y;
+            }
+        }
+        public readonly Vector2 ZZ => new(Z, Z);
+
+        public readonly Vector3 XXX => new(X, X, X);
+        public readonly Vector3 XXY => new(X, X, Y);
+        public readonly Vector3 XXZ => new(X, X, Z);
+        public readonly Vector3 XYX => new(X, Y, X);
+        public readonly Vector3 XYY => new(X, Y, Y);
+        public Vector3 XYZ
+        {
+            readonly get => new(X, Y, Z);
+            set
+            {
+                X = value.X;
+                Y = value.Y;
+                Z = value.Z;
+            }
+        }
+        public readonly Vector3 XZX => new(X, Z, X);
+        public Vector3 XZY
+        {
+            readonly get => new(X, Z, Y);
+            set
+            {
+                X = value.X;
+                Z = value.Y;
+                Y = value.Z;
+            }
+        }
+        public readonly Vector3 XZZ => new(X, Z, Z);
+        public readonly Vector3 YXX => new(Y, X, X);
+        public readonly Vector3 YXY => new(Y, X, Y);
+        public Vector3 YXZ
+        {
+            readonly get => new(Y, X, Z);
+            set
+            {
+                Y = value.X;
+                X = value.Y;
+                Z = value.Z;
+            }
+        }
+        public readonly Vector3 YYX => new(Y, Y, X);
+        public readonly Vector3 YYY => new(Y, Y, Y);
+        public readonly Vector3 YYZ => new(Y, Y, Z);
+        public Vector3 YZX
+        {
+            readonly get => new(Y, Z, X);
+            set
+            {
+                Y = value.X;
+                Z = value.Y;
+                X = value.Z;
+            }
+        }
+        public readonly Vector3 YZY => new(Y, Z, Y);
+        public readonly Vector3 YZZ => new(Y, Z, Z);
+        public readonly Vector3 ZXX => new(Z, X, X);
+        public Vector3 ZXY
+        {
+            readonly get => new(Z, X, Y);
+            set
+            {
+                Z = value.X;
+                X = value.Y;
+                Y = value.Z;
+            }
+        }
+        public readonly Vector3 ZXZ => new(Z, X, Z);
+        public Vector3 ZYX
+        {
+            readonly get => new(Z, Y, X);
+            set
+            {
+                Z = value.X;
+                Y = value.Y;
+                X = value.Z;
+            }
+        }
+        public readonly Vector3 ZYY => new(Z, Y, Y);
+        public readonly Vector3 ZYZ => new(Z, Y, Z);
+        public readonly Vector3 ZZX => new(Z, Z, X);
+        public readonly Vector3 ZZY => new(Z, Z, Y);
+        public readonly Vector3 ZZZ => new(Z, Z, Z);
+
+        public readonly Vector4 XXXX => new(X, X, X, X);
+        public readonly Vector4 XXXY => new(X, X, X, Y);
+        public readonly Vector4 XXXZ => new(X, X, X, Z);
+        public readonly Vector4 XXYX => new(X, X, Y, X);
+        public readonly Vector4 XXYY => new(X, X, Y, Y);
+        public readonly Vector4 XXYZ => new(X, X, Y, Z);
+        public readonly Vector4 XXZX => new(X, X, Z, X);
+        public readonly Vector4 XXZY => new(X, X, Z, Y);
+        public readonly Vector4 XXZZ => new(X, X, Z, Z);
+        public readonly Vector4 XYXX => new(X, Y, X, X);
+        public readonly Vector4 XYXY => new(X, Y, X, Y);
+        public readonly Vector4 XYXZ => new(X, Y, X, Z);
+        public readonly Vector4 XYYX => new(X, Y, Y, X);
+        public readonly Vector4 XYYY => new(X, Y, Y, Y);
+        public readonly Vector4 XYYZ => new(X, Y, Y, Z);
+        public readonly Vector4 XYZX => new(X, Y, Z, X);
+        public readonly Vector4 XYZY => new(X, Y, Z, Y);
+        public readonly Vector4 XYZZ => new(X, Y, Z, Z);
+        public readonly Vector4 XZXX => new(X, Z, X, X);
+        public readonly Vector4 XZXY => new(X, Z, X, Y);
+        public readonly Vector4 XZXZ => new(X, Z, X, Z);
+        public readonly Vector4 XZYX => new(X, Z, Y, X);
+        public readonly Vector4 XZYY => new(X, Z, Y, Y);
+        public readonly Vector4 XZYZ => new(X, Z, Y, Z);
+        public readonly Vector4 XZZX => new(X, Z, Z, X);
+        public readonly Vector4 XZZY => new(X, Z, Z, Y);
+        public readonly Vector4 XZZZ => new(X, Z, Z, Z);
+        public readonly Vector4 YXXX => new(Y, X, X, X);
+        public readonly Vector4 YXXY => new(Y, X, X, Y);
+        public readonly Vector4 YXXZ => new(Y, X, X, Z);
+        public readonly Vector4 YXYX => new(Y, X, Y, X);
+        public readonly Vector4 YXYY => new(Y, X, Y, Y);
+        public readonly Vector4 YXYZ => new(Y, X, Y, Z);
+        public readonly Vector4 YXZX => new(Y, X, Z, X);
+        public readonly Vector4 YXZY => new(Y, X, Z, Y);
+        public readonly Vector4 YXZZ => new(Y, X, Z, Z);
+        public readonly Vector4 YYXX => new(Y, Y, X, X);
+        public readonly Vector4 YYXY => new(Y, Y, X, Y);
+        public readonly Vector4 YYXZ => new(Y, Y, X, Z);
+        public readonly Vector4 YYYX => new(Y, Y, Y, X);
+        public readonly Vector4 YYYY => new(Y, Y, Y, Y);
+        public readonly Vector4 YYYZ => new(Y, Y, Y, Z);
+        public readonly Vector4 YYZX => new(Y, Y, Z, X);
+        public readonly Vector4 YYZY => new(Y, Y, Z, Y);
+        public readonly Vector4 YYZZ => new(Y, Y, Z, Z);
+        public readonly Vector4 YZXX => new(Y, Z, X, X);
+        public readonly Vector4 YZXY => new(Y, Z, X, Y);
+        public readonly Vector4 YZXZ => new(Y, Z, X, Z);
+        public readonly Vector4 YZYX => new(Y, Z, Y, X);
+        public readonly Vector4 YZYY => new(Y, Z, Y, Y);
+        public readonly Vector4 YZYZ => new(Y, Z, Y, Z);
+        public readonly Vector4 YZZX => new(Y, Z, Z, X);
+        public readonly Vector4 YZZY => new(Y, Z, Z, Y);
+        public readonly Vector4 YZZZ => new(Y, Z, Z, Z);
+        public readonly Vector4 ZXXX => new(Z, X, X, X);
+        public readonly Vector4 ZXXY => new(Z, X, X, Y);
+        public readonly Vector4 ZXXZ => new(Z, X, X, Z);
+        public readonly Vector4 ZXYX => new(Z, X, Y, X);
+        public readonly Vector4 ZXYY => new(Z, X, Y, Y);
+        public readonly Vector4 ZXYZ => new(Z, X, Y, Z);
+        public readonly Vector4 ZXZX => new(Z, X, Z, X);
+        public readonly Vector4 ZXZY => new(Z, X, Z, Y);
+        public readonly Vector4 ZXZZ => new(Z, X, Z, Z);
+        public readonly Vector4 ZYXX => new(Z, Y, X, X);
+        public readonly Vector4 ZYXY => new(Z, Y, X, Y);
+        public readonly Vector4 ZYXZ => new(Z, Y, X, Z);
+        public readonly Vector4 ZYYX => new(Z, Y, Y, X);
+        public readonly Vector4 ZYYY => new(Z, Y, Y, Y);
+        public readonly Vector4 ZYYZ => new(Z, Y, Y, Z);
+        public readonly Vector4 ZYZX => new(Z, Y, Z, X);
+        public readonly Vector4 ZYZY => new(Z, Y, Z, Y);
+        public readonly Vector4 ZYZZ => new(Z, Y, Z, Z);
+        public readonly Vector4 ZZXX => new(Z, Z, X, X);
+        public readonly Vector4 ZZXY => new(Z, Z, X, Y);
+        public readonly Vector4 ZZXZ => new(Z, Z, X, Z);
+        public readonly Vector4 ZZYX => new(Z, Z, Y, X);
+        public readonly Vector4 ZZYY => new(Z, Z, Y, Y);
+        public readonly Vector4 ZZYZ => new(Z, Z, Y, Z);
+        public readonly Vector4 ZZZX => new(Z, Z, Z, X);
+        public readonly Vector4 ZZZY => new(Z, Z, Z, Y);
+        public readonly Vector4 ZZZZ => new(Z, Z, Z, Z);
+#pragma warning restore CS1591
+
+
         /// <summary>
         /// Constructs a new <see cref="Vector3"/> with the given components.
         /// </summary>

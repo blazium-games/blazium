@@ -40,6 +40,7 @@
 #include "core/variant/variant_utility.h"
 #include "editor/editor_node.h"
 #include "editor/editor_string_names.h"
+#include "editor/file_system/editor_file_system.h"
 #include "editor/file_system/editor_paths.h"
 #include "editor/settings/editor_settings.h"
 #include "editor/themes/editor_scale.h"
@@ -100,7 +101,11 @@ void EditorResourcePreviewGenerator::_bind_methods() {
 
 void EditorResourcePreviewGenerator::DrawRequester::request_and_wait(RID p_viewport) {
 	if (EditorResourcePreview::get_singleton()->is_threaded()) {
-		RS::get_singleton()->connect(SNAME("frame_pre_draw"), callable_mp(this, &EditorResourcePreviewGenerator::DrawRequester::_prepare_draw).bind(p_viewport), Object::CONNECT_ONE_SHOT);
+		Callable prepare_draw = callable_mp(this, &EditorResourcePreviewGenerator::DrawRequester::_prepare_draw).bind(p_viewport);
+		// Avoid reconnecting frame_pre_draw on first load if a one-shot is already pending.
+		if (!RS::get_singleton()->is_connected(SNAME("frame_pre_draw"), prepare_draw)) {
+			RS::get_singleton()->connect(SNAME("frame_pre_draw"), prepare_draw, Object::CONNECT_ONE_SHOT);
+		}
 		semaphore.wait();
 	} else {
 		// Avoid the main viewport and children being redrawn.
@@ -146,7 +151,7 @@ void EditorResourcePreview::_thread_func(void *ud) {
 	erp->_thread();
 }
 
-void EditorResourcePreview::_preview_ready(const String &p_path, int p_hash, const Ref<Texture2D> &p_texture, const Ref<Texture2D> &p_small_texture, const Callable &p_callback, const Dictionary &p_metadata) {
+void EditorResourcePreview::_preview_ready(const String &p_path, int p_hash, const Ref<Texture2D> &p_texture, const Ref<Texture2D> &p_small_texture, const Callable &p_callback, const Dictionary &p_metadata, const String &p_resource_path) {
 	{
 		MutexLock lock(preview_mutex);
 
@@ -166,6 +171,7 @@ void EditorResourcePreview::_preview_ready(const String &p_path, int p_hash, con
 		item.last_hash = p_hash;
 		item.modified_time = modified_time;
 		item.preview_metadata = p_metadata;
+		item.resource_path = p_resource_path;
 
 		cache[p_path] = item;
 	}
@@ -298,7 +304,7 @@ void EditorResourcePreview::_iterate() {
 	if (cache.has(item.path)) {
 		Item cached_item = cache[item.path];
 		// Already has it because someone loaded it, just let it know it's ready.
-		_preview_ready(item.path, cached_item.last_hash, cached_item.preview, cached_item.small_preview, item.callback, cached_item.preview_metadata);
+		_preview_ready(item.path, cached_item.last_hash, cached_item.preview, cached_item.small_preview, item.callback, cached_item.preview_metadata, cached_item.resource_path);
 		preview_mutex.unlock();
 		return;
 	}
@@ -313,7 +319,7 @@ void EditorResourcePreview::_iterate() {
 	if (item.resource.is_valid()) {
 		Dictionary preview_metadata;
 		_generate_preview(texture, small_texture, item, String(), preview_metadata);
-		_preview_ready(item.path, item.resource->hash_edited_version_for_preview(), texture, small_texture, item.callback, preview_metadata);
+		_preview_ready(item.path, item.resource->hash_edited_version_for_preview(), texture, small_texture, item.callback, preview_metadata, item.resource->get_path());
 		return;
 	}
 
@@ -569,6 +575,25 @@ void EditorResourcePreview::_notification(int p_what) {
 	}
 }
 
+void EditorResourcePreview::_resources_reimported(const Vector<String> &p_resources) {
+	Vector<String> invalidated;
+	{
+		MutexLock lock(preview_mutex);
+		for (KeyValue<String, Item> &E : cache) {
+			if (E.key.begins_with("ID:") && !E.value.resource_path.is_empty() && p_resources.has(E.value.resource_path)) {
+				invalidated.push_back(E.key);
+			}
+		}
+		for (const String &key : invalidated) {
+			cache.erase(key);
+		}
+	}
+
+	for (const String &key : invalidated) {
+		call_deferred(SNAME("emit_signal"), "preview_invalidated", key);
+	}
+}
+
 void EditorResourcePreview::check_for_invalidation(const String &p_path) {
 	bool call_invalidated = false;
 	{
@@ -596,6 +621,10 @@ void EditorResourcePreview::check_for_invalidation(const String &p_path) {
 void EditorResourcePreview::start() {
 	if (DisplayServer::get_singleton()->get_name() == "headless") {
 		return;
+	}
+
+	if (EditorFileSystem::get_singleton() && !EditorFileSystem::get_singleton()->is_connected(SNAME("resources_reimported"), callable_mp(this, &EditorResourcePreview::_resources_reimported))) {
+		EditorFileSystem::get_singleton()->connect(SNAME("resources_reimported"), callable_mp(this, &EditorResourcePreview::_resources_reimported));
 	}
 
 	if (is_threaded()) {
@@ -636,4 +665,7 @@ EditorResourcePreview::EditorResourcePreview() {
 
 EditorResourcePreview::~EditorResourcePreview() {
 	stop();
+	if (singleton == this) {
+		singleton = nullptr;
+	}
 }

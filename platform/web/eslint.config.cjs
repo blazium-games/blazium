@@ -132,6 +132,7 @@ module.exports = [
 			globals: {
 				...globals.browser,
 				'Features': true,
+				'Blazium': true,
 				'Godot': true,
 				'InternalConfig': true,
 				'Preloader': true,
@@ -164,7 +165,7 @@ module.exports = [
 		},
 	},
 
-	// javascript templates (service workers)
+	// javascript templates (engine starter, service workers and third party services)
 	{
 		files: ['misc/dist/html/**/*.js'],
 		languageOptions: {
@@ -173,6 +174,11 @@ module.exports = [
 				'___GODOT_CACHE___': true,
 				'___GODOT_ENSURE_CROSSORIGIN_ISOLATION_HEADERS___': true,
 				'___GODOT_OPT_CACHE___': true,
+				'Engine': true,
+				'$GODOT_CONFIG': true,
+				'$GODOT_THREADS_ENABLED': true,
+				'$BLAZIUM_DISCORD_AUTODETECT': true,
+				'ytgame': true,
 			},
 		},
 	},

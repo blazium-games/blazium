@@ -211,6 +211,11 @@ public:
 		ALPHA_BLEND
 	};
 
+	enum PNGFlags {
+		PNG_FLAG_NOT_SRGB = 1 << 0,
+		PNG_FLAG_FAST = 1 << 1,
+	};
+
 	struct BasisUniversalPackerParams {
 		int uastc_level = 0;
 		float rdo_quality_loss = 0;
@@ -302,6 +307,7 @@ private:
 	int width = 0;
 	int height = 0;
 	bool mipmaps = false;
+	BitField<PNGFlags> png_flags = PNG_FLAG_FAST;
 
 	void _copy_internals_from(const Image &p_image);
 
@@ -399,6 +405,8 @@ public:
 
 	Error load(const String &p_path);
 	static Ref<Image> load_from_file(const String &p_path);
+	void set_png_flags(BitField<PNGFlags> p_flags);
+	BitField<PNGFlags> get_png_flags() const;
 	Error save_png(const String &p_path) const;
 	Error save_jpg(const String &p_path, float p_quality = 0.75) const;
 	Error save_dds(const String &p_path) const;
@@ -516,6 +524,7 @@ VARIANT_ENUM_CAST(Image::UsedChannels)
 VARIANT_ENUM_CAST(Image::AlphaMode)
 VARIANT_ENUM_CAST(Image::RoughnessChannel)
 VARIANT_ENUM_CAST(Image::CompressProfile)
+VARIANT_BITFIELD_CAST(Image::PNGFlags)
 
 #ifndef DISABLE_DEPRECATED
 VARIANT_ENUM_CAST(Image::ASTCFormat)

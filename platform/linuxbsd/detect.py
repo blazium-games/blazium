@@ -49,7 +49,7 @@ def get_opts():
         EnumVariable("linker", "Linker program", "default", ["default", "bfd", "gold", "lld", "mold"], ignorecase=2),
         BoolVariable("use_llvm", "Use the LLVM compiler", False),
         BoolVariable("use_static_cpp", "Link libgcc and libstdc++ statically for better portability", True),
-        BoolVariable("use_coverage", "Test Godot coverage", False),
+        BoolVariable("use_coverage", "Test Blazium coverage", False),
         BoolVariable("use_ubsan", "Use LLVM/GCC compiler undefined behavior sanitizer (UBSAN)", False),
         BoolVariable("use_asan", "Use LLVM/GCC compiler address sanitizer (ASAN)", False),
         BoolVariable("use_lsan", "Use LLVM/GCC compiler leak sanitizer (LSAN)", False),
@@ -161,10 +161,6 @@ def configure(env: "SConsEnvironment"):
 
     if env["use_ubsan"] or env["use_asan"] or env["use_lsan"] or env["use_tsan"] or env["use_msan"]:
         env.extra_suffix += ".san"
-
-        if not env["use_llvm"] and env["arch"] == "x86_64":
-            env.Append(CCFLAGS=["-mcmodel=medium"])
-            env.Append(LINKFLAGS=["-mcmodel=medium"])
 
         if env["use_ubsan"]:
             env.Append(CPPDEFINES=["UBSAN_ENABLED"])
@@ -530,7 +526,7 @@ def configure(env: "SConsEnvironment"):
                 "The screen reader support driver requires dependencies to be installed.\n"
                 f"You can install them by running `python {os.path.join('misc', 'scripts', 'install_accesskit.py')}`.\n"
                 "See the documentation for more information:\n\t"
-                "https://docs.godotengine.org/en/latest/engine_details/development/compiling/compiling_for_linuxbsd.html#compiling-with-accesskit-support"
+                "https://docs.blazium.app/contributing/development/compiling/compiling_for_linuxbsd.html#compiling-with-accesskit-support"
                 "\nAlternatively, disable this driver by compiling with `accesskit=no` explicitly."
             )
             env["accesskit"] = False

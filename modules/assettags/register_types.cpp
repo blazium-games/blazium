@@ -37,19 +37,20 @@
 
 #include "core/io/file_access.h"
 #include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 #include "core/templates/pair.h"
 
 #ifdef TOOLS_ENABLED
-#include "core/object/class_db.h"
+#include "editor/docks/filesystem_dock.h"
+#include "editor/editor_node.h"
+#include "editor/export/editor_export.h"
+#include "editor/file_system/editor_file_system.h"
+#include "editor/plugins/editor_plugin.h"
+#include "editor/settings/editor_settings.h"
+
 #include "modules/assettags/editor/asset_tag_export_plugin.h"
 #include "modules/assettags/editor/asset_tags_context_menu_plugin.h"
 #include "modules/assettags/editor/asset_tags_editor_plugin.h"
-#include "editor/file_system/editor_file_system.h"
-#include "editor/editor_node.h"
-#include "editor/settings/editor_settings.h"
-#include "editor/export/editor_export.h"
-#include "editor/docks/filesystem_dock.h"
-#include "editor/plugins/editor_plugin.h"
 #endif
 
 #include "core/config/project_settings.h"

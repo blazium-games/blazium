@@ -43,6 +43,7 @@
 #include "requests/twitch_users_requests.h"
 #include "twitch_api.h"
 #include "twitch_http_client.h"
+
 #include "core/config/engine.h"
 #include "core/object/class_db.h"
 

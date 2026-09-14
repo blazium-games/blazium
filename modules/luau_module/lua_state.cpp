@@ -29,6 +29,7 @@
 
 #include "lua_state.h"
 
+#include "Luau/Bytecode.h"
 #include "bindings/array.h"
 #include "bindings/callable.h"
 #include "bindings/dictionary.h"
@@ -46,8 +47,6 @@
 #include "core/object/class_db.h"
 #include "core/variant/variant.h"
 
-#include "Luau/Bytecode.h"
-
 #include <cstring>
 
 VARIANT_ENUM_CAST(luau_module::LuaState::ValueType);
@@ -56,9 +55,10 @@ VARIANT_ENUM_CAST(luau_module::LuaState::CoStatus);
 VARIANT_ENUM_CAST(luau_module::LuaState::GCOp);
 #include "core/error/error_macros.h"
 #include "core/object/object.h"
-#include "core/templates/local_vector.h"
-#include <lualib.h>
 #include "core/string/string_name.h"
+#include "core/templates/local_vector.h"
+
+#include <lualib.h>
 
 using namespace luau_module;
 
@@ -101,7 +101,7 @@ static void callback_debugbreak(lua_State *L, lua_Debug *ar) {
 		return;
 	}
 
-	Ref<LuaDebug> debug_info(memnew(LuaDebug(*ar)));
+	Ref<LuaDebug> debug_info = memnew(LuaDebug(*ar));
 	state->emit_signal(static_strings->debugbreak, state, debug_info);
 
 	if (LuauScriptLanguage *lang = LuauScriptLanguage::get_singleton()) {
@@ -463,7 +463,7 @@ void LuaState::setup_vm() {
 
 Ref<LuaState> LuaState::bind_thread(lua_State *p_thread_L) {
 	Ref<LuaState> state;
-	state.reference_ptr(memnew(LuaState(p_thread_L, get_main_thread())));
+	state = memnew(LuaState(p_thread_L, get_main_thread()));
 	return state;
 }
 
@@ -1466,7 +1466,7 @@ Ref<LuaDebug> LuaState::get_info(int p_level, const String &p_what) {
 	ERR_FAIL_COND_V_MSG(!is_valid(), Ref<LuaDebug>(), "Lua state is invalid. Cannot get debug info.");
 
 	Ref<LuaDebug> debug_info;
-	debug_info.reference_ptr(memnew(LuaDebug));
+	debug_info = memnew(LuaDebug);
 	if (lua_getinfo(L, p_level, p_what.utf8().get_data(), debug_info->ptrw())) {
 		return debug_info;
 	} else {
@@ -2089,10 +2089,10 @@ Ref<LuaState> LuaState::find_or_create_lua_state(lua_State *p_L) {
 	if (!state.is_valid()) {
 		lua_State *main_thread_L = lua_mainthread(p_L);
 		if (p_L == main_thread_L) {
-			state.reference_ptr(memnew(LuaState(p_L)));
+			state = memnew(LuaState(p_L));
 		} else {
 			Ref<LuaState> main_thread_state = LuaState::find_or_create_lua_state(main_thread_L);
-			state.reference_ptr(memnew(LuaState(p_L, main_thread_state)));
+			state = memnew(LuaState(p_L, main_thread_state));
 		}
 	}
 

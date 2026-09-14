@@ -52,6 +52,7 @@ private:
 	bool expand_icon = false;
 	bool clip_text = false;
 	HorizontalAlignment alignment = HORIZONTAL_ALIGNMENT_CENTER;
+	bool expand_text = true;
 	HorizontalAlignment horizontal_icon_alignment = HORIZONTAL_ALIGNMENT_LEFT;
 	VerticalAlignment vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER;
 	float _internal_margin[4] = {};
@@ -159,6 +160,9 @@ public:
 
 	void set_text_alignment(HorizontalAlignment p_alignment);
 	HorizontalAlignment get_text_alignment() const;
+
+	void set_expand_text(bool p_expand);
+	bool is_expand_text() const;
 
 	void set_icon_alignment(HorizontalAlignment p_alignment);
 	void set_vertical_icon_alignment(VerticalAlignment p_alignment);

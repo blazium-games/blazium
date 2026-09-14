@@ -33,6 +33,7 @@
 
 #include "../navimesh_exporter.h"
 
+#include "core/object/callable_mp.h"
 #include "editor/editor_node.h"
 #include "editor/editor_string_names.h"
 #include "editor/gui/editor_file_dialog.h"
@@ -43,7 +44,6 @@
 #include "scene/gui/box_container.h"
 #include "scene/gui/button.h"
 #include "scene/scene_string_names.h"
-#include "core/object/callable_mp.h"
 
 static bool _is_nav_export_node(Object *p_object) {
 	return Object::cast_to<NavigationRegion3D>(p_object) || Object::cast_to<NavigationLink3D>(p_object) ||

@@ -35,7 +35,7 @@
 #include <android/log.h>
 #include <jni.h>
 
-// Class that makes functions in java/src/org/godotengine/godot/GodotRenderView.java callable from C++
+// Class that makes functions in java/lib/src/main/java/app/blazium/godot/GodotRenderView.java callable from C++
 class GodotJavaViewWrapper {
 private:
 	jclass _cls;

@@ -34,11 +34,12 @@
 #include "core/object/object.h"
 #include "core/os/mutex.h"
 #include "core/os/thread.h"
+#include "core/variant/type_info.h"
 #include "core/variant/typed_array.h"
-#include "modules/enet/enet_connection.h"
 #include "scene/main/node.h"
 #include "scene/main/scene_tree.h"
-#include "core/variant/type_info.h"
+
+#include "modules/enet/enet_connection.h"
 
 class ENetServer : public Object {
 	GDCLASS(ENetServer, Object);

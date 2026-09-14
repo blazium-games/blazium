@@ -102,6 +102,8 @@ void PhysicsServer3D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("space_create"), &PhysicsServer3D::space_create);
 	ClassDB::bind_method(D_METHOD("space_set_active", "space", "active"), &PhysicsServer3D::space_set_active);
 	ClassDB::bind_method(D_METHOD("space_is_active", "space"), &PhysicsServer3D::space_is_active);
+	ClassDB::bind_method(D_METHOD("space_step", "space", "delta"), &PhysicsServer3D::space_step);
+	ClassDB::bind_method(D_METHOD("space_flush_queries", "space"), &PhysicsServer3D::space_flush_queries);
 	ClassDB::bind_method(D_METHOD("space_set_param", "space", "param", "value"), &PhysicsServer3D::space_set_param);
 	ClassDB::bind_method(D_METHOD("space_get_param", "space", "param"), &PhysicsServer3D::space_get_param);
 	ClassDB::bind_method(D_METHOD("space_get_direct_state", "space"), &PhysicsServer3D::space_get_direct_state);
@@ -296,6 +298,9 @@ void PhysicsServer3D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("joint_create"), &PhysicsServer3D::joint_create);
 	ClassDB::bind_method(D_METHOD("joint_clear", "joint"), &PhysicsServer3D::joint_clear);
+
+	ClassDB::bind_method(D_METHOD("joint_set_enabled", "joint", "enabled"), &PhysicsServer3D::joint_set_enabled);
+	ClassDB::bind_method(D_METHOD("joint_is_enabled", "joint"), &PhysicsServer3D::joint_is_enabled);
 
 	BIND_ENUM_CONSTANT(PS3DE::JOINT_TYPE_PIN);
 	BIND_ENUM_CONSTANT(PS3DE::JOINT_TYPE_HINGE);

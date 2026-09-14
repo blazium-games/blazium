@@ -31,9 +31,10 @@
 
 #include "blazium_goap_action_planner.h"
 #include "blazium_goap_world_state.h"
-#include "scene/main/node.h"
+
 #include "core/string/ustring.h"
 #include "core/variant/typed_array.h"
+#include "scene/main/node.h"
 
 class BlaziumGoapAgent : public Node {
 	GDCLASS(BlaziumGoapAgent, Node);

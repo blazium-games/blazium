@@ -16,6 +16,21 @@ wrote which part of the codebase.
 GitHub usernames are indicated in parentheses, or as sole entry when no other
 name is available.
 
+## Blazium Developers
+
+    Randolph William Aarseth II (Bioblaze Payne)
+    Jonathan (jss2a98aj)
+    Nicholas Santos Shiden (sshiiden)
+    Gaishains (HArryOrno)
+    Luke (Flare199)
+    Rei (Reisyukaku)
+    Mounir Tohami (WhalesState)
+    Scott (TheKingScott)
+    RandomOfNoWhere (RandomOfNoWhere)
+    Adaro (steve-coder)
+    TamashiiDev (PrzyDev)
+    Jake
+
 ## Project Founders
 
     Juan Linietsky (reduz)

@@ -33,9 +33,9 @@
 #include "nav_rid_2d.h"
 
 #include "core/math/vector2.h"
+#include "core/string/ustring.h"
 #include "core/templates/self_list.h"
 #include "core/variant/callable.h"
-#include "core/string/ustring.h"
 #include "core/variant/dictionary.h"
 #include "servers/navigation_2d/navigation_constants_2d.h"
 

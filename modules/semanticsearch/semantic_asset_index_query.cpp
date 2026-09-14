@@ -27,15 +27,15 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "semantic_asset_index.h"
-#include "semantic_asset_index_helpers.h"
-
 #include "hash_vector_embedding.h"
 #include "lexical_search_engine.h"
-#include "modules/modules_enabled.gen.h"
+#include "semantic_asset_index.h"
+#include "semantic_asset_index_helpers.h"
 #include "semantic_search_backend.h"
 #include "semantic_search_backend_factory.h"
 #include "semantic_search_filters.h"
+
+#include "modules/modules_enabled.gen.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/file_system/editor_file_system.h"

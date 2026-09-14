@@ -86,6 +86,7 @@
 #include "editor/gui/editor_file_dialog.h"
 #include "editor/gui/editor_icon_manager.h"
 #include "editor/gui/editor_quick_open_dialog.h"
+#include "editor/gui/editor_scroll_box.h"
 #include "editor/gui/editor_title_bar.h"
 #include "editor/gui/editor_toaster.h"
 #include "editor/gui/progress_dialog.h"
@@ -1058,9 +1059,9 @@ void EditorNode::_notification(int p_what) {
 
 			// Save the project after opening to mark it as last modified, except in headless mode.
 			// Also use this opportunity to ensure default settings are applied to new projects created from the command line
-			// using `touch project.godot`.
+			// using `touch project.blazium` or `touch project.godot`.
 			if (!cmdline_mode) {
-				const String project_settings_path = ProjectSettings::get_singleton()->get_resource_path().path_join("project.godot");
+				const String project_settings_path = ProjectSettings::get_singleton()->get_project_settings_path();
 				// Check the file's size in bytes as an optimization. If it's under 10 bytes, the file is assumed to be empty.
 				if (FileAccess::get_size(project_settings_path) < 10) {
 					const HashMap<String, Variant> initial_settings = get_initial_settings();
@@ -1593,6 +1594,24 @@ void EditorNode::_remove_lock_file() {
 	OS::get_singleton()->remove_lock_file();
 }
 
+bool EditorNode::is_path_excluded_from_external_change_check(const String &p_path) {
+	const PackedStringArray patterns = GLOBAL_GET("editor/external_changes/ignored_paths");
+	if (patterns.is_empty()) {
+		return false;
+	}
+
+	const String file = p_path.get_file();
+	for (const String &pattern : patterns) {
+		if (pattern.is_empty()) {
+			continue;
+		}
+		if (p_path.matchn(pattern) || file.matchn(pattern)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 void EditorNode::_scan_external_changes() {
 	disk_changed_list->clear();
 	TreeItem *r = disk_changed_list->create_item();
@@ -1612,6 +1631,10 @@ void EditorNode::_scan_external_changes() {
 			continue;
 		}
 
+		if (is_path_excluded_from_external_change_check(scene_path)) {
+			continue;
+		}
+
 		uint64_t last_date = editor_data.get_scene_modified_time(i);
 		uint64_t date = FileAccess::get_modified_time(scene_path);
 
@@ -1623,10 +1646,10 @@ void EditorNode::_scan_external_changes() {
 		}
 	}
 
-	String project_settings_path = ProjectSettings::get_singleton()->get_resource_path().path_join("project.godot");
+	String project_settings_path = ProjectSettings::get_singleton()->get_project_settings_path();
 	if (FileAccess::get_modified_time(project_settings_path) > ProjectSettings::get_singleton()->get_last_saved_time()) {
 		TreeItem *ti = disk_changed_list->create_item(r);
-		ti->set_text(0, "project.godot");
+		ti->set_text(0, ProjectSettings::get_singleton()->get_project_settings_text_file());
 		need_reload = true;
 		disk_changed_project = true;
 	}
@@ -1653,6 +1676,10 @@ void EditorNode::_reload_modified_scenes() {
 
 	for (int i = 0; i < editor_data.get_edited_scene_count(); i++) {
 		if (editor_data.get_scene_path(i) == "") {
+			continue;
+		}
+
+		if (is_path_excluded_from_external_change_check(editor_data.get_scene_path(i))) {
 			continue;
 		}
 
@@ -2152,7 +2179,7 @@ void EditorNode::_dialog_display_load_error(String p_file, Error p_error) {
 				show_warning(vformat(TTR("Missing file '%s' or one of its dependencies."), p_file.get_file()));
 			} break;
 			case ERR_FILE_UNRECOGNIZED: {
-				show_warning(vformat(TTR("File '%s' is saved in a format that is newer than the formats supported by this version of Godot, so it can't be opened."), p_file.get_file()));
+				show_warning(vformat(TTR("File '%s' is saved in a format that is newer than the formats supported by this version of Blazium, so it can't be opened."), p_file.get_file()));
 			} break;
 			default: {
 				show_warning(vformat(TTR("Error while loading file '%s'."), p_file.get_file()));
@@ -3985,29 +4012,29 @@ void EditorNode::_menu_option_confirm(int p_option, bool p_confirmed) {
 			OS::get_singleton()->shell_open(GODOT_VERSION_DOCS_URL "/");
 		} break;
 		case HELP_FORUM: {
-			OS::get_singleton()->shell_open("https://forum.godotengine.org/");
+			OS::get_singleton()->shell_open("https://chat.blazium.app");
 		} break;
 		case HELP_REPORT_A_BUG: {
-			OS::get_singleton()->shell_open("https://github.com/godotengine/godot/issues");
+			OS::get_singleton()->shell_open("https://github.com/blazium-games/blazium/issues");
 		} break;
 		case HELP_COPY_SYSTEM_INFO: {
 			String info = _get_system_info();
 			DisplayServer::get_singleton()->clipboard_set(info);
 		} break;
 		case HELP_SUGGEST_A_FEATURE: {
-			OS::get_singleton()->shell_open("https://github.com/godotengine/godot-proposals#readme");
+			OS::get_singleton()->shell_open("https://chat.blazium.app");
 		} break;
 		case HELP_SEND_DOCS_FEEDBACK: {
-			OS::get_singleton()->shell_open("https://github.com/godotengine/godot-docs/issues");
+			OS::get_singleton()->shell_open("https://github.com/blazium-games/blazium-docs/issues");
 		} break;
 		case HELP_COMMUNITY: {
-			OS::get_singleton()->shell_open("https://godotengine.org/community");
+			OS::get_singleton()->shell_open("https://chat.blazium.app");
 		} break;
 		case HELP_ABOUT: {
 			about->popup_centered(Size2(780, 500) * EDSCALE);
 		} break;
 		case HELP_SUPPORT_GODOT_DEVELOPMENT: {
-			OS::get_singleton()->shell_open("https://fund.godotengine.org/?ref=help_menu");
+			OS::get_singleton()->shell_open("https://chat.blazium.app");
 		} break;
 	}
 }
@@ -6095,7 +6122,7 @@ String EditorNode::_get_system_info() const {
 	}
 	const String distribution_version = OS::get_singleton()->get_version_alias();
 
-	String godot_version = "Godot v" + String(GODOT_VERSION_FULL_CONFIG);
+	String godot_version = "Blazium v" + String(GODOT_VERSION_FULL_CONFIG);
 	if (String(GODOT_VERSION_BUILD) != "official") {
 		String hash = String(GODOT_VERSION_HASH);
 		hash = hash.is_empty() ? String("unknown") : vformat("(%s)", hash.left(9));
@@ -7753,7 +7780,7 @@ bool EditorNode::call_build() {
 
 	for (int i = 0; i < build_callback_count && builds_successful; i++) {
 		if (!build_callbacks[i]()) {
-			ERR_PRINT("A Godot Engine build callback failed.");
+			ERR_PRINT("A Blazium Engine build callback failed.");
 			builds_successful = false;
 		}
 	}
@@ -8303,6 +8330,9 @@ void EditorNode::_update_main_menu_type() {
 				main_menu_bar->remove_child(menu);
 			}
 		}
+		if (menu_scroll_box && menu_scroll_box->get_control() == main_menu_bar) {
+			menu_scroll_box->set_control(nullptr);
+		}
 		memdelete(main_menu_bar);
 		main_menu_bar = nullptr;
 	}
@@ -8344,6 +8374,9 @@ void EditorNode::_update_main_menu_type() {
 		title_bar->add_child(menu_btn_spacer);
 		title_bar->move_child(menu_btn_spacer, left_menu_spacer ? left_menu_spacer->get_index() + 1 : 0);
 #endif
+		if (menu_scroll_box) {
+			menu_scroll_box->hide();
+		}
 		title_bar->add_child(main_menu_button);
 		if (menu_btn_spacer == nullptr) {
 			title_bar->move_child(main_menu_button, left_menu_spacer ? left_menu_spacer->get_index() + 1 : 0);
@@ -8365,8 +8398,14 @@ void EditorNode::_update_main_menu_type() {
 			}
 		}
 
-		title_bar->add_child(main_menu_bar);
-		title_bar->move_child(main_menu_bar, left_menu_spacer ? left_menu_spacer->get_index() + 1 : 0);
+		if (menu_scroll_box) {
+			menu_scroll_box->set_control(main_menu_bar);
+			menu_scroll_box->show();
+			title_bar->move_child(menu_scroll_box, left_menu_spacer ? left_menu_spacer->get_index() + 1 : 0);
+		} else {
+			title_bar->add_child(main_menu_bar);
+			title_bar->move_child(main_menu_bar, left_menu_spacer ? left_menu_spacer->get_index() + 1 : 0);
+		}
 	}
 
 	// Show/hide project title.
@@ -8446,6 +8485,7 @@ EditorNode::EditorNode() {
 	DEV_ASSERT(!singleton);
 	singleton = this;
 
+	GLOBAL_DEF(PropertyInfo(Variant::PACKED_STRING_ARRAY, "editor/external_changes/ignored_paths"), PackedStringArray());
 	// Detecting headless mode, that means the editor is running in command line.
 	cmdline_mode = (DisplayServer::get_singleton()->get_name() == "headless");
 
@@ -9131,15 +9171,15 @@ EditorNode::EditorNode() {
 	ED_SHORTCUT_AND_COMMAND("editor/report_a_bug", TTRC("Report a Bug"));
 	ED_SHORTCUT_AND_COMMAND("editor/suggest_a_feature", TTRC("Suggest a Feature"));
 	ED_SHORTCUT_AND_COMMAND("editor/send_docs_feedback", TTRC("Send Docs Feedback"));
-	ED_SHORTCUT_AND_COMMAND("editor/about", TTRC("About Godot..."));
-	ED_SHORTCUT_AND_COMMAND("editor/support_development", TTRC("Support Godot Development"));
+	ED_SHORTCUT_AND_COMMAND("editor/about", TTRC("About Blazium..."));
+	ED_SHORTCUT_AND_COMMAND("editor/support_development", TTRC("Join the Blazium Discord"));
 
 	// Use the Ctrl modifier so F2 can be used to rename nodes in the scene tree dock.
 	ED_SHORTCUT_AND_COMMAND("editor/editor_2d", TTRC("Open 2D Workspace"), KeyModifierMask::CTRL | Key::F1);
 	ED_SHORTCUT_AND_COMMAND("editor/editor_3d", TTRC("Open 3D Workspace"), KeyModifierMask::CTRL | Key::F2);
 	ED_SHORTCUT_AND_COMMAND("editor/editor_script", TTRC("Open Script Editor"), KeyModifierMask::CTRL | Key::F3);
 	ED_SHORTCUT_AND_COMMAND("editor/editor_game", TTRC("Open Game View"), KeyModifierMask::CTRL | Key::F4);
-	ED_SHORTCUT_AND_COMMAND("editor/editor_asset_store", TTRC("Open Asset Store"), KeyModifierMask::CTRL | Key::F5);
+	ED_SHORTCUT_AND_COMMAND("editor/editor_asset_store", TTRC("Open Asset Library"), KeyModifierMask::CTRL | Key::F5);
 
 	ED_SHORTCUT_OVERRIDE("editor/editor_2d", "macos", KeyModifierMask::META | KeyModifierMask::CTRL | Key::KEY_1);
 	ED_SHORTCUT_OVERRIDE("editor/editor_3d", "macos", KeyModifierMask::META | KeyModifierMask::CTRL | Key::KEY_2);
@@ -9171,6 +9211,10 @@ EditorNode::EditorNode() {
 		left_menu_spacer->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
 		title_bar->add_child(left_menu_spacer);
 	}
+
+	menu_scroll_box = memnew(EditorHScrollBox);
+	menu_scroll_box->set_v_size_flags(Control::SIZE_SHRINK_CENTER);
+	title_bar->add_child(menu_scroll_box);
 
 	file_menu = memnew(PopupMenu);
 	file_menu->connect(SceneStringName(id_pressed), callable_mp(this, &EditorNode::_menu_option));
@@ -9448,7 +9492,7 @@ EditorNode::EditorNode() {
 
 	disk_changed = memnew(ConfirmationDialog);
 	{
-		disk_changed->set_title(TTR("Files have been modified outside Godot"));
+		disk_changed->set_title(TTR("Files have been modified outside Blazium"));
 
 		VBoxContainer *vbc = memnew(VBoxContainer);
 		disk_changed->add_child(vbc);
@@ -9501,7 +9545,7 @@ EditorNode::EditorNode() {
 	if (AssetLibraryEditorPlugin::is_available()) {
 		add_editor_plugin(memnew(AssetLibraryEditorPlugin));
 	} else {
-		print_verbose("Asset Store not available (due to using Web editor, or SSL support disabled).");
+		print_verbose("Asset Library not available (due to using Web editor, or SSL support disabled).");
 	}
 
 	// More visually meaningful to have this later.

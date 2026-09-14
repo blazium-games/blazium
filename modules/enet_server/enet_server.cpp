@@ -29,12 +29,13 @@
 
 #include "enet_server.h"
 
+#include "enet_packet.h"
+
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 #include "core/os/os.h"
 #include "core/variant/callable.h"
 #include "core/variant/typed_array.h"
-#include "enet_packet.h"
-#include "core/object/callable_mp.h"
-#include "core/object/class_db.h"
 #include "scene/main/scene_tree.h"
 
 ENetServer *ENetServer::singleton = nullptr;
@@ -267,7 +268,7 @@ void ENetServer::send_packet_to_all(const Variant &p_packet, int p_channel, bool
 		}
 
 		if (!excluded && E.value.is_valid()) {
-			E.value->send_packet(p_packet, p_channel, p_reliable);
+			E.value->send_raw_packet(data, p_channel, p_reliable);
 		}
 	}
 	peers_mutex.unlock();

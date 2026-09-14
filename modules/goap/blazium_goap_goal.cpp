@@ -28,7 +28,9 @@
 /**************************************************************************/
 
 #include "blazium_goap_goal.h"
+
 #include "blazium_goap_agent.h"
+
 #include "core/object/class_db.h"
 #include "core/string/string_name.h"
 

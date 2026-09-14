@@ -29,11 +29,6 @@
 
 #include "register_types.h"
 
-#include "core/config/engine.h"
-#include "core/config/project_settings.h"
-#include "scene/main/node.h"
-#include "scene/main/scene_tree.h"
-
 #include "gdk/gdk.h"
 #include "gdk/gdk_accessibility.h"
 #include "gdk/gdk_achievement.h"
@@ -57,12 +52,19 @@
 #include "gdk/gdk_string_verify.h"
 #include "gdk/gdk_system.h"
 #include "gdk/gdk_title_storage.h"
+
+#include "core/config/engine.h"
+#include "core/config/project_settings.h"
+#include "scene/main/node.h"
+#include "scene/main/scene_tree.h"
 #ifdef TOOLS_ENABLED
 #include "editor/plugins/editor_plugin.h"
+
 #include "modules/xbox_module/editor/xbox_editor_plugin.h"
 #endif
 
 #include "gdk/gdk_user.h"
+
 #include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
 

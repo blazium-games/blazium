@@ -31,8 +31,8 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "editor/export/editor_export_platform.h"
 #include "core/string/ustring.h"
+#include "editor/export/editor_export_platform.h"
 #include "scene/resources/image_texture.h"
 
 class EditorExportPlatformWindowsInterDVD : public EditorExportPlatform {

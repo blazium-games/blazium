@@ -36,6 +36,7 @@
 #include "luau_compile_result.h"
 
 #include "core/string/ustring.h"
+
 #include <lualib.h>
 
 #ifdef LUAU_MODULE_ANALYSIS_ENABLED
@@ -50,6 +51,8 @@ namespace {
 
 String g_execute_result;
 String g_check_result;
+CharString g_execute_utf8;
+CharString g_check_utf8;
 
 static bool setup_sandboxed_state(Ref<LuaState> &r_state) {
 	r_state.instantiate();
@@ -68,13 +71,15 @@ EMSCRIPTEN_KEEPALIVE const char *luau_web_execute_script(const char *p_source) {
 
 	if (!p_source) {
 		g_execute_result = "source is null";
-		return g_execute_result.utf8().get_data();
+		g_execute_utf8 = g_execute_result.utf8();
+		return g_execute_utf8.get_data();
 	}
 
 	Ref<LuaState> state;
 	if (!setup_sandboxed_state(state)) {
 		g_execute_result = "failed to create Luau state";
-		return g_execute_result.utf8().get_data();
+		g_execute_utf8 = g_execute_result.utf8();
+		return g_execute_utf8.get_data();
 	}
 
 	const LuaState::Status status = state->do_string(String::utf8(p_source), "@web_playground");
@@ -85,7 +90,8 @@ EMSCRIPTEN_KEEPALIVE const char *luau_web_execute_script(const char *p_source) {
 		} else {
 			g_execute_result = "Luau execution failed";
 		}
-		return g_execute_result.utf8().get_data();
+		g_execute_utf8 = g_execute_result.utf8();
+		return g_execute_utf8.get_data();
 	}
 
 	state->set_top(0);
@@ -98,7 +104,8 @@ EMSCRIPTEN_KEEPALIVE const char *luau_web_check_script(const char *p_source, int
 
 	if (!p_source) {
 		g_check_result = "source is null";
-		return g_check_result.utf8().get_data();
+		g_check_utf8 = g_check_result.utf8();
+		return g_check_utf8.get_data();
 	}
 
 	const String source = String::utf8(p_source);
@@ -108,22 +115,23 @@ EMSCRIPTEN_KEEPALIVE const char *luau_web_check_script(const char *p_source, int
 		if (compile_result.error_line > 0) {
 			g_check_result = itos(compile_result.error_line) + ": " + g_check_result;
 		}
-		return g_check_result.utf8().get_data();
+		g_check_utf8 = g_check_result.utf8();
+		return g_check_utf8.get_data();
 	}
 
 #ifdef LUAU_MODULE_ANALYSIS_ENABLED
-	List<ScriptLanguage::ScriptError> errors;
-	List<ScriptLanguage::Warning> warnings;
+	List<LuauScriptError> errors;
+	List<LuauWarning> warnings;
 	LuauTypecheck::analyze(source, "web_playground", &errors, &warnings);
 
-	for (const ScriptLanguage::ScriptError &err : errors) {
+	for (const LuauScriptError &err : errors) {
 		if (!g_check_result.is_empty()) {
 			g_check_result += "\n";
 		}
-		g_check_result += itos(err.line) + ": " + err.message;
+		g_check_result += itos(err.start_line) + ": " + err.message;
 	}
 
-	for (const ScriptLanguage::Warning &warning : warnings) {
+	for (const LuauWarning &warning : warnings) {
 		if (!g_check_result.is_empty()) {
 			g_check_result += "\n";
 		}
@@ -131,7 +139,11 @@ EMSCRIPTEN_KEEPALIVE const char *luau_web_check_script(const char *p_source, int
 	}
 #endif
 
-	return g_check_result.is_empty() ? nullptr : g_check_result.utf8().get_data();
+	if (g_check_result.is_empty()) {
+		return nullptr;
+	}
+	g_check_utf8 = g_check_result.utf8();
+	return g_check_utf8.get_data();
 }
 }
 

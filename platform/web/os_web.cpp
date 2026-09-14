@@ -144,7 +144,46 @@ int OS_Web::get_processor_count() const {
 }
 
 String OS_Web::get_unique_id() const {
-	ERR_FAIL_V_MSG("", "OS::get_unique_id() is not available on the Web platform.");
+	static String uid;
+
+	if (uid.is_empty()) {
+		JavaScriptBridge *singleton = JavaScriptBridge::get_singleton();
+		if (!singleton) {
+			ERR_PRINT("JavaScriptBridge singleton is invalid");
+			return OS::get_unique_id();
+		}
+		uid += String(singleton->eval("window.clientInformation.userAgent"));
+		uid += String(singleton->eval("window.clientInformation.language"));
+		uid += String(singleton->eval("window.clientInformation.platform"));
+		uid += String(singleton->eval("window.clientInformation.product"));
+		uid += String(singleton->eval("window.clientInformation.productSub"));
+		uid += String::num_int64(singleton->eval("window.clientInformation.deviceMemory"));
+		uid += String::num_int64(singleton->eval("window.clientInformation.hardwareConcurrency"));
+
+		uid += String::num_int64(singleton->eval("screen.height"));
+		uid += String::num_int64(singleton->eval("screen.width"));
+		uid += String::num_int64(singleton->eval("screen.colorDepth"));
+
+		uid += String(singleton->eval(R"(
+			(() => {
+				let gpu_info = "";
+				const canvas = document.createElement('canvas');
+				const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+				if (gl) {
+					const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+					if (debugInfo) {
+						gpu_info += gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+						gpu_info += gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+					}
+				}
+				return gpu_info;
+			})();
+		)"));
+
+		uid = uid.remove_char(' ').sha256_text();
+	}
+
+	return uid;
 }
 
 int OS_Web::get_default_thread_pool_size() const {

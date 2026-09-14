@@ -32,16 +32,17 @@
 #include "steam_editor_plugin.h"
 
 #include "core/input/shortcut.h"
+#include "core/object/callable_mp.h"
+#include "core/os/os.h"
 #include "editor/themes/editor_scale.h"
-#include "modules/steam/steam.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/button.h"
 #include "scene/gui/grid_container.h"
 #include "scene/gui/label.h"
 #include "scene/gui/line_edit.h"
 #include "scene/gui/rich_text_label.h"
-#include "core/object/callable_mp.h"
-#include "core/os/os.h"
+
+#include "modules/steam/steam.h"
 
 void SteamEditorPlugin::_append_log(const String &p_line) {
 	if (!log) {

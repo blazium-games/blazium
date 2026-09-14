@@ -43,7 +43,7 @@ GodotJavaWrapper::GodotJavaWrapper(JNIEnv *p_env, jobject p_godot_native_bridge)
 	godot_native_bridge = p_env->NewGlobalRef(p_godot_native_bridge);
 
 	// get info about our Godot class so we can get pointers and stuff...
-	godot_native_bridge_class = jni_find_class(p_env, "org/godotengine/godot/nativeapi/GodotNativeBridge");
+	godot_native_bridge_class = jni_find_class(p_env, "app/blazium/godot/nativeapi/GodotNativeBridge");
 	if (godot_native_bridge_class) {
 		godot_native_bridge_class = (jclass)p_env->NewGlobalRef(godot_native_bridge_class);
 	} else {
@@ -77,7 +77,7 @@ GodotJavaWrapper::GodotJavaWrapper(JNIEnv *p_env, jobject p_godot_native_bridge)
 	_on_godot_main_loop_started = p_env->GetMethodID(godot_native_bridge_class, "onGodotMainLoopStarted", "()V");
 	_on_godot_terminating = p_env->GetMethodID(godot_native_bridge_class, "onGodotTerminating", "()V");
 	_create_new_godot_instance = p_env->GetMethodID(godot_native_bridge_class, "createNewGodotInstance", "([Ljava/lang/String;)I");
-	_get_render_view = p_env->GetMethodID(godot_native_bridge_class, "getRenderView", "()Lorg/godotengine/godot/GodotRenderView;");
+	_get_render_view = p_env->GetMethodID(godot_native_bridge_class, "getRenderView", "()Lapp/blazium/godot/GodotRenderView;");
 	_begin_benchmark_measure = p_env->GetMethodID(godot_native_bridge_class, "nativeBeginBenchmarkMeasure", "(Ljava/lang/String;Ljava/lang/String;)V");
 	_end_benchmark_measure = p_env->GetMethodID(godot_native_bridge_class, "nativeEndBenchmarkMeasure", "(Ljava/lang/String;Ljava/lang/String;)V");
 	_dump_benchmark = p_env->GetMethodID(godot_native_bridge_class, "nativeDumpBenchmark", "(Ljava/lang/String;)V");
@@ -91,11 +91,11 @@ GodotJavaWrapper::GodotJavaWrapper(JNIEnv *p_env, jobject p_godot_native_bridge)
 	_on_editor_workspace_selected = p_env->GetMethodID(godot_native_bridge_class, "nativeOnEditorWorkspaceSelected", "(Ljava/lang/String;)V");
 	_on_distraction_free_mode_changed = p_env->GetMethodID(godot_native_bridge_class, "nativeOnDistractionFreeModeChanged", "(Z)V");
 	_get_activity = p_env->GetMethodID(godot_native_bridge_class, "getActivity", "()Landroid/app/Activity;");
-	_build_env_connect = p_env->GetMethodID(godot_native_bridge_class, "nativeBuildEnvConnect", "(Lorg/godotengine/godot/variant/Callable;)Z");
+	_build_env_connect = p_env->GetMethodID(godot_native_bridge_class, "nativeBuildEnvConnect", "(Lapp/blazium/godot/variant/Callable;)Z");
 	_build_env_disconnect = p_env->GetMethodID(godot_native_bridge_class, "nativeBuildEnvDisconnect", "()V");
-	_build_env_execute = p_env->GetMethodID(godot_native_bridge_class, "nativeBuildEnvExecute", "(Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lorg/godotengine/godot/variant/Callable;Lorg/godotengine/godot/variant/Callable;)I");
+	_build_env_execute = p_env->GetMethodID(godot_native_bridge_class, "nativeBuildEnvExecute", "(Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lapp/blazium/godot/variant/Callable;Lapp/blazium/godot/variant/Callable;)I");
 	_build_env_cancel = p_env->GetMethodID(godot_native_bridge_class, "nativeBuildEnvCancel", "(I)V");
-	_build_env_clean_project = p_env->GetMethodID(godot_native_bridge_class, "nativeBuildEnvCleanProject", "(Ljava/lang/String;Ljava/lang/String;Lorg/godotengine/godot/variant/Callable;)V");
+	_build_env_clean_project = p_env->GetMethodID(godot_native_bridge_class, "nativeBuildEnvCleanProject", "(Ljava/lang/String;Ljava/lang/String;Lapp/blazium/godot/variant/Callable;)V");
 
 	// PiP mode method ids.
 	_is_pip_mode_supported = p_env->GetMethodID(godot_native_bridge_class, "nativeIsPiPModeSupported", "()Z");

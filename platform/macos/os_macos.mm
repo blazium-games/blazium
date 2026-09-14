@@ -59,6 +59,7 @@
 #include <libproc.h>
 #import <mach-o/dyld.h>
 #include <os/log.h>
+#include <pwd.h>
 #include <sys/sysctl.h>
 
 void OS_MacOS::add_frame_delay(bool p_can_draw, bool p_wake_for_events) {
@@ -521,6 +522,17 @@ String OS_MacOS::get_system_dir(SystemDir p_dir, bool p_shared_storage) const {
 	}
 
 	String ret;
+#ifdef TOOLS_ENABLED
+	// if editor is sandboxed, return real path
+	if (p_dir == SYSTEM_DIR_DOCUMENTS && is_sandboxed() && Engine::get_singleton()->is_editor_hint()) {
+		struct passwd *pw = getpwuid(getuid());
+		if (pw && pw->pw_name) {
+			ret.append_utf8(pw->pw_name);
+			return String("/Users/") + ret + String("/Documents");
+		}
+	}
+#endif
+
 	if (found) {
 		NSArray *paths = NSSearchPathForDirectoriesInDomains(id, NSUserDomainMask, YES);
 		if (paths && [paths count] >= 1) {
@@ -806,6 +818,17 @@ Error OS_MacOS::create_process(const String &p_path, const List<String> &p_argum
 	// Use NSWorkspace if path is an .app bundle.
 	NSURL *url = [NSURL fileURLWithPath:@(p_path.utf8().get_data())];
 	NSBundle *bundle = [NSBundle bundleWithURL:url];
+	// if sandboxed, put arguments in a file
+	if (is_sandboxed()) {
+		String args_path = get_temp_path().path_join("blazium_args.txt");
+		Ref<FileAccess> file = FileAccess::open(args_path, FileAccess::WRITE);
+		if (file.is_valid()) {
+			for (const String &arg : p_arguments) {
+				file->store_line(arg);
+			}
+			file->close();
+		}
+	}
 	if (bundle) {
 		NSMutableArray *arguments = [[NSMutableArray alloc] init];
 		for (const String &arg : p_arguments) {

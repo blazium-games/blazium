@@ -139,6 +139,7 @@ public:
 	enum class VCSMetadata {
 		NONE,
 		GIT,
+		COLDSTORAGE,
 	};
 	static void create_vcs_metadata_files(VCSMetadata p_vcs_metadata_type, String &p_dir);
 

@@ -37,8 +37,8 @@
 #include "justamcp_server.h"
 #include "tools/justamcp_mcp_client_bridge.h"
 
-#include "core/os/os.h"
 #include "core/object/class_db.h"
+#include "core/os/os.h"
 
 JustAMCPMCPAppsHost *JustAMCPMCPAppsHost::singleton = nullptr;
 

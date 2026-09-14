@@ -139,8 +139,9 @@ Error image_to_png(const Ref<Image> &p_image, Vector<uint8_t> &p_buffer, bool p_
 	png_img.version = PNG_IMAGE_VERSION;
 	png_img.width = source_image->get_width();
 	png_img.height = source_image->get_height();
+	png_img.flags = source_image->get_png_flags();
 	if (p_fast) {
-		png_img.flags = PNG_IMAGE_FLAG_FAST;
+		png_img.flags |= PNG_IMAGE_FLAG_FAST;
 	}
 
 	switch (source_image->get_format()) {

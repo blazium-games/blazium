@@ -1,5 +1,5 @@
-name: Save Godot build cache
-description: Save Godot build cache.
+name: Save Blazium build cache
+description: Save Blazium build cache.
 inputs:
   cache-name:
     description: The cache base name (job name by default).

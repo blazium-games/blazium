@@ -28,7 +28,6 @@
 /**************************************************************************/
 
 #include "register_types.h"
-#include "core/object/class_db.h"
 
 #include "blazium_goap_action.h"
 #include "blazium_goap_action_planner.h"
@@ -36,10 +35,13 @@
 #include "blazium_goap_goal.h"
 #include "blazium_goap_world_state.h"
 
+#include "core/object/class_db.h"
+
 #ifdef TOOLS_ENABLED
-#include "modules/goap/editor/blazium_goap_editor_plugin.h"
 #include "editor/editor_node.h"
 #include "editor/plugins/editor_plugin.h"
+
+#include "modules/goap/editor/blazium_goap_editor_plugin.h"
 #endif
 
 void initialize_goap_module(ModuleInitializationLevel p_level) {

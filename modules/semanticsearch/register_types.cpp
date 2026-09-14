@@ -29,9 +29,6 @@
 
 #include "register_types.h"
 
-#include "core/config/project_settings.h"
-#include "core/object/callable_mp.h"
-#include "core/object/class_db.h"
 #include "embedding_backend.h"
 #include "embedding_provider.h"
 #include "lexical_tag_backend.h"
@@ -41,19 +38,24 @@
 #include "semantic_search_backend.h"
 #include "semantic_search_backend_factory.h"
 
+#include "core/config/project_settings.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
+
 #include "modules/modules_enabled.gen.h"
 
 #ifdef MODULE_ASSETTAGS_ENABLED
-#include "modules/assettags/asset_tag_registry.h"
 #include "semantic_assettags_bridge.h"
+
+#include "modules/assettags/asset_tag_registry.h"
 #ifdef TOOLS_ENABLED
 #include "editor/editor_node.h"
 #endif
 #endif
 
 #ifdef TOOLS_ENABLED
-#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_node.h"
+#include "editor/file_system/editor_file_system.h"
 #endif
 
 #ifdef TESTS_ENABLED
@@ -71,6 +73,9 @@
 #include "tests/test_semantic_assettags_bridge.cpp"
 #endif
 #endif
+
+static Ref<SemanticAsyncSearchWorker> g_owned_search_worker;
+static Ref<SemanticAsyncEmbedWorker> g_owned_embed_worker;
 
 static String g_last_semantic_backend;
 static String g_last_semantic_provider;
@@ -225,11 +230,9 @@ void initialize_semanticsearch_module(ModuleInitializationLevel p_level) {
 		}
 #endif
 		if (!SemanticAsyncSearchWorker::get_singleton()) {
+			g_owned_search_worker = memnew(SemanticAsyncSearchWorker);
 #ifdef TESTS_ENABLED
-			SemanticAsyncSearchWorker *worker = memnew(SemanticAsyncSearchWorker);
-			SemanticAsyncSearchWorkerTestHooks::set_module_singleton(worker);
-#else
-			memnew(SemanticAsyncSearchWorker);
+			SemanticAsyncSearchWorkerTestHooks::set_module_singleton(g_owned_search_worker.ptr());
 #endif
 		}
 #ifdef TESTS_ENABLED
@@ -238,11 +241,9 @@ void initialize_semanticsearch_module(ModuleInitializationLevel p_level) {
 		}
 #endif
 		if (!SemanticAsyncEmbedWorker::get_singleton()) {
+			g_owned_embed_worker = memnew(SemanticAsyncEmbedWorker);
 #ifdef TESTS_ENABLED
-			SemanticAsyncEmbedWorker *embed_worker = memnew(SemanticAsyncEmbedWorker);
-			SemanticAsyncEmbedWorkerTestHooks::set_module_singleton(embed_worker);
-#else
-			memnew(SemanticAsyncEmbedWorker);
+			SemanticAsyncEmbedWorkerTestHooks::set_module_singleton(g_owned_embed_worker.ptr());
 #endif
 		}
 #ifdef TESTS_ENABLED
@@ -277,12 +278,12 @@ void uninitialize_semanticsearch_module(ModuleInitializationLevel p_level) {
 #endif
 		if (SemanticAsyncSearchWorker *worker = SemanticAsyncSearchWorker::get_singleton()) {
 			worker->drain_jobs();
-			memdelete(worker);
 		}
+		g_owned_search_worker.unref();
 		if (SemanticAsyncEmbedWorker *embed_worker = SemanticAsyncEmbedWorker::get_singleton()) {
 			embed_worker->drain_jobs();
-			memdelete(embed_worker);
 		}
+		g_owned_embed_worker.unref();
 		if (SemanticAssetIndex *index = SemanticAssetIndex::get_singleton()) {
 			index->save();
 			memdelete(index);

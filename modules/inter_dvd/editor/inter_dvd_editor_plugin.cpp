@@ -33,6 +33,24 @@
 
 #include "export/windows_inter_dvd_export_platform.h"
 #include "inter_dvd_scene_baker.h"
+
+#include "core/config/project_settings.h"
+#include "core/io/resource_loader.h"
+#include "core/math/math_funcs.h"
+#include "core/object/callable_mp.h"
+#include "core/object/object.h"
+#include "core/os/os.h"
+#include "editor/docks/inspector_dock.h"
+#include "editor/editor_node.h"
+#include "editor/export/editor_export.h"
+#include "editor/gui/editor_file_dialog.h"
+#include "editor/inspector/editor_properties.h"
+#include "editor/settings/editor_settings.h"
+#include "scene/gui/box_container.h"
+#include "scene/gui/button.h"
+#include "scene/gui/label.h"
+#include "scene/resources/packed_scene.h"
+
 #include "modules/inter_dvd/author/inter_dvd_ifo_writer.h"
 #include "modules/inter_dvd/author/inter_dvd_project.h"
 #include "modules/inter_dvd/scene/inter_dvd_chapter.h"
@@ -41,23 +59,6 @@
 #include "modules/inter_dvd/scene/inter_dvd_menu_page.h"
 #include "modules/inter_dvd/scene/inter_dvd_title.h"
 #include "modules/inter_dvd/scene/inter_dvd_title_set.h"
-
-#include "core/config/project_settings.h"
-#include "core/io/resource_loader.h"
-#include "core/math/math_funcs.h"
-#include "core/object/object.h"
-#include "core/os/os.h"
-#include "editor/editor_node.h"
-#include "editor/inspector/editor_properties.h"
-#include "editor/settings/editor_settings.h"
-#include "editor/export/editor_export.h"
-#include "editor/gui/editor_file_dialog.h"
-#include "editor/docks/inspector_dock.h"
-#include "scene/gui/box_container.h"
-#include "scene/gui/button.h"
-#include "scene/gui/label.h"
-#include "scene/resources/packed_scene.h"
-#include "core/object/callable_mp.h"
 
 bool EditorInspectorPluginInterDVDCell::can_handle(Object *p_object) {
 	return Object::cast_to<InterDVDCell>(p_object) != nullptr;

@@ -27,6 +27,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
+#include "../justamcp_mcp_tool_macros.h"
 #include "../justamcp_read_limits.h"
 #include "justamcp_script_tools.h"
 
@@ -34,12 +35,10 @@
 #include "core/io/file_access.h"
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
+#include "core/object/class_db.h"
 #include "core/object/script_language.h"
 #include "core/string/regex.h"
 #include "scene/resources/packed_scene.h"
-
-#include "../justamcp_mcp_tool_macros.h"
-#include "core/object/class_db.h"
 
 Dictionary JustAMCPScriptTools::_search_in_scripts(const Dictionary &p_params) {
 	if (!p_params.has("pattern")) {

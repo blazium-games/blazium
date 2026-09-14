@@ -44,7 +44,7 @@ using luau_module::LuauBytecodeFormat;
 #include "core/object/class_db.h"
 #include "core/object/script_language.h"
 #include "core/string/string_name.h"
-#include "editor/file_system/editor_file_system.h"
+#include "core/templates/local_vector.h"
 
 namespace {
 
@@ -66,7 +66,9 @@ void merge_inherited_class_metadata(LuauClassInfo &r_info, const LuauClassInfo &
 void LuauScript::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("load_source_code", "path"), &LuauScript::load_source_code);
 	ClassDB::bind_method(D_METHOD("compile", "force_recompile"), &LuauScript::compile, DEFVAL(false));
+#ifdef TOOLS_ENABLED
 	ClassDB::bind_method(D_METHOD("is_placeholder_fallback_enabled"), &LuauScript::is_placeholder_fallback_enabled);
+#endif
 	ClassDB::bind_vararg_method(METHOD_FLAGS_DEFAULT, "new", &LuauScript::_new, MethodInfo("new"));
 }
 
@@ -184,7 +186,7 @@ StringName LuauScript::get_instance_base_type() const {
 	}
 	if (resolved == StringName()) {
 		Ref<Script> base = get_base_script();
-		if (base.is_valid() && base->is_valid()) {
+		if (base.is_valid() && base->is_script_valid()) {
 			resolved = base->get_instance_base_type();
 		}
 	}
@@ -202,8 +204,8 @@ StringName LuauScript::get_instance_base_type() const {
 		}
 		const String path = get_path();
 		if (!path.is_empty()) {
-			List<StringName> classes;
-			ScriptServer::get_global_class_list(&classes);
+			LocalVector<StringName> classes;
+			ScriptServer::get_global_class_list(classes);
 			for (const StringName &c : classes) {
 				if (ScriptServer::get_global_class_path(c) == path) {
 					const StringName native = ScriptServer::get_global_class_native_base(c);
@@ -304,7 +306,7 @@ Error LuauScript::reload(bool p_keep_state) {
 			const String base_path = ScriptServer::get_global_class_path(extends_info.extends);
 			if (!base_path.is_empty()) {
 				Ref<LuauScript> base_luau = ResourceLoader::load(base_path);
-				if (base_luau.is_valid() && base_luau->is_valid() && base_luau->get_class_vm().is_valid()) {
+				if (base_luau.is_valid() && base_luau->is_script_valid() && base_luau->get_class_vm().is_valid()) {
 					parse_vm = base_luau->get_class_vm();
 				}
 			}
@@ -341,7 +343,7 @@ Error LuauScript::reload(bool p_keep_state) {
 		const String base_path = ScriptServer::get_global_class_path(class_info.extends);
 		if (!base_path.is_empty()) {
 			Ref<LuauScript> base_luau = ResourceLoader::load(base_path);
-			if (base_luau.is_valid() && base_luau->is_valid()) {
+			if (base_luau.is_valid() && base_luau->is_script_valid()) {
 				merge_inherited_class_metadata(class_info, base_luau->get_class_info());
 			}
 		}
@@ -447,7 +449,7 @@ bool LuauScript::is_tool() const {
 	return tool;
 }
 
-bool LuauScript::is_valid() const {
+bool LuauScript::is_script_valid() const {
 	return valid;
 }
 
@@ -478,7 +480,7 @@ bool LuauScript::get_property_default_value(const StringName &p_property, Varian
 		}
 	}
 	Ref<LuauScript> base_luau = get_base_script();
-	if (base_luau.is_valid() && base_luau->is_valid()) {
+	if (base_luau.is_valid() && base_luau->is_script_valid()) {
 		return base_luau->get_property_default_value(p_property, r_value);
 	}
 	return false;
@@ -522,7 +524,7 @@ int LuauScript::get_member_line(const StringName &p_member) const {
 	return find_member_line_in_source(source, p_member);
 }
 
-Variant LuauScript::get_rpc_config() const {
+const Variant LuauScript::get_rpc_config() const {
 	return class_info.rpc_config;
 }
 

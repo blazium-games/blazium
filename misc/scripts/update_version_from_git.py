@@ -13,6 +13,11 @@ Usage (from repository root)::
     python misc/scripts/update_version_from_git.py --dry-run
     python misc/scripts/update_version_from_git.py --status nightly
 
+Or during the SCons build (sets EXTERNAL_* for the build and writes version.py)::
+
+    scons update_version_from_git=yes
+    scons update_version_from_git=yes update_version_status=nightly
+
 Leaves version.py uncommitted on purpose; do not check the modified file in.
 """
 
@@ -83,6 +88,15 @@ def compute_version(repo: str, status_override: str | None) -> dict[str, str | i
         "external_status": status,
         "external_sha": sha,
     }
+
+
+def apply_version_to_environ(version: dict[str, str | int]) -> None:
+    """Set EXTERNAL_* process env vars consumed by methods.get_version_info()."""
+    os.environ["EXTERNAL_MAJOR"] = str(version["external_major"])
+    os.environ["EXTERNAL_MINOR"] = str(version["external_minor"])
+    os.environ["EXTERNAL_PATCH"] = str(version["external_patch"])
+    os.environ["EXTERNAL_STATUS"] = str(version["external_status"])
+    os.environ["EXTERNAL_SHA"] = str(version["external_sha"])
 
 
 def update_version_py(path: str, version: dict[str, str | int]) -> None:

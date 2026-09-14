@@ -190,7 +190,7 @@ class TemplateModifier {
 
 		Vector<uint8_t> save() const;
 		void load(Ref<FileAccess> p_icon_file);
-		void fill_with_godot_blue();
+		void fill_with_blazium_purple();
 	};
 
 	struct SectionEntry : ByteStream {

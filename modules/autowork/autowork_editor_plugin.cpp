@@ -30,14 +30,15 @@
 #ifdef TOOLS_ENABLED
 
 #include "autowork_editor_plugin.h"
+
 #include "autowork_logger.h"
 #include "autowork_main.h"
 
 #include "core/input/shortcut.h"
-#include "core/os/thread.h"
-#include "editor/editor_node.h"
 #include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
+#include "core/os/thread.h"
+#include "editor/editor_node.h"
 
 void AutoworkEditorPlugin::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_run_tests_pressed"), &AutoworkEditorPlugin::_run_tests_pressed);

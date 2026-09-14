@@ -58,10 +58,11 @@
 #include "scene/main/window.h"
 #include "servers/audio/audio_server.h"
 #ifdef TOOLS_ENABLED
-#include "editor/settings/editor_settings.h"
 #include "tools/justamcp_tool_executor.h"
-#include "core/string/string_name.h"
+
 #include "core/io/dir_access.h"
+#include "core/string/string_name.h"
+#include "editor/settings/editor_settings.h"
 #endif
 
 JustAMCPRuntime *JustAMCPRuntime::singleton = nullptr;

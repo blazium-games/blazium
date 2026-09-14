@@ -10,5 +10,6 @@ namespace GodotTools
         Rider,
         CustomEditor,
         Fleet,
+        Codium,
     }
 }

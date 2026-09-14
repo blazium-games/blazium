@@ -2,7 +2,7 @@
   "fill-specializations" : [
     {
       "value" : {
-        "automatic-gradient" : "display-p3:0.84784,0.92489,1.00000,1.00000"
+        "automatic-gradient" : "display-p3:1.00000,0.50196,1.00000,1.00000"
       }
     },
     {
@@ -28,7 +28,7 @@
         },
         {
           "fill" : {
-            "automatic-gradient" : "srgb:0.00000,0.50588,1.00000,1.00000"
+            "automatic-gradient" : "srgb:0.37647,0.00000,0.74902,1.00000"
           },
           "image-name" : "layer_1.svg",
           "name" : "layer_1"

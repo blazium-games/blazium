@@ -30,9 +30,10 @@
 #pragma once
 
 #include "core/config/project_settings.h"
+#include "tests/test_macros.h"
+
 #include "modules/livewallpaper/livewallpaper_cmdline.h"
 #include "modules/livewallpaper/livewallpaper_workerw.h"
-#include "tests/test_macros.h"
 
 TEST_CASE("[Modules][LiveWallpaper] consume preview and quit") {
 	LiveWallpaperCmdline::reset();

@@ -61,11 +61,11 @@ void TTS_Linux::speech_init_thread_func(void *p_userdata) {
 			CharString class_str;
 			String config_name = GLOBAL_GET("application/config/name");
 			if (config_name.length() == 0) {
-				class_str = "Godot_Engine";
+				class_str = "Blazium_Engine";
 			} else {
 				class_str = config_name.utf8();
 			}
-			tts->synth = spd_open(class_str.get_data(), "Godot_Engine_Speech_API", "Godot_Engine", SPD_MODE_THREADED);
+			tts->synth = spd_open(class_str.get_data(), "Blazium_Engine_Speech_API", "Blazium_Engine", SPD_MODE_THREADED);
 			if (tts->synth) {
 				tts->synth->callback_end = &speech_event_callback;
 				tts->synth->callback_cancel = &speech_event_callback;

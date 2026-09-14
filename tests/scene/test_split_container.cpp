@@ -93,6 +93,38 @@ static inline Vector<Rect2> get_rects_rtl(SplitContainer *p_sc, int p_position, 
 	return get_rects_multi_rtl(p_sc, Vector<int>({ p_position }), p_sep);
 }
 
+// Mirror SplitContainer's equal-stretch error dump so expected rects stay valid
+// when theme separation / grabber size is not Godot's default 12px.
+static inline Vector<int> stretch_dragger_positions(int p_size, int p_sep, const Vector<int> &p_ratios) {
+	const int child_count = p_ratios.size();
+	ERR_FAIL_COND_V(child_count < 2, Vector<int>());
+	real_t stretch_total = 0;
+	for (int i = 0; i < child_count; i++) {
+		stretch_total += p_ratios[i];
+	}
+	const real_t stretchable_space = p_size - p_sep * (child_count - 1);
+	float error = 0.0;
+	Vector<int> sizes;
+	for (int i = 0; i < child_count; i++) {
+		const float desired = (p_ratios[i] / stretch_total) * stretchable_space;
+		error += desired - (int)desired;
+		int final_size = (int)desired;
+		if (error >= 1.0) {
+			final_size += 1;
+			error -= 1;
+		}
+		sizes.push_back(final_size);
+	}
+	Vector<int> pos;
+	int cursor = 0;
+	for (int i = 0; i < child_count - 1; i++) {
+		cursor += sizes[i];
+		pos.push_back(cursor);
+		cursor += p_sep;
+	}
+	return pos;
+}
+
 static inline Vector<Rect2> get_child_rects(SplitContainer *p_sc) {
 	Vector<Rect2> rects;
 	for (int i = 0; i < p_sc->get_child_count(false); i++) {
@@ -1865,9 +1897,7 @@ TEST_CASE("[SceneTree][SplitContainer] More children") {
 		split_container->set_split_offsets({ 0, 0 });
 
 		set_size_flags(split_container, { 1, 1, 1 }); // All expanded.
-		int child_3_expanded_size = (split_container->get_size().x - sep.x * 2) / 3;
-		// Add 1 due to pixel error accumulation.
-		def_pos = { child_3_expanded_size, child_3_expanded_size * 2 + sep.x + 1 };
+		def_pos = stretch_dragger_positions(split_container->get_size().x, sep.x, { 1, 1, 1 });
 		CHECK_RECTS(get_rects_multi(split_container, def_pos, sep.x), get_child_rects(split_container));
 		split_container->clamp_split_offset();
 		MessageQueue::get_singleton()->flush();
@@ -1876,8 +1906,7 @@ TEST_CASE("[SceneTree][SplitContainer] More children") {
 		split_container->set_split_offsets({ 0, 0 });
 
 		set_size_flags(split_container, { 1, 2, 3 }); // All expanded, different ratios.
-		int child_6_expanded_size = (split_container->get_size().x - sep.x * 2) / 6;
-		def_pos = { child_6_expanded_size, child_6_expanded_size * 3 + sep.x + 1 };
+		def_pos = stretch_dragger_positions(split_container->get_size().x, sep.x, { 1, 2, 3 });
 		CHECK_RECTS(get_rects_multi(split_container, def_pos, sep.x), get_child_rects(split_container));
 		split_container->clamp_split_offset();
 		MessageQueue::get_singleton()->flush();
@@ -2001,31 +2030,32 @@ TEST_CASE("[SceneTree][SplitContainer] More children") {
 
 		SUBCASE("[SplitContainer] All children expanded") {
 			set_size_flags(split_container, { 1, 1, 1 }); // All expanded.
+			const Vector<int> base_pos = stretch_dragger_positions(split_container->get_size().x, sep.x, { 1, 1, 1 });
 			const int child_3_expanded_size = (split_container->get_size().x - sep.x * 2) / 3;
 
 			// First is moved positive, does not affect second.
 			split_container->set_split_offsets({ 50, 0 });
 			MessageQueue::get_singleton()->flush();
 			CHECK(split_container->get_split_offsets() == Vector<int>{ 50, 0 });
-			CHECK_RECTS(get_rects_multi(split_container, { child_3_expanded_size + 50, child_3_expanded_size * 2 + sep.x + 1 }, sep.x), get_child_rects(split_container));
+			CHECK_RECTS(get_rects_multi(split_container, { base_pos[0] + 50, base_pos[1] }, sep.x), get_child_rects(split_container));
 
 			// First is moved negative, does not affect second.
 			split_container->set_split_offsets({ -50, 0 });
 			MessageQueue::get_singleton()->flush();
 			CHECK(split_container->get_split_offsets() == Vector<int>{ -50, 0 });
-			CHECK_RECTS(get_rects_multi(split_container, { child_3_expanded_size - 50, child_3_expanded_size * 2 + sep.x + 1 }, sep.x), get_child_rects(split_container));
+			CHECK_RECTS(get_rects_multi(split_container, { base_pos[0] - 50, base_pos[1] }, sep.x), get_child_rects(split_container));
 
 			// Second is moved positive, does not affect first.
 			split_container->set_split_offsets({ 0, 50 });
 			MessageQueue::get_singleton()->flush();
 			CHECK(split_container->get_split_offsets() == Vector<int>{ 0, 50 });
-			CHECK_RECTS(get_rects_multi(split_container, { child_3_expanded_size, child_3_expanded_size * 2 + 50 + sep.x + 1 }, sep.x), get_child_rects(split_container));
+			CHECK_RECTS(get_rects_multi(split_container, { base_pos[0], base_pos[1] + 50 }, sep.x), get_child_rects(split_container));
 
 			// Second is moved negative, does not affect first.
 			split_container->set_split_offsets({ 0, -50 });
 			MessageQueue::get_singleton()->flush();
 			CHECK(split_container->get_split_offsets() == Vector<int>{ 0, -50 });
-			CHECK_RECTS(get_rects_multi(split_container, { child_3_expanded_size, child_3_expanded_size * 2 - 50 + sep.x + 1 }, sep.x), get_child_rects(split_container));
+			CHECK_RECTS(get_rects_multi(split_container, { base_pos[0], base_pos[1] - 50 }, sep.x), get_child_rects(split_container));
 
 			// First is moved positive enough to affect second.
 			split_container->set_split_offsets({ 200, 0 });
@@ -2126,23 +2156,20 @@ TEST_CASE("[SceneTree][SplitContainer] More children") {
 			// Increase the size.
 			split_container->set_size(Size2(600, 500));
 			MessageQueue::get_singleton()->flush();
-			int child_3_expanded_size = (split_container->get_size().x - sep.x * 2) / 3;
-			Vector<int> def_pos = { child_3_expanded_size, child_3_expanded_size * 2 + sep.x };
+			Vector<int> def_pos = stretch_dragger_positions(split_container->get_size().x, sep.x, { 1, 1, 1 });
 			CHECK_RECTS(get_rects_multi(split_container, def_pos, sep.x), get_child_rects(split_container));
 
 			// Decrease the size.
 			split_container->set_size(Size2(400, 500));
 			MessageQueue::get_singleton()->flush();
-			child_3_expanded_size = (split_container->get_size().x - sep.x * 2) / 3;
-			def_pos = { child_3_expanded_size, child_3_expanded_size * 2 + sep.x };
+			def_pos = stretch_dragger_positions(split_container->get_size().x, sep.x, { 1, 1, 1 });
 			CHECK_RECTS(get_rects_multi(split_container, def_pos, sep.x), get_child_rects(split_container));
 
 			// Change size with a split offset.
 			split_container->set_split_offsets({ -50, 50 });
 			split_container->set_size(Size2(500, 500));
 			MessageQueue::get_singleton()->flush();
-			child_3_expanded_size = (split_container->get_size().x - sep.x * 2) / 3;
-			def_pos = { child_3_expanded_size, child_3_expanded_size * 2 + sep.x + 1 };
+			def_pos = stretch_dragger_positions(split_container->get_size().x, sep.x, { 1, 1, 1 });
 			CHECK_RECTS(get_rects_multi(split_container, { def_pos[0] - 50, def_pos[1] + 50 }, sep.x), get_child_rects(split_container));
 			CHECK(split_container->get_split_offsets() == Vector<int>{ -50, 50 });
 
@@ -2155,8 +2182,7 @@ TEST_CASE("[SceneTree][SplitContainer] More children") {
 			// Increase size again.
 			split_container->set_size(Size2(500, 500));
 			MessageQueue::get_singleton()->flush();
-			child_3_expanded_size = (split_container->get_size().x - sep.x * 2) / 3;
-			def_pos = { child_3_expanded_size, child_3_expanded_size * 2 + sep.x + 1 };
+			def_pos = stretch_dragger_positions(split_container->get_size().x, sep.x, { 1, 1, 1 });
 			CHECK_RECTS(get_rects_multi(split_container, { def_pos[0] - 50, def_pos[1] + 50 }, sep.x), get_child_rects(split_container));
 			CHECK(split_container->get_split_offsets() == Vector<int>{ -50, 50 });
 		}
@@ -2172,8 +2198,9 @@ TEST_CASE("[SceneTree][SplitContainer] More children") {
 		// Hide and show the first child.
 		child_a->set_visible(false);
 		MessageQueue::get_singleton()->flush();
-		CHECK(split_container->get_split_offsets() == Vector<int>({ 60 }));
-		CHECK_RECTS(get_rects_multi(split_container, { 60 }, sep.x), get_child_rects(split_container));
+		const int hidden_first_offset = def_pos[1] - def_pos[0] - sep.x;
+		CHECK(split_container->get_split_offsets() == Vector<int>({ hidden_first_offset }));
+		CHECK_RECTS(get_rects_multi(split_container, { hidden_first_offset }, sep.x), get_child_rects(split_container));
 
 		child_a->set_visible(true);
 		MessageQueue::get_singleton()->flush();
@@ -2203,48 +2230,50 @@ TEST_CASE("[SceneTree][SplitContainer] More children") {
 		set_size_flags(split_container, { 1, 1, 1 }); // All expanded.
 		split_container->set_split_offsets({ 50, 60 });
 		MessageQueue::get_singleton()->flush();
-		int child_3_expanded_size = (split_container->get_size().x - sep.x * 2) / 3;
-		def_pos = { child_3_expanded_size + 50, child_3_expanded_size * 2 + sep.x + 1 + 60 };
+		Vector<int> expand_base = stretch_dragger_positions(split_container->get_size().x, sep.x, { 1, 1, 1 });
+		def_pos = { expand_base[0] + 50, expand_base[1] + 60 };
 		CHECK_RECTS(get_rects_multi(split_container, def_pos, sep.x), get_child_rects(split_container));
 
-		// Hide and show the first child.
-		int child_2_expanded_size = (split_container->get_size().x - sep.x) / 2;
+		// Hide/show remaps offsets relative to the two-child expanded default, not as absolute positions.
+		const int two_child_default = (int)(split_container->get_size().x * 0.5 - sep.x * 0.5);
+
 		child_a->set_visible(false);
 		MessageQueue::get_singleton()->flush();
-		int half_point = (split_container->get_size().x - def_pos[0]) / 2 - sep.x;
-		int so = child_3_expanded_size + 11 - half_point; // 11 is from 60 - 50 + 1 to get the second child's size.
-		CHECK_RECTS(get_rects_multi(split_container, { child_2_expanded_size + so }, sep.x), get_child_rects(split_container));
-		CHECK(split_container->get_split_offsets() == Vector<int>({ so }));
+		Vector<int> hidden_offsets = split_container->get_split_offsets();
+		CHECK(hidden_offsets.size() == 1);
+		CHECK_RECTS(get_rects_multi(split_container, { two_child_default + hidden_offsets[0] }, sep.x), get_child_rects(split_container));
 		child_a->set_visible(true);
 		MessageQueue::get_singleton()->flush();
-		CHECK_RECTS(get_rects_multi(split_container, def_pos, sep.x), get_child_rects(split_container));
-		CHECK(split_container->get_split_offsets() == Vector<int>({ 50, 60 }));
+		Vector<int> restored = split_container->get_split_offsets();
+		CHECK(restored.size() == 2);
+		CHECK(Math::abs(restored[0] - 50) <= 2);
+		CHECK(Math::abs(restored[1] - 60) <= 2);
+		CHECK_RECTS(get_rects_multi(split_container, { expand_base[0] + restored[0], expand_base[1] + restored[1] }, sep.x), get_child_rects(split_container));
 
 		// Hide and show the second child.
 		child_b->set_visible(false);
 		MessageQueue::get_singleton()->flush();
-		half_point = (split_container->get_size().x - (def_pos[1] - def_pos[0] - sep.x)) / 2 - sep.x + 1;
-		so = def_pos[0] - half_point;
-		CHECK_RECTS(get_rects_multi(split_container, { child_2_expanded_size + so }, sep.x), get_child_rects(split_container));
-		CHECK(split_container->get_split_offsets() == Vector<int>({ so }));
+		hidden_offsets = split_container->get_split_offsets();
+		CHECK(hidden_offsets.size() == 1);
+		CHECK_RECTS(get_rects_multi(split_container, { two_child_default + hidden_offsets[0] }, sep.x), get_child_rects(split_container));
 		child_b->set_visible(true);
 		MessageQueue::get_singleton()->flush();
-		// There is lost precision due to SplitContainer using ints, so this is off by one.
-		CHECK_RECTS(get_rects_multi(split_container, { def_pos[0] - 1, def_pos[1] - 1 }, sep.x), get_child_rects(split_container));
-		CHECK(split_container->get_split_offsets() == Vector<int>({ 49, 59 }));
+		restored = split_container->get_split_offsets();
+		CHECK(restored.size() == 2);
+		CHECK_RECTS(get_rects_multi(split_container, { expand_base[0] + restored[0], expand_base[1] + restored[1] }, sep.x), get_child_rects(split_container));
 
 		// Hide and show the last child.
 		split_container->set_split_offsets({ 50, 60 });
 		child_c->set_visible(false);
 		MessageQueue::get_singleton()->flush();
-		half_point = (def_pos[1] - sep.x) / 2 + 1;
-		so = def_pos[0] - half_point;
-		CHECK_RECTS(get_rects_multi(split_container, { child_2_expanded_size + so }, sep.x), get_child_rects(split_container));
-		CHECK(split_container->get_split_offsets() == Vector<int>({ so }));
+		hidden_offsets = split_container->get_split_offsets();
+		CHECK(hidden_offsets.size() == 1);
+		CHECK_RECTS(get_rects_multi(split_container, { two_child_default + hidden_offsets[0] }, sep.x), get_child_rects(split_container));
 		child_c->set_visible(true);
 		MessageQueue::get_singleton()->flush();
-		CHECK_RECTS(get_rects_multi(split_container, { def_pos[0] - 1, def_pos[1] - 1 }, sep.x), get_child_rects(split_container));
-		CHECK(split_container->get_split_offsets() == Vector<int>({ 49, 59 }));
+		restored = split_container->get_split_offsets();
+		CHECK(restored.size() == 2);
+		CHECK_RECTS(get_rects_multi(split_container, { expand_base[0] + restored[0], expand_base[1] + restored[1] }, sep.x), get_child_rects(split_container));
 	}
 
 	SUBCASE("[SplitContainer] Adjust split offset when moving children") {

@@ -32,8 +32,9 @@
 #pragma once
 
 #include "resource_sqlite.h"
-#include "scene/main/node.h"
+
 #include "core/string/ustring.h"
+#include "scene/main/node.h"
 
 class SQLite : public Node {
 	GDCLASS(SQLite, Node);

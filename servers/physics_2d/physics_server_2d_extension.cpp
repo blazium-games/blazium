@@ -159,6 +159,8 @@ void PhysicsServer2DExtension::_bind_methods() {
 	GDVIRTUAL_BIND(_space_create);
 	GDVIRTUAL_BIND(_space_set_active, "space", "active");
 	GDVIRTUAL_BIND(_space_is_active, "space");
+	GDVIRTUAL_BIND(_space_step, "space", "delta");
+	GDVIRTUAL_BIND(_space_flush_queries, "space");
 
 	GDVIRTUAL_BIND(_space_set_param, "space", "param", "value");
 	GDVIRTUAL_BIND(_space_get_param, "space", "param");
@@ -313,6 +315,9 @@ void PhysicsServer2DExtension::_bind_methods() {
 
 	GDVIRTUAL_BIND(_joint_create);
 	GDVIRTUAL_BIND(_joint_clear, "joint");
+
+	GDVIRTUAL_BIND(_joint_set_enabled, "joint", "enabled");
+	GDVIRTUAL_BIND(_joint_is_enabled, "joint");
 
 	GDVIRTUAL_BIND(_joint_set_param, "joint", "param", "value");
 	GDVIRTUAL_BIND(_joint_get_param, "joint", "param");

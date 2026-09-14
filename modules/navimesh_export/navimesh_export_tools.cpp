@@ -32,14 +32,14 @@
 #ifdef TOOLS_ENABLED
 #ifdef MODULE_JUSTAMCP_ENABLED
 
-#include "navimesh_export_tools.h"
-
 #include "navimesh_export_collect.h"
+#include "navimesh_export_tools.h"
 #include "navimesh_exporter.h"
 
-#include "modules/justamcp/tools/justamcp_tool_schema_builder.h"
-#include "scene/main/node.h"
 #include "core/object/class_db.h"
+#include "scene/main/node.h"
+
+#include "modules/justamcp/tools/justamcp_tool_schema_builder.h"
 
 static Dictionary _export_region_from_scene(NavimeshExporter *p_exporter, const String &p_scene, const String &p_region_path, const String &p_output, NavimeshExporter::Format p_format) {
 	Dictionary result;

@@ -34,15 +34,17 @@
 #include "core/io/image.h"
 #include "core/math/math_funcs.h"
 #include "core/object/class_db.h"
-#include "modules/livewallpaper/livewallpaper_workerw.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
 #include "servers/display/display_server.h"
 #include "servers/rendering/rendering_server.h"
 
+#include "modules/livewallpaper/livewallpaper_workerw.h"
+
 #ifdef WINDOWS_ENABLED
-#include <windows.h>
 #include "core/object/callable_mp.h"
+
+#include <windows.h>
 #endif
 
 LiveWallpaper *LiveWallpaper::singleton = nullptr;
@@ -384,11 +386,11 @@ void LiveWallpaper::_free_overlay_canvas() {
 		return;
 	}
 	if (overlay_item.is_valid()) {
-		rs->free(overlay_item);
+		rs->free_rid(overlay_item);
 		overlay_item = RID();
 	}
 	if (overlay_canvas.is_valid()) {
-		rs->free(overlay_canvas);
+		rs->free_rid(overlay_canvas);
 		overlay_canvas = RID();
 	}
 }

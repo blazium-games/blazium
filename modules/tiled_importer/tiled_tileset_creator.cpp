@@ -30,12 +30,14 @@
 /**************************************************************************/
 
 #include "tiled_tileset_creator.h"
+
+#include "tiled_dictionary_builder.h"
+
 #include "scene/2d/light_occluder_2d.h"
 #include "scene/2d/navigation/navigation_region_2d.h"
 #include "scene/resources/2d/navigation_polygon.h"
 #include "scene/resources/2d/polygon_path_finder.h"
 #include "scene/resources/placeholder_textures.h"
-#include "tiled_dictionary_builder.h"
 
 // Note: Replicates roughly 800 lines of TilesetCreator.gd
 

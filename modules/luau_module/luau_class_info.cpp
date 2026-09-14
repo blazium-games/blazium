@@ -28,25 +28,26 @@
 /**************************************************************************/
 
 #include "luau_class_info.h"
-#include "analysis/luau_analysis.h"
-#include "luau_codegen.h"
-#include "luau_parser_pool.h"
-#include "luau_script_language.h"
-#include "scheduler/luau_task_scheduler.h"
 
+#include "analysis/luau_analysis.h"
 #include "bindings/dictionary.h"
 #include "bindings/luau_blazium_types.h"
 #include "bindings/variant.h"
 #include "helpers.h"
 #include "lua_blazium_classes.h"
 #include "luau.h"
+#include "luau_codegen.h"
+#include "luau_parser_pool.h"
+#include "luau_script_language.h"
 #include "require/luau_package_path.h"
+#include "scheduler/luau_task_scheduler.h"
 #include "string_cache.h"
 
 #include "core/error/error_macros.h"
 #include "core/object/class_db.h"
-#include <lualib.h>
 #include "core/string/string_name.h"
+
+#include <lualib.h>
 
 using namespace luau_module;
 

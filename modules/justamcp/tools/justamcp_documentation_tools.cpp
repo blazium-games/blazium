@@ -30,6 +30,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_documentation_tools.h"
+
 #include "justamcp_route_helpers.h"
 
 #include "editor/doc/doc_tools.h"

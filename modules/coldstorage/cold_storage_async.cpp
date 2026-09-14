@@ -35,12 +35,12 @@
 
 // Include Godot headers before the SDK: winsock2.h defines CONNECT/IGNORE, which
 // break Godot enums if those headers are parsed afterward.
+#include "client/sdk/client_sdk.h"
+#include "client/sdk/tls_options.h"
+
 #include "core/object/object.h"
 #include "core/object/worker_thread_pool.h"
 #include "core/os/mutex.h"
-
-#include "client/sdk/client_sdk.h"
-#include "client/sdk/tls_options.h"
 #ifdef CONNECT
 #undef CONNECT
 #endif
@@ -48,11 +48,12 @@
 #undef IGNORE
 #endif
 
+#include "core/object/callable_mp.h"
+#include "core/string/string_name.h"
+
 #include <exception>
 #include <memory>
 #include <utility>
-#include "core/object/callable_mp.h"
-#include "core/string/string_name.h"
 
 namespace {
 

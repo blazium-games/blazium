@@ -29,11 +29,12 @@
 
 #include "enet_client.h"
 
-#include "core/os/os.h"
-#include "core/variant/callable.h"
 #include "enet_packet.h"
+
 #include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
+#include "core/os/os.h"
+#include "core/variant/callable.h"
 #include "scene/main/scene_tree.h"
 
 ENetClient *ENetClient::singleton = nullptr;

@@ -41,6 +41,7 @@
 #include <winsock2.h>
 #else
 #include <unistd.h>
+
 #include <fstream>
 #endif
 
@@ -48,7 +49,7 @@ namespace coldstorage {
 
 inline bool csNetTraceEnabled() {
 	static const bool enabled = []() {
-		const char *value = std::getenv("COLDSTORAGE_TEST_TRACE");
+		const char *value = ::getenv("COLDSTORAGE_TEST_TRACE");
 		if (value == nullptr) {
 			return false;
 		}
@@ -166,13 +167,13 @@ private:
 	std::thread worker_;
 };
 
-#define CS_NET_TRACE(component, expr)                                      \
-	do {                                                                   \
-		if (::coldstorage::csNetTraceEnabled()) {                          \
-			std::ostringstream _cs_trace_oss;                              \
-			_cs_trace_oss << expr;                                         \
+#define CS_NET_TRACE(component, expr) \
+	do { \
+		if (::coldstorage::csNetTraceEnabled()) { \
+			std::ostringstream _cs_trace_oss; \
+			_cs_trace_oss << expr; \
 			::coldstorage::csNetTraceLine(component, _cs_trace_oss.str()); \
-		}                                                                  \
+		} \
 	} while (0)
 
 } //namespace coldstorage

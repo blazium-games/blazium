@@ -74,7 +74,7 @@ extern int WINAPI ShimMainCRTStartup() {
 		return WinMainCRTStartup();
 #endif
 	} else {
-		MessageBoxW(NULL, L"A CPU with SSE4.2 instruction set support is required.", L"Godot Engine", MB_OK | MB_ICONEXCLAMATION | MB_TASKMODAL);
+		MessageBoxW(NULL, L"A CPU with SSE4.2 instruction set support is required.", L"Blazium Engine", MB_OK | MB_ICONEXCLAMATION | MB_TASKMODAL);
 		return -1;
 	}
 }

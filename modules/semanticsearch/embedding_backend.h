@@ -30,6 +30,7 @@
 #pragma once
 
 #include "semantic_search_backend.h"
+
 #include "core/string/ustring.h"
 
 class EmbeddingBackend : public SemanticSearchBackend {

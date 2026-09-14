@@ -30,8 +30,8 @@
 #include "socketio_client.h"
 
 #include "core/io/json.h"
-#include "core/os/time.h"
 #include "core/object/class_db.h"
+#include "core/os/time.h"
 
 SocketIOClient *SocketIOClient::singleton = nullptr;
 

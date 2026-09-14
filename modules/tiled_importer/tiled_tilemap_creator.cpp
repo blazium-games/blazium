@@ -30,9 +30,15 @@
 /**************************************************************************/
 
 #include "tiled_tilemap_creator.h"
+
+#include "tiled_dictionary_builder.h"
+#include "tiled_tileset_creator.h"
+
+#include "core/config/engine.h"
 #include "core/core_bind.h"
 #include "core/io/json.h"
 #include "core/io/marshalls.h"
+#include "core/string/string_name.h"
 #include "scene/2d/light_occluder_2d.h"
 #include "scene/2d/line_2d.h"
 #include "scene/2d/marker_2d.h"
@@ -50,7 +56,6 @@
 #include "scene/2d/physics/static_body_2d.h"
 #include "scene/2d/polygon_2d.h"
 #include "scene/2d/sprite_2d.h"
-#include "modules/tilemap/tile_map_layer.h"
 #include "scene/gui/color_rect.h"
 #include "scene/gui/label.h"
 #include "scene/gui/texture_rect.h"
@@ -60,10 +65,8 @@
 #include "scene/resources/2d/segment_shape_2d.h"
 #include "scene/resources/font.h"
 #include "servers/text/text_server.h"
-#include "tiled_dictionary_builder.h"
-#include "tiled_tileset_creator.h"
-#include "core/string/string_name.h"
-#include "core/config/engine.h"
+
+#include "modules/tilemap/tile_map_layer.h"
 
 // Note: Replicates roughly 2200 lines of TilemapCreator.gd
 
@@ -460,10 +463,11 @@ void TiledTilemapCreator::handle_parallaxes(Node *p_parent, Node *p_layer_node, 
 	}
 	p_layer_node->set_owner(_base_node);
 }
+#include "tiled_tileson_bridge.h"
+
 #include "core/crypto/crypto_core.h"
 #include "core/io/compression.h"
 #include "core/io/marshalls.h"
-#include "tiled_tileson_bridge.h"
 
 Array TiledTilemapCreator::handle_data(const Variant &p_data, int p_map_size) {
 	Array ret;
@@ -574,7 +578,6 @@ String TiledTilemapCreator::get_tileset_orientation(int p_gid) {
 	if (idx < 0) {
 		return "orthogonal";
 	}
-	Dictionary dict = _atlas_sources[idx];
 	return (p_gid > 0 ? _tileset->get_name() : "orthogonal");
 }
 
@@ -583,7 +586,6 @@ String TiledTilemapCreator::get_tileset_alignment(int p_gid) {
 	if (idx < 0) {
 		return "unspecified";
 	}
-	Dictionary dict = _atlas_sources[idx];
 	return (p_gid > 0 ? _tileset->get_name() : "unspecified");
 }
 

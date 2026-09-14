@@ -39,10 +39,10 @@
 #include "tools/justamcp_settings_resolver.h"
 
 #include "core/io/json.h"
+#include "core/object/class_db.h"
 #include "core/os/os.h"
 #include "core/os/time.h"
 #include "core/version.h"
-#include "core/object/class_db.h"
 
 static uint64_t g_justamcp_client_rpc_id = 1;
 
@@ -84,7 +84,7 @@ Dictionary JustAMCPMCPClient::client_info() {
 	Dictionary info;
 	info["name"] = "JustAMCP";
 	info["title"] = "JustAMCP";
-	info["version"] = String(VERSION_FULL_NAME);
+	info["version"] = String(GODOT_VERSION_FULL_NAME);
 	info["websiteUrl"] = "https://blazium.app";
 	return info;
 }
@@ -226,7 +226,6 @@ Dictionary JustAMCPMCPClient::_handle_input_required(const String &p_method, con
 	}
 	Dictionary elicitation = inner.has("elicitation") ? Dictionary(inner["elicitation"]) : Dictionary();
 	const String mode = String(elicitation.get("mode", "form"));
-	Dictionary responses;
 	if (mode == "url") {
 		const String url = String(elicitation.get("url", ""));
 		Dictionary prompt;

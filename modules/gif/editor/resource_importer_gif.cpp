@@ -29,10 +29,10 @@
 
 #include "resource_importer_gif.h"
 
-#include "modules/gif/gif_texture.h"
-
 #include "core/io/resource_saver.h"
 #include "core/string/string_name.h"
+
+#include "modules/gif/gif_texture.h"
 
 String ResourceImporterGIF::get_importer_name() const {
 	return "gif";

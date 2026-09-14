@@ -29,10 +29,11 @@
 
 #include "register_types.h"
 
-#include "core/config/project_settings.h"
 #include "rcon_client.h"
 #include "rcon_packet.h"
 #include "rcon_server.h"
+
+#include "core/config/project_settings.h"
 #include "core/object/class_db.h"
 
 void initialize_rcon_module(ModuleInitializationLevel p_level) {

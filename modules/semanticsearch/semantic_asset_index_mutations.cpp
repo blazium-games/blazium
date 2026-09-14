@@ -27,16 +27,17 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "semantic_asset_index.h"
-#include "semantic_asset_index_helpers.h"
-
-#include "core/config/project_settings.h"
 #include "hash_vector_embedding.h"
 #include "lexical_index_builder.h"
-#include "modules/modules_enabled.gen.h"
+#include "semantic_asset_index.h"
+#include "semantic_asset_index_helpers.h"
 #include "semantic_embedding_pipeline.h"
 #include "semantic_index_store.h"
 #include "semantic_search_backend_factory.h"
+
+#include "core/config/project_settings.h"
+
+#include "modules/modules_enabled.gen.h"
 
 #ifdef MODULE_ASSETTAGS_ENABLED
 #include "modules/assettags/asset_tag_registry.h"
@@ -44,8 +45,8 @@
 #endif
 
 #ifdef TOOLS_ENABLED
-#include "editor/file_system/editor_file_system.h"
 #include "core/io/file_access.h"
+#include "editor/file_system/editor_file_system.h"
 #endif
 
 Error SemanticAssetIndex::rebuild_index() {

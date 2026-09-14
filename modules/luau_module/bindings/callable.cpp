@@ -28,19 +28,20 @@
 /**************************************************************************/
 
 #include "bindings/callable.h"
-#include "luau_script_language.h"
 
 #include "bindings/variant.h"
 #include "helpers.h"
 #include "lua_state.h"
+#include "luau_script_language.h"
 
 #include "core/error/error_macros.h"
 #include "core/os/memory.h"
 #include "core/os/time.h"
+#include "core/string/string_name.h"
 #include "core/templates/hashfuncs.h"
 #include "core/variant/variant.h"
+
 #include <lualib.h>
-#include "core/string/string_name.h"
 
 using namespace luau_module;
 

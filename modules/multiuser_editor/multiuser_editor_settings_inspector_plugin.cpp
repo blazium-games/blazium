@@ -31,12 +31,13 @@
 
 #include "multiuser_editor_settings_inspector_plugin.h"
 
-#include "editor/inspector/editor_properties.h"
 #include "multiuser_editor_network.h"
 #include "multiuser_editor_plugin.h"
 #include "multiuser_editor_settings_ui.h"
-#include "scene/gui/label.h"
+
+#include "editor/inspector/editor_properties.h"
 #include "editor/settings/editor_settings.h"
+#include "scene/gui/label.h"
 
 bool MultiuserEditorSettingsInspectorPlugin::can_handle(Object *p_object) {
 	String cname = p_object->get_class();

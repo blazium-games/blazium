@@ -32,7 +32,13 @@ const Preloader = /** @constructor */ function () { // eslint-disable-line no-un
 			loaded: 0,
 			done: false,
 		};
-		return fetch(file).then(function (response) {
+
+		let url = file;
+		// Prepend .proxy/ to the url value if needed
+		if (window.DiscordEmbed?.isDiscordEmbed()) {
+			url = `.proxy/${url}`;
+		}
+		return fetch(url).then(function (response) {
 			if (!response.ok) {
 				return Promise.reject(new Error(`Failed loading file '${file}'`));
 			}

@@ -31,10 +31,10 @@
 
 #ifdef TOOLS_ENABLED
 
+#include "core/string/ustring.h"
 #include "editor/export/editor_export_platform.h"
 #include "editor/export/editor_export_plugin.h"
 #include "editor/export/editor_export_preset.h"
-#include "core/string/ustring.h"
 
 class EditorExportLuau : public EditorExportPlugin {
 	GDCLASS(EditorExportLuau, EditorExportPlugin);

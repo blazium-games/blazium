@@ -34,10 +34,10 @@
 #include "core/crypto/crypto_core.h"
 #include "core/io/file_access.h"
 #include "core/io/ip.h"
+#include "core/object/class_db.h"
 #include "core/os/os.h"
 #include "core/os/time.h"
 #include "core/string/regex.h"
-#include "core/object/class_db.h"
 
 void IRCClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("connect_to_server", "host", "port", "use_ssl", "nick", "username", "realname", "password"), &IRCClient::connect_to_server, DEFVAL(""));
@@ -1124,7 +1124,6 @@ void IRCClient::_handle_numeric(Ref<IRCMessage> p_message) {
 void IRCClient::_handle_command(Ref<IRCMessage> p_message) {
 	String command = p_message->get_command();
 	PackedStringArray params = p_message->get_params();
-	String prefix = p_message->get_prefix();
 	Dictionary tags = p_message->get_tags();
 
 	if (command == "PING") {

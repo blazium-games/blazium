@@ -33,7 +33,6 @@
 #include "analysis/luau_typecheck.h"
 #include "bindings/object.h"
 #include "bindings/variant.h"
-#include "modules/luau_module/editor/luau_completion.h"
 #include "lua_blazium_classes.h"
 #include "lua_state.h"
 #include "luau.h"
@@ -43,8 +42,12 @@
 #include "require/luau_package_path.h"
 #include "scheduler/luau_task_scheduler.h"
 
+#include "modules/luau_module/editor/luau_completion.h"
+
 #ifdef TOOLS_ENABLED
+#include "editor/luau_editor_language.h"
 #include "editor/settings/editor_settings.h"
+
 #include "modules/luau_module/editor/luau_formatter.h"
 #endif
 #include "core/config/project_settings.h"
@@ -52,15 +55,15 @@
 #include "core/io/file_access.h"
 #include "core/io/resource_loader.h"
 #include "core/math/expression.h"
+#include "core/object/class_db.h"
 #include "core/object/script_language.h"
 #include "core/os/os.h"
 #include "core/os/time.h"
+#include "core/string/string_name.h"
 #include "core/variant/variant_utility.h"
 #include "main/performance.h"
+
 #include <lualib.h>
-#include "core/object/class_db.h"
-#include "core/string/string_name.h"
-#include "editor/file_system/editor_file_system.h"
 
 LuauScriptLanguage *LuauScriptLanguage::singleton = nullptr;
 
@@ -120,8 +123,14 @@ void LuauScriptLanguage::finish() {
 	}
 }
 
-void LuauScriptLanguage::get_reserved_words(List<String> *p_words) const {
-	static const char *words[] = {
+#ifdef TOOLS_ENABLED
+EditorLanguage *LuauScriptLanguage::get_editor_language() {
+	return LuauEditorLanguage::get_singleton();
+}
+#endif
+
+Vector<String> LuauScriptLanguage::get_reserved_words() const {
+	static const Vector<String> words = {
 		"and",
 		"break",
 		"do",
@@ -146,11 +155,8 @@ void LuauScriptLanguage::get_reserved_words(List<String> *p_words) const {
 		"continue",
 		"type",
 		"export",
-		nullptr,
 	};
-	for (const char **w = words; *w; w++) {
-		p_words->push_back(*w);
-	}
+	return words;
 }
 
 bool LuauScriptLanguage::is_control_flow_keyword(const String &p_string) const {
@@ -159,19 +165,19 @@ bool LuauScriptLanguage::is_control_flow_keyword(const String &p_string) const {
 			p_string == "return" || p_string == "then" || p_string == "until" || p_string == "while";
 }
 
-void LuauScriptLanguage::get_comment_delimiters(List<String> *p_delimiters) const {
-	p_delimiters->push_back("--");
-	p_delimiters->push_back("--[[ ]]");
+Vector<String> LuauScriptLanguage::get_comment_delimiters() const {
+	static const Vector<String> delimiters = { "--", "--[[ ]]" };
+	return delimiters;
 }
 
-void LuauScriptLanguage::get_doc_comment_delimiters(List<String> *p_delimiters) const {
-	p_delimiters->push_back("---");
+Vector<String> LuauScriptLanguage::get_doc_comment_delimiters() const {
+	static const Vector<String> delimiters = { "---" };
+	return delimiters;
 }
 
-void LuauScriptLanguage::get_string_delimiters(List<String> *p_delimiters) const {
-	p_delimiters->push_back("\" \"");
-	p_delimiters->push_back("' '");
-	p_delimiters->push_back("[[ ]]");
+Vector<String> LuauScriptLanguage::get_string_delimiters() const {
+	static const Vector<String> delimiters = { "\" \"", "' '", "[[ ]]" };
+	return delimiters;
 }
 
 Ref<Script> LuauScriptLanguage::make_template(const String &p_template, const String &p_class_name, const String &p_base_class_name) const {
@@ -259,14 +265,16 @@ bool LuauScriptLanguage::is_using_templates() {
 	return true;
 }
 
-bool LuauScriptLanguage::validate(const String &p_script, const String &p_path, List<String> *r_functions, List<ScriptError> *r_errors, List<Warning> *r_warnings, HashSet<int> *r_safe_lines) const {
+bool LuauScriptLanguage::validate(const String &p_script, const String &p_path, List<String> *r_functions, List<luau_module::LuauScriptError> *r_errors, List<luau_module::LuauWarning> *r_warnings, HashSet<int> *r_safe_lines) const {
 	const luau_module::LuauCompileResult compile_result = luau_module::Luau::compile_with_diagnostics(p_script);
 	if (compile_result.is_error() || compile_result.bytecode.is_empty()) {
 		if (r_errors) {
-			ScriptError err;
+			luau_module::LuauScriptError err;
 			err.path = p_path;
-			err.line = compile_result.error_line > 0 ? compile_result.error_line : 1;
-			err.column = compile_result.error_column;
+			err.start_line = compile_result.error_line > 0 ? compile_result.error_line : 1;
+			err.start_column = compile_result.error_column;
+			err.end_line = err.start_line;
+			err.end_column = err.start_column;
 			err.message = compile_result.error_message.is_empty() ? "Compilation failed" : compile_result.error_message;
 			r_errors->push_back(err);
 		}
@@ -296,14 +304,14 @@ bool LuauScriptLanguage::validate(const String &p_script, const String &p_path, 
 	if (r_safe_lines) {
 		HashSet<int> unsafe_lines;
 		if (r_errors) {
-			for (const ScriptError &err : *r_errors) {
-				if (err.line > 0) {
-					unsafe_lines.insert(err.line);
+			for (const luau_module::LuauScriptError &err : *r_errors) {
+				if (err.start_line > 0) {
+					unsafe_lines.insert(err.start_line);
 				}
 			}
 		}
 		if (r_warnings) {
-			for (const Warning &warning : *r_warnings) {
+			for (const luau_module::LuauWarning &warning : *r_warnings) {
 				for (int line = warning.start_line; line <= warning.end_line; line++) {
 					if (line > 0) {
 						unsafe_lines.insert(line);
@@ -339,14 +347,14 @@ Dictionary LuauScriptLanguage::validate_script(const String &p_script, const Str
 		functions_ptr = &functions;
 	}
 
-	List<ScriptError> error_list;
+	List<luau_module::LuauScriptError> error_list;
 	const bool ok = validate(p_script, p_path, functions_ptr, &error_list, nullptr, nullptr);
 
-	for (const ScriptError &err : error_list) {
+	for (const luau_module::LuauScriptError &err : error_list) {
 		Dictionary entry;
 		entry["path"] = err.path;
-		entry["line"] = err.line;
-		entry["column"] = err.column;
+		entry["line"] = err.start_line;
+		entry["column"] = err.start_column;
 		entry["message"] = err.message;
 		errors.push_back(entry);
 	}
@@ -357,7 +365,8 @@ Dictionary LuauScriptLanguage::validate_script(const String &p_script, const Str
 	return result;
 }
 
-Error LuauScriptLanguage::complete_code(const String &p_code, const String &p_path, Object *p_owner, List<CodeCompletionOption> *r_options, bool &r_force, String &r_call_hint) {
+#ifdef TOOLS_ENABLED
+Error LuauScriptLanguage::complete_code(const String &p_code, const String &p_path, Object *p_owner, List<EditorLanguage::CompletionOption> *r_options, bool &r_force, String &r_call_hint) {
 	(void)p_owner;
 	r_force = false;
 	r_call_hint = String();
@@ -372,27 +381,21 @@ Error LuauScriptLanguage::complete_code(const String &p_code, const String &p_pa
 	const String source = LuauCompletionHelper::normalize_completion_source(p_code, cursor_line, cursor_col);
 	ctx = LuauCompletionHelper::extract_context(source, cursor_line, cursor_col);
 
-	auto add_option = [&](const String &p_label, CodeCompletionKind p_kind) {
+	auto add_option = [&](const String &p_label, EditorLanguage::CompletionKind p_kind) {
 		if (!LuauCompletionHelper::matches_prefix(p_label, ctx.prefix)) {
 			return;
 		}
-		CodeCompletionOption opt;
-		opt.display = p_label;
-		opt.insert_text = p_label;
-		opt.kind = p_kind;
-		r_options->push_back(opt);
+		r_options->push_back(EditorLanguage::CompletionOption(p_label, p_kind));
 	};
 
 	if (!ctx.wants_member) {
-		List<String> words;
-		get_reserved_words(&words);
-		for (const String &w : words) {
-			add_option(w, CODE_COMPLETION_KIND_PLAIN_TEXT);
+		for (const String &w : get_reserved_words()) {
+			add_option(w, EditorLanguage::CompletionKind::PLAIN_TEXT);
 		}
 
 		static const char *extra[] = { "await", "wait", "wait_signal", "gdclass", "super", "require", "class", "export", "signal", nullptr };
 		for (const char **w = extra; *w; w++) {
-			add_option(*w, CODE_COMPLETION_KIND_PLAIN_TEXT);
+			add_option(*w, EditorLanguage::CompletionKind::PLAIN_TEXT);
 		}
 	}
 
@@ -404,10 +407,10 @@ Error LuauScriptLanguage::complete_code(const String &p_code, const String &p_pa
 		if (ctx.wants_member && !ctx.base.is_empty()) {
 			if (ctx.base == "self" || ctx.base == info.class_name) {
 				for (const KeyValue<StringName, LuauClassProperty> &pair : info.properties) {
-					add_option(pair.key, CODE_COMPLETION_KIND_MEMBER);
+					add_option(pair.key, EditorLanguage::CompletionKind::MEMBER_VARIABLE);
 				}
 				for (const KeyValue<StringName, LuauClassMethod> &pair : info.methods) {
-					add_option(pair.key, CODE_COMPLETION_KIND_FUNCTION);
+					add_option(pair.key, EditorLanguage::CompletionKind::FUNCTION);
 				}
 			} else if (ScriptServer::is_global_class(ctx.base)) {
 				const String base_path = ScriptServer::get_global_class_path(ctx.base);
@@ -416,21 +419,21 @@ Error LuauScriptLanguage::complete_code(const String &p_code, const String &p_pa
 					List<PropertyInfo> props;
 					base_script->get_script_property_list(&props);
 					for (const PropertyInfo &prop : props) {
-						add_option(prop.name, CODE_COMPLETION_KIND_MEMBER);
+						add_option(prop.name, EditorLanguage::CompletionKind::MEMBER_VARIABLE);
 					}
 					List<MethodInfo> methods;
 					base_script->get_script_method_list(&methods);
 					for (const MethodInfo &method : methods) {
-						add_option(method.name, CODE_COMPLETION_KIND_FUNCTION);
+						add_option(method.name, EditorLanguage::CompletionKind::FUNCTION);
 					}
 				}
 			}
 		} else {
 			for (const KeyValue<StringName, LuauClassProperty> &pair : info.properties) {
-				add_option(pair.key, CODE_COMPLETION_KIND_MEMBER);
+				add_option(pair.key, EditorLanguage::CompletionKind::MEMBER_VARIABLE);
 			}
 			for (const KeyValue<StringName, LuauClassMethod> &pair : info.methods) {
-				add_option(pair.key, CODE_COMPLETION_KIND_FUNCTION);
+				add_option(pair.key, EditorLanguage::CompletionKind::FUNCTION);
 			}
 		}
 
@@ -443,7 +446,7 @@ Error LuauScriptLanguage::complete_code(const String &p_code, const String &p_pa
 					if (method.name.begins_with("_")) {
 						continue;
 					}
-					add_option(method.name, CODE_COMPLETION_KIND_FUNCTION);
+					add_option(method.name, EditorLanguage::CompletionKind::FUNCTION);
 				}
 			}
 		}
@@ -452,12 +455,12 @@ Error LuauScriptLanguage::complete_code(const String &p_code, const String &p_pa
 	return OK;
 }
 
-Error LuauScriptLanguage::lookup_code(const String &p_code, const String &p_symbol, const String &p_path, Object *p_owner, LookupResult &r_result) {
+Error LuauScriptLanguage::lookup_code(const String &p_code, const String &p_symbol, const String &p_path, Object *p_owner, EditorLanguage::LookupResult &r_result) {
 	(void)p_owner;
 
 	const int line = LuauScript::find_member_line_in_source(p_code, StringName(p_symbol));
 	if (line >= 0) {
-		r_result.type = LOOKUP_RESULT_SCRIPT_LOCATION;
+		r_result.type = EditorLanguage::LookupResult::Type::SCRIPT_LOCATION;
 		r_result.script_path = p_path;
 		r_result.location = line;
 		return OK;
@@ -467,14 +470,14 @@ Error LuauScriptLanguage::lookup_code(const String &p_code, const String &p_symb
 	luau_module::LuauAnalysis::parse_annotations(p_code, &info);
 
 	if (info.properties.has(StringName(p_symbol)) || info.methods.has(StringName(p_symbol))) {
-		r_result.type = LOOKUP_RESULT_SCRIPT_LOCATION;
+		r_result.type = EditorLanguage::LookupResult::Type::SCRIPT_LOCATION;
 		r_result.script_path = p_path;
 		r_result.location = line >= 0 ? line : 0;
 		return OK;
 	}
 
 	if (ScriptServer::is_global_class(p_symbol)) {
-		r_result.type = LOOKUP_RESULT_SCRIPT_LOCATION;
+		r_result.type = EditorLanguage::LookupResult::Type::SCRIPT_LOCATION;
 		r_result.script_path = ScriptServer::get_global_class_path(p_symbol);
 		r_result.location = 0;
 		return OK;
@@ -482,16 +485,7 @@ Error LuauScriptLanguage::lookup_code(const String &p_code, const String &p_symb
 
 	return ERR_UNAVAILABLE;
 }
-
-Script *LuauScriptLanguage::create_script() const {
-	return memnew(LuauScript);
-}
-
-#ifndef DISABLE_DEPRECATED
-bool LuauScriptLanguage::has_named_classes() const {
-	return true;
-}
-#endif
+#endif // TOOLS_ENABLED
 
 bool LuauScriptLanguage::supports_builtin_mode() const {
 	return false;
@@ -524,14 +518,11 @@ String LuauScriptLanguage::make_function(const String &p_class, const String &p_
 	return vformat("function %s:%s(%s)\nend\n", p_class, p_name, params);
 }
 
-void LuauScriptLanguage::auto_indent_code(String &p_code, int p_from_line, int p_to_line) const {
 #ifdef TOOLS_ENABLED
-	p_code = LuauFormatter::format_lines(p_code, p_from_line, p_to_line);
-#else
-	(void)p_from_line;
-	(void)p_to_line;
-#endif
+void LuauScriptLanguage::format_code(String &r_code, uint32_t p_from_line, uint32_t p_to_line) const {
+	r_code = LuauFormatter::format_lines(r_code, p_from_line, p_to_line);
 }
+#endif
 
 #ifdef TOOLS_ENABLED
 Error LuauScriptLanguage::open_in_external_editor(const Ref<Script> &p_script, int p_line, int p_col) {
@@ -578,7 +569,7 @@ void LuauScriptLanguage::remove_named_global_constant(const StringName &p_name) 
 
 void LuauScriptLanguage::push_named_globals_to_state(lua_State *p_L) const {
 	for (const KeyValue<StringName, Variant> &pair : named_globals) {
-		CharString utf8 = pair.key.operator String().utf8();
+		CharString utf8 = pair.key.string().utf8();
 		const Variant &value = pair.value;
 		if (value.get_type() == Variant::OBJECT) {
 			Object *obj = value.get_validated_object();
@@ -981,26 +972,18 @@ void LuauScriptLanguage::reload_all_scripts() {
 	}
 }
 
-void LuauScriptLanguage::reload_scripts(const Array &p_scripts, bool p_soft_reload) {
+void LuauScriptLanguage::reload_scripts(const Array &p_scripts) {
 	for (int i = 0; i < p_scripts.size(); i++) {
 		Ref<Script> scr = p_scripts[i];
 		if (scr.is_valid()) {
-			scr->reload(p_soft_reload);
+			scr->reload(true);
 		}
 	}
 }
 
-void LuauScriptLanguage::reload_tool_script(const Ref<Script> &p_script, bool p_soft_reload) {
-	Ref<LuauScript> scr = p_script;
-	if (scr.is_valid() && scr->is_tool()) {
-		scr->reload(p_soft_reload);
-	}
-}
-
-void LuauScriptLanguage::get_recognized_extensions(List<String> *p_extensions) const {
-	p_extensions->push_back("luau");
-	p_extensions->push_back("lua");
-	p_extensions->push_back("luauc");
+void LuauScriptLanguage::reload_tool_script(const Ref<Script> &p_script) {
+	Array scripts = { p_script };
+	reload_scripts(scripts);
 }
 
 bool LuauScriptLanguage::handles_global_class_type(const String &p_type) const {
@@ -1066,8 +1049,18 @@ String LuauScriptLanguage::get_global_class_name(const String &p_path, String *r
 LuauScriptLanguage::LuauScriptLanguage() {
 	singleton = this;
 	load_state.instantiate();
+#ifdef TOOLS_ENABLED
+	if (!LuauEditorLanguage::get_singleton()) {
+		memnew(LuauEditorLanguage);
+	}
+#endif
 }
 
 LuauScriptLanguage::~LuauScriptLanguage() {
+#ifdef TOOLS_ENABLED
+	if (LuauEditorLanguage::get_singleton()) {
+		memdelete(LuauEditorLanguage::get_singleton());
+	}
+#endif
 	singleton = nullptr;
 }

@@ -260,7 +260,7 @@ PluginConfigDialog::PluginConfigDialog() {
 	grid->add_child(author_lb);
 
 	author_edit = memnew(LineEdit);
-	author_edit->set_placeholder("Godette");
+	author_edit->set_placeholder("Blazia");
 	author_edit->set_accessibility_name(TTRC("Author:"));
 	author_edit->set_tooltip_text(TTR("Optional. The author's username, full name, or organization name."));
 	author_edit->set_h_size_flags(Control::SIZE_EXPAND_FILL);

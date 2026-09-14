@@ -29,16 +29,18 @@
 
 #include "register_types.h"
 
-#include "core/config/engine.h"
-#include "core/object/message_queue.h"
 #include "livewallpaper.h"
 
-#ifdef TOOLS_ENABLED
-#include "modules/livewallpaper/editor/export/windows_livewallpaper_export_platform.h"
-#include "modules/livewallpaper/editor/livewallpaper_editor_plugin.h"
-#include "editor/plugins/editor_plugin.h"
+#include "core/config/engine.h"
 #include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
+#include "core/object/message_queue.h"
+
+#ifdef TOOLS_ENABLED
+#include "editor/plugins/editor_plugin.h"
+
+#include "modules/livewallpaper/editor/export/windows_livewallpaper_export_platform.h"
+#include "modules/livewallpaper/editor/livewallpaper_editor_plugin.h"
 #endif
 
 static LiveWallpaper *livewallpaper_singleton = nullptr;

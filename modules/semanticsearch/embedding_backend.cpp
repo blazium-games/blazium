@@ -29,6 +29,8 @@
 
 #include "embedding_backend.h"
 
+#include "embedding_provider.h"
+#include "hash_vector_embedding.h"
 #include "lexical_search_engine.h"
 #include "lexical_tag_backend.h"
 #include "semantic_asset_index.h"
@@ -39,8 +41,6 @@
 #include "semantic_search_filters.h"
 
 #include "core/config/project_settings.h"
-#include "embedding_provider.h"
-#include "hash_vector_embedding.h"
 
 void EmbeddingBackend::_bind_methods() {}
 

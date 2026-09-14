@@ -35,10 +35,11 @@
 #include "autowork_spy.h"
 #include "autowork_stubber.h"
 #include "autowork_test.h"
+
+#include "core/string/ustring.h"
 #include "core/templates/list.h"
 #include "scene/main/node.h"
 #include "scene/main/scene_tree.h"
-#include "core/string/ustring.h"
 
 class SceneTree;
 
@@ -56,6 +57,7 @@ class Autowork : public Node {
 	bool aborted = false;
 	String json_output_path;
 	String xml_output_path;
+	String post_run_script_path;
 
 protected:
 	static void _bind_methods();

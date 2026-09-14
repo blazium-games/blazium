@@ -46,6 +46,11 @@ for name, path in env.module_list.items():
         import glob
 
         module_tests = sorted(glob.glob(os.path.join(base_path, "tests", "*.h")))
+        # JustAMCP TEST_CASE bodies live in .cpp files compiled only for the
+        # editor (register_types.cpp, TOOLS_ENABLED). Including those headers
+        # from template test_main leaves undefined test_* symbols at link.
+        if name == "justamcp" and not env.editor_build:
+            module_tests = []
         if module_tests != []:
             test_headers += module_tests
 

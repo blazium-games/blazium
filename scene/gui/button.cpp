@@ -350,7 +350,8 @@ void Button::_notification(int p_what) {
 					if (expand_icon) {
 						const Size2 text_buf_size = text_buf->get_size();
 						Size2 _size = custom_element_size;
-						if (!is_clipped && icon_align_rtl_checked != HORIZONTAL_ALIGNMENT_CENTER && text_buf_size.width > 0.0f) {
+						const bool align_center_fill = icon_align_rtl_checked == HORIZONTAL_ALIGNMENT_CENTER && expand_text;
+						if (!is_clipped && !align_center_fill && text_buf_size.width > 0.0f) {
 							// If there is not enough space for icon and h_separation, h_separation will occupy the space first,
 							// so the icon's width may be negative. Keep it negative to make it easier to calculate the space
 							// reserved for text later.
@@ -417,8 +418,8 @@ void Button::_notification(int p_what) {
 				}
 
 				if (!xl_text.is_empty()) {
-					// Update the size after the icon is stripped. Stripping only when the icon alignments are not center.
-					if (icon_align_rtl_checked != HORIZONTAL_ALIGNMENT_CENTER) {
+					// Update the size after the icon is stripped. Stripping only when the icon alignments are not center-fill.
+					if (!(icon_align_rtl_checked == HORIZONTAL_ALIGNMENT_CENTER && expand_text)) {
 						// Subtract the space's width occupied by icon and h_separation together.
 						drawable_size_remained.width -= icon_size.width + h_separation;
 					}
@@ -433,7 +434,17 @@ void Button::_notification(int p_what) {
 			if (!xl_text.is_empty()) {
 				text_buf->set_alignment(align_rtl_checked);
 
-				float text_buf_width = Math::ceil(MAX(1.0f, drawable_size_remained.width)); // The space's width filled by the text_buf.
+				float text_buf_width = 0;
+				if (expand_text) {
+					text_buf_width = Math::ceil(MAX(1.0f, drawable_size_remained.width)); // The space's width filled by the text_buf.
+				} else {
+					text_buf->set_width(drawable_size_remained.width);
+					if (!is_clipped) {
+						text_buf_width = text_buf->get_size().width;
+					} else {
+						text_buf_width = MAX(1.0f, MIN(text_buf->get_size().width, drawable_size_remained.width));
+					}
+				}
 				if (autowrap_mode != TextServer::AUTOWRAP_OFF && !Math::is_equal_approx(text_buf_width, text_buf->get_width())) {
 					update_minimum_size();
 				}
@@ -443,7 +454,9 @@ void Button::_notification(int p_what) {
 
 				switch (align_rtl_checked) {
 					case HORIZONTAL_ALIGNMENT_CENTER: {
-						text_ofs.x = (drawable_size_remained.width - text_buf_width) / 2.0f;
+						if (expand_text) {
+							text_ofs.x = (drawable_size_remained.width - text_buf_width) / 2.0f;
+						}
 					}
 						[[fallthrough]];
 					case HORIZONTAL_ALIGNMENT_FILL:
@@ -755,6 +768,19 @@ HorizontalAlignment Button::get_text_alignment() const {
 	return alignment;
 }
 
+void Button::set_expand_text(bool p_enabled) {
+	if (expand_text != p_enabled) {
+		expand_text = p_enabled;
+		_shape();
+		update_minimum_size();
+		queue_redraw();
+	}
+}
+
+bool Button::is_expand_text() const {
+	return expand_text;
+}
+
 void Button::set_icon_alignment(HorizontalAlignment p_alignment) {
 	if (horizontal_icon_alignment == p_alignment) {
 		return;
@@ -808,6 +834,8 @@ void Button::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_clip_text"), &Button::get_clip_text);
 	ClassDB::bind_method(D_METHOD("set_text_alignment", "alignment"), &Button::set_text_alignment);
 	ClassDB::bind_method(D_METHOD("get_text_alignment"), &Button::get_text_alignment);
+	ClassDB::bind_method(D_METHOD("set_expand_text", "enabled"), &Button::set_expand_text);
+	ClassDB::bind_method(D_METHOD("is_expand_text"), &Button::is_expand_text);
 	ClassDB::bind_method(D_METHOD("set_icon_alignment", "icon_alignment"), &Button::set_icon_alignment);
 	ClassDB::bind_method(D_METHOD("get_icon_alignment"), &Button::get_icon_alignment);
 	ClassDB::bind_method(D_METHOD("set_vertical_icon_alignment", "vertical_icon_alignment"), &Button::set_vertical_icon_alignment);
@@ -821,6 +849,7 @@ void Button::_bind_methods() {
 
 	ADD_GROUP("Text Behavior", "");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "alignment", PROPERTY_HINT_ENUM, "Left,Center,Right"), "set_text_alignment", "get_text_alignment");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "expand_text"), "set_expand_text", "is_expand_text");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "text_overrun_behavior", PROPERTY_HINT_ENUM, "Trim Nothing,Trim Characters,Trim Words,Ellipsis (6+ Characters),Word Ellipsis (6+ Characters),Ellipsis (Always),Word Ellipsis (Always)"), "set_text_overrun_behavior", "get_text_overrun_behavior");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "autowrap_mode", PROPERTY_HINT_ENUM, "Off,Arbitrary,Word,Word (Smart)"), "set_autowrap_mode", "get_autowrap_mode");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "autowrap_trim_flags", PROPERTY_HINT_FLAGS, vformat("Trim Spaces After Break:%d,Trim Spaces Before Break:%d", TextServer::BREAK_TRIM_START_EDGE_SPACES, TextServer::BREAK_TRIM_END_EDGE_SPACES)), "set_autowrap_trim_flags", "get_autowrap_trim_flags");

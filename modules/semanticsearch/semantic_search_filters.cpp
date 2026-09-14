@@ -29,8 +29,9 @@
 
 #include "semantic_search_filters.h"
 
-#include "modules/modules_enabled.gen.h"
 #include "semantic_asset_index.h"
+
+#include "modules/modules_enabled.gen.h"
 
 #ifdef MODULE_ASSETTAGS_ENABLED
 #include "modules/assettags/asset_tag_registry.h"

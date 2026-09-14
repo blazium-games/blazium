@@ -30,28 +30,29 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_asset_tags_tools.h"
+
 #include "core/object/class_db.h"
 
 #include "modules/modules_enabled.gen.h"
 
 #ifdef MODULE_ASSETTAGS_ENABLED
+#include "resources/justamcp_tags_resource_provider.h"
+
 #include "modules/assettags/asset_tag_coordinator.h"
 #include "modules/assettags/asset_tag_manager.h"
 #include "modules/assettags/asset_tag_registry.h"
 #include "modules/assettags/asset_tag_storage.h"
-#include "resources/justamcp_tags_resource_provider.h"
 #endif
 
 #include "../justamcp_mcp_spec.h"
 #include "../justamcp_pagination.h"
 #include "../justamcp_server.h"
-
+#include "justamcp_settings_resolver.h"
 #include "justamcp_tool_schema_builder.h"
 
 #include "core/config/project_settings.h"
 #include "core/os/os.h"
 #include "editor/settings/editor_settings.h"
-#include "justamcp_settings_resolver.h"
 
 #ifdef MODULE_ASSETTAGS_ENABLED
 static void _invalidate_tags_dictionary_cache() {

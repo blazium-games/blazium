@@ -32,8 +32,8 @@
 #include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "core/templates/safe_refcount.h"
-#include "core/variant/typed_array.h"
 #include "core/variant/type_info.h"
+#include "core/variant/typed_array.h"
 
 class CrashReporter : public Object {
 	GDCLASS(CrashReporter, Object);

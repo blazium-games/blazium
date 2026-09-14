@@ -29,7 +29,6 @@
 
 #include "register_types.h"
 
-#include "core/config/engine.h"
 #include "kick_api.h"
 #include "kick_http_client.h"
 #include "requests/kick_categories_requests.h"
@@ -41,6 +40,8 @@
 #include "requests/kick_oauth_requests.h"
 #include "requests/kick_request_base.h"
 #include "requests/kick_users_requests.h"
+
+#include "core/config/engine.h"
 #include "core/object/class_db.h"
 
 static KickAPI *kick_api_singleton = nullptr;

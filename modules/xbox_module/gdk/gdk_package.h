@@ -29,8 +29,9 @@
 
 #pragma once
 
-#include "core/variant/callable.h"
 #include "gdk_gdk_stubs.h"
+
+#include "core/variant/callable.h"
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -39,17 +40,18 @@
 #include "gdk_windows.h"
 #endif
 
-#include <vector>
-
 #include "core/object/class_db.h"
 #include "core/object/ref_counted.h"
 #include "core/string/ustring.h"
 #include "core/variant/array.h"
 #include "core/variant/dictionary.h"
 
+#include <vector>
+
 #ifdef XBOX_MODULE_GDK_ENABLED
-#include <XPackage.h>
 #include "core/variant/type_info.h"
+
+#include <XPackage.h>
 #endif
 
 class GDK;

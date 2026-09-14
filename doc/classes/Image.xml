@@ -280,6 +280,12 @@
 				This is the same as [method get_pixel], but with a [Vector2i] argument instead of two integer arguments.
 			</description>
 		</method>
+		<method name="get_png_flags" qualifiers="const">
+			<return type="int" enum="Image.PNGFlags" is_bitfield="true" />
+			<description>
+				Returns the PNG flags used when saving the image as a PNG.
+			</description>
+		</method>
 		<method name="get_region" qualifiers="const">
 			<return type="Image" />
 			<param index="0" name="region" type="Rect2i" />
@@ -373,6 +379,12 @@
 			<param index="0" name="path" type="String" />
 			<description>
 				Creates a new [Image] and loads data from the specified file.
+			</description>
+		</method>
+		<method name="load_gif_from_buffer">
+			<return type="int" enum="Error" />
+			<param index="0" name="buffer" type="PackedByteArray" />
+			<description>
 			</description>
 		</method>
 		<method name="load_jpg_from_buffer">
@@ -517,6 +529,17 @@
 				When saving screenshots of a project that uses HDR output, use [method Window.get_output_max_linear_value] for [param max_linear_value].
 			</description>
 		</method>
+		<method name="save_gif" qualifiers="const">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="save_gif_to_buffer" qualifiers="const">
+			<return type="PackedByteArray" />
+			<description>
+			</description>
+		</method>
 		<method name="save_jpg" qualifiers="const">
 			<return type="int" enum="Error" />
 			<param index="0" name="path" type="String" />
@@ -630,6 +653,13 @@
 				This is the same as [method set_pixel], but with a [Vector2i] argument instead of two integer arguments.
 				[b]Note:[/b] Depending on the image's format, the color set here may be clamped or lose precision. Do not assume the color returned by [method get_pixelv] to be identical to the one set here; any comparisons will likely need to use an approximation like [method Color.is_equal_approx].
 				[b]Note:[/b] On grayscale image formats, only the red channel of [param color] is used (and alpha if relevant). The green and blue channels are ignored.
+			</description>
+		</method>
+		<method name="set_png_flags">
+			<return type="void" />
+			<param index="0" name="flags" type="int" enum="Image.PNGFlags" is_bitfield="true" />
+			<description>
+				Set the PNG flags used when saving the image to PNG. Defaults to [constant PNG_FLAG_FAST].
 			</description>
 		</method>
 		<method name="shrink_x2">
@@ -847,6 +877,16 @@
 		</constant>
 		<constant name="INTERPOLATE_LANCZOS" value="4" enum="Interpolation">
 			Performs Lanczos interpolation. This is the slowest image resizing mode, but it typically gives the best results, especially when downscaling images.
+		</constant>
+		<constant name="PNG_FLAG_NOT_SRGB" value="1" enum="PNGFlags" is_bitfield="true">
+			This indicates that the RGB values of the in-memory bitmap do not correspond to the red, green and blue end-points defined by sRGB.
+		</constant>
+		<constant name="PNG_FLAG_FAST" value="2" enum="PNGFlags" is_bitfield="true">
+			On write emphasize speed over compression.
+			The resultant PNG file will be larger but will be produced significantly faster, particular for large images.
+			Do not use this option for images which will be distributed, only used it when producing intermediate files that will be read back in repeatedly.
+			For a typical 24-bit image the option will double the read speed at the cost of increasing the image size by 25%,
+			however for many more compressible images the PNG file can be 10 times larger with only a slight speed gain.
 		</constant>
 		<constant name="ALPHA_NONE" value="0" enum="AlphaMode">
 			Image is fully opaque. It does not store alpha data.

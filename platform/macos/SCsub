@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 from misc.utility.scons_hints import *
 
+import shutil
+
 import platform_macos_builders
+
+import methods
 
 Import("env")
 
@@ -48,11 +52,19 @@ else:
     files += ["libgodot_macos.mm"]
 
 if env["library_type"] == "static_library":
-    prog = env.add_library("#bin/godot", files)
+    prog = env.add_library("#bin/blazium", files)
 elif env["library_type"] == "shared_library":
-    prog = env.add_shared_library("#bin/godot", files)
+    prog = env.add_shared_library("#bin/blazium", files)
 else:
-    prog = env.add_program("#bin/godot", files)
+    prog = env.add_program("#bin/blazium", files)
+
+# Copy the channel icon before build.
+shutil.copy(
+    File("#platform/macos/icons/Blazium_" + env.version_info["external_status"] + ".icns").abspath,
+    File("#misc/dist/macos_tools.app/Contents/Resources/Blazium.icns").abspath,
+)
+
+methods.add_hub_register_post_action(env, prog)
 
 if env["debug_symbols"] and env["separate_debug_symbols"]:
     env.AddPostAction(prog, env.Run(platform_macos_builders.make_debug_macos))

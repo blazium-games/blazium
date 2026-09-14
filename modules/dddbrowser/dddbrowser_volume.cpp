@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "dddbrowser_volume.h"
+
 #include "core/object/class_db.h"
 
 void DDDBrowserVolume::_bind_methods() {

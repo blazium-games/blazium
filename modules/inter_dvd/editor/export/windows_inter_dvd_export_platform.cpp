@@ -39,16 +39,17 @@
 #include "core/io/zip_io.h"
 #include "core/os/os.h"
 #include "editor/editor_node.h"
-#include "editor/settings/editor_settings.h"
 #include "editor/editor_string_names.h"
+#include "editor/settings/editor_settings.h"
+#include "scene/main/node.h"
+#include "scene/resources/image_texture.h"
+#include "scene/resources/packed_scene.h"
+
 #include "modules/inter_dvd/author/inter_dvd_ifo_writer.h"
 #include "modules/inter_dvd/author/inter_dvd_project.h"
 #include "modules/inter_dvd/author/inter_dvd_vob_mux.h"
 #include "modules/inter_dvd/editor/inter_dvd_toolchain.h"
 #include "modules/inter_dvd/scene/inter_dvd_disc.h"
-#include "scene/main/node.h"
-#include "scene/resources/image_texture.h"
-#include "scene/resources/packed_scene.h"
 
 namespace {
 int count_export_steps(const Ref<InterDVDProject> &p_project, int p_kind) {

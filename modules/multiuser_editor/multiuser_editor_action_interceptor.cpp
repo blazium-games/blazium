@@ -38,14 +38,14 @@
 #include "core/io/resource.h"
 #include "core/io/resource_loader.h"
 #include "core/math/math_funcs.h"
+#include "core/object/class_db.h"
 #include "core/object/script_language.h"
-#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_interface.h"
-#include "editor/settings/editor_settings.h"
 #include "editor/editor_undo_redo_manager.h"
+#include "editor/file_system/editor_file_system.h"
+#include "editor/settings/editor_settings.h"
 #include "scene/2d/node_2d.h"
 #include "scene/3d/node_3d.h"
-#include "core/object/class_db.h"
 
 static const char *MULTIUSER_SAFE_NODE_BASES[] = {
 	"Node2D",

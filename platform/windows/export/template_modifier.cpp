@@ -282,11 +282,11 @@ void TemplateModifier::GroupIcon::load(Ref<FileAccess> p_icon_file) {
 	}
 }
 
-void TemplateModifier::GroupIcon::fill_with_godot_blue() {
+void TemplateModifier::GroupIcon::fill_with_blazium_purple() {
 	uint32_t id = 1;
 	for (uint8_t size : SIZES) {
 		Ref<Image> image = Image::create_empty(size ? size : 256, size ? size : 256, false, Image::FORMAT_RGB8);
-		image->fill(Color::hex(0x478cbfff));
+		image->fill(Color::hex(0x6000bfff));
 		Vector<uint8_t> data = image->save_png_to_buffer();
 		IconEntry icon_entry;
 		icon_entry.width = size;
@@ -553,7 +553,7 @@ TemplateModifier::GroupIcon TemplateModifier::_create_group_icon(const String &p
 
 	Ref<FileAccess> icon_file = FileAccess::open(p_icon_path, FileAccess::READ);
 	if (icon_file.is_null()) {
-		group_icon.fill_with_godot_blue();
+		group_icon.fill_with_blazium_purple();
 		return group_icon;
 	}
 

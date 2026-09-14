@@ -30,16 +30,18 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_tilemap_tools.h"
+
 #include "../justamcp_editor_scene_access.h"
 #include "../justamcp_mcp_tool_macros.h"
 #include "justamcp_agent_helpers.h"
 #include "justamcp_scene_file_io.h"
 
 #include "core/io/resource_loader.h"
+#include "scene/resources/texture.h"
+
 #include "modules/tilemap/tile_map.h"
 #include "modules/tilemap/tile_map_layer.h"
 #include "modules/tilemap/tile_set.h"
-#include "scene/resources/texture.h"
 
 JustAMCPTileMapTools::JustAMCPTileMapTools() {
 }

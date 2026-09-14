@@ -28,8 +28,8 @@ if env["use_pix"]:
     env_d3d12_rdd.Append(CPPDEFINES=["PIX_ENABLED"])
     env_d3d12_rdd.Append(CPPPATH=[env["pix_path"] + "/Include"])
 
-# Direct composition.
-if "dcomp" in env.get("supported", []):
+# Direct composition (needs Win8+ SDK types; Godot 4.8 targets Windows 10).
+if "dcomp" in env.get("supported", []) and int(str(env.get("target_win_version", "0x0A00")), 16) >= 0x0602:
     env_d3d12_rdd.Append(CPPDEFINES=["DCOMP_ENABLED"])
     env.Append(CPPDEFINES=["DCOMP_ENABLED"])  # Used in header included in platform.
 

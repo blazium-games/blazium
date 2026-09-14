@@ -509,15 +509,26 @@ Error OS_Windows::open_dynamic_library(const String &p_path, void *&p_library_ha
 		}
 	}
 
-	DLL_DIRECTORY_COOKIE cookie = nullptr;
+	typedef PVOID DLL_DIRECTORY_COOKIE_T;
+	typedef DLL_DIRECTORY_COOKIE_T(WINAPI * PAddDllDirectory)(PCWSTR);
+	typedef BOOL(WINAPI * PRemoveDllDirectory)(DLL_DIRECTORY_COOKIE_T);
+#ifndef LOAD_LIBRARY_SEARCH_DEFAULT_DIRS
+#define LOAD_LIBRARY_SEARCH_DEFAULT_DIRS 0x00001000
+#endif
+
+	PAddDllDirectory add_dll_directory = (PAddDllDirectory)(void *)GetProcAddress(GetModuleHandle("kernel32.dll"), "AddDllDirectory");
+	PRemoveDllDirectory remove_dll_directory = (PRemoveDllDirectory)(void *)GetProcAddress(GetModuleHandle("kernel32.dll"), "RemoveDllDirectory");
+
+	bool has_dll_directory_api = ((add_dll_directory != nullptr) && (remove_dll_directory != nullptr));
+	DLL_DIRECTORY_COOKIE_T cookie = nullptr;
 
 	String dll_path = fix_path(load_path);
 	String dll_dir = fix_path(ProjectSettings::get_singleton()->globalize_path(load_path.get_base_dir()));
-	if (p_data != nullptr && p_data->also_set_library_path) {
-		cookie = AddDllDirectory((LPCWSTR)(dll_dir.utf16().get_data()));
+	if (p_data != nullptr && p_data->also_set_library_path && has_dll_directory_api) {
+		cookie = add_dll_directory((LPCWSTR)(dll_dir.utf16().get_data()));
 	}
 
-	p_library_handle = (void *)LoadLibraryExW((LPCWSTR)(dll_path.utf16().get_data()), nullptr, (p_data != nullptr && p_data->also_set_library_path) ? LOAD_LIBRARY_SEARCH_DEFAULT_DIRS : 0);
+	p_library_handle = (void *)LoadLibraryExW((LPCWSTR)(dll_path.utf16().get_data()), nullptr, (p_data != nullptr && p_data->also_set_library_path && has_dll_directory_api) ? LOAD_LIBRARY_SEARCH_DEFAULT_DIRS : 0);
 	if (!p_library_handle) {
 		if (p_data != nullptr && p_data->generate_temp_files) {
 			DirAccess::remove_absolute(load_path);
@@ -548,8 +559,8 @@ Error OS_Windows::open_dynamic_library(const String &p_path, void *&p_library_ha
 	ERR_FAIL_NULL_V_MSG(p_library_handle, ERR_CANT_OPEN, vformat("Can't open dynamic library: %s. Error: %s.", p_path, format_error_message(GetLastError())));
 #endif
 
-	if (cookie) {
-		RemoveDllDirectory(cookie);
+	if (cookie && remove_dll_directory) {
+		remove_dll_directory(cookie);
 	}
 
 	if (p_data != nullptr && p_data->r_resolved_path != nullptr) {

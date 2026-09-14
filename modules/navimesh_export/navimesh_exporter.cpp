@@ -36,12 +36,12 @@
 
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
+#include "core/object/class_db.h"
 #include "scene/2d/navigation/navigation_link_2d.h"
 #include "scene/2d/navigation/navigation_region_2d.h"
 #include "scene/3d/navigation/navigation_link_3d.h"
 #include "scene/3d/navigation/navigation_region_3d.h"
 #include "scene/main/node.h"
-#include "core/object/class_db.h"
 
 NavimeshExporter *NavimeshExporter::singleton = nullptr;
 

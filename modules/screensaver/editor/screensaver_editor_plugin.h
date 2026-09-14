@@ -31,9 +31,9 @@
 
 #ifdef TOOLS_ENABLED
 
+#include "core/string/ustring.h"
 #include "editor/export/editor_export_platform.h"
 #include "editor/plugins/editor_plugin.h"
-#include "core/string/ustring.h"
 
 class ScreensaverEditorPlugin : public EditorPlugin {
 	GDCLASS(ScreensaverEditorPlugin, EditorPlugin);

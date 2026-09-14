@@ -28,11 +28,9 @@
 /**************************************************************************/
 
 #include "register_types.h"
-#include "justamcp_project_settings.h"
-
-#include "modules/modules_enabled.gen.h"
 
 #include "justamcp_cli_args.h"
+#include "justamcp_project_settings.h"
 #include "justamcp_runtime.h"
 #include "justamcp_server.h"
 #include "tools/justamcp_settings_resolver.h"
@@ -41,10 +39,9 @@
 #include "core/config/project_settings.h"
 #include "core/object/callable_mp.h"
 
+#include "modules/modules_enabled.gen.h"
+
 #ifdef TOOLS_ENABLED
-#include "core/config/project_settings.h"
-#include "core/os/os.h"
-#include "editor/settings/editor_settings.h"
 #include "justamcp_editor_plugin.h"
 #include "justamcp_server.h"
 #include "tools/justamcp_analysis_tools.h"
@@ -54,6 +51,10 @@
 #include "tools/justamcp_documentation_tools.h"
 #include "tools/justamcp_export_tools.h"
 #include "tools/justamcp_input_tools.h"
+
+#include "core/config/project_settings.h"
+#include "core/os/os.h"
+#include "editor/settings/editor_settings.h"
 #ifdef MODULE_MULTIUSER_EDITOR_ENABLED
 #include "tools/justamcp_multiuser_tools.h"
 #endif
@@ -78,7 +79,6 @@
 #include "tools/justamcp_scene_tools.h"
 #include "tools/justamcp_script_tools.h"
 #include "tools/justamcp_semantic_search_tools.h"
-#include "core/object/class_db.h"
 #include "tools/justamcp_shader_tools.h"
 #include "tools/justamcp_task_manager.h"
 #include "tools/justamcp_theme_tools.h"
@@ -95,6 +95,8 @@
 #include "tools/prompts/justamcp_prompt_project_info.h"
 #include "tools/resources/justamcp_resource.h"
 #include "tools/resources/justamcp_resource_project_file.h"
+
+#include "core/object/class_db.h"
 #endif
 
 #if defined(TESTS_ENABLED) && defined(TOOLS_ENABLED)

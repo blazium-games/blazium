@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "twitch_bits_requests.h"
+
 #include "core/object/class_db.h"
 
 void TwitchBitsRequests::_bind_methods() {

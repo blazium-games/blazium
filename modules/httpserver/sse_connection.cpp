@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "sse_connection.h"
+
 #include "core/object/class_db.h"
 
 void SSEConnection::_bind_methods() {

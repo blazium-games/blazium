@@ -28,9 +28,10 @@
 /**************************************************************************/
 
 #include "autowork_input_sender.h"
+
 #include "core/input/input.h"
-#include "core/os/keyboard.h"
 #include "core/object/class_db.h"
+#include "core/os/keyboard.h"
 #include "core/string/string_name.h"
 
 void AutoworkInputSender::_bind_methods() {

@@ -45,6 +45,7 @@
 #include "editor/editor_string_names.h"
 #include "editor/file_system/editor_paths.h"
 #include "editor/gui/editor_file_dialog.h"
+#include "editor/gui/editor_scroll_box.h"
 #include "editor/project_manager/project_manager.h"
 #include "editor/settings/editor_settings.h"
 #include "editor/settings/project_settings_editor.h"
@@ -1307,7 +1308,7 @@ void EditorAssetLibrary::_image_update(void *p_image_queue) {
 
 		if (parsed_image.is_null()) {
 			if (is_print_verbose_enabled()) {
-				ERR_PRINT(vformat("Asset Store: Invalid image downloaded from '%s' for asset # %d", iq->image_url, iq->asset_id));
+				ERR_PRINT(vformat("Asset Library: Invalid image downloaded from '%s' for asset # %d", iq->image_url, iq->asset_id));
 			}
 		} else {
 			image->copy_internals_from(parsed_image);
@@ -1374,7 +1375,7 @@ void EditorAssetLibrary::_image_request_completed(int p_status, int p_code, cons
 		image_queue[p_queue_id].thread->start(_image_update, &image_queue[p_queue_id]);
 	} else {
 		if (is_print_verbose_enabled()) {
-			WARN_PRINT(vformat("Asset Store: Error getting image from '%s' for asset # %d.", image_queue[p_queue_id].image_url, image_queue[p_queue_id].asset_id));
+			WARN_PRINT(vformat("Asset Library: Error getting image from '%s' for asset # %d.", image_queue[p_queue_id].image_url, image_queue[p_queue_id].asset_id));
 		}
 
 		Object *obj = ObjectDB::get_instance(image_queue[p_queue_id].target);
@@ -1427,7 +1428,7 @@ void EditorAssetLibrary::_request_image(ObjectID p_for, int p_asset_id, const St
 	// Remove extra spaces around the URL. This isn't strictly valid, but recoverable.
 	String trimmed_url = p_image_url.strip_edges();
 	if (trimmed_url != p_image_url && is_print_verbose_enabled()) {
-		WARN_PRINT(vformat("Asset Store: Badly formatted image URL '%s' for asset # %d.", p_image_url, p_asset_id));
+		WARN_PRINT(vformat("Asset Library: Badly formatted image URL '%s' for asset # %d.", p_image_url, p_asset_id));
 	}
 
 	// Validate the image URL first.
@@ -1440,7 +1441,7 @@ void EditorAssetLibrary::_request_image(ObjectID p_for, int p_asset_id, const St
 		Error err = trimmed_url.parse_url(url_scheme, url_host, url_port, url_path, url_fragment);
 		if (err != OK) {
 			if (is_print_verbose_enabled()) {
-				ERR_PRINT(vformat("Asset Store: Invalid image URL '%s' for asset # %d.", trimmed_url, p_asset_id));
+				ERR_PRINT(vformat("Asset Library: Invalid image URL '%s' for asset # %d.", trimmed_url, p_asset_id));
 			}
 
 			Object *obj = ObjectDB::get_instance(p_for);
@@ -1615,6 +1616,17 @@ HBoxContainer *EditorAssetLibrary::_make_pages(int p_page, int p_page_count, int
 
 	hbc->add_child(memnew(VSeparator));
 
+	EditorHScrollBox *scroll_box = memnew(EditorHScrollBox);
+	scroll_box->get_first_button()->set_theme_type_variation("PanelBackgroundButton");
+	scroll_box->get_second_button()->set_theme_type_variation("PanelBackgroundButton");
+	scroll_box->set_h_size_flags(SIZE_EXPAND_FILL);
+	hbc->add_child(scroll_box);
+
+	HBoxContainer *pages_hb = memnew(HBoxContainer);
+	pages_hb->set_h_size_flags(SIZE_EXPAND_FILL);
+	pages_hb->set_alignment(BoxContainer::ALIGNMENT_CENTER);
+	scroll_box->set_control(pages_hb);
+
 	for (int i = from; i <= to; i++) {
 		Button *current = memnew(Button);
 		// Add padding to make page number buttons easier to click.
@@ -1626,7 +1638,7 @@ HBoxContainer *EditorAssetLibrary::_make_pages(int p_page, int p_page_count, int
 		} else {
 			current->connect(SceneStringName(pressed), callable_mp(this, &EditorAssetLibrary::_search).bind(i));
 		}
-		hbc->add_child(current);
+		pages_hb->add_child(current);
 	}
 
 	hbc->add_child(memnew(VSeparator));
@@ -1675,7 +1687,7 @@ void EditorAssetLibrary::_api_request(const String &p_request, RequestType p_req
 	}
 
 	if (loading_blocked) {
-		_set_library_message_with_action(TTRC("The Asset Store requires an online connection and involves sending data over the internet."), TTRC("Go Online"), callable_mp(this, &EditorAssetLibrary::_force_online_mode));
+		_set_library_message_with_action(TTRC("The Asset Library requires an online connection and involves sending data over the internet."), TTRC("Go Online"), callable_mp(this, &EditorAssetLibrary::_force_online_mode));
 		return;
 	}
 
@@ -2162,7 +2174,7 @@ void EditorAssetLibrary::_bind_methods() {
 }
 
 EditorAssetLibrary::EditorAssetLibrary(bool p_templates_only) {
-	set_name(TTRC("Asset Store"));
+	set_name(TTRC("Asset Library"));
 	set_icon_name("AssetStore");
 	set_available_layouts(EditorDock::DOCK_LAYOUT_MAIN_SCREEN | EditorDock::DOCK_LAYOUT_FLOATING);
 	set_default_slot(EditorDock::DOCK_SLOT_MAIN_SCREEN);
@@ -2363,7 +2375,7 @@ EditorAssetLibrary::EditorAssetLibrary(bool p_templates_only) {
 
 bool AssetLibraryEditorPlugin::is_available() {
 #ifdef WEB_ENABLED
-	// Asset Store can't work on Web editor for now as most assets are sourced
+	// Asset Library can't work on Web editor for now as most assets are sourced
 	// directly from GitHub which does not set CORS.
 	return false;
 #else

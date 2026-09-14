@@ -28,12 +28,12 @@
 /**************************************************************************/
 
 #include "steam.h"
+#include "steam_types.h"
 
 #include "core/io/http_client.h"
 #include "core/io/image.h"
 #include "core/os/os.h"
 #include "core/os/time.h"
-#include "steam_types.h"
 
 bool Steam::_ensure_inventory_ready() const {
 	return initialized && steam_inventory && loader.has_inventory_support();
@@ -217,7 +217,7 @@ Ref<Image> Steam::_fetch_image_from_url(const String &p_url) const {
 		::OS::get_singleton()->delay_usec(1000);
 	}
 
-	err = http->request(HTTPClient::METHOD_GET, p_url, Vector<String>(), nullptr, 0);
+	err = http->request(HTTPClient::METHOD_GET, path, Vector<String>(), nullptr, 0);
 	if (err != OK) {
 		return Ref<Image>();
 	}

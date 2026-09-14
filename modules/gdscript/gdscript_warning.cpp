@@ -173,6 +173,42 @@ String GDScriptWarning::get_message() const {
 			return R"("@onready" will set the default value after "@export" takes effect and will override it.)";
 		case ONREADY_WITH_CAST:
 			return vformat(R"("as" will silently return "null" if the type of "%s" is wrong. Prefer assigning the node directly to an explicitly typed variable to get an error in such cases.)", symbols[0]);
+		case FUNCTION_NAMING_CONVENTION:
+			CHECK_SYMBOLS(1);
+			return vformat(R"*(The function name "%s" does not follow the GDScript style guide (expected snake_case).)*", symbols[0]);
+		case CLASS_NAMING_CONVENTION:
+			CHECK_SYMBOLS(1);
+			return vformat(R"(The class name "%s" does not follow the GDScript style guide (expected PascalCase).)", symbols[0]);
+		case VARIABLE_NAMING_CONVENTION:
+			CHECK_SYMBOLS(1);
+			return vformat(R"(The variable name "%s" does not follow the GDScript style guide (expected snake_case).)", symbols[0]);
+		case CONSTANT_NAMING_CONVENTION:
+			CHECK_SYMBOLS(1);
+			return vformat(R"(The constant name "%s" does not follow the GDScript style guide (expected CONSTANT_CASE).)", symbols[0]);
+		case SIGNAL_NAMING_CONVENTION:
+			CHECK_SYMBOLS(1);
+			return vformat(R"(The signal name "%s" does not follow the GDScript style guide (expected snake_case).)", symbols[0]);
+		case ENUM_NAMING_CONVENTION:
+			CHECK_SYMBOLS(1);
+			return vformat(R"(The enum name "%s" does not follow the GDScript style guide (expected PascalCase).)", symbols[0]);
+		case ENUM_VALUE_NAMING_CONVENTION:
+			CHECK_SYMBOLS(1);
+			return vformat(R"(The enum value "%s" does not follow the GDScript style guide (expected CONSTANT_CASE).)", symbols[0]);
+		case PARAMETER_NAMING_CONVENTION:
+			CHECK_SYMBOLS(1);
+			return vformat(R"(The parameter name "%s" does not follow the GDScript style guide (expected snake_case).)", symbols[0]);
+		case FILE_NAMING_CONVENTION:
+			CHECK_SYMBOLS(1);
+			return vformat(R"(The file name "%s" does not follow the GDScript style guide (expected snake_case).)", symbols[0]);
+		case MISSING_TRAILING_COMMA:
+			CHECK_SYMBOLS(1);
+			return vformat(R"(Missing trailing comma after the last element of this %s, as recommended by the GDScript style guide when the closing bracket is on its own line.)", symbols[0]);
+		case UNNECESSARY_TRAILING_COMMA:
+			CHECK_SYMBOLS(1);
+			return vformat(R"(Unnecessary trailing comma after the last element of this %s, as the GDScript style guide only recommends one when the closing bracket is on its own line.)", symbols[0]);
+		case HEXADECIMAL_CASE:
+			CHECK_SYMBOLS(1);
+			return vformat(R"(The hexadecimal number "%s" does not follow the GDScript style guide (expected uppercase letters).)", symbols[0]);
 #ifndef DISABLE_DEPRECATED
 		// Never produced. These warnings migrated from 3.x by mistake.
 		case PROPERTY_USED_AS_FUNCTION: // There is already an error.
@@ -252,6 +288,18 @@ String GDScriptWarning::get_name_from_code(Code p_code) {
 		PNAME("GET_NODE_DEFAULT_WITHOUT_ONREADY"),
 		PNAME("ONREADY_WITH_EXPORT"),
 		PNAME("ONREADY_WITH_CAST"),
+		PNAME("FUNCTION_NAMING_CONVENTION"),
+		PNAME("CLASS_NAMING_CONVENTION"),
+		PNAME("VARIABLE_NAMING_CONVENTION"),
+		PNAME("CONSTANT_NAMING_CONVENTION"),
+		PNAME("SIGNAL_NAMING_CONVENTION"),
+		PNAME("ENUM_NAMING_CONVENTION"),
+		PNAME("ENUM_VALUE_NAMING_CONVENTION"),
+		PNAME("PARAMETER_NAMING_CONVENTION"),
+		PNAME("FILE_NAMING_CONVENTION"),
+		PNAME("MISSING_TRAILING_COMMA"),
+		PNAME("UNNECESSARY_TRAILING_COMMA"),
+		PNAME("HEXADECIMAL_CASE"),
 #ifndef DISABLE_DEPRECATED
 		"PROPERTY_USED_AS_FUNCTION",
 		"CONSTANT_USED_AS_FUNCTION",
@@ -265,6 +313,12 @@ String GDScriptWarning::get_name_from_code(Code p_code) {
 }
 
 String GDScriptWarning::get_setting_path_from_code(Code p_code) {
+	if (is_style_warning(p_code)) {
+		if (p_code == MISSING_TRAILING_COMMA || p_code == UNNECESSARY_TRAILING_COMMA) {
+			return "debug/gdscript/style_checks/trailing_comma";
+		}
+		return "debug/gdscript/style_checks/" + get_name_from_code(p_code).to_lower();
+	}
 	return "debug/gdscript/warnings/" + get_name_from_code(p_code).to_lower();
 }
 

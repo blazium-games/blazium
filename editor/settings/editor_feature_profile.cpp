@@ -47,7 +47,7 @@
 const char *EditorFeatureProfile::feature_names[FEATURE_MAX] = {
 	TTRC("3D Editor"),
 	TTRC("Script Editor"),
-	TTRC("Asset Store"),
+	TTRC("Asset Library"),
 	TTRC("Scene Tree Editing"),
 #ifndef DISABLE_DEPRECATED
 	TTRC("Node Dock (deprecated)"),
@@ -63,7 +63,7 @@ const char *EditorFeatureProfile::feature_names[FEATURE_MAX] = {
 const char *EditorFeatureProfile::feature_descriptions[FEATURE_MAX] = {
 	TTRC("Allows to view and edit 3D scenes."),
 	TTRC("Allows to edit scripts using the integrated script editor."),
-	TTRC("Provides built-in access to the Asset Store."),
+	TTRC("Provides built-in access to the Asset Library."),
 	TTRC("Allows editing the node hierarchy in the Scene dock."),
 #ifndef DISABLE_DEPRECATED
 	TTRC("Allows to work with signals and groups of the node selected in the Scene dock."),
@@ -1073,7 +1073,7 @@ EditorFeatureProfileManager::EditorFeatureProfileManager() {
 	import_profiles = memnew(EditorFileDialog);
 	add_child(import_profiles);
 	import_profiles->set_file_mode(EditorFileDialog::FILE_MODE_OPEN_FILES);
-	import_profiles->add_filter("*.profile", TTR("Godot Feature Profile"));
+	import_profiles->add_filter("*.profile", TTR("Blazium Feature Profile"));
 	import_profiles->connect("files_selected", callable_mp(this, &EditorFeatureProfileManager::_import_profiles));
 	import_profiles->set_title(TTR("Import Profile(s)"));
 	import_profiles->set_access(EditorFileDialog::ACCESS_FILESYSTEM);
@@ -1081,7 +1081,7 @@ EditorFeatureProfileManager::EditorFeatureProfileManager() {
 	export_profile = memnew(EditorFileDialog);
 	add_child(export_profile);
 	export_profile->set_file_mode(EditorFileDialog::FILE_MODE_SAVE_FILE);
-	export_profile->add_filter("*.profile", TTR("Godot Feature Profile"));
+	export_profile->add_filter("*.profile", TTR("Blazium Feature Profile"));
 	export_profile->connect("file_selected", callable_mp(this, &EditorFeatureProfileManager::_export_profile));
 	export_profile->set_title(TTR("Export Profile"));
 	export_profile->set_access(EditorFileDialog::ACCESS_FILESYSTEM);

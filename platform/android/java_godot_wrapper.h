@@ -39,7 +39,7 @@
 
 #include <jni.h>
 
-// Class that makes functions in java/src/org/godotengine/godot/Godot.kt callable from C++
+// Class that makes functions in java/lib/src/main/java/app/blazium/godot/Godot.kt callable from C++
 class GodotJavaWrapper {
 private:
 	jobject godot_native_bridge;

@@ -32,9 +32,9 @@
 #include "enet_webrtc_socket_factory.h"
 #include "protocol.h"
 
-#include "core/os/os.h"
 #include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
+#include "core/os/os.h"
 
 void WebRTCEnetSession::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("configure", "signal_url", "game_id", "auth_token"), &WebRTCEnetSession::configure);

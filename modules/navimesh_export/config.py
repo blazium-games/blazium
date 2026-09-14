@@ -8,7 +8,7 @@ def is_enabled():
 def can_build(env, platform):
     if not env.editor_build:
         return False
-    env.module_add_dependencies("navimesh_export", ["navigation"], True)
+    env.module_add_dependencies("navimesh_export", ["navigation_2d", "navigation_3d"], False)
     env.module_add_dependencies("navimesh_export", ["justamcp"], False)
     env.module_add_dependencies("navimesh_export", ["remote_control"], False)
     return True

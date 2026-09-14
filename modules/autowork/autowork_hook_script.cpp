@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "autowork_hook_script.h"
+
 #include "core/object/class_db.h"
 
 void AutoworkHookScript::_bind_methods() {

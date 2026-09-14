@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "crowd_control_game_pack_meta.h"
+
 #include "core/object/class_db.h"
 
 void CrowdControlGamePackMeta::_bind_methods() {

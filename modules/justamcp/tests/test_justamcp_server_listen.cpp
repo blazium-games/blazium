@@ -33,9 +33,12 @@
 
 #include "../justamcp_cli_args.h"
 #include "../justamcp_server.h"
+#include "test_justamcp_fixture.h"
+
 #include "core/config/project_settings.h"
-#include "modules/modules_enabled.gen.h"
 #include "tests/test_macros.h"
+
+#include "modules/modules_enabled.gen.h"
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 #include "modules/httpserver/http_server.h"
@@ -100,7 +103,8 @@ void test_justamcp_server_start_listens() {
 	const int port = 16506;
 	settings.apply(true, port);
 
-	JustAMCPServer server;
+	JustAMCPTestServerFixture fixture;
+	JustAMCPServer &server = fixture.get_server();
 	server.test_start_server();
 	CHECK(server.is_server_started());
 	CHECK(server.get_listening_port() == port);
@@ -123,7 +127,8 @@ void test_justamcp_server_failed_listen_does_not_activate() {
 	const int port = 16507;
 	settings.apply(true, port);
 
-	JustAMCPServer server;
+	JustAMCPTestServerFixture fixture;
+	JustAMCPServer &server = fixture.get_server();
 	server.test_set_forced_listen_error(ERR_CANT_CREATE);
 	server.test_start_server();
 	CHECK(!server.is_server_started());
@@ -143,7 +148,8 @@ void test_justamcp_server_cli_port_wins_over_settings() {
 	settings.apply(true, 16506);
 	JustAMCPCliArgs::set_test_mcp_port(16516);
 
-	JustAMCPServer server;
+	JustAMCPTestServerFixture fixture;
+	JustAMCPServer &server = fixture.get_server();
 	server.test_start_server();
 	CHECK(server.is_server_started());
 	CHECK(server.get_listening_port() == 16516);

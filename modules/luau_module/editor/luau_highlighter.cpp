@@ -31,8 +31,9 @@
 
 #include "modules/luau_module/editor/luau_highlighter.h"
 
-#include "editor/settings/editor_settings.h"
 #include "luau_script_language.h"
+
+#include "editor/settings/editor_settings.h"
 #include "scene/gui/text_edit.h"
 
 namespace {

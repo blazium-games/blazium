@@ -31,8 +31,8 @@
 
 #include "irc_client.h"
 
-#include "scene/main/node.h"
 #include "core/string/ustring.h"
+#include "scene/main/node.h"
 
 class IRCClientNode : public Node {
 	GDCLASS(IRCClientNode, Node);

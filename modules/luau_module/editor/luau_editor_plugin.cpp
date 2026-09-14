@@ -31,17 +31,19 @@
 
 #include "luau_editor_plugin.h"
 
-#include "modules/luau_module/editor/luau_formatter.h"
 #include "require/luau_package_path.h"
 
 #include "core/config/project_settings.h"
 #include "core/input/shortcut.h"
 #include "core/io/file_access.h"
-#include "scene/gui/separator.h"
-#include <lua.h>
 #include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
 #include "core/os/os.h"
+#include "scene/gui/separator.h"
+
+#include "modules/luau_module/editor/luau_formatter.h"
+
+#include <lua.h>
 
 using namespace luau_module;
 

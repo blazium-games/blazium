@@ -10,3 +10,5 @@ RemoveSemicolon: false
 #  outputs, this is the only instance of this happening, but future major version bumps should
 #  ratify this as well.
 AlignAfterOpenBracket: DontAlign
+JavaImportGroups:
+  - app.blazium

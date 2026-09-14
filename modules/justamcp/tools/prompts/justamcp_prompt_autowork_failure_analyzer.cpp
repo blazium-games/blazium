@@ -30,6 +30,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_prompt_autowork_failure_analyzer.h"
+
 #include "core/string/string_name.h"
 
 void JustAMCPPromptAutoworkFailureAnalyzer::_bind_methods() {}

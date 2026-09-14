@@ -75,6 +75,41 @@ String ProjectSettings::get_imported_files_path() const {
 	return get_project_data_path().path_join("imported");
 }
 
+String ProjectSettings::get_project_settings_file_name(const String &p_dir, bool p_warn_if_both) {
+	const String blazium_path = p_dir.path_join(PROJECT_FILE_BLAZIUM);
+	const String godot_path = p_dir.path_join(PROJECT_FILE_GODOT);
+	const bool has_blazium = FileAccess::exists(blazium_path);
+	const bool has_godot = FileAccess::exists(godot_path);
+
+	if (has_blazium) {
+		if (has_godot && p_warn_if_both) {
+			WARN_PRINT_ONCE(vformat("Both %s and %s found in '%s'; using %s.", PROJECT_FILE_BLAZIUM, PROJECT_FILE_GODOT, p_dir, PROJECT_FILE_BLAZIUM));
+		}
+		return PROJECT_FILE_BLAZIUM;
+	}
+	if (has_godot) {
+		return PROJECT_FILE_GODOT;
+	}
+	return String();
+}
+
+bool ProjectSettings::is_project_settings_file(const String &p_path) {
+	const String file = p_path.get_file();
+	return file == PROJECT_FILE_BLAZIUM || file == PROJECT_FILE_GODOT;
+}
+
+bool ProjectSettings::project_settings_exists(const String &p_dir) {
+	return !get_project_settings_file_name(p_dir, false).is_empty();
+}
+
+String ProjectSettings::get_project_settings_path() const {
+	return resource_path.path_join(project_settings_text_file);
+}
+
+String ProjectSettings::get_project_settings_text_file() const {
+	return project_settings_text_file;
+}
+
 #ifdef TOOLS_ENABLED
 // Returns the features that a project must have when opened with this build of Godot.
 // This is used by the project manager to provide the initial_settings for config/features.
@@ -706,7 +741,7 @@ Error ProjectSettings::_setup(const String &p_path, const String &p_main_pack, b
 		bool ok = _load_resource_pack(p_main_pack, false, 0, true);
 		ERR_FAIL_COND_V_MSG(!ok, ERR_CANT_OPEN, vformat("Cannot open resource pack '%s'.", p_main_pack));
 
-		Error err = _load_settings_text_or_binary("res://project.godot", "res://project.binary");
+		Error err = _load_project_settings("res://");
 #ifdef OVERRIDE_ENABLED
 		if (err == OK && !p_ignore_override) {
 			// Load override from location of the main pack
@@ -761,7 +796,7 @@ Error ProjectSettings::_setup(const String &p_path, const String &p_main_pack, b
 
 		// If we opened our package, try and load our project.
 		if (found) {
-			Error err = _load_settings_text_or_binary("res://project.godot", "res://project.binary");
+			Error err = _load_project_settings("res://");
 #ifdef OVERRIDE_ENABLED
 			if (err == OK && !p_ignore_override) {
 				// Load overrides from the PCK and the executable location.
@@ -786,7 +821,7 @@ Error ProjectSettings::_setup(const String &p_path, const String &p_main_pack, b
 	// (Only Android -when reading from PCK-.)
 
 	if (!OS::get_singleton()->get_resource_dir().is_empty()) {
-		Error err = _load_settings_text_or_binary("res://project.godot", "res://project.binary");
+		Error err = _load_project_settings("res://");
 #ifdef OVERRIDE_ENABLED
 		if (err == OK && !p_ignore_override) {
 			// Optional, we don't mind if it fails.
@@ -812,7 +847,7 @@ Error ProjectSettings::_setup(const String &p_path, const String &p_main_pack, b
 
 		Error err;
 
-		err = _load_settings_text_or_binary(resource_path.path_join("project.godot"), resource_path.path_join("project.binary"));
+		err = _load_project_settings(resource_path);
 		if (err == OK && !p_ignore_override) {
 			// Optional, we don't mind if it fails.
 #ifdef OVERRIDE_ENABLED
@@ -841,7 +876,7 @@ Error ProjectSettings::_setup(const String &p_path, const String &p_main_pack, b
 		// Set the resource path early so things can be resolved when loading.
 		resource_path = current_dir;
 		resource_path = resource_path.replace_char('\\', '/'); // Windows path to Unix path just in case.
-		err = _load_settings_text_or_binary(current_dir.path_join("project.godot"), current_dir.path_join("project.binary"));
+		err = _load_project_settings(current_dir);
 		if (err == OK) {
 #ifdef OVERRIDE_ENABLED
 			if (!p_ignore_override) {
@@ -985,10 +1020,11 @@ Error ProjectSettings::_load_settings_text(const String &p_path) {
 
 		err = VariantParser::parse_tag_assign_eof(&stream, lines, error_text, next_tag, assign, value, nullptr, true);
 		if (err == ERR_FILE_EOF) {
-			// If we're loading a project.godot from source code, we can operate some
+			// If we're loading a project settings file from source code, we can operate some
 			// ProjectSettings conversions if need be.
 			_convert_to_last_version(config_version);
-			last_save_time = FileAccess::get_modified_time(get_resource_path().path_join("project.godot"));
+			project_settings_text_file = p_path.get_file();
+			last_save_time = FileAccess::get_modified_time(p_path);
 			return OK;
 		}
 		ERR_FAIL_COND_V_MSG(err != OK, err, vformat("Error parsing '%s' at line %d: %s File might be corrupted.", p_path, lines, error_text));
@@ -1046,6 +1082,49 @@ Error ProjectSettings::_load_settings_text_or_binary(const String &p_text_path, 
 	return err;
 }
 
+Error ProjectSettings::_load_project_settings(const String &p_base_path) {
+	const String bin_path = p_base_path.path_join(PROJECT_FILE_BINARY);
+
+	Error err = _load_settings_binary(bin_path);
+	if (err == OK) {
+		const String text_name = get_project_settings_file_name(p_base_path, false);
+		project_settings_text_file = text_name.is_empty() ? String(PROJECT_FILE_BLAZIUM) : text_name;
+		return OK;
+	} else if (err != ERR_FILE_NOT_FOUND) {
+		ERR_PRINT(vformat("Couldn't load file '%s', error code %d.", bin_path, err));
+	}
+
+	const String text_name = get_project_settings_file_name(p_base_path, true);
+	if (text_name.is_empty()) {
+		return ERR_FILE_NOT_FOUND;
+	}
+
+	project_settings_text_file = text_name;
+	err = _load_settings_text(p_base_path.path_join(text_name));
+	if (err == OK) {
+#ifndef DISABLE_DEPRECATED
+		const PackedStringArray features = get_setting("application/config/features");
+		for (const String &feat : features) {
+			if (feat.contains_char('.') && feat.get_slice_count(".") == 2) {
+				int major_version = feat.get_slicec('.', 0).to_int();
+				int minor_version = feat.get_slicec('.', 1).to_int();
+				// Major version is irrelevant, but the extra check ensures that the feature is in fact a version string.
+				if (major_version == 4 && minor_version < 6) {
+					// Enable MeshInstance3D compat for projects created before 4.6.
+					set_setting("animation/compatibility/default_parent_skeleton_in_mesh_instance_3d", true);
+				}
+				break;
+			}
+		}
+#endif
+		return OK;
+	} else if (err != ERR_FILE_NOT_FOUND) {
+		ERR_PRINT(vformat("Couldn't load file '%s', error code %d.", p_base_path.path_join(text_name), err));
+	}
+
+	return err;
+}
+
 Error ProjectSettings::load_custom(const String &p_path) {
 	if (p_path.ends_with(".binary")) {
 		return _load_settings_binary(p_path);
@@ -1083,9 +1162,10 @@ void ProjectSettings::clear(const String &p_name) {
 }
 
 Error ProjectSettings::save() {
-	Error error = save_custom(get_resource_path().path_join("project.godot"));
+	const String path = get_project_settings_path();
+	Error error = save_custom(path);
 	if (error == OK) {
-		last_save_time = FileAccess::get_modified_time(get_resource_path().path_join("project.godot"));
+		last_save_time = FileAccess::get_modified_time(path);
 	}
 	return error;
 }
@@ -1331,7 +1411,7 @@ Error ProjectSettings::save_custom(const String &p_path, const CustomMap &p_cust
 		save_features += f;
 	}
 
-	if (p_path.ends_with(".godot") || p_path.ends_with("override.cfg")) {
+	if (p_path.ends_with(".godot") || p_path.ends_with(".blazium") || p_path.ends_with("override.cfg")) {
 		return _save_settings_text(p_path, save_props, p_custom, save_features);
 	} else if (p_path.ends_with(".binary")) {
 		return _save_settings_binary(p_path, save_props, p_custom, save_features);
@@ -1823,7 +1903,7 @@ ProjectSettings::ProjectSettings() {
 	GLOBAL_DEF("debug/settings/crash_handler/message",
 			String("Please include this when reporting the bug to the project developer."));
 	GLOBAL_DEF("debug/settings/crash_handler/message.editor",
-			String("Please include this when reporting the bug on: https://github.com/godotengine/godot/issues"));
+			String("Please include this when reporting the bug on: https://github.com/blazium-games/blazium/issues"));
 	GLOBAL_DEF_RST(PropertyInfo(Variant::INT, "rendering/occlusion_culling/bvh_build_quality", PROPERTY_HINT_ENUM, "Low,Medium,High"), 2);
 	GLOBAL_DEF_RST("rendering/occlusion_culling/jitter_projection", true);
 

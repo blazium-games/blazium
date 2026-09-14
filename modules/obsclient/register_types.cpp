@@ -29,9 +29,10 @@
 
 #include "register_types.h"
 
-#include "core/object/class_db.h"
 #include "obs_client.h"
+
 #include "core/config/engine.h"
+#include "core/object/class_db.h"
 
 static OBSClient *obs_client_singleton = nullptr;
 

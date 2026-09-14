@@ -29,6 +29,7 @@
 
 #ifdef TOOLS_ENABLED
 #include "justamcp_resource.h"
+
 #include "core/object/class_db.h"
 
 void JustAMCPResource::_bind_methods() {

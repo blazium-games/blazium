@@ -33,9 +33,10 @@
 
 #include "../asset_tag_storage.h"
 #include "asset_tags_dialog.h"
+
+#include "core/object/callable_mp.h"
 #include "editor/editor_node.h"
 #include "editor/editor_string_names.h"
-#include "core/object/callable_mp.h"
 
 void AssetTagsContextMenuPlugin::_bind_methods() {}
 

@@ -29,13 +29,14 @@
 
 #include "steam.h"
 
-#include "core/config/engine.h"
-#include "core/io/image.h"
-#include "core/os/os.h"
-#include "core/os/time.h"
 #include "steam_auth_client.h"
 #include "steam_types.h"
+
+#include "core/config/engine.h"
+#include "core/io/image.h"
 #include "core/object/class_db.h"
+#include "core/os/os.h"
+#include "core/os/time.h"
 
 Steam *Steam::singleton = nullptr;
 

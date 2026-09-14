@@ -272,8 +272,90 @@ opts.Add(BoolVariable("werror", "Treat compiler warnings as errors", False))
 opts.Add("extra_suffix", "Custom extra suffix added to the base filename of all generated binary files", "")
 opts.Add("object_prefix", "Custom prefix added to the base filename of all generated object files", "")
 opts.Add(BoolVariable("vsproj", "Generate a Visual Studio solution", False))
-opts.Add("vsproj_name", "Name of the Visual Studio solution", "godot")
+opts.Add("vsproj_name", "Name of the Visual Studio solution", "blazium")
 opts.Add("import_env_vars", "A comma-separated list of environment variables to copy from the outer environment.", "")
+opts.Add(
+    BoolVariable(
+        "hub_build",
+        "Enable Hub-capable export template features (includes remote_control in templates)",
+        False,
+    )
+)
+opts.Add(
+    BoolVariable(
+        "crash_reporter",
+        "Enable crash reporter in export templates (Breakpad dumps + reporter spawn)",
+        False,
+    )
+)
+opts.Add(
+    BoolVariable(
+        "editor_crash_reporter",
+        "Include Breakpad crash reporter in the editor (console sink; dumps to editor data dir)",
+        False,
+    )
+)
+opts.Add("editor_app_id", "Shared baked editor App ID (crash reporter + analytics)", "custom_blazium_engine")
+opts.Add("editor_build_id", "Shared baked editor Build ID (empty = git/VERSION_HASH)", "")
+opts.Add("editor_crash_reporter_app_id", "Alias for editor_app_id (empty uses editor_app_id)", "")
+opts.Add("editor_crash_reporter_app_name", "Baked editor crash reporter app_name", "Blazium Editor")
+opts.Add("editor_crash_reporter_build_id", "Alias for editor_build_id (empty uses editor_build_id)", "")
+opts.Add("editor_crash_reporter_build_channel", "Baked editor crash reporter build_channel", "dev")
+opts.Add("editor_crash_reporter_endpoint", "Baked editor crash reporter ingest URL (empty = console only)", "")
+opts.Add(
+    "editor_crash_reporter_contact_url",
+    "Baked editor crash reporter contact/bug URL",
+    "https://github.com/blazium-games/blazium/issues",
+)
+opts.Add(
+    BoolVariable(
+        "analytics",
+        "Enable analytics SDK in export templates (session + custom track)",
+        False,
+    )
+)
+opts.Add(
+    BoolVariable(
+        "editor_analytics",
+        "Enable editor analytics (demographic/usage events; send only after consent)",
+        False,
+    )
+)
+opts.Add("editor_analytics_app_id", "Alias for editor_app_id (empty uses editor_app_id)", "")
+opts.Add("editor_analytics_build_id", "Alias for editor_build_id (empty uses editor_build_id)", "")
+opts.Add("editor_analytics_build_channel", "Baked editor analytics build_channel", "dev")
+opts.Add("editor_analytics_endpoint", "Baked editor analytics ingest URL (empty = disabled)", "")
+opts.Add("template_app_id", "Optional baked export-template App ID (empty = Project Settings remain writable)", "")
+opts.Add("template_build_id", "Optional baked export-template Build ID (empty = Project Settings remain writable)", "")
+opts.Add(
+    "template_analytics_endpoint",
+    "Optional baked export-template analytics URL (empty = Project Settings remain writable)",
+    "",
+)
+opts.Add(
+    "template_crash_reporter_endpoint",
+    "Optional baked export-template crash ingest URL (empty = Project Settings remain writable)",
+    "",
+)
+opts.Add(
+    BoolVariable(
+        "hub_register",
+        "Post-build: register the linked editor with Blazium Hub via blazium-cli handle-uri (editor only; not runtime)",
+        False,
+    )
+)
+opts.Add(
+    BoolVariable(
+        "update_version_from_git",
+        "Before build, set EXTERNAL_* version from nearest v* git tag (+ commits) via misc/scripts/update_version_from_git.py",
+        False,
+    )
+)
+opts.Add(
+    "update_version_status",
+    "Override external_status when update_version_from_git=yes (empty = script default)",
+    "",
+)
 opts.Add(BoolVariable("disable_exceptions", "Force disabling exception handling code", True))
 opts.Add(BoolVariable("disable_2d", "Disable 2D nodes for a smaller executable", False))
 opts.Add(BoolVariable("disable_3d", "Disable 3D nodes for a smaller executable", False))
@@ -575,6 +657,120 @@ if env.dev_build:
 else:
     # Disable assert() for production targets (only used in thirdparty code).
     env.Append(CPPDEFINES=["NDEBUG"])
+
+
+def _crash_reporter_cpp_string(name, value):
+    escaped = str(value).replace("\\", "\\\\").replace('"', '\\"')
+    return f'{name}=\\"{escaped}\\"'
+
+
+def _first_nonempty(*vals):
+    for v in vals:
+        if str(v).strip():
+            return v
+    return ""
+
+
+editor_app_id = _first_nonempty(
+    env.get("editor_crash_reporter_app_id", ""),
+    env.get("editor_analytics_app_id", ""),
+    env.get("editor_app_id", "custom_blazium_engine"),
+)
+editor_build_id = _first_nonempty(
+    env.get("editor_crash_reporter_build_id", ""),
+    env.get("editor_analytics_build_id", ""),
+    env.get("editor_build_id", ""),
+)
+
+_crash_reporter_platforms = ("windows", "linuxbsd")
+
+if env.editor_build:
+    if env.get("crash_reporter"):
+        print_warning("crash_reporter=yes is ignored for editor builds; use editor_crash_reporter=yes.")
+    if env.get("editor_crash_reporter"):
+        if env["platform"] not in _crash_reporter_platforms:
+            print_warning(
+                f"editor_crash_reporter=yes is ignored on {env['platform']}; crash reporter is Windows/Linux only."
+            )
+        else:
+            env.Append(CPPDEFINES=["CRASH_REPORTER_ENABLED", "USE_BREAKPAD"])
+            env.Append(
+                CPPDEFINES=[
+                    _crash_reporter_cpp_string("CRASH_REPORTER_EDITOR_APP_ID", editor_app_id),
+                    _crash_reporter_cpp_string(
+                        "CRASH_REPORTER_EDITOR_APP_NAME", env.get("editor_crash_reporter_app_name", "")
+                    ),
+                    _crash_reporter_cpp_string("CRASH_REPORTER_EDITOR_BUILD_ID", editor_build_id),
+                    _crash_reporter_cpp_string(
+                        "CRASH_REPORTER_EDITOR_BUILD_CHANNEL", env.get("editor_crash_reporter_build_channel", "")
+                    ),
+                    _crash_reporter_cpp_string(
+                        "CRASH_REPORTER_EDITOR_ENDPOINT", env.get("editor_crash_reporter_endpoint", "")
+                    ),
+                    _crash_reporter_cpp_string(
+                        "CRASH_REPORTER_EDITOR_CONTACT_URL", env.get("editor_crash_reporter_contact_url", "")
+                    ),
+                ]
+            )
+elif env.get("editor_crash_reporter"):
+    print_warning("editor_crash_reporter=yes is ignored for export templates; use crash_reporter=yes.")
+elif env.get("crash_reporter"):
+    if env["platform"] not in _crash_reporter_platforms:
+        print_warning(f"crash_reporter=yes is ignored on {env['platform']}; crash reporter is Windows/Linux only.")
+    else:
+        env.Append(CPPDEFINES=["CRASH_REPORTER_ENABLED", "USE_BREAKPAD"])
+
+
+def _analytics_cpp_string(name, value):
+    escaped = str(value).replace("\\", "\\\\").replace('"', '\\"')
+    return f'{name}=\\"{escaped}\\"'
+
+
+if env.editor_build:
+    if env.get("analytics"):
+        print_warning("analytics=yes is ignored for editor builds; use editor_analytics=yes.")
+    if env.get("editor_analytics"):
+        env.Append(CPPDEFINES=["ANALYTICS_ENABLED"])
+        env.Append(
+            CPPDEFINES=[
+                _analytics_cpp_string("ANALYTICS_EDITOR_APP_ID", editor_app_id),
+                _analytics_cpp_string("ANALYTICS_EDITOR_BUILD_ID", editor_build_id),
+                _analytics_cpp_string("ANALYTICS_EDITOR_BUILD_CHANNEL", env.get("editor_analytics_build_channel", "")),
+                _analytics_cpp_string("ANALYTICS_EDITOR_ENDPOINT", env.get("editor_analytics_endpoint", "")),
+            ]
+        )
+elif env.get("editor_analytics"):
+    print_warning("editor_analytics=yes is ignored for export templates; use analytics=yes.")
+elif env.get("analytics"):
+    env.Append(CPPDEFINES=["ANALYTICS_ENABLED"])
+
+
+def _scons_or_environ(scons_key, environ_key):
+    v = str(env.get(scons_key, "")).strip()
+    if v:
+        return v
+    return os.environ.get(environ_key, "").strip()
+
+
+template_app_id = _scons_or_environ("template_app_id", "BLAZIUM_TEMPLATE_APP_ID")
+template_build_id = _scons_or_environ("template_build_id", "BLAZIUM_TEMPLATE_BUILD_ID")
+template_analytics_endpoint = _scons_or_environ("template_analytics_endpoint", "BLAZIUM_TEMPLATE_ANALYTICS_ENDPOINT")
+template_crash_endpoint = _scons_or_environ("template_crash_reporter_endpoint", "BLAZIUM_TEMPLATE_CRASH_ENDPOINT")
+
+if env.editor_build:
+    if template_app_id or template_build_id or template_analytics_endpoint or template_crash_endpoint:
+        print_warning("template_* identity flags are ignored for editor builds.")
+else:
+    env.Append(
+        CPPDEFINES=[
+            _crash_reporter_cpp_string("CRASH_REPORTER_TEMPLATE_APP_ID", template_app_id),
+            _crash_reporter_cpp_string("CRASH_REPORTER_TEMPLATE_BUILD_ID", template_build_id),
+            _crash_reporter_cpp_string("CRASH_REPORTER_TEMPLATE_ENDPOINT", template_crash_endpoint),
+            _analytics_cpp_string("ANALYTICS_TEMPLATE_APP_ID", template_app_id),
+            _analytics_cpp_string("ANALYTICS_TEMPLATE_BUILD_ID", template_build_id),
+            _analytics_cpp_string("ANALYTICS_TEMPLATE_ENDPOINT", template_analytics_endpoint),
+        ]
+    )
 
 # This is not part of fast_unsafe because the only downside it has compared to
 # the default is that SCons won't mark files that were changed in the last second
@@ -1104,6 +1300,8 @@ if env["disable_navigation_3d"]:
     env.Append(CPPDEFINES=["NAVIGATION_3D_DISABLED"])
 if env["disable_xr"]:
     env.Append(CPPDEFINES=["XR_DISABLED"])
+if env.get("hub_register", False) and not env.editor_build:
+    print_warning("Build option `hub_register=yes` is ignored for non-editor builds.")
 if env["minizip"]:
     env.Append(CPPDEFINES=["MINIZIP_ENABLED"])
 if env["brotli"]:
@@ -1167,6 +1365,31 @@ if env.editor_build:
     if not env.module_check_dependencies("editor"):
         print_error("Not all modules required by editor builds are enabled.")
         Exit(255)
+
+if env.get("update_version_from_git", False):
+    try:
+        from misc.scripts import update_version_from_git as uvfg
+
+        repo_root = uvfg.find_repo_root(str(methods.base_folder))
+        status_override = env.get("update_version_status", "")
+        if status_override == "":
+            status_override = None
+        git_version = uvfg.compute_version(repo_root, status_override)
+        uvfg.apply_version_to_environ(git_version)
+        uvfg.update_version_py(os.path.join(repo_root, "version.py"), git_version)
+        print_info(
+            "update_version_from_git: "
+            f"{git_version['external_major']}.{git_version['external_minor']}.{git_version['external_patch']}"
+            f"-{git_version['external_status']} "
+            f"(tag {git_version['tag']} +{git_version['commits_after_tag']} commits)"
+        )
+        print_info("Leave version.py uncommitted; restore with: git checkout -- version.py")
+    except SystemExit as exc:
+        msg = exc.code if isinstance(exc.code, str) else (str(exc) if exc.args else "update_version_from_git failed")
+        print_error(msg)
+        Exit(255)
+
+env.version_info = methods.get_version_info(env.module_version_string)
 
 env["PROGSUFFIX_WRAP"] = suffix + env.module_version_string + ".console" + env["PROGSUFFIX"]
 env["PROGSUFFIX"] = suffix + env.module_version_string + env["PROGSUFFIX"]

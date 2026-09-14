@@ -34,8 +34,8 @@
 #include "../steam_inventory_item.h"
 
 #include "core/io/image.h"
-#include "tests/test_macros.h"
 #include "core/string/ustring.h"
+#include "tests/test_macros.h"
 
 namespace TestSteam {
 

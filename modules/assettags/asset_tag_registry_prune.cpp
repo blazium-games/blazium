@@ -27,17 +27,16 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
+#include "asset_tag_coordinator.h"
 #include "asset_tag_registry.h"
 
-#include "asset_tag_coordinator.h"
-
 #include "core/io/file_access.h"
+#include "core/object/callable_mp.h"
 #include "core/os/os.h"
 #include "scene/main/scene_tree.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/file_system/editor_file_system.h"
-#include "core/object/callable_mp.h"
 #endif
 
 namespace {

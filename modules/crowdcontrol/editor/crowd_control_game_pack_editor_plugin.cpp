@@ -31,10 +31,10 @@
 
 #ifdef TOOLS_ENABLED
 
+#include "core/object/callable_mp.h"
 #include "editor/editor_node.h"
 #include "editor/gui/editor_file_dialog.h"
 #include "scene/gui/box_container.h"
-#include "core/object/callable_mp.h"
 
 // CrowdControlGamePackInspectorPlugin
 

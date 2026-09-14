@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "autowork_stub_params.h"
+
 #include "core/object/class_db.h"
 #include "core/string/string_name.h"
 

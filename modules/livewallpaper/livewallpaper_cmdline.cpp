@@ -31,6 +31,7 @@
 
 #include "core/config/project_settings.h"
 #include "core/os/os.h"
+
 #include "modules/livewallpaper/livewallpaper_workerw.h"
 
 static bool _is_non_editor_binary() {

@@ -41,10 +41,10 @@
 #include "justamcp_tool_schema_builder.h"
 
 #include "core/config/project_settings.h"
+#include "core/object/class_db.h"
 #include "core/object/worker_thread_pool.h"
 #include "core/os/thread.h"
 #include "editor/settings/editor_settings.h"
-#include "core/object/class_db.h"
 
 JustAMCPMCPClientBridge *JustAMCPMCPClientBridge::singleton = nullptr;
 

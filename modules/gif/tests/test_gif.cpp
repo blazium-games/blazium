@@ -29,16 +29,16 @@
 
 #include "test_gif.h"
 
-#include "modules/gif/gif_decode.h"
-#include "modules/gif/gif_encode.h"
-#include "modules/gif/gif_recorder.h"
-#include "modules/gif/gif_texture.h"
-
 #include "core/config/project_settings.h"
 #include "core/io/image.h"
 #include "scene/resources/image_texture.h"
 #include "scene/resources/sprite_frames.h"
 #include "servers/rendering/rendering_server.h"
+
+#include "modules/gif/gif_decode.h"
+#include "modules/gif/gif_encode.h"
+#include "modules/gif/gif_recorder.h"
+#include "modules/gif/gif_texture.h"
 
 #include <string.h>
 

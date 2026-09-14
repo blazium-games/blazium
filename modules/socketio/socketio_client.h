@@ -29,12 +29,14 @@
 
 #pragma once
 
-#include "core/object/object.h"
-#include "core/templates/hash_map.h"
-#include "modules/websocket/websocket_peer.h"
 #include "socketio_namespace.h"
 #include "socketio_packet.h"
+
+#include "core/object/object.h"
+#include "core/templates/hash_map.h"
 #include "core/variant/type_info.h"
+
+#include "modules/websocket/websocket_peer.h"
 
 class SocketIOClient : public Object {
 	GDCLASS(SocketIOClient, Object);

@@ -31,8 +31,8 @@
 
 #include "twitch_irc_client.h"
 
-#include "scene/main/node.h"
 #include "core/string/ustring.h"
+#include "scene/main/node.h"
 
 class TwitchIRCClientNode : public Node {
 	GDCLASS(TwitchIRCClientNode, Node);

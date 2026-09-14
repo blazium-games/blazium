@@ -29,11 +29,13 @@
 
 #pragma once
 
+#include "crowd_control_http_client.h"
+
 #include "core/object/class_db.h"
 #include "core/object/object.h"
-#include "crowd_control_http_client.h"
-#include "modules/websocket/websocket_peer.h"
 #include "core/variant/type_info.h"
+
+#include "modules/websocket/websocket_peer.h"
 
 class CrowdControl : public Object {
 	GDCLASS(CrowdControl, Object);

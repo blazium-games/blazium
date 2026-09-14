@@ -48,9 +48,9 @@
 			If you're distributing your app via the Play Store, it's generally recommended to keep this option [code]false[/code], see [url=https://developer.android.com/build/releases/past-releases/agp-3-6-0-release-notes#extractNativeLibs]official documentation[/url].
 		</member>
 		<member name="gradle_build/custom_theme_attributes" type="Dictionary" setter="" getter="">
-			A dictionary of custom theme attributes to include in the exported Android project. Each entry defines a theme attribute name and its value, and will be added to the [b]GodotAppMainTheme[/b].
+			A dictionary of custom theme attributes to include in the exported Android project. Each entry defines a theme attribute name and its value, and will be added to the [b]BlaziumAppMainTheme[/b].
 			For example, the key [code]android:windowSwipeToDismiss[/code] with the value [code]false[/code] is resolved to [code]&lt;item name="android:windowSwipeToDismiss"&gt;false&lt;/item&gt;[/code].
-			[b]Note:[/b] To add a custom attribute to the [b]GodotAppSplashTheme[/b], prefix the attribute name with [code][splash][/code].
+			[b]Note:[/b] To add a custom attribute to the [b]BlaziumAppSplashTheme[/b], prefix the attribute name with [code][splash][/code].
 			[b]Note:[/b] Reserved attributes configured via other export options or project settings cannot be overridden by [code]custom_theme_attributes[/code] and are skipped during export.
 		</member>
 		<member name="gradle_build/export_format" type="int" setter="" getter="">

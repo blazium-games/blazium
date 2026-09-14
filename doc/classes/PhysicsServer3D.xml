@@ -902,6 +902,13 @@
 				Returns whether the bodies attached to the [Joint3D] will collide with each other.
 			</description>
 		</method>
+		<method name="joint_is_enabled" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="joint" type="RID" />
+			<description>
+				Gets the joint enabled state.
+			</description>
+		</method>
 		<method name="joint_make_cone_twist">
 			<return type="void" />
 			<param index="0" name="joint" type="RID" />
@@ -951,6 +958,14 @@
 			<param index="3" name="body_B" type="RID" />
 			<param index="4" name="local_ref_B" type="Transform3D" />
 			<description>
+			</description>
+		</method>
+		<method name="joint_set_enabled">
+			<return type="void" />
+			<param index="0" name="joint" type="RID" />
+			<param index="1" name="enabled" type="bool" />
+			<description>
+				Enable or disable the joint.
 			</description>
 		</method>
 		<method name="joint_set_solver_priority">
@@ -1404,6 +1419,13 @@
 				Creates a space. A space is a collection of parameters for the physics engine that can be assigned to an area or a body. It can be assigned to an area with [method area_set_space], or to a body with [method body_set_space].
 			</description>
 		</method>
+		<method name="space_flush_queries" experimental="">
+			<return type="void" />
+			<param index="0" name="space" type="RID" />
+			<description>
+				Flushes [param space]'s queries. It is necessary to call this method after calling [method space_step] with an active space from [code]_physics_process[/code]. Otherwise, call this method before calling [method space_step].
+			</description>
+		</method>
 		<method name="space_get_direct_state">
 			<return type="PhysicsDirectSpaceState3D" />
 			<param index="0" name="space" type="RID" />
@@ -1441,6 +1463,15 @@
 			<param index="2" name="value" type="float" />
 			<description>
 				Sets the value for a space parameter. A list of available parameters is on the [enum SpaceParameter] constants.
+			</description>
+		</method>
+		<method name="space_step" experimental="">
+			<return type="void" />
+			<param index="0" name="space" type="RID" />
+			<param index="1" name="delta" type="float" />
+			<description>
+				Manually advance [param space] forward in [param delta]. This technique can be used for speeding up physics simulations, as seen in advanced rollback-style networking, or for predicting outcomes in scenarios such as hitting a ball in a billiards game.
+				[b]Note:[/b] If calling this method with an active [param space] from [code]_physics_process()[/code], you should call [method space_flush_queries] afterwards. Otherwise, call [method space_flush_queries] beforehand. Godot Physics rejects stepping an active space; deactivate it first.
 			</description>
 		</method>
 		<method name="sphere_shape_create">

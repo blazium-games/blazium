@@ -37,19 +37,20 @@
 #include "../semantic_query_embed_cache.h"
 #include "../semantic_search_backend.h"
 #include "../semantic_search_backend_factory.h"
+
 #include "modules/modules_enabled.gen.h"
 #ifdef MODULE_ASSETTAGS_ENABLED
 #include "modules/assettags/asset_tag_manager.h"
 #include "modules/assettags/asset_tag_registry.h"
 #include "modules/assettags/asset_tag_storage.h"
 #endif
+#include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/io/http_client.h"
 #include "core/math/math_funcs.h"
 #include "core/os/os.h"
 #include "tests/test_macros.h"
-#include "core/config/project_settings.h"
 
 static SemanticAssetIndex *semantic_test_index() {
 	SemanticAssetIndex *index = SemanticAssetIndex::get_singleton();

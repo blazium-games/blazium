@@ -33,17 +33,17 @@
 #include "gif_encode.h"
 
 #include "core/io/file_access.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 #include "core/object/message_queue.h"
 #include "core/os/os.h"
 #include "core/os/thread.h"
+#include "core/string/string_name.h"
 #include "core/templates/local_vector.h"
 #include "scene/main/scene_tree.h"
 #include "scene/resources/image_texture.h"
 #include "scene/resources/sprite_frames.h"
 #include "servers/rendering/rendering_server.h"
-#include "core/object/callable_mp.h"
-#include "core/object/class_db.h"
-#include "core/string/string_name.h"
 
 Mutex GIFTexture::_active_mutex;
 HashSet<GIFTexture *> GIFTexture::_active_textures;
@@ -1051,9 +1051,9 @@ GIFTexture::~GIFTexture() {
 	ERR_FAIL_NULL(RenderingServer::get_singleton());
 
 	if (proxy.is_valid()) {
-		RS::get_singleton()->free(proxy);
+		RS::get_singleton()->free_rid(proxy);
 	}
 	if (proxy_ph.is_valid()) {
-		RS::get_singleton()->free(proxy_ph);
+		RS::get_singleton()->free_rid(proxy_ph);
 	}
 }

@@ -32,6 +32,7 @@
 #include "justamcp_tool_category_bridge.h"
 
 #include "justamcp_tool_executor.h"
+
 #include "core/object/class_db.h"
 
 void JustAMCPToolCategoryBridge::_bind_methods() {

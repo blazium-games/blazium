@@ -28,8 +28,10 @@
 /**************************************************************************/
 
 #include "justamcp_export_tools.h"
+
 #include "../justamcp_server.h"
 #include "../justamcp_tool_context.h"
+
 #include "core/config/project_settings.h"
 #include "core/io/config_file.h"
 #include "core/io/dir_access.h"

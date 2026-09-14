@@ -32,21 +32,21 @@
 #include "analytics_http.h"
 #include "analytics_queue.h"
 
-#include <cstring>
-
 #include "core/config/app_identity.h"
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
+#include "core/object/class_db.h"
 #include "core/os/os.h"
 #include "core/os/time.h"
 #include "core/version.h"
 #include "servers/display/display_server.h"
 
+#include <cstring>
+
 #ifdef TOOLS_ENABLED
 #include "editor/file_system/editor_paths.h"
 #include "editor/settings/editor_settings.h"
-#include "core/object/class_db.h"
 #endif
 
 #ifndef ANALYTICS_EDITOR_APP_ID
@@ -259,7 +259,7 @@ Dictionary Analytics::_build_event(const String &p_event, const Dictionary &p_pr
 	ev["build_id"] = get_build_id();
 	ev["app_version"] = get_app_version();
 	ev["build_channel"] = get_build_channel();
-	ev["engine_version"] = String(VERSION_FULL_NAME);
+	ev["engine_version"] = String(GODOT_VERSION_FULL_NAME);
 	ev["session_id"] = session_id;
 	const bool anonymous = is_anonymous();
 	ev["anonymous"] = anonymous;
@@ -444,7 +444,7 @@ String Analytics::get_build_id() const {
 String Analytics::get_app_version() const {
 #ifdef TOOLS_ENABLED
 	if (_is_editor_context()) {
-		return String(VERSION_FULL_NAME);
+		return String(GODOT_VERSION_FULL_NAME);
 	}
 #endif
 	const String project_version = _setting_string("application/analytics/app_version", String());
@@ -544,7 +544,7 @@ void Analytics::flush() {
 	bytes.resize(utf8.length());
 	memcpy(bytes.ptrw(), utf8.get_data(), utf8.length());
 
-	const String ua = vformat("BlaziumAnalytics/%s", VERSION_FULL_NAME);
+	const String ua = vformat("BlaziumAnalytics/%s", GODOT_VERSION_FULL_NAME);
 	int timeout_sec = 15;
 	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("application/analytics/timeout_sec")) {
 		timeout_sec = MAX((int)GLOBAL_GET("application/analytics/timeout_sec"), 1);
@@ -573,7 +573,7 @@ Dictionary Analytics::get_resolved_config() const {
 	cfg["build_id"] = get_build_id();
 	cfg["app_version"] = get_app_version();
 	cfg["build_channel"] = get_build_channel();
-	cfg["engine_version"] = String(VERSION_FULL_NAME);
+	cfg["engine_version"] = String(GODOT_VERSION_FULL_NAME);
 	cfg["session_id"] = session_id;
 	cfg["device_uid"] = get_device_uid();
 	cfg["endpoint"] = get_endpoint();

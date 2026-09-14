@@ -29,9 +29,10 @@
 
 #pragma once
 
-#include "editor/export/editor_export_platform_pc.h"
-#include "modules/xbox_module/xbox_module_constants.h"
 #include "core/string/ustring.h"
+#include "editor/export/editor_export_platform_pc.h"
+
+#include "modules/xbox_module/xbox_module_constants.h"
 
 class GDKToolchain;
 

@@ -29,11 +29,9 @@
 
 #pragma once
 
-#include "editor/plugins/editor_plugin.h"
-
+#include "core/string/ustring.h"
 #include "editor/export/editor_export_platform.h"
 #include "editor/plugins/editor_plugin.h"
-#include "core/string/ustring.h"
 
 class EditorExportPlatformXbox;
 

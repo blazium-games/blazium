@@ -5,6 +5,7 @@ on:
 
 # Global Settings
 env:
+  BLAZIUM_BASE_BRANCH: blazium_4.8
   SCONS_FLAGS: >-
     dev_mode=yes
     module_text_server_fb_enabled=yes
@@ -19,7 +20,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
@@ -33,9 +34,10 @@ jobs:
       - name: Compilation (arm64)
         uses: ./.github/actions/godot-build
         with:
-          scons-flags: ${{ env.SCONS_FLAGS }}
+          sconsflags: ${{ env.SCONS_FLAGS }}
           platform: visionos
           target: template_release
+          tests: false
 
       - name: Save Godot build cache
         uses: ./.github/actions/godot-cache-save

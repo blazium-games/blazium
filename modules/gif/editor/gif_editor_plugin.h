@@ -31,12 +31,13 @@
 
 #ifdef TOOLS_ENABLED
 
+#include "core/string/ustring.h"
 #include "editor/inspector/editor_inspector.h"
 #include "editor/inspector/editor_resource_preview.h"
 #include "editor/plugins/editor_plugin.h"
+
 #include "modules/gif/gif_recorder.h"
 #include "modules/gif/gif_texture.h"
-#include "core/string/ustring.h"
 
 class Button;
 class EditorFileDialog;

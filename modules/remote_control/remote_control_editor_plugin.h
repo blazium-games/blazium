@@ -31,8 +31,8 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "editor/plugins/editor_plugin.h"
 #include "core/string/ustring.h"
+#include "editor/plugins/editor_plugin.h"
 
 class RemoteControlEditorPlugin : public EditorPlugin {
 	GDCLASS(RemoteControlEditorPlugin, EditorPlugin);

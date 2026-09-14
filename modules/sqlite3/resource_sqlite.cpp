@@ -30,12 +30,13 @@
 /**************************************************************************/
 
 #include "resource_sqlite.h"
+
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
-#include "core/variant/variant_utility.h"
 #include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
 #include "core/string/string_name.h"
+#include "core/variant/variant_utility.h"
 
 void SQLiteDatabase::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_sqlite"), &SQLiteDatabase::get_sqlite);
@@ -205,7 +206,6 @@ Ref<SQLiteQuery> SQLiteDatabase::create_table(const String &p_table_name, const 
 	key_string = "";
 	primary_string = "";
 
-	Dictionary column_dict;
 	int primary_key_columns = 0;
 	for (int64_t i = 0; i < p_columns.size(); i++) {
 		Ref<SQLiteColumnSchema> schema = p_columns[i];
@@ -490,17 +490,15 @@ Dictionary SQLiteDatabase::get_tables() const {
 	Dictionary result_dict;
 	for (int i = 0; i < result->get_result().size(); i++) {
 		Dictionary row = result->get_result()[i];
-		for (Variant key : row.keys()) {
-			String table_name = row.get("name", String());
-			if (!table_name.begins_with("sqlite_")) {
-				TypedArray<SQLiteColumnSchema> columns = get_columns(table_name);
-				TypedArray<String> column_names;
-				for (int k = 0; k < columns.size(); k++) {
-					Ref<SQLiteColumnSchema> column = columns[k];
-					column_names.append(column->get_name());
-				}
-				result_dict[table_name] = column_names;
+		String table_name = row.get("name", String());
+		if (!table_name.begins_with("sqlite_")) {
+			TypedArray<SQLiteColumnSchema> columns = get_columns(table_name);
+			TypedArray<String> column_names;
+			for (int k = 0; k < columns.size(); k++) {
+				Ref<SQLiteColumnSchema> column = columns[k];
+				column_names.append(column->get_name());
 			}
+			result_dict[table_name] = column_names;
 		}
 	}
 	return result_dict;

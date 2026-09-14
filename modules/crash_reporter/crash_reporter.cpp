@@ -39,6 +39,8 @@
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 #include "core/os/os.h"
 #include "core/string/print_string.h"
 #include "core/version.h"
@@ -46,8 +48,6 @@
 
 #ifdef TOOLS_ENABLED
 #include "editor/file_system/editor_paths.h"
-#include "core/object/callable_mp.h"
-#include "core/object/class_db.h"
 #endif
 
 CrashReporter *CrashReporter::singleton = nullptr;
@@ -266,7 +266,7 @@ String CrashReporter::get_app_name() const {
 String CrashReporter::get_app_version() const {
 	const String from_env = _resolve_env_or_baked("BLAZIUM_CRASH_REPORTER_APP_VERSION", String(), String());
 #ifdef TOOLS_ENABLED
-	return from_env.is_empty() ? String(VERSION_FULL_NAME) : from_env;
+	return from_env.is_empty() ? String(GODOT_VERSION_FULL_NAME) : from_env;
 #else
 	if (!from_env.is_empty()) {
 		return from_env;
@@ -441,8 +441,8 @@ void CrashReporter::_cache_breakpad_identity() {
 	const CharString app_id = get_app_id().utf8();
 	const CharString app_name = get_app_name().utf8();
 	const CharString app_version = get_app_version().utf8();
-	const CharString engine_version = String(VERSION_FULL_NAME).utf8();
-	const CharString engine_hash = String(VERSION_HASH).utf8();
+	const CharString engine_version = String(GODOT_VERSION_FULL_NAME).utf8();
+	const CharString engine_hash = String(GODOT_VERSION_HASH).utf8();
 	const CharString os_name = OS::get_singleton()->get_name().utf8();
 	const CharString arch = Engine::get_singleton()->get_architecture_name().utf8();
 	const CharString channel = get_build_channel().utf8();
@@ -624,7 +624,7 @@ Error CrashReporter::upload_report(const String &p_id) {
 	const CrashReporterUtil::MultipartBody body = CrashReporterUtil::build_multipart(dump_bytes, p_id + ".dmp", meta_json, log_bytes, p_id + ".log", "----BlaziumCrashBoundary");
 	emit_signal(SNAME("upload_progress"), p_id, (int64_t)0, (int64_t)body.data.size());
 
-	const String ua = vformat("BlaziumCrashReporter/%s", VERSION_FULL_NAME);
+	const String ua = vformat("BlaziumCrashReporter/%s", GODOT_VERSION_FULL_NAME);
 	const CrashReporterHTTPResult result = CrashReporterHTTP::upload_report(get_endpoint(), get_app_id(), get_build_id(), ua, body.data, body.content_type, _setting_int("application/crash_reporter/timeout_sec", 30), _setting_bool("application/crash_reporter/verify_tls", true), _setting_int("application/crash_reporter/retry_count", 3), _setting_int("application/crash_reporter/retry_backoff_sec", 5), &upload_cancel);
 
 	uploading = false;

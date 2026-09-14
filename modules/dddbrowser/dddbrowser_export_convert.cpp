@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "dddbrowser_export_convert.h"
+
 #include "dddbrowser_exporter.h"
 
 #include "core/config/project_settings.h"
@@ -43,12 +44,12 @@
 #include "scene/resources/3d/capsule_shape_3d.h"
 #include "scene/resources/3d/cylinder_shape_3d.h"
 #include "scene/resources/3d/sphere_shape_3d.h"
+#include "scene/resources/audio/audio_stream.h"
 #include "scene/resources/environment.h"
 #include "scene/resources/material.h"
 #include "scene/resources/mesh.h"
 #include "scene/resources/sky.h"
 #include "scene/resources/texture.h"
-#include "scene/resources/audio/audio_stream.h"
 
 #if 0 // MODULE_LUAU_MODULE_ENABLED — Luau is stubbed on Godot 4.8
 #include "modules/luau_module/luau_script.h"

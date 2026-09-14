@@ -32,16 +32,15 @@
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-#include "gdk_windows.h"
-
-#include <cstdint>
-
-#include "core/variant/dictionary.h"
-
 #include "gdk.h"
 #include "gdk_result.h"
 #include "gdk_runtime.h"
+#include "gdk_windows.h"
+
 #include "core/object/class_db.h"
+#include "core/variant/dictionary.h"
+
+#include <cstdint>
 
 namespace {
 constexpr const char *RUNTIME_NOT_INITIALIZED_ERROR_MESSAGE = "GDK runtime must be initialized before configuring error reporting.";

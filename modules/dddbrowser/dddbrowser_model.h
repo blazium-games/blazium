@@ -29,9 +29,9 @@
 
 #pragma once
 
-#include "scene/3d/mesh_instance_3d.h"
 #include "core/string/ustring.h"
 #include "core/variant/type_info.h"
+#include "scene/3d/mesh_instance_3d.h"
 
 class DDDBrowserModel : public MeshInstance3D {
 	GDCLASS(DDDBrowserModel, MeshInstance3D);

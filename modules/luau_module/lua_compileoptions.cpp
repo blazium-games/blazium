@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "lua_compileoptions.h"
+
 #include "core/object/class_db.h"
 
 using namespace luau_module;

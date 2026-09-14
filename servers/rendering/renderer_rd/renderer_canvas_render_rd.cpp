@@ -820,7 +820,12 @@ void RendererCanvasRenderRD::canvas_render_items(RID p_to_render_target, Item *p
 				_render_batch_items(to_render_target, item_count, canvas_transform_inverse, p_light_list, r_sdf_used, false, r_render_info);
 				item_count = 0;
 
-				if (ci->canvas_group_owner->canvas_group->mode != RSE::CANVAS_GROUP_MODE_TRANSPARENT) {
+				const bool owner_uses_clear =
+						ci->canvas_group_owner->canvas_group->mode == RSE::CANVAS_GROUP_MODE_TRANSPARENT ||
+						ci->canvas_group_owner->canvas_group->mode == RSE::CANVAS_GROUP_MODE_MASK_PARENT ||
+						ci->canvas_group_owner->canvas_group->mode == RSE::CANVAS_GROUP_MODE_MASK_PARENT_SUBTRACT;
+
+				if (!owner_uses_clear) {
 					Rect2i group_rect = ci->canvas_group_owner->global_rect_cache;
 					texture_storage->render_target_copy_to_back_buffer(p_to_render_target, group_rect, false);
 					if (ci->canvas_group_owner->canvas_group->mode == RSE::CANVAS_GROUP_MODE_CLIP_AND_DRAW) {
@@ -2119,6 +2124,48 @@ void fragment() {
 	}
 
 	{
+		default_mask_parent_shader = material_storage->shader_allocate();
+		material_storage->shader_initialize(default_mask_parent_shader);
+
+		material_storage->shader_set_code(default_mask_parent_shader, R"(
+shader_type canvas_item;
+render_mode unshaded;
+
+uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_nearest;
+
+void fragment() {
+	vec4 c = textureLod(screen_texture, SCREEN_UV, 0.0);
+	COLOR.a *= c.a;
+}
+)");
+		default_mask_parent_material = material_storage->material_allocate();
+		material_storage->material_initialize(default_mask_parent_material);
+
+		material_storage->material_set_shader(default_mask_parent_material, default_mask_parent_shader);
+	}
+
+	{
+		default_mask_parent_subtract_shader = material_storage->shader_allocate();
+		material_storage->shader_initialize(default_mask_parent_subtract_shader);
+
+		material_storage->shader_set_code(default_mask_parent_subtract_shader, R"(
+shader_type canvas_item;
+render_mode unshaded;
+
+uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_nearest;
+
+void fragment() {
+	vec4 c = textureLod(screen_texture, SCREEN_UV, 0.0);
+	COLOR.a *= 1.0 - c.a;
+}
+)");
+		default_mask_parent_subtract_material = material_storage->material_allocate();
+		material_storage->material_initialize(default_mask_parent_subtract_material);
+
+		material_storage->material_set_shader(default_mask_parent_subtract_material, default_mask_parent_subtract_shader);
+	}
+
+	{
 		uint32_t cache_size = uint32_t(GLOBAL_GET("rendering/2d/batching/uniform_set_cache_size"));
 		rid_set_to_uniform_set.set_capacity(cache_size);
 	}
@@ -2209,6 +2256,10 @@ void RendererCanvasRenderRD::_render_batch_items(RenderTarget p_to_render_target
 			if (ci->use_canvas_group) {
 				if (ci->canvas_group->mode == RSE::CANVAS_GROUP_MODE_CLIP_AND_DRAW) {
 					material = default_clip_children_material;
+				} else if (ci->canvas_group->mode == RSE::CANVAS_GROUP_MODE_MASK_PARENT) {
+					material = default_mask_parent_material;
+				} else if (ci->canvas_group->mode == RSE::CANVAS_GROUP_MODE_MASK_PARENT_SUBTRACT) {
+					material = default_mask_parent_subtract_material;
 				} else {
 					if (material.is_null()) {
 						if (ci->canvas_group->mode == RSE::CANVAS_GROUP_MODE_CLIP_ONLY) {
@@ -3364,6 +3415,11 @@ RendererCanvasRenderRD::~RendererCanvasRenderRD() {
 
 	material_storage->material_free(default_clip_children_material);
 	material_storage->shader_free(default_clip_children_shader);
+
+	material_storage->material_free(default_mask_parent_material);
+	material_storage->shader_free(default_mask_parent_shader);
+	material_storage->material_free(default_mask_parent_subtract_material);
+	material_storage->shader_free(default_mask_parent_subtract_shader);
 
 	{
 		if (state.canvas_state_buffer.is_valid()) {

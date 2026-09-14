@@ -30,8 +30,8 @@
             tools:targetApi="29" />
 
         <activity
-            android:name=".GodotApp"
-            android:theme="@style/GodotAppSplashTheme"
+            android:name=".BlaziumApp"
+            android:theme="@style/BlaziumAppSplashTheme"
             android:launchMode="singleInstancePerTask"
             android:excludeFromRecents="false"
             android:exported="false"
@@ -42,8 +42,8 @@
             android:resizeableActivity="false"
             tools:ignore="UnusedAttribute" />
         <activity-alias
-            android:name=".GodotAppLauncher"
-            android:targetActivity=".GodotApp"
+            android:name=".BlaziumAppLauncher"
+            android:targetActivity=".BlaziumApp"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

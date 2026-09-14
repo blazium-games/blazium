@@ -27,9 +27,9 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
+#include "asset_tag_manager.h"
 #include "asset_tag_registry.h"
 
-#include "asset_tag_manager.h"
 #include "core/config/project_settings.h"
 #include "core/io/file_access.h"
 

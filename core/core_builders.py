@@ -29,7 +29,7 @@ def version_info_builder(target, source, env):
 #define GODOT_VERSION_MODULE_CONFIG "{module_config}"
 #define GODOT_VERSION_WEBSITE "{website}"
 #define GODOT_VERSION_DOCS_BRANCH "{docs_branch}"
-#define GODOT_VERSION_DOCS_URL "https://docs.godotengine.org/en/" GODOT_VERSION_DOCS_BRANCH
+#define GODOT_VERSION_DOCS_URL "https://docs.blazium.app"
 #define EXTERNAL_VERSION_MAJOR {external_major}
 #define EXTERNAL_VERSION_MINOR {external_minor}
 #define EXTERNAL_VERSION_PATCH {external_patch}
@@ -104,6 +104,7 @@ def make_authors_header(target, source, env):
         "Lead Developer": "AUTHORS_LEAD_DEVELOPERS",
         "Project Manager": "AUTHORS_PROJECT_MANAGERS",
         "Developers": "AUTHORS_DEVELOPERS",
+        "Blazium Developers": "BLAZIUM_DEVELOPERS",
     }
     buffer = methods.get_buffer(str(source[0]))
     reading = False
@@ -139,6 +140,7 @@ def make_donors_header(target, source, env):
         "Titanium members": "DONORS_MEMBERS_TITANIUM",
         "Platinum members": "DONORS_MEMBERS_PLATINUM",
         "Gold members": "DONORS_MEMBERS_GOLD",
+        "Blazium Sponsors": "BLAZIUM_SPONSORS",
     }
     buffer = methods.get_buffer(str(source[0]))
     reading = False

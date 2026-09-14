@@ -30,6 +30,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_editor_tools.h"
+
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
 #include "../justamcp_mcp_tool_macros.h"
@@ -37,24 +38,27 @@
 #include "../justamcp_runtime.h"
 #include "../justamcp_server.h"
 #include "../justamcp_tool_context.h"
+#include "justamcp_agent_helpers.h"
+#include "justamcp_scene_tree_dump.h"
+
 #include "core/input/input_event.h"
 #include "core/io/file_access.h"
 #include "core/io/image.h"
 #include "core/io/json.h"
 #include "core/io/resource_loader.h"
 #include "core/math/math_funcs.h"
+#include "core/object/class_db.h"
 #include "core/os/keyboard.h"
 #include "core/os/os.h"
 #include "core/os/thread.h"
+#include "core/string/string_name.h"
 #include "editor/editor_data.h"
-#include "editor/file_system/editor_file_system.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_log.h"
 #include "editor/editor_node.h"
-#include "editor/settings/editor_settings.h"
 #include "editor/editor_undo_redo_manager.h"
-#include "justamcp_agent_helpers.h"
-#include "justamcp_scene_tree_dump.h"
+#include "editor/file_system/editor_file_system.h"
+#include "editor/settings/editor_settings.h"
 #include "scene/2d/node_2d.h"
 #include "scene/gui/control.h"
 #include "scene/main/canvas_item.h"
@@ -63,8 +67,6 @@
 #include "scene/main/window.h"
 #include "scene/resources/texture.h"
 #include "servers/display/display_server.h"
-#include "core/object/class_db.h"
-#include "core/string/string_name.h"
 
 static Dictionary g_qa_evidence;
 

@@ -44,11 +44,12 @@
 #include "modules/modules_enabled.gen.h"
 
 #ifdef MODULE_SEMANTICSEARCH_ENABLED
+#include "core/object/class_db.h"
+
 #include "modules/semanticsearch/semantic_asset_index.h"
 #include "modules/semanticsearch/semantic_async_search_worker.h"
 #include "modules/semanticsearch/semantic_search_backend.h"
 #include "modules/semanticsearch/semantic_search_backend_factory.h"
-#include "core/object/class_db.h"
 #endif
 
 void JustAMCPSemanticSearchTools::_bind_methods() {

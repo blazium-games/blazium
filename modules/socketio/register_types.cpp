@@ -29,10 +29,11 @@
 
 #include "register_types.h"
 
-#include "core/object/class_db.h"
 #include "socketio_client.h"
 #include "socketio_namespace.h"
+
 #include "core/config/engine.h"
+#include "core/object/class_db.h"
 
 static SocketIOClient *socketio_client_singleton = nullptr;
 

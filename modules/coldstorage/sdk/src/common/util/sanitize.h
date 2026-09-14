@@ -31,6 +31,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdlib>
 #include <stdexcept>
 #include <string>
 
@@ -504,7 +505,7 @@ inline bool isValidPassword(const std::string &pw) {
 }
 
 inline std::string safeGetenv(const char *name, size_t maxLen = 4096) {
-	const char *val = std::getenv(name);
+	const char *val = ::getenv(name);
 	if (!val) {
 		return "";
 	}

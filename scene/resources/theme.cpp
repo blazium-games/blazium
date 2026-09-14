@@ -1696,6 +1696,18 @@ void Theme::_unfreeze_and_propagate_changes() {
 	_emit_theme_changed(true);
 }
 
+void Theme::freeze_change_propagation() {
+	_freeze_change_propagation();
+}
+
+bool Theme::is_frozen() const {
+	return no_change_propagation;
+}
+
+void Theme::unfreeze_and_propagate_changes() {
+	_unfreeze_and_propagate_changes();
+}
+
 void Theme::merge_with(const Ref<Theme> &p_other) {
 	if (p_other.is_null()) {
 		return;

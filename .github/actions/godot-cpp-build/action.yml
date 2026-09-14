@@ -1,9 +1,9 @@
-name: Build godot-cpp
-description: Build godot-cpp with the provided options.
+name: Build blazium-cpp
+description: Build blazium-cpp with the provided options.
 
 inputs:
   bin:
-    description: Path to the Godot binary.
+    description: Path to the Blazium binary.
     required: true
     type: string
   scons-flags:
@@ -14,8 +14,8 @@ inputs:
     default: ${{ github.workspace }}/.scons_cache/
     type: string
   godot-cpp-branch:
-    description: The godot-cpp branch.
-    default: master
+    description: The blazium-cpp branch.
+    default: blazium-dev
     type: string
 
 runs:
@@ -25,16 +25,30 @@ runs:
       uses: actions/checkout@v7
       with:
         submodules: recursive
-        repository: godotengine/godot-cpp
+        repository: blazium-games/blazium-cpp
         ref: ${{ inputs.godot-cpp-branch }}
-        path: godot-cpp
+        path: blazium-cpp
 
     - name: Extract API
       shell: sh
       run: ${{ inputs.bin }} --headless --dump-gdextension-interface --dump-extension-api
 
+    - name: Adapt dumped API for blazium-cpp
+      shell: sh
+      run: python3 "${GITHUB_ACTION_PATH}/filter_limit_constants.py"
+
+    - name: Patch SConstruct for Linux ARCOM
+      if: runner.os == 'Linux'
+      shell: python
+      run: |
+        with open("blazium-cpp/SConstruct", "r") as f:
+            content = f.read()
+        content = content.replace('library = env.GodotCPP()', 'env["ARCOM_POSIX"] = env.get("ARCOM", "$AR $ARFLAGS $TARGET $SOURCES").replace("$TARGET", "$TARGET.posix").replace("$SOURCES", "$SOURCES.posix")\nenv["ARCOM"] = "${TEMPFILE(ARCOM_POSIX)}"\nlibrary = env.GodotCPP()')
+        with open("blazium-cpp/SConstruct", "w") as f:
+            f.write(content)
+
     - name: SCons Build
       shell: sh
       env:
         SCONS_CACHE: ${{ inputs.scons-cache }}
-      run: scons --directory=./godot-cpp/test "gdextension_dir=${{ github.workspace }}" ${{ inputs.scons-flags }}
+      run: scons --directory=./blazium-cpp/test "gdextension_dir=${{ github.workspace }}" ${{ inputs.scons-flags }}

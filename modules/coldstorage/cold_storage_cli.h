@@ -32,6 +32,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "cold_storage_settings.h"
+
 #include "core/string/ustring.h"
 
 struct ColdStorageCliOverrides {

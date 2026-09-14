@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "justamcp_project_tools.h"
+
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_read_limits.h"
 #include "justamcp_agent_helpers.h"

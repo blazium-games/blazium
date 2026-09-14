@@ -9,6 +9,7 @@
 #ifdef TESTS_ENABLED
 
 #include "test_justamcp_runtime_export.h"
+
 #include "../justamcp_cli_args.h"
 #include "../justamcp_json_rpc_transport.h"
 #include "../justamcp_project_registry.h"
@@ -16,9 +17,12 @@
 #include "../justamcp_server.h"
 #include "../tools/justamcp_json_rpc_router.h"
 #include "../tools/justamcp_settings_resolver.h"
+#include "test_justamcp_fixture.h"
+
 #include "core/config/project_settings.h"
 #include "core/object/callable_mp.h"
 #include "core/object/object.h"
+
 #include "modules/modules_enabled.gen.h"
 #ifdef MODULE_HTTPSERVER_ENABLED
 #include "modules/httpserver/http_response.h"
@@ -196,7 +200,8 @@ void test_justamcp_runtime_host_refuses_editor_port() {
 	ps->set_setting("blazium/justamcp/game_control_enabled", true);
 	CHECK(JustAMCPSettingsResolver::runtime_port_conflicts_with_editor());
 
-	JustAMCPServer server;
+	JustAMCPTestServerFixture fixture;
+	JustAMCPServer &server = fixture.get_server();
 	server.set_runtime_host(true);
 	server.test_start_server();
 	CHECK(!server.is_server_started());
@@ -260,7 +265,8 @@ void test_justamcp_runtime_host_call_and_get() {
 	CHECK(String(Dictionary(content[0]).get("text", "")) == "hello cursor");
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
-	JustAMCPServer server;
+	JustAMCPTestServerFixture fixture;
+	JustAMCPServer &server = fixture.get_server();
 	server.set_runtime_host(true);
 
 	Dictionary call_params;

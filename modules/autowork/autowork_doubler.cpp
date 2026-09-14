@@ -28,11 +28,14 @@
 /**************************************************************************/
 
 #include "autowork_doubler.h"
+
 #include "autowork_spy.h"
 #include "autowork_stubber.h"
+
 #include "core/io/resource_loader.h"
-#include "modules/gdscript/gdscript.h"
 #include "core/object/class_db.h"
+
+#include "modules/gdscript/gdscript.h"
 
 void AutoworkDoubler::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_spy", "spy"), &AutoworkDoubler::set_spy);

@@ -29,8 +29,8 @@
 
 #pragma once
 
-#include "servers/movie_writer/movie_writer.h"
 #include "core/string/ustring.h"
+#include "servers/movie_writer/movie_writer.h"
 
 class MovieWriterGIF : public MovieWriter {
 	GDCLASS(MovieWriterGIF, MovieWriter)

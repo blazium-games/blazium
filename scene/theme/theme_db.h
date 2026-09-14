@@ -36,6 +36,7 @@
 #include <functional>
 
 class Font;
+class ImageTexture;
 class Node;
 class StyleBox;
 class Texture2D;
@@ -77,6 +78,15 @@ class ThemeDB : public Object {
 
 	Ref<Theme> default_theme;
 	Ref<Theme> project_theme;
+
+	enum FontColorOverride {
+		FONT_COLOR_OVERRIDE_AUTO,
+		FONT_COLOR_OVERRIDE_LIGHT,
+		FONT_COLOR_OVERRIDE_DARK,
+		FONT_COLOR_OVERRIDE_CUSTOM
+	};
+
+	Color _get_font_color() const;
 
 	// Universal default values, final fallback for every theme.
 
@@ -129,6 +139,18 @@ public:
 	void initialize_theme();
 	void initialize_theme_noproject();
 	void finalize_theme();
+
+	Error theme_add_user_icon(const String &p_icon_name, const String &p_icon_source);
+	Error theme_remove_user_icon(const String &p_icon_name);
+	bool theme_has_user_icon(const String &p_icon_name);
+	Ref<ImageTexture> theme_get_user_icon(const String &p_icon_name);
+	PackedStringArray theme_get_user_icons_list();
+	bool theme_has_icon(const String &p_icon_name);
+	Ref<ImageTexture> theme_get_icon(const String &p_icon_name);
+	PackedStringArray theme_get_icons_list();
+	void freeze_default_theme();
+	void unfreeze_default_theme();
+	bool is_default_theme_frozen() const;
 
 	// Global Theme resources.
 

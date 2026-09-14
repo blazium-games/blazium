@@ -32,12 +32,13 @@
 #include "asset_tag_picker.h"
 
 #include "../asset_tag_manager.h"
+
+#include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
 #include "editor/editor_string_names.h"
 #include "editor/themes/editor_scale.h"
 #include "scene/gui/button.h"
 #include "scene/gui/label.h"
-#include "core/object/callable_mp.h"
 
 void AssetTagPicker::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_tags", "tags"), &AssetTagPicker::set_tags);

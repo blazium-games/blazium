@@ -30,8 +30,10 @@
 #pragma once
 
 #include "../third_party_client.h"
-#include "platform/web/api/javascript_bridge_singleton.h"
+
 #include "core/string/ustring.h"
+
+#include "platform/web/api/javascript_bridge_singleton.h"
 
 class ReactClient : public ThirdPartyClient {
 	GDCLASS(ReactClient, ThirdPartyClient);

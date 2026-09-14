@@ -417,6 +417,10 @@ void CanvasItem::_notification(int p_what) {
 			_set_global_invalid(true);
 			_enter_canvas();
 
+			if (mask_parent_mode != MASK_PARENT_DISABLED) {
+				_refresh_mask_parent();
+			}
+
 			RenderingServer::get_singleton()->canvas_item_set_visible(canvas_item, is_visible_in_tree()); // The visibility of the parent may change.
 			if (is_visible_in_tree()) {
 				notification(NOTIFICATION_VISIBILITY_CHANGED); // Considered invisible until entered.
@@ -453,6 +457,10 @@ void CanvasItem::_notification(int p_what) {
 
 			if (xform_change.in_list()) {
 				get_tree()->xform_change_list.remove(&xform_change);
+			}
+
+			if (mask_parent_mode != MASK_PARENT_DISABLED) {
+				_refresh_mask_parent(true);
 			}
 			_exit_canvas();
 
@@ -1562,6 +1570,8 @@ void CanvasItem::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_clip_children_mode", "mode"), &CanvasItem::set_clip_children_mode);
 	ClassDB::bind_method(D_METHOD("get_clip_children_mode"), &CanvasItem::get_clip_children_mode);
+	ClassDB::bind_method(D_METHOD("set_mask_parent", "enabled"), &CanvasItem::set_mask_parent);
+	ClassDB::bind_method(D_METHOD("get_mask_parent"), &CanvasItem::get_mask_parent);
 
 	ClassDB::bind_method(D_METHOD("set_oversampling_with_scale", "enabled"), &CanvasItem::set_oversampling_with_scale);
 	ClassDB::bind_method(D_METHOD("get_oversampling_with_scale"), &CanvasItem::get_oversampling_with_scale);
@@ -1575,6 +1585,7 @@ void CanvasItem::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_behind_parent"), "set_draw_behind_parent", "is_draw_behind_parent_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "top_level"), "set_as_top_level", "is_set_as_top_level");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "clip_children", PROPERTY_HINT_ENUM, "Disabled,Clip Only,Clip + Draw"), "set_clip_children_mode", "get_clip_children_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "mask_parent", PROPERTY_HINT_ENUM, "Disabled,Intersect,Subtract"), "set_mask_parent", "get_mask_parent");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "oversampling_with_scale", PROPERTY_HINT_ENUM, "Inherit,Disabled,Enabled"), "set_oversampling_with_scale", "get_oversampling_with_scale");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "light_mask", PROPERTY_HINT_LAYERS_2D_RENDER), "set_light_mask", "get_light_mask");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "visibility_layer", PROPERTY_HINT_LAYERS_2D_RENDER), "set_visibility_layer", "get_visibility_layer");
@@ -1628,6 +1639,11 @@ void CanvasItem::_bind_methods() {
 	BIND_ENUM_CONSTANT(CLIP_CHILDREN_ONLY);
 	BIND_ENUM_CONSTANT(CLIP_CHILDREN_AND_DRAW);
 	BIND_ENUM_CONSTANT(CLIP_CHILDREN_MAX);
+
+	BIND_ENUM_CONSTANT(MASK_PARENT_DISABLED);
+	BIND_ENUM_CONSTANT(MASK_PARENT_INTERSECT);
+	BIND_ENUM_CONSTANT(MASK_PARENT_SUBTRACT);
+	BIND_ENUM_CONSTANT(MASK_PARENT_MAX);
 
 	BIND_ENUM_CONSTANT(OVERSAMPLING_WITH_SCALE_PARENT_NODE);
 	BIND_ENUM_CONSTANT(OVERSAMPLING_WITH_SCALE_DISABLED);
@@ -1872,6 +1888,58 @@ void CanvasItem::set_clip_children_mode(ClipChildrenMode p_clip_mode) {
 CanvasItem::ClipChildrenMode CanvasItem::get_clip_children_mode() const {
 	ERR_READ_THREAD_GUARD_V(CLIP_CHILDREN_DISABLED);
 	return clip_children_mode;
+}
+
+void CanvasItem::_refresh_mask_parent(bool p_force_disable) {
+#ifndef _2D_DISABLED
+	if (Object::cast_to<CanvasGroup>(this) != nullptr) {
+		return;
+	}
+#endif // _2D_DISABLED
+
+	RSE::CanvasGroupMode rs_mode = RSE::CANVAS_GROUP_MODE_DISABLED;
+	if (!p_force_disable) {
+		switch (mask_parent_mode) {
+			case MASK_PARENT_INTERSECT:
+				rs_mode = RSE::CANVAS_GROUP_MODE_MASK_PARENT;
+				break;
+			case MASK_PARENT_SUBTRACT:
+				rs_mode = RSE::CANVAS_GROUP_MODE_MASK_PARENT_SUBTRACT;
+				break;
+			default:
+				rs_mode = RSE::CANVAS_GROUP_MODE_DISABLED;
+				break;
+		}
+	}
+
+	RS::get_singleton()->canvas_item_set_mask_parent(get_canvas_item(), rs_mode);
+}
+
+void CanvasItem::set_mask_parent(MaskParentMode p_mode) {
+	ERR_THREAD_GUARD;
+	ERR_FAIL_INDEX(p_mode, MASK_PARENT_MAX);
+
+	if (mask_parent_mode == p_mode) {
+		return;
+	}
+
+#ifndef _2D_DISABLED
+	if (Object::cast_to<CanvasGroup>(this) != nullptr) {
+		return;
+	}
+#endif // _2D_DISABLED
+
+	mask_parent_mode = p_mode;
+
+	if (is_inside_tree()) {
+		_refresh_mask_parent();
+	}
+	queue_redraw();
+}
+
+CanvasItem::MaskParentMode CanvasItem::get_mask_parent() const {
+	ERR_READ_THREAD_GUARD_V(MASK_PARENT_DISABLED);
+	return mask_parent_mode;
 }
 
 CanvasItem::TextureRepeat CanvasItem::get_texture_repeat() const {

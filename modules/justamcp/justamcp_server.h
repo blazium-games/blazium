@@ -29,25 +29,27 @@
 
 #pragma once
 
-#include "modules/modules_enabled.gen.h"
-#include "scene/main/node.h"
-
 #include "core/os/mutex.h"
 #include "core/templates/hash_map.h"
 #include "core/templates/hash_set.h"
 #include "core/variant/array.h"
+#include "scene/main/node.h"
+
+#include "modules/modules_enabled.gen.h"
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 #include "core/os/semaphore.h"
+
 #include "modules/httpserver/http_request_context.h"
 #include "modules/httpserver/http_response.h"
 #include "modules/httpserver/http_server.h"
 #endif
 
-#include "core/string/print_string.h"
 #include "justamcp_notification_bus.h"
 #include "mcp_tool_queue.h"
 #include "mcp_tool_queue_entry.h"
+
+#include "core/string/print_string.h"
 #include "core/string/ustring.h"
 
 class JustAMCPNotificationBus;
@@ -126,6 +128,7 @@ private:
 	mutable Mutex pending_elicitation_mutex;
 
 	void _setup_settings();
+	void _ensure_tools_executors();
 	void _start_server();
 	void _start_server_internal(bool p_ignore_cmdline_block);
 	void _stop_server();

@@ -1,0 +1,5 @@
+Blazium Engine Logo
+Copyright (c) 2024 Blazium Contributors
+
+This work is licensed under the Creative Commons Zero (CC0 1.0 Universal) Public Domain Dedication:
+https://creativecommons.org/publicdomain/zero/1.0/

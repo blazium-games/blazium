@@ -215,6 +215,49 @@
 /modules/zip/doc_classes/                     @godotengine/core @godotengine/documentation
 /modules/zip/tests/                           @godotengine/core @godotengine/tests
 
+## Blazium
+/modules/analytics/                           @blazium-games
+/modules/assettags/                           @blazium-games
+/modules/autowork/                            @blazium-games
+/modules/clickertools/                        @blazium-games
+/modules/coldstorage/                         @blazium-games
+/modules/crash_reporter/                      @blazium-games
+/modules/crowdcontrol/                        @blazium-games
+/modules/dddbrowser/                          @blazium-games
+/modules/device_autorun/                      @blazium-games
+/modules/discord_module/                      @blazium-games
+/modules/dotcsv/                              @blazium-games
+/modules/dotenv/                              @blazium-games
+/modules/dotini/                              @blazium-games
+/modules/enet_server/                         @blazium-games
+/modules/games_enet_webrtc/                   @blazium-games
+/modules/gif/                                 @blazium-games
+/modules/goap/                                @blazium-games
+/modules/httpserver/                          @blazium-games
+/modules/inter_dvd/                           @blazium-games
+/modules/ircclient/                           @blazium-games
+/modules/justamcp/                            @blazium-games
+/modules/jwttool/                             @blazium-games
+/modules/kickapi/                             @blazium-games
+/modules/livewallpaper/                       @blazium-games
+/modules/luau_module/                         @blazium-games
+/modules/multiuser_editor/                    @blazium-games
+/modules/navimesh_export/                     @blazium-games
+/modules/obsclient/                           @blazium-games
+/modules/rcon/                                @blazium-games
+/modules/remote_control/                      @blazium-games
+/modules/screensaver/                         @blazium-games
+/modules/semanticsearch/                      @blazium-games
+/modules/socialexports/                       @blazium-games
+/modules/socketio/                            @blazium-games
+/modules/sqlite3/                             @blazium-games
+/modules/steam/                               @blazium-games
+/modules/tiled_importer/                      @blazium-games
+/modules/town_sdk/                            @blazium-games
+/modules/trenchbroom/                         @blazium-games
+/modules/twitchapi/                           @blazium-games
+/modules/xbox_module/                         @blazium-games
+
 # Platform
 
 /platform/register_platform_apis.*            @godotengine/buildsystem

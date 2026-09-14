@@ -30,6 +30,7 @@
 #include "justamcp_settings_resolver.h"
 
 #include "../justamcp_cli_args.h"
+
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
 

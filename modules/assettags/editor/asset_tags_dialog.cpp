@@ -37,13 +37,13 @@
 #include "../asset_tag_storage.h"
 #include "asset_tag_picker.h"
 
+#include "core/object/callable_mp.h"
 #include "editor/themes/editor_scale.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/button.h"
 #include "scene/gui/label.h"
 #include "scene/gui/line_edit.h"
 #include "servers/display/display_server.h"
-#include "core/object/callable_mp.h"
 
 void AssetTagsEditorDialog::_bind_methods() {}
 

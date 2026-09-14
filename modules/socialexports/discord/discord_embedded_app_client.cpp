@@ -28,10 +28,13 @@
 /**************************************************************************/
 
 #include "discord_embedded_app_client.h"
+
 #include "core/io/json.h"
-#include "platform/web/api/javascript_bridge_singleton.h"
+#include "core/math/math_funcs.h"
 #include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
+
+#include "platform/web/api/javascript_bridge_singleton.h"
 
 void DiscordEmbeddedAppClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("close", "code", "message"), &DiscordEmbeddedAppClient::close);
@@ -289,7 +292,7 @@ String _generate_nonce() {
 	String chars = "0123456789abcdef";
 	String nonce;
 	for (int i = 0; i < 32; i++) {
-		nonce += chars[rand() % chars.length()];
+		nonce += chars[Math::rand() % chars.length()];
 		if (i == 7 || i == 11 || i == 15 || i == 19) {
 			nonce += "-";
 		}
@@ -441,7 +444,6 @@ Ref<DiscordEmbeddedAppResponse> DiscordEmbeddedAppClient::encourage_hardware_acc
 		callable.call_deferred("Discord not ready. Listen to is_ready.");
 		return response;
 	}
-	Dictionary body;
 	String nonce = _generate_nonce();
 	_send_command("ENCOURAGE_HW_ACCELERATION", Dictionary(), nonce);
 	Ref<DiscordEmbeddedAppResponse> response;

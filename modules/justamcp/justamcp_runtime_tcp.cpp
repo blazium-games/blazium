@@ -27,15 +27,15 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "justamcp_runtime.h"
-
 #include "justamcp_cli_args.h"
+#include "justamcp_runtime.h"
 #include "justamcp_server.h"
 #include "tools/justamcp_settings_resolver.h"
 
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
+#include "core/object/callable_mp.h"
 #include "core/object/message_queue.h"
 #include "core/os/os.h"
 #include "core/os/time.h"
@@ -43,7 +43,6 @@
 #include "scene/main/scene_tree.h"
 #ifdef TOOLS_ENABLED
 #include "tools/justamcp_tool_executor.h"
-#include "core/object/callable_mp.h"
 #endif
 
 void JustAMCPRuntime::_thread_poll_wrapper(void *p_user) {

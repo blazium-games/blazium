@@ -19,7 +19,7 @@ pluginManagement {
     }
 }
 
-rootProject.name = "Godot"
+rootProject.name = "Blazium"
 
 include ':app'
 include ':lib'

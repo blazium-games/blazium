@@ -2932,6 +2932,14 @@ Error Image::save_jpg(const String &p_path, float p_quality) const {
 	return save_jpg_func(p_path, Ref<Image>((Image *)this), p_quality);
 }
 
+void Image::set_png_flags(BitField<PNGFlags> p_flags) {
+	png_flags = p_flags;
+}
+
+BitField<Image::PNGFlags> Image::get_png_flags() const {
+	return png_flags;
+}
+
 Vector<uint8_t> Image::save_png_to_buffer() const {
 	return _save_png_to_buffer();
 }
@@ -3525,6 +3533,7 @@ void Image::_copy_internals_from(const Image &p_image) {
 	height = p_image.height;
 	mipmaps = p_image.mipmaps;
 	data = p_image.data;
+	png_flags = p_image.png_flags;
 }
 
 template <typename T>
@@ -4015,6 +4024,8 @@ void Image::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("load", "path"), &Image::load);
 	ClassDB::bind_static_method("Image", D_METHOD("load_from_file", "path"), &Image::load_from_file);
+	ClassDB::bind_method(D_METHOD("set_png_flags", "flags"), &Image::set_png_flags);
+	ClassDB::bind_method(D_METHOD("get_png_flags"), &Image::get_png_flags);
 	ClassDB::bind_method(D_METHOD("save_png", "path"), &Image::save_png);
 	ClassDB::bind_method(D_METHOD("save_png_to_buffer"), &Image::save_png_to_buffer);
 	ClassDB::bind_method(D_METHOD("save_gif", "path"), &Image::save_gif);
@@ -4147,6 +4158,9 @@ void Image::_bind_methods() {
 	BIND_ENUM_CONSTANT(INTERPOLATE_CUBIC);
 	BIND_ENUM_CONSTANT(INTERPOLATE_TRILINEAR);
 	BIND_ENUM_CONSTANT(INTERPOLATE_LANCZOS);
+
+	BIND_BITFIELD_FLAG(PNG_FLAG_NOT_SRGB);
+	BIND_BITFIELD_FLAG(PNG_FLAG_FAST);
 
 	BIND_ENUM_CONSTANT(ALPHA_NONE);
 	BIND_ENUM_CONSTANT(ALPHA_BIT);

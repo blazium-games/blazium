@@ -29,7 +29,7 @@
   </ItemGroup>
 
   <!-- This file is imported automatically when using PackageReference to
-  reference Godot.SourceGenerators, but not when using ProjectReference -->
-  <Import Project="..\Godot.SourceGenerators\Godot.SourceGenerators.props" />
+  reference Blazium.SourceGenerators, but not when using ProjectReference -->
+  <Import Project="..\Godot.SourceGenerators\Blazium.SourceGenerators.props" />
 
 </Project>

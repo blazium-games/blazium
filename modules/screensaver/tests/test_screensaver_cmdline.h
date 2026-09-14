@@ -32,10 +32,11 @@
 #include "core/config/project_settings.h"
 #include "core/math/rect2i.h"
 #include "core/os/os.h"
+#include "core/string/ustring.h"
+#include "tests/test_macros.h"
+
 #include "modules/screensaver/screensaver.h"
 #include "modules/screensaver/screensaver_cmdline.h"
-#include "tests/test_macros.h"
-#include "core/string/ustring.h"
 
 static void _apply_screensaver(DisplayServerEnums::WindowMode &r_window_mode, uint32_t &r_flags, int64_t &r_embed, Vector2i &r_pos, Size2i &r_size, int &r_screen, bool &r_use_pos) {
 	ScreensaverCmdline::apply_recorded(r_window_mode, r_flags, r_embed, r_pos, r_size, r_screen, r_use_pos);

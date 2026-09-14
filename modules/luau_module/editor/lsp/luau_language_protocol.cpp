@@ -35,8 +35,9 @@
 
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
-#include "core/os/os.h"
+#include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
+#include "core/os/os.h"
 
 LuauLanguageProtocol *LuauLanguageProtocol::singleton = nullptr;
 
@@ -59,8 +60,7 @@ Error LuauLanguageProtocol::LSPeer::handle_data() {
 			int l = req_pos;
 			if (l > 3 && r[l] == '\n' && r[l - 1] == '\r' && r[l - 2] == '\n' && r[l - 3] == '\r') {
 				r[l - 3] = '\0';
-				String header;
-				header.parse_utf8(r);
+				const String header = String::utf8(r);
 				content_length = header.substr(16).to_int();
 				has_header = true;
 				req_pos = 0;
@@ -86,8 +86,7 @@ Error LuauLanguageProtocol::LSPeer::handle_data() {
 			req_pos++;
 		}
 		has_header = false;
-		String message;
-		message.parse_utf8((const char *)req_buf, content_length);
+		const String message = String::utf8((const char *)req_buf, content_length);
 		req_pos = 0;
 		LuauLanguageProtocol *protocol = LuauLanguageProtocol::get_singleton();
 		if (protocol) {
@@ -287,8 +286,18 @@ LuauLanguageProtocol::LuauLanguageProtocol() {
 	singleton = this;
 	workspace.instantiate();
 	text_document.instantiate();
-	set_scope("textDocument", text_document.ptr());
-	set_scope("workspace", workspace.ptr());
+	set_method("initialize", callable_mp(this, &LuauLanguageProtocol::initialize));
+	set_method("initialized", callable_mp(this, &LuauLanguageProtocol::initialized));
+	set_method("shutdown", callable_mp(this, &LuauLanguageProtocol::shutdown));
+	set_method("textDocument/didOpen", callable_mp(text_document.ptr(), &LuauTextDocument::didOpen));
+	set_method("textDocument/didClose", callable_mp(text_document.ptr(), &LuauTextDocument::didClose));
+	set_method("textDocument/didChange", callable_mp(text_document.ptr(), &LuauTextDocument::didChange));
+	set_method("textDocument/didSave", callable_mp(text_document.ptr(), &LuauTextDocument::didSave));
+	set_method("textDocument/completion", callable_mp(text_document.ptr(), &LuauTextDocument::completion));
+	set_method("textDocument/definition", callable_mp(text_document.ptr(), &LuauTextDocument::definition));
+	set_method("textDocument/hover", callable_mp(text_document.ptr(), &LuauTextDocument::hover));
+	set_method("textDocument/documentSymbol", callable_mp(text_document.ptr(), &LuauTextDocument::documentSymbol));
+	set_method("textDocument/formatting", callable_mp(text_document.ptr(), &LuauTextDocument::formatting));
 	if (ProjectSettings::get_singleton()) {
 		workspace->initialize();
 	}

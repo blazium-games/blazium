@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "autowork_main.h"
+
 #include "autowork_doubler.h"
 #include "autowork_hook_script.h"
 #include "autowork_logger.h"
@@ -35,21 +36,23 @@
 #include "autowork_signal_watcher.h"
 #include "autowork_spy.h"
 #include "autowork_stubber.h"
+
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/io/file_access.h"
 #include "core/io/json.h"
 #include "core/io/resource_loader.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "core/object/script_instance.h"
 #include "core/object/script_language.h"
 #include "core/os/os.h"
-#include "modules/gdscript/gdscript.h"
-#include "servers/display/display_server.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
-#include "core/object/callable_mp.h"
-#include "core/object/class_db.h"
+#include "servers/display/display_server.h"
+
+#include "modules/gdscript/gdscript.h"
 
 void Autowork::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_directory", "path", "prefix", "suffix"), &Autowork::add_directory, DEFVAL(""), DEFVAL(""));
@@ -318,6 +321,16 @@ void Autowork::run_tests() {
 		}
 	}
 
+	if (!junit_path.is_empty()) {
+		xml_output_path = junit_path;
+	}
+	if (!json_path.is_empty()) {
+		json_output_path = json_path;
+	}
+	if (!post_run_path.is_empty()) {
+		post_run_script_path = post_run_path;
+	}
+
 	if (!pre_run_path.is_empty()) {
 		Ref<Script> pre_s = ResourceLoader::load(pre_run_path);
 		if (pre_s.is_valid()) {
@@ -516,6 +529,9 @@ void Autowork::_on_test_over() {
 		if (arg.begins_with("--aw-post-run=")) {
 			post_p = arg.get_slicec('=', 1);
 		}
+	}
+	if (post_p.is_empty()) {
+		post_p = post_run_script_path;
 	}
 	if (!post_p.is_empty()) {
 		Ref<Script> post_s = ResourceLoader::load(post_p);

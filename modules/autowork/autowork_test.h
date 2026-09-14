@@ -35,12 +35,13 @@
 #include "autowork_spy.h"
 #include "autowork_stub_params.h"
 #include "autowork_stubber.h"
-#include "scene/main/node.h"
-#include "scene/main/scene_tree.h"
+
 #include "core/object/callable_mp.h"
 #include "core/string/string_name.h"
 #include "core/string/ustring.h"
 #include "core/variant/type_info.h"
+#include "scene/main/node.h"
+#include "scene/main/scene_tree.h"
 
 class AutoworkTest : public Node {
 	GDCLASS(AutoworkTest, Node);
@@ -265,12 +266,12 @@ public:
 	void pass_test(const String &p_text = "");
 	void fail_test(const String &p_text = "");
 
-#define ERR_FAIL_TEST(m_cond, m_retval, m_msg, m_assert_name)       \
-	if (unlikely(m_cond)) {                                         \
-		ERR_PRINT(m_msg);                                           \
+#define ERR_FAIL_TEST(m_cond, m_retval, m_msg, m_assert_name) \
+	if (unlikely(m_cond)) { \
+		ERR_PRINT(m_msg); \
 		fail_test(vformat("%s failed (%s)", m_assert_name, m_msg)); \
-		return m_retval;                                            \
-	} else                                                          \
+		return m_retval; \
+	} else \
 		((void)0)
 };
 

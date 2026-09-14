@@ -35,7 +35,6 @@
 #include "justamcp_notification_bus.h"
 #include "justamcp_pagination.h"
 #ifdef TOOLS_ENABLED
-#include "editor/settings/editor_settings.h"
 #include "justamcp_project_settings.h"
 #include "justamcp_tool_dispatch.h"
 #include "tools/justamcp_prompt_executor.h"
@@ -43,6 +42,8 @@
 #include "tools/justamcp_task_manager.h"
 #include "tools/justamcp_tool_executor.h"
 #include "tools/justamcp_tool_schema_cache.h"
+
+#include "editor/settings/editor_settings.h"
 #endif
 #include "justamcp_server_request_lookup.h"
 #include "justamcp_session_manager.h"
@@ -299,12 +300,25 @@ JustAMCPServer::JustAMCPServer() {
 	print_handler.printfunc = _print_handler_callback;
 	print_handler.userdata = this;
 	add_print_handler(&print_handler);
+	// Prompt/resource executors construct many Objects. Creating them here
+	// nests that work in this constructor's stack frame and SIGSEGVs under TSan.
+}
 
+void JustAMCPServer::_ensure_tools_executors() {
 #ifdef TOOLS_ENABLED
-	prompt_executor = memnew(JustAMCPPromptExecutor);
-	resource_executor = memnew(JustAMCPResourceExecutor);
-	task_manager = memnew(JustAMCPTaskManager);
-	task_manager->set_server(this);
+	if (singleton != this) {
+		return;
+	}
+	if (!prompt_executor) {
+		prompt_executor = memnew(JustAMCPPromptExecutor);
+	}
+	if (!resource_executor) {
+		resource_executor = memnew(JustAMCPResourceExecutor);
+	}
+	if (!task_manager) {
+		task_manager = memnew(JustAMCPTaskManager);
+		task_manager->set_server(this);
+	}
 #endif
 }
 
@@ -349,6 +363,9 @@ JustAMCPServer::~JustAMCPServer() {
 
 void JustAMCPServer::_notification(int p_what) {
 	switch (p_what) {
+		case NOTIFICATION_POSTINITIALIZE: {
+			_ensure_tools_executors();
+		} break;
 		case NOTIFICATION_ENTER_TREE: {
 			_setup_settings();
 			_start_server();

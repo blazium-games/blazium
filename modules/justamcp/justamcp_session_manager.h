@@ -33,11 +33,11 @@
 #include "justamcp_request_router.h"
 
 #include "core/os/mutex.h"
+#include "core/string/ustring.h"
 #include "core/templates/hash_map.h"
 #include "core/templates/hash_set.h"
 #include "core/templates/vector.h"
 #include "core/variant/array.h"
-#include "core/string/ustring.h"
 #include "core/variant/dictionary.h"
 
 #include "modules/modules_enabled.gen.h"

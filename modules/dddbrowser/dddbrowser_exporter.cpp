@@ -47,6 +47,7 @@
 #include "core/io/image.h"
 #include "core/io/json.h"
 #include "core/math/math_funcs.h"
+#include "core/object/class_db.h"
 #include "core/templates/hash_map.h"
 #include "scene/3d/audio_stream_player_3d.h"
 #include "scene/3d/camera_3d.h"
@@ -58,7 +59,6 @@
 #include "scene/3d/sprite_3d.h"
 #include "scene/resources/mesh.h"
 #include "scene/resources/texture.h"
-#include "core/object/class_db.h"
 
 void DDDBrowserExporter::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("export_scene", "root", "export_dir", "generate_html"), &DDDBrowserExporter::export_scene, DEFVAL(true));

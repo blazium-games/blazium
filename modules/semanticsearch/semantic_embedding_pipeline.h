@@ -30,6 +30,7 @@
 #pragma once
 
 #include "semantic_index_store.h"
+
 #include "core/string/ustring.h"
 
 class SemanticEmbeddingPipeline {

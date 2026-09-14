@@ -31,8 +31,9 @@
 
 #include "core/object/object.h"
 #include "core/templates/vector.h"
-#include "modules/screensaver/screensaver_cmdline.h"
 #include "core/variant/type_info.h"
+
+#include "modules/screensaver/screensaver_cmdline.h"
 
 class AcceptDialog;
 class CheckBox;

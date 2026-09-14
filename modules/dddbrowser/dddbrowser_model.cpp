@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "dddbrowser_model.h"
+
 #include "core/object/class_db.h"
 
 void DDDBrowserModel::_bind_methods() {

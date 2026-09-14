@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "dddbrowser_audio.h"
+
 #include "core/object/class_db.h"
 
 void DDDBrowserAudio::_bind_methods() {

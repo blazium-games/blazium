@@ -29,12 +29,13 @@
 
 #include "discord.h"
 
-#include "core/config/project_settings.h"
-#include "core/os/os.h"
-#include "core/variant/array.h"
 #include "discord_auth_client.h"
 #include "discord_frame_hook.h"
+
+#include "core/config/project_settings.h"
 #include "core/object/class_db.h"
+#include "core/os/os.h"
+#include "core/variant/array.h"
 
 struct DiscordAuthFlow {
 	Discord *owner = nullptr;

@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "crowd_control_effect_parameter.h"
+
 #include "core/object/class_db.h"
 
 void CrowdControlEffectParameter::_bind_methods() {

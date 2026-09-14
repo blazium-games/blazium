@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "kick_users_requests.h"
+
 #include "core/object/class_db.h"
 
 void KickUsersRequests::_bind_methods() {

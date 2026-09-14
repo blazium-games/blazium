@@ -31,9 +31,9 @@
 
 #ifdef TOOLS_ENABLED
 
+#include "core/string/ustring.h"
 #include "core/templates/hash_set.h"
 #include "editor/export/editor_export_plugin.h"
-#include "core/string/ustring.h"
 
 class AnalyticsEditorExportPlugin : public EditorExportPlugin {
 	GDCLASS(AnalyticsEditorExportPlugin, EditorExportPlugin);

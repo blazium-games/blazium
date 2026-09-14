@@ -31,9 +31,9 @@
 
 #ifdef TOOLS_ENABLED
 
+#include "core/string/ustring.h"
 #include "core/templates/hash_set.h"
 #include "core/templates/vector.h"
-#include "core/string/ustring.h"
 #include "core/variant/dictionary.h"
 #include "core/variant/variant.h"
 

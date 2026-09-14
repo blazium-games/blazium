@@ -29,17 +29,17 @@
 
 #include "inter_dvd_project.h"
 
-#include "modules/inter_dvd/machine/inter_dvd_instruction.h"
-
 #include "core/config/project_settings.h"
 #include "core/math/math_funcs.h"
 #include "core/object/class_db.h"
 #include "core/os/os.h"
+#include "core/string/string_name.h"
 #include "scene/2d/node_2d.h"
 #include "scene/gui/control.h"
 #include "scene/main/canvas_item.h"
 #include "scene/main/node.h"
-#include "core/string/string_name.h"
+
+#include "modules/inter_dvd/machine/inter_dvd_instruction.h"
 
 void InterDVDStream::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_kind", "kind"), &InterDVDStream::set_kind);

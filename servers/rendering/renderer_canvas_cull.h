@@ -59,6 +59,7 @@ public:
 		Transform2D ysort_xform; // Relative to y-sorted subtree's root item (identity for such root). Its `origin.y` is used for sorting.
 		int ysort_index;
 		int ysort_parent_abs_z_index; // Absolute Z index of parent. Only populated and used when y-sorting.
+		bool mask_parent = false;
 		uint32_t visibility_layer = 0xffffffff;
 
 		Vector<Item *> child_items;
@@ -301,6 +302,7 @@ public:
 	void canvas_item_set_visibility_notifier(RID p_item, bool p_enable, const Rect2 &p_area, const Callable &p_enter_callable, const Callable &p_exit_callable);
 
 	void canvas_item_set_canvas_group_mode(RID p_item, RSE::CanvasGroupMode p_mode, float p_clear_margin = 5.0, bool p_fit_empty = false, float p_fit_margin = 0.0, bool p_blur_mipmaps = false);
+	void canvas_item_set_mask_parent(RID p_item, RSE::CanvasGroupMode p_mode);
 
 	void canvas_item_set_debug_redraw(bool p_enabled);
 	bool canvas_item_get_debug_redraw() const;

@@ -58,6 +58,7 @@
 #include "editor/file_system/editor_paths.h"
 #include "editor/gui/code_editor.h"
 #include "editor/gui/editor_file_dialog.h"
+#include "editor/gui/editor_scroll_box.h"
 #include "editor/gui/editor_toaster.h"
 #include "editor/gui/filter_line_edit.h"
 #include "editor/gui/window_wrapper.h"
@@ -1580,6 +1581,10 @@ bool ScriptEditor::_test_script_times_on_disk(Ref<Resource> p_for_script) {
 			continue; // Internal script, who cares.
 		}
 
+		if (EditorNode::is_path_excluded_from_external_change_check(seb->edited_file_data.path)) {
+			continue;
+		}
+
 		uint64_t last_date = seb->edited_file_data.last_modified_time;
 		uint64_t date = FileAccess::get_modified_time(seb->edited_file_data.path);
 
@@ -2420,12 +2425,12 @@ void ScriptEditor::_update_online_doc() {
 	}
 	if (native_class_doc) {
 		String name = eh->get_class();
-		String tooltip = vformat(TTR("Open '%s' in Godot online documentation."), name);
+		String tooltip = vformat(TTR("Open '%s' in Blazium online documentation."), name);
 		site_search->set_text(TTRC("Open in Online Docs"));
 		site_search->set_tooltip_text(tooltip);
 	} else {
 		site_search->set_text(TTRC("Online Docs"));
-		site_search->set_tooltip_text(TTRC("Open Godot online documentation."));
+		site_search->set_tooltip_text(TTRC("Open Blazium online documentation."));
 	}
 }
 
@@ -2877,6 +2882,10 @@ void ScriptEditor::_reload_scripts(bool p_refresh_only) {
 
 		if (edited_res->is_built_in()) {
 			continue; // Internal script, who cares.
+		}
+
+		if (EditorNode::is_path_excluded_from_external_change_check(edited_res->get_path())) {
+			continue;
 		}
 
 		if (p_refresh_only) {
@@ -4142,8 +4151,16 @@ ScriptEditor::ScriptEditor(const String &p_config_section, const String &p_cache
 	VBoxContainer *main_container = memnew(VBoxContainer);
 	add_child(main_container);
 
+	HBoxContainer *main_hb = memnew(HBoxContainer);
+	main_hb->set_h_size_flags(SIZE_EXPAND_FILL);
+	main_container->add_child(main_hb);
+
+	EditorHScrollBox *menu_scroll_box = memnew(EditorHScrollBox);
+	menu_scroll_box->set_h_size_flags(SIZE_EXPAND_FILL);
+	main_hb->add_child(menu_scroll_box);
+
 	menu_hb = memnew(HBoxContainer);
-	main_container->add_child(menu_hb);
+	menu_scroll_box->set_control(menu_hb);
 
 	script_split = memnew(HSplitContainer);
 	main_container->add_child(script_split);
@@ -4385,7 +4402,7 @@ ScriptEditor::ScriptEditor(const String &p_config_section, const String &p_cache
 
 	disk_changed = memnew(ConfirmationDialog);
 	{
-		disk_changed->set_title(TTRC("Files have been modified outside Godot"));
+		disk_changed->set_title(TTRC("Files have been modified outside Blazium"));
 
 		VBoxContainer *vbc = memnew(VBoxContainer);
 		disk_changed->add_child(vbc);

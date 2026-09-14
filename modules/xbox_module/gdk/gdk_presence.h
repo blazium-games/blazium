@@ -38,11 +38,6 @@
 
 #include "gdk_gdk_stubs.h"
 
-#include <atomic>
-#include <memory>
-#include <mutex>
-#include <vector>
-
 #include "core/object/class_db.h"
 #include "core/object/ref_counted.h"
 #include "core/string/ustring.h"
@@ -51,10 +46,16 @@
 #include "core/variant/dictionary.h"
 #include "core/variant/variant.h"
 
+#include <atomic>
+#include <memory>
+#include <mutex>
+#include <vector>
+
 #ifdef XBOX_MODULE_GDK_ENABLED
+#include "core/variant/type_info.h"
+
 #include <XUser.h>
 #include <xsapi-c/services_c.h>
-#include "core/variant/type_info.h"
 #endif
 
 class GDK;

@@ -28,14 +28,16 @@
 /**************************************************************************/
 
 #include "autowork_runtime_ui.h"
+
 #include "core/config/project_settings.h"
-#include "modules/autowork/autowork_logger.h"
-#include "modules/autowork/autowork_main.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 #include "scene/gui/panel.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
-#include "core/object/callable_mp.h"
-#include "core/object/class_db.h"
+
+#include "modules/autowork/autowork_logger.h"
+#include "modules/autowork/autowork_main.h"
 
 void AutoworkRuntimeUI::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_logger", "logger"), &AutoworkRuntimeUI::set_logger);

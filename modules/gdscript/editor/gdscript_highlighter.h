@@ -61,6 +61,10 @@ private:
 	HashMap<StringName, Color> reserved_keywords;
 	HashMap<StringName, Color> member_keywords;
 	HashSet<StringName> global_functions;
+	HashSet<StringName> local_types; // `class_name`, inner `class` and named `enum` declarations.
+	HashSet<StringName> local_enum_values; // Values of unnamed `enum` declarations, which become script constants.
+	uint32_t local_symbols_version = 0;
+	bool local_symbols_dirty = true;
 
 	enum Type {
 		NONE,
@@ -106,6 +110,7 @@ private:
 	HashMap<String, CommentMarkerLevel> comment_markers;
 
 	void add_color_region(ColorRegion::Type p_type, const String &p_start_key, const String &p_end_key, const Color &p_color, bool p_line_only = false, bool p_r_prefix = false);
+	void _update_local_symbols();
 
 public:
 	virtual void _update_cache() override;

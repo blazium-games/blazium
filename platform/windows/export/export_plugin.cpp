@@ -459,7 +459,7 @@ bool EditorExportPlatformWindows::get_export_option_visibility(const EditorExpor
 void EditorExportPlatformWindows::get_export_options(List<ExportOption> *r_options) const {
 	EditorExportPlatformPC::get_export_options(r_options);
 
-	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "binary_format/architecture", PROPERTY_HINT_ENUM, "x86_64,x86_32,arm64"), "x86_64"));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "binary_format/architecture", PROPERTY_HINT_ENUM, "x86_64,x86_32,arm64,arm32"), "x86_64"));
 
 	r_options->push_back(ExportOption(PropertyInfo(Variant::BOOL, "codesign/enable"), false, true));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "codesign/identity_type", PROPERTY_HINT_ENUM, "Select automatically,Use PKCS12 file (specify *.PFX/*.P12 file),Use certificate store (specify SHA-1 hash)", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SECRET), 0));
@@ -491,13 +491,13 @@ void EditorExportPlatformWindows::get_export_options(List<ExportOption> *r_optio
 						"$trigger = New-ScheduledTaskTrigger -Once -At 00:00\n"
 						"$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries\n"
 						"$task = New-ScheduledTask -Action $action -Trigger $trigger -Settings $settings\n"
-						"Register-ScheduledTask godot_remote_debug -InputObject $task -Force:$true\n"
-						"Start-ScheduledTask -TaskName godot_remote_debug\n"
-						"while (Get-ScheduledTask -TaskName godot_remote_debug | ? State -eq running) { Start-Sleep -Milliseconds 100 }\n"
-						"Unregister-ScheduledTask -TaskName godot_remote_debug -Confirm:$false -ErrorAction:SilentlyContinue";
+						"Register-ScheduledTask blazium_remote_debug -InputObject $task -Force:$true\n"
+						"Start-ScheduledTask -TaskName blazium_remote_debug\n"
+						"while (Get-ScheduledTask -TaskName blazium_remote_debug | ? State -eq running) { Start-Sleep -Milliseconds 100 }\n"
+						"Unregister-ScheduledTask -TaskName blazium_remote_debug -Confirm:$false -ErrorAction:SilentlyContinue";
 
-	String cleanup_script = "Stop-ScheduledTask -TaskName godot_remote_debug -ErrorAction:SilentlyContinue\n"
-							"Unregister-ScheduledTask -TaskName godot_remote_debug -Confirm:$false -ErrorAction:SilentlyContinue\n"
+	String cleanup_script = "Stop-ScheduledTask -TaskName blazium_remote_debug -ErrorAction:SilentlyContinue\n"
+							"Unregister-ScheduledTask -TaskName blazium_remote_debug -Confirm:$false -ErrorAction:SilentlyContinue\n"
 							"Remove-Item -Recurse -Force '{temp_dir}'";
 
 	r_options->push_back(ExportOption(PropertyInfo(Variant::BOOL, "ssh_remote_deploy/enabled"), false, true));

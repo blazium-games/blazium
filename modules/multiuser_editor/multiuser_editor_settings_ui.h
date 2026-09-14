@@ -31,9 +31,9 @@
 
 #ifdef TOOLS_ENABLED
 
+#include "core/string/ustring.h"
 #include "core/templates/hash_map.h"
 #include "scene/gui/margin_container.h"
-#include "core/string/ustring.h"
 
 class Button;
 class Label;

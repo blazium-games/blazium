@@ -30,9 +30,10 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_project_resource_provider.h"
-#include "../../justamcp_editor_scene_access.h"
 
+#include "../../justamcp_editor_scene_access.h"
 #include "../../justamcp_server.h"
+
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/input/input_event.h"
@@ -45,9 +46,10 @@
 #include "scene/main/node.h"
 
 #ifdef MODULE_ASSETTAGS_ENABLED
-#include "core/templates/hash_set.h"
-#include "modules/assettags/asset_tag_manager.h"
 #include "core/string/string_name.h"
+#include "core/templates/hash_set.h"
+
+#include "modules/assettags/asset_tag_manager.h"
 #endif
 
 static Dictionary _project_json_contents(const String &p_uri, const Dictionary &p_payload) {

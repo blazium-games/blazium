@@ -29,16 +29,18 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
+#include "godot_sqlite.h"
+
+#include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/core_bind.h"
 #include "core/error/error_macros.h"
-#include "core/variant/variant.h"
-#include "thirdparty/sqlite/sqlite3.h"
-
-#include "godot_sqlite.h"
-#include "core/object/class_db.h"
-#include "core/config/engine.h"
 #include "core/io/file_access.h"
+#include "core/object/class_db.h"
+#include "core/variant/variant.h"
+
+#include <stdlib.h>
+#include <string.h>
 
 Array fast_parse_row(sqlite3_stmt *stmt) {
 	Array result;
@@ -1234,7 +1236,7 @@ void SQLiteAccess::_configure_hooks() {
 	}
 }
 
-void SQLiteAccess::_sqlite_update_hook_callback(void *p_arg, int p_op, char const *p_db_name, char const *p_table_name, sqlite3_int64 p_rowid) {
+void SQLiteAccess::_sqlite_update_hook_callback(void *p_arg, int p_op, const char *p_db_name, const char *p_table_name, sqlite3_int64 p_rowid) {
 	SQLiteAccess *instance = (SQLiteAccess *)p_arg;
 	if (instance) {
 		instance->emit_signal("row_updated", p_op, String::utf8(p_db_name), String::utf8(p_table_name), (int64_t)p_rowid);

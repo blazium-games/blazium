@@ -31,8 +31,9 @@
 
 #include "core/object/object.h"
 #include "core/templates/rid.h"
-#include "modules/livewallpaper/livewallpaper_cmdline.h"
 #include "core/variant/type_info.h"
+
+#include "modules/livewallpaper/livewallpaper_cmdline.h"
 
 class LiveWallpaper : public Object {
 	GDCLASS(LiveWallpaper, Object);

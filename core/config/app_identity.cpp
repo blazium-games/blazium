@@ -155,5 +155,5 @@ String AppIdentity::editor_fallback_app_id() {
 }
 
 String AppIdentity::editor_fallback_build_id() {
-	return String(VERSION_HASH);
+	return String(GODOT_VERSION_HASH);
 }

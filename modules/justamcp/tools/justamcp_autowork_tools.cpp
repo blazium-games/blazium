@@ -36,9 +36,6 @@
 #include "../justamcp_tool_context.h"
 #include "justamcp_agent_helpers.h"
 #include "justamcp_autowork_tools.h"
-#include "modules/autowork/autowork_collector.h"
-#include "modules/autowork/autowork_main.h"
-#include "modules/justamcp/justamcp_editor_plugin.h"
 
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
@@ -49,6 +46,10 @@
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
 #include "servers/display/display_server.h"
+
+#include "modules/autowork/autowork_collector.h"
+#include "modules/autowork/autowork_main.h"
+#include "modules/justamcp/justamcp_editor_plugin.h"
 
 void JustAMCPAutoworkTools::_bind_methods() {
 }

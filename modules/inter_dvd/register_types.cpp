@@ -33,6 +33,10 @@
 #include "author/inter_dvd_project.h"
 #include "machine/inter_dvd_instruction.h"
 #include "machine/inter_dvd_machine.h"
+
+#include "core/config/project_settings.h"
+#include "core/object/class_db.h"
+
 #include "modules/inter_dvd/scene/inter_dvd_chapter.h"
 #include "modules/inter_dvd/scene/inter_dvd_disc.h"
 #include "modules/inter_dvd/scene/inter_dvd_hotspot.h"
@@ -40,14 +44,12 @@
 #include "modules/inter_dvd/scene/inter_dvd_title.h"
 #include "modules/inter_dvd/scene/inter_dvd_title_set.h"
 
-#include "core/config/project_settings.h"
-
 #ifdef TOOLS_ENABLED
+#include "editor/plugins/editor_plugin.h"
+
 #include "modules/inter_dvd/editor/export/windows_inter_dvd_export_platform.h"
 #include "modules/inter_dvd/editor/inter_dvd_editor_plugin.h"
 #include "modules/inter_dvd/editor/inter_dvd_scene_baker.h"
-#include "editor/plugins/editor_plugin.h"
-#include "core/object/class_db.h"
 #endif
 
 void initialize_inter_dvd_module(ModuleInitializationLevel p_level) {

@@ -5,41 +5,27 @@
 /*                             BLAZIUM ENGINE                             */
 /*                          https://blazium.app                           */
 /**************************************************************************/
-/* Copyright (c) 2024-present Blazium Engine contributors.                */
-/*                                                                        */
-/* Permission is hereby granted, free of charge, to any person obtaining  */
-/* a copy of this software and associated documentation files (the        */
-/* "Software"), to deal in the Software without restriction, including    */
-/* without limitation the rights to use, copy, modify, merge, publish,    */
-/* distribute, sublicense, and/or sell copies of the Software, and to     */
-/* permit persons to whom the Software is furnished to do so, subject to  */
-/* the following conditions:                                              */
-/*                                                                        */
-/* The above copyright notice and this permission notice shall be         */
-/* included in all copies or substantial portions of the Software.        */
-/*                                                                        */
-/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
-/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
-/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
-/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
-/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
-/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
-/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
-/**************************************************************************/
 
 #pragma once
 
-#include "core/object/script_language.h"
-#include "core/os/mutex.h"
-#include "core/templates/hash_map.h"
-#include "core/templates/self_list.h"
+#include "analysis/luau_typecheck.h"
 #include "debugger/luau_script_debugger.h"
 #include "lua_state.h"
 #include "luau_parser_pool.h"
 #include "luau_script.h"
 #include "scheduler/luau_task_scheduler.h"
+
+#include "core/object/script_language.h"
+#include "core/os/mutex.h"
 #include "core/string/string_name.h"
 #include "core/string/ustring.h"
+#include "core/templates/hash_map.h"
+#include "core/templates/hash_set.h"
+#include "core/templates/self_list.h"
+
+#ifdef TOOLS_ENABLED
+#include "core/object/editor_language.h"
+#endif
 
 class LuauScriptLanguage : public ScriptLanguage {
 	GDCLASS(LuauScriptLanguage, ScriptLanguage);
@@ -123,30 +109,33 @@ public:
 	virtual String get_extension() const override;
 	virtual void finish() override;
 
-	virtual void get_reserved_words(List<String> *p_words) const override;
+#ifdef TOOLS_ENABLED
+	virtual EditorLanguage *get_editor_language() override;
+#endif
+
+	virtual Vector<String> get_reserved_words() const override;
 	virtual bool is_control_flow_keyword(const String &p_string) const override;
-	virtual void get_comment_delimiters(List<String> *p_delimiters) const override;
-	virtual void get_doc_comment_delimiters(List<String> *p_delimiters) const override;
-	virtual void get_string_delimiters(List<String> *p_delimiters) const override;
+	virtual Vector<String> get_comment_delimiters() const override;
+	virtual Vector<String> get_doc_comment_delimiters() const override;
+	virtual Vector<String> get_string_delimiters() const override;
 
 	virtual Ref<Script> make_template(const String &p_template, const String &p_class_name, const String &p_base_class_name) const override;
 	virtual Vector<ScriptTemplate> get_built_in_templates(const StringName &p_object) override;
 	virtual bool is_using_templates() override;
-	virtual bool validate(const String &p_script, const String &p_path = "", List<String> *r_functions = nullptr, List<ScriptError> *r_errors = nullptr, List<Warning> *r_warnings = nullptr, HashSet<int> *r_safe_lines = nullptr) const override;
-	virtual Error complete_code(const String &p_code, const String &p_path, Object *p_owner, List<CodeCompletionOption> *r_options, bool &r_force, String &r_call_hint) override;
-	virtual Error lookup_code(const String &p_code, const String &p_symbol, const String &p_path, Object *p_owner, LookupResult &r_result) override;
 
-	virtual Script *create_script() const override;
-#ifndef DISABLE_DEPRECATED
-	virtual bool has_named_classes() const override;
+	bool validate(const String &p_script, const String &p_path = "", List<String> *r_functions = nullptr, List<luau_module::LuauScriptError> *r_errors = nullptr, List<luau_module::LuauWarning> *r_warnings = nullptr, HashSet<int> *r_safe_lines = nullptr) const;
+#ifdef TOOLS_ENABLED
+	Error complete_code(const String &p_code, const String &p_path, Object *p_owner, List<EditorLanguage::CompletionOption> *r_options, bool &r_force, String &r_call_hint);
+	Error lookup_code(const String &p_code, const String &p_symbol, const String &p_path, Object *p_owner, EditorLanguage::LookupResult &r_result);
+	void format_code(String &r_code, uint32_t p_from_line, uint32_t p_to_line) const;
 #endif
+	int find_function(const String &p_function, const String &p_code) const;
+
 	virtual bool supports_builtin_mode() const override;
 	virtual bool supports_documentation() const override;
 	virtual bool can_inherit_from_file() const override;
-	virtual int find_function(const String &p_function, const String &p_code) const override;
 	virtual String make_function(const String &p_class, const String &p_name, const PackedStringArray &p_args) const override;
 
-	virtual void auto_indent_code(String &p_code, int p_from_line, int p_to_line) const override;
 #ifdef TOOLS_ENABLED
 	virtual Error open_in_external_editor(const Ref<Script> &p_script, int p_line, int p_col) override;
 #endif
@@ -165,10 +154,9 @@ public:
 	virtual String debug_parse_stack_level_expression(int p_level, const String &p_expression, int p_max_subitems = -1, int p_max_depth = -1) override;
 
 	virtual void reload_all_scripts() override;
-	virtual void reload_scripts(const Array &p_scripts, bool p_soft_reload) override;
-	virtual void reload_tool_script(const Ref<Script> &p_script, bool p_soft_reload) override;
+	virtual void reload_scripts(const Array &p_scripts) override;
+	virtual void reload_tool_script(const Ref<Script> &p_script) override;
 
-	virtual void get_recognized_extensions(List<String> *p_extensions) const override;
 	virtual void get_public_functions(List<MethodInfo> *p_functions) const override;
 	virtual void get_public_constants(List<Pair<String, Variant>> *p_constants) const override;
 	virtual void get_public_annotations(List<MethodInfo> *p_annotations) const override;

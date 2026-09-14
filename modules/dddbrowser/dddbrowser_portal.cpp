@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "dddbrowser_portal.h"
+
 #include "core/object/class_db.h"
 
 void DDDBrowserPortal::_bind_methods() {

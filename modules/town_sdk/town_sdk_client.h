@@ -34,10 +34,10 @@
 #include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "core/string/ustring.h"
+#include "core/variant/type_info.h"
 #include "core/variant/typed_array.h"
 
 #include <memory>
-#include "core/variant/type_info.h"
 
 namespace turnbattle {
 class Client;

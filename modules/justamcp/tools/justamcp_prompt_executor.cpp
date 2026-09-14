@@ -30,11 +30,9 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_prompt_executor.h"
+
 #include "../justamcp_mcp_spec.h"
 #include "../justamcp_pagination.h"
-#include "core/config/project_settings.h"
-#include "core/object/class_db.h"
-#include "editor/settings/editor_settings.h"
 #include "justamcp_settings_resolver.h"
 #include "prompts/justamcp_prompt_asset_tagging_workflow.h"
 #include "prompts/justamcp_prompt_autowork_failure_analyzer.h"
@@ -49,6 +47,10 @@
 #include "prompts/justamcp_prompt_blazium_workflows.h"
 #include "prompts/justamcp_prompt_editor_state.h"
 #include "prompts/justamcp_prompt_project_info.h"
+
+#include "core/config/project_settings.h"
+#include "core/object/class_db.h"
+#include "editor/settings/editor_settings.h"
 
 void JustAMCPPromptExecutor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_prompt", "name", "args"), &JustAMCPPromptExecutor::get_prompt);

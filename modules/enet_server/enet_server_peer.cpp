@@ -29,10 +29,11 @@
 
 #include "enet_server_peer.h"
 
-#include "core/os/time.h"
 #include "enet_packet.h"
 #include "enet_server.h"
+
 #include "core/object/class_db.h"
+#include "core/os/time.h"
 
 void ENetServerPeer::_bind_methods() {
 	// Getters

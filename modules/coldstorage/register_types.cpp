@@ -34,9 +34,10 @@
 #include "cold_storage_settings.h"
 #include "cold_storage_settings_ui.h"
 #include "cold_storage_vcs.h"
+
+#include "core/object/class_db.h"
 #include "editor/editor_node.h"
 #include "editor/plugins/editor_plugin.h"
-#include "core/object/class_db.h"
 #endif
 
 void initialize_coldstorage_module(ModuleInitializationLevel p_level) {

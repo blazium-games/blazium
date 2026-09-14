@@ -41,6 +41,7 @@
 
 #ifdef TOOLS_ENABLED
 #include "editor/settings/editor_settings.h"
+
 #include "modules/luau_module/editor/luau_formatter.h"
 #endif
 
@@ -79,7 +80,7 @@ Error ResourceFormatSaverLuau::save(const Ref<Resource> &p_resource, const Strin
 	}
 
 	if (ScriptServer::is_reload_scripts_on_save_enabled()) {
-		LuauScriptLanguage::get_singleton()->reload_tool_script(luau_script, true);
+		LuauScriptLanguage::get_singleton()->reload_tool_script(luau_script);
 	}
 
 	return OK;

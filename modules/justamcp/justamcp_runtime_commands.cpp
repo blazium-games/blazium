@@ -27,6 +27,8 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
+#include "justamcp_project_registry.h"
+#include "justamcp_read_limits.h"
 #include "justamcp_runtime.h"
 
 #include "core/config/engine.h"
@@ -38,12 +40,11 @@
 #include "core/io/image.h"
 #include "core/io/json.h"
 #include "core/math/expression.h"
+#include "core/object/callable_mp.h"
 #include "core/object/message_queue.h"
 #include "core/object/script_language.h"
 #include "core/os/os.h"
 #include "core/os/time.h"
-#include "justamcp_project_registry.h"
-#include "justamcp_read_limits.h"
 #include "main/performance.h"
 #include "scene/gui/base_button.h"
 #include "scene/gui/control.h"
@@ -53,10 +54,10 @@
 #include "servers/audio/audio_server.h"
 
 #ifdef TOOLS_ENABLED
+#include "tools/justamcp_tool_executor.h"
+
 #include "editor/editor_interface.h"
 #include "editor/settings/editor_settings.h"
-#include "tools/justamcp_tool_executor.h"
-#include "core/object/callable_mp.h"
 #include "scene/main/scene_tree.h"
 #endif
 

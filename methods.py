@@ -17,7 +17,7 @@ from typing import Generator, TextIO, cast
 from misc.utility.color import print_error, print_info, print_warning
 from platform_methods import detect_arch
 
-# Get the "Godot" folder name ahead of time
+# Get the "Blazium" folder name ahead of time
 base_folder = Path(__file__).resolve().parent
 
 compiler_version_cache = None
@@ -630,6 +630,18 @@ def detect_darwin_toolchain_path(env):
             raise
 
 
+def add_hub_register_post_action(env, prog):
+    """After linking an editor binary, optionally register it with Blazium Hub via blazium-cli."""
+    if not getattr(env, "editor_build", False):
+        return
+    if not env.get("hub_register", False):
+        return
+    # Late import so non-hub_register builds do not require the helper module.
+    from misc.scripts import hub_register_editor
+
+    env.AddPostAction(prog, env.Run(hub_register_editor.scons_post_action))
+
+
 def detect_darwin_sdk_path(platform, env):
     sdk_name = ""
 
@@ -1008,7 +1020,7 @@ def dump(env):
 #
 # To generate AND build from the command line:
 #   scons vsproj=yes vsproj_gen_only=no
-def generate_vs_project(env, original_args, project_name="godot"):
+def generate_vs_project(env, original_args, project_name="blazium"):
     # Augmented glob_recursive that also fills the dirs argument with traversed directories that have content.
     def glob_recursive_2(pattern, dirs, node="."):
         from SCons import Node
@@ -1241,7 +1253,7 @@ def generate_vs_project(env, original_args, project_name="godot"):
     others_active = []
 
     get_dependencies(
-        env.File(f"#bin/godot{env['PROGSUFFIX']}"), env, extensions, headers_active, sources_active, others_active
+        env.File(f"#bin/blazium{env['PROGSUFFIX']}"), env, extensions, headers_active, sources_active, others_active
     )
 
     all_items = []
@@ -1302,7 +1314,7 @@ def generate_vs_project(env, original_args, project_name="godot"):
             properties.append(
                 "<ActiveProjectItemList_%s>;%s;</ActiveProjectItemList_%s>" % (x, ";".join(itemlist[x]), x)
             )
-        output = os.path.join("bin", f"godot{env['PROGSUFFIX']}")
+        output = os.path.join("bin", f"blazium{env['PROGSUFFIX']}")
 
         # The modules_enabled.gen.h header containing the defines is only generated on build, and only for the most recently built
         # platform, which means VS can't properly render code that's inside module-specific ifdefs. This adds those defines to the

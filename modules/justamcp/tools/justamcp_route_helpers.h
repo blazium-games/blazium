@@ -12,6 +12,7 @@
 #include "../justamcp_mcp_tool_macros.h"
 #include "../justamcp_runtime.h"
 #include "../justamcp_server.h"
+
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
 #include "core/object/class_db.h"
@@ -20,12 +21,12 @@
 #include "servers/display/display_server.h"
 
 #ifdef TOOLS_ENABLED
+#include "core/string/string_name.h"
+#include "core/string/ustring.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
 #include "scene/main/node.h"
 #include "scene/main/window.h"
-#include "core/string/string_name.h"
-#include "core/string/ustring.h"
 #endif
 
 inline Dictionary justamcp_normalize_runtime_result(const Dictionary &p_raw) {

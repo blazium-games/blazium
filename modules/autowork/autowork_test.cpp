@@ -28,17 +28,18 @@
 /**************************************************************************/
 
 #include "autowork_test.h"
+
 #include "core/config/engine.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 #include "core/object/script_language.h"
 #include "core/os/os.h"
+#include "core/string/string_name.h"
 #include "core/variant/variant.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
-#include "core/object/callable_mp.h"
-#include "core/object/class_db.h"
-#include "core/string/string_name.h"
 
 void AutoworkTest::_bind_methods() {
 	GDVIRTUAL_BIND(_before_all);

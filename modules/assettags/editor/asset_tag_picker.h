@@ -31,10 +31,10 @@
 
 #ifdef TOOLS_ENABLED
 
+#include "core/string/ustring.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/item_list.h"
 #include "scene/gui/line_edit.h"
-#include "core/string/ustring.h"
 
 class AssetTagPicker : public VBoxContainer {
 	GDCLASS(AssetTagPicker, VBoxContainer);

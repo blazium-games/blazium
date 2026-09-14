@@ -30,7 +30,7 @@
 
 package com.godot.game.test.javaclasswrapper
 
-import org.godotengine.godot.Dictionary
+import app.blazium.godot.Dictionary
 import kotlin.collections.contentToString
 import kotlin.collections.joinToString
 

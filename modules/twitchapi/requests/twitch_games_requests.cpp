@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "twitch_games_requests.h"
+
 #include "core/object/class_db.h"
 
 void TwitchGamesRequests::_bind_methods() {

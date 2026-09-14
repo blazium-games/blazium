@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "dddbrowser_picturebox.h"
+
 #include "core/object/class_db.h"
 
 void DDDBrowserPicturebox::_bind_methods() {

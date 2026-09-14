@@ -42,6 +42,7 @@
 #include "core/input/input.h"
 #include "core/input/input_map.h"
 #include "core/io/dir_access.h"
+#include "core/io/file_access.h"
 #include "core/io/file_access_pack.h"
 #include "core/io/file_access_zip.h"
 #include "core/io/image.h"
@@ -127,10 +128,12 @@
 #include "editor/file_system/editor_file_system.h"
 #include "editor/file_system/editor_paths.h"
 #include "editor/gui/progress_dialog.h"
+#include "editor/project_manager/project_creator.h"
 #include "editor/project_manager/project_manager.h"
 #include "editor/register_editor_types.h"
 #include "editor/settings/editor_settings.h"
 #include "editor/translations/editor_translation.h"
+#include "editor/version_control/editor_vcs_interface.h"
 
 #if defined(TOOLS_ENABLED) && !defined(NO_EDITOR_SPLASH)
 #include "main/splash_editor.gen.h"
@@ -147,8 +150,32 @@
 
 #include "modules/modules_enabled.gen.h" // For mono.
 
+#ifdef MODULE_CRASH_REPORTER_ENABLED
+#include "modules/crash_reporter/crash_reporter.h"
+#endif
+#ifdef MODULE_ANALYTICS_ENABLED
+#include "modules/analytics/analytics.h"
+#endif
+#ifdef MODULE_LIVEWALLPAPER_ENABLED
+#include "modules/livewallpaper/livewallpaper_cmdline.h"
+#endif
+#ifdef MODULE_SCREENSAVER_ENABLED
+#include "modules/screensaver/screensaver_cmdline.h"
+#endif
+
 #if defined(MODULE_MONO_ENABLED) && defined(TOOLS_ENABLED)
 #include "modules/mono/editor/bindings_generator.h"
+#endif
+
+#ifdef MODULE_AUTOWORK_ENABLED
+#include "modules/autowork/autowork_main.h"
+#endif
+
+#ifdef MODULE_NAVIMESH_EXPORT_ENABLED
+#ifdef TOOLS_ENABLED
+#include "modules/navimesh_export/navimesh_export_batch.h"
+#include "modules/navimesh_export/navimesh_export_cmdline.h"
+#endif
 #endif
 
 #ifdef MODULE_GDSCRIPT_ENABLED
@@ -286,6 +313,13 @@ static bool dump_extension_api = false;
 static bool include_docs_in_extension_api_dump = false;
 static bool validate_extension_api = false;
 static String validate_extension_api_file;
+static bool create_project_cli = false;
+static bool create_project_edit = false;
+static bool create_project_force = false;
+static String create_project_path;
+static String create_project_name;
+static String create_project_renderer = "forward_plus";
+static String create_project_vcs = "git";
 #endif
 bool profile_gpu = false;
 
@@ -321,7 +355,7 @@ static String get_full_version_string() {
 	if (!hash.is_empty()) {
 		hash = "." + hash.left(9);
 	}
-	return String(GODOT_VERSION_FULL_BUILD) + hash;
+	return String(EXTERNAL_VERSION_FULL_BUILD) + hash;
 }
 
 #if defined(TOOLS_ENABLED) && defined(MODULE_GDSCRIPT_ENABLED)
@@ -465,10 +499,10 @@ void Main::print_help_option(const char *p_option, const char *p_description, CL
 void Main::print_help(const char *p_binary) {
 	print_header(true);
 	print_help_copyright("Free and open source software under the terms of the MIT license.");
-	print_help_copyright("(c) 2014-present Godot Engine contributors. (c) 2007-present Juan Linietsky, Ariel Manzur.");
+	print_help_copyright("(c) 2024-present Blazium Engine contributors. (c) 2014-present Godot Engine contributors. (c) 2007-present Juan Linietsky, Ariel Manzur.");
 
 	print_help_title("Usage");
-	OS::get_singleton()->print("  %s \u001b[96m[options] [path to \"project.godot\" file]\u001b[0m\n", p_binary);
+	OS::get_singleton()->print("  %s \u001b[96m[options] [path to \"project.blazium\" or \"project.godot\" file]\u001b[0m\n", p_binary);
 
 #if defined(TOOLS_ENABLED)
 	print_help_title("Option legend (this build = editor)");
@@ -507,13 +541,20 @@ void Main::print_help(const char *p_binary) {
 #if defined(MODULE_GDSCRIPT_ENABLED) && !defined(GDSCRIPT_NO_LSP)
 	print_help_option("--lsp-port <port>", "Use the specified port for the GDScript Language Server Protocol. Recommended port range [1024, 49151].\n", CLI_OPTION_AVAILABILITY_EDITOR);
 #endif // MODULE_GDSCRIPT_ENABLED && !GDSCRIPT_NO_LSP
+	print_help_option("--create-project <path>", "Create a new project at the given path and exit.\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--name <name>", "Project display name (used with --create-project).\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--renderer <type>", "Renderer: forward_plus, mobile, or gl_compatibility (used with --create-project).\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--vcs <none|git|coldstorage>", "Version control metadata to generate (used with --create-project).\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--force", "Allow creating a project in a non-empty directory (used with --create-project).\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--edit", "Open the newly created project in the editor (used with --create-project).\n", CLI_OPTION_AVAILABILITY_EDITOR);
 #endif
 	print_help_option("--quit", "Quit after the first iteration.\n");
 	print_help_option("--quit-after <int>", "Quit after the given number of iterations. Set to 0 to disable.\n");
 	print_help_option("-l, --language <locale>", "Use a specific locale (<locale> being a two-letter code).\n");
 #if defined(OVERRIDE_PATH_ENABLED)
-	print_help_option("--path <directory>", "Path to a project (<directory> must contain a \"project.godot\" file).\n", CLI_OPTION_AVAILABILITY_TEMPLATE_UNSAFE);
+	print_help_option("--path <directory>", "Path to a project (<directory> must contain a \"project.blazium\" or \"project.godot\" file).\n", CLI_OPTION_AVAILABILITY_TEMPLATE_UNSAFE);
 	print_help_option("--scene <path>", "Path or UID of a scene in the project that should be started.\n", CLI_OPTION_AVAILABILITY_TEMPLATE_UNSAFE);
+	print_help_option("-u, --upwards", "Scan folders upwards for project.blazium or project.godot file.\n", CLI_OPTION_AVAILABILITY_TEMPLATE_UNSAFE);
 #endif // defined(OVERRIDE_PATH_ENABLED)
 #if defined(OVERRIDE_PATH_ENABLED) || defined(ANDROID_ENABLED) || defined(WEB_ENABLED)
 	print_help_option("--main-pack <file>", "Path to a pack (.pck) file to load.\n", CLI_OPTION_AVAILABILITY_TEMPLATE_UNSAFE);
@@ -646,6 +687,14 @@ void Main::print_help(const char *p_binary) {
 	print_help_option("--export-debug <preset> <path>", "Export the project in debug mode using the given preset and output path. See --export-release description for other considerations.\n", CLI_OPTION_AVAILABILITY_EDITOR);
 	print_help_option("--export-pack <preset> <path>", "Export the project data only using the given preset and output path. The <path> extension determines whether it will be in PCK or ZIP format.\n", CLI_OPTION_AVAILABILITY_EDITOR);
 	print_help_option("--export-patch <preset> <path>", "Export pack with changed files only. See --export-pack description for other considerations.\n", CLI_OPTION_AVAILABILITY_EDITOR);
+#ifdef MODULE_NAVIMESH_EXPORT_ENABLED
+	print_help_option("--export-navmesh", "Bake and export navigation meshes, then quit.\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--export-navmesh-scenes <path>", "Scene root to scan (used with --export-navmesh). Defaults to res://.\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--export-navmesh-output <path>", "Output directory (used with --export-navmesh). Defaults to res://.navimesh_export/.\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--export-navmesh-mode <mode>", "Export mode: individual or combined (used with --export-navmesh).\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--export-navmesh-format <format>", "Export format: json, binary, or both (used with --export-navmesh).\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--export-navmesh-dimension <dim>", "Dimension: 2d, 3d, or both (used with --export-navmesh).\n", CLI_OPTION_AVAILABILITY_EDITOR);
+#endif
 	print_help_option("--patches <paths>", "List of patches to use with --export-patch. The list is comma-separated.\n", CLI_OPTION_AVAILABILITY_EDITOR);
 	print_help_option("--install-android-build-template", "Install the Android build template. Used in conjunction with --export-release or --export-debug.\n", CLI_OPTION_AVAILABILITY_EDITOR);
 #ifndef DISABLE_DEPRECATED
@@ -664,8 +713,8 @@ void Main::print_help(const char *p_binary) {
 	print_help_option("--build-solutions", "Build the scripting solutions (e.g. for C# projects). Implies --editor and requires a valid project to edit.\n", CLI_OPTION_AVAILABILITY_EDITOR);
 	print_help_option("--dump-gdextension-interface", "Generate a GDExtension header file \"gdextension_interface.h\" in the current folder. This file is the base file required to implement a GDExtension.\n", CLI_OPTION_AVAILABILITY_EDITOR);
 	print_help_option("--dump-gdextension-interface-json", "Generate a JSON dump of the GDExtension interface named \"gdextension_interface.json\" in the current folder.\n", CLI_OPTION_AVAILABILITY_EDITOR);
-	print_help_option("--dump-extension-api", "Generate a JSON dump of the Godot API for GDExtension bindings named \"extension_api.json\" in the current folder.\n", CLI_OPTION_AVAILABILITY_EDITOR);
-	print_help_option("--dump-extension-api-with-docs", "Generate JSON dump of the Godot API like the previous option, but including documentation.\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--dump-extension-api", "Generate a JSON dump of the Blazium API for GDExtension bindings named \"extension_api.json\" in the current folder.\n", CLI_OPTION_AVAILABILITY_EDITOR);
+	print_help_option("--dump-extension-api-with-docs", "Generate JSON dump of the Blazium API like the previous option, but including documentation.\n", CLI_OPTION_AVAILABILITY_EDITOR);
 	print_help_option("--validate-extension-api <path>", "Validate an extension API file dumped (with one of the two previous options) from a previous version of the engine to ensure API compatibility.\n", CLI_OPTION_AVAILABILITY_EDITOR);
 	print_help_option("", "If incompatibilities or errors are detected, the exit code will be non-zero.\n");
 	print_help_option("--benchmark", "Benchmark the run time and print it to console.\n", CLI_OPTION_AVAILABILITY_EDITOR);
@@ -674,6 +723,69 @@ void Main::print_help(const char *p_binary) {
 #ifdef TESTS_ENABLED
 	print_help_option("--test [--help]", "Run unit tests. Use --test --help for more information.\n");
 #endif // TESTS_ENABLED
+
+#ifdef MODULE_JUSTAMCP_ENABLED
+	print_help_title("JustAMCP Options");
+	print_help_option("--enable-mcp", "Force start the embedded JustAMCP server alongside the process.\n");
+	print_help_option("--mcp-port <port>", "Bind the JustAMCP server to a specific local port.\n");
+	print_help_option("--mcp-client-id <id>", "Force override the MCP OAuth Client ID dynamically.\n");
+	print_help_option("--mcp-client-secret <secret>", "Force override the MCP OAuth Client Secret dynamically.\n");
+#endif
+
+#ifdef MODULE_ANALYTICS_ENABLED
+	print_help_title("Analytics Options");
+	print_help_option("--analytics=<accepted|declined>", "Set analytics consent for this process (overrides settings).\n");
+	print_help_option("--analytics-mode=<anonymous|identified>", "Anonymous omits device_uid; identified sends OS.get_unique_id().\n");
+#endif
+
+#ifdef TOOLS_ENABLED
+	print_help_title("Crash Reporter Options");
+	print_help_option("--crash-reporter <path>", "Editor sidecar crash reporter executable (dumps + spawn; omitted = console only).\n", CLI_OPTION_AVAILABILITY_EDITOR);
+#endif
+
+#ifdef MODULE_REMOTE_CONTROL_ENABLED
+	print_help_title("Remote Control Options");
+	print_help_option("--enable-remote-control", "Start the remote_control HTTP API (localhost JSON /v1/* for blazium-cli remote).\n");
+	print_help_option("--remote-control-port=<port>", "Bind port for remote_control (default: 6508, or ProjectSettings blazium/remote_control/server_port).\n");
+	print_help_option("--remote-control-token=<token>", "Require Authorization: Bearer / X-Remote-Control-Token for remote_control requests.\n");
+#endif
+
+#ifdef MODULE_AUTOWORK_ENABLED
+	print_help_title("Autowork options");
+	print_help_option("--aw-dir=<directory>", "Run Autowork tests in the specified directory (starts the runner without -s).\n");
+	print_help_option("--aw-file=<file>", "Run a specific Autowork test script.\n");
+	print_help_option("--aw-test=<name>", "Run a specific Autowork test by name.\n");
+	print_help_option("--aw-select=<pattern>", "Run Autowork test scripts matching the pattern.\n");
+	print_help_option("--aw-prefix=<prefix>", "Set the prefix for Autowork test files (default: \"test_\").\n");
+	print_help_option("--aw-suffix=<suffix>", "Set the suffix for Autowork test files (default: \".gd\").\n");
+	print_help_option("--aw-inner-class=<pattern>", "Run Autowork inner classes matching the pattern.\n");
+	print_help_option("--aw-junit=<file>", "Export Autowork test results to a JUnit XML file.\n");
+	print_help_option("--aw-json=<file>", "Export Autowork test results to a JSON file.\n");
+	print_help_option("--aw-pre-run=<script>", "Run a script before Autowork tests start.\n");
+	print_help_option("--aw-post-run=<script>", "Run a script after Autowork tests finish.\n");
+	print_help_option("--aw-hide-orphans", "Do not print orphaned nodes during Autowork tests.\n");
+	print_help_option("--aw-include-subdirs", "Include subdirectories when scanning for Autowork tests.\n");
+	print_help_option("--aw-e2e", "Force start the embedded E2E server alongside the process.\n");
+	print_help_option("--aw-e2e-host <address>", "Bind the E2E server to a specific local address (default: 127.0.0.1).\n");
+	print_help_option("--aw-e2e-port <port>", "Bind the E2E server to a specific local port.\n");
+	print_help_option("--aw-e2e-token <token>", "Force override the E2E token dynamically.\n");
+	print_help_option("--aw-e2e-port-file <path>", "Write the E2E server port to a file.\n");
+	print_help_option("--aw-e2e-log", "Enable verbose logging for the E2E server.\n");
+#endif
+
+#ifdef MODULE_MULTIUSER_EDITOR_ENABLED
+	print_help_title("Multiuser Editor Options");
+	print_help_option("--multiuser-server", "Force start the multiuser editor session as a dedicated headless server.\n");
+	print_help_option("--multiuser-port <port>", "Bind the multiuser server to a specific local port.\n");
+	print_help_option("--multiuser-password <password>", "Set the multiuser server password for connecting clients.\n");
+	print_help_option("--multiuser-jwt-auth", "Enable JWT authentication for the multiuser server.\n");
+	print_help_option("--multiuser-jwt-secret <secret>", "Set the JWT secret used for generating and verifying tokens.\n");
+	print_help_option("--multiuser-jwt <token>", "Connect to a multiuser server using the provided JWT token.\n");
+	print_help_option("--multiuser-host <ip>", "Set the default multiuser host for client auto-join.\n");
+	print_help_option("--multiuser-join", "Auto-join a multiuser session using default host/port and client JWT.\n");
+	print_help_option("--multiuser-debug", "Enable verbose multiuser editor network and debug logging.\n");
+#endif
+
 	OS::get_singleton()->print("\n");
 }
 
@@ -936,8 +1048,8 @@ int Main::test_entrypoint(int argc, char *argv[], bool &tests_need_run) {
 			return status;
 #else
 			ERR_PRINT(
-					"`--test` was specified on the command line, but this Godot binary was compiled without support for unit tests. Aborting.\n"
-					"To be able to run unit tests, use the `tests=yes` SCons option when compiling Godot.\n");
+					"`--test` was specified on the command line, but this Blazium binary was compiled without support for unit tests. Aborting.\n"
+					"To be able to run unit tests, use the `tests=yes` SCons option when compiling Blazium.\n");
 			return EXIT_FAILURE;
 #endif
 		}
@@ -1037,6 +1149,20 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		args.push_back(String::utf8(argv[i]));
 	}
 
+	// On macos if the app is sandboxed, read the arguments from file.
+	if (OS::get_singleton()->is_sandboxed()) {
+		args.clear();
+		String args_path = OS::get_singleton()->get_temp_path().path_join("blazium_args.txt");
+		Ref<FileAccess> file = FileAccess::open(args_path, FileAccess::READ);
+		while (file.is_valid() && !file->eof_reached()) {
+			String line = file->get_line().strip_edges();
+			if (!line.is_empty()) {
+				args.push_back(line);
+			}
+		}
+		DirAccess::remove_file_or_error(args_path);
+	}
+
 	// Add arguments received from macOS LaunchService (URL schemas, file associations).
 	for (const String &arg : platform_args) {
 		args.push_back(arg);
@@ -1051,6 +1177,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 
 	String audio_driver = "";
 	String project_path = ".";
+	bool upwards = false;
 
 #if defined(DEBUG_ENABLED) || defined(TOOLS_ENABLED)
 	String debug_uri = "";
@@ -1108,6 +1235,12 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	I = args.front();
 	while (I) {
 		List<String>::Element *N = I->next();
+#ifdef MODULE_LIVEWALLPAPER_ENABLED
+		bool livewallpaper_consumed_next = false;
+#endif
+#ifdef MODULE_SCREENSAVER_ENABLED
+		bool screensaver_consumed_next = false;
+#endif
 
 		const String &arg = I->get();
 
@@ -1419,6 +1552,9 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			if (N) {
 				init_screen = N->get().to_int();
 				init_use_custom_screen = true;
+#ifdef MODULE_SCREENSAVER_ENABLED
+				ScreensaverCmdline::set_target_screen(init_screen);
+#endif
 
 				N = N->next();
 			} else {
@@ -1476,8 +1612,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			use_debug_profiler = true;
 #else
 			ERR_PRINT(
-					"`--profiling` was specified on the command line, but this Godot binary was compiled without debug. Aborting.\n"
-					"To be able to use it, use the `target=template_debug` SCons option when compiling Godot.\n");
+					"`--profiling` was specified on the command line, but this Blazium binary was compiled without debug. Aborting.\n"
+					"To be able to use it, use the `target=template_debug` SCons option when compiling Blazium.\n");
 #endif
 		} else if (arg == "-l" || arg == "--language") { // language
 
@@ -1500,8 +1636,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			}
 #else
 			ERR_PRINT(
-					"`--remote-fs` was specified on the command line, but this Godot binary was compiled without debug. Aborting.\n"
-					"To be able to use it, use the `target=template_debug` SCons option when compiling Godot.\n");
+					"`--remote-fs` was specified on the command line, but this Blazium binary was compiled without debug. Aborting.\n"
+					"To be able to use it, use the `target=template_debug` SCons option when compiling Blazium.\n");
 #endif // defined(DEBUG_ENABLED) || defined (TOOLS_ENABLED)
 		} else if (arg == "--remote-fs-password") { // remote filesystem password
 
@@ -1515,8 +1651,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			}
 #else
 			ERR_PRINT(
-					"`--remote-fs-password` was specified on the command line, but this Godot binary was compiled without debug. Aborting.\n"
-					"To be able to use it, use the `target=template_debug` SCons option when compiling Godot.\n");
+					"`--remote-fs-password` was specified on the command line, but this Blazium binary was compiled without debug. Aborting.\n"
+					"To be able to use it, use the `target=template_debug` SCons option when compiling Blazium.\n");
 			goto error;
 #endif // defined(DEBUG_ENABLED) || defined (TOOLS_ENABLED)
 		} else if (arg == "--render-thread") { // render thread mode
@@ -1637,8 +1773,47 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			cmdline_tool = true;
 			wait_for_import = true;
 			quit_after = 1;
+		} else if (arg == "--create-project") {
+			if (N) {
+				create_project_cli = true;
+				cmdline_tool = true;
+				create_project_path = N->get();
+				N = N->next();
+			} else {
+				OS::get_singleton()->print("Missing path argument after --create-project, aborting.\n");
+				goto error;
+			}
+		} else if (arg == "--name") {
+			if (N) {
+				create_project_name = N->get();
+				N = N->next();
+			} else {
+				OS::get_singleton()->print("Missing name argument after --name, aborting.\n");
+				goto error;
+			}
+		} else if (arg == "--renderer") {
+			if (N) {
+				create_project_renderer = N->get();
+				N = N->next();
+			} else {
+				OS::get_singleton()->print("Missing renderer argument after --renderer, aborting.\n");
+				goto error;
+			}
+		} else if (arg == "--vcs") {
+			if (N) {
+				create_project_vcs = N->get().to_lower();
+				N = N->next();
+			} else {
+				OS::get_singleton()->print("Missing vcs argument after --vcs, aborting.\n");
+				goto error;
+			}
+		} else if (arg == "--force") {
+			create_project_force = true;
+		} else if (arg == "--edit") {
+			create_project_edit = true;
 		} else if (arg == "--export-release" || arg == "--export-debug" ||
-				arg == "--export-pack" || arg == "--export-patch") { // Export project
+				arg == "--export-pack" || arg == "--export-patch" ||
+				arg == "--export-navmesh" || arg.begins_with("--export-navmesh-")) { // Export project
 			// Actually handling is done in start().
 			editor = true;
 			cmdline_tool = true;
@@ -1732,10 +1907,12 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			}
 #else
 			ERR_PRINT(
-					"`--path` was specified on the command line, but this Godot binary was compiled without support for path overrides. Aborting.\n"
-					"To be able to use it, use the `disable_path_overrides=no` SCons option when compiling Godot.\n");
+					"`--path` was specified on the command line, but this Blazium binary was compiled without support for path overrides. Aborting.\n"
+					"To be able to use it, use the `disable_path_overrides=no` SCons option when compiling Blazium.\n");
 			goto error;
 #endif // defined(OVERRIDE_PATH_ENABLED)
+		} else if (arg == "-u" || arg == "--upwards") { // scan folders upwards
+			upwards = true;
 		} else if (arg == "--quit") { // Auto quit at the end of the first main loop iteration
 			quit_after = 1;
 #ifdef TOOLS_ENABLED
@@ -1749,7 +1926,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 				OS::get_singleton()->print("Missing number of iterations, aborting.\n");
 				goto error;
 			}
-		} else if (arg.ends_with("project.godot")) {
+		} else if (arg.ends_with("project.godot") || arg.ends_with("project.blazium")) {
 #if defined(OVERRIDE_PATH_ENABLED)
 			String path;
 			String file = arg;
@@ -1769,8 +1946,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 #endif
 #else
 			ERR_PRINT(
-					"`project.godot` path was specified on the command line, but this Godot binary was compiled without support for path overrides. Aborting.\n"
-					"To be able to use it, use the `disable_path_overrides=no` SCons option when compiling Godot.\n");
+					"`project.blazium`/`project.godot` path was specified on the command line, but this Blazium binary was compiled without support for path overrides. Aborting.\n"
+					"To be able to use it, use the `disable_path_overrides=no` SCons option when compiling Blazium.\n");
 			goto error;
 #endif // defined(OVERRIDE_PATH_ENABLED)
 #if defined(DEBUG_ENABLED) || defined(TOOLS_ENABLED)
@@ -1828,8 +2005,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 				if (main_pack_fa.is_valid()) {
 					if (main_pack_fa->get_access_type() != FileAccess::ACCESS_RESOURCES) {
 						ERR_PRINT(
-								"--main-pack is attempting to load from outside of the executable, but this Godot binary was compiled without support for path overrides. Aborting.\n"
-								"To be able to use it, use the `disable_path_overrides=no` SCons option when compiling Godot.\n");
+								"--main-pack is attempting to load from outside of the executable, but this Blazium binary was compiled without support for path overrides. Aborting.\n"
+								"To be able to use it, use the `disable_path_overrides=no` SCons option when compiling Blazium.\n");
 						goto error;
 					}
 				} else {
@@ -1843,8 +2020,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			}
 #else
 			ERR_PRINT(
-					"`--main-pack` was specified on the command line, but this Godot binary was compiled without support for path overrides. Aborting.\n"
-					"To be able to use it, use the `disable_path_overrides=no` SCons option when compiling Godot.\n");
+					"`--main-pack` was specified on the command line, but this Blazium binary was compiled without support for path overrides. Aborting.\n"
+					"To be able to use it, use the `disable_path_overrides=no` SCons option when compiling Blazium.\n");
 			goto error;
 #endif // defined(OVERRIDE_PATH_ENABLED) || defined(WEB_ENABLED) || defined(ANDROID_ENABLED)
 
@@ -1854,8 +2031,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			OS::get_singleton()->_debug_stdout = true;
 #else
 			ERR_PRINT(
-					arg + " was specified on the command line, but this Godot binary was compiled without debug. Aborting.\n"
-						  "To be able to use it, use the `target=template_debug` SCons option when compiling Godot.\n");
+					arg + " was specified on the command line, but this Blazium binary was compiled without debug. Aborting.\n"
+						  "To be able to use it, use the `target=template_debug` SCons option when compiling Blazium.\n");
 			goto error;
 #endif
 #if defined(DEBUG_ENABLED)
@@ -1896,8 +2073,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			}
 #else
 			ERR_PRINT(
-					"`--remote-debug` was specified on the command line, but this Godot binary was compiled without debug. Aborting.\n"
-					"To be able to use it, use the `target=template_debug` SCons option when compiling Godot.\n");
+					"`--remote-debug` was specified on the command line, but this Blazium binary was compiled without debug. Aborting.\n"
+					"To be able to use it, use the `target=template_debug` SCons option when compiling Blazium.\n");
 			goto error;
 #endif // defined(DEBUG_ENABLED) || defined (TOOLS_ENABLED)
 #ifdef TOOLS_ENABLED
@@ -2032,12 +2209,59 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 
 		} else if (arg == "--" || arg == "++") {
 			adding_user_args = true;
+#ifdef TOOLS_ENABLED
+		} else if (arg == "--crash-reporter") {
+			if (N) {
+				N = N->next();
+			} else {
+				OS::get_singleton()->print("Missing <path> argument for --crash-reporter <path>.\n");
+				goto error;
+			}
+		} else if (arg.begins_with("--crash-reporter=")) {
+#endif
+#ifdef MODULE_LIVEWALLPAPER_ENABLED
+		} else if (
+#ifdef TOOLS_ENABLED
+				!editor && !project_manager &&
+#endif
+				LiveWallpaperCmdline::try_consume(arg, N ? N->get() : String(), livewallpaper_consumed_next)) {
+			if (livewallpaper_consumed_next && N) {
+				N = N->next();
+			}
+#endif
+#ifdef MODULE_SCREENSAVER_ENABLED
+		} else if (
+#ifdef TOOLS_ENABLED
+				!editor && !project_manager &&
+#endif
+				ScreensaverCmdline::try_consume(arg, N ? N->get() : String(), screensaver_consumed_next)) {
+			if (screensaver_consumed_next && N) {
+				N = N->next();
+			}
+#endif
 		} else {
 			main_args.push_back(arg);
 		}
 
 		I = N;
 	}
+
+#ifdef TOOLS_ENABLED
+	if (create_project_cli) {
+		if (create_project_vcs != "none" && create_project_vcs != "git" && create_project_vcs != "coldstorage") {
+			OS::get_singleton()->print("Invalid --vcs value. Expected none, git, or coldstorage.\n");
+			goto error;
+		}
+
+		if (create_project_edit) {
+			editor = true;
+			cmdline_tool = false;
+		} else {
+			audio_driver = NULL_AUDIO_DRIVER;
+			display_driver = NULL_DISPLAY_DRIVER;
+		}
+	}
+#endif
 
 #ifdef TOOLS_ENABLED
 	if (editor && project_manager) {
@@ -2068,13 +2292,17 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 #endif // defined(DEBUG_ENABLED) || defined (TOOLS_ENABLED)
 
 	OS::get_singleton()->_in_editor = editor;
-	if (globals->setup(project_path, main_pack, false, editor) == OK) {
+	if (globals->setup(project_path, main_pack, upwards, editor) == OK) {
 #ifdef TOOLS_ENABLED
 		found_project = true;
 #endif
 	} else {
 #ifdef TOOLS_ENABLED
-		editor = false;
+		if (create_project_cli && create_project_edit) {
+			editor = true;
+		} else {
+			editor = false;
+		}
 #else
 		String error_msg = "Error: Couldn't load project data at path \"" + (project_path == "." ? OS::get_singleton()->get_cwd() : project_path) + "\". Is the .pck file missing?\n\n";
 #if !defined(OVERRIDE_PATH_ENABLED) && !defined(TOOLS_ENABLED)
@@ -2082,9 +2310,9 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		String exec_basename = exec_path.get_file().get_basename();
 
 		if (FileAccess::exists(old_cwd.path_join(exec_basename + ".pck"))) {
-			error_msg += "\"" + exec_basename + ".pck\" was found in the current working directory. To be able to load a project from the CWD, use the `disable_path_overrides=no` SCons option when compiling Godot.\n";
-		} else if (FileAccess::exists(old_cwd.path_join("project.godot"))) {
-			error_msg += "\"project.godot\" was found in the current working directory. To be able to load a project from the CWD, use the `disable_path_overrides=no` SCons option when compiling Godot.\n";
+			error_msg += "\"" + exec_basename + ".pck\" was found in the current working directory. To be able to load a project from the CWD, use the `disable_path_overrides=no` SCons option when compiling Blazium.\n";
+		} else if (FileAccess::exists(old_cwd.path_join("project.blazium")) || FileAccess::exists(old_cwd.path_join("project.godot"))) {
+			error_msg += "\"project.blazium\" or \"project.godot\" was found in the current working directory. To be able to load a project from the CWD, use the `disable_path_overrides=no` SCons option when compiling Blazium.\n";
 		} else {
 			error_msg += "If you've renamed the executable, the associated .pck file should also be renamed to match the executable's name (without the extension).\n";
 		}
@@ -2250,6 +2478,16 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 
 	register_early_core_singletons();
 	initialize_modules(MODULE_INITIALIZATION_LEVEL_CORE);
+#ifdef MODULE_CRASH_REPORTER_ENABLED
+	if (CrashReporter::get_singleton()) {
+		CrashReporter::get_singleton()->report_user_data_dir_ready();
+	}
+#endif
+#ifdef MODULE_ANALYTICS_ENABLED
+	if (Analytics::get_singleton()) {
+		Analytics::get_singleton()->report_user_data_dir_ready();
+	}
+#endif
 	register_core_extensions(); // core extensions must be registered after globals setup and before display
 
 	if (!editor) {
@@ -2441,7 +2679,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		FORCE_ANGLE("ATI", "Radeon (TM) R9 M3");
 		FORCE_ANGLE("AMD", "Radeon (TM) R9 M3");
 
-		// Intel GPUs (Gen7-Gen9.5 devices).
+		// Intel GPUs (Gen7-Gen9.5 devices). Name prefixes first, then PCI IDs
+		// for drivers that report vendor/device IDs instead of marketing names.
 		FORCE_ANGLE("Intel", "Intel(R) HD Graphics");
 		FORCE_ANGLE("Intel", "Intel HD Graphics");
 		FORCE_ANGLE("Intel", "Intel(R) Vallyview Graphics");
@@ -2455,6 +2694,63 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		FORCE_ANGLE("Intel", "Intel(R) Iris Plus Graphics 650");
 		FORCE_ANGLE("Intel", "Intel(R) Iris Pro Graphics 580");
 		FORCE_ANGLE("Intel", "Intel(R) Iris Pro Graphics P580");
+		FORCE_ANGLE("0x8086", "0x0042"); // HD Graphics, Gen5, Clarkdale
+		FORCE_ANGLE("0x8086", "0x0046"); // HD Graphics, Gen5, Arrandale
+		FORCE_ANGLE("0x8086", "0x010A"); // HD Graphics, Gen6, Sandy Bridge
+		FORCE_ANGLE("0x8086", "0x0102"); // HD Graphics 2000, Gen6, Sandy Bridge
+		FORCE_ANGLE("0x8086", "0x0116"); // HD Graphics 3000, Gen6, Sandy Bridge
+		FORCE_ANGLE("0x8086", "0x0126"); // HD Graphics 3000, Gen6, Sandy Bridge
+		FORCE_ANGLE("0x8086", "0x0112"); // HD Graphics P3000, Gen6, Sandy Bridge
+		FORCE_ANGLE("0x8086", "0x0122");
+		FORCE_ANGLE("0x8086", "0x015A"); // HD Graphics, Gen7, Ivy Bridge
+		FORCE_ANGLE("0x8086", "0x0152"); // HD Graphics 2500, Gen7, Ivy Bridge
+		FORCE_ANGLE("0x8086", "0x0162"); // HD Graphics 4000, Gen7, Ivy Bridge
+		FORCE_ANGLE("0x8086", "0x0166");
+		FORCE_ANGLE("0x8086", "0x016A"); // HD Graphics P4000, Gen7, Ivy Bridge
+		FORCE_ANGLE("0x8086", "0x0F30"); // Intel(R) Vallyview Graphics, Gen7, Vallyview
+		FORCE_ANGLE("0x8086", "0x0F31");
+		FORCE_ANGLE("0x8086", "0x0A1E"); // Intel(R) HD Graphics 4200, Gen7.5, Haswell
+		FORCE_ANGLE("0x8086", "0x0A16"); // Intel(R) HD Graphics 4400, Gen7.5, Haswell
+		FORCE_ANGLE("0x8086", "0x0412"); // Intel(R) HD Graphics 4600, Gen7.5, Haswell
+		FORCE_ANGLE("0x8086", "0x0416");
+		FORCE_ANGLE("0x8086", "0x0426");
+		FORCE_ANGLE("0x8086", "0x0D12");
+		FORCE_ANGLE("0x8086", "0x0D16");
+		FORCE_ANGLE("0x8086", "0x041A"); // Intel(R) HD Graphics P4600/P4700, Gen7.5, Haswell
+		FORCE_ANGLE("0x8086", "0x0422"); // Intel(R) HD Graphics 5000, Gen7.5, Haswell
+		FORCE_ANGLE("0x8086", "0x042A");
+		FORCE_ANGLE("0x8086", "0x0A26");
+		FORCE_ANGLE("0x8086", "0x0A22"); // Intel(R) Iris(TM) Graphics 5100, Gen7.5, Haswell
+		FORCE_ANGLE("0x8086", "0x0A2A");
+		FORCE_ANGLE("0x8086", "0x0A2B");
+		FORCE_ANGLE("0x8086", "0x0A2E");
+		FORCE_ANGLE("0x8086", "0x0D22"); // Intel(R) Iris(TM) Pro Graphics 5200, Gen7.5, Haswell
+		FORCE_ANGLE("0x8086", "0x0D26");
+		FORCE_ANGLE("0x8086", "0x0D2A");
+		FORCE_ANGLE("0x8086", "0x0D2B");
+		FORCE_ANGLE("0x8086", "0x0D2E");
+		FORCE_ANGLE("0x8086", "0x22B0"); // Intel(R) HD Graphics, Gen8, Cherryview Braswell
+		FORCE_ANGLE("0x8086", "0x22B1");
+		FORCE_ANGLE("0x8086", "0x22B2");
+		FORCE_ANGLE("0x8086", "0x22B3");
+		FORCE_ANGLE("0x8086", "0x161E"); // Intel(R) HD Graphics 5300, Gen8, Broadwell
+		FORCE_ANGLE("0x8086", "0x1616"); // Intel(R) HD Graphics 5500, Gen8, Broadwell
+		FORCE_ANGLE("0x8086", "0x1612"); // Intel(R) HD Graphics 5600, Gen8, Broadwell
+		FORCE_ANGLE("0x8086", "0x1626"); // Intel(R) HD Graphics 6000, Gen8, Broadwell
+		FORCE_ANGLE("0x8086", "0x162B"); // Intel(R) Iris(TM) Graphics 6100, Gen8, Broadwell
+		FORCE_ANGLE("0x8086", "0x1622"); // Intel(R) Iris(TM) Pro Graphics 6200, Gen8, Broadwell
+		FORCE_ANGLE("0x8086", "0x162A"); // Intel(R) Iris(TM) Pro Graphics P6300, Gen8, Broadwell
+		FORCE_ANGLE("0x8086", "0x1902"); // Intel(R) HD Graphics 510, Gen9, Skylake
+		FORCE_ANGLE("0x8086", "0x1906");
+		FORCE_ANGLE("0x8086", "0x1916"); // Intel(R) HD Graphics 520, Gen9, Skylake
+		FORCE_ANGLE("0x8086", "0x1912"); // Intel(R) HD Graphics 530, Gen9, Skylake
+		FORCE_ANGLE("0x8086", "0x191B");
+		FORCE_ANGLE("0x8086", "0x191D"); // Intel(R) HD Graphics P530, Gen9, Skylake
+		FORCE_ANGLE("0x8086", "0x191E"); // Intel(R) HD Graphics 515, Gen9, Skylake
+		FORCE_ANGLE("0x8086", "0x1926"); // Intel(R) Iris Graphics 540, Gen9, Skylake
+		FORCE_ANGLE("0x8086", "0x1927");
+		FORCE_ANGLE("0x8086", "0x193B"); // Intel(R) Iris Pro Graphics 580, Gen9, Skylake
+		FORCE_ANGLE("0x8086", "0x193D"); // Intel(R) Iris Pro Graphics P580, Gen9, Skylake
 
 #undef FORCE_ANGLE
 
@@ -3295,6 +3591,24 @@ Error Main::setup2(bool p_show_boot_logo) {
 			context = DisplayServerEnums::CONTEXT_ENGINE;
 		}
 
+#ifdef MODULE_LIVEWALLPAPER_ENABLED
+		bool livewallpaper_use_position = false;
+		LiveWallpaperCmdline::apply_recorded(window_mode, window_flags, position, window_size, init_embed_parent_window_id, livewallpaper_use_position);
+		if (livewallpaper_use_position) {
+			window_position = &position;
+		}
+#endif
+#ifdef MODULE_SCREENSAVER_ENABLED
+		bool screensaver_use_position = false;
+		ScreensaverCmdline::apply_recorded(window_mode, window_flags, init_embed_parent_window_id, position, window_size, init_screen, screensaver_use_position);
+		if (screensaver_use_position) {
+			window_position = &position;
+		} else if (ScreensaverCmdline::should_clear_create_position()) {
+			// Project absolute (0,0) / exported initial_position_type=0 would ignore --screen.
+			window_position = nullptr;
+		}
+#endif
+
 		if (init_embed_parent_window_id) {
 			// Reset flags and other settings to be sure it's borderless and windowed. The position and size should have been initialized correctly
 			// from --position and --resolution parameters.
@@ -3303,6 +3617,11 @@ Error Main::setup2(bool p_show_boot_logo) {
 			if (bool(GLOBAL_GET("display/window/size/transparent"))) {
 				window_flags |= DisplayServerEnums::WINDOW_FLAG_TRANSPARENT_BIT;
 			}
+#ifdef MODULE_LIVEWALLPAPER_ENABLED
+			if (LiveWallpaperCmdline::get_mode() == LiveWallpaperCmdline::MODE_RUN) {
+				window_flags |= DisplayServerEnums::WINDOW_FLAG_NO_FOCUS_BIT;
+			}
+#endif
 		}
 
 #ifdef TOOLS_ENABLED
@@ -4081,8 +4400,8 @@ int Main::start() {
 			}
 #else
 			ERR_PRINT(
-					"`--scene` was specified on the command line, but this Godot binary was compiled without support for path overrides. Aborting.\n"
-					"To be able to use it, use the `disable_path_overrides=no` SCons option when compiling Godot.\n");
+					"`--scene` was specified on the command line, but this Blazium binary was compiled without support for path overrides. Aborting.\n"
+					"To be able to use it, use the `disable_path_overrides=no` SCons option when compiling Blazium.\n");
 			return EXIT_FAILURE;
 #endif // defined(OVERRIDE_PATH_ENABLED)
 		} else if (E->get().length() && E->get()[0] != '-' && positional_arg.is_empty() && game_path.is_empty()) {
@@ -4104,8 +4423,8 @@ int Main::start() {
 				game_path = scene_path;
 #else
 				ERR_PRINT(
-						"Scene path was specified on the command line, but this Godot binary was compiled without support for path overrides. Aborting.\n"
-						"To be able to use it, use the `disable_path_overrides=no` SCons option when compiling Godot.\n");
+						"Scene path was specified on the command line, but this Blazium binary was compiled without support for path overrides. Aborting.\n"
+						"To be able to use it, use the `disable_path_overrides=no` SCons option when compiling Blazium.\n");
 				return EXIT_FAILURE;
 #endif // defined(OVERRIDE_PATH_ENABLED)
 			}
@@ -4152,6 +4471,12 @@ int Main::start() {
 				export_patch = true;
 			} else if (E->get() == "--patches") {
 				patches = E->next()->get().split(",", false);
+#ifdef MODULE_NAVIMESH_EXPORT_ENABLED
+			} else if (E->get() == "--export-navmesh" || E->get().begins_with("--export-navmesh-")) {
+				ERR_FAIL_COND_V_MSG(!editor && !found_project, EXIT_FAILURE, "Please provide a valid project path when exporting, aborting.");
+				editor = true;
+				parsed_pair = false;
+#endif
 #endif
 			} else {
 				// The parameter does not match anything known, don't skip the next argument
@@ -4160,6 +4485,11 @@ int Main::start() {
 			if (parsed_pair) {
 				E = E->next();
 			}
+#if defined(TOOLS_ENABLED) && defined(MODULE_NAVIMESH_EXPORT_ENABLED)
+		} else if (E->get() == "--export-navmesh" || E->get().begins_with("--export-navmesh-")) {
+			ERR_FAIL_COND_V_MSG(!editor && !found_project, EXIT_FAILURE, "Please provide a valid project path when exporting, aborting.");
+			editor = true;
+#endif
 		} else if (E->get().begins_with("--export-")) {
 			ERR_FAIL_V_MSG(EXIT_FAILURE, "Missing export preset name, aborting.");
 		}
@@ -4171,6 +4501,51 @@ int Main::start() {
 		}
 #endif
 	}
+
+#ifdef TOOLS_ENABLED
+	if (create_project_cli) {
+		ProjectCreateOptions options;
+		options.path = create_project_path;
+		options.name = create_project_name;
+		options.renderer = create_project_renderer;
+		options.allow_nonempty = create_project_force;
+		if (create_project_vcs == "none") {
+			options.vcs = EditorVCSInterface::VCSMetadata::NONE;
+		} else if (create_project_vcs == "coldstorage") {
+			options.vcs = EditorVCSInterface::VCSMetadata::COLDSTORAGE;
+		} else {
+			options.vcs = EditorVCSInterface::VCSMetadata::GIT;
+		}
+
+		String error_message;
+		Error create_err = ProjectCreator::create_project(options, &error_message);
+		if (create_err != OK) {
+			OS::get_singleton()->printerr("%s\n", error_message.utf8().get_data());
+			return EXIT_FAILURE;
+		}
+
+		String created_path = create_project_path.simplify_path();
+		print_line("Created project at: " + created_path);
+
+		if (!create_project_edit) {
+			return EXIT_SUCCESS;
+		}
+
+		if (OS::get_singleton()->set_cwd(created_path) != OK) {
+			ERR_FAIL_V_MSG(EXIT_FAILURE, "Failed to set working directory to newly created project.");
+		}
+
+		if (globals->setup(created_path, String(), false, true) != OK) {
+			ERR_FAIL_V_MSG(EXIT_FAILURE, "Failed to load newly created project.");
+		}
+
+		found_project = true;
+		editor = true;
+		cmdline_tool = false;
+		OS::get_singleton()->_in_editor = true;
+		Engine::get_singleton()->set_editor_hint(true);
+	}
+#endif
 
 	uint64_t minimum_time_msec = GLOBAL_DEF(PropertyInfo(Variant::INT, "application/boot_splash/minimum_display_time", PROPERTY_HINT_RANGE, "0,100,1,or_greater,suffix:ms"), 0);
 	if (Engine::get_singleton()->is_editor_hint()) {
@@ -4197,7 +4572,7 @@ int Main::start() {
 			// Ensure that doctool is running in the root dir, but only if
 			// user did not manually specify a path as argument.
 			if (doc_tool_implicit_cwd) {
-				ERR_FAIL_COND_V_MSG(!da->dir_exists("doc"), EXIT_FAILURE, "--doctool must be run from the Godot repository's root folder, or specify a path that points there.");
+				ERR_FAIL_COND_V_MSG(!da->dir_exists("doc"), EXIT_FAILURE, "--doctool must be run from the Blazium repository's root folder, or specify a path that points there.");
 			}
 		}
 
@@ -4346,8 +4721,14 @@ int Main::start() {
 		}
 	}
 
+#ifdef MODULE_AUTOWORK_ENABLED
+	const bool autowork_cli = Autowork::has_unit_runner_cli_flags() && script.is_empty();
+#else
+	const bool autowork_cli = false;
+#endif
+
 #ifdef TOOLS_ENABLED
-	if (!editor && !project_manager && !cmdline_tool && script.is_empty() && game_path.is_empty()) {
+	if (!editor && !project_manager && !cmdline_tool && script.is_empty() && game_path.is_empty() && !autowork_cli) {
 		// If we end up here, it means we didn't manage to detect what we want to run.
 		// Let's throw an error gently. The code leading to this is pretty brittle so
 		// this might end up triggered by valid usage, in which case we'll have to
@@ -4611,6 +4992,14 @@ int Main::start() {
 				game_path = ""; // Do not load anything.
 			}
 
+#ifdef MODULE_NAVIMESH_EXPORT_ENABLED
+			if (NavimeshExportCmdline::has_export_cli()) {
+				ERR_FAIL_COND_V_MSG(!ClassDB::class_exists("NavimeshExporter"), EXIT_FAILURE, "NavimeshExporter is not available.");
+				game_path = ""; // Do not load anything.
+				return NavimeshExportBatch::run_and_quit();
+			}
+#endif
+
 			OS::get_singleton()->benchmark_end_measure("Startup", "Editor");
 		}
 #endif
@@ -4753,7 +5142,11 @@ int Main::start() {
 			// Load SSL Certificates from Project Settings (or builtin).
 			Crypto::load_default_certificates(GLOBAL_GET("network/tls/certificate_bundle_override"));
 
-			if (!game_path.is_empty()) {
+			if (autowork_cli) {
+#ifdef MODULE_AUTOWORK_ENABLED
+				Autowork::start_from_cli(sml);
+#endif
+			} else if (!game_path.is_empty()) {
 				Node *scene = nullptr;
 				Ref<PackedScene> scenedata = ResourceLoader::load(local_game_path);
 				if (scenedata.is_valid()) {

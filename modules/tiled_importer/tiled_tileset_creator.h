@@ -35,11 +35,12 @@
 
 // Equivalent to TilesetCreator.gd
 
-#include "scene/resources/texture.h"
 #include "tiled_common.h"
 #include "tiled_custom_types.h"
 #include "tileson_gd_bindings.h"
+
 #include "core/string/ustring.h"
+#include "scene/resources/texture.h"
 
 class TiledTilesetCreator {
 private:

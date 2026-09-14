@@ -28,11 +28,12 @@
 /**************************************************************************/
 
 #include "dotini_file.h"
+
 #include "core/crypto/crypto_core.h"
+#include "core/io/file_access.h"
+#include "core/object/class_db.h"
 #include "core/os/os.h"
 #include "core/variant/variant_parser.h"
-#include "core/object/class_db.h"
-#include "core/io/file_access.h"
 
 Ref<DotIniFile> DotIniFile::global_fallback = nullptr;
 

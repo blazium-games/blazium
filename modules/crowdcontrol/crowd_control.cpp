@@ -31,10 +31,10 @@
 
 #include "core/core_bind.h"
 #include "core/io/json.h"
-#include "core/os/os.h"
-#include "core/os/time.h"
 #include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
+#include "core/os/os.h"
+#include "core/os/time.h"
 
 void CrowdControl::_bind_methods() {
 	// Connection Management
@@ -543,7 +543,7 @@ void CrowdControl::_handle_direct_event(const String &p_type, const Dictionary &
 		// Subscription confirmed
 		if (p_payload.has("success")) {
 			Array success = p_payload["success"];
-			// Could emit signal or log if needed
+			(void)success;
 		}
 		if (p_payload.has("failure")) {
 			Array failure = p_payload["failure"];

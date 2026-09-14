@@ -36,7 +36,7 @@
 #include <android/log.h>
 #include <jni.h>
 
-// Class that makes functions in java/src/org/godotengine/godot/GodotIO.java callable from C++
+// Class that makes functions in java/lib/src/main/java/app/blazium/godot/GodotIO.java callable from C++
 class GodotIOJavaWrapper {
 private:
 	jobject godot_io_instance;

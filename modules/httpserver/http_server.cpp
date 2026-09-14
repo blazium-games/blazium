@@ -31,8 +31,8 @@
 
 #include "core/crypto/crypto.h"
 #include "core/io/file_access.h"
-#include "core/os/os.h"
 #include "core/object/class_db.h"
+#include "core/os/os.h"
 
 HTTPServer *HTTPServer::singleton = nullptr;
 
@@ -288,7 +288,11 @@ void HTTPServer::_parse_and_dispatch_request(int p_client_id, ClientConnection &
 
 	String method = request_line[0];
 	String raw_path = request_line[1];
-	String protocol = request_line[2];
+	if (!request_line[2].begins_with("HTTP/")) {
+		_send_error(p_client_id, p_client, 400, "Bad Request");
+		_clear_client(p_client_id);
+		return;
+	}
 
 	// Parse path and query
 	String path = raw_path;

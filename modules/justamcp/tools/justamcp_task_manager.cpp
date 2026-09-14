@@ -30,15 +30,17 @@
 #ifdef TOOLS_ENABLED
 
 #include "justamcp_task_manager.h"
+
 #include "../justamcp_pagination.h"
 #include "../justamcp_server.h"
+#include "justamcp_settings_resolver.h"
+
 #include "core/config/project_settings.h"
 #include "core/crypto/crypto_core.h"
+#include "core/object/class_db.h"
 #include "core/os/os.h"
 #include "core/os/thread.h"
 #include "core/os/time.h"
-#include "justamcp_settings_resolver.h"
-#include "core/object/class_db.h"
 
 static int _justamcp_task_result_max_wait_ms() {
 	return JustAMCPSettingsResolver::resolve_int("blazium/justamcp/task_result_max_wait_ms", 120000);

@@ -1,9 +1,9 @@
-name: Test Godot project converter
-description: Test the Godot project converter.
+name: Test Blazium project converter
+description: Test the Blazium project converter.
 
 inputs:
   bin:
-    description: The path to the Godot executable
+    description: The path to the Blazium executable
     required: true
 
 runs:

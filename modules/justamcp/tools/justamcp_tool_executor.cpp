@@ -28,16 +28,12 @@
 /**************************************************************************/
 
 #include "justamcp_tool_executor.h"
+
 #include "../justamcp_mcp_spec.h"
 #include "../justamcp_pagination.h"
 #include "../justamcp_runtime.h"
 #include "../justamcp_server.h"
 #include "../justamcp_tool_context.h"
-#include "core/config/project_settings.h"
-#include "core/io/resource_loader.h"
-#include "core/io/resource_saver.h"
-#include "core/os/os.h"
-#include "core/templates/hash_set.h"
 #include "justamcp_agent_helpers.h"
 #include "justamcp_analysis_tools.h"
 #include "justamcp_animation_tools.h"
@@ -77,13 +73,21 @@
 #include "justamcp_tool_schema_builder.h"
 #include "justamcp_tool_schema_cache.h"
 #include "justamcp_toolset_registry.h"
+
+#include "core/config/project_settings.h"
+#include "core/io/resource_loader.h"
+#include "core/io/resource_saver.h"
+#include "core/os/os.h"
+#include "core/templates/hash_set.h"
+
 #include "modules/modules_enabled.gen.h"
 
 #ifdef TOOLS_ENABLED
 #include "../justamcp_editor_plugin.h"
-#include "editor/file_system/editor_file_system.h"
+
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
+#include "editor/file_system/editor_file_system.h"
 #include "editor/settings/editor_settings.h"
 #include "scene/main/node.h"
 #include "scene/resources/material.h"
@@ -97,6 +101,7 @@
 
 #ifdef MODULE_MULTIUSER_EDITOR_ENABLED
 #include "justamcp_multiuser_tools.h"
+
 #include "core/object/class_db.h"
 #endif
 

@@ -30,18 +30,20 @@
 /**************************************************************************/
 
 #include "resource_importer_tiled.h"
-#include "core/io/file_access.h"
-#include "core/io/resource_loader.h"
-#include "core/io/resource_saver.h"
-#include "core/object/script_language.h"
-#include "scene/resources/packed_scene.h"
+
 #include "tiled_common.h"
 #include "tiled_custom_types.h"
 #include "tiled_dictionary_builder.h"
 #include "tiled_tilemap_creator.h"
 #include "tiled_tileset_creator.h"
 #include "tiled_tileson_bridge.h"
+
+#include "core/io/file_access.h"
+#include "core/io/resource_loader.h"
+#include "core/io/resource_saver.h"
+#include "core/object/script_language.h"
 #include "core/string/string_name.h"
+#include "scene/resources/packed_scene.h"
 
 static void _set_owner_recursive(Node *p_node, Node *p_owner) {
 	if (p_node != p_owner) {

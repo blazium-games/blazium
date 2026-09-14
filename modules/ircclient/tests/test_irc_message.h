@@ -29,10 +29,10 @@
 
 #pragma once
 
-#include "modules/ircclient/irc_message.h"
-
-#include "tests/test_macros.h"
 #include "core/string/ustring.h"
+#include "tests/test_macros.h"
+
+#include "modules/ircclient/irc_message.h"
 
 namespace TestIRCClient {
 
