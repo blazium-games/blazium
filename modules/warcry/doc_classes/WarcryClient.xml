@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="WarcryClient" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Opus voice client that talks to an out-of-tree Politeia / Warcry server over ENet.
+	</brief_description>
+	<description>
+		`WarcryClient` is the engine singleton exposed as `Warcry`. It encodes 48 kHz mono 20 ms microphone frames with Opus, sends [code]VoiceFrameHeader[/code] plus raw Opus on ENet channel 1, and exchanges Politeia control JSON on channel 0 ([code]HELLO[/code], [code]AUTH[/code], channels, mute, user preferences). There is no in-engine mixer or server; connect to a running [code]politeia_server[/code].
+		Call [method poll] once per frame if you disable the automatic SceneTree hook. Attach playback with [method get_playback_stream] on an [AudioStreamPlayer], or call [method setup_audio_io] to create capture and playback nodes.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="authenticate">
+			<return type="bool" />
+			<param index="0" name="username" type="String" />
+			<param index="1" name="password" type="String" />
+			<description>
+				Sends [code]AUTH[/code] so the server can elevate the session to admin or moderator. Returns [code]false[/code] if the ENet peer is not connected.
+			</description>
+		</method>
+		<method name="connect_to_server">
+			<return type="bool" />
+			<param index="0" name="host" type="String" />
+			<param index="1" name="port" type="int" />
+			<param index="2" name="username" type="String" />
+			<description>
+				Creates a 2-channel ENet client and starts connecting. [code]HELLO[/code] is sent after the CONNECT event. The [signal connected] signal fires on [code]HELLO_ACK[/code].
+			</description>
+		</method>
+		<method name="disconnect_from_server">
+			<return type="void" />
+			<description>
+				Drops the peer immediately and clears cached users and channels.
+			</description>
+		</method>
+		<method name="get_channels" qualifiers="const">
+			<return type="Dictionary[]" />
+			<description>
+				Cached channels from [code]SERVER_STATE[/code]. Each dictionary has [code]id[/code], [code]name[/code], and [code]member_count[/code].
+			</description>
+		</method>
+		<method name="get_current_channel" qualifiers="const">
+			<return type="int" />
+			<description>
+				Local user's current channel id, or [code]0[/code] if unknown.
+			</description>
+		</method>
+		<method name="get_local_user_id" qualifiers="const">
+			<return type="int" />
+			<description>
+				Id assigned in [code]HELLO_ACK[/code].
+			</description>
+		</method>
+		<method name="get_master_volume" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_playback_stream" qualifiers="const">
+			<return type="AudioStream" />
+			<description>
+				48 kHz [AudioStreamGenerator] used for decoded mix-down from the server.
+			</description>
+		</method>
+		<method name="get_users" qualifiers="const">
+			<return type="Dictionary[]" />
+			<description>
+				Cached users from [code]SERVER_STATE[/code]. Each dictionary has [code]id[/code], [code]username[/code], [code]channel_id[/code], [code]muted[/code], and [code]deaf[/code].
+			</description>
+		</method>
+		<method name="is_client_connected" qualifiers="const">
+			<return type="bool" />
+			<description>
+				True when the ENet peer is in the connected state. Named to avoid clashing with [method Object.is_connected].
+			</description>
+		</method>
+		<method name="is_deaf" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="is_muted" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="is_speaking" qualifiers="const">
+			<return type="bool" />
+			<description>
+				True after [method start_speaking] until [method stop_speaking] (push-to-talk).
+			</description>
+		</method>
+		<method name="join_channel">
+			<return type="bool" />
+			<param index="0" name="channel_id" type="int" />
+			<description>
+				Sends [code]JOIN_CHANNEL[/code].
+			</description>
+		</method>
+		<method name="leave_channel">
+			<return type="bool" />
+			<param index="0" name="channel_id" type="int" />
+			<description>
+				Sends [code]LEAVE_CHANNEL[/code].
+			</description>
+		</method>
+		<method name="poll">
+			<return type="void" />
+			<description>
+				Services ENet and encodes a capture frame when speaking. The module also hooks [code]SceneTree.process_frame[/code] when a tree exists.
+			</description>
+		</method>
+		<method name="set_capture_effect">
+			<return type="void" />
+			<param index="0" name="capture" type="AudioEffectCapture" />
+			<description>
+				Microphone tap. Requires [code]audio/driver/enable_input[/code] and an [AudioStreamMicrophone] playing into the capture bus.
+			</description>
+		</method>
+		<method name="set_deaf">
+			<return type="void" />
+			<param index="0" name="deaf" type="bool" />
+			<description>
+				Locally stops playback and sends [code]USER_STATE[/code].
+			</description>
+		</method>
+		<method name="set_master_volume">
+			<return type="void" />
+			<param index="0" name="volume" type="float" />
+			<description>
+				Linear gain applied to decoded frames (0 to 2).
+			</description>
+		</method>
+		<method name="set_muted">
+			<return type="void" />
+			<param index="0" name="muted" type="bool" />
+			<description>
+				Stops sending voice and sends [code]USER_STATE[/code].
+			</description>
+		</method>
+		<method name="set_playback">
+			<return type="void" />
+			<param index="0" name="playback" type="AudioStreamGeneratorPlayback" />
+			<description>
+				Bind the generator playback created by an [AudioStreamPlayer] after [method AudioStreamPlayer.play].
+			</description>
+		</method>
+		<method name="set_user_preference">
+			<return type="bool" />
+			<param index="0" name="user_id" type="int" />
+			<param index="1" name="volume" type="float" />
+			<param index="2" name="muted" type="bool" />
+			<description>
+				Sends [code]USER_PREFERENCE[/code] for per-user volume and mute on the server mixer.
+			</description>
+		</method>
+		<method name="setup_audio_io">
+			<return type="bool" />
+			<param index="0" name="parent" type="Node" />
+			<description>
+				Creates a muted [code]WarcryCap[/code] bus with [AudioEffectCapture], plus optional [code]WarcryPlayback[/code] and [code]WarcryMic[/code] players under [param parent].
+			</description>
+		</method>
+		<method name="start_speaking">
+			<return type="void" />
+			<description>
+				Enables push-to-talk capture encode.
+			</description>
+		</method>
+		<method name="stop_speaking">
+			<return type="void" />
+			<description>
+				Disables push-to-talk capture encode.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="authenticated">
+			<param index="0" name="role" type="String" />
+			<description>
+				Emitted on [code]AUTH_ACK[/code].
+			</description>
+		</signal>
+		<signal name="connected">
+			<description>
+				Emitted on [code]HELLO_ACK[/code].
+			</description>
+		</signal>
+		<signal name="disconnected">
+			<description>
+			</description>
+		</signal>
+		<signal name="error">
+			<param index="0" name="message" type="String" />
+			<description>
+			</description>
+		</signal>
+		<signal name="server_state">
+			<description>
+				Emitted after a [code]SERVER_STATE[/code] update has been merged.
+			</description>
+		</signal>
+		<signal name="user_joined">
+			<param index="0" name="user_id" type="int" />
+			<param index="1" name="username" type="String" />
+			<description>
+			</description>
+		</signal>
+		<signal name="user_left">
+			<param index="0" name="user_id" type="int" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+</class>
