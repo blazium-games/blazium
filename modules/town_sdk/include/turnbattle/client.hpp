@@ -28,9 +28,9 @@
 /**************************************************************************/
 
 #pragma once
+#include "core/variant/dictionary.h"
 #include "handlers.hpp"
 #include "types.hpp"
-#include "core/variant/dictionary.h"
 #include <memory>
 #include <string>
 #include <vector>

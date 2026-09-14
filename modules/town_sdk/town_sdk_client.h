@@ -29,7 +29,7 @@
 
 #pragma once
 
-#include "turnbattle/types.hpp"
+#include "include/turnbattle/types.hpp"
 
 #include "core/object/class_db.h"
 #include "core/object/object.h"
