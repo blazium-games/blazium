@@ -43,6 +43,7 @@
 #include <chrono>
 #include <cstring>
 #include <functional>
+#include <string>
 #include <vector>
 
 namespace turnbattle {
@@ -64,6 +65,20 @@ static std::string variant_to_json_string(const Variant &p_variant) {
 	String json_text = JSON::stringify(p_variant, "", false, true);
 	CharString utf8 = json_text.utf8();
 	return std::string(utf8.get_data(), utf8.length());
+}
+
+static std::string loc_debug(const Dictionary &loc) {
+	String out = String(loc.get("kind", "bag"));
+	if (loc.has("slot")) {
+		out += vformat(" slot=%d", (int)loc.get("slot", -1));
+	}
+	if (loc.has("x") || loc.has("y")) {
+		out += vformat(" x=%d y=%d", (int)loc.get("x", -1), (int)loc.get("y", -1));
+	}
+	if (loc.has("rot")) {
+		out += vformat(" rot=%d", (int)loc.get("rot", 0));
+	}
+	return to_std_string(out);
 }
 
 static bool parse_json_payload(const std::string &p_payload, Variant &r_result, String &r_error) {
@@ -553,6 +568,7 @@ void Client::send_drop(const std::string &kind, int slot) {
 }
 
 void Client::send_inventory_move(const Dictionary &from, const Dictionary &to) {
+	log_info("inventory_move from=" + loc_debug(from) + " to=" + loc_debug(to));
 	Dictionary payload;
 	payload["from"] = from;
 	payload["to"] = to;
@@ -706,6 +722,11 @@ void Client::apply_hello_ack(const Dictionary &p_data) {
 		if (port > 0 && port <= 65535) {
 			impl_->voip_port = static_cast<uint16_t>(port);
 		}
+	}
+	if (has_voip()) {
+		log_info("voip stored " + impl_->voip_host + ":" + std::to_string(impl_->voip_port));
+	} else {
+		log_info("voip none");
 	}
 
 	const bool resumed = (bool)p_data.get("resumed", false);
