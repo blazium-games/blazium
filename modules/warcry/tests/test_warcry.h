@@ -101,6 +101,75 @@ TEST_CASE("[Warcry] opus sine encode/decode") {
 	CHECK(decoded.size() == WarcryOpusCodec::FRAME_SAMPLES);
 }
 
+TEST_CASE("[Warcry] SERVER_STATE array roster replace") {
+	Dictionary alice;
+	alice["id"] = 4;
+	alice["username"] = "alice";
+	alice["channelId"] = 2;
+	alice["muted"] = false;
+	alice["deaf"] = false;
+	Array users;
+	users.push_back(alice);
+	Dictionary lobby;
+	lobby["id"] = 2;
+	lobby["name"] = "Lobby";
+	lobby["memberCount"] = 1;
+	Array channels;
+	channels.push_back(lobby);
+	Dictionary data;
+	data["users"] = users;
+	data["channels"] = channels;
+	const Vector<uint8_t> bytes = WarcryProtocol::serialize_control(WarcryProtocol::MsgType::SERVER_STATE, data);
+	WarcryProtocol::MsgType type = WarcryProtocol::MsgType::INVALID;
+	Dictionary parsed;
+	CHECK(WarcryProtocol::deserialize_control(bytes.ptr(), bytes.size(), type, parsed));
+	CHECK(type == WarcryProtocol::MsgType::SERVER_STATE);
+	CHECK(parsed["users"].get_type() == Variant::ARRAY);
+	CHECK(parsed["channels"].get_type() == Variant::ARRAY);
+
+	Object *client = Engine::get_singleton()->get_singleton_object("Warcry");
+	REQUIRE(client);
+	client->call("disconnect_from_server");
+	client->call("_apply_server_state", parsed);
+	const Array roster = client->call("get_users");
+	CHECK(roster.size() == 1);
+	const Dictionary first = roster[0];
+	CHECK((int)first.get("id", 0) == 4);
+	CHECK(String(first.get("username", String())) == "alice");
+	CHECK((int)first.get("channel_id", 0) == 2);
+	const Array chs = client->call("get_channels");
+	CHECK(chs.size() == 1);
+	client->call("disconnect_from_server");
+	CHECK(Array(client->call("get_users")).is_empty());
+	CHECK((int)client->call("get_local_user_id") == 0);
+	CHECK((int)client->call("get_current_channel") == 0);
+}
+
+TEST_CASE("[Warcry] SERVER_STATE incremental string keys") {
+	Dictionary bob;
+	bob["id"] = 7;
+	bob["username"] = "bob";
+	bob["channelId"] = 1;
+	Dictionary users;
+	users["7"] = bob;
+	Dictionary data;
+	data["users"] = users;
+	const Vector<uint8_t> bytes = WarcryProtocol::serialize_control(WarcryProtocol::MsgType::SERVER_STATE, data);
+	WarcryProtocol::MsgType type = WarcryProtocol::MsgType::INVALID;
+	Dictionary parsed;
+	CHECK(WarcryProtocol::deserialize_control(bytes.ptr(), bytes.size(), type, parsed));
+	Object *client = Engine::get_singleton()->get_singleton_object("Warcry");
+	REQUIRE(client);
+	client->call("disconnect_from_server");
+	client->call("_apply_server_state", parsed);
+	const Array roster = client->call("get_users");
+	CHECK(roster.size() == 1);
+	const Dictionary first = roster[0];
+	CHECK((int)first.get("id", 0) == 7);
+	CHECK(String(first.get("username", String())) == "bob");
+	client->call("disconnect_from_server");
+}
+
 TEST_CASE("[Warcry] SERVER_STATE incremental null user") {
 	Dictionary users;
 	users[7] = Variant();

@@ -99,6 +99,18 @@ bool WarcryClient::connect_to_server(const String &p_host, int p_port, const Str
 	return true;
 }
 
+void WarcryClient::_reset_session_state() {
+	local_user_id = 0;
+	current_channel = 0;
+	hello_sent = false;
+	if (downlink_channels != 1) {
+		downlink_channels = 1;
+		codec.init_decoder(1);
+	}
+	users.clear();
+	channels.clear();
+}
+
 void WarcryClient::disconnect_from_server() {
 	const bool was_connected = is_client_connected() || hello_sent;
 	if (peer.is_valid()) {
@@ -109,15 +121,7 @@ void WarcryClient::disconnect_from_server() {
 		host->destroy();
 		host.unref();
 	}
-	local_user_id = 0;
-	current_channel = 0;
-	hello_sent = false;
-	if (downlink_channels != 1) {
-		downlink_channels = 1;
-		codec.init_decoder(1);
-	}
-	users.clear();
-	channels.clear();
+	_reset_session_state();
 	if (was_connected) {
 		emit_signal(SNAME("disconnected"));
 	}
@@ -361,7 +365,7 @@ void WarcryClient::poll() {
 			}
 		} else if (type == ENetConnection::EVENT_DISCONNECT) {
 			peer.unref();
-			hello_sent = false;
+			_reset_session_state();
 			emit_signal(SNAME("disconnected"));
 		} else if (type == ENetConnection::EVENT_RECEIVE && event.packet) {
 			const uint8_t *data = event.packet->data;
@@ -418,58 +422,118 @@ void WarcryClient::_handle_control(WarcryProtocol::MsgType p_type, const Diction
 	}
 }
 
+WarcryClient::RemoteUser WarcryClient::_user_from_dict(const Dictionary &p_user, int p_fallback_id) {
+	RemoteUser user;
+	user.id = (int)p_user.get("id", p_fallback_id);
+	user.username = p_user.get("username", String());
+	user.channel_id = (int)p_user.get("channelId", 0);
+	user.muted = p_user.get("muted", false);
+	user.deaf = p_user.get("deaf", false);
+	return user;
+}
+
+WarcryClient::RemoteChannel WarcryClient::_channel_from_dict(const Dictionary &p_channel, int p_fallback_id) {
+	RemoteChannel ch;
+	ch.id = (int)p_channel.get("id", p_fallback_id);
+	ch.name = p_channel.get("name", String());
+	if (p_channel.has("members") && p_channel["members"].get_type() == Variant::ARRAY) {
+		ch.member_count = ((Array)p_channel["members"]).size();
+	} else {
+		ch.member_count = (int)p_channel.get("memberCount", 0);
+	}
+	return ch;
+}
+
 void WarcryClient::_apply_server_state(const Dictionary &p_data) {
-	if (p_data.has("users") && p_data["users"].get_type() == Variant::DICTIONARY) {
-		const Dictionary users_dict = p_data["users"];
-		const Array keys = users_dict.keys();
-		for (int i = 0; i < keys.size(); i++) {
-			const Variant raw = users_dict[keys[i]];
-			const int id = (int)keys[i];
-			if (raw.get_type() != Variant::DICTIONARY) {
-				if (users.has(id)) {
-					users.erase(id);
-					emit_signal(SNAME("user_left"), id);
+	if (p_data.has("users")) {
+		const Variant users_var = p_data["users"];
+		if (users_var.get_type() == Variant::ARRAY) {
+			HashMap<int, RemoteUser> incoming;
+			const Array users_arr = users_var;
+			for (int i = 0; i < users_arr.size(); i++) {
+				if (users_arr[i].get_type() != Variant::DICTIONARY) {
+					continue;
 				}
-				continue;
+				const RemoteUser user = _user_from_dict(users_arr[i], 0);
+				if (user.id == 0) {
+					continue;
+				}
+				incoming[user.id] = user;
 			}
-			const Dictionary u = raw;
-			RemoteUser user;
-			user.id = (int)u.get("id", id);
-			user.username = u.get("username", String());
-			user.channel_id = (int)u.get("channelId", 0);
-			user.muted = u.get("muted", false);
-			user.deaf = u.get("deaf", false);
-			const bool existed = users.has(user.id);
-			users[user.id] = user;
-			if (!existed) {
-				emit_signal(SNAME("user_joined"), user.id, user.username);
+			Vector<int> gone;
+			for (const KeyValue<int, RemoteUser> &E : users) {
+				if (!incoming.has(E.key)) {
+					gone.push_back(E.key);
+				}
 			}
-			if (user.id == local_user_id) {
-				current_channel = user.channel_id;
+			for (int id : gone) {
+				users.erase(id);
+				emit_signal(SNAME("user_left"), id);
+			}
+			for (const KeyValue<int, RemoteUser> &E : incoming) {
+				const bool existed = users.has(E.key);
+				users[E.key] = E.value;
+				if (!existed) {
+					emit_signal(SNAME("user_joined"), E.value.id, E.value.username);
+				}
+				if (E.value.id == local_user_id) {
+					current_channel = E.value.channel_id;
+				}
+			}
+		} else if (users_var.get_type() == Variant::DICTIONARY) {
+			const Dictionary users_dict = users_var;
+			const Array keys = users_dict.keys();
+			for (int i = 0; i < keys.size(); i++) {
+				const Variant raw = users_dict[keys[i]];
+				const int id = String(keys[i]).to_int();
+				if (raw.get_type() != Variant::DICTIONARY) {
+					if (users.has(id)) {
+						users.erase(id);
+						emit_signal(SNAME("user_left"), id);
+					}
+					continue;
+				}
+				const RemoteUser user = _user_from_dict(raw, id);
+				const bool existed = users.has(user.id);
+				users[user.id] = user;
+				if (!existed) {
+					emit_signal(SNAME("user_joined"), user.id, user.username);
+				}
+				if (user.id == local_user_id) {
+					current_channel = user.channel_id;
+				}
 			}
 		}
 	}
 
-	if (p_data.has("channels") && p_data["channels"].get_type() == Variant::DICTIONARY) {
-		const Dictionary ch_dict = p_data["channels"];
-		const Array keys = ch_dict.keys();
-		for (int i = 0; i < keys.size(); i++) {
-			const Variant raw = ch_dict[keys[i]];
-			const int id = (int)keys[i];
-			if (raw.get_type() != Variant::DICTIONARY) {
-				channels.erase(id);
-				continue;
+	if (p_data.has("channels")) {
+		const Variant channels_var = p_data["channels"];
+		if (channels_var.get_type() == Variant::ARRAY) {
+			HashMap<int, RemoteChannel> incoming;
+			const Array channels_arr = channels_var;
+			for (int i = 0; i < channels_arr.size(); i++) {
+				if (channels_arr[i].get_type() != Variant::DICTIONARY) {
+					continue;
+				}
+				const RemoteChannel ch = _channel_from_dict(channels_arr[i], 0);
+				if (ch.id == 0) {
+					continue;
+				}
+				incoming[ch.id] = ch;
 			}
-			const Dictionary c = raw;
-			RemoteChannel ch;
-			ch.id = (int)c.get("id", id);
-			ch.name = c.get("name", String());
-			if (c.has("members") && c["members"].get_type() == Variant::ARRAY) {
-				ch.member_count = ((Array)c["members"]).size();
-			} else {
-				ch.member_count = (int)c.get("memberCount", 0);
+			channels = incoming;
+		} else if (channels_var.get_type() == Variant::DICTIONARY) {
+			const Dictionary ch_dict = channels_var;
+			const Array keys = ch_dict.keys();
+			for (int i = 0; i < keys.size(); i++) {
+				const Variant raw = ch_dict[keys[i]];
+				const int id = String(keys[i]).to_int();
+				if (raw.get_type() != Variant::DICTIONARY) {
+					channels.erase(id);
+					continue;
+				}
+				channels[id] = _channel_from_dict(raw, id);
 			}
-			channels[ch.id] = ch;
 		}
 	}
 }
@@ -562,6 +626,7 @@ void WarcryClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_users"), &WarcryClient::get_users);
 	ClassDB::bind_method(D_METHOD("get_local_user_id"), &WarcryClient::get_local_user_id);
 	ClassDB::bind_method(D_METHOD("get_current_channel"), &WarcryClient::get_current_channel);
+	ClassDB::bind_method(D_METHOD("_apply_server_state", "data"), &WarcryClient::_apply_server_state);
 	ClassDB::bind_method(D_METHOD("set_capture_effect", "capture"), &WarcryClient::set_capture_effect);
 	ClassDB::bind_method(D_METHOD("set_playback", "playback"), &WarcryClient::set_playback);
 	ClassDB::bind_method(D_METHOD("get_playback_stream"), &WarcryClient::get_playback_stream);
