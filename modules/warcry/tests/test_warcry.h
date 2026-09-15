@@ -112,8 +112,13 @@ TEST_CASE("[Warcry] SERVER_STATE incremental null user") {
 	CHECK(WarcryProtocol::deserialize_control(bytes.ptr(), bytes.size(), type, parsed));
 	CHECK(type == WarcryProtocol::MsgType::SERVER_STATE);
 	const Dictionary parsed_users = parsed.get("users", Dictionary());
-	CHECK(parsed_users.has(7) || parsed_users.has("7"));
-	const Variant raw = parsed_users.has(7) ? parsed_users[7] : parsed_users["7"];
+	Variant raw;
+	if (parsed_users.has(7)) {
+		raw = parsed_users[7];
+	} else {
+		CHECK(parsed_users.has("7"));
+		raw = parsed_users["7"];
+	}
 	CHECK(raw.get_type() == Variant::NIL);
 }
 
