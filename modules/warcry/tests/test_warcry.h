@@ -101,6 +101,22 @@ TEST_CASE("[Warcry] opus sine encode/decode") {
 	CHECK(decoded.size() == WarcryOpusCodec::FRAME_SAMPLES);
 }
 
+TEST_CASE("[Warcry] SERVER_STATE incremental null user") {
+	Dictionary users;
+	users[7] = Variant();
+	Dictionary data;
+	data["users"] = users;
+	const Vector<uint8_t> bytes = WarcryProtocol::serialize_control(WarcryProtocol::MsgType::SERVER_STATE, data);
+	WarcryProtocol::MsgType type = WarcryProtocol::MsgType::INVALID;
+	Dictionary parsed;
+	CHECK(WarcryProtocol::deserialize_control(bytes.ptr(), bytes.size(), type, parsed));
+	CHECK(type == WarcryProtocol::MsgType::SERVER_STATE);
+	const Dictionary parsed_users = parsed.get("users", Dictionary());
+	CHECK(parsed_users.has(7) || parsed_users.has("7"));
+	const Variant raw = parsed_users.has(7) ? parsed_users[7] : parsed_users["7"];
+	CHECK(raw.get_type() == Variant::NIL);
+}
+
 TEST_CASE("[Warcry] HELLO_ACK downlinkChannels stereo") {
 	Dictionary data;
 	data["userId"] = 4;
