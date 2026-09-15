@@ -70,6 +70,7 @@ inline constexpr uint16_t POINTS = 29;
 inline constexpr uint16_t SCOREBOARD = 40;
 inline constexpr uint16_t PICKUP = 41;
 inline constexpr uint16_t PICKUP_STATE = 42;
+inline constexpr uint16_t INVENTORY_MOVE = 43;
 
 inline constexpr uint16_t BATTLE_INDICATOR_SPAWN = 30;
 inline constexpr uint16_t BATTLE_INDICATOR_DESPAWN = 31;

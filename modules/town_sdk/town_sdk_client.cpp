@@ -378,6 +378,12 @@ void TownSdkClient::send_drop(const String &p_kind, int p_slot) {
 	}
 }
 
+void TownSdkClient::send_inventory_move(const Dictionary &p_from, const Dictionary &p_to) {
+	if (client) {
+		client->send_inventory_move(p_from, p_to);
+	}
+}
+
 void TownSdkClient::send_reload() {
 	if (client) {
 		client->send_reload();
@@ -523,6 +529,7 @@ void TownSdkClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("send_use", "slot"), &TownSdkClient::send_use);
 	ClassDB::bind_method(D_METHOD("send_craft", "recipe"), &TownSdkClient::send_craft);
 	ClassDB::bind_method(D_METHOD("send_drop", "kind", "slot"), &TownSdkClient::send_drop);
+	ClassDB::bind_method(D_METHOD("send_inventory_move", "from", "to"), &TownSdkClient::send_inventory_move);
 	ClassDB::bind_method(D_METHOD("send_reload"), &TownSdkClient::send_reload);
 	ClassDB::bind_method(D_METHOD("request_inventory"), &TownSdkClient::request_inventory);
 	ClassDB::bind_method(D_METHOD("battle_action", "battle_id", "action", "target_id"), &TownSdkClient::battle_action, DEFVAL(String()));

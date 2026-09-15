@@ -552,6 +552,13 @@ void Client::send_drop(const std::string &kind, int slot) {
 	send_message(protocol::MessageType::USE, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
 
+void Client::send_inventory_move(const Dictionary &from, const Dictionary &to) {
+	Dictionary payload;
+	payload["from"] = from;
+	payload["to"] = to;
+	send_message(protocol::MessageType::INVENTORY_MOVE, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
 void Client::send_reload() {
 	Dictionary payload;
 	send_message(protocol::MessageType::RELOAD, variant_to_json_string(payload), protocol::Channel::CONTROL);

@@ -32,6 +32,7 @@
 #include "tests/test_macros.h"
 
 #include "modules/town_sdk/town_sdk_client.h"
+#include "modules/town_sdk/include/turnbattle/protocol.hpp"
 
 #include "core/config/engine.h"
 #include "core/os/os.h"
@@ -68,6 +69,15 @@ TEST_CASE("[TownSDK] game type defaults to turn based and can switch to fps") {
 	CHECK(sdk->get_game_type() == TownSdkClient::GAME_TYPE_FPS);
 	sdk->set_game_type(TownSdkClient::GAME_TYPE_TURN_BASED);
 	CHECK(sdk->get_game_type() == TownSdkClient::GAME_TYPE_TURN_BASED);
+}
+
+TEST_CASE("[TownSDK] inventory move is bound and protocol id is 43") {
+	CHECK(turnbattle::protocol::MessageType::INVENTORY_MOVE == 43);
+	Engine *engine = Engine::get_singleton();
+	REQUIRE(engine != nullptr);
+	Object *client_obj = engine->get_singleton_object("TownSDK");
+	REQUIRE(client_obj != nullptr);
+	CHECK(client_obj->has_method("send_inventory_move"));
 }
 
 TEST_CASE("[TownSDK] HELLO_ACK voip is stored and cleared") {

@@ -207,6 +207,14 @@
 			<description>
 			</description>
 		</method>
+		<method name="send_inventory_move">
+			<return type="void" />
+			<param index="0" name="from" type="Dictionary" />
+			<param index="1" name="to" type="Dictionary" />
+			<description>
+				Move or rotate an inventory item. [param from] and [param to] use [code]kind[/code] [code]bag[/code] or [code]hotbar[/code], plus [code]x[/code]/[code]y[/code] or [code]slot[/code].
+			</description>
+		</method>
 		<method name="send_move">
 			<return type="void" />
 			<param index="0" name="held" type="int" />

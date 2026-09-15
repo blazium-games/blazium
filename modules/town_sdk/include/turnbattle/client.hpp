@@ -73,6 +73,7 @@ public:
 	void send_use(int slot);
 	void send_craft(const std::string &recipe);
 	void send_drop(const std::string &kind, int slot);
+	void send_inventory_move(const Dictionary &from, const Dictionary &to);
 	void send_reload();
 
 	// Battle
