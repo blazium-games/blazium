@@ -183,6 +183,10 @@ void TownSdkClient::_attach_callbacks() {
 		emit_signal("battle_indicator_despawn", p_indicator);
 	});
 
+	client->on_hello([this](const Variant &p_data) {
+		emit_signal("hello_received", p_data);
+	});
+
 	client->on_error([this](const std::string &p_error) {
 		emit_signal("error", std_to_string(p_error));
 	});
@@ -254,6 +258,24 @@ void TownSdkClient::disconnect_from_server() {
 
 bool TownSdkClient::is_client_connected() const {
 	return client ? client->is_connected() : false;
+}
+
+void TownSdkClient::apply_hello_ack(const Dictionary &p_data) {
+	if (client) {
+		client->apply_hello_ack(p_data);
+	}
+}
+
+bool TownSdkClient::has_voip() const {
+	return client && client->has_voip();
+}
+
+String TownSdkClient::get_voip_host() const {
+	return client ? _std_to_string(client->get_voip_host()) : String();
+}
+
+int TownSdkClient::get_voip_port() const {
+	return client ? (int)client->get_voip_port() : 0;
 }
 
 String TownSdkClient::get_server_version() const {
@@ -481,6 +503,10 @@ void TownSdkClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("disconnect_from_server"), &TownSdkClient::disconnect_from_server);
 	ClassDB::bind_method(D_METHOD("is_client_connected"), &TownSdkClient::is_client_connected);
 	ClassDB::bind_method(D_METHOD("get_server_version"), &TownSdkClient::get_server_version);
+	ClassDB::bind_method(D_METHOD("apply_hello_ack", "data"), &TownSdkClient::apply_hello_ack);
+	ClassDB::bind_method(D_METHOD("has_voip"), &TownSdkClient::has_voip);
+	ClassDB::bind_method(D_METHOD("get_voip_host"), &TownSdkClient::get_voip_host);
+	ClassDB::bind_method(D_METHOD("get_voip_port"), &TownSdkClient::get_voip_port);
 	ClassDB::bind_method(D_METHOD("set_game_type", "game_type"), &TownSdkClient::set_game_type);
 	ClassDB::bind_method(D_METHOD("get_game_type"), &TownSdkClient::get_game_type);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "game_type", PROPERTY_HINT_ENUM, "Turn Based,FPS"), "set_game_type", "get_game_type");
@@ -518,6 +544,7 @@ void TownSdkClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_last_info_message"), &TownSdkClient::get_last_info_message);
 
 	ADD_SIGNAL(MethodInfo("connected"));
+	ADD_SIGNAL(MethodInfo("hello_received", PropertyInfo(Variant::DICTIONARY, "data")));
 	ADD_SIGNAL(MethodInfo("connection_failed"));
 	ADD_SIGNAL(MethodInfo("snapshot_received", PropertyInfo(Variant::DICTIONARY, "snapshot")));
 	ADD_SIGNAL(MethodInfo("move_state", PropertyInfo(Variant::DICTIONARY, "state")));

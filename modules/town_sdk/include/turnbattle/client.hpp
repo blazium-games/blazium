@@ -108,8 +108,14 @@ public:
 	void on_battle_end(OnBattleEndCallback cb);
 	void on_battle_indicator_spawn(OnBattleIndicatorSpawnCallback cb);
 	void on_battle_indicator_despawn(OnBattleIndicatorDespawnCallback cb);
+	void on_hello(OnHelloCallback cb);
 	void on_error(OnErrorCallback cb);
 	void on_disconnect(OnDisconnectCallback cb);
+
+	void apply_hello_ack(const Dictionary &p_data);
+	bool has_voip() const;
+	std::string get_voip_host() const;
+	uint16_t get_voip_port() const;
 
 	// Reconnection
 	void set_auto_reconnect(bool enabled);

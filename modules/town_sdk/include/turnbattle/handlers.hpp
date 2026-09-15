@@ -55,6 +55,7 @@ using OnBattleLogCallback = std::function<void(const std::string &log)>;
 using OnBattleEndCallback = VariantCallback;
 using OnBattleIndicatorSpawnCallback = VariantCallback;
 using OnBattleIndicatorDespawnCallback = VariantCallback;
+using OnHelloCallback = VariantCallback;
 using OnErrorCallback = std::function<void(const std::string &error)>;
 using OnDisconnectCallback = std::function<void(const std::string &reason)>;
 

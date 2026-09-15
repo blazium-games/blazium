@@ -120,8 +120,11 @@ struct Client::Impl {
 	OnBattleEndCallback on_battle_end;
 	OnBattleIndicatorSpawnCallback on_battle_indicator_spawn;
 	OnBattleIndicatorDespawnCallback on_battle_indicator_despawn;
+	OnHelloCallback on_hello;
 	OnErrorCallback on_error;
 	OnDisconnectCallback on_disconnect;
+	std::string voip_host;
+	uint16_t voip_port = 0;
 
 	// Reconnection state
 	std::string last_jwt_token;
@@ -394,6 +397,10 @@ std::string Client::get_server_version() const {
 }
 
 void Client::disconnect() {
+	if (impl_) {
+		impl_->voip_host.clear();
+		impl_->voip_port = 0;
+	}
 	if (!is_ready()) {
 		return;
 	}
@@ -418,6 +425,8 @@ void Client::disconnect() {
 
 	impl_->peer = nullptr;
 	impl_->connected = false;
+	impl_->voip_host.clear();
+	impl_->voip_port = 0;
 }
 
 bool Client::is_connected() const {
@@ -673,6 +682,57 @@ void Client::on_battle_indicator_spawn(OnBattleIndicatorSpawnCallback cb) {
 void Client::on_battle_indicator_despawn(OnBattleIndicatorDespawnCallback cb) {
 	impl_->on_battle_indicator_despawn = cb;
 }
+void Client::apply_hello_ack(const Dictionary &p_data) {
+	if (!impl_) {
+		return;
+	}
+	if (p_data.has("session_id")) {
+		impl_->session_id = to_std_string(p_data["session_id"]);
+	}
+
+	impl_->voip_host.clear();
+	impl_->voip_port = 0;
+	if (p_data.has("voip") && p_data["voip"].get_type() == Variant::DICTIONARY) {
+		const Dictionary voip = p_data["voip"];
+		impl_->voip_host = to_std_string(voip.get("host", String()));
+		const int port = (int)voip.get("port", 0);
+		if (port > 0 && port <= 65535) {
+			impl_->voip_port = static_cast<uint16_t>(port);
+		}
+	}
+
+	const bool resumed = (bool)p_data.get("resumed", false);
+	if (resumed) {
+		impl_->is_reconnecting = false;
+		impl_->reconnect_attempts = 0;
+		if (impl_->on_reconnected) {
+			impl_->on_reconnected(p_data.get("resume_state", Variant()));
+		}
+	}
+
+	if (p_data.has("reconnection_token")) {
+		impl_->reconnection_token = to_std_string(p_data["reconnection_token"]);
+	}
+	if (impl_->on_hello) {
+		impl_->on_hello(p_data);
+	}
+}
+
+bool Client::has_voip() const {
+	return impl_ && !impl_->voip_host.empty() && impl_->voip_port != 0;
+}
+
+std::string Client::get_voip_host() const {
+	return impl_ ? impl_->voip_host : std::string();
+}
+
+uint16_t Client::get_voip_port() const {
+	return impl_ ? impl_->voip_port : 0;
+}
+
+void Client::on_hello(OnHelloCallback cb) {
+	impl_->on_hello = cb;
+}
 void Client::on_error(OnErrorCallback cb) {
 	impl_->on_error = cb;
 }
@@ -841,24 +901,7 @@ void Client::handle_message(uint16_t type, const std::string &payload) {
 				log_warning("HELLO_ACK payload is not a dictionary");
 				return;
 			}
-
-			if (data.has("session_id")) {
-				impl_->session_id = to_std_string(data["session_id"]);
-			}
-
-			bool resumed = (bool)data.get("resumed", false);
-			if (resumed) {
-				impl_->is_reconnecting = false;
-				impl_->reconnect_attempts = 0;
-
-				if (impl_->on_reconnected) {
-					impl_->on_reconnected(data.get("resume_state", Variant()));
-				}
-			}
-
-			if (data.has("reconnection_token")) {
-				impl_->reconnection_token = to_std_string(data["reconnection_token"]);
-			}
+			apply_hello_ack(data);
 			break;
 		}
 
