@@ -118,6 +118,9 @@ private:
 	void _handle_voice(const uint8_t *p_data, int p_size);
 	void _capture_and_send();
 	void _apply_server_state(const Dictionary &p_data);
+	void _reset_session_state();
+	RemoteUser _user_from_dict(const Dictionary &p_user, int p_fallback_id);
+	RemoteChannel _channel_from_dict(const Dictionary &p_channel, int p_fallback_id);
 	void _ensure_frame_hook();
 
 	static WarcryClient *singleton;
