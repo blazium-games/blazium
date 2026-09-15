@@ -395,7 +395,6 @@ void WarcryClient::_handle_control(WarcryProtocol::MsgType p_type, const Diction
 					downlink_channels = ack_channels;
 				} else {
 					ERR_PRINT("Warcry failed to init " + itos(ack_channels) + "-channel decoder");
-					downlink_channels = ack_channels;
 				}
 			}
 			emit_signal(SNAME("connected"));
