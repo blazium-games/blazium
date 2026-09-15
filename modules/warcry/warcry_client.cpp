@@ -391,10 +391,11 @@ void WarcryClient::_handle_control(WarcryProtocol::MsgType p_type, const Diction
 			}
 			const int ack_channels = ((int)p_data.get("downlinkChannels", 1) == 2) ? 2 : 1;
 			if (ack_channels != downlink_channels) {
-				downlink_channels = ack_channels;
-				if (!codec.init_decoder(downlink_channels)) {
-					downlink_channels = 1;
-					codec.init_decoder(1);
+				if (codec.init_decoder(ack_channels)) {
+					downlink_channels = ack_channels;
+				} else {
+					ERR_PRINT("Warcry failed to init " + itos(ack_channels) + "-channel decoder");
+					downlink_channels = ack_channels;
 				}
 			}
 			emit_signal(SNAME("connected"));
@@ -466,6 +467,9 @@ void WarcryClient::_handle_voice(const uint8_t *p_data, int p_size) {
 	WarcryProtocol::VoiceFrameHeader header;
 	Vector<uint8_t> opus;
 	if (!WarcryProtocol::deserialize_voice(p_data, p_size, header, opus)) {
+		return;
+	}
+	if (codec.decoder_channels() != downlink_channels) {
 		return;
 	}
 	Vector<int16_t> pcm;
