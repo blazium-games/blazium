@@ -380,12 +380,14 @@ void ExtendGDScriptParser::parse_class_symbol(const GDScriptParser::ClassNode *p
 				parse_function_symbol(m.function, symbol);
 				r_symbol.children.push_back(symbol);
 			} break;
+			case ClassNode::Member::TRAIT:
 			case ClassNode::Member::CLASS: {
 				LSP::DocumentSymbol symbol;
 				parse_class_symbol(m.m_class, symbol);
 				r_symbol.children.push_back(symbol);
 			} break;
 			case ClassNode::Member::GROUP:
+			case ClassNode::Member::STRUCT:
 				break; // No-op, but silences warnings.
 			case ClassNode::Member::UNDEFINED:
 				break; // Unreachable.
@@ -860,6 +862,7 @@ Dictionary ExtendGDScriptParser::dump_class_api(const GDScriptParser::ClassNode 
 
 	for (const ClassNode::Member &m : p_class->members) {
 		switch (m.type) {
+			case ClassNode::Member::TRAIT:
 			case ClassNode::Member::CLASS:
 				nested_classes.push_back(dump_class_api(m.m_class));
 				break;
@@ -937,6 +940,7 @@ Dictionary ExtendGDScriptParser::dump_class_api(const GDScriptParser::ClassNode 
 				}
 			} break;
 			case ClassNode::Member::GROUP:
+			case ClassNode::Member::STRUCT:
 				break; // No-op, but silences warnings.
 			case ClassNode::Member::UNDEFINED:
 				break; // Unreachable.
