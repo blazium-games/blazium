@@ -1931,6 +1931,15 @@ void GDScriptByteCodeGenerator::write_return(const Address &p_return_value, bool
 			append(p_return_value);
 			append(script_idx);
 		} break;
+		case GDScriptDataType::GDTRAIT: {
+			append_opcode(GDScriptFunction::OPCODE_RETURN);
+			append(p_return_value);
+		} break;
+		case GDScriptDataType::STRUCT: {
+			append_opcode(GDScriptFunction::OPCODE_RETURN_TYPED_BUILTIN);
+			append(p_return_value);
+			append(Variant::ARRAY);
+		} break;
 	}
 }
 

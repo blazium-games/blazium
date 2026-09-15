@@ -7435,15 +7435,17 @@ void GDScriptAnalyzer::override_member_function(GDScriptParser::FunctionNode *p_
 	// Check function signature.
 	String function_signature = p_source_function->identifier->name;
 	function_signature += "(";
-	int par_count_diff = p_source_function->parameters.size() - p_target_function->parameters.size();
+	const int source_par_count = p_source_function->parameters.size();
+	const int target_par_count = p_target_function->parameters.size();
+	int par_count_diff = source_par_count - target_par_count;
 	bool signature_match = par_count_diff >= 0;
-	for (int j = 0; j < p_source_function->parameters.size(); j++) {
+	for (int j = 0; j < source_par_count; j++) {
 		function_signature += p_source_function->parameters[j]->get_datatype().to_string_strict();
 		if (j > 0) {
 			function_signature += ",";
 		}
 
-		if (j > p_target_function->parameters.size() - 1) {
+		if (j > target_par_count - 1) {
 			signature_match = false;
 			continue;
 		}
@@ -7505,7 +7507,8 @@ void GDScriptAnalyzer::override_member_function(GDScriptParser::FunctionNode *p_
 }
 
 void GDScriptAnalyzer::extend_class(GDScriptParser::ClassNode *p_class, const GDScriptParser::ClassNode *p_trait, const GDScriptParser::Node *p_trait_name_node, const String &p_trait_name) {
-	for (int i = 0; i < p_trait->members.size(); i++) {
+	const int trait_member_count = p_trait->members.size();
+	for (int i = 0; i < trait_member_count; i++) {
 		GDScriptParser::ClassNode::Member trait_member = p_trait->members[i];
 		if (trait_member.type == GDScriptParser::ClassNode::Member::TRAIT) {
 			continue;
@@ -7553,7 +7556,8 @@ void GDScriptAnalyzer::extend_class(GDScriptParser::ClassNode *p_class, const GD
 				// Unimplemented (Bodyless) Functions.
 				GDScriptParser::FunctionNode *trait_function = trait_member.function;
 				String function_signature = trait_member.get_name() + "(";
-				for (int j = 0; j < trait_function->parameters.size(); j++) {
+				const int trait_par_count = trait_function->parameters.size();
+				for (int j = 0; j < trait_par_count; j++) {
 					function_signature += trait_function->parameters[j]->get_datatype().to_string_strict();
 					if (j > 0) {
 						function_signature += ",";
