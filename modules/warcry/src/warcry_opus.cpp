@@ -55,17 +55,18 @@ bool WarcryOpusCodec::init() {
 
 bool WarcryOpusCodec::init_decoder(int p_channels) {
 	const int channels = (p_channels == 2) ? 2 : CHANNELS;
-	if (decoder) {
-		opus_decoder_destroy(decoder);
-		decoder = nullptr;
-	}
 	int err = OPUS_OK;
-	decoder = opus_decoder_create(SAMPLE_RATE, channels, &err);
-	if (!decoder || err != OPUS_OK) {
-		decoder = nullptr;
-		decoder_channels_ = CHANNELS;
+	OpusDecoder *created = opus_decoder_create(SAMPLE_RATE, channels, &err);
+	if (!created || err != OPUS_OK) {
+		if (created) {
+			opus_decoder_destroy(created);
+		}
 		return false;
 	}
+	if (decoder) {
+		opus_decoder_destroy(decoder);
+	}
+	decoder = created;
 	decoder_channels_ = channels;
 	return true;
 }
