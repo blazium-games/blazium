@@ -423,9 +423,18 @@ void WarcryClient::_apply_server_state(const Dictionary &p_data) {
 		const Dictionary users_dict = p_data["users"];
 		const Array keys = users_dict.keys();
 		for (int i = 0; i < keys.size(); i++) {
-			const Dictionary u = users_dict[keys[i]];
+			const Variant raw = users_dict[keys[i]];
+			const int id = (int)keys[i];
+			if (raw.get_type() != Variant::DICTIONARY) {
+				if (users.has(id)) {
+					users.erase(id);
+					emit_signal(SNAME("user_left"), id);
+				}
+				continue;
+			}
+			const Dictionary u = raw;
 			RemoteUser user;
-			user.id = (int)u.get("id", keys[i]);
+			user.id = (int)u.get("id", id);
 			user.username = u.get("username", String());
 			user.channel_id = (int)u.get("channelId", 0);
 			user.muted = u.get("muted", false);
@@ -445,9 +454,15 @@ void WarcryClient::_apply_server_state(const Dictionary &p_data) {
 		const Dictionary ch_dict = p_data["channels"];
 		const Array keys = ch_dict.keys();
 		for (int i = 0; i < keys.size(); i++) {
-			const Dictionary c = ch_dict[keys[i]];
+			const Variant raw = ch_dict[keys[i]];
+			const int id = (int)keys[i];
+			if (raw.get_type() != Variant::DICTIONARY) {
+				channels.erase(id);
+				continue;
+			}
+			const Dictionary c = raw;
 			RemoteChannel ch;
-			ch.id = (int)c.get("id", keys[i]);
+			ch.id = (int)c.get("id", id);
 			ch.name = c.get("name", String());
 			if (c.has("members") && c["members"].get_type() == Variant::ARRAY) {
 				ch.member_count = ((Array)c["members"]).size();
@@ -466,6 +481,9 @@ void WarcryClient::_handle_voice(const uint8_t *p_data, int p_size) {
 	WarcryProtocol::VoiceFrameHeader header;
 	Vector<uint8_t> opus;
 	if (!WarcryProtocol::deserialize_voice(p_data, p_size, header, opus)) {
+		return;
+	}
+	if (current_channel != 0 && header.channel_id != (uint32_t)current_channel) {
 		return;
 	}
 	if (codec.decoder_channels() != downlink_channels) {
