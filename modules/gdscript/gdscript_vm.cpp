@@ -209,6 +209,17 @@ String GDScriptFunction::_get_callable_call_error(const String &p_where, const C
 }
 #endif // DEBUG_ENABLED
 
+bool GDScriptFunction::_is_class_using_trait(Script *p_class_script, const StringName &p_trait_type) {
+	while (p_class_script) {
+		GDScript *gdscript = Object::cast_to<GDScript>(p_class_script);
+		if (gdscript && gdscript->get_used_trait_names().has(p_trait_type)) {
+			return true;
+		}
+		p_class_script = p_class_script->get_base_script().ptr();
+	}
+	return false;
+}
+
 void (*type_init_function_table[])(Variant *) = {
 	nullptr, // NIL (shouldn't be called).
 	&VariantInitializer<bool>::init, // BOOL.
@@ -260,6 +271,7 @@ void (*type_init_function_table[])(Variant *) = {
 		&&OPCODE_TYPE_TEST_ARRAY, \
 		&&OPCODE_TYPE_TEST_DICTIONARY, \
 		&&OPCODE_TYPE_TEST_NATIVE, \
+		&&OPCODE_TYPE_TEST_TRAIT, \
 		&&OPCODE_TYPE_TEST_SCRIPT, \
 		&&OPCODE_SET_KEYED, \
 		&&OPCODE_SET_KEYED_VALIDATED, \
@@ -286,11 +298,13 @@ void (*type_init_function_table[])(Variant *) = {
 		&&OPCODE_ASSIGN_TYPED_SCRIPT, \
 		&&OPCODE_CAST_TO_BUILTIN, \
 		&&OPCODE_CAST_TO_NATIVE, \
+		&&OPCODE_CAST_TO_TRAIT, \
 		&&OPCODE_CAST_TO_SCRIPT, \
 		&&OPCODE_CONSTRUCT, \
 		&&OPCODE_CONSTRUCT_VALIDATED, \
 		&&OPCODE_CONSTRUCT_ARRAY, \
 		&&OPCODE_CONSTRUCT_TYPED_ARRAY, \
+		&&OPCODE_CONSTRUCT_STRUCT, \
 		&&OPCODE_CONSTRUCT_DICTIONARY, \
 		&&OPCODE_CONSTRUCT_TYPED_DICTIONARY, \
 		&&OPCODE_CALL, \
@@ -946,6 +960,34 @@ Variant GDScriptFunction::call(GDScriptInstance *p_instance, const Variant **p_a
 				}
 
 				*dst = object && object->is_class(native_type);
+				ip += 4;
+			}
+			DISPATCH_OPCODE;
+
+			OPCODE(OPCODE_TYPE_TEST_TRAIT) {
+				CHECK_SPACE(4);
+
+				GET_VARIANT_PTR(dst, 0);
+				GET_VARIANT_PTR(value, 1);
+
+				int trait_type_idx = _code_ptr[ip + 3];
+				GD_ERR_BREAK(trait_type_idx < 0 || trait_type_idx >= _global_names_count);
+				const StringName trait_type = _global_names_ptr[trait_type_idx];
+
+				bool was_freed = false;
+				Object *object = value->get_validated_object_with_check(was_freed);
+				if (was_freed) {
+					err_text = "Left operand of 'is' is a previously freed instance.";
+					OPCODE_BREAK;
+				}
+
+				bool result = false;
+				if (object && object->get_script_instance()) {
+					Script *script_ptr = object->get_script_instance()->get_script().ptr();
+					result = _is_class_using_trait(script_ptr, trait_type);
+				}
+
+				*dst = result;
 				ip += 4;
 			}
 			DISPATCH_OPCODE;
@@ -1685,6 +1727,46 @@ Variant GDScriptFunction::call(GDScriptInstance *p_instance, const Variant **p_a
 			}
 			DISPATCH_OPCODE;
 
+			OPCODE(OPCODE_CAST_TO_TRAIT) {
+				CHECK_SPACE(4);
+				GET_VARIANT_PTR(src, 0);
+				GET_VARIANT_PTR(dst, 1);
+
+				int trait_type_idx = _code_ptr[ip + 3];
+				GD_ERR_BREAK(trait_type_idx < 0 || trait_type_idx >= _global_names_count);
+				const StringName trait_type = _global_names_ptr[trait_type_idx];
+
+#ifdef DEBUG_ENABLED
+				if (src->operator Object *() && !src->get_validated_object()) {
+					err_text = "Trying to cast a freed object.";
+					OPCODE_BREAK;
+				}
+				if (src->get_type() != Variant::OBJECT && src->get_type() != Variant::NIL) {
+					err_text = "Trying to assign a non-object value to a variable of trait '" + String(trait_type).replace("::", ".") + "'.";
+					OPCODE_BREAK;
+				}
+#endif
+				bool valid = false;
+
+				if (src->get_type() != Variant::NIL && src->operator Object *() != nullptr) {
+					ScriptInstance *scr_inst = src->operator Object *()->get_script_instance();
+
+					if (scr_inst) {
+						Script *src_type = src->operator Object *()->get_script_instance()->get_script().ptr();
+						valid = _is_class_using_trait(src_type, trait_type);
+					}
+				}
+
+				if (valid) {
+					*dst = *src; // Valid cast, copy the source object
+				} else {
+					*dst = Variant(); // invalid cast, assign NULL
+				}
+
+				ip += 4;
+			}
+			DISPATCH_OPCODE;
+
 			OPCODE(OPCODE_CAST_TO_SCRIPT) {
 				CHECK_SPACE(4);
 				GET_VARIANT_PTR(src, 0);
@@ -1832,6 +1914,47 @@ Variant GDScriptFunction::call(GDScriptInstance *p_instance, const Variant **p_a
 				*dst = array;
 
 				ip += 4;
+			}
+			DISPATCH_OPCODE;
+
+			OPCODE(OPCODE_CONSTRUCT_STRUCT) {
+				LOAD_INSTRUCTION_ARGS
+				CHECK_SPACE(2 + instr_arg_count);
+				ip += instr_arg_count;
+
+				int argc = _code_ptr[ip + 1];
+
+				GET_INSTRUCTION_ARG(struct_def_var, argc + 1);
+				Ref<GDScriptStruct> struct_def = *struct_def_var;
+				GD_ERR_BREAK(struct_def.is_null());
+
+				Vector<StringName> names;
+				Vector<int> types;
+				Vector<StringName> class_names;
+				Vector<Variant> scripts;
+				Vector<Variant> default_values;
+
+				for (int i = 0; i < struct_def->fields.size(); i++) {
+					names.push_back(struct_def->fields[i].name);
+					types.push_back(struct_def->fields[i].data_type.builtin_type);
+					class_names.push_back(struct_def->fields[i].data_type.native_type);
+					scripts.push_back(struct_def->fields[i].data_type.script_type_ref);
+					default_values.push_back(struct_def->fields[i].default_value);
+				}
+
+				Array array;
+				array.set_as_struct(names, default_values);
+
+				for (int i = 0; i < argc; i++) {
+					array.set_struct_member_by_offset(i, *(instruction_args[i]));
+				}
+
+				GET_INSTRUCTION_ARG(dst, argc);
+				*dst = Variant(); // Clear potential previous temporary so Variant type resets to NIL.
+
+				*dst = array;
+
+				ip += 2;
 			}
 			DISPATCH_OPCODE;
 

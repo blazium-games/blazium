@@ -156,6 +156,11 @@ GDScriptTestRunner::GDScriptTestRunner(const String &p_source_dir, bool p_init_l
 			// TODO: Add ability for test scripts to specify which warnings to enable/disable for testing.
 			continue;
 		}
+		if (i == GDScriptWarning::EXPERIMENTAL_TRAIT) {
+			const String setting_path = GDScriptWarning::get_setting_path_from_code((GDScriptWarning::Code)i);
+			ProjectSettings::get_singleton()->set_setting(setting_path, (int)GDScriptWarning::IGNORE);
+			continue;
+		}
 		const String setting_path = GDScriptWarning::get_setting_path_from_code((GDScriptWarning::Code)i);
 		ProjectSettings::get_singleton()->set_setting(setting_path, (int)GDScriptWarning::WARN);
 	}
