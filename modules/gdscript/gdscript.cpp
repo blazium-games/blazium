@@ -2731,7 +2731,9 @@ void GDScriptLanguage::get_reserved_words(List<String> *p_words) const {
 		"namespace", // Reserved for potential future use.
 		"signal",
 		"static",
-		"trait", // Reserved for potential future use.
+		"trait",
+		"trait_name",
+		"uses",
 		"var",
 		// Other keywords.
 		"await",

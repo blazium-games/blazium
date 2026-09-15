@@ -33,7 +33,7 @@
 #include "core/io/compression.h"
 #include "core/io/marshalls.h"
 
-#define TOKENIZER_VERSION 100
+#define TOKENIZER_VERSION 101
 
 int GDScriptTokenizerBuffer::_token_to_binary(const Token &p_token, Vector<uint8_t> &r_buffer, int p_start, HashMap<StringName, uint32_t> &r_identifiers_map, HashMap<Variant, uint32_t, VariantHasher, VariantComparator> &r_constants_map) {
 	int pos = p_start;

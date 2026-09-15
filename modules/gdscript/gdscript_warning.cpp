@@ -162,6 +162,10 @@ String GDScriptWarning::get_message() const {
 			return vformat(R"*(The default value is using "%s" which won't return nodes in the scene tree before "_ready()" is called. Use the "@onready" annotation to solve this.)*", symbols[0]);
 		case ONREADY_WITH_EXPORT:
 			return R"("@onready" will set the default value after "@export" takes effect and will override it.)";
+		case UNUSED_STATIC_OVERRIDING_TRAIT:
+			return R"(Overridden static without using "static" keyword.)";
+		case EXPERIMENTAL_TRAIT:
+			return R"(GDScript traits are experimental and may change or be removed in future versions.)";
 		case FUNCTION_NAMING_CONVENTION:
 			CHECK_SYMBOLS(1);
 			return vformat(R"*(The function name "%s" does not follow the GDScript style guide (expected snake_case).)*", symbols[0]);
@@ -274,6 +278,8 @@ String GDScriptWarning::get_name_from_code(Code p_code) {
 		"NATIVE_METHOD_OVERRIDE",
 		"GET_NODE_DEFAULT_WITHOUT_ONREADY",
 		"ONREADY_WITH_EXPORT",
+		"UNUSED_STATIC_OVERRIDING_TRAIT",
+		"EXPERIMENTAL_TRAIT",
 		"FUNCTION_NAMING_CONVENTION",
 		"CLASS_NAMING_CONVENTION",
 		"VARIABLE_NAMING_CONVENTION",
