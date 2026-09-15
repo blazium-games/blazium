@@ -154,6 +154,10 @@ GDScriptTestRunner::GDScriptTestRunner(const String &p_source_dir, bool p_init_l
 			continue;
 		}
 		String warning_setting = GDScriptWarning::get_settings_path_from_code((GDScriptWarning::Code)i);
+		if (i == GDScriptWarning::EXPERIMENTAL_TRAIT) {
+			ProjectSettings::get_singleton()->set_setting(warning_setting, (int)GDScriptWarning::IGNORE);
+			continue;
+		}
 		ProjectSettings::get_singleton()->set_setting(warning_setting, (int)GDScriptWarning::WARN);
 	}
 #endif

@@ -53,6 +53,7 @@ public:
 		NATIVE,
 		SCRIPT,
 		GDSCRIPT,
+		GDTRAIT,
 	};
 
 	Kind kind = UNINITIALIZED;
@@ -60,6 +61,7 @@ public:
 	bool has_type = false;
 	Variant::Type builtin_type = Variant::NIL;
 	StringName native_type;
+	StringName trait_type;
 	Script *script_type = nullptr;
 	Ref<Script> script_type_ref;
 
@@ -70,6 +72,7 @@ public:
 
 		switch (kind) {
 			case UNINITIALIZED:
+			case GDTRAIT:
 				break;
 			case BUILTIN: {
 				Variant::Type var_type = p_variant.get_type();
@@ -200,6 +203,7 @@ public:
 		has_type = p_other.has_type;
 		builtin_type = p_other.builtin_type;
 		native_type = p_other.native_type;
+		trait_type = p_other.trait_type;
 		script_type = p_other.script_type;
 		script_type_ref = p_other.script_type_ref;
 		container_element_types = p_other.container_element_types;
@@ -220,6 +224,7 @@ public:
 		OPCODE_TYPE_TEST_BUILTIN,
 		OPCODE_TYPE_TEST_ARRAY,
 		OPCODE_TYPE_TEST_NATIVE,
+		OPCODE_TYPE_TEST_TRAIT,
 		OPCODE_TYPE_TEST_SCRIPT,
 		OPCODE_SET_KEYED,
 		OPCODE_SET_KEYED_VALIDATED,
@@ -245,6 +250,7 @@ public:
 		OPCODE_ASSIGN_TYPED_SCRIPT,
 		OPCODE_CAST_TO_BUILTIN,
 		OPCODE_CAST_TO_NATIVE,
+		OPCODE_CAST_TO_TRAIT,
 		OPCODE_CAST_TO_SCRIPT,
 		OPCODE_CONSTRUCT, // Only for basic types!
 		OPCODE_CONSTRUCT_VALIDATED, // Only for basic types!
@@ -510,6 +516,7 @@ private:
 
 	_FORCE_INLINE_ String _get_call_error(const String &p_where, const Variant **p_argptrs, const Variant &p_ret, const Callable::CallError &p_err) const;
 	Variant _get_default_variant_for_data_type(const GDScriptDataType &p_data_type);
+	bool _is_class_using_trait(Script *p_class_script, const StringName &p_trait_type);
 
 public:
 	static constexpr int MAX_CALL_DEPTH = 2048; // Limit to try to avoid crash because of a stack overflow.

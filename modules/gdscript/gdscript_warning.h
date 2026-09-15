@@ -89,6 +89,8 @@ public:
 		NATIVE_METHOD_OVERRIDE, // The script method overrides a native one, this may not work as intended.
 		GET_NODE_DEFAULT_WITHOUT_ONREADY, // A class variable uses `get_node()` (or the `$` notation) as its default value, but does not use the @onready annotation.
 		ONREADY_WITH_EXPORT, // The `@onready` annotation will set the value after `@export` which is likely not intended.
+		UNUSED_STATIC_OVERRIDING_TRAIT, // Overridden static without using "static" keyword.
+		EXPERIMENTAL_TRAIT, // Traits are experimental.
 		FUNCTION_NAMING_CONVENTION,
 		CLASS_NAMING_CONVENTION,
 		VARIABLE_NAMING_CONVENTION,
@@ -158,7 +160,9 @@ public:
 		ERROR, // NATIVE_METHOD_OVERRIDE // May not work as expected.
 		ERROR, // GET_NODE_DEFAULT_WITHOUT_ONREADY // May not work as expected.
 		ERROR, // ONREADY_WITH_EXPORT // May not work as expected.
-		IGNORE, // FUNCTION_NAMING_CONVENTION
+		WARN, // UNUSED_STATIC_OVERRIDING_TRAIT
+		WARN, // EXPERIMENTAL_TRAIT
+		IGNORE, // FUNCTION_NAMING_CONVENTION,
 		IGNORE, // CLASS_NAMING_CONVENTION
 		IGNORE, // VARIABLE_NAMING_CONVENTION
 		IGNORE, // CONSTANT_NAMING_CONVENTION
