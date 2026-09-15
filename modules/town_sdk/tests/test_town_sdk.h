@@ -37,6 +37,7 @@
 #include "core/os/os.h"
 #include "core/string/ustring.h"
 #include "core/variant/array.h"
+#include "core/variant/dictionary.h"
 #include "core/variant/typed_array.h"
 #include <string>
 
@@ -67,6 +68,36 @@ TEST_CASE("[TownSDK] game type defaults to turn based and can switch to fps") {
 	CHECK(sdk->get_game_type() == TownSdkClient::GAME_TYPE_FPS);
 	sdk->set_game_type(TownSdkClient::GAME_TYPE_TURN_BASED);
 	CHECK(sdk->get_game_type() == TownSdkClient::GAME_TYPE_TURN_BASED);
+}
+
+TEST_CASE("[TownSDK] HELLO_ACK voip is stored and cleared") {
+	Engine *engine = Engine::get_singleton();
+	REQUIRE(engine != nullptr);
+	Object *client_obj = engine->get_singleton_object("TownSDK");
+	REQUIRE(client_obj != nullptr);
+	TownSdkClient *sdk = Object::cast_to<TownSdkClient>(client_obj);
+	REQUIRE(sdk != nullptr);
+
+	Dictionary empty_ack;
+	sdk->apply_hello_ack(empty_ack);
+	CHECK_FALSE(sdk->has_voip());
+
+	Dictionary voip;
+	voip["host"] = "64.23.133.47";
+	voip["port"] = 7100;
+	Dictionary ack;
+	ack["voip"] = voip;
+	sdk->apply_hello_ack(ack);
+	CHECK(sdk->has_voip());
+	CHECK(sdk->get_voip_host() == String("64.23.133.47"));
+	CHECK(sdk->get_voip_port() == 7100);
+
+	sdk->apply_hello_ack(empty_ack);
+	CHECK_FALSE(sdk->has_voip());
+
+	sdk->apply_hello_ack(ack);
+	sdk->disconnect_from_server();
+	CHECK_FALSE(sdk->has_voip());
 }
 
 TEST_CASE("[TownSDK] optional live connection") {

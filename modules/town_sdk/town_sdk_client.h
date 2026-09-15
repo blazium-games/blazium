@@ -68,6 +68,11 @@ public:
 	bool is_client_connected() const;
 	String get_server_version() const;
 
+	void apply_hello_ack(const Dictionary &p_data);
+	bool has_voip() const;
+	String get_voip_host() const;
+	int get_voip_port() const;
+
 	void set_game_type(GameType p_type);
 	GameType get_game_type() const;
 

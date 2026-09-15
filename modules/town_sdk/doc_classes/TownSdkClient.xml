@@ -43,6 +43,12 @@
 			<description>
 			</description>
 		</method>
+		<method name="apply_hello_ack">
+			<return type="void" />
+			<param index="0" name="data" type="Dictionary" />
+			<description>
+			</description>
+		</method>
 		<method name="authenticate">
 			<return type="void" />
 			<param index="0" name="jwt_token" type="String" />
@@ -115,6 +121,21 @@
 		</method>
 		<method name="get_singleton" qualifiers="static">
 			<return type="TownSdkClient" />
+			<description>
+			</description>
+		</method>
+		<method name="get_voip_host" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_voip_port" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="has_voip" qualifiers="const">
+			<return type="bool" />
 			<description>
 			</description>
 		</method>
@@ -330,6 +351,11 @@
 		</signal>
 		<signal name="health">
 			<param index="0" name="health" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="hello_received">
+			<param index="0" name="data" type="Dictionary" />
 			<description>
 			</description>
 		</signal>
