@@ -31,6 +31,7 @@
 
 #include "tests/test_macros.h"
 
+#include "modules/town_sdk/include/turnbattle/protocol.hpp"
 #include "modules/town_sdk/town_sdk_client.h"
 
 #include "core/config/engine.h"
@@ -70,6 +71,15 @@ TEST_CASE("[TownSDK] game type defaults to turn based and can switch to fps") {
 	CHECK(sdk->get_game_type() == TownSdkClient::GAME_TYPE_TURN_BASED);
 }
 
+TEST_CASE("[TownSDK] inventory move is bound and protocol id is 43") {
+	CHECK(turnbattle::protocol::MessageType::INVENTORY_MOVE == 43);
+	Engine *engine = Engine::get_singleton();
+	REQUIRE(engine != nullptr);
+	Object *client_obj = engine->get_singleton_object("TownSDK");
+	REQUIRE(client_obj != nullptr);
+	CHECK(client_obj->has_method("send_inventory_move"));
+}
+
 TEST_CASE("[TownSDK] HELLO_ACK voip is stored and cleared") {
 	Engine *engine = Engine::get_singleton();
 	REQUIRE(engine != nullptr);
@@ -98,6 +108,52 @@ TEST_CASE("[TownSDK] HELLO_ACK voip is stored and cleared") {
 	sdk->apply_hello_ack(ack);
 	sdk->disconnect_from_server();
 	CHECK_FALSE(sdk->has_voip());
+}
+
+TEST_CASE("[TownSDK] debug log records voip and inventory move") {
+	Engine *engine = Engine::get_singleton();
+	REQUIRE(engine != nullptr);
+	Object *client_obj = engine->get_singleton_object("TownSDK");
+	REQUIRE(client_obj != nullptr);
+	TownSdkClient *sdk = Object::cast_to<TownSdkClient>(client_obj);
+	REQUIRE(sdk != nullptr);
+
+	sdk->set_debug_logging_enabled(true, 64);
+	sdk->clear_debug_log();
+
+	Dictionary voip;
+	voip["host"] = "64.23.133.47";
+	voip["port"] = 7100;
+	Dictionary ack;
+	ack["voip"] = voip;
+	sdk->apply_hello_ack(ack);
+
+	Dictionary from;
+	from["kind"] = "bag";
+	from["x"] = 0;
+	from["y"] = 0;
+	Dictionary to;
+	to["kind"] = "bag";
+	to["x"] = 2;
+	to["y"] = 1;
+	to["rot"] = 1;
+	sdk->send_inventory_move(from, to);
+
+	PackedStringArray log = sdk->get_debug_log();
+	bool saw_voip = false;
+	bool saw_move = false;
+	for (int i = 0; i < log.size(); ++i) {
+		const String line = log[i];
+		if (line.contains("voip stored")) {
+			saw_voip = true;
+		}
+		if (line.contains("inventory_move")) {
+			saw_move = true;
+		}
+	}
+	CHECK(saw_voip);
+	CHECK(saw_move);
+	sdk->set_debug_logging_enabled(false);
 }
 
 TEST_CASE("[TownSDK] optional live connection") {
