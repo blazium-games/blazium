@@ -31,8 +31,8 @@
 
 #include "tests/test_macros.h"
 
-#include "modules/town_sdk/town_sdk_client.h"
 #include "modules/town_sdk/include/turnbattle/protocol.hpp"
+#include "modules/town_sdk/town_sdk_client.h"
 
 #include "core/config/engine.h"
 #include "core/os/os.h"
