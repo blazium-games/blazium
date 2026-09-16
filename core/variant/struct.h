@@ -51,22 +51,26 @@ struct StructMember {
 #define STRUCT_MEMBER(m_name, m_type, ...) StructMember(SNAME(m_name), m_type, ##__VA_ARGS__)
 #define STRUCT_CLASS_MEMBER(m_name, m_class) StructMember(SNAME(m_name), Variant::OBJECT, Variant(), m_class)
 
-#define STRUCT_LAYOUT(m_class, m_name, ...)                                          \
-	struct m_name {                                                                  \
-		_FORCE_INLINE_ static StringName get_class() { return SNAME(#m_class); }     \
-		_FORCE_INLINE_ static StringName get_name() { return SNAME(#m_name); }       \
-		_FORCE_INLINE_ static uint32_t get_member_count() {                          \
-			static const StructMember members[] = { __VA_ARGS__ };                   \
-			return sizeof(members) / sizeof(members[0]);                             \
-		}                                                                            \
-		_FORCE_INLINE_ static const StructMember *get_members() {                    \
-			static const StructMember members[] = { __VA_ARGS__ };                   \
-			return members;                                                          \
-		}                                                                            \
-		_FORCE_INLINE_ static const StructMember &get_member(uint32_t p_index) {     \
-			CRASH_BAD_INDEX(p_index, get_member_count());                            \
-			return get_members()[p_index];                                           \
-		}                                                                            \
+#define STRUCT_LAYOUT(m_class, m_name, ...)                                      \
+	struct m_name {                                                              \
+		_FORCE_INLINE_ static StringName get_class() {                           \
+			return SNAME(#m_class);                                              \
+		}                                                                        \
+		_FORCE_INLINE_ static StringName get_name() {                            \
+			return SNAME(#m_name);                                               \
+		}                                                                        \
+		_FORCE_INLINE_ static uint32_t get_member_count() {                      \
+			static const StructMember members[] = { __VA_ARGS__ };               \
+			return sizeof(members) / sizeof(members[0]);                         \
+		}                                                                        \
+		_FORCE_INLINE_ static const StructMember *get_members() {                \
+			static const StructMember members[] = { __VA_ARGS__ };               \
+			return members;                                                      \
+		}                                                                        \
+		_FORCE_INLINE_ static const StructMember &get_member(uint32_t p_index) { \
+			CRASH_BAD_INDEX(p_index, get_member_count());                        \
+			return get_members()[p_index];                                       \
+		}                                                                        \
 	};
 
 template <class T>
