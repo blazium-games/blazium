@@ -115,12 +115,16 @@ void GDScriptDocGen::_doctype_from_gdtype(const GDType &p_gdtype, String &r_type
 			}
 			r_type = "Object";
 			return;
+		case GDType::TRAIT:
 		case GDType::CLASS:
 			if (p_gdtype.is_meta_type) {
 				r_type = GDScript::get_class_static();
 				return;
 			}
 			r_type = _get_class_name(*p_gdtype.class_type);
+			return;
+		case GDType::STRUCT:
+			r_type = p_gdtype.native_type;
 			return;
 		case GDType::ENUM:
 			if (p_gdtype.is_meta_type) {
@@ -306,6 +310,10 @@ void GDScriptDocGen::_generate_docs(GDScript *p_script, const GDP::ClassNode *p_
 	for (const GDP::ClassNode::Member &member : p_class->members) {
 		switch (member.type) {
 			case GDP::ClassNode::Member::CLASS: {
+				if (p_class->type == GDP::Node::TRAIT) {
+					// Trait do not have scripts for their inner classes.
+					continue;
+				}
 				const GDP::ClassNode *inner_class = member.m_class;
 				const StringName &class_name = inner_class->identifier->name;
 

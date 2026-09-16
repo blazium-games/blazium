@@ -57,6 +57,28 @@ public:
 	GDScriptNativeClass(const StringName &p_name);
 };
 
+class GDScriptStruct : public RefCounted {
+	GDCLASS(GDScriptStruct, RefCounted);
+
+protected:
+	static void _bind_methods();
+
+public:
+	StringName name;
+
+	struct Field {
+		StringName name;
+		GDScriptDataType data_type;
+		PropertyInfo property_info;
+		Variant default_value;
+	};
+
+	Vector<Field> fields;
+	GDScriptStruct() {}
+
+	Array get_fields() const;
+};
+
 class GDScript : public Script {
 	GDCLASS(GDScript, Script);
 	bool tool = false;
@@ -187,6 +209,7 @@ private:
 	StringName global_name; // `class_name`.
 	String fully_qualified_name;
 	String simplified_icon_path;
+	Vector<StringName> traits_fqtn; // Fully-qualified trait names used by script.
 	SelfList<GDScript> script_list;
 
 	SelfList<GDScriptFunctionState>::List pending_func_states;

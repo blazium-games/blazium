@@ -118,8 +118,11 @@ static const char *token_names[] = {
 	"self", // SELF,
 	"signal", // SIGNAL,
 	"static", // STATIC,
+	"struct", // STRUCT,
 	"super", // SUPER,
 	"trait", // TRAIT,
+	"trait_name", // TRAIT_NAME,
+	"uses", // USES,
 	"var", // VAR,
 	"void", // VOID,
 	"yield", // YIELD,
@@ -246,8 +249,11 @@ bool GDScriptTokenizer::Token::is_node_name() const {
 		case SELF:
 		case SIGNAL:
 		case STATIC:
+		case STRUCT:
 		case SUPER:
 		case TRAIT:
+		case TRAIT_NAME:
+		case USES:
 		case UNDERSCORE:
 		case VAR:
 		case VOID:
@@ -535,9 +541,13 @@ GDScriptTokenizer::Token GDScriptTokenizerText::annotation() {
 	KEYWORD("self", Token::SELF)             \
 	KEYWORD("signal", Token::SIGNAL)         \
 	KEYWORD("static", Token::STATIC)         \
+	KEYWORD("struct", Token::STRUCT)         \
 	KEYWORD("super", Token::SUPER)           \
 	KEYWORD_GROUP('t')                       \
 	KEYWORD("trait", Token::TRAIT)           \
+	KEYWORD("trait_name", Token::TRAIT_NAME) \
+	KEYWORD_GROUP('u')                       \
+	KEYWORD("uses", Token::USES)             \
 	KEYWORD_GROUP('v')                       \
 	KEYWORD("var", Token::VAR)               \
 	KEYWORD("void", Token::VOID)             \

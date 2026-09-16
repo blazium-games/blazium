@@ -773,6 +773,9 @@ void GDScriptSyntaxHighlighter::_update_local_symbols() {
 				break;
 			case GDScriptTokenizer::Token::CLASS:
 			case GDScriptTokenizer::Token::CLASS_NAME:
+			case GDScriptTokenizer::Token::TRAIT:
+			case GDScriptTokenizer::Token::TRAIT_NAME:
+			case GDScriptTokenizer::Token::STRUCT:
 				pending = PENDING_TYPE_NAME;
 				break;
 			default:
