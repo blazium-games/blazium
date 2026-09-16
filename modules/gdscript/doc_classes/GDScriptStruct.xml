@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GDScriptStruct" inherits="RefCounted" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Metadata for a named GDScript [code]struct[/code] type.
+	</brief_description>
+	<description>
+		Holds the field layout of a GDScript [code]struct[/code] declared with the [code]struct[/code] keyword. Runtime struct values are typed arrays with named members; [GDScriptStruct] describes that layout so the compiler, inspector, and scripts can inspect field names, types, and defaults.
+		Declare a struct in GDScript and construct values with the type name:
+		[codeblock]
+		struct Stats:
+		    var hp: int = 100
+		    var speed: float = 1.0
+
+		func _ready() -&gt; void:
+		    var s := Stats(50, 2.0)
+		    s.hp += 10
+		[/codeblock]
+		[b]Note:[/b] Script authors normally work with struct values directly. [GDScriptStruct] is the type-definition object, not the runtime value.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_fields" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns this struct's fields as an [Array] of dictionaries. Each [Dictionary] contains:
+				- [code]name[/code] is the field name, as a [StringName];
+				- [code]type[/code] is the field's [enum Variant.Type];
+				- [code]hint[/code] is how the field is meant to be edited (see [enum PropertyHint]);
+				- [code]hint_string[/code] depends on the hint (see [enum PropertyHint]);
+				- [code]usage[/code] is a combination of [enum PropertyUsageFlags];
+				- [code]class_name[/code] is the class name when the field is [constant TYPE_OBJECT];
+				- [code]default_value[/code] is the field's default [Variant].
+			</description>
+		</method>
+	</methods>
+</class>

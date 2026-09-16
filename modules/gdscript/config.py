@@ -12,6 +12,7 @@ def get_doc_classes():
         "@GDScript",
         "GDScript",
         "GDScriptLanguageProtocol",
+        "GDScriptStruct",
         "GDScriptSyntaxHighlighter",
         "GDScriptTextDocument",
         "GDScriptWorkspace",
