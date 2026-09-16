@@ -65,6 +65,29 @@
 
 ///////////////////////////
 
+void GDScriptStruct::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_fields"), &GDScriptStruct::get_fields);
+}
+
+Array GDScriptStruct::get_fields() const {
+	Array arr;
+	for (int i = 0; i < fields.size(); i++) {
+		PropertyInfo prop_info = fields[i].property_info;
+		Dictionary dic;
+		dic["name"] = fields[i].name;
+		dic["type"] = prop_info.type;
+		dic["hint"] = prop_info.hint;
+		dic["hint_string"] = prop_info.hint_string;
+		dic["usage"] = prop_info.usage;
+		dic["class_name"] = prop_info.class_name;
+		dic["default_value"] = fields[i].default_value;
+		arr.push_back(dic);
+	}
+	return arr;
+}
+
+///////////////////////////
+
 GDScriptNativeClass::GDScriptNativeClass(const StringName &p_name) {
 	name = p_name;
 }
@@ -2645,7 +2668,10 @@ Vector<String> GDScriptLanguage::get_reserved_words() const {
 		"namespace", // Reserved for potential future use.
 		"signal",
 		"static",
-		"trait", // Reserved for potential future use.
+		"struct",
+		"trait",
+		"trait_name",
+		"uses",
 		"var",
 		// Other keywords.
 		"await",

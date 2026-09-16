@@ -173,6 +173,10 @@ String GDScriptWarning::get_message() const {
 			return R"("@onready" will set the default value after "@export" takes effect and will override it.)";
 		case ONREADY_WITH_CAST:
 			return vformat(R"("as" will silently return "null" if the type of "%s" is wrong. Prefer assigning the node directly to an explicitly typed variable to get an error in such cases.)", symbols[0]);
+		case UNUSED_STATIC_OVERRIDING_TRAIT:
+			return R"(Overridden static without using "static" keyword.)";
+		case EXPERIMENTAL_TRAIT:
+			return R"(The "trait" and "uses" language features are experimental and may change in a future release.)";
 		case FUNCTION_NAMING_CONVENTION:
 			CHECK_SYMBOLS(1);
 			return vformat(R"*(The function name "%s" does not follow the GDScript style guide (expected snake_case).)*", symbols[0]);
@@ -288,6 +292,8 @@ String GDScriptWarning::get_name_from_code(Code p_code) {
 		PNAME("GET_NODE_DEFAULT_WITHOUT_ONREADY"),
 		PNAME("ONREADY_WITH_EXPORT"),
 		PNAME("ONREADY_WITH_CAST"),
+		PNAME("UNUSED_STATIC_OVERRIDING_TRAIT"),
+		PNAME("EXPERIMENTAL_TRAIT"),
 		PNAME("FUNCTION_NAMING_CONVENTION"),
 		PNAME("CLASS_NAMING_CONVENTION"),
 		PNAME("VARIABLE_NAMING_CONVENTION"),

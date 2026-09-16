@@ -36,6 +36,31 @@
 
 bool GDScriptDataType::is_type(const Variant &p_variant, bool p_allow_implicit_conversion) const {
 	switch (kind) {
+		case GDTRAIT: {
+			if (p_variant.get_type() == Variant::NIL) {
+				return true;
+			}
+			if (p_variant.get_type() != Variant::OBJECT) {
+				return false;
+			}
+			bool was_freed = false;
+			Object *obj = p_variant.get_validated_object_with_check(was_freed);
+			if (!obj) {
+				return !was_freed;
+			}
+			if (!obj->get_script_instance()) {
+				return false;
+			}
+			Script *script_ptr = obj->get_script_instance()->get_script().ptr();
+			while (script_ptr) {
+				GDScript *gdscript = Object::cast_to<GDScript>(script_ptr);
+				if (gdscript && gdscript->get_used_trait_names().has(trait_type)) {
+					return true;
+				}
+				script_ptr = script_ptr->get_base_script().ptr();
+			}
+			return false;
+		} break;
 		case VARIANT: {
 			return true;
 		} break;
@@ -144,6 +169,12 @@ bool GDScriptDataType::is_type(const Variant &p_variant, bool p_allow_implicit_c
 				base = base->get_base_script();
 			}
 			return valid;
+		} break;
+		case STRUCT: {
+			if (p_variant.get_type() == Variant::NIL) {
+				return true;
+			}
+			return p_variant.get_type() == Variant::ARRAY;
 		} break;
 	}
 	return false;

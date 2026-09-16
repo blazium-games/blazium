@@ -228,6 +228,16 @@ void GDScriptFunction::disassemble(const Vector<String> &p_code_lines) const {
 
 				incr += 4;
 			} break;
+			case OPCODE_TYPE_TEST_TRAIT: {
+				text += "type test ";
+				text += DADDR(1);
+				text += " = ";
+				text += DADDR(2);
+				text += " is ";
+				text += get_global_name(_code_ptr[ip + 3]);
+
+				incr += 4;
+			} break;
 			case OPCODE_TYPE_TEST_SCRIPT: {
 				text += "type test ";
 				text += DADDR(1);
@@ -501,6 +511,16 @@ void GDScriptFunction::disassemble(const Vector<String> &p_code_lines) const {
 
 				incr += 4;
 			} break;
+			case OPCODE_CAST_TO_TRAIT: {
+				text += "cast trait ";
+				text += DADDR(2);
+				text += " = ";
+				text += DADDR(1);
+				text += " as ";
+				text += get_global_name(_code_ptr[ip + 3]);
+
+				incr += 4;
+			} break;
 			case OPCODE_CAST_TO_SCRIPT: {
 				text += "cast ";
 				text += DADDR(2);
@@ -603,6 +623,27 @@ void GDScriptFunction::disassemble(const Vector<String> &p_code_lines) const {
 				text += "]";
 
 				incr += 6 + argc;
+			} break;
+			case OPCODE_CONSTRUCT_STRUCT: {
+				int instr_var_args = _code_ptr[++ip];
+				int argc = _code_ptr[ip + 1 + instr_var_args];
+
+				text += "make_struct (";
+				text += DADDR(2 + argc);
+				text += ") ";
+				text += DADDR(1 + argc);
+				text += " = {";
+
+				for (int i = 0; i < argc; i++) {
+					if (i > 0) {
+						text += ", ";
+					}
+					text += DADDR(1 + i);
+				}
+
+				text += "}";
+
+				incr += 3 + instr_var_args;
 			} break;
 			case OPCODE_CONSTRUCT_DICTIONARY: {
 				int instr_var_args = _code_ptr[++ip];
