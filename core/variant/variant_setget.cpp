@@ -270,6 +270,14 @@ void Variant::set_named(const StringName &p_member, const Variant &p_value, bool
 		}
 
 		r_valid = true;
+	} else if (type == Variant::ARRAY) {
+		Array &arr = *VariantGetInternalPtr<Array>::get_ptr(this);
+		if (arr.is_struct()) {
+			arr.set_named(p_member, p_value);
+			r_valid = true;
+			return;
+		}
+		r_valid = false;
 	} else {
 		r_valid = false;
 	}
@@ -303,6 +311,18 @@ Variant Variant::get_named(const StringName &p_member, bool &r_valid) const {
 			if (v) {
 				r_valid = true;
 				return *v;
+			}
+		} break;
+		case Variant::ARRAY: {
+			const Array &arr = *VariantGetInternalPtr<Array>::get_ptr(this);
+			if (arr.is_struct()) {
+				r_valid = true;
+				return arr.get_named(p_member);
+			}
+
+			if (Variant::has_builtin_method(type, p_member)) {
+				r_valid = true;
+				return Callable(memnew(VariantCallable(*this, p_member)));
 			}
 		} break;
 		default: {

@@ -128,6 +128,7 @@ public:
 			SELF,
 			SIGNAL,
 			STATIC,
+			STRUCT,
 			SUPER,
 			TRAIT,
 			TRAIT_NAME,

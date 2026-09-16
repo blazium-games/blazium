@@ -57,6 +57,28 @@ public:
 	GDScriptNativeClass(const StringName &p_name);
 };
 
+class GDScriptStruct : public RefCounted {
+	GDCLASS(GDScriptStruct, RefCounted);
+
+protected:
+	static void _bind_methods();
+
+public:
+	StringName name;
+
+	struct Field {
+		StringName name;
+		GDScriptDataType data_type;
+		PropertyInfo property_info;
+		Variant default_value;
+	};
+
+	Vector<Field> fields;
+	GDScriptStruct() {}
+
+	Array get_fields() const;
+};
+
 class GDScript : public Script {
 	GDCLASS(GDScript, Script);
 	bool tool = false;

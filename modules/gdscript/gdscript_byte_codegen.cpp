@@ -670,6 +670,12 @@ void GDScriptByteCodeGenerator::write_type_test(const Address &p_target, const A
 			append(p_source);
 			append(p_type.trait_type);
 		} break;
+		case GDScriptDataType::STRUCT: {
+			append_opcode(GDScriptFunction::OPCODE_TYPE_TEST_BUILTIN);
+			append(p_target);
+			append(p_source);
+			append(Variant::ARRAY);
+		} break;
 		case GDScriptDataType::SCRIPT:
 		case GDScriptDataType::GDSCRIPT: {
 			const Variant &script = p_type.script_type;
@@ -903,6 +909,7 @@ void GDScriptByteCodeGenerator::write_get_static_variable(const Address &p_targe
 
 void GDScriptByteCodeGenerator::write_assign_with_conversion(const Address &p_target, const Address &p_source) {
 	switch (p_target.type.kind) {
+		case GDScriptDataType::STRUCT:
 		case GDScriptDataType::BUILTIN: {
 			if (p_target.type.builtin_type == Variant::ARRAY && p_target.type.has_container_element_type(0)) {
 				const GDScriptDataType &element_type = p_target.type.get_container_element_type(0);
@@ -1453,6 +1460,18 @@ void GDScriptByteCodeGenerator::write_construct_typed_array(const Address &p_tar
 	ct.cleanup();
 }
 
+void GDScriptByteCodeGenerator::write_construct_struct(const Address &p_target, const GDScriptDataType &p_struct_type, const Vector<Address> &p_arguments) {
+	append_opcode_and_argcount(GDScriptFunction::OPCODE_CONSTRUCT_STRUCT, 2 + p_arguments.size());
+	for (int i = 0; i < p_arguments.size(); i++) {
+		append(p_arguments[i]);
+	}
+	CallTarget ct = get_call_target(p_target);
+	append(ct.target);
+	append(get_constant_pos(p_struct_type.struct_def_variant) | (GDScriptFunction::ADDR_TYPE_CONSTANT << GDScriptFunction::ADDR_BITS));
+	append(p_arguments.size());
+	ct.cleanup();
+}
+
 void GDScriptByteCodeGenerator::write_construct_dictionary(const Address &p_target, const Vector<Address> &p_arguments) {
 	append_opcode_and_argcount(GDScriptFunction::OPCODE_CONSTRUCT_DICTIONARY, 1 + p_arguments.size());
 	for (int i = 0; i < p_arguments.size(); i++) {
@@ -1787,6 +1806,15 @@ void GDScriptByteCodeGenerator::write_return(const Address &p_return_value) {
 				append_opcode(GDScriptFunction::OPCODE_RETURN_TYPED_SCRIPT);
 				append(p_return_value);
 				append(script_idx);
+			} break;
+			case GDScriptDataType::GDTRAIT: {
+				append_opcode(GDScriptFunction::OPCODE_RETURN);
+				append(p_return_value);
+			} break;
+			case GDScriptDataType::STRUCT: {
+				append_opcode(GDScriptFunction::OPCODE_RETURN_TYPED_BUILTIN);
+				append(p_return_value);
+				append(Variant::ARRAY);
 			} break;
 			default: {
 				ERR_PRINT("Compiler bug: unresolved return.");

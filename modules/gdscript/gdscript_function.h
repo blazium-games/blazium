@@ -54,6 +54,7 @@ public:
 		SCRIPT,
 		GDSCRIPT,
 		GDTRAIT,
+		STRUCT,
 	};
 
 	Kind kind = UNINITIALIZED;
@@ -64,6 +65,7 @@ public:
 	StringName trait_type;
 	Script *script_type = nullptr;
 	Ref<Script> script_type_ref;
+	Variant struct_def_variant;
 
 	bool is_type(const Variant &p_variant, bool p_allow_implicit_conversion = false) const {
 		if (!has_type) {
@@ -145,6 +147,12 @@ public:
 				}
 				return valid;
 			} break;
+			case STRUCT: {
+				if (p_variant.get_type() == Variant::NIL) {
+					return true;
+				}
+				return p_variant.get_type() == Variant::ARRAY;
+			} break;
 		}
 		return false;
 	}
@@ -207,6 +215,7 @@ public:
 		script_type = p_other.script_type;
 		script_type_ref = p_other.script_type_ref;
 		container_element_types = p_other.container_element_types;
+		struct_def_variant = p_other.struct_def_variant;
 	}
 
 	GDScriptDataType(const GDScriptDataType &p_other) {
@@ -256,6 +265,7 @@ public:
 		OPCODE_CONSTRUCT_VALIDATED, // Only for basic types!
 		OPCODE_CONSTRUCT_ARRAY,
 		OPCODE_CONSTRUCT_TYPED_ARRAY,
+		OPCODE_CONSTRUCT_STRUCT,
 		OPCODE_CONSTRUCT_DICTIONARY,
 		OPCODE_CALL,
 		OPCODE_CALL_RETURN,
