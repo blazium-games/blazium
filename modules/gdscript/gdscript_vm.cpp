@@ -977,7 +977,9 @@ Variant GDScriptFunction::call(GDScriptInstance *p_instance, const Variant **p_a
 				bool was_freed = false;
 				Object *object = value->get_validated_object_with_check(was_freed);
 				if (was_freed) {
+#ifdef DEBUG_ENABLED
 					err_text = "Left operand of 'is' is a previously freed instance.";
+#endif
 					OPCODE_BREAK;
 				}
 

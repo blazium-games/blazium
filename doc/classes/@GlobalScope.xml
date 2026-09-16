@@ -3053,7 +3053,10 @@
 		<constant name="PROPERTY_HINT_AUDIO_BUS" value="45" enum="PropertyHint">
 			Hints that a [String] or [StringName] property is the name of an audio bus. This allows the selection of predefined bus names registered with the audio server.
 		</constant>
-		<constant name="PROPERTY_HINT_MAX" value="46" enum="PropertyHint">
+		<constant name="PROPERTY_HINT_STRUCT" value="46" enum="PropertyHint">
+			Hints that a property is a GDScript struct. The hint string uses the form [code]script_path::struct_name[/code].
+		</constant>
+		<constant name="PROPERTY_HINT_MAX" value="47" enum="PropertyHint">
 			Represents the size of the [enum PropertyHint] enum.
 		</constant>
 		<constant name="PROPERTY_USAGE_NONE" value="0" enum="PropertyUsageFlags" is_bitfield="true">
