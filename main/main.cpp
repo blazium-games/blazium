@@ -137,6 +137,9 @@
 #ifdef MODULE_SCREENSAVER_ENABLED
 #include "modules/screensaver/screensaver_cmdline.h"
 #endif
+#ifdef MODULE_OBFUSCATION_ENABLED
+#include "modules/obfuscation/obfuscation_cmdline.h"
+#endif
 #ifdef MODULE_NAVIMESH_EXPORT_ENABLED
 #include "modules/navimesh_export/navimesh_export_batch.h"
 #include "modules/navimesh_export/navimesh_export_cmdline.h"
@@ -725,6 +728,12 @@ void Main::print_help(const char *p_binary) {
 	print_help_option("--analytics-mode=<anonymous|identified>", "Anonymous omits device_uid; identified sends OS.get_unique_id().\n");
 #endif
 
+#ifdef MODULE_OBFUSCATION_ENABLED
+	print_help_title("Obfuscation Options");
+	print_help_option("--obfuscation-verify [claim] [target]", "Decode a claim PNG and scan a folder or pack, then write evidence. Runs after scene init.\n");
+	print_help_option("--out <path>", "Evidence output path for --obfuscation-verify (json, md, or pdf).\n");
+#endif
+
 #ifdef TOOLS_ENABLED
 	print_help_title("Crash Reporter Options");
 	print_help_option("--crash-reporter <path>", "Editor sidecar crash reporter executable (dumps + spawn; omitted = console only).\n", CLI_OPTION_AVAILABILITY_EDITOR);
@@ -1156,6 +1165,9 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 #endif
 #ifdef MODULE_SCREENSAVER_ENABLED
 		bool screensaver_consumed_next = false;
+#endif
+#ifdef MODULE_OBFUSCATION_ENABLED
+		bool obfuscation_consumed_next = false;
 #endif
 
 		const String &arg = I->get();
@@ -2022,6 +2034,12 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 #endif
 				ScreensaverCmdline::try_consume(arg, N ? N->get() : String(), screensaver_consumed_next)) {
 			if (screensaver_consumed_next && N) {
+				N = N->next();
+			}
+#endif
+#ifdef MODULE_OBFUSCATION_ENABLED
+		} else if (ObfuscationCmdline::try_consume(arg, N ? N->get() : String(), obfuscation_consumed_next)) {
+			if (obfuscation_consumed_next && N) {
 				N = N->next();
 			}
 #endif
@@ -3876,6 +3894,12 @@ int Main::start() {
 	OS::get_singleton()->benchmark_begin_measure("Startup", "Main::Start");
 
 	ERR_FAIL_COND_V(!_start_success, false);
+
+#ifdef MODULE_OBFUSCATION_ENABLED
+	if (ObfuscationCmdline::wants_verify()) {
+		return ObfuscationCmdline::run();
+	}
+#endif
 
 	bool has_icon = false;
 	String positional_arg;

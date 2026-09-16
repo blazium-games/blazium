@@ -35,6 +35,7 @@
 #include "luau.h"
 #include "luau_bytecode_format.h"
 
+#include "core/config/project_settings.h"
 #include "core/io/compression.h"
 #include "core/io/file_access.h"
 
@@ -91,6 +92,10 @@ void EditorExportLuau::_export_file(const String &p_path, const String &p_type, 
 
 	const String extension = p_path.get_extension();
 	if (extension != "luau" && extension != "lua") {
+		return;
+	}
+
+	if (!p_features.has("no_obfuscation") && ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("obfuscation/pack/scramble_names") && bool(GLOBAL_GET("obfuscation/pack/scramble_names"))) {
 		return;
 	}
 

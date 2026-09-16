@@ -713,8 +713,18 @@ def get_compiler_version(env):
             # benefit from a more nuanced search.
             # https://github.com/godotengine/godot/pull/91069#issuecomment-2358956731
             # https://github.com/godotengine/godot/pull/91069#issuecomment-2380836341
+            # SCons sets env["VSWHERE"] on auto-detect; VCVARS setups and some
+            # SCons/Python combos leave it unset (KeyError on env["VSWHERE"]).
+            vswhere = env.get("VSWHERE")
+            if not vswhere:
+                vswhere = os.path.join(
+                    os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"),
+                    "Microsoft Visual Studio",
+                    "Installer",
+                    "vswhere.exe",
+                )
             args = [
-                env["VSWHERE"],
+                vswhere,
                 "-latest",
                 "-prerelease",
                 "-products",
