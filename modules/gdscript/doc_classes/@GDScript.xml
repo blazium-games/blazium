@@ -303,15 +303,15 @@
 				Inheriting classes must either provide implementations for all abstract methods, or the inheriting class must be marked as abstract. If a class has at least one abstract method (either its own or an unimplemented inherited one), then it must also be marked as abstract. However, the reverse is not true: an abstract class is allowed to have no abstract methods.
 				[codeblock]
 				@abstract class Shape:
-					@abstract func draw()
+				    @abstract func draw()
 
 				class Circle extends Shape:
-					func draw():
-						print("Drawing a circle.")
+				    func draw():
+				        print("Drawing a circle.")
 
 				class Square extends Shape:
-					func draw():
-						print("Drawing a square.")
+				    func draw():
+				        print("Drawing a square.")
 				[/codeblock]
 			</description>
 		</annotation>
