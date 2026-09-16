@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ObfuscationScan" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Result of scanning a path, image, stream, or script for marks.
+	</brief_description>
+	<description>
+		Holds a decoded seal (if found), per-file mark rows, matched/total counts, a 0–1 score, and a reconstructed copyright string when the lattice hash matches.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="marks" type="Array" setter="" getter="get_marks" default="[]">
+			Mark dictionaries with [code skip-lint]path[/code], [code skip-lint]kind[/code], [code skip-lint]matched[/code], and [code skip-lint]bits[/code].
+		</member>
+		<member name="matched" type="int" setter="" getter="get_matched" default="0">
+			Number of marks that matched.
+		</member>
+		<member name="owner_id" type="PackedByteArray" setter="" getter="get_owner_id" default="PackedByteArray()">
+			Owner id taken from the seal when present.
+		</member>
+		<member name="project_id" type="String" setter="" getter="get_project_id" default="&quot;&quot;">
+			Project id taken from the seal when present.
+		</member>
+		<member name="reconstructed_copyright" type="String" setter="" getter="get_reconstructed_copyright" default="&quot;&quot;">
+			Reconstructed copyright lattice payload, or empty.
+		</member>
+		<member name="score" type="float" setter="" getter="get_score" default="0.0">
+			Ratio of matched marks to total marks, or 0 when nothing was scanned.
+		</member>
+		<member name="seal" type="ObfuscationClaim" setter="" getter="get_seal">
+			Decoded claim, if a seal was found.
+		</member>
+		<member name="signature_valid" type="bool" setter="" getter="get_signature_valid" default="false">
+			[code]true[/code] when the scanned seal signature verified.
+		</member>
+		<member name="total" type="int" setter="" getter="get_total" default="0">
+			Number of mark rows recorded.
+		</member>
+	</members>
+</class>

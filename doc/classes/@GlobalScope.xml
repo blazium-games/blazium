@@ -1653,6 +1653,8 @@
 		<member name="OS" type="OS" setter="" getter="">
 			The [OS] singleton.
 		</member>
+		<member name="Obfuscation" type="Obfuscation" setter="" getter="">
+		</member>
 		<member name="Performance" type="Performance" setter="" getter="">
 			The [Performance] singleton.
 		</member>

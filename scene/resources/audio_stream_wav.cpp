@@ -30,8 +30,16 @@
 
 #include "audio_stream_wav.h"
 
+#include "core/config/project_settings.h"
 #include "core/io/file_access_memory.h"
 #include "core/io/marshalls.h"
+#include "modules/modules_enabled.gen.h"
+
+#ifdef MODULE_OBFUSCATION_ENABLED
+#include "modules/obfuscation/obfuscation.h"
+#endif
+
+#include <cstring>
 
 const float TRIM_DB_LIMIT = -50;
 const int TRIM_FADE_OUT_FRAMES = 500;
@@ -1095,6 +1103,18 @@ Ref<AudioStreamWAV> AudioStreamWAV::load_from_buffer(const Vector<uint8_t> &p_st
 	if (force_8_bit) {
 		is16 = false;
 	}
+
+#ifdef MODULE_OBFUSCATION_ENABLED
+	if (Obfuscation::is_import_audio_mark() && Obfuscation::get_singleton() && Obfuscation::get_singleton()->is_enabled() && bool(GLOBAL_GET("obfuscation/audio/spread_spectrum"))) {
+		PackedByteArray f32;
+		f32.resize(data.size() * (int)sizeof(float));
+		memcpy(f32.ptrw(), data.ptr(), f32.size());
+		PackedByteArray marked = Obfuscation::get_singleton()->watermark_pcm(f32, rate, format_channels);
+		if (marked.size() == f32.size()) {
+			memcpy(data.ptrw(), marked.ptr(), marked.size());
+		}
+	}
+#endif
 
 	Vector<uint8_t> dst_data;
 	AudioStreamWAV::Format dst_format;

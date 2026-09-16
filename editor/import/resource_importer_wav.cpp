@@ -31,6 +31,11 @@
 #include "resource_importer_wav.h"
 
 #include "core/io/resource_saver.h"
+#include "modules/modules_enabled.gen.h"
+
+#ifdef MODULE_OBFUSCATION_ENABLED
+#include "modules/obfuscation/obfuscation.h"
+#endif
 
 String ResourceImporterWAV::get_importer_name() const {
 	return "wav";
@@ -94,7 +99,13 @@ Error ResourceImporterWAV::import(ResourceUID::ID p_source_id, const String &p_s
 		options[pair.key] = pair.value;
 	}
 
+#ifdef MODULE_OBFUSCATION_ENABLED
+	Obfuscation::set_import_audio_mark(true);
+#endif
 	Ref<AudioStreamWAV> sample = AudioStreamWAV::load_from_file(p_source_file, options);
+#ifdef MODULE_OBFUSCATION_ENABLED
+	Obfuscation::set_import_audio_mark(false);
+#endif
 	ResourceSaver::save(sample, p_save_path + ".sample");
 	return OK;
 }

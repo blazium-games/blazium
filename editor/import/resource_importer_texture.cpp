@@ -39,7 +39,12 @@
 #include "editor/import/resource_importer_texture_settings.h"
 #include "editor/themes/editor_scale.h"
 #include "editor/themes/editor_theme_manager.h"
+#include "modules/modules_enabled.gen.h"
 #include "scene/resources/compressed_texture.h"
+
+#ifdef MODULE_OBFUSCATION_ENABLED
+#include "modules/obfuscation/obfuscation.h"
+#endif
 
 void ResourceImporterTexture::_texture_reimport_roughness(const Ref<CompressedTexture2D> &p_tex, const String &p_normal_path, RS::TextureDetectRoughnessChannel p_channel) {
 	ERR_FAIL_COND(p_tex.is_null());
@@ -426,6 +431,12 @@ void ResourceImporterTexture::_save_ctex(const Ref<Image> &p_image, const String
 	}
 
 	save_to_ctex_format(f, image, p_compress_mode, used_channels, p_vram_compression, p_lossy_quality);
+#ifdef MODULE_OBFUSCATION_ENABLED
+	f.unref();
+	if (Obfuscation::get_singleton() && Obfuscation::get_singleton()->is_enabled()) {
+		Obfuscation::get_singleton()->append_ctex_trailer(p_to_path, p_to_path);
+	}
+#endif
 }
 
 void ResourceImporterTexture::_save_editor_meta(const Dictionary &p_metadata, const String &p_to_path) {
@@ -642,6 +653,20 @@ Error ResourceImporterTexture::import(ResourceUID::ID p_source_id, const String 
 			_clamp_hdr_exposure(target_image);
 		}
 	}
+
+#ifdef MODULE_OBFUSCATION_ENABLED
+	if (Obfuscation::get_singleton() && Obfuscation::get_singleton()->is_enabled() && bool(GLOBAL_GET("obfuscation/textures/dwt"))) {
+		if (Obfuscation::get_singleton()->can_watermark_image(image)) {
+			image = Obfuscation::get_singleton()->watermark_image(image);
+		}
+		if (editor_image.is_valid() && Obfuscation::get_singleton()->can_watermark_image(editor_image)) {
+			editor_image = Obfuscation::get_singleton()->watermark_image(editor_image);
+		}
+		if (compress_mode == COMPRESS_VRAM_COMPRESSED || compress_mode == COMPRESS_BASIS_UNIVERSAL) {
+			WARN_PRINT(vformat("%s: VRAM or Basis Universal compression weakens coefficient marks; the trailer and manifest are still written.", p_source_file));
+		}
+	}
+#endif
 
 	bool detect_3d = int(p_options["detect_3d/compress_to"]) > 0;
 	bool detect_roughness = roughness == 0;

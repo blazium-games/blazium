@@ -4144,6 +4144,66 @@
 			If [code]true[/code], enable TLSv1.3 negotiation.
 			[b]Note:[/b] Only supported when using Mbed TLS 3.0 or later (Linux distribution packages may be compiled against older system Mbed TLS packages), otherwise the maximum supported TLS version is always TLSv1.2.
 		</member>
+		<member name="obfuscation/audio/spectro_path" type="String" setter="" getter="" default="&quot;&quot;">
+			Optional image path mixed into WAV PCM as a compact spectrogram digest during import. Empty disables spectrogram embed.
+		</member>
+		<member name="obfuscation/audio/spread_spectrum" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], embed a spread-spectrum mark into imported 16-bit WAV PCM.
+		</member>
+		<member name="obfuscation/copyright/author" type="String" setter="" getter="" default="&quot;&quot;">
+			Copyright author used by the copyright lattice. Combined with [member obfuscation/copyright/license] and [member obfuscation/copyright/text] into the canonical notice.
+		</member>
+		<member name="obfuscation/copyright/license" type="String" setter="" getter="" default="&quot;&quot;">
+			License identifier included in the canonical copyright notice.
+		</member>
+		<member name="obfuscation/copyright/shard_count" type="int" setter="" getter="" default="8">
+			Number of base64 shards used to spread the copyright notice across exported scripts.
+		</member>
+		<member name="obfuscation/copyright/text" type="String" setter="" getter="" default="&quot;&quot;">
+			Free-form copyright notice text. Stored as in-engine base64 shards ([code]_CI[/code]/[code]_CR[/code]), never as a packed private key.
+		</member>
+		<member name="obfuscation/enabled" type="bool" setter="" getter="" default="true">
+			Master switch for the [Obfuscation] module. When [code]false[/code], import hooks, export injection, and scanning no-ops.
+		</member>
+		<member name="obfuscation/pack/inject_seal" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], export writes a claim PNG and manifest into the packed tree.
+		</member>
+		<member name="obfuscation/pack/scramble_names" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], claim PNG and manifest are packed under one-way HMAC folder and file names instead of [code].obfuscation/claimkey.png[/code]. Original names cannot be recovered from the packed paths.
+		</member>
+		<member name="obfuscation/project_id" type="String" setter="" getter="" default="&quot;&quot;">
+			Fallback project id when no identity is loaded. Identity generation also reads this value.
+		</member>
+		<member name="obfuscation/publisher_id" type="String" setter="" getter="" default="&quot;&quot;">
+			Fallback publisher id when no identity is loaded.
+		</member>
+		<member name="obfuscation/scripts/comment_decoys" type="int" setter="" getter="" default="8">
+			Number of HMAC-tagged decoy lattice comments scattered across packed GDScript and Luau sources. [code]0[/code] disables decoys.
+		</member>
+		<member name="obfuscation/scripts/comment_lattice" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], store seeds, copyright shards, and script refs in HMAC-tagged pseudo-comments so stripping comments breaks packed lookups.
+		</member>
+		<member name="obfuscation/scripts/inject_ck" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], export injects HMAC [code]_CK[/code] seeds into GDScript sources.
+		</member>
+		<member name="obfuscation/scripts/inject_copyright" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], export injects copyright lattice shards into GDScript sources.
+		</member>
+		<member name="obfuscation/scripts/minify" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], strip author comments and minify packed GDScript and Luau before planting lattice comments. GDScript indentation is kept.
+		</member>
+		<member name="obfuscation/textures/dwt" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], embed a Haar DWT + QIM mark before compressed textures are saved.
+		</member>
+		<member name="obfuscation/textures/gutter" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], allow gutter padding marks on imported textures.
+		</member>
+		<member name="obfuscation/textures/min_size" type="int" setter="" getter="" default="256">
+			Minimum image width and height required before an image mark is applied.
+		</member>
+		<member name="obfuscation/textures/overlay" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], allow overlay-style texture marks in addition to DWT.
+		</member>
 		<member name="physics/2d/default_angular_damp" type="float" setter="" getter="" default="1.0">
 			The default rotational motion damping in 2D. Damping is used to gradually slow down physical objects over time. RigidBodies will fall back to this value when combining their own damping values and no area damping value is present.
 			Suggested values are in the range [code]0[/code] to [code]30[/code]. At value [code]0[/code] objects will keep moving with the same velocity. Greater values will stop the object faster. A value equal to or greater than the physics tick rate ([member physics/common/physics_ticks_per_second]) will bring the object to a stop in one iteration.

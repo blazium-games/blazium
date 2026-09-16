@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ObfuscationClaim" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Decoded claim-seal payload.
+	</brief_description>
+	<description>
+		Holds the visible fields recovered from a claim PNG: owner id, project id, issue time, copyright hash, embedded public key, and whether the RSA signature verified. Private keys are never stored on this resource.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="copyright_hash" type="PackedByteArray" setter="" getter="get_copyright_hash" default="PackedByteArray()">
+			SHA-256 of the base64 copyright notice committed in the seal.
+		</member>
+		<member name="flags" type="int" setter="" getter="get_flags" default="0">
+			Payload flags.
+		</member>
+		<member name="issued_unix" type="int" setter="" getter="get_issued_unix" default="0">
+			Unix timestamp when the seal was issued.
+		</member>
+		<member name="magic" type="String" setter="" getter="get_magic" default="&quot;&quot;">
+			Payload magic, expected to be [code]OBF1[/code].
+		</member>
+		<member name="owner_id" type="PackedByteArray" setter="" getter="get_owner_id" default="PackedByteArray()">
+			16-byte owner id from the seal.
+		</member>
+		<member name="project_id" type="String" setter="" getter="get_project_id" default="&quot;&quot;">
+			Project id stored in the seal.
+		</member>
+		<member name="public_key" type="CryptoKey" setter="" getter="get_public_key">
+			Public key recovered from the seal, if present.
+		</member>
+		<member name="signature_valid" type="bool" setter="" getter="get_signature_valid" default="false">
+			[code]true[/code] when the RSA signature verified.
+		</member>
+		<member name="version" type="int" setter="" getter="get_version" default="0">
+			Seal payload version.
+		</member>
+	</members>
+</class>
