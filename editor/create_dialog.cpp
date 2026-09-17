@@ -81,6 +81,10 @@ void CreateDialog::popup_create(bool p_dont_clear, bool p_replace_mode, const St
 	}
 }
 
+void CreateDialog::for_inherit() {
+	allow_abstract_scripts = true;
+}
+
 void CreateDialog::_fill_type_list() {
 	List<StringName> complete_type_list;
 	ClassDB::get_class_list(&complete_type_list);
@@ -200,6 +204,10 @@ bool CreateDialog::_should_hide_type(const StringName &p_type) const {
 				i = script_path.find_char('/', i + 1);
 			}
 		}
+		// Abstract scripts cannot be instantiated.
+		String path = ScriptServer::get_global_class_path(p_type);
+		Ref<Script> scr = ResourceLoader::load(path, "Script");
+		return scr.is_null() || (!allow_abstract_scripts && scr->is_abstract());
 	}
 
 	return false;
@@ -319,7 +327,9 @@ void CreateDialog::_configure_search_option_item(TreeItem *r_item, const StringN
 		r_item->set_metadata(0, p_type);
 		r_item->set_text(0, p_type);
 
-		is_abstract = ScriptServer::is_global_class_abstract(p_type);
+		if (!allow_abstract_scripts) {
+			is_abstract = ScriptServer::is_global_class_abstract(p_type);
+		}
 
 		String tooltip = TTR("Script path: %s");
 		bool is_tool = ScriptServer::is_global_class_tool(p_type);
@@ -337,7 +347,7 @@ void CreateDialog::_configure_search_option_item(TreeItem *r_item, const StringN
 	}
 
 	bool can_instantiate = (p_type_category == TypeCategory::CPP_TYPE && ClassDB::can_instantiate(p_type)) ||
-			(p_type_category == TypeCategory::OTHER_TYPE && !is_abstract);
+			(p_type_category == TypeCategory::OTHER_TYPE && !(!allow_abstract_scripts && is_abstract));
 	bool instantiable = can_instantiate && !(ClassDB::class_exists(p_type) && ClassDB::is_virtual(p_type));
 
 	r_item->set_meta(SNAME("__instantiable"), instantiable);
