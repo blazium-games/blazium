@@ -36,6 +36,7 @@
 #include "core/object/object.h"
 #include "core/templates/hash_map.h"
 #include "core/variant/typed_array.h"
+
 #include "modules/enet/enet_connection.h"
 #ifdef VISIBLE
 #undef VISIBLE
@@ -46,9 +47,9 @@
 #ifdef ERROR
 #undef ERROR
 #endif
-#include "servers/audio/audio_stream.h"
+#include "scene/resources/audio/audio_stream.h"
+#include "scene/resources/audio/audio_stream_generator.h"
 #include "servers/audio/effects/audio_effect_capture.h"
-#include "servers/audio/effects/audio_stream_generator.h"
 
 class Node;
 

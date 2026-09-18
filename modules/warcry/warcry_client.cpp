@@ -31,12 +31,15 @@
 
 #include "core/config/engine.h"
 #include "core/math/math_funcs.h"
+#include "core/object/callable_mp.h"
 #include "core/os/time.h"
-#include "modules/enet/enet_packet_peer.h"
 #include "scene/audio/audio_stream_player.h"
 #include "scene/main/node.h"
 #include "scene/main/scene_tree.h"
-#include "servers/audio_server.h"
+#include "scene/resources/audio/audio_stream_microphone.h"
+#include "servers/audio/audio_server.h"
+
+#include "modules/enet/enet_packet_peer.h"
 
 #include <enet/enet.h>
 

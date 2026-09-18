@@ -31,8 +31,11 @@
 
 #include "warcry_editor_plugin.h"
 
+#include "warcry_client.h"
+
 #include "core/config/project_settings.h"
 #include "core/input/shortcut.h"
+#include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
 #include "editor/themes/editor_scale.h"
 #include "scene/gui/box_container.h"
@@ -44,9 +47,7 @@
 #include "scene/gui/line_edit.h"
 #include "scene/gui/slider.h"
 #include "scene/scene_string_names.h"
-#include "servers/text_server.h"
-
-#include "warcry_client.h"
+#include "servers/text/text_server.h"
 
 void WarcryEditorPlugin::_load_settings() {
 	if (!host_edit) {

@@ -29,11 +29,11 @@
 
 #pragma once
 
-#include "tests/test_macros.h"
-
 #include "core/config/engine.h"
 #include "core/math/math_funcs.h"
 #include "core/os/os.h"
+#include "tests/test_macros.h"
+
 #include "modules/warcry/src/warcry_opus.h"
 #include "modules/warcry/src/warcry_protocol.h"
 
