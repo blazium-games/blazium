@@ -200,6 +200,8 @@ bool AnticheatAPILoader::try_load() {
 		return false;
 	}
 	fn_cl_set_hash = (BZCL_SetFileHashFn)symbol;
+	_load_symbol(client_handle, "BZCL_ProvideScreenshot", symbol);
+	fn_cl_provide_screenshot = (BZCL_ProvideScreenshotFn)symbol;
 
 	client_loaded = true;
 	return true;
@@ -272,7 +274,10 @@ bool AnticheatAPILoader::try_load_server() {
 		return false;
 	}
 	fn_sv_client_join = (BZSV_ClientJoinFn)symbol;
-	_load_symbol(server_handle, "BZSV_SetNotifyDrop", symbol);
+	if (!_load_symbol(server_handle, "BZSV_SetNotifyDrop", symbol)) {
+		_clear_server();
+		return false;
+	}
 	fn_sv_notify_drop = (BZSV_SetNotifyDropFn)symbol;
 
 	if (!_load_symbol(gb_handle, "BZGB_Connect", symbol)) {
@@ -280,7 +285,10 @@ bool AnticheatAPILoader::try_load_server() {
 		return false;
 	}
 	fn_gb_connect = (BZGB_ConnectFn)symbol;
-	_load_symbol(gb_handle, "BZGB_ConnectUrl", symbol);
+	if (!_load_symbol(gb_handle, "BZGB_ConnectUrl", symbol)) {
+		_clear_server();
+		return false;
+	}
 	fn_gb_connect_url = (BZGB_ConnectUrlFn)symbol;
 	if (!_load_symbol(gb_handle, "BZGB_Close", symbol)) {
 		_clear_server();
@@ -297,9 +305,15 @@ bool AnticheatAPILoader::try_load_server() {
 		return false;
 	}
 	fn_gb_connected = (BZGB_ConnectedFn)symbol;
-	_load_symbol(gb_handle, "BZGB_Send", symbol);
+	if (!_load_symbol(gb_handle, "BZGB_Send", symbol)) {
+		_clear_server();
+		return false;
+	}
 	fn_gb_send = (BZGB_SendFn)symbol;
-	_load_symbol(gb_handle, "BZGB_SetActionReceiver", symbol);
+	if (!_load_symbol(gb_handle, "BZGB_SetActionReceiver", symbol)) {
+		_clear_server();
+		return false;
+	}
 	fn_gb_set_action = (BZGB_SetActionFn)symbol;
 	_load_symbol(gb_handle, "BZGB_SetTimeoutMs", symbol);
 	fn_gb_set_timeout = (BZGB_SetTimeoutFn)symbol;
@@ -321,6 +335,7 @@ void AnticheatAPILoader::_clear_client() {
 	fn_cl_on_packet = nullptr;
 	fn_cl_on_command = nullptr;
 	fn_cl_set_screenshot = nullptr;
+	fn_cl_provide_screenshot = nullptr;
 	fn_cl_set_send = nullptr;
 	fn_cl_set_hash = nullptr;
 }
@@ -401,6 +416,12 @@ void AnticheatAPILoader::cl_set_send_packet(BZCL_SendPacketFn fn) {
 void AnticheatAPILoader::cl_set_file_hash(BZCL_FileHashFn fn) {
 	if (fn_cl_set_hash) {
 		fn_cl_set_hash(fn);
+	}
+}
+
+void AnticheatAPILoader::cl_provide_screenshot(const unsigned char *rgba, int w, int h, int bpp) {
+	if (fn_cl_provide_screenshot) {
+		fn_cl_provide_screenshot(rgba, w, h, bpp);
 	}
 }
 

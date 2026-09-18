@@ -239,6 +239,7 @@ void Anticheat::_capture_viewport_png() {
 	if (img->get_format() != Image::FORMAT_RGBA8) {
 		img->convert(Image::FORMAT_RGBA8);
 	}
+	loader.cl_provide_screenshot(img->ptr(), img->get_width(), img->get_height(), 32);
 	const Vector<uint8_t> png = img->save_png_to_buffer();
 	PackedByteArray out;
 	out.resize(png.size());
