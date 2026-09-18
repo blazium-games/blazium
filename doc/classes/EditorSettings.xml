@@ -250,6 +250,12 @@
 		<member name="asset_store/use_threads" type="bool" setter="" getter="">
 			If [code]true[/code], the Asset Store uses multiple threads for its HTTP requests. This prevents the Asset Store from blocking the main thread for every loaded asset.
 		</member>
+		<member name="blazium/justamcp/bridge_url_allow_hosts" type="Array" setter="" getter="">
+			Host allow-list for JustAMCP MCP client bridge URLs.
+		</member>
+		<member name="blazium/justamcp/mcp_clients" type="Array" setter="" getter="">
+			Configured JustAMCP MCP clients shown in the editor.
+		</member>
 		<member name="debugger/auto_switch_to_remote_scene_tree" type="bool" setter="" getter="">
 			If [code]true[/code], automatically switches to the [b]Remote[/b] scene tree when running the project from the editor. If [code]false[/code], stays on the [b]Local[/b] scene tree when running the project from the editor.
 			[b]Warning:[/b] Enabling this setting can cause stuttering when running a project with a large amount of nodes (typically a few thousands of nodes or more), even if the editor window isn't focused. This is due to the remote scene tree being updated every second regardless of whether the editor is focused.
@@ -1119,7 +1125,7 @@
 		</member>
 		<member name="interface/editor/localization/editor_language" type="String" setter="" getter="">
 			The language to use for the editor interface. If set to [b]Auto[/b], the language is automatically determined based on the system locale. See also [method EditorInterface.get_editor_language].
-			Translations are provided by the community. If you spot a mistake, [url=https://contributing.godotengine.org/en/latest/development/translations.html]contribute to editor translations on Weblate![/url]
+			Translations are provided by the community. If you spot a mistake, [url=$DOCS_URL/contributing/documentation/editor_and_docs_localization.html]contribute to editor translations on Weblate![/url]
 		</member>
 		<member name="interface/editor/localization/localize_settings" type="bool" setter="" getter="">
 			If [code]true[/code], setting names in the editor are localized when possible.
