@@ -96,10 +96,24 @@ jobs:
 
           git checkout -B "${SYNC_BRANCH}" "origin/${TARGET_BRANCH}"
 
+          skip_file=".github/workflows/sync-master-to-4.8.skip-shas"
+          declare -A skip_shas=()
+          if [ -f "${skip_file}" ]; then
+            while read -r sha _rest; do
+              [[ -z "${sha}" || "${sha}" == \#* ]] && continue
+              skip_shas["${sha}"]=1
+            done < "${skip_file}"
+          fi
+          echo "Permanent skip list (${skip_file}): ${#skip_shas[@]} SHA(s)"
+
           applied=0
           skipped_empty=0
           failed_sha=""
           for sha in "${missing[@]}"; do
+            if [ -n "${skip_shas[$sha]:-}" ]; then
+              echo "Skipping ${sha}: listed in ${skip_file}."
+              continue
+            fi
             if git cherry-pick -x "${sha}"; then
               applied=$((applied + 1))
             elif git diff --quiet && git diff --cached --quiet; then
