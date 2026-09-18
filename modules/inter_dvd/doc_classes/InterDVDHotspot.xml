@@ -35,8 +35,8 @@
 		<member name="auto_action" type="bool" setter="set_auto_action" getter="get_auto_action" default="false">
 			Activate the button when highlighted.
 		</member>
-		<member name="hidden" type="bool" setter="set_hidden" getter="is_hidden" default="false">
-			Hide the highlight until selected.
+		<member name="button_hidden" type="bool" setter="set_hidden" getter="is_hidden" default="false">
+			Hide the DVD highlight until selected. Named to avoid clashing with [signal CanvasItem.hidden].
 		</member>
 		<member name="forced_selected" type="bool" setter="set_forced_selected" getter="is_forced_selected" default="false">
 			Force this button as the selected highlight.

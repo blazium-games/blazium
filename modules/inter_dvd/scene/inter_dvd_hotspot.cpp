@@ -55,7 +55,7 @@ void InterDVDHotspot::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_BYTE_ARRAY, "command"), "set_command", "get_command");
 	ADD_GROUP("Highlight", "");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "auto_action"), "set_auto_action", "get_auto_action");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "hidden"), "set_hidden", "is_hidden");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "button_hidden"), "set_hidden", "is_hidden");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "forced_selected"), "set_forced_selected", "is_forced_selected");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "forced_activated"), "set_forced_activated", "is_forced_activated");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "numeric_select"), "set_numeric_select", "get_numeric_select");
@@ -127,7 +127,7 @@ Ref<InterDVDButton> InterDVDHotspot::compile_button() const {
 	btn->set_stream(stream);
 	btn->set_subtitle_on(subtitle_on);
 	btn->set_auto_action(auto_action);
-	btn->set_hidden(hidden);
+	btn->set_hidden(button_hidden);
 	btn->set_forced_selected(forced_selected);
 	btn->set_forced_activated(forced_activated);
 	btn->set_numeric_select(numeric_select);

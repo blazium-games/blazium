@@ -20,7 +20,7 @@ class InterDVDHotspot : public Control {
 	int stream = 0;
 	bool subtitle_on = true;
 	bool auto_action = false;
-	bool hidden = false;
+	bool button_hidden = false;
 	bool forced_selected = false;
 	bool forced_activated = false;
 	bool numeric_select = true;
@@ -50,8 +50,8 @@ public:
 	bool get_subtitle_on() const { return subtitle_on; }
 	void set_auto_action(bool p_auto) { auto_action = p_auto; }
 	bool get_auto_action() const { return auto_action; }
-	void set_hidden(bool p_hidden) { hidden = p_hidden; }
-	bool is_hidden() const { return hidden; }
+	void set_hidden(bool p_hidden) { button_hidden = p_hidden; }
+	bool is_hidden() const { return button_hidden; }
 	void set_forced_selected(bool p_forced) { forced_selected = p_forced; }
 	bool is_forced_selected() const { return forced_selected; }
 	void set_forced_activated(bool p_forced) { forced_activated = p_forced; }
