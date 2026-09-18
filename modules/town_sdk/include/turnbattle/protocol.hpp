@@ -47,9 +47,15 @@ inline constexpr uint16_t VERSION_MISMATCH = 4;
 inline constexpr uint16_t REGION_ENTER = 10;
 inline constexpr uint16_t REGION_LEAVE = 11;
 inline constexpr uint16_t MOVE_INPUT = 12;
+inline constexpr uint16_t USE = 14;
+inline constexpr uint16_t FIRE = 18;
+inline constexpr uint16_t RELOAD = 19;
 
 inline constexpr uint16_t REGION_SNAPSHOT = 20;
 inline constexpr uint16_t MOVE_STATE = 23;
+
+inline constexpr uint16_t MELEE = 44;
+inline constexpr uint16_t ANIM_FX = 45;
 
 inline constexpr uint16_t BATTLE_INDICATOR_SPAWN = 30;
 inline constexpr uint16_t BATTLE_INDICATOR_DESPAWN = 31;
