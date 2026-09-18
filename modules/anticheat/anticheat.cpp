@@ -145,7 +145,13 @@ int Anticheat::initialize() {
 		return ANTICHEAT_OK;
 	}
 	if (!is_available()) {
-		if (ProjectSettings::get_singleton() && (bool)ProjectSettings::get_singleton()->get("anticheat/verify_runtime_signature")) {
+		bool verify = false;
+		bool require_agent = false;
+		if (ProjectSettings::get_singleton()) {
+			verify = ProjectSettings::get_singleton()->get("anticheat/verify_runtime_signature");
+			require_agent = ProjectSettings::get_singleton()->get("anticheat/require_agent");
+		}
+		if (verify || require_agent) {
 			return ANTICHEAT_ERR_SIGNATURE;
 		}
 		return ANTICHEAT_ERR_UNAVAILABLE;
@@ -229,6 +235,13 @@ int Anticheat::ops_connect() {
 
 	int err = 1;
 	if (mode == "saas") {
+		String key;
+		if (OS::get_singleton()) {
+			key = OS::get_singleton()->get_environment("BLAZIUM_AC_API_KEY");
+		}
+		if (key.is_empty()) {
+			return ANTICHEAT_ERR_CONNECT;
+		}
 		String endpoint = ProjectSettings::get_singleton()->get("anticheat/ops/saas_endpoint");
 		if (endpoint.is_empty()) {
 			endpoint = address;
