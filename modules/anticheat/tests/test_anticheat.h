@@ -10,6 +10,7 @@
 
 #include "../anticheat.h"
 #include "../anticheat_api_loader.h"
+#include "../anticheat_types.h"
 
 #include "core/config/engine.h"
 #include "tests/test_macros.h"
@@ -37,6 +38,12 @@ TEST_CASE("[Anticheat] verify missing sidecar fails when required") {
 
 TEST_CASE("[Anticheat] verify missing sig fails closed") {
 	CHECK_FALSE(AnticheatAPILoader::verify_runtime_file("this_file_does_not_exist_bzcl.dll", true));
+}
+
+TEST_CASE("[Anticheat] screenshot command without viewport does not crash") {
+	Anticheat *ac = Anticheat::get_singleton();
+	REQUIRE(ac != nullptr);
+	CHECK(ac->submit_command("screenshot") == ANTICHEAT_ERR_INIT);
 }
 
 } // namespace TestAnticheat
