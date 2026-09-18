@@ -53,6 +53,11 @@ public:
 		ACTION_DEFEND = (int)turnbattle::Action::DEFEND,
 	};
 
+	enum GameType {
+		GAME_TYPE_TURN_BASED = 0,
+		GAME_TYPE_FPS = 1,
+	};
+
 	TownSdkClient();
 	~TownSdkClient() override;
 
@@ -64,6 +69,8 @@ public:
 	String get_server_version() const;
 
 	void authenticate(const String &p_jwt_token);
+	void set_game_type(GameType p_type);
+	GameType get_game_type() const;
 	void enter_region(const String &p_region_id);
 	void leave_region();
 	void send_move(int p_held, double p_delta);
@@ -113,3 +120,4 @@ private:
 };
 
 VARIANT_ENUM_CAST(TownSdkClient::BattleAction);
+VARIANT_ENUM_CAST(TownSdkClient::GameType);

@@ -112,6 +112,7 @@ struct Client::Impl {
 
 	// Reconnection state
 	std::string last_jwt_token;
+	std::string game_type = "turn_based";
 	std::string last_address;
 	uint16_t last_port = 0;
 	std::string reconnection_token;
@@ -403,12 +404,21 @@ bool Client::is_connected() const {
 	return impl_->connected;
 }
 
+void Client::set_game_type(const std::string &game_type) {
+	impl_->game_type = game_type.empty() ? "turn_based" : game_type;
+}
+
+std::string Client::get_game_type() const {
+	return impl_->game_type;
+}
+
 void Client::auth(const std::string &jwt_token) {
 	// Store for reconnection
 	impl_->last_jwt_token = jwt_token;
 
 	Dictionary payload;
 	payload["jwt"] = String::utf8(jwt_token.c_str());
+	payload["game_type"] = String::utf8(impl_->game_type.c_str());
 	send_message(protocol::MessageType::HELLO, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
 
