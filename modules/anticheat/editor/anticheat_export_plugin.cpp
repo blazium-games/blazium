@@ -35,10 +35,17 @@ void AnticheatExportPlugin::_export_end() {
 		src_dir = ProjectSettings::get_singleton()->globalize_path(src_dir);
 	}
 	Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
-	const bool require = ProjectSettings::get_singleton()->get("anticheat/verify_runtime_signature");
+	const bool verify = ProjectSettings::get_singleton()->get("anticheat/verify_runtime_signature");
+	const bool require_agent = ProjectSettings::get_singleton()->get("anticheat/require_agent");
+	const bool require = verify || require_agent;
 	if (da.is_null() || !DirAccess::exists(src_dir)) {
 		if (require) {
-			ERR_PRINT("Anticheat export failed: runtime bin dir missing while anticheat/verify_runtime_signature is enabled.");
+			Ref<EditorExportPlatform> plat = get_export_platform();
+			if (plat.is_valid()) {
+				plat->add_message(EditorExportPlatform::EXPORT_MESSAGE_ERROR, "Anticheat", "Runtime bin dir missing while verify_runtime_signature or require_agent is enabled.");
+			} else {
+				ERR_PRINT("Anticheat export failed: runtime bin dir missing while verify_runtime_signature or require_agent is enabled.");
+			}
 		}
 		export_path = String();
 		return;
@@ -61,22 +68,32 @@ void AnticheatExportPlugin::_export_end() {
 	names.push_back("libbzag.so");
 #endif
 	bool copied_client = false;
+	bool copied_client_sig = false;
 	for (int i = 0; i < names.size(); i++) {
 		const String src = src_dir.path_join(names[i]);
 		if (!FileAccess::exists(src)) {
 			continue;
 		}
 		da->copy(src, dest_dir.path_join(names[i]));
-		if (names[i].begins_with("bzcl") || names[i].begins_with("libbzcl")) {
+		const bool is_client = names[i].begins_with("bzcl") || names[i].begins_with("libbzcl");
+		if (is_client) {
 			copied_client = true;
 		}
 		const String sig = src + ".sig";
 		if (FileAccess::exists(sig)) {
 			da->copy(sig, dest_dir.path_join(names[i] + ".sig"));
+			if (is_client) {
+				copied_client_sig = true;
+			}
 		}
 	}
-	if (require && !copied_client) {
-		ERR_PRINT("Anticheat export failed: runtime binaries missing while anticheat/verify_runtime_signature is enabled.");
+	if (require && (!copied_client || !copied_client_sig)) {
+		Ref<EditorExportPlatform> plat = get_export_platform();
+		if (plat.is_valid()) {
+			plat->add_message(EditorExportPlatform::EXPORT_MESSAGE_ERROR, "Anticheat", "Runtime client binary or .sig missing while verify_runtime_signature or require_agent is enabled.");
+		} else {
+			ERR_PRINT("Anticheat export failed: runtime client binary or .sig missing while verify_runtime_signature or require_agent is enabled.");
+		}
 	}
 	export_path = String();
 }
