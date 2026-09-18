@@ -29,6 +29,8 @@ private:
 	static void _screenshot_receiver(const unsigned char *rgba, int w, int h, int bpp);
 	static int _send_packet(const void *data, int len);
 	static int _file_hash(const char *path, unsigned char out32[32]);
+	static int _sv_send_packet(int client_index, const void *data, int len);
+	static void _sv_notify_drop(int client_index, const char *reason_utf8);
 
 protected:
 	static void _bind_methods();
@@ -47,6 +49,9 @@ public:
 	int submit_command(const String &p_command);
 	int ops_connect();
 	bool is_ops_connected() const;
+	int sv_on_packet(int p_client_index, const PackedByteArray &p_data);
+	int sv_client_join(int p_client_index);
+	int gb_send(const PackedByteArray &p_data);
 
 	Anticheat();
 	~Anticheat();

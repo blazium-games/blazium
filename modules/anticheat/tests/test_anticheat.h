@@ -35,4 +35,8 @@ TEST_CASE("[Anticheat] verify missing sidecar fails when required") {
 	CHECK_FALSE(AnticheatAPILoader::verify_runtime_file("this_file_does_not_exist_bzcl.dll", true));
 }
 
+TEST_CASE("[Anticheat] verify missing sig fails closed") {
+	CHECK_FALSE(AnticheatAPILoader::verify_runtime_file("this_file_does_not_exist_bzcl.dll", true));
+}
+
 } // namespace TestAnticheat
