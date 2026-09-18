@@ -153,19 +153,31 @@
 	<signals>
 		<signal name="outgoing_packet">
 			<param index="0" name="blob" type="PackedByteArray" />
+			<description>
+				Integrity tunnel blob the net layer should send to the dedicated server.
+			</description>
 		</signal>
 		<signal name="outgoing_server_packet">
 			<param index="0" name="client_index" type="int" />
 			<param index="1" name="blob" type="PackedByteArray" />
+			<description>
+				Dedicated server: integrity blob to send to that client slot.
+			</description>
 		</signal>
 		<signal name="screenshot_ready">
 			<param index="0" name="png" type="PackedByteArray" />
 			<param index="1" name="width" type="int" />
 			<param index="2" name="height" type="int" />
+			<description>
+				PNG captured from the local viewport after an ops screenshot request.
+			</description>
 		</signal>
 		<signal name="server_drop_client">
 			<param index="0" name="client_index" type="int" />
 			<param index="1" name="reason" type="String" />
+			<description>
+				Dedicated server: drop that client slot after an ops Kick or integrity failure.
+			</description>
 		</signal>
 		<signal name="ops_action">
 			<param index="0" name="json_line" type="String" />
@@ -221,7 +233,7 @@
 			<param index="1" name="text" type="String" />
 			<param index="2" name="until_unix" type="int" />
 			<description>
-				Dedicated server: mute combat for that player until [code]until_unix[/code] (0 means until leave).
+				Dedicated server: mute combat for that player until [param until_unix] (0 means until leave).
 			</description>
 		</signal>
 		<signal name="ops_spectate">
@@ -229,7 +241,7 @@
 			<param index="1" name="text" type="String" />
 			<param index="2" name="until_unix" type="int" />
 			<description>
-				Dedicated server: mark the player as spectating until [code]until_unix[/code] (0 means until leave). The host must skip their fire and targeting.
+				Dedicated server: mark the player as spectating until [param until_unix] (0 means until leave). The host must skip their fire and targeting.
 			</description>
 		</signal>
 	</signals>

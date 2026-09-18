@@ -18,10 +18,10 @@
 
 #ifdef TOOLS_ENABLED
 #include "core/object/class_db.h"
-#include "editor/export/editor_export.h"
-#include "editor/plugins/editor_plugin.h"
 #include "editor/anticheat_editor_plugin.h"
 #include "editor/anticheat_export_plugin.h"
+#include "editor/export/editor_export.h"
+#include "editor/plugins/editor_plugin.h"
 #endif
 
 #ifdef TESTS_ENABLED

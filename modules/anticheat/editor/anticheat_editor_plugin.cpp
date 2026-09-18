@@ -11,13 +11,14 @@
 #include "anticheat_editor_plugin.h"
 
 #include "core/object/callable_mp.h"
-#include "modules/anticheat/anticheat.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/button.h"
 #include "scene/gui/label.h"
 #include "scene/gui/line_edit.h"
 #include "scene/gui/rich_text_label.h"
 #include "scene/gui/text_edit.h"
+
+#include "modules/anticheat/anticheat.h"
 
 void AnticheatEditorPlugin::_append_log(const String &p_line) {
 	if (!log) {

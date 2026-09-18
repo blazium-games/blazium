@@ -7,6 +7,7 @@
 /**************************************************************************/
 
 #include "anticheat_api_loader.h"
+
 #include "anticheat_ed25519.h"
 
 #include "core/config/engine.h"

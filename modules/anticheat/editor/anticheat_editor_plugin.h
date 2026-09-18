@@ -10,8 +10,8 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "editor/plugins/editor_plugin.h"
 #include "core/variant/variant.h"
+#include "editor/plugins/editor_plugin.h"
 
 class LineEdit;
 class RichTextLabel;

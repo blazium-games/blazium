@@ -10,6 +10,7 @@
 
 #include "anticheat_api_loader.h"
 #include "anticheat_types.h"
+
 #include "core/object/object.h"
 #include "core/templates/hash_map.h"
 
