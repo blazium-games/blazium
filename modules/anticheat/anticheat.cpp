@@ -62,6 +62,7 @@ void Anticheat::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("ops_screenshot_request", PropertyInfo(Variant::STRING, "player_id"), PropertyInfo(Variant::STRING, "side")));
 	ADD_SIGNAL(MethodInfo("ops_warn", PropertyInfo(Variant::STRING, "player_id"), PropertyInfo(Variant::STRING, "text")));
 	ADD_SIGNAL(MethodInfo("ops_mute", PropertyInfo(Variant::STRING, "player_id"), PropertyInfo(Variant::STRING, "text"), PropertyInfo(Variant::INT, "until_unix")));
+	ADD_SIGNAL(MethodInfo("ops_unmute", PropertyInfo(Variant::STRING, "player_id")));
 	ADD_SIGNAL(MethodInfo("ops_spectate", PropertyInfo(Variant::STRING, "player_id"), PropertyInfo(Variant::STRING, "text"), PropertyInfo(Variant::INT, "until_unix")));
 }
 
@@ -285,6 +286,16 @@ void Anticheat::_send_screenshot_data(const PackedByteArray &p_png, int p_width,
 	if (!screenshot_player_id.is_empty()) {
 		ev["player_id"] = screenshot_player_id;
 	}
+	String title;
+	if (ProjectSettings::get_singleton()) {
+		title = ProjectSettings::get_singleton()->get("anticheat/ops/title_id");
+	}
+	if (title.is_empty() && OS::get_singleton()) {
+		title = OS::get_singleton()->get_environment("BLAZIUM_AC_TITLE_ID");
+	}
+	if (!title.is_empty()) {
+		ev["title_id"] = title;
+	}
 	ev["pairs"] = pairs;
 	const String line = JSON::stringify(ev) + "\n";
 	const CharString utf8 = line.utf8();
@@ -493,7 +504,12 @@ void Anticheat::apply_ops_line(const String &p_json_line) {
 	if (text.is_empty()) {
 		text = reason;
 	}
-	if (event == "Kick" || event == "KickMsg" || event == "Timeout") {
+	if (event == "KickMsg") {
+		emit_signal("ops_warn", player_id, text);
+		_apply_mapped_kick(player_id, text);
+		return;
+	}
+	if (event == "Kick" || event == "Timeout") {
 		_apply_mapped_kick(player_id, reason);
 		return;
 	}
@@ -503,6 +519,10 @@ void Anticheat::apply_ops_line(const String &p_json_line) {
 	}
 	if (event == "Mute") {
 		emit_signal("ops_mute", player_id, text, (int64_t)pairs.get("until_unix", 0));
+		return;
+	}
+	if (event == "Unmute") {
+		emit_signal("ops_unmute", player_id);
 		return;
 	}
 	if (event == "Spectate") {

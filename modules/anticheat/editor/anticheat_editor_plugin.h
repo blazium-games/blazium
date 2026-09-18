@@ -48,6 +48,7 @@ private:
 	void _on_ops_action(const String &p_json_line);
 	void _on_ops_warn(const String &p_player_id, const String &p_text);
 	void _on_ops_mute(const String &p_player_id, const String &p_text, int64_t p_until);
+	void _on_ops_unmute(const String &p_player_id);
 	void _on_ops_spectate(const String &p_player_id, const String &p_text, int64_t p_until);
 	void _setup_dock();
 	void _teardown_dock();
