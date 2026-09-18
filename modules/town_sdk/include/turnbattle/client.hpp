@@ -99,6 +99,7 @@ public:
 	void on_admin_broadcast(OnAdminBroadcastCallback cb);
 	void on_integrity(OnIntegrityCallback cb);
 	void on_screenshot_req(OnScreenshotReqCallback cb);
+	void on_ops_action(OnOpsActionCallback cb);
 
 	// Update (call each frame)
 	void update(float dt);
