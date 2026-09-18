@@ -12,3 +12,4 @@
 
 void initialize_anticheat_module(ModuleInitializationLevel p_level);
 void uninitialize_anticheat_module(ModuleInitializationLevel p_level);
+void anticheat_ensure_frame_hook();

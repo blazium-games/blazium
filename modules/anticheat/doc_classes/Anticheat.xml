@@ -33,9 +33,22 @@
 				Shuts down the loaded runtime.
 			</description>
 		</method>
+		<method name="sv_initialize">
+			<return type="int" />
+			<description>
+				Dedicated server: calls [code]BZSV_Init[/code] without connecting ops. Returns 0 on success.
+			</description>
+		</method>
 		<method name="is_initialized">
 			<return type="bool" />
 			<description>
+				Returns [code]true[/code] after a successful client [method initialize].
+			</description>
+		</method>
+		<method name="is_server_initialized">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] after a successful [method sv_initialize].
 			</description>
 		</method>
 		<method name="tick">
@@ -48,6 +61,7 @@
 		<method name="is_enabled">
 			<return type="bool" />
 			<description>
+				Returns [code]true[/code] when the client runtime is initialized and enabled.
 			</description>
 		</method>
 		<method name="submit_packet">
@@ -67,12 +81,13 @@
 		<method name="ops_connect">
 			<return type="int" />
 			<description>
-				Dedicated server: connect [code]bzgb[/code] using ProjectSettings and [code]BLAZIUM_AC_API_KEY[/code].
+				Dedicated server: connect [code]bzgb[/code] using ProjectSettings and [code]BLAZIUM_AC_API_KEY[/code] for SaaS. Internal mode requires [code]anticheat/ops/license_path[/code] unless [code]BLAZIUM_AC_DEV=1[/code].
 			</description>
 		</method>
 		<method name="is_ops_connected">
 			<return type="bool" />
 			<description>
+				Returns [code]true[/code] when [code]bzgb[/code] is connected after [method ops_connect].
 			</description>
 		</method>
 		<method name="sv_on_packet">
@@ -88,6 +103,43 @@
 			<param index="0" name="client_index" type="int" />
 			<description>
 				Dedicated server: starts the integrity hello for a client slot.
+			</description>
+		</method>
+		<method name="sv_drop_client">
+			<return type="int" />
+			<param index="0" name="client_index" type="int" />
+			<param index="1" name="reason" type="String" default="&quot;&quot;" />
+			<description>
+				Dedicated server: drop an integrity slot and emit [signal server_drop_client].
+			</description>
+		</method>
+		<method name="bind_player">
+			<return type="void" />
+			<param index="0" name="client_index" type="int" />
+			<param index="1" name="player_id" type="String" />
+			<description>
+				Maps a game account id to a dedicated client slot so ops Kick can emit [signal server_drop_client].
+			</description>
+		</method>
+		<method name="unbind_player">
+			<return type="void" />
+			<param index="0" name="client_index" type="int" />
+			<description>
+				Clears the account mapping for a client slot.
+			</description>
+		</method>
+		<method name="player_client_index">
+			<return type="int" />
+			<param index="0" name="player_id" type="String" />
+			<description>
+				Returns the bound client slot, or [code]-1[/code] if the player is not mapped.
+			</description>
+		</method>
+		<method name="apply_ops_line">
+			<return type="void" />
+			<param index="0" name="json_line" type="String" />
+			<description>
+				Applies one ops JSONL action: Kick if mapped, screenshot upload, Teleport as [signal ops_teleport]. Always emits [signal ops_action].
 			</description>
 		</method>
 		<method name="gb_send">
@@ -118,7 +170,16 @@
 		<signal name="ops_action">
 			<param index="0" name="json_line" type="String" />
 			<description>
-				Dedicated server: Kick, Screenshot, Teleport, and other ops actions from [code]bzgb[/code].
+				Raw ops JSONL from [code]bzgb[/code]. Kick, Screenshot, and Teleport are also handled as documented on [method apply_ops_line].
+			</description>
+		</signal>
+		<signal name="ops_teleport">
+			<param index="0" name="player_id" type="String" />
+			<param index="1" name="region" type="String" />
+			<param index="2" name="x" type="float" />
+			<param index="3" name="y" type="float" />
+			<description>
+				Dedicated server: Teleport action. The host must move the player; the module does not.
 			</description>
 		</signal>
 	</signals>
