@@ -8,10 +8,14 @@
 
 #include "anticheat.h"
 
+#include "register_types.h"
+
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
+#include "core/crypto/crypto_core.h"
 #include "core/io/file_access.h"
 #include "core/io/image.h"
+#include "core/io/json.h"
 #include "core/object/class_db.h"
 #include "core/os/os.h"
 #include "scene/main/scene_tree.h"
@@ -27,8 +31,10 @@ void Anticheat::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_available"), &Anticheat::is_available);
 	ClassDB::bind_method(D_METHOD("get_server_available"), &Anticheat::get_server_available);
 	ClassDB::bind_method(D_METHOD("initialize"), &Anticheat::initialize);
+	ClassDB::bind_method(D_METHOD("sv_initialize"), &Anticheat::sv_initialize);
 	ClassDB::bind_method(D_METHOD("shutdown"), &Anticheat::shutdown);
 	ClassDB::bind_method(D_METHOD("is_initialized"), &Anticheat::is_initialized);
+	ClassDB::bind_method(D_METHOD("is_server_initialized"), &Anticheat::is_server_initialized);
 	ClassDB::bind_method(D_METHOD("tick", "tick_limit_ms"), &Anticheat::tick, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("is_enabled"), &Anticheat::is_enabled);
 	ClassDB::bind_method(D_METHOD("submit_packet", "data"), &Anticheat::submit_packet);
@@ -37,6 +43,11 @@ void Anticheat::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_ops_connected"), &Anticheat::is_ops_connected);
 	ClassDB::bind_method(D_METHOD("sv_on_packet", "client_index", "data"), &Anticheat::sv_on_packet);
 	ClassDB::bind_method(D_METHOD("sv_client_join", "client_index"), &Anticheat::sv_client_join);
+	ClassDB::bind_method(D_METHOD("sv_drop_client", "client_index", "reason"), &Anticheat::sv_drop_client, DEFVAL(String()));
+	ClassDB::bind_method(D_METHOD("bind_player", "client_index", "player_id"), &Anticheat::bind_player);
+	ClassDB::bind_method(D_METHOD("unbind_player", "client_index"), &Anticheat::unbind_player);
+	ClassDB::bind_method(D_METHOD("player_client_index", "player_id"), &Anticheat::player_client_index);
+	ClassDB::bind_method(D_METHOD("apply_ops_line", "json_line"), &Anticheat::apply_ops_line);
 	ClassDB::bind_method(D_METHOD("gb_send", "data"), &Anticheat::gb_send);
 
 	ADD_SIGNAL(MethodInfo("outgoing_packet", PropertyInfo(Variant::PACKED_BYTE_ARRAY, "blob")));
@@ -44,6 +55,7 @@ void Anticheat::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("screenshot_ready", PropertyInfo(Variant::PACKED_BYTE_ARRAY, "png"), PropertyInfo(Variant::INT, "width"), PropertyInfo(Variant::INT, "height")));
 	ADD_SIGNAL(MethodInfo("server_drop_client", PropertyInfo(Variant::INT, "client_index"), PropertyInfo(Variant::STRING, "reason")));
 	ADD_SIGNAL(MethodInfo("ops_action", PropertyInfo(Variant::STRING, "json_line")));
+	ADD_SIGNAL(MethodInfo("ops_teleport", PropertyInfo(Variant::STRING, "player_id"), PropertyInfo(Variant::STRING, "region"), PropertyInfo(Variant::FLOAT, "x"), PropertyInfo(Variant::FLOAT, "y")));
 }
 
 Anticheat *Anticheat::get_singleton() {
@@ -55,7 +67,7 @@ Anticheat::Anticheat() {
 }
 
 Anticheat::~Anticheat() {
-	if (initialized) {
+	if (initialized || server_initialized || ops_connected) {
 		shutdown();
 	}
 	if (singleton == this) {
@@ -67,7 +79,9 @@ void Anticheat::_screenshot_receiver(const unsigned char *rgba, int w, int h, in
 	if (!singleton || !rgba || w <= 0 || h <= 0) {
 		return;
 	}
-	(void)bpp;
+	if (bpp != 0 && bpp != 32) {
+		return;
+	}
 	Ref<Image> image;
 	image.instantiate();
 	Vector<uint8_t> bytes;
@@ -81,6 +95,7 @@ void Anticheat::_screenshot_receiver(const unsigned char *rgba, int w, int h, in
 		memcpy(out.ptrw(), png.ptr(), png.size());
 	}
 	singleton->emit_signal("screenshot_ready", out, w, h);
+	singleton->_send_screenshot_data(out, w, h);
 }
 
 void Anticheat::_register_screenshot_receiver() {
@@ -166,6 +181,24 @@ int Anticheat::initialize() {
 	}
 	_register_runtime_callbacks();
 	initialized = true;
+	anticheat_ensure_frame_hook();
+	return ANTICHEAT_OK;
+}
+
+int Anticheat::sv_initialize() {
+	if (server_initialized) {
+		return ANTICHEAT_OK;
+	}
+	if (!get_server_available()) {
+		return ANTICHEAT_ERR_UNAVAILABLE;
+	}
+	if (loader.sv_init() != 0) {
+		return ANTICHEAT_ERR_INIT;
+	}
+	loader.sv_set_send_packet(&Anticheat::_sv_send_packet);
+	loader.sv_set_notify_drop(&Anticheat::_sv_notify_drop);
+	server_initialized = true;
+	anticheat_ensure_frame_hook();
 	return ANTICHEAT_OK;
 }
 
@@ -178,22 +211,31 @@ void Anticheat::shutdown() {
 		loader.cl_shutdown();
 		initialized = false;
 	}
-	if (server_available) {
+	if (server_initialized) {
 		loader.sv_shutdown();
+		server_initialized = false;
 	}
+	player_to_index.clear();
+	index_to_player.clear();
+	screenshot_player_id = String();
 }
 
 bool Anticheat::is_initialized() const {
 	return initialized;
 }
 
+bool Anticheat::is_server_initialized() const {
+	return server_initialized;
+}
+
 void Anticheat::tick(int tick_limit_ms) {
-	if (!initialized) {
-		return;
+	if (initialized) {
+		loader.cl_tick(tick_limit_ms);
 	}
-	loader.cl_tick(tick_limit_ms);
-	if (server_available) {
+	if (server_initialized) {
 		loader.sv_tick(tick_limit_ms);
+	}
+	if (ops_connected) {
 		loader.gb_tick();
 	}
 }
@@ -219,6 +261,27 @@ int Anticheat::submit_command(const String &p_command) {
 		_capture_viewport_png();
 	}
 	return err;
+}
+
+void Anticheat::_send_screenshot_data(const PackedByteArray &p_png, int p_width, int p_height) {
+	if (!ops_connected) {
+		return;
+	}
+	Dictionary pairs;
+	pairs["width"] = p_width;
+	pairs["height"] = p_height;
+	if (!p_png.is_empty()) {
+		pairs["png_base64"] = CryptoCore::b64_encode_str(p_png.ptr(), p_png.size());
+	}
+	Dictionary ev;
+	ev["event"] = "ScreenshotData";
+	if (!screenshot_player_id.is_empty()) {
+		ev["player_id"] = screenshot_player_id;
+	}
+	ev["pairs"] = pairs;
+	const String line = JSON::stringify(ev) + "\n";
+	const CharString utf8 = line.utf8();
+	loader.gb_send(utf8.get_data(), utf8.length());
 }
 
 void Anticheat::_capture_viewport_png() {
@@ -248,19 +311,16 @@ void Anticheat::_capture_viewport_png() {
 		memcpy(out.ptrw(), png.ptr(), png.size());
 	}
 	emit_signal("screenshot_ready", out, img->get_width(), img->get_height());
-	if (ops_connected) {
-		const String line = vformat("{\"event\":\"Screenshot\",\"pairs\":{\"width\":%d,\"height\":%d}}\n", img->get_width(), img->get_height());
-		const CharString utf8 = line.utf8();
-		loader.gb_send(utf8.get_data(), utf8.length());
-	}
+	_send_screenshot_data(out, img->get_width(), img->get_height());
 }
 
 int Anticheat::ops_connect() {
 	if (!get_server_available()) {
 		return ANTICHEAT_ERR_UNAVAILABLE;
 	}
+	const String mode = ProjectSettings::get_singleton() ? String(ProjectSettings::get_singleton()->get("anticheat/ops/mode")) : String();
 	const bool dev = OS::get_singleton() && OS::get_singleton()->get_environment("BLAZIUM_AC_DEV") == "1";
-	if (!dev && ProjectSettings::get_singleton()) {
+	if (!dev && mode != "saas" && ProjectSettings::get_singleton()) {
 		String lic = ProjectSettings::get_singleton()->get("anticheat/ops/license_path");
 		if (!lic.is_empty()) {
 			if (lic.begins_with("res://") || lic.begins_with("user://")) {
@@ -271,16 +331,14 @@ int Anticheat::ops_connect() {
 			}
 		}
 	}
-	if (loader.sv_init() != 0) {
-		return ANTICHEAT_ERR_INIT;
+	const int sv_err = sv_initialize();
+	if (sv_err != ANTICHEAT_OK) {
+		return sv_err;
 	}
-	loader.sv_set_send_packet(&Anticheat::_sv_send_packet);
-	loader.sv_set_notify_drop(&Anticheat::_sv_notify_drop);
 	loader.gb_set_action_receiver(&Anticheat::_ops_action);
 	const int timeout_s = ProjectSettings::get_singleton()->get("anticheat/ops/timeout_s");
 	loader.gb_set_timeout_ms(timeout_s > 0 ? timeout_s * 1000 : 30000);
 
-	const String mode = ProjectSettings::get_singleton()->get("anticheat/ops/mode");
 	const String address = ProjectSettings::get_singleton()->get("anticheat/ops/address");
 	const int port = ProjectSettings::get_singleton()->get("anticheat/ops/port");
 	String source_id = ProjectSettings::get_singleton()->get("anticheat/ops/source_id");
@@ -335,6 +393,7 @@ void Anticheat::_sv_notify_drop(int client_index, const char *reason_utf8) {
 	if (!singleton) {
 		return;
 	}
+	singleton->unbind_player(client_index);
 	singleton->emit_signal("server_drop_client", client_index, String::utf8(reason_utf8 ? reason_utf8 : ""));
 }
 
@@ -342,21 +401,99 @@ void Anticheat::_ops_action(const char *json_line, int len) {
 	if (!singleton || !json_line || len <= 0) {
 		return;
 	}
-	singleton->emit_signal("ops_action", String::utf8(json_line, len));
+	singleton->apply_ops_line(String::utf8(json_line, len));
+}
+
+void Anticheat::_apply_mapped_kick(const String &p_player_id, const String &p_reason) {
+	const int idx = player_client_index(p_player_id);
+	if (idx < 0) {
+		return;
+	}
+	sv_drop_client(idx, p_reason);
 }
 
 int Anticheat::sv_on_packet(int p_client_index, const PackedByteArray &p_data) {
-	if (!server_available || p_data.is_empty()) {
+	if (!server_initialized || p_data.is_empty()) {
 		return ANTICHEAT_ERR_INIT;
 	}
 	return loader.sv_on_packet(p_client_index, p_data.ptr(), p_data.size());
 }
 
 int Anticheat::sv_client_join(int p_client_index) {
-	if (!server_available) {
+	if (!server_initialized) {
 		return ANTICHEAT_ERR_UNAVAILABLE;
 	}
 	return loader.sv_client_join(p_client_index);
+}
+
+int Anticheat::sv_drop_client(int p_client_index, const String &p_reason) {
+	if (server_initialized) {
+		const CharString utf8 = p_reason.utf8();
+		loader.sv_drop_client(p_client_index, utf8.get_data());
+		return ANTICHEAT_OK;
+	}
+	emit_signal("server_drop_client", p_client_index, p_reason);
+	unbind_player(p_client_index);
+	return ANTICHEAT_OK;
+}
+
+void Anticheat::bind_player(int p_client_index, const String &p_player_id) {
+	if (p_player_id.is_empty()) {
+		unbind_player(p_client_index);
+		return;
+	}
+	if (index_to_player.has(p_client_index)) {
+		player_to_index.erase(index_to_player[p_client_index]);
+	}
+	if (player_to_index.has(p_player_id)) {
+		index_to_player.erase(player_to_index[p_player_id]);
+	}
+	player_to_index[p_player_id] = p_client_index;
+	index_to_player[p_client_index] = p_player_id;
+}
+
+void Anticheat::unbind_player(int p_client_index) {
+	if (!index_to_player.has(p_client_index)) {
+		return;
+	}
+	player_to_index.erase(index_to_player[p_client_index]);
+	index_to_player.erase(p_client_index);
+}
+
+int Anticheat::player_client_index(const String &p_player_id) const {
+	if (!player_to_index.has(p_player_id)) {
+		return -1;
+	}
+	return player_to_index[p_player_id];
+}
+
+void Anticheat::apply_ops_line(const String &p_json_line) {
+	emit_signal("ops_action", p_json_line);
+	const Variant parsed = JSON::parse_string(p_json_line.strip_edges());
+	if (parsed.get_type() != Variant::DICTIONARY) {
+		return;
+	}
+	const Dictionary ev = parsed;
+	const String event = ev.get("event", "");
+	const String player_id = ev.get("player_id", "");
+	Dictionary pairs;
+	if (ev.get("pairs", Variant()).get_type() == Variant::DICTIONARY) {
+		pairs = ev.get("pairs", Dictionary());
+	}
+	const String reason = pairs.get("reason", "ops");
+	if (event == "Kick" || event == "KickMsg") {
+		_apply_mapped_kick(player_id, reason);
+		return;
+	}
+	if (event == "Screenshot" || event == "ScreenshotFront" || event == "ScreenshotBack") {
+		screenshot_player_id = player_id;
+		_capture_viewport_png();
+		screenshot_player_id = String();
+		return;
+	}
+	if (event == "Teleport") {
+		emit_signal("ops_teleport", player_id, String(pairs.get("region", "")), pairs.get("x", 0.0), pairs.get("y", 0.0));
+	}
 }
 
 int Anticheat::gb_send(const PackedByteArray &p_data) {

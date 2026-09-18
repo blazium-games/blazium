@@ -34,16 +34,17 @@ static bool anticheat_frame_hook_connected = false;
 static Ref<AnticheatExportPlugin> anticheat_export_plugin;
 #endif
 
-namespace {
-
-void anticheat_frame_callback() {
-	if (anticheat_singleton == nullptr || !anticheat_singleton->is_initialized()) {
+static void anticheat_frame_callback() {
+	if (anticheat_singleton == nullptr) {
+		return;
+	}
+	if (!anticheat_singleton->is_initialized() && !anticheat_singleton->is_server_initialized()) {
 		return;
 	}
 	anticheat_singleton->tick(0);
 }
 
-void connect_anticheat_frame_hook() {
+static void connect_anticheat_frame_hook() {
 	if (anticheat_frame_hook_connected) {
 		return;
 	}
@@ -55,7 +56,11 @@ void connect_anticheat_frame_hook() {
 	anticheat_frame_hook_connected = true;
 }
 
-void disconnect_anticheat_frame_hook() {
+void anticheat_ensure_frame_hook() {
+	connect_anticheat_frame_hook();
+}
+
+static void disconnect_anticheat_frame_hook() {
 	if (!anticheat_frame_hook_connected) {
 		return;
 	}
@@ -66,7 +71,7 @@ void disconnect_anticheat_frame_hook() {
 	anticheat_frame_hook_connected = false;
 }
 
-void anticheat_register_project_settings() {
+static void anticheat_register_project_settings() {
 	GLOBAL_DEF("anticheat/require_agent", false);
 	GLOBAL_DEF(PropertyInfo(Variant::STRING, "anticheat/ops/mode", PROPERTY_HINT_ENUM, "internal,saas"), "internal");
 	GLOBAL_DEF("anticheat/ops/address", "127.0.0.1");
@@ -79,8 +84,6 @@ void anticheat_register_project_settings() {
 	GLOBAL_DEF("anticheat/verify_runtime_signature", false);
 	GLOBAL_DEF("anticheat/runtime_public_key", "");
 }
-
-} // namespace
 
 void initialize_anticheat_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {

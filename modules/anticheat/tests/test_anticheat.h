@@ -13,6 +13,7 @@
 #include "../anticheat_types.h"
 
 #include "core/config/engine.h"
+#include "core/config/project_settings.h"
 #include "tests/test_macros.h"
 
 namespace TestAnticheat {
@@ -50,6 +51,38 @@ TEST_CASE("[Anticheat] ops_connect without dedicated runtimes is unavailable") {
 	Anticheat *ac = Anticheat::get_singleton();
 	REQUIRE(ac != nullptr);
 	CHECK(ac->ops_connect() == ANTICHEAT_ERR_UNAVAILABLE);
+}
+
+TEST_CASE("[Anticheat] sv_initialize without dedicated runtimes is unavailable") {
+	Anticheat *ac = Anticheat::get_singleton();
+	REQUIRE(ac != nullptr);
+	CHECK(ac->sv_initialize() == ANTICHEAT_ERR_UNAVAILABLE);
+	CHECK_FALSE(ac->is_server_initialized());
+}
+
+TEST_CASE("[Anticheat] bind_player maps kick without a runtime") {
+	Anticheat *ac = Anticheat::get_singleton();
+	REQUIRE(ac != nullptr);
+	ac->bind_player(3, "alice");
+	CHECK(ac->player_client_index("alice") == 3);
+	ac->apply_ops_line("{\"event\":\"Kick\",\"player_id\":\"nobody\"}");
+	CHECK(ac->player_client_index("alice") == 3);
+	ac->apply_ops_line("{\"event\":\"Kick\",\"player_id\":\"alice\",\"pairs\":{\"reason\":\"ops\"}}");
+	CHECK(ac->player_client_index("alice") == -1);
+}
+
+TEST_CASE("[Anticheat] saas ops_connect skips missing license file") {
+	Anticheat *ac = Anticheat::get_singleton();
+	REQUIRE(ac != nullptr);
+	ProjectSettings *ps = ProjectSettings::get_singleton();
+	REQUIRE(ps != nullptr);
+	const Variant prev_mode = ps->get("anticheat/ops/mode");
+	const Variant prev_lic = ps->get("anticheat/ops/license_path");
+	ps->set("anticheat/ops/mode", "saas");
+	ps->set("anticheat/ops/license_path", "this_license_does_not_exist.json");
+	CHECK(ac->ops_connect() == ANTICHEAT_ERR_UNAVAILABLE);
+	ps->set("anticheat/ops/mode", prev_mode);
+	ps->set("anticheat/ops/license_path", prev_lic);
 }
 
 } // namespace TestAnticheat
