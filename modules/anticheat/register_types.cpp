@@ -78,6 +78,7 @@ static void anticheat_register_project_settings() {
 	GLOBAL_DEF("anticheat/ops/port", 8730);
 	GLOBAL_DEF("anticheat/ops/timeout_s", 30);
 	GLOBAL_DEF("anticheat/ops/source_id", "");
+	GLOBAL_DEF("anticheat/ops/title_id", "");
 	GLOBAL_DEF("anticheat/ops/license_path", "bzops.license.json");
 	GLOBAL_DEF("anticheat/ops/saas_endpoint", "");
 	GLOBAL_DEF("anticheat/export/bin_dir", "res://anticheat/bin");

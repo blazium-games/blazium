@@ -158,6 +158,10 @@ void AnticheatEditorPlugin::_on_ops_mute(const String &p_player_id, const String
 	_append_log(vformat("ops_mute player=%s text=%s until=%d", p_player_id, p_text, (int)p_until));
 }
 
+void AnticheatEditorPlugin::_on_ops_unmute(const String &p_player_id) {
+	_append_log(vformat("ops_unmute player=%s", p_player_id));
+}
+
 void AnticheatEditorPlugin::_on_ops_spectate(const String &p_player_id, const String &p_text, int64_t p_until) {
 	_append_log(vformat("ops_spectate player=%s text=%s until=%d", p_player_id, p_text, (int)p_until));
 }
@@ -177,6 +181,7 @@ void AnticheatEditorPlugin::_connect_signals() {
 	ac->connect("ops_action", callable_mp(this, &AnticheatEditorPlugin::_on_ops_action));
 	ac->connect("ops_warn", callable_mp(this, &AnticheatEditorPlugin::_on_ops_warn));
 	ac->connect("ops_mute", callable_mp(this, &AnticheatEditorPlugin::_on_ops_mute));
+	ac->connect("ops_unmute", callable_mp(this, &AnticheatEditorPlugin::_on_ops_unmute));
 	ac->connect("ops_spectate", callable_mp(this, &AnticheatEditorPlugin::_on_ops_spectate));
 	signals_connected = true;
 }
@@ -283,6 +288,9 @@ void AnticheatEditorPlugin::_teardown_dock() {
 			}
 			if (ac->is_connected("ops_mute", callable_mp(this, &AnticheatEditorPlugin::_on_ops_mute))) {
 				ac->disconnect("ops_mute", callable_mp(this, &AnticheatEditorPlugin::_on_ops_mute));
+			}
+			if (ac->is_connected("ops_unmute", callable_mp(this, &AnticheatEditorPlugin::_on_ops_unmute))) {
+				ac->disconnect("ops_unmute", callable_mp(this, &AnticheatEditorPlugin::_on_ops_unmute));
 			}
 			if (ac->is_connected("ops_spectate", callable_mp(this, &AnticheatEditorPlugin::_on_ops_spectate))) {
 				ac->disconnect("ops_spectate", callable_mp(this, &AnticheatEditorPlugin::_on_ops_spectate));
