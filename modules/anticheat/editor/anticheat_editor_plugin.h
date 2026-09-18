@@ -11,6 +11,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "editor/plugins/editor_plugin.h"
+#include "core/variant/variant.h"
 
 class LineEdit;
 class RichTextLabel;
@@ -37,8 +38,15 @@ private:
 	void _on_bind_pressed();
 	void _on_unbind_pressed();
 	void _on_apply_ops_pressed();
+	void _on_ops_message(const String &p_player_id, const String &p_text);
+	void _on_ops_kill(const String &p_player_id);
+	void _on_ops_screenshot_request(const String &p_player_id, const String &p_side);
+	void _on_server_drop_client(int p_client_index, const String &p_reason);
+	void _on_screenshot_ready(const PackedByteArray &p_png, int p_width, int p_height);
 	void _setup_dock();
 	void _teardown_dock();
+	void _connect_signals();
+	bool signals_connected = false;
 
 protected:
 	static void _bind_methods() {}

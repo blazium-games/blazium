@@ -178,6 +178,7 @@
 			<param index="1" name="region" type="String" />
 			<param index="2" name="x" type="float" />
 			<param index="3" name="y" type="float" />
+			<param index="4" name="z" type="float" />
 			<description>
 				Dedicated server: Teleport action. The host must move the player; the module does not.
 			</description>
