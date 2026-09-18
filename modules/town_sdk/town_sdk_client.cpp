@@ -92,6 +92,7 @@ TownSdkClient::~TownSdkClient() {
 		client->on_integrity({});
 		client->on_screenshot_req({});
 		client->on_ops_action({});
+		client->on_anim_fx({});
 		client.reset();
 	}
 
@@ -181,6 +182,10 @@ void TownSdkClient::_attach_callbacks() {
 	client->on_ops_action([this](const Variant &p_payload) {
 		emit_signal("ops_action_received", p_payload);
 	});
+
+	client->on_anim_fx([this](const Variant &p_payload) {
+		emit_signal("anim_fx", p_payload);
+	});
 }
 
 std::string TownSdkClient::_string_to_std(const String &p_string) {
@@ -244,6 +249,47 @@ void TownSdkClient::send_move(int p_held, double p_delta) {
 	if (client) {
 		uint8_t held = (uint8_t)CLAMP(p_held, 0, 255);
 		client->send_move(held, (float)p_delta);
+	}
+}
+
+void TownSdkClient::send_move_look(int p_held, double p_delta, double p_yaw, double p_pitch, bool p_flashlight,
+		bool p_weapon_light) {
+	if (client) {
+		uint8_t held = (uint8_t)CLAMP(p_held, 0, 255);
+		client->send_move_look(held, (float)p_delta, (float)p_yaw, (float)p_pitch, p_flashlight, p_weapon_light);
+	}
+}
+
+void TownSdkClient::send_move_pose(int p_held, double p_delta, double p_yaw, double p_pitch, bool p_flashlight,
+		bool p_weapon_light, const String &p_stance, bool p_ads) {
+	if (client) {
+		uint8_t held = (uint8_t)CLAMP(p_held, 0, 255);
+		client->send_move_pose(held, (float)p_delta, (float)p_yaw, (float)p_pitch, p_flashlight, p_weapon_light,
+				_string_to_std(p_stance), p_ads);
+	}
+}
+
+void TownSdkClient::send_melee() {
+	if (client) {
+		client->send_melee();
+	}
+}
+
+void TownSdkClient::send_fire() {
+	if (client) {
+		client->send_fire();
+	}
+}
+
+void TownSdkClient::send_use(int p_slot) {
+	if (client) {
+		client->send_use(p_slot);
+	}
+}
+
+void TownSdkClient::send_reload() {
+	if (client) {
+		client->send_reload();
 	}
 }
 
@@ -374,6 +420,15 @@ void TownSdkClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("enter_region", "region_id"), &TownSdkClient::enter_region);
 	ClassDB::bind_method(D_METHOD("leave_region"), &TownSdkClient::leave_region);
 	ClassDB::bind_method(D_METHOD("send_move", "held", "delta"), &TownSdkClient::send_move);
+	ClassDB::bind_method(D_METHOD("send_move_look", "held", "delta", "yaw", "pitch", "flashlight", "weapon_light"),
+			&TownSdkClient::send_move_look, DEFVAL(false), DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("send_move_pose", "held", "delta", "yaw", "pitch", "flashlight", "weapon_light",
+								 "stance", "ads"),
+			&TownSdkClient::send_move_pose);
+	ClassDB::bind_method(D_METHOD("send_melee"), &TownSdkClient::send_melee);
+	ClassDB::bind_method(D_METHOD("send_fire"), &TownSdkClient::send_fire);
+	ClassDB::bind_method(D_METHOD("send_use", "slot"), &TownSdkClient::send_use);
+	ClassDB::bind_method(D_METHOD("send_reload"), &TownSdkClient::send_reload);
 	ClassDB::bind_method(D_METHOD("battle_action", "battle_id", "action", "target_id"), &TownSdkClient::battle_action, DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("leave_battle", "battle_id"), &TownSdkClient::leave_battle);
 	ClassDB::bind_method(D_METHOD("admin_reload", "scope"), &TownSdkClient::admin_reload);
@@ -415,6 +470,7 @@ void TownSdkClient::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("integrity_received", PropertyInfo(Variant::DICTIONARY, "payload")));
 	ADD_SIGNAL(MethodInfo("screenshot_req_received", PropertyInfo(Variant::DICTIONARY, "payload")));
 	ADD_SIGNAL(MethodInfo("ops_action_received", PropertyInfo(Variant::DICTIONARY, "payload")));
+	ADD_SIGNAL(MethodInfo("anim_fx", PropertyInfo(Variant::DICTIONARY, "fx")));
 
 	BIND_ENUM_CONSTANT(ACTION_ATTACK);
 	BIND_ENUM_CONSTANT(ACTION_BLOCK);

@@ -58,6 +58,14 @@ public:
 	void enter_region(const std::string &region_id);
 	void leave_region();
 	void send_move(uint8_t held, float dt);
+	void send_move_look(uint8_t held, float dt, float yaw, float pitch, bool flashlight = false,
+			bool weapon_light = false);
+	void send_move_pose(uint8_t held, float dt, float yaw, float pitch, bool flashlight,
+			bool weapon_light, const std::string &stance, bool ads);
+	void send_melee();
+	void send_fire();
+	void send_use(int slot);
+	void send_reload();
 
 	// Battle
 	void battle_action(const std::string &battle_id, Action action,
@@ -100,6 +108,7 @@ public:
 	void on_integrity(OnIntegrityCallback cb);
 	void on_screenshot_req(OnScreenshotReqCallback cb);
 	void on_ops_action(OnOpsActionCallback cb);
+	void on_anim_fx(OnAnimFxCallback cb);
 
 	// Update (call each frame)
 	void update(float dt);

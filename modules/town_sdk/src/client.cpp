@@ -134,6 +134,7 @@ struct Client::Impl {
 	OnIntegrityCallback on_integrity;
 	OnScreenshotReqCallback on_screenshot_req;
 	OnOpsActionCallback on_ops_action;
+	OnAnimFxCallback on_anim_fx;
 
 	bool debug_capture = false;
 	size_t debug_history_limit = 64;
@@ -429,6 +430,53 @@ void Client::send_move(uint8_t held, float dt) {
 	send_message(protocol::MessageType::MOVE_INPUT, variant_to_json_string(payload), protocol::Channel::REGION);
 }
 
+void Client::send_move_look(uint8_t held, float dt, float yaw, float pitch, bool flashlight,
+		bool weapon_light) {
+	Dictionary payload;
+	payload["held"] = (int)held;
+	payload["dt"] = dt;
+	payload["yaw"] = yaw;
+	payload["pitch"] = pitch;
+	payload["flashlight"] = flashlight;
+	payload["weapon_light"] = weapon_light;
+	send_message(protocol::MessageType::MOVE_INPUT, variant_to_json_string(payload), protocol::Channel::REGION);
+}
+
+void Client::send_move_pose(uint8_t held, float dt, float yaw, float pitch, bool flashlight,
+		bool weapon_light, const std::string &stance, bool ads) {
+	Dictionary payload;
+	payload["held"] = (int)held;
+	payload["dt"] = dt;
+	payload["yaw"] = yaw;
+	payload["pitch"] = pitch;
+	payload["flashlight"] = flashlight;
+	payload["weapon_light"] = weapon_light;
+	payload["stance"] = String::utf8(stance.c_str());
+	payload["ads"] = ads;
+	send_message(protocol::MessageType::MOVE_INPUT, variant_to_json_string(payload), protocol::Channel::REGION);
+}
+
+void Client::send_melee() {
+	Dictionary payload;
+	send_message(protocol::MessageType::MELEE, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::send_fire() {
+	Dictionary payload;
+	send_message(protocol::MessageType::FIRE, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::send_use(int slot) {
+	Dictionary payload;
+	payload["slot"] = slot;
+	send_message(protocol::MessageType::USE, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::send_reload() {
+	Dictionary payload;
+	send_message(protocol::MessageType::RELOAD, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
 void Client::battle_action(const std::string &battle_id, Action action, const std::string &target_id) {
 	std::string action_str;
 	switch (action) {
@@ -550,6 +598,9 @@ void Client::on_screenshot_req(OnScreenshotReqCallback cb) {
 }
 void Client::on_ops_action(OnOpsActionCallback cb) {
 	impl_->on_ops_action = cb;
+}
+void Client::on_anim_fx(OnAnimFxCallback cb) {
+	impl_->on_anim_fx = cb;
 }
 
 void Client::send_integrity(const std::string &hex_blob) {
@@ -806,6 +857,12 @@ void Client::handle_message(uint16_t type, const std::string &payload) {
 		case protocol::MessageType::OPS_ACTION:
 			if (impl_->on_ops_action) {
 				impl_->on_ops_action(parsed);
+			}
+			break;
+
+		case protocol::MessageType::ANIM_FX:
+			if (impl_->on_anim_fx) {
+				impl_->on_anim_fx(parsed);
 			}
 			break;
 

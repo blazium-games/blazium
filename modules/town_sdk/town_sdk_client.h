@@ -67,6 +67,14 @@ public:
 	void enter_region(const String &p_region_id);
 	void leave_region();
 	void send_move(int p_held, double p_delta);
+	void send_move_look(int p_held, double p_delta, double p_yaw, double p_pitch, bool p_flashlight = false,
+			bool p_weapon_light = false);
+	void send_move_pose(int p_held, double p_delta, double p_yaw, double p_pitch, bool p_flashlight,
+			bool p_weapon_light, const String &p_stance, bool p_ads);
+	void send_melee();
+	void send_fire();
+	void send_use(int p_slot);
+	void send_reload();
 
 	void battle_action(const String &p_battle_id, BattleAction p_action, const String &p_target_id = String());
 	void leave_battle(const String &p_battle_id);
