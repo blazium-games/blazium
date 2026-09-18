@@ -43,6 +43,7 @@
 #include <chrono>
 #include <cstring>
 #include <functional>
+#include <string>
 #include <vector>
 
 namespace turnbattle {
@@ -64,6 +65,20 @@ static std::string variant_to_json_string(const Variant &p_variant) {
 	String json_text = JSON::stringify(p_variant, "", false, true);
 	CharString utf8 = json_text.utf8();
 	return std::string(utf8.get_data(), utf8.length());
+}
+
+static std::string loc_debug(const Dictionary &loc) {
+	String out = String(loc.get("kind", "bag"));
+	if (loc.has("slot")) {
+		out += vformat(" slot=%d", (int)loc.get("slot", -1));
+	}
+	if (loc.has("x") || loc.has("y")) {
+		out += vformat(" x=%d y=%d", (int)loc.get("x", -1), (int)loc.get("y", -1));
+	}
+	if (loc.has("rot")) {
+		out += vformat(" rot=%d", (int)loc.get("rot", 0));
+	}
+	return to_std_string(out);
 }
 
 static bool parse_json_payload(const std::string &p_payload, Variant &r_result, String &r_error) {
@@ -123,6 +138,8 @@ struct Client::Impl {
 	OnBattleIndicatorDespawnCallback on_battle_indicator_despawn;
 	OnErrorCallback on_error;
 	OnDisconnectCallback on_disconnect;
+	std::string voip_host;
+	uint16_t voip_port = 0;
 
 	// Reconnection state
 	std::string last_jwt_token;
@@ -389,6 +406,10 @@ std::string Client::get_server_version() const {
 }
 
 void Client::disconnect() {
+	if (impl_) {
+		impl_->voip_host.clear();
+		impl_->voip_port = 0;
+	}
 	if (!is_ready()) {
 		return;
 	}
@@ -413,6 +434,8 @@ void Client::disconnect() {
 
 	impl_->peer = nullptr;
 	impl_->connected = false;
+	impl_->voip_host.clear();
+	impl_->voip_port = 0;
 }
 
 bool Client::is_connected() const {
@@ -559,6 +582,14 @@ void Client::send_craft(const std::string &recipe) {
 	send_message(protocol::MessageType::USE, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
 
+void Client::send_inventory_move(const Dictionary &from, const Dictionary &to) {
+	log_info("inventory_move from=" + loc_debug(from) + " to=" + loc_debug(to));
+	Dictionary payload;
+	payload["from"] = from;
+	payload["to"] = to;
+	send_message(protocol::MessageType::INVENTORY_MOVE, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
 void Client::battle_action(const std::string &battle_id, Action action, const std::string &target_id) {
 	std::string action_str;
 	switch (action) {
@@ -626,6 +657,60 @@ void Client::on_move_state(OnMoveStateCallback cb) {
 void Client::on_hello(OnHelloCallback cb) {
 	impl_->on_hello = cb;
 }
+
+void Client::apply_hello_ack(const Dictionary &p_data) {
+	if (!impl_) {
+		return;
+	}
+	if (p_data.has("session_id")) {
+		impl_->session_id = to_std_string(p_data["session_id"]);
+	}
+
+	impl_->voip_host.clear();
+	impl_->voip_port = 0;
+	if (p_data.has("voip") && p_data["voip"].get_type() == Variant::DICTIONARY) {
+		const Dictionary voip = p_data["voip"];
+		impl_->voip_host = to_std_string(voip.get("host", String()));
+		const int port = (int)voip.get("port", 0);
+		if (port > 0 && port <= 65535) {
+			impl_->voip_port = static_cast<uint16_t>(port);
+		}
+	}
+	if (has_voip()) {
+		log_info("voip stored " + impl_->voip_host + ":" + std::to_string(impl_->voip_port));
+	} else {
+		log_info("voip none");
+	}
+
+	const bool resumed = (bool)p_data.get("resumed", false);
+	if (resumed) {
+		impl_->is_reconnecting = false;
+		impl_->reconnect_attempts = 0;
+		if (impl_->on_reconnected) {
+			impl_->on_reconnected(p_data.get("resume_state", Variant()));
+		}
+	}
+
+	if (p_data.has("reconnection_token")) {
+		impl_->reconnection_token = to_std_string(p_data["reconnection_token"]);
+	}
+	if (impl_->on_hello) {
+		impl_->on_hello(p_data);
+	}
+}
+
+bool Client::has_voip() const {
+	return impl_ && !impl_->voip_host.empty() && impl_->voip_port != 0;
+}
+
+std::string Client::get_voip_host() const {
+	return impl_ ? impl_->voip_host : std::string();
+}
+
+uint16_t Client::get_voip_port() const {
+	return impl_ ? impl_->voip_port : 0;
+}
+
 void Client::on_entity_spawn(OnEntitySpawnCallback cb) {
 	impl_->on_entity_spawn = cb;
 }
@@ -873,28 +958,7 @@ void Client::handle_message(uint16_t type, const std::string &payload) {
 				log_warning("HELLO_ACK payload is not a dictionary");
 				return;
 			}
-
-			if (data.has("session_id")) {
-				impl_->session_id = to_std_string(data["session_id"]);
-			}
-
-			bool resumed = (bool)data.get("resumed", false);
-			if (resumed) {
-				impl_->is_reconnecting = false;
-				impl_->reconnect_attempts = 0;
-
-				if (impl_->on_reconnected) {
-					impl_->on_reconnected(data.get("resume_state", Variant()));
-				}
-			}
-
-			if (data.has("reconnection_token")) {
-				impl_->reconnection_token = to_std_string(data["reconnection_token"]);
-			}
-
-			if (impl_->on_hello) {
-				impl_->on_hello(data);
-			}
+			apply_hello_ack(data);
 			break;
 		}
 

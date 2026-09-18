@@ -34,6 +34,12 @@
 			<description>
 			</description>
 		</method>
+		<method name="apply_hello_ack">
+			<return type="void" />
+			<param index="0" name="data" type="Dictionary" />
+			<description>
+			</description>
+		</method>
 		<method name="authenticate">
 			<return type="void" />
 			<param index="0" name="jwt_token" type="String" />
@@ -101,6 +107,21 @@
 			<description>
 			</description>
 		</method>
+		<method name="get_voip_host" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_voip_port" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="has_voip" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
 		<method name="is_client_connected" qualifiers="const">
 			<return type="bool" />
 			<description>
@@ -130,6 +151,13 @@
 		<method name="poll">
 			<return type="void" />
 			<param index="0" name="delta" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="send_inventory_move">
+			<return type="void" />
+			<param index="0" name="from" type="Dictionary" />
+			<param index="1" name="to" type="Dictionary" />
 			<description>
 			</description>
 		</method>
@@ -220,6 +248,11 @@
 		</signal>
 		<signal name="error">
 			<param index="0" name="message" type="String" />
+			<description>
+			</description>
+		</signal>
+		<signal name="hello_received">
+			<param index="0" name="hello" type="Dictionary" />
 			<description>
 			</description>
 		</signal>
