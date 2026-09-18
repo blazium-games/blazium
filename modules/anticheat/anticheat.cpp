@@ -60,6 +60,9 @@ void Anticheat::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("ops_global_message", PropertyInfo(Variant::STRING, "text")));
 	ADD_SIGNAL(MethodInfo("ops_kill", PropertyInfo(Variant::STRING, "player_id")));
 	ADD_SIGNAL(MethodInfo("ops_screenshot_request", PropertyInfo(Variant::STRING, "player_id"), PropertyInfo(Variant::STRING, "side")));
+	ADD_SIGNAL(MethodInfo("ops_warn", PropertyInfo(Variant::STRING, "player_id"), PropertyInfo(Variant::STRING, "text")));
+	ADD_SIGNAL(MethodInfo("ops_mute", PropertyInfo(Variant::STRING, "player_id"), PropertyInfo(Variant::STRING, "text"), PropertyInfo(Variant::INT, "until_unix")));
+	ADD_SIGNAL(MethodInfo("ops_spectate", PropertyInfo(Variant::STRING, "player_id"), PropertyInfo(Variant::STRING, "text"), PropertyInfo(Variant::INT, "until_unix")));
 }
 
 Anticheat *Anticheat::get_singleton() {
@@ -490,8 +493,23 @@ void Anticheat::apply_ops_line(const String &p_json_line) {
 	if (text.is_empty()) {
 		text = reason;
 	}
-	if (event == "Kick" || event == "KickMsg") {
+	if (event == "Kick" || event == "KickMsg" || event == "Timeout") {
 		_apply_mapped_kick(player_id, reason);
+		return;
+	}
+	if (event == "Warn") {
+		emit_signal("ops_warn", player_id, text);
+		return;
+	}
+	if (event == "Mute") {
+		emit_signal("ops_mute", player_id, text, (int64_t)pairs.get("until_unix", 0));
+		return;
+	}
+	if (event == "Spectate") {
+		emit_signal("ops_spectate", player_id, text, (int64_t)pairs.get("until_unix", 0));
+		return;
+	}
+	if (event == "Note") {
 		return;
 	}
 	if (event == "Message") {

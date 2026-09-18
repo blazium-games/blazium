@@ -138,6 +138,30 @@ void AnticheatEditorPlugin::_on_screenshot_ready(const PackedByteArray &p_png, i
 	_append_log(vformat("screenshot_ready %dx%d bytes=%d", p_width, p_height, p_png.size()));
 }
 
+void AnticheatEditorPlugin::_on_ops_teleport(const String &p_player_id, const String &p_region, float p_x, float p_y, float p_z) {
+	_append_log(vformat("ops_teleport player=%s region=%s x=%s y=%s z=%s", p_player_id, p_region, rtos(p_x), rtos(p_y), rtos(p_z)));
+}
+
+void AnticheatEditorPlugin::_on_ops_global_message(const String &p_text) {
+	_append_log(vformat("ops_global_message text=%s", p_text));
+}
+
+void AnticheatEditorPlugin::_on_ops_action(const String &p_json_line) {
+	_append_log(vformat("ops_action %s", p_json_line));
+}
+
+void AnticheatEditorPlugin::_on_ops_warn(const String &p_player_id, const String &p_text) {
+	_append_log(vformat("ops_warn player=%s text=%s", p_player_id, p_text));
+}
+
+void AnticheatEditorPlugin::_on_ops_mute(const String &p_player_id, const String &p_text, int64_t p_until) {
+	_append_log(vformat("ops_mute player=%s text=%s until=%d", p_player_id, p_text, (int)p_until));
+}
+
+void AnticheatEditorPlugin::_on_ops_spectate(const String &p_player_id, const String &p_text, int64_t p_until) {
+	_append_log(vformat("ops_spectate player=%s text=%s until=%d", p_player_id, p_text, (int)p_until));
+}
+
 void AnticheatEditorPlugin::_connect_signals() {
 	Anticheat *ac = Anticheat::get_singleton();
 	if (!ac || signals_connected) {
@@ -148,6 +172,12 @@ void AnticheatEditorPlugin::_connect_signals() {
 	ac->connect("ops_screenshot_request", callable_mp(this, &AnticheatEditorPlugin::_on_ops_screenshot_request));
 	ac->connect("server_drop_client", callable_mp(this, &AnticheatEditorPlugin::_on_server_drop_client));
 	ac->connect("screenshot_ready", callable_mp(this, &AnticheatEditorPlugin::_on_screenshot_ready));
+	ac->connect("ops_teleport", callable_mp(this, &AnticheatEditorPlugin::_on_ops_teleport));
+	ac->connect("ops_global_message", callable_mp(this, &AnticheatEditorPlugin::_on_ops_global_message));
+	ac->connect("ops_action", callable_mp(this, &AnticheatEditorPlugin::_on_ops_action));
+	ac->connect("ops_warn", callable_mp(this, &AnticheatEditorPlugin::_on_ops_warn));
+	ac->connect("ops_mute", callable_mp(this, &AnticheatEditorPlugin::_on_ops_mute));
+	ac->connect("ops_spectate", callable_mp(this, &AnticheatEditorPlugin::_on_ops_spectate));
 	signals_connected = true;
 }
 
@@ -238,6 +268,24 @@ void AnticheatEditorPlugin::_teardown_dock() {
 			}
 			if (ac->is_connected("screenshot_ready", callable_mp(this, &AnticheatEditorPlugin::_on_screenshot_ready))) {
 				ac->disconnect("screenshot_ready", callable_mp(this, &AnticheatEditorPlugin::_on_screenshot_ready));
+			}
+			if (ac->is_connected("ops_teleport", callable_mp(this, &AnticheatEditorPlugin::_on_ops_teleport))) {
+				ac->disconnect("ops_teleport", callable_mp(this, &AnticheatEditorPlugin::_on_ops_teleport));
+			}
+			if (ac->is_connected("ops_global_message", callable_mp(this, &AnticheatEditorPlugin::_on_ops_global_message))) {
+				ac->disconnect("ops_global_message", callable_mp(this, &AnticheatEditorPlugin::_on_ops_global_message));
+			}
+			if (ac->is_connected("ops_action", callable_mp(this, &AnticheatEditorPlugin::_on_ops_action))) {
+				ac->disconnect("ops_action", callable_mp(this, &AnticheatEditorPlugin::_on_ops_action));
+			}
+			if (ac->is_connected("ops_warn", callable_mp(this, &AnticheatEditorPlugin::_on_ops_warn))) {
+				ac->disconnect("ops_warn", callable_mp(this, &AnticheatEditorPlugin::_on_ops_warn));
+			}
+			if (ac->is_connected("ops_mute", callable_mp(this, &AnticheatEditorPlugin::_on_ops_mute))) {
+				ac->disconnect("ops_mute", callable_mp(this, &AnticheatEditorPlugin::_on_ops_mute));
+			}
+			if (ac->is_connected("ops_spectate", callable_mp(this, &AnticheatEditorPlugin::_on_ops_spectate))) {
+				ac->disconnect("ops_spectate", callable_mp(this, &AnticheatEditorPlugin::_on_ops_spectate));
 			}
 		}
 		signals_connected = false;

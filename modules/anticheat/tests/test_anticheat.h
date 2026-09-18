@@ -74,6 +74,11 @@ TEST_CASE("[Anticheat] bind_player maps kick without a runtime") {
 	ac->apply_ops_line("{\"event\":\"Kill\",\"player_id\":\"bob\"}");
 	ac->apply_ops_line("{\"event\":\"Screenshot\",\"player_id\":\"bob\"}");
 	ac->apply_ops_line("{\"event\":\"Teleport\",\"player_id\":\"bob\",\"pairs\":{\"region\":\"town\",\"x\":1,\"y\":2,\"z\":3}}");
+	ac->apply_ops_line("{\"event\":\"Warn\",\"player_id\":\"bob\",\"pairs\":{\"text\":\"stop\"}}");
+	ac->apply_ops_line("{\"event\":\"Mute\",\"player_id\":\"bob\",\"pairs\":{\"until_unix\":1}}");
+	ac->apply_ops_line("{\"event\":\"Spectate\",\"player_id\":\"bob\",\"pairs\":{\"until_unix\":0}}");
+	ac->apply_ops_line("{\"event\":\"Timeout\",\"player_id\":\"nobody\",\"pairs\":{\"reason\":\"temp\"}}");
+	ac->apply_ops_line("{\"event\":\"Note\",\"player_id\":\"bob\",\"pairs\":{\"text\":\"flag\"}}");
 	CHECK_FALSE(ac->is_server_initialized());
 }
 
