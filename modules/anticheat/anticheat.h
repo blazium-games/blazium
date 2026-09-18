@@ -32,6 +32,7 @@ private:
 	static int _file_hash(const char *path, unsigned char out32[32]);
 	static int _sv_send_packet(int client_index, const void *data, int len);
 	static void _sv_notify_drop(int client_index, const char *reason_utf8);
+	static void _ops_action(const char *json_line, int len);
 
 protected:
 	static void _bind_methods();

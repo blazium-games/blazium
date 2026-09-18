@@ -75,5 +75,51 @@
 			<description>
 			</description>
 		</method>
+		<method name="sv_on_packet">
+			<return type="int" />
+			<param index="0" name="client_index" type="int" />
+			<param index="1" name="data" type="PackedByteArray" />
+			<description>
+				Dedicated server: forwards a client integrity blob to [code]bzsv[/code].
+			</description>
+		</method>
+		<method name="sv_client_join">
+			<return type="int" />
+			<param index="0" name="client_index" type="int" />
+			<description>
+				Dedicated server: starts the integrity hello for a client slot.
+			</description>
+		</method>
+		<method name="gb_send">
+			<return type="int" />
+			<param index="0" name="data" type="PackedByteArray" />
+			<description>
+				Dedicated server: send a JSONL line to ops after [method ops_connect].
+			</description>
+		</method>
 	</methods>
+	<signals>
+		<signal name="outgoing_packet">
+			<param index="0" name="blob" type="PackedByteArray" />
+		</signal>
+		<signal name="outgoing_server_packet">
+			<param index="0" name="client_index" type="int" />
+			<param index="1" name="blob" type="PackedByteArray" />
+		</signal>
+		<signal name="screenshot_ready">
+			<param index="0" name="png" type="PackedByteArray" />
+			<param index="1" name="width" type="int" />
+			<param index="2" name="height" type="int" />
+		</signal>
+		<signal name="server_drop_client">
+			<param index="0" name="client_index" type="int" />
+			<param index="1" name="reason" type="String" />
+		</signal>
+		<signal name="ops_action">
+			<param index="0" name="json_line" type="String" />
+			<description>
+				Dedicated server: Kick, Screenshot, Teleport, and other ops actions from [code]bzgb[/code].
+			</description>
+		</signal>
+	</signals>
 </class>

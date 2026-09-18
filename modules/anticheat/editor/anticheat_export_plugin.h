@@ -18,6 +18,7 @@ class AnticheatExportPlugin : public EditorExportPlugin {
 	GDCLASS(AnticheatExportPlugin, EditorExportPlugin);
 
 	String export_path;
+	HashSet<String> export_features;
 
 protected:
 	virtual void _export_begin(const HashSet<String> &p_features, bool p_debug, const String &p_path, int p_flags) override;

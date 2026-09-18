@@ -19,7 +19,21 @@ void AnticheatExportPlugin::_export_begin(const HashSet<String> &p_features, boo
 	(void)p_debug;
 	(void)p_flags;
 	export_path = p_path;
-	(void)p_features;
+	export_features = p_features;
+}
+
+static bool export_wants_windows(const HashSet<String> &features) {
+	if (features.has("windows")) {
+		return true;
+	}
+	if (features.has("linux") || features.has("linuxbsd") || features.has("x11") || features.has("macos") || features.has("osx")) {
+		return false;
+	}
+#ifdef WINDOWS_ENABLED
+	return true;
+#else
+	return false;
+#endif
 }
 
 void AnticheatExportPlugin::_export_end() {
@@ -48,25 +62,26 @@ void AnticheatExportPlugin::_export_end() {
 			}
 		}
 		export_path = String();
+		export_features.clear();
 		return;
 	}
 
 	Vector<String> names;
-#ifdef WINDOWS_ENABLED
-	names.push_back("bzcl.dll");
-	names.push_back("bzcl64.dll");
-	names.push_back("bzsv.dll");
-	names.push_back("bzsv64.dll");
-	names.push_back("bzgb.dll");
-	names.push_back("bzgb64.dll");
-	names.push_back("bzag.dll");
-	names.push_back("bzag64.dll");
-#else
-	names.push_back("libbzcl.so");
-	names.push_back("libbzsv.so");
-	names.push_back("libbzgb.so");
-	names.push_back("libbzag.so");
-#endif
+	if (export_wants_windows(export_features)) {
+		names.push_back("bzcl.dll");
+		names.push_back("bzcl64.dll");
+		names.push_back("bzsv.dll");
+		names.push_back("bzsv64.dll");
+		names.push_back("bzgb.dll");
+		names.push_back("bzgb64.dll");
+		names.push_back("bzag.dll");
+		names.push_back("bzag64.dll");
+	} else {
+		names.push_back("libbzcl.so");
+		names.push_back("libbzsv.so");
+		names.push_back("libbzgb.so");
+		names.push_back("libbzag.so");
+	}
 	bool copied_client = false;
 	bool copied_client_sig = false;
 	for (int i = 0; i < names.size(); i++) {
@@ -96,6 +111,7 @@ void AnticheatExportPlugin::_export_end() {
 		}
 	}
 	export_path = String();
+	export_features.clear();
 }
 
 #endif
