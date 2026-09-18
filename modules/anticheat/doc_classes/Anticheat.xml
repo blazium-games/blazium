@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Anticheat" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Loads first-party anticheat runtimes next to the executable and forwards ticks.
+	</brief_description>
+	<description>
+		The Anticheat singleton dynamically loads [code]bzcl[/code] (and dedicated [code]bzsv[/code]/[code]bzgb[/code]) from the executable directory. If the library is missing, [method is_available] is [code]false[/code]. Game scripts must not configure detectors or ops credentials.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="is_available">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when the private client runtime loaded and required symbols bound.
+			</description>
+		</method>
+		<method name="get_server_available">
+			<return type="bool" />
+			<description>
+				Dedicated server only. Returns [code]true[/code] when [code]bzsv[/code] and [code]bzgb[/code] loaded.
+			</description>
+		</method>
+		<method name="initialize">
+			<return type="int" />
+			<description>
+				Calls [code]BZCL_Init[/code]. Returns 0 on success.
+			</description>
+		</method>
+		<method name="shutdown">
+			<return type="void" />
+			<description>
+				Shuts down the loaded runtime.
+			</description>
+		</method>
+		<method name="is_initialized">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="tick">
+			<return type="void" />
+			<param index="0" name="tick_limit_ms" type="int" default="0" />
+			<description>
+				Forwards a tick to the private runtime. 0 means unbounded.
+			</description>
+		</method>
+		<method name="is_enabled">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="submit_packet">
+			<return type="int" />
+			<param index="0" name="data" type="PackedByteArray" />
+			<description>
+				Forwards an integrity tunnel blob from the net layer.
+			</description>
+		</method>
+		<method name="submit_command">
+			<return type="int" />
+			<param index="0" name="command" type="String" />
+			<description>
+				Optional debug command. Do not use in production.
+			</description>
+		</method>
+		<method name="ops_connect">
+			<return type="int" />
+			<description>
+				Dedicated server: connect [code]bzgb[/code] using ProjectSettings and [code]BLAZIUM_AC_API_KEY[/code].
+			</description>
+		</method>
+		<method name="is_ops_connected">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

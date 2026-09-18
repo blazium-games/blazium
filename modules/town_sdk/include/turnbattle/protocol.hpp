@@ -67,6 +67,11 @@ inline constexpr uint16_t ADMIN_KICK = 102;
 inline constexpr uint16_t ADMIN_STATS_REQUEST = 103;
 inline constexpr uint16_t ADMIN_STATS_RESPONSE = 104;
 inline constexpr uint16_t ADMIN_BROADCAST = 105;
+inline constexpr uint16_t ADMIN_BANK = 106;
+inline constexpr uint16_t INTEGRITY_C2S = 107;
+inline constexpr uint16_t INTEGRITY_S2C = 108;
+inline constexpr uint16_t SCREENSHOT_REQ = 109;
+inline constexpr uint16_t SCREENSHOT_DATA = 110;
 
 inline constexpr uint16_t ERROR_MSG = 200;
 } //namespace MessageType

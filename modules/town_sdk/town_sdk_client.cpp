@@ -35,6 +35,7 @@
 #include "core/math/math_funcs.h"
 #include "core/object/class_db.h"
 #include "core/string/print_string.h"
+#include "core/io/json.h"
 #include "core/variant/variant.h"
 
 #include <vector>
@@ -88,6 +89,8 @@ TownSdkClient::~TownSdkClient() {
 		client->on_admin_kick({});
 		client->on_admin_stats({});
 		client->on_admin_broadcast({});
+		client->on_integrity({});
+		client->on_screenshot_req({});
 		client.reset();
 	}
 
@@ -167,6 +170,12 @@ void TownSdkClient::_attach_callbacks() {
 
 	client->on_admin_broadcast([this](const Variant &p_payload) {
 		emit_signal("admin_broadcast_received", p_payload);
+	});
+	client->on_integrity([this](const Variant &p_payload) {
+		emit_signal("integrity_received", p_payload);
+	});
+	client->on_screenshot_req([this](const Variant &p_payload) {
+		emit_signal("screenshot_req_received", p_payload);
 	});
 }
 
@@ -273,6 +282,24 @@ void TownSdkClient::admin_broadcast(const String &p_message, bool p_is_alert) {
 	}
 }
 
+void TownSdkClient::send_integrity(const PackedByteArray &p_blob) {
+	if (!client || p_blob.is_empty()) {
+		return;
+	}
+	String hex;
+	for (int i = 0; i < p_blob.size(); i++) {
+		hex += String::num_int64(p_blob[i], 16).pad_zeros(2);
+	}
+	client->send_integrity(_string_to_std(hex));
+}
+
+void TownSdkClient::send_screenshot_data(const Dictionary &p_payload) {
+	if (!client) {
+		return;
+	}
+	client->send_screenshot_data(_string_to_std(JSON::stringify(p_payload)));
+}
+
 void TownSdkClient::set_auto_reconnect(bool p_enabled) {
 	if (client) {
 		client->set_auto_reconnect(p_enabled);
@@ -349,6 +376,8 @@ void TownSdkClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("admin_kick", "username", "reason"), &TownSdkClient::admin_kick, DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("admin_stats_request"), &TownSdkClient::admin_stats_request);
 	ClassDB::bind_method(D_METHOD("admin_broadcast", "message", "is_alert"), &TownSdkClient::admin_broadcast, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("send_integrity", "blob"), &TownSdkClient::send_integrity);
+	ClassDB::bind_method(D_METHOD("send_screenshot_data", "payload"), &TownSdkClient::send_screenshot_data);
 	ClassDB::bind_method(D_METHOD("set_auto_reconnect", "enabled"), &TownSdkClient::set_auto_reconnect);
 	ClassDB::bind_method(D_METHOD("manual_reconnect"), &TownSdkClient::manual_reconnect);
 	ClassDB::bind_method(D_METHOD("poll", "delta"), &TownSdkClient::poll);
@@ -379,6 +408,8 @@ void TownSdkClient::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("admin_kick_received", PropertyInfo(Variant::DICTIONARY, "payload")));
 	ADD_SIGNAL(MethodInfo("admin_stats_received", PropertyInfo(Variant::DICTIONARY, "payload")));
 	ADD_SIGNAL(MethodInfo("admin_broadcast_received", PropertyInfo(Variant::DICTIONARY, "payload")));
+	ADD_SIGNAL(MethodInfo("integrity_received", PropertyInfo(Variant::DICTIONARY, "payload")));
+	ADD_SIGNAL(MethodInfo("screenshot_req_received", PropertyInfo(Variant::DICTIONARY, "payload")));
 
 	BIND_ENUM_CONSTANT(ACTION_ATTACK);
 	BIND_ENUM_CONSTANT(ACTION_BLOCK);

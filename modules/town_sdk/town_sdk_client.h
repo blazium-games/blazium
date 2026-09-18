@@ -75,6 +75,8 @@ public:
 	void admin_kick(const String &p_username, const String &p_reason = String());
 	void admin_stats_request();
 	void admin_broadcast(const String &p_message, bool p_is_alert = false);
+	void send_integrity(const PackedByteArray &p_blob);
+	void send_screenshot_data(const Dictionary &p_payload);
 
 	void set_auto_reconnect(bool p_enabled);
 	void manual_reconnect();
