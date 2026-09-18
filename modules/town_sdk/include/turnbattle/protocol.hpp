@@ -72,6 +72,7 @@ inline constexpr uint16_t INTEGRITY_C2S = 107;
 inline constexpr uint16_t INTEGRITY_S2C = 108;
 inline constexpr uint16_t SCREENSHOT_REQ = 109;
 inline constexpr uint16_t SCREENSHOT_DATA = 110;
+inline constexpr uint16_t OPS_ACTION = 111;
 
 inline constexpr uint16_t ERROR_MSG = 200;
 } //namespace MessageType

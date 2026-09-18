@@ -91,6 +91,7 @@ TownSdkClient::~TownSdkClient() {
 		client->on_admin_broadcast({});
 		client->on_integrity({});
 		client->on_screenshot_req({});
+		client->on_ops_action({});
 		client.reset();
 	}
 
@@ -176,6 +177,9 @@ void TownSdkClient::_attach_callbacks() {
 	});
 	client->on_screenshot_req([this](const Variant &p_payload) {
 		emit_signal("screenshot_req_received", p_payload);
+	});
+	client->on_ops_action([this](const Variant &p_payload) {
+		emit_signal("ops_action_received", p_payload);
 	});
 }
 
@@ -410,6 +414,7 @@ void TownSdkClient::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("admin_broadcast_received", PropertyInfo(Variant::DICTIONARY, "payload")));
 	ADD_SIGNAL(MethodInfo("integrity_received", PropertyInfo(Variant::DICTIONARY, "payload")));
 	ADD_SIGNAL(MethodInfo("screenshot_req_received", PropertyInfo(Variant::DICTIONARY, "payload")));
+	ADD_SIGNAL(MethodInfo("ops_action_received", PropertyInfo(Variant::DICTIONARY, "payload")));
 
 	BIND_ENUM_CONSTANT(ACTION_ATTACK);
 	BIND_ENUM_CONSTANT(ACTION_BLOCK);

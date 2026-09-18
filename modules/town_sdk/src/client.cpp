@@ -133,6 +133,7 @@ struct Client::Impl {
 	OnAdminBroadcastCallback on_admin_broadcast;
 	OnIntegrityCallback on_integrity;
 	OnScreenshotReqCallback on_screenshot_req;
+	OnOpsActionCallback on_ops_action;
 
 	bool debug_capture = false;
 	size_t debug_history_limit = 64;
@@ -547,6 +548,9 @@ void Client::on_integrity(OnIntegrityCallback cb) {
 void Client::on_screenshot_req(OnScreenshotReqCallback cb) {
 	impl_->on_screenshot_req = cb;
 }
+void Client::on_ops_action(OnOpsActionCallback cb) {
+	impl_->on_ops_action = cb;
+}
 
 void Client::send_integrity(const std::string &hex_blob) {
 	const std::string payload = std::string("{\"blob\":\"") + hex_blob + "\"}";
@@ -796,6 +800,12 @@ void Client::handle_message(uint16_t type, const std::string &payload) {
 		case protocol::MessageType::SCREENSHOT_REQ:
 			if (impl_->on_screenshot_req) {
 				impl_->on_screenshot_req(parsed);
+			}
+			break;
+
+		case protocol::MessageType::OPS_ACTION:
+			if (impl_->on_ops_action) {
+				impl_->on_ops_action(parsed);
 			}
 			break;
 
