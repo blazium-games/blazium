@@ -7,6 +7,7 @@
 /**************************************************************************/
 
 #include "anticheat_api_loader.h"
+#include "anticheat_ed25519.h"
 
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
@@ -21,10 +22,11 @@ bool should_verify_signature() {
 		return false;
 	}
 	const bool verify = ProjectSettings::get_singleton()->get("anticheat/verify_runtime_signature");
+	const bool require_agent = ProjectSettings::get_singleton()->get("anticheat/require_agent");
 	if (Engine::get_singleton() && Engine::get_singleton()->is_editor_hint()) {
 		return false;
 	}
-	return verify;
+	return verify || require_agent;
 }
 
 void apply_hot_rename(const String &p_dir, const String &p_live, const String &p_new_name) {
@@ -63,13 +65,34 @@ bool AnticheatAPILoader::verify_runtime_file(const String &p_path, bool p_requir
 	if (sha.is_empty() || body.is_empty()) {
 		return false;
 	}
-	if (body.find(sha) == -1 && body.find("sha256=" + sha) == -1) {
-		// JSON: "sha256":"<hex>"
-		if (body.find("\"sha256\"") == -1 || body.find(sha) == -1) {
-			return false;
-		}
+	String sha_json;
+	String sig_b64;
+	if (!anticheat_parse_runtime_sig(body, sha_json, sig_b64)) {
+		return false;
 	}
-	return true;
+	if (sha_json.to_lower() != sha) {
+		return false;
+	}
+	uint8_t sig[64];
+	if (anticheat_b64_decode(sig_b64, sig, 64) != 64) {
+		return false;
+	}
+	String pk_hex;
+	if (OS::get_singleton()) {
+		pk_hex = OS::get_singleton()->get_environment("BLAZIUM_AC_RUNTIME_PK");
+	}
+	if (pk_hex.is_empty() && ProjectSettings::get_singleton()) {
+		pk_hex = ProjectSettings::get_singleton()->get("anticheat/runtime_public_key");
+	}
+	if (pk_hex.is_empty()) {
+		return false;
+	}
+	uint8_t pk[32];
+	if (anticheat_hex_decode(pk_hex, pk, 32) != 0) {
+		return false;
+	}
+	const CharString msg = sha.utf8();
+	return anticheat_ed25519_verify(pk, (const uint8_t *)msg.get_data(), (size_t)msg.length(), sig);
 }
 
 bool AnticheatAPILoader::_load_symbol(void *p_handle, const char *p_name, void *&r_symbol) {
@@ -162,11 +185,20 @@ bool AnticheatAPILoader::try_load() {
 		return false;
 	}
 	fn_cl_on_command = (BZCL_OnCommandFn)symbol;
-	_load_symbol(client_handle, "BZCL_SetScreenshotReceiver", symbol);
+	if (!_load_symbol(client_handle, "BZCL_SetScreenshotReceiver", symbol)) {
+		unload();
+		return false;
+	}
 	fn_cl_set_screenshot = (BZCL_SetScreenshotReceiverFn)symbol;
-	_load_symbol(client_handle, "BZCL_SetSendPacket", symbol);
+	if (!_load_symbol(client_handle, "BZCL_SetSendPacket", symbol)) {
+		unload();
+		return false;
+	}
 	fn_cl_set_send = (BZCL_SetSendPacketFn)symbol;
-	_load_symbol(client_handle, "BZCL_SetFileHash", symbol);
+	if (!_load_symbol(client_handle, "BZCL_SetFileHash", symbol)) {
+		unload();
+		return false;
+	}
 	fn_cl_set_hash = (BZCL_SetFileHashFn)symbol;
 
 	client_loaded = true;
@@ -230,6 +262,18 @@ bool AnticheatAPILoader::try_load_server() {
 		return false;
 	}
 	fn_sv_drop_client = (BZSV_DropClientFn)symbol;
+	if (!_load_symbol(server_handle, "BZSV_SetSendPacket", symbol)) {
+		_clear_server();
+		return false;
+	}
+	fn_sv_set_send = (BZSV_SetSendPacketFn)symbol;
+	if (!_load_symbol(server_handle, "BZSV_ClientJoin", symbol)) {
+		_clear_server();
+		return false;
+	}
+	fn_sv_client_join = (BZSV_ClientJoinFn)symbol;
+	_load_symbol(server_handle, "BZSV_SetNotifyDrop", symbol);
+	fn_sv_notify_drop = (BZSV_SetNotifyDropFn)symbol;
 
 	if (!_load_symbol(gb_handle, "BZGB_Connect", symbol)) {
 		_clear_server();
@@ -253,6 +297,12 @@ bool AnticheatAPILoader::try_load_server() {
 		return false;
 	}
 	fn_gb_connected = (BZGB_ConnectedFn)symbol;
+	_load_symbol(gb_handle, "BZGB_Send", symbol);
+	fn_gb_send = (BZGB_SendFn)symbol;
+	_load_symbol(gb_handle, "BZGB_SetActionReceiver", symbol);
+	fn_gb_set_action = (BZGB_SetActionFn)symbol;
+	_load_symbol(gb_handle, "BZGB_SetTimeoutMs", symbol);
+	fn_gb_set_timeout = (BZGB_SetTimeoutFn)symbol;
 
 	server_loaded = true;
 	return true;
@@ -290,11 +340,17 @@ void AnticheatAPILoader::_clear_server() {
 	fn_sv_tick = nullptr;
 	fn_sv_on_packet = nullptr;
 	fn_sv_drop_client = nullptr;
+	fn_sv_set_send = nullptr;
+	fn_sv_notify_drop = nullptr;
+	fn_sv_client_join = nullptr;
 	fn_gb_connect = nullptr;
 	fn_gb_connect_url = nullptr;
 	fn_gb_close = nullptr;
 	fn_gb_tick = nullptr;
 	fn_gb_connected = nullptr;
+	fn_gb_send = nullptr;
+	fn_gb_set_action = nullptr;
+	fn_gb_set_timeout = nullptr;
 }
 
 void AnticheatAPILoader::unload() {
@@ -372,6 +428,22 @@ int AnticheatAPILoader::sv_drop_client(int client_index, const char *reason_utf8
 	return fn_sv_drop_client ? fn_sv_drop_client(client_index, reason_utf8) : 1;
 }
 
+void AnticheatAPILoader::sv_set_send_packet(BZSV_SendPacketFn fn) {
+	if (fn_sv_set_send) {
+		fn_sv_set_send(fn);
+	}
+}
+
+void AnticheatAPILoader::sv_set_notify_drop(BZSV_NotifyDropFn fn) {
+	if (fn_sv_notify_drop) {
+		fn_sv_notify_drop(fn);
+	}
+}
+
+int AnticheatAPILoader::sv_client_join(int client_index) {
+	return fn_sv_client_join ? fn_sv_client_join(client_index) : 1;
+}
+
 int AnticheatAPILoader::gb_connect(const char *address, unsigned short port, const char *source_id) {
 	return fn_gb_connect ? fn_gb_connect(address, port, source_id) : 1;
 }
@@ -397,4 +469,20 @@ void AnticheatAPILoader::gb_tick() {
 
 int AnticheatAPILoader::gb_connected() const {
 	return fn_gb_connected ? fn_gb_connected() : 0;
+}
+
+int AnticheatAPILoader::gb_send(const void *data, int len) {
+	return fn_gb_send ? fn_gb_send(data, len) : 1;
+}
+
+void AnticheatAPILoader::gb_set_action_receiver(BZGB_ActionFn fn) {
+	if (fn_gb_set_action) {
+		fn_gb_set_action(fn);
+	}
+}
+
+void AnticheatAPILoader::gb_set_timeout_ms(int timeout_ms) {
+	if (fn_gb_set_timeout) {
+		fn_gb_set_timeout(timeout_ms);
+	}
 }

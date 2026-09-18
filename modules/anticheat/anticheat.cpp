@@ -32,8 +32,14 @@ void Anticheat::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("submit_command", "command"), &Anticheat::submit_command);
 	ClassDB::bind_method(D_METHOD("ops_connect"), &Anticheat::ops_connect);
 	ClassDB::bind_method(D_METHOD("is_ops_connected"), &Anticheat::is_ops_connected);
+	ClassDB::bind_method(D_METHOD("sv_on_packet", "client_index", "data"), &Anticheat::sv_on_packet);
+	ClassDB::bind_method(D_METHOD("sv_client_join", "client_index"), &Anticheat::sv_client_join);
+	ClassDB::bind_method(D_METHOD("gb_send", "data"), &Anticheat::gb_send);
 
 	ADD_SIGNAL(MethodInfo("outgoing_packet", PropertyInfo(Variant::PACKED_BYTE_ARRAY, "blob")));
+	ADD_SIGNAL(MethodInfo("outgoing_server_packet", PropertyInfo(Variant::INT, "client_index"), PropertyInfo(Variant::PACKED_BYTE_ARRAY, "blob")));
+	ADD_SIGNAL(MethodInfo("screenshot_ready", PropertyInfo(Variant::PACKED_BYTE_ARRAY, "png"), PropertyInfo(Variant::INT, "width"), PropertyInfo(Variant::INT, "height")));
+	ADD_SIGNAL(MethodInfo("server_drop_client", PropertyInfo(Variant::INT, "client_index"), PropertyInfo(Variant::STRING, "reason")));
 }
 
 Anticheat *Anticheat::get_singleton() {
@@ -54,7 +60,7 @@ Anticheat::~Anticheat() {
 }
 
 void Anticheat::_screenshot_receiver(const unsigned char *rgba, int w, int h, int bpp) {
-	if (!rgba || w <= 0 || h <= 0) {
+	if (!singleton || !rgba || w <= 0 || h <= 0) {
 		return;
 	}
 	(void)bpp;
@@ -64,7 +70,13 @@ void Anticheat::_screenshot_receiver(const unsigned char *rgba, int w, int h, in
 	bytes.resize(w * h * 4);
 	memcpy(bytes.ptrw(), rgba, bytes.size());
 	image->set_data(w, h, false, Image::FORMAT_RGBA8, bytes);
-	(void)image;
+	const Vector<uint8_t> png = image->save_png_to_buffer();
+	PackedByteArray out;
+	out.resize(png.size());
+	if (png.size()) {
+		memcpy(out.ptrw(), png.ptr(), png.size());
+	}
+	singleton->emit_signal("screenshot_ready", out, w, h);
 }
 
 void Anticheat::_register_screenshot_receiver() {
@@ -133,6 +145,9 @@ int Anticheat::initialize() {
 		return ANTICHEAT_OK;
 	}
 	if (!is_available()) {
+		if (ProjectSettings::get_singleton() && (bool)ProjectSettings::get_singleton()->get("anticheat/verify_runtime_signature")) {
+			return ANTICHEAT_ERR_SIGNATURE;
+		}
 		return ANTICHEAT_ERR_UNAVAILABLE;
 	}
 	const int err = loader.cl_init();
@@ -199,6 +214,10 @@ int Anticheat::ops_connect() {
 	if (loader.sv_init() != 0) {
 		return ANTICHEAT_ERR_INIT;
 	}
+	loader.sv_set_send_packet(&Anticheat::_sv_send_packet);
+	loader.sv_set_notify_drop(&Anticheat::_sv_notify_drop);
+	const int timeout_s = ProjectSettings::get_singleton()->get("anticheat/ops/timeout_s");
+	loader.gb_set_timeout_ms(timeout_s > 0 ? timeout_s * 1000 : 30000);
 
 	const String mode = ProjectSettings::get_singleton()->get("anticheat/ops/mode");
 	const String address = ProjectSettings::get_singleton()->get("anticheat/ops/address");
@@ -211,8 +230,6 @@ int Anticheat::ops_connect() {
 	int err = 1;
 	if (mode == "saas") {
 		String endpoint = ProjectSettings::get_singleton()->get("anticheat/ops/saas_endpoint");
-		const String api_key = OS::get_singleton()->get_environment("BLAZIUM_AC_API_KEY");
-		(void)api_key;
 		if (endpoint.is_empty()) {
 			endpoint = address;
 		}
@@ -233,4 +250,43 @@ int Anticheat::ops_connect() {
 
 bool Anticheat::is_ops_connected() const {
 	return ops_connected && loader.gb_connected() != 0;
+}
+
+int Anticheat::_sv_send_packet(int client_index, const void *data, int len) {
+	if (!singleton || !data || len <= 0) {
+		return 1;
+	}
+	PackedByteArray blob;
+	blob.resize(len);
+	memcpy(blob.ptrw(), data, static_cast<size_t>(len));
+	singleton->emit_signal("outgoing_server_packet", client_index, blob);
+	return 0;
+}
+
+void Anticheat::_sv_notify_drop(int client_index, const char *reason_utf8) {
+	if (!singleton) {
+		return;
+	}
+	singleton->emit_signal("server_drop_client", client_index, String::utf8(reason_utf8 ? reason_utf8 : ""));
+}
+
+int Anticheat::sv_on_packet(int p_client_index, const PackedByteArray &p_data) {
+	if (!server_available || p_data.is_empty()) {
+		return ANTICHEAT_ERR_INIT;
+	}
+	return loader.sv_on_packet(p_client_index, p_data.ptr(), p_data.size());
+}
+
+int Anticheat::sv_client_join(int p_client_index) {
+	if (!server_available) {
+		return ANTICHEAT_ERR_UNAVAILABLE;
+	}
+	return loader.sv_client_join(p_client_index);
+}
+
+int Anticheat::gb_send(const PackedByteArray &p_data) {
+	if (!ops_connected || p_data.is_empty()) {
+		return ANTICHEAT_ERR_CONNECT;
+	}
+	return loader.gb_send(p_data.ptr(), p_data.size());
 }

@@ -77,6 +77,7 @@ void anticheat_register_project_settings() {
 	GLOBAL_DEF("anticheat/ops/saas_endpoint", "");
 	GLOBAL_DEF("anticheat/export/bin_dir", "res://anticheat/bin");
 	GLOBAL_DEF("anticheat/verify_runtime_signature", false);
+	GLOBAL_DEF("anticheat/runtime_public_key", "");
 }
 
 } // namespace
