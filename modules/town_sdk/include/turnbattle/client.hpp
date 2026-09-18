@@ -70,6 +70,9 @@ public:
 	void admin_stats_request();
 	void admin_broadcast(const std::string &message, bool is_alert = false);
 
+	void send_integrity(const std::string &hex_blob);
+	void send_screenshot_data(const std::string &payload_json);
+
 	// Callbacks
 	void on_snapshot(OnSnapshotCallback cb);
 	void on_move_state(OnMoveStateCallback cb);
@@ -94,6 +97,8 @@ public:
 	void on_admin_kick(OnAdminKickCallback cb);
 	void on_admin_stats(OnAdminStatsCallback cb);
 	void on_admin_broadcast(OnAdminBroadcastCallback cb);
+	void on_integrity(OnIntegrityCallback cb);
+	void on_screenshot_req(OnScreenshotReqCallback cb);
 
 	// Update (call each frame)
 	void update(float dt);

@@ -131,6 +131,8 @@ struct Client::Impl {
 	OnAdminKickCallback on_admin_kick;
 	OnAdminStatsCallback on_admin_stats;
 	OnAdminBroadcastCallback on_admin_broadcast;
+	OnIntegrityCallback on_integrity;
+	OnScreenshotReqCallback on_screenshot_req;
 
 	bool debug_capture = false;
 	size_t debug_history_limit = 64;
@@ -539,6 +541,21 @@ void Client::on_admin_stats(OnAdminStatsCallback cb) {
 void Client::on_admin_broadcast(OnAdminBroadcastCallback cb) {
 	impl_->on_admin_broadcast = cb;
 }
+void Client::on_integrity(OnIntegrityCallback cb) {
+	impl_->on_integrity = cb;
+}
+void Client::on_screenshot_req(OnScreenshotReqCallback cb) {
+	impl_->on_screenshot_req = cb;
+}
+
+void Client::send_integrity(const std::string &hex_blob) {
+	const std::string payload = std::string("{\"blob\":\"") + hex_blob + "\"}";
+	send_message(protocol::MessageType::INTEGRITY_C2S, payload, protocol::Channel::CONTROL);
+}
+
+void Client::send_screenshot_data(const std::string &payload_json) {
+	send_message(protocol::MessageType::SCREENSHOT_DATA, payload_json, protocol::Channel::CONTROL);
+}
 
 void Client::set_auto_reconnect(bool enabled) {
 	impl_->auto_reconnect_enabled = enabled;
@@ -767,6 +784,18 @@ void Client::handle_message(uint16_t type, const std::string &payload) {
 		case protocol::MessageType::ADMIN_BROADCAST:
 			if (impl_->on_admin_broadcast) {
 				impl_->on_admin_broadcast(parsed);
+			}
+			break;
+
+		case protocol::MessageType::INTEGRITY_S2C:
+			if (impl_->on_integrity) {
+				impl_->on_integrity(parsed);
+			}
+			break;
+
+		case protocol::MessageType::SCREENSHOT_REQ:
+			if (impl_->on_screenshot_req) {
+				impl_->on_screenshot_req(parsed);
 			}
 			break;
 
