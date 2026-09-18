@@ -14,6 +14,9 @@
 #include "core/io/image.h"
 #include "core/object/class_db.h"
 #include "core/os/os.h"
+#include "scene/main/scene_tree.h"
+#include "scene/main/viewport.h"
+#include "scene/main/window.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -210,7 +213,44 @@ int Anticheat::submit_command(const String &p_command) {
 		return ANTICHEAT_ERR_INIT;
 	}
 	const CharString utf8 = p_command.utf8();
-	return loader.cl_on_command(utf8.get_data());
+	const int err = loader.cl_on_command(utf8.get_data());
+	if (p_command.begins_with("screenshot")) {
+		_capture_viewport_png();
+	}
+	return err;
+}
+
+void Anticheat::_capture_viewport_png() {
+	if (!Engine::get_singleton() || !OS::get_singleton()) {
+		return;
+	}
+	SceneTree *tree = Object::cast_to<SceneTree>(OS::get_singleton()->get_main_loop());
+	if (!tree || !tree->get_root()) {
+		return;
+	}
+	Ref<ViewportTexture> tex = tree->get_root()->get_texture();
+	if (tex.is_null()) {
+		return;
+	}
+	Ref<Image> img = tex->get_image();
+	if (img.is_null() || img->is_empty()) {
+		return;
+	}
+	if (img->get_format() != Image::FORMAT_RGBA8) {
+		img->convert(Image::FORMAT_RGBA8);
+	}
+	const Vector<uint8_t> png = img->save_png_to_buffer();
+	PackedByteArray out;
+	out.resize(png.size());
+	if (png.size()) {
+		memcpy(out.ptrw(), png.ptr(), png.size());
+	}
+	emit_signal("screenshot_ready", out, img->get_width(), img->get_height());
+	if (ops_connected) {
+		const String line = vformat("{\"event\":\"Screenshot\",\"pairs\":{\"width\":%d,\"height\":%d}}\n", img->get_width(), img->get_height());
+		const CharString utf8 = line.utf8();
+		loader.gb_send(utf8.get_data(), utf8.length());
+	}
 }
 
 int Anticheat::ops_connect() {
