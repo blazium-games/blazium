@@ -139,7 +139,7 @@
 			<return type="void" />
 			<param index="0" name="json_line" type="String" />
 			<description>
-				Applies one ops JSONL action: Kick if mapped, screenshot upload, Teleport as [signal ops_teleport]. Always emits [signal ops_action].
+				Applies one ops JSONL action: Kick/KickMsg if mapped, Message/GlobalMessage/Kill as signals, screenshot upload or [signal ops_screenshot_request] on dedicated, Teleport as [signal ops_teleport]. Always emits [signal ops_action].
 			</description>
 		</method>
 		<method name="gb_send">
@@ -170,7 +170,7 @@
 		<signal name="ops_action">
 			<param index="0" name="json_line" type="String" />
 			<description>
-				Raw ops JSONL from [code]bzgb[/code]. Kick, Screenshot, and Teleport are also handled as documented on [method apply_ops_line].
+				Raw ops JSONL from [code]bzgb[/code]. Named actions are also handled as documented on [method apply_ops_line].
 			</description>
 		</signal>
 		<signal name="ops_teleport">
@@ -180,6 +180,32 @@
 			<param index="3" name="y" type="float" />
 			<description>
 				Dedicated server: Teleport action. The host must move the player; the module does not.
+			</description>
+		</signal>
+		<signal name="ops_message">
+			<param index="0" name="player_id" type="String" />
+			<param index="1" name="text" type="String" />
+			<description>
+				Dedicated server: deliver a toast or chat line to one player. The host must show it.
+			</description>
+		</signal>
+		<signal name="ops_global_message">
+			<param index="0" name="text" type="String" />
+			<description>
+				Dedicated server: broadcast a toast or chat line. The host must show it.
+			</description>
+		</signal>
+		<signal name="ops_kill">
+			<param index="0" name="player_id" type="String" />
+			<description>
+				Dedicated server: force death on that player. The host must apply HP/death.
+			</description>
+		</signal>
+		<signal name="ops_screenshot_request">
+			<param index="0" name="player_id" type="String" />
+			<param index="1" name="side" type="String" />
+			<description>
+				Dedicated server: ask that client's viewport for a PNG. Do not capture the dedicated process.
 			</description>
 		</signal>
 	</signals>
