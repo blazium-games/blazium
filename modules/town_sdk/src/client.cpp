@@ -46,6 +46,7 @@
 #include <cstring>
 #include <functional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace turnbattle {
@@ -174,6 +175,7 @@ struct Client::Impl {
 	bool debug_capture = false;
 	size_t debug_history_limit = 64;
 	std::vector<std::string> log_history;
+	std::unordered_map<std::string, double> trace_last;
 	std::string last_error_message;
 	std::string last_warning_message;
 	std::string last_info_message;
@@ -220,6 +222,44 @@ void Client::log_error(const std::string &p_message) {
 	}
 	impl_->last_error_message = p_message;
 	append_log_entry("ERROR", p_message);
+}
+
+void Client::log_trace(const std::string &p_message) {
+	if (!impl_ || !impl_->debug_capture) {
+		return;
+	}
+	print_line("[TownSDK] " + String::utf8(p_message.c_str()));
+	impl_->last_info_message = p_message;
+	append_log_entry("TRACE", p_message);
+}
+
+bool Client::trace_rate(const std::string &p_key, double p_interval_s) {
+	if (!impl_ || !impl_->debug_capture) {
+		return false;
+	}
+	using clock = std::chrono::steady_clock;
+	const double now = std::chrono::duration<double>(clock::now().time_since_epoch()).count();
+	double &last = impl_->trace_last[p_key.empty() ? "-" : p_key];
+	if (last > 0.0 && (now - last) < p_interval_s) {
+		return false;
+	}
+	last = now;
+	return true;
+}
+
+void Client::log_inbound(uint16_t p_type, const Variant &p_parsed) {
+	if (!impl_ || !impl_->debug_capture) {
+		return;
+	}
+	Dictionary data;
+	ensure_dictionary(p_parsed, data);
+	const std::string id = data.has("id") ? to_std_string(data["id"]) : std::string("-");
+	const std::string anim = data.has("anim") ? to_std_string(data["anim"]) : std::string("-");
+	const std::string item_id = data.has("item_id") ? to_std_string(data["item_id"]) : std::string("-");
+	if (!trace_rate(std::to_string(p_type) + ":" + id + ":" + anim, 1.0)) {
+		return;
+	}
+	log_trace("type=" + std::to_string(p_type) + " id=" + id + " anim=" + anim + " item_id=" + item_id);
 }
 
 Client::Client() :
@@ -467,6 +507,7 @@ void Client::auth_username(const std::string &username) {
 	impl_->last_username = username;
 	impl_->last_jwt_token.clear();
 
+	log_trace("op=auth_username type=1");
 	Dictionary payload;
 	payload["username"] = String::utf8(username.c_str());
 	payload["game_type"] = String::utf8(impl_->game_type.c_str());
@@ -474,6 +515,7 @@ void Client::auth_username(const std::string &username) {
 }
 
 void Client::enter_region(const std::string &region_id) {
+	log_trace("op=enter_region type=10 region=" + region_id);
 	Dictionary payload;
 	payload["region_id"] = String::utf8(region_id.c_str());
 	send_message(protocol::MessageType::REGION_ENTER, variant_to_json_string(payload), protocol::Channel::CONTROL);
@@ -518,22 +560,32 @@ void Client::send_move_pose(uint8_t held, float dt, float yaw, float pitch, bool
 }
 
 void Client::send_melee() {
+	if (trace_rate("send_melee", 1.0)) {
+		log_trace("op=send_melee type=44");
+	}
 	Dictionary payload;
 	send_message(protocol::MessageType::MELEE, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
 
 void Client::send_fire() {
+	if (trace_rate("send_fire", 1.0)) {
+		log_trace("op=send_fire type=18");
+	}
 	Dictionary payload;
 	send_message(protocol::MessageType::FIRE, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
 
 void Client::send_use(int slot) {
+	log_trace("op=send_use type=14 slot=" + std::to_string(slot));
 	Dictionary payload;
 	payload["slot"] = slot;
 	send_message(protocol::MessageType::USE, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
 
 void Client::send_reload() {
+	if (trace_rate("send_reload", 1.0)) {
+		log_trace("op=send_reload type=19");
+	}
 	Dictionary payload;
 	send_message(protocol::MessageType::RELOAD, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
@@ -977,12 +1029,14 @@ void Client::handle_message(uint16_t type, const std::string &payload) {
 			break;
 
 		case protocol::MessageType::ENTITY_SPAWN:
+			log_inbound(protocol::MessageType::ENTITY_SPAWN, parsed);
 			if (impl_->on_entity_spawn) {
 				impl_->on_entity_spawn(parsed);
 			}
 			break;
 
 		case protocol::MessageType::ENTITY_DESPAWN:
+			log_inbound(protocol::MessageType::ENTITY_DESPAWN, parsed);
 			if (impl_->on_entity_despawn) {
 				impl_->on_entity_despawn(parsed);
 			}
@@ -995,30 +1049,35 @@ void Client::handle_message(uint16_t type, const std::string &payload) {
 			break;
 
 		case protocol::MessageType::INVENTORY_UPDATE:
+			log_inbound(protocol::MessageType::INVENTORY_UPDATE, parsed);
 			if (impl_->on_inventory_update) {
 				impl_->on_inventory_update(parsed);
 			}
 			break;
 
 		case protocol::MessageType::SHOT:
+			log_inbound(protocol::MessageType::SHOT, parsed);
 			if (impl_->on_shot) {
 				impl_->on_shot(parsed);
 			}
 			break;
 
 		case protocol::MessageType::HEALTH:
+			log_inbound(protocol::MessageType::HEALTH, parsed);
 			if (impl_->on_health) {
 				impl_->on_health(parsed);
 			}
 			break;
 
 		case protocol::MessageType::DEATH:
+			log_inbound(protocol::MessageType::DEATH, parsed);
 			if (impl_->on_death) {
 				impl_->on_death(parsed);
 			}
 			break;
 
 		case protocol::MessageType::RESPAWN:
+			log_inbound(protocol::MessageType::RESPAWN, parsed);
 			if (impl_->on_respawn) {
 				impl_->on_respawn(parsed);
 			}
@@ -1137,6 +1196,7 @@ void Client::handle_message(uint16_t type, const std::string &payload) {
 			break;
 
 		case protocol::MessageType::ANIM_FX:
+			log_inbound(protocol::MessageType::ANIM_FX, parsed);
 			if (impl_->on_anim_fx) {
 				impl_->on_anim_fx(parsed);
 			}

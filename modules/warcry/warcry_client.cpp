@@ -33,6 +33,7 @@
 #include "core/math/math_funcs.h"
 #include "core/object/callable_mp.h"
 #include "core/os/time.h"
+#include "core/string/print_string.h"
 #include "scene/audio/audio_stream_player.h"
 #include "scene/main/node.h"
 #include "scene/main/scene_tree.h"
@@ -126,6 +127,7 @@ void WarcryClient::disconnect_from_server() {
 	}
 	_reset_session_state();
 	if (was_connected) {
+		print_line("[Warcry] disconnect");
 		emit_signal(SNAME("disconnected"));
 	}
 }
@@ -165,8 +167,10 @@ void WarcryClient::_send_voice(const Vector<uint8_t> &p_opus) {
 
 bool WarcryClient::authenticate(const String &p_username, const String &p_password) {
 	if (!is_client_connected()) {
+		WARN_PRINT("[Warcry] AUTH skipped not connected user=" + p_username);
 		return false;
 	}
+	print_line("[Warcry] AUTH send user=" + p_username);
 	Dictionary data;
 	data["username"] = p_username;
 	data["password"] = p_password;
@@ -175,6 +179,7 @@ bool WarcryClient::authenticate(const String &p_username, const String &p_passwo
 }
 
 bool WarcryClient::join_channel(int p_channel_id) {
+	print_line("[Warcry] JOIN channel=" + itos(p_channel_id));
 	Dictionary data;
 	data["channelId"] = p_channel_id;
 	_send_control(WarcryProtocol::MsgType::JOIN_CHANNEL, data);
@@ -182,6 +187,7 @@ bool WarcryClient::join_channel(int p_channel_id) {
 }
 
 bool WarcryClient::leave_channel(int p_channel_id) {
+	print_line("[Warcry] LEAVE channel=" + itos(p_channel_id));
 	Dictionary data;
 	data["channelId"] = p_channel_id;
 	_send_control(WarcryProtocol::MsgType::LEAVE_CHANNEL, data);
@@ -363,10 +369,12 @@ void WarcryClient::poll() {
 			if (!hello_sent) {
 				Dictionary hello;
 				hello["username"] = username;
+				print_line("[Warcry] HELLO send user=" + username);
 				_send_control(WarcryProtocol::MsgType::HELLO, hello);
 				hello_sent = true;
 			}
 		} else if (type == ENetConnection::EVENT_DISCONNECT) {
+			print_line("[Warcry] disconnect peer");
 			peer.unref();
 			_reset_session_state();
 			emit_signal(SNAME("disconnected"));
@@ -397,9 +405,12 @@ void WarcryClient::_handle_control(WarcryProtocol::MsgType p_type, const Diction
 				current_channel = (int)p_data.get("channelId", 0);
 			}
 			const int ack_channels = ((int)p_data.get("downlinkChannels", 1) == 2) ? 2 : 1;
+			print_line("[Warcry] HELLO_ACK user=" + itos(local_user_id) + " channels=" + itos(ack_channels) +
+					" channel=" + itos(current_channel));
 			if (ack_channels != downlink_channels) {
 				if (codec.init_decoder(ack_channels)) {
 					downlink_channels = ack_channels;
+					print_line("[Warcry] decoder channels=" + itos(ack_channels));
 				} else {
 					ERR_PRINT("Warcry failed to init " + itos(ack_channels) + "-channel decoder");
 				}
@@ -413,11 +424,15 @@ void WarcryClient::_handle_control(WarcryProtocol::MsgType p_type, const Diction
 			break;
 		}
 		case WarcryProtocol::MsgType::AUTH_ACK: {
-			emit_signal(SNAME("authenticated"), p_data.get("role", String()));
+			const String role = p_data.get("role", String());
+			print_line("[Warcry] AUTH ok role=" + role);
+			emit_signal(SNAME("authenticated"), role);
 			break;
 		}
 		case WarcryProtocol::MsgType::ERROR_MSG: {
-			emit_signal(SNAME("error"), p_data.get("message", String("Warcry error")));
+			const String err = p_data.get("message", String("Warcry error"));
+			WARN_PRINT("[Warcry] error " + err);
+			emit_signal(SNAME("error"), err);
 			break;
 		}
 		default:

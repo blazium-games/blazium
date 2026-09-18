@@ -123,10 +123,14 @@ TEST_CASE("[TownSDK] debug log records voip and inventory move") {
 	to["y"] = 1;
 	to["rot"] = 1;
 	sdk->send_inventory_move(from, to);
+	sdk->send_fire();
+	sdk->send_use(3);
 
 	PackedStringArray log = sdk->get_debug_log();
 	bool saw_voip = false;
 	bool saw_move = false;
+	bool saw_fire = false;
+	bool saw_use = false;
 	for (int i = 0; i < log.size(); ++i) {
 		const String line = log[i];
 		if (line.contains("voip stored")) {
@@ -135,9 +139,17 @@ TEST_CASE("[TownSDK] debug log records voip and inventory move") {
 		if (line.contains("inventory_move")) {
 			saw_move = true;
 		}
+		if (line.contains("send_fire")) {
+			saw_fire = true;
+		}
+		if (line.contains("send_use")) {
+			saw_use = true;
+		}
 	}
 	CHECK(saw_voip);
 	CHECK(saw_move);
+	CHECK(saw_fire);
+	CHECK(saw_use);
 	sdk->set_debug_logging_enabled(false);
 }
 

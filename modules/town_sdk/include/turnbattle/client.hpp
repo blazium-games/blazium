@@ -163,6 +163,9 @@ private:
 	void log_info(const std::string &p_message);
 	void log_warning(const std::string &p_message);
 	void log_error(const std::string &p_message);
+	void log_trace(const std::string &p_message);
+	bool trace_rate(const std::string &p_key, double p_interval_s);
+	void log_inbound(uint16_t p_type, const Variant &p_parsed);
 
 	struct Impl;
 	std::unique_ptr<Impl> impl_;
