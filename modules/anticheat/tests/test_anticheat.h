@@ -69,6 +69,11 @@ TEST_CASE("[Anticheat] bind_player maps kick without a runtime") {
 	CHECK(ac->player_client_index("alice") == 3);
 	ac->apply_ops_line("{\"event\":\"Kick\",\"player_id\":\"alice\",\"pairs\":{\"reason\":\"ops\"}}");
 	CHECK(ac->player_client_index("alice") == -1);
+	ac->apply_ops_line("{\"event\":\"Message\",\"player_id\":\"bob\",\"pairs\":{\"reason\":\"hi\"}}");
+	ac->apply_ops_line("{\"event\":\"GlobalMessage\",\"pairs\":{\"reason\":\"all\"}}");
+	ac->apply_ops_line("{\"event\":\"Kill\",\"player_id\":\"bob\"}");
+	ac->apply_ops_line("{\"event\":\"Screenshot\",\"player_id\":\"bob\"}");
+	CHECK_FALSE(ac->is_server_initialized());
 }
 
 TEST_CASE("[Anticheat] saas ops_connect skips missing license file") {

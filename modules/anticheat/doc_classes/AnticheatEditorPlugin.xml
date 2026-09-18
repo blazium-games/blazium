@@ -4,7 +4,7 @@
 		Editor dock for Anticheat availability and a one-shot initialize/tick.
 	</brief_description>
 	<description>
-		Does not expose detector configuration.
+		Does not expose detector configuration. Dedicated wiring: Status, Initialize, sv_initialize, ops_connect, Tick, Shutdown, bind_player, apply_ops_line.
 	</description>
 	<tutorials>
 	</tutorials>

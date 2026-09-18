@@ -56,6 +56,10 @@ void Anticheat::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("server_drop_client", PropertyInfo(Variant::INT, "client_index"), PropertyInfo(Variant::STRING, "reason")));
 	ADD_SIGNAL(MethodInfo("ops_action", PropertyInfo(Variant::STRING, "json_line")));
 	ADD_SIGNAL(MethodInfo("ops_teleport", PropertyInfo(Variant::STRING, "player_id"), PropertyInfo(Variant::STRING, "region"), PropertyInfo(Variant::FLOAT, "x"), PropertyInfo(Variant::FLOAT, "y")));
+	ADD_SIGNAL(MethodInfo("ops_message", PropertyInfo(Variant::STRING, "player_id"), PropertyInfo(Variant::STRING, "text")));
+	ADD_SIGNAL(MethodInfo("ops_global_message", PropertyInfo(Variant::STRING, "text")));
+	ADD_SIGNAL(MethodInfo("ops_kill", PropertyInfo(Variant::STRING, "player_id")));
+	ADD_SIGNAL(MethodInfo("ops_screenshot_request", PropertyInfo(Variant::STRING, "player_id"), PropertyInfo(Variant::STRING, "side")));
 }
 
 Anticheat *Anticheat::get_singleton() {
@@ -485,7 +489,27 @@ void Anticheat::apply_ops_line(const String &p_json_line) {
 		_apply_mapped_kick(player_id, reason);
 		return;
 	}
+	if (event == "Message") {
+		emit_signal("ops_message", player_id, reason);
+		return;
+	}
+	if (event == "GlobalMessage") {
+		emit_signal("ops_global_message", reason);
+		return;
+	}
+	if (event == "Kill") {
+		emit_signal("ops_kill", player_id);
+		return;
+	}
 	if (event == "Screenshot" || event == "ScreenshotFront" || event == "ScreenshotBack") {
+		String side = "front";
+		if (event == "ScreenshotBack") {
+			side = "back";
+		}
+		if (server_initialized) {
+			emit_signal("ops_screenshot_request", player_id, side);
+			return;
+		}
 		screenshot_player_id = player_id;
 		_capture_viewport_png();
 		screenshot_player_id = String();

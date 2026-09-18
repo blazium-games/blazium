@@ -15,7 +15,9 @@
 #include "scene/gui/box_container.h"
 #include "scene/gui/button.h"
 #include "scene/gui/label.h"
+#include "scene/gui/line_edit.h"
 #include "scene/gui/rich_text_label.h"
+#include "scene/gui/text_edit.h"
 
 void AnticheatEditorPlugin::_append_log(const String &p_line) {
 	if (!log) {
@@ -31,10 +33,12 @@ void AnticheatEditorPlugin::_on_status_pressed() {
 		_append_log("Anticheat singleton unavailable");
 		return;
 	}
-	_append_log(vformat("available=%s initialized=%s enabled=%s",
+	_append_log(vformat("available=%s initialized=%s enabled=%s server_initialized=%s ops_connected=%s",
 			ac->is_available() ? "true" : "false",
 			ac->is_initialized() ? "true" : "false",
-			ac->is_enabled() ? "true" : "false"));
+			ac->is_enabled() ? "true" : "false",
+			ac->is_server_initialized() ? "true" : "false",
+			ac->is_ops_connected() ? "true" : "false"));
 }
 
 void AnticheatEditorPlugin::_on_init_pressed() {
@@ -46,6 +50,24 @@ void AnticheatEditorPlugin::_on_init_pressed() {
 	_append_log(vformat("initialize() -> %d", ac->initialize()));
 }
 
+void AnticheatEditorPlugin::_on_sv_init_pressed() {
+	Anticheat *ac = Anticheat::get_singleton();
+	if (!ac) {
+		_append_log("Anticheat singleton unavailable");
+		return;
+	}
+	_append_log(vformat("sv_initialize() -> %d", ac->sv_initialize()));
+}
+
+void AnticheatEditorPlugin::_on_ops_connect_pressed() {
+	Anticheat *ac = Anticheat::get_singleton();
+	if (!ac) {
+		_append_log("Anticheat singleton unavailable");
+		return;
+	}
+	_append_log(vformat("ops_connect() -> %d", ac->ops_connect()));
+}
+
 void AnticheatEditorPlugin::_on_tick_pressed() {
 	Anticheat *ac = Anticheat::get_singleton();
 	if (!ac) {
@@ -54,6 +76,46 @@ void AnticheatEditorPlugin::_on_tick_pressed() {
 	}
 	ac->tick(0);
 	_append_log("tick()");
+}
+
+void AnticheatEditorPlugin::_on_shutdown_pressed() {
+	Anticheat *ac = Anticheat::get_singleton();
+	if (!ac) {
+		_append_log("Anticheat singleton unavailable");
+		return;
+	}
+	ac->shutdown();
+	_append_log("shutdown()");
+}
+
+void AnticheatEditorPlugin::_on_bind_pressed() {
+	Anticheat *ac = Anticheat::get_singleton();
+	if (!ac || !player_id_edit || !client_index_edit) {
+		return;
+	}
+	const int idx = client_index_edit->get_text().to_int();
+	ac->bind_player(idx, player_id_edit->get_text());
+	_append_log(vformat("bind_player(%d, %s)", idx, player_id_edit->get_text()));
+}
+
+void AnticheatEditorPlugin::_on_unbind_pressed() {
+	Anticheat *ac = Anticheat::get_singleton();
+	if (!ac || !client_index_edit) {
+		return;
+	}
+	const int idx = client_index_edit->get_text().to_int();
+	ac->unbind_player(idx);
+	_append_log(vformat("unbind_player(%d)", idx));
+}
+
+void AnticheatEditorPlugin::_on_apply_ops_pressed() {
+	Anticheat *ac = Anticheat::get_singleton();
+	if (!ac || !ops_edit) {
+		return;
+	}
+	const String line = ops_edit->get_text();
+	ac->apply_ops_line(line);
+	_append_log("apply_ops_line()");
 }
 
 void AnticheatEditorPlugin::_setup_dock() {
@@ -70,10 +132,53 @@ void AnticheatEditorPlugin::_setup_dock() {
 	init->connect("pressed", callable_mp(this, &AnticheatEditorPlugin::_on_init_pressed));
 	dock_root->add_child(init);
 
+	Button *sv = memnew(Button);
+	sv->set_text("sv_initialize");
+	sv->connect("pressed", callable_mp(this, &AnticheatEditorPlugin::_on_sv_init_pressed));
+	dock_root->add_child(sv);
+
+	Button *ops = memnew(Button);
+	ops->set_text("ops_connect");
+	ops->connect("pressed", callable_mp(this, &AnticheatEditorPlugin::_on_ops_connect_pressed));
+	dock_root->add_child(ops);
+
 	Button *tick = memnew(Button);
 	tick->set_text("Tick once");
 	tick->connect("pressed", callable_mp(this, &AnticheatEditorPlugin::_on_tick_pressed));
 	dock_root->add_child(tick);
+
+	Button *shut = memnew(Button);
+	shut->set_text("Shutdown");
+	shut->connect("pressed", callable_mp(this, &AnticheatEditorPlugin::_on_shutdown_pressed));
+	dock_root->add_child(shut);
+
+	player_id_edit = memnew(LineEdit);
+	player_id_edit->set_placeholder("player_id");
+	dock_root->add_child(player_id_edit);
+
+	client_index_edit = memnew(LineEdit);
+	client_index_edit->set_placeholder("client_index");
+	dock_root->add_child(client_index_edit);
+
+	Button *bind = memnew(Button);
+	bind->set_text("Bind player");
+	bind->connect("pressed", callable_mp(this, &AnticheatEditorPlugin::_on_bind_pressed));
+	dock_root->add_child(bind);
+
+	Button *unbind = memnew(Button);
+	unbind->set_text("Unbind player");
+	unbind->connect("pressed", callable_mp(this, &AnticheatEditorPlugin::_on_unbind_pressed));
+	dock_root->add_child(unbind);
+
+	ops_edit = memnew(TextEdit);
+	ops_edit->set_custom_minimum_size(Size2(0, 72));
+	ops_edit->set_placeholder("{\"event\":\"Kick\",\"player_id\":\"\"}");
+	dock_root->add_child(ops_edit);
+
+	Button *apply = memnew(Button);
+	apply->set_text("Apply ops line");
+	apply->connect("pressed", callable_mp(this, &AnticheatEditorPlugin::_on_apply_ops_pressed));
+	dock_root->add_child(apply);
 
 	log = memnew(RichTextLabel);
 	log->set_v_size_flags(Control::SIZE_EXPAND_FILL);
@@ -87,6 +192,9 @@ void AnticheatEditorPlugin::_teardown_dock() {
 		dock_root->queue_free();
 		dock_root = nullptr;
 		log = nullptr;
+		player_id_edit = nullptr;
+		client_index_edit = nullptr;
+		ops_edit = nullptr;
 	}
 }
 
