@@ -53,6 +53,8 @@ public:
 
 	// Auth
 	void auth(const std::string &jwt_token);
+	void set_game_type(const std::string &game_type);
+	std::string get_game_type() const;
 
 	// Region
 	void enter_region(const std::string &region_id);

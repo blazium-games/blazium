@@ -233,6 +233,19 @@ void TownSdkClient::authenticate(const String &p_jwt_token) {
 	}
 }
 
+void TownSdkClient::set_game_type(GameType p_type) {
+	if (client) {
+		client->set_game_type(p_type == GAME_TYPE_FPS ? "fps" : "turn_based");
+	}
+}
+
+TownSdkClient::GameType TownSdkClient::get_game_type() const {
+	if (!client) {
+		return GAME_TYPE_TURN_BASED;
+	}
+	return client->get_game_type() == "fps" ? GAME_TYPE_FPS : GAME_TYPE_TURN_BASED;
+}
+
 void TownSdkClient::enter_region(const String &p_region_id) {
 	if (client) {
 		client->enter_region(_string_to_std(p_region_id));
@@ -417,6 +430,8 @@ void TownSdkClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_client_connected"), &TownSdkClient::is_client_connected);
 	ClassDB::bind_method(D_METHOD("get_server_version"), &TownSdkClient::get_server_version);
 	ClassDB::bind_method(D_METHOD("authenticate", "jwt_token"), &TownSdkClient::authenticate);
+	ClassDB::bind_method(D_METHOD("set_game_type", "type"), &TownSdkClient::set_game_type);
+	ClassDB::bind_method(D_METHOD("get_game_type"), &TownSdkClient::get_game_type);
 	ClassDB::bind_method(D_METHOD("enter_region", "region_id"), &TownSdkClient::enter_region);
 	ClassDB::bind_method(D_METHOD("leave_region"), &TownSdkClient::leave_region);
 	ClassDB::bind_method(D_METHOD("send_move", "held", "delta"), &TownSdkClient::send_move);
@@ -475,4 +490,8 @@ void TownSdkClient::_bind_methods() {
 	BIND_ENUM_CONSTANT(ACTION_ATTACK);
 	BIND_ENUM_CONSTANT(ACTION_BLOCK);
 	BIND_ENUM_CONSTANT(ACTION_DEFEND);
+	BIND_ENUM_CONSTANT(GAME_TYPE_TURN_BASED);
+	BIND_ENUM_CONSTANT(GAME_TYPE_FPS);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "game_type", PROPERTY_HINT_ENUM, "turn_based,fps"), "set_game_type",
+			"get_game_type");
 }
