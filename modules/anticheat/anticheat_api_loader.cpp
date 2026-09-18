@@ -317,6 +317,8 @@ bool AnticheatAPILoader::try_load_server() {
 	fn_gb_set_action = (BZGB_SetActionFn)symbol;
 	_load_symbol(gb_handle, "BZGB_SetTimeoutMs", symbol);
 	fn_gb_set_timeout = (BZGB_SetTimeoutFn)symbol;
+	_load_symbol(gb_handle, "BZGB_SetApiKey", symbol);
+	fn_gb_set_api_key = (BZGB_SetApiKeyFn)symbol;
 
 	server_loaded = true;
 	return true;
@@ -366,6 +368,7 @@ void AnticheatAPILoader::_clear_server() {
 	fn_gb_send = nullptr;
 	fn_gb_set_action = nullptr;
 	fn_gb_set_timeout = nullptr;
+	fn_gb_set_api_key = nullptr;
 }
 
 void AnticheatAPILoader::unload() {
@@ -505,5 +508,11 @@ void AnticheatAPILoader::gb_set_action_receiver(BZGB_ActionFn fn) {
 void AnticheatAPILoader::gb_set_timeout_ms(int timeout_ms) {
 	if (fn_gb_set_timeout) {
 		fn_gb_set_timeout(timeout_ms);
+	}
+}
+
+void AnticheatAPILoader::gb_set_api_key(const char *api_key) {
+	if (fn_gb_set_api_key) {
+		fn_gb_set_api_key(api_key);
 	}
 }

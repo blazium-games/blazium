@@ -118,6 +118,39 @@ void AnticheatEditorPlugin::_on_apply_ops_pressed() {
 	_append_log("apply_ops_line()");
 }
 
+void AnticheatEditorPlugin::_on_ops_message(const String &p_player_id, const String &p_text) {
+	_append_log(vformat("ops_message player=%s text=%s", p_player_id, p_text));
+}
+
+void AnticheatEditorPlugin::_on_ops_kill(const String &p_player_id) {
+	_append_log(vformat("ops_kill player=%s", p_player_id));
+}
+
+void AnticheatEditorPlugin::_on_ops_screenshot_request(const String &p_player_id, const String &p_side) {
+	_append_log(vformat("ops_screenshot_request player=%s side=%s", p_player_id, p_side));
+}
+
+void AnticheatEditorPlugin::_on_server_drop_client(int p_client_index, const String &p_reason) {
+	_append_log(vformat("server_drop_client index=%d reason=%s", p_client_index, p_reason));
+}
+
+void AnticheatEditorPlugin::_on_screenshot_ready(const PackedByteArray &p_png, int p_width, int p_height) {
+	_append_log(vformat("screenshot_ready %dx%d bytes=%d", p_width, p_height, p_png.size()));
+}
+
+void AnticheatEditorPlugin::_connect_signals() {
+	Anticheat *ac = Anticheat::get_singleton();
+	if (!ac || signals_connected) {
+		return;
+	}
+	ac->connect("ops_message", callable_mp(this, &AnticheatEditorPlugin::_on_ops_message));
+	ac->connect("ops_kill", callable_mp(this, &AnticheatEditorPlugin::_on_ops_kill));
+	ac->connect("ops_screenshot_request", callable_mp(this, &AnticheatEditorPlugin::_on_ops_screenshot_request));
+	ac->connect("server_drop_client", callable_mp(this, &AnticheatEditorPlugin::_on_server_drop_client));
+	ac->connect("screenshot_ready", callable_mp(this, &AnticheatEditorPlugin::_on_screenshot_ready));
+	signals_connected = true;
+}
+
 void AnticheatEditorPlugin::_setup_dock() {
 	dock_root = memnew(VBoxContainer);
 	add_control_to_dock(DOCK_SLOT_RIGHT_UL, dock_root);
@@ -184,9 +217,31 @@ void AnticheatEditorPlugin::_setup_dock() {
 	log->set_v_size_flags(Control::SIZE_EXPAND_FILL);
 	log->set_custom_minimum_size(Size2(0, 120));
 	dock_root->add_child(log);
+	_connect_signals();
 }
 
 void AnticheatEditorPlugin::_teardown_dock() {
+	if (signals_connected) {
+		Anticheat *ac = Anticheat::get_singleton();
+		if (ac) {
+			if (ac->is_connected("ops_message", callable_mp(this, &AnticheatEditorPlugin::_on_ops_message))) {
+				ac->disconnect("ops_message", callable_mp(this, &AnticheatEditorPlugin::_on_ops_message));
+			}
+			if (ac->is_connected("ops_kill", callable_mp(this, &AnticheatEditorPlugin::_on_ops_kill))) {
+				ac->disconnect("ops_kill", callable_mp(this, &AnticheatEditorPlugin::_on_ops_kill));
+			}
+			if (ac->is_connected("ops_screenshot_request", callable_mp(this, &AnticheatEditorPlugin::_on_ops_screenshot_request))) {
+				ac->disconnect("ops_screenshot_request", callable_mp(this, &AnticheatEditorPlugin::_on_ops_screenshot_request));
+			}
+			if (ac->is_connected("server_drop_client", callable_mp(this, &AnticheatEditorPlugin::_on_server_drop_client))) {
+				ac->disconnect("server_drop_client", callable_mp(this, &AnticheatEditorPlugin::_on_server_drop_client));
+			}
+			if (ac->is_connected("screenshot_ready", callable_mp(this, &AnticheatEditorPlugin::_on_screenshot_ready))) {
+				ac->disconnect("screenshot_ready", callable_mp(this, &AnticheatEditorPlugin::_on_screenshot_ready));
+			}
+		}
+		signals_connected = false;
+	}
 	if (dock_root) {
 		remove_control_from_docks(dock_root);
 		dock_root->queue_free();

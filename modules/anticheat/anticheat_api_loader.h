@@ -47,6 +47,7 @@ public:
 	typedef void (*BZGB_ActionFn)(const char *json_line, int len);
 	typedef void (*BZGB_SetActionFn)(BZGB_ActionFn fn);
 	typedef void (*BZGB_SetTimeoutFn)(int timeout_ms);
+	typedef void (*BZGB_SetApiKeyFn)(const char *api_key);
 
 	bool try_load();
 	bool try_load_server();
@@ -82,6 +83,7 @@ public:
 	int gb_send(const void *data, int len);
 	void gb_set_action_receiver(BZGB_ActionFn fn);
 	void gb_set_timeout_ms(int timeout_ms);
+	void gb_set_api_key(const char *api_key);
 
 	static bool verify_runtime_file(const String &p_path, bool p_require_sig);
 
@@ -120,6 +122,7 @@ private:
 	BZGB_SendFn fn_gb_send = nullptr;
 	BZGB_SetActionFn fn_gb_set_action = nullptr;
 	BZGB_SetTimeoutFn fn_gb_set_timeout = nullptr;
+	BZGB_SetApiKeyFn fn_gb_set_api_key = nullptr;
 
 	bool _load_symbol(void *p_handle, const char *p_name, void *&r_symbol);
 	void *_open_library(const Vector<String> &p_names, bool p_require_sig);

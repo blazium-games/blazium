@@ -55,7 +55,7 @@ void Anticheat::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("screenshot_ready", PropertyInfo(Variant::PACKED_BYTE_ARRAY, "png"), PropertyInfo(Variant::INT, "width"), PropertyInfo(Variant::INT, "height")));
 	ADD_SIGNAL(MethodInfo("server_drop_client", PropertyInfo(Variant::INT, "client_index"), PropertyInfo(Variant::STRING, "reason")));
 	ADD_SIGNAL(MethodInfo("ops_action", PropertyInfo(Variant::STRING, "json_line")));
-	ADD_SIGNAL(MethodInfo("ops_teleport", PropertyInfo(Variant::STRING, "player_id"), PropertyInfo(Variant::STRING, "region"), PropertyInfo(Variant::FLOAT, "x"), PropertyInfo(Variant::FLOAT, "y")));
+	ADD_SIGNAL(MethodInfo("ops_teleport", PropertyInfo(Variant::STRING, "player_id"), PropertyInfo(Variant::STRING, "region"), PropertyInfo(Variant::FLOAT, "x"), PropertyInfo(Variant::FLOAT, "y"), PropertyInfo(Variant::FLOAT, "z")));
 	ADD_SIGNAL(MethodInfo("ops_message", PropertyInfo(Variant::STRING, "player_id"), PropertyInfo(Variant::STRING, "text")));
 	ADD_SIGNAL(MethodInfo("ops_global_message", PropertyInfo(Variant::STRING, "text")));
 	ADD_SIGNAL(MethodInfo("ops_kill", PropertyInfo(Variant::STRING, "player_id")));
@@ -359,6 +359,7 @@ int Anticheat::ops_connect() {
 		if (key.is_empty()) {
 			return ANTICHEAT_ERR_CONNECT;
 		}
+		loader.gb_set_api_key(key.utf8().get_data());
 		String endpoint = ProjectSettings::get_singleton()->get("anticheat/ops/saas_endpoint");
 		if (endpoint.is_empty()) {
 			endpoint = address;
@@ -485,16 +486,20 @@ void Anticheat::apply_ops_line(const String &p_json_line) {
 		pairs = ev.get("pairs", Dictionary());
 	}
 	const String reason = pairs.get("reason", "ops");
+	String text = pairs.get("text", "");
+	if (text.is_empty()) {
+		text = reason;
+	}
 	if (event == "Kick" || event == "KickMsg") {
 		_apply_mapped_kick(player_id, reason);
 		return;
 	}
 	if (event == "Message") {
-		emit_signal("ops_message", player_id, reason);
+		emit_signal("ops_message", player_id, text);
 		return;
 	}
 	if (event == "GlobalMessage") {
-		emit_signal("ops_global_message", reason);
+		emit_signal("ops_global_message", text);
 		return;
 	}
 	if (event == "Kill") {
@@ -516,7 +521,7 @@ void Anticheat::apply_ops_line(const String &p_json_line) {
 		return;
 	}
 	if (event == "Teleport") {
-		emit_signal("ops_teleport", player_id, String(pairs.get("region", "")), pairs.get("x", 0.0), pairs.get("y", 0.0));
+		emit_signal("ops_teleport", player_id, String(pairs.get("region", "")), pairs.get("x", 0.0), pairs.get("y", 0.0), pairs.get("z", 0.0));
 	}
 }
 
