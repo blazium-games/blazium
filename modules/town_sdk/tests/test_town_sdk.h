@@ -29,17 +29,17 @@
 
 #pragma once
 
-#include "tests/test_macros.h"
-
-#include "modules/town_sdk/include/turnbattle/protocol.hpp"
-#include "modules/town_sdk/town_sdk_client.h"
-
 #include "core/config/engine.h"
 #include "core/os/os.h"
 #include "core/string/ustring.h"
 #include "core/variant/array.h"
 #include "core/variant/dictionary.h"
 #include "core/variant/typed_array.h"
+#include "tests/test_macros.h"
+
+#include "modules/town_sdk/include/turnbattle/protocol.hpp"
+#include "modules/town_sdk/town_sdk_client.h"
+
 #include <string>
 
 namespace TestTownSDK {

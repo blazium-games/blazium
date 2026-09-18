@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "turnbattle/client.hpp"
+
 #include "turnbattle/protocol.hpp"
 #include "turnbattle/version.hpp"
 
@@ -40,6 +41,7 @@
 #include "core/variant/variant.h"
 
 #include <enet/enet.h>
+
 #include <chrono>
 #include <cstring>
 #include <functional>
