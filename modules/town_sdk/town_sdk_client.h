@@ -34,6 +34,7 @@
 #include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "core/string/ustring.h"
+#include "core/variant/dictionary.h"
 #include "core/variant/type_info.h"
 #include "core/variant/typed_array.h"
 
@@ -69,6 +70,7 @@ public:
 	String get_server_version() const;
 
 	void authenticate(const String &p_jwt_token);
+	void authenticate_username(const String &p_username);
 	void set_game_type(GameType p_type);
 	GameType get_game_type() const;
 	void enter_region(const String &p_region_id);
@@ -82,6 +84,12 @@ public:
 	void send_fire();
 	void send_use(int p_slot);
 	void send_reload();
+	void request_inventory();
+	void send_equip(int p_slot);
+	void send_interact(const String &p_interactable_id, const Dictionary &p_extra = Dictionary());
+	void send_pickup(const String &p_pickup_id);
+	void send_drop(const String &p_kind, int p_slot);
+	void send_craft(const String &p_recipe);
 
 	void battle_action(const String &p_battle_id, BattleAction p_action, const String &p_target_id = String());
 	void leave_battle(const String &p_battle_id);

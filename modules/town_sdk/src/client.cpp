@@ -101,6 +101,20 @@ struct Client::Impl {
 	// Callbacks
 	OnSnapshotCallback on_snapshot;
 	OnMoveStateCallback on_move_state;
+	OnHelloCallback on_hello;
+	OnEntitySpawnCallback on_entity_spawn;
+	OnEntityDespawnCallback on_entity_despawn;
+	OnInteractableStateCallback on_interactable_state;
+	OnInventoryUpdateCallback on_inventory_update;
+	OnShotCallback on_shot;
+	OnHealthCallback on_health;
+	OnDeathCallback on_death;
+	OnRespawnCallback on_respawn;
+	OnPointsCallback on_points;
+	OnScoreboardCallback on_scoreboard;
+	OnPickupStateCallback on_pickup_state;
+	OnToastCallback on_toast;
+	OnAlertCallback on_alert;
 	OnBattleStartCallback on_battle_start;
 	OnBattleStateCallback on_battle_state;
 	OnBattleLogCallback on_battle_log;
@@ -112,6 +126,7 @@ struct Client::Impl {
 
 	// Reconnection state
 	std::string last_jwt_token;
+	std::string last_username;
 	std::string game_type = "turn_based";
 	std::string last_address;
 	uint16_t last_port = 0;
@@ -415,9 +430,20 @@ std::string Client::get_game_type() const {
 void Client::auth(const std::string &jwt_token) {
 	// Store for reconnection
 	impl_->last_jwt_token = jwt_token;
+	impl_->last_username.clear();
 
 	Dictionary payload;
 	payload["jwt"] = String::utf8(jwt_token.c_str());
+	payload["game_type"] = String::utf8(impl_->game_type.c_str());
+	send_message(protocol::MessageType::HELLO, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::auth_username(const std::string &username) {
+	impl_->last_username = username;
+	impl_->last_jwt_token.clear();
+
+	Dictionary payload;
+	payload["username"] = String::utf8(username.c_str());
 	payload["game_type"] = String::utf8(impl_->game_type.c_str());
 	send_message(protocol::MessageType::HELLO, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
@@ -487,6 +513,52 @@ void Client::send_reload() {
 	send_message(protocol::MessageType::RELOAD, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
 
+void Client::request_inventory() {
+	Dictionary payload;
+	send_message(protocol::MessageType::INVENTORY_GET, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::send_equip(int slot) {
+	Dictionary payload;
+	payload["slot"] = slot;
+	send_message(protocol::MessageType::EQUIP, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::send_interact(const std::string &interactable_id, const Dictionary &extra) {
+	if (interactable_id.empty()) {
+		return;
+	}
+	Dictionary payload = extra.duplicate(true);
+	payload["id"] = String::utf8(interactable_id.c_str());
+	send_message(protocol::MessageType::INTERACT, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::send_pickup(const std::string &pickup_id) {
+	if (pickup_id.empty()) {
+		return;
+	}
+	Dictionary payload;
+	payload["id"] = String::utf8(pickup_id.c_str());
+	send_message(protocol::MessageType::PICKUP, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::send_drop(const std::string &kind, int slot) {
+	Dictionary payload;
+	payload["drop"] = true;
+	payload["kind"] = String::utf8(kind.c_str());
+	payload["slot"] = slot;
+	send_message(protocol::MessageType::USE, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::send_craft(const std::string &recipe) {
+	if (recipe.empty()) {
+		return;
+	}
+	Dictionary payload;
+	payload["recipe"] = String::utf8(recipe.c_str());
+	send_message(protocol::MessageType::USE, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
 void Client::battle_action(const std::string &battle_id, Action action, const std::string &target_id) {
 	std::string action_str;
 	switch (action) {
@@ -550,6 +622,48 @@ void Client::on_snapshot(OnSnapshotCallback cb) {
 }
 void Client::on_move_state(OnMoveStateCallback cb) {
 	impl_->on_move_state = cb;
+}
+void Client::on_hello(OnHelloCallback cb) {
+	impl_->on_hello = cb;
+}
+void Client::on_entity_spawn(OnEntitySpawnCallback cb) {
+	impl_->on_entity_spawn = cb;
+}
+void Client::on_entity_despawn(OnEntityDespawnCallback cb) {
+	impl_->on_entity_despawn = cb;
+}
+void Client::on_interactable_state(OnInteractableStateCallback cb) {
+	impl_->on_interactable_state = cb;
+}
+void Client::on_inventory_update(OnInventoryUpdateCallback cb) {
+	impl_->on_inventory_update = cb;
+}
+void Client::on_shot(OnShotCallback cb) {
+	impl_->on_shot = cb;
+}
+void Client::on_health(OnHealthCallback cb) {
+	impl_->on_health = cb;
+}
+void Client::on_death(OnDeathCallback cb) {
+	impl_->on_death = cb;
+}
+void Client::on_respawn(OnRespawnCallback cb) {
+	impl_->on_respawn = cb;
+}
+void Client::on_points(OnPointsCallback cb) {
+	impl_->on_points = cb;
+}
+void Client::on_scoreboard(OnScoreboardCallback cb) {
+	impl_->on_scoreboard = cb;
+}
+void Client::on_pickup_state(OnPickupStateCallback cb) {
+	impl_->on_pickup_state = cb;
+}
+void Client::on_toast(OnToastCallback cb) {
+	impl_->on_toast = cb;
+}
+void Client::on_alert(OnAlertCallback cb) {
+	impl_->on_alert = cb;
 }
 void Client::on_battle_start(OnBattleStartCallback cb) {
 	impl_->on_battle_start = cb;
@@ -659,15 +773,19 @@ void Client::update(float dt) {
 					impl_->on_reconnecting(impl_->reconnect_attempts, impl_->reconnect_delay);
 				}
 
-				// Use reconnection token if available, otherwise last JWT
+				// Use reconnection token if available, otherwise last JWT or username
 				std::string token = !impl_->reconnection_token.empty()
 						? impl_->reconnection_token
 						: impl_->last_jwt_token;
 
-				if (!token.empty() && !impl_->last_address.empty()) {
+				if (!impl_->last_address.empty()) {
 					disconnect(); // Clean up old connection
 					if (connect(impl_->last_address, impl_->last_port)) {
-						auth(token);
+						if (!token.empty()) {
+							auth(token);
+						} else if (!impl_->last_username.empty()) {
+							auth_username(impl_->last_username);
+						}
 					}
 				}
 			}
@@ -773,6 +891,10 @@ void Client::handle_message(uint16_t type, const std::string &payload) {
 			if (data.has("reconnection_token")) {
 				impl_->reconnection_token = to_std_string(data["reconnection_token"]);
 			}
+
+			if (impl_->on_hello) {
+				impl_->on_hello(data);
+			}
 			break;
 		}
 
@@ -785,6 +907,84 @@ void Client::handle_message(uint16_t type, const std::string &payload) {
 		case protocol::MessageType::MOVE_STATE:
 			if (impl_->on_move_state) {
 				impl_->on_move_state(parsed);
+			}
+			break;
+
+		case protocol::MessageType::ENTITY_SPAWN:
+			if (impl_->on_entity_spawn) {
+				impl_->on_entity_spawn(parsed);
+			}
+			break;
+
+		case protocol::MessageType::ENTITY_DESPAWN:
+			if (impl_->on_entity_despawn) {
+				impl_->on_entity_despawn(parsed);
+			}
+			break;
+
+		case protocol::MessageType::INTERACTABLE_STATE:
+			if (impl_->on_interactable_state) {
+				impl_->on_interactable_state(parsed);
+			}
+			break;
+
+		case protocol::MessageType::INVENTORY_UPDATE:
+			if (impl_->on_inventory_update) {
+				impl_->on_inventory_update(parsed);
+			}
+			break;
+
+		case protocol::MessageType::SHOT:
+			if (impl_->on_shot) {
+				impl_->on_shot(parsed);
+			}
+			break;
+
+		case protocol::MessageType::HEALTH:
+			if (impl_->on_health) {
+				impl_->on_health(parsed);
+			}
+			break;
+
+		case protocol::MessageType::DEATH:
+			if (impl_->on_death) {
+				impl_->on_death(parsed);
+			}
+			break;
+
+		case protocol::MessageType::RESPAWN:
+			if (impl_->on_respawn) {
+				impl_->on_respawn(parsed);
+			}
+			break;
+
+		case protocol::MessageType::POINTS:
+			if (impl_->on_points) {
+				impl_->on_points(parsed);
+			}
+			break;
+
+		case protocol::MessageType::SCOREBOARD:
+			if (impl_->on_scoreboard) {
+				impl_->on_scoreboard(parsed);
+			}
+			break;
+
+		case protocol::MessageType::PICKUP_STATE:
+			if (impl_->on_pickup_state) {
+				impl_->on_pickup_state(parsed);
+			}
+			break;
+
+		case protocol::MessageType::TOAST:
+			if (impl_->on_toast) {
+				impl_->on_toast(parsed);
+			}
+			break;
+
+		case protocol::MessageType::ALERT:
+			if (impl_->on_alert) {
+				impl_->on_alert(parsed);
 			}
 			break;
 

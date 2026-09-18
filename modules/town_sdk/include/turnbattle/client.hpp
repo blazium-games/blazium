@@ -30,6 +30,9 @@
 #pragma once
 #include "handlers.hpp"
 #include "types.hpp"
+
+#include "core/variant/dictionary.h"
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -53,6 +56,7 @@ public:
 
 	// Auth
 	void auth(const std::string &jwt_token);
+	void auth_username(const std::string &username);
 	void set_game_type(const std::string &game_type);
 	std::string get_game_type() const;
 
@@ -68,6 +72,12 @@ public:
 	void send_fire();
 	void send_use(int slot);
 	void send_reload();
+	void request_inventory();
+	void send_equip(int slot);
+	void send_interact(const std::string &interactable_id, const Dictionary &extra = Dictionary());
+	void send_pickup(const std::string &pickup_id);
+	void send_drop(const std::string &kind, int slot);
+	void send_craft(const std::string &recipe);
 
 	// Battle
 	void battle_action(const std::string &battle_id, Action action,
@@ -86,6 +96,20 @@ public:
 	// Callbacks
 	void on_snapshot(OnSnapshotCallback cb);
 	void on_move_state(OnMoveStateCallback cb);
+	void on_hello(OnHelloCallback cb);
+	void on_entity_spawn(OnEntitySpawnCallback cb);
+	void on_entity_despawn(OnEntityDespawnCallback cb);
+	void on_interactable_state(OnInteractableStateCallback cb);
+	void on_inventory_update(OnInventoryUpdateCallback cb);
+	void on_shot(OnShotCallback cb);
+	void on_health(OnHealthCallback cb);
+	void on_death(OnDeathCallback cb);
+	void on_respawn(OnRespawnCallback cb);
+	void on_points(OnPointsCallback cb);
+	void on_scoreboard(OnScoreboardCallback cb);
+	void on_pickup_state(OnPickupStateCallback cb);
+	void on_toast(OnToastCallback cb);
+	void on_alert(OnAlertCallback cb);
 	void on_battle_start(OnBattleStartCallback cb);
 	void on_battle_state(OnBattleStateCallback cb);
 	void on_battle_log(OnBattleLogCallback cb);
