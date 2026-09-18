@@ -10,10 +10,12 @@
 
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
+#include "core/io/file_access.h"
 #include "core/io/image.h"
 #include "core/object/class_db.h"
 #include "core/os/os.h"
 
+#include <cstdlib>
 #include <cstring>
 
 Anticheat *Anticheat::singleton = nullptr;
@@ -30,6 +32,8 @@ void Anticheat::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("submit_command", "command"), &Anticheat::submit_command);
 	ClassDB::bind_method(D_METHOD("ops_connect"), &Anticheat::ops_connect);
 	ClassDB::bind_method(D_METHOD("is_ops_connected"), &Anticheat::is_ops_connected);
+
+	ADD_SIGNAL(MethodInfo("outgoing_packet", PropertyInfo(Variant::PACKED_BYTE_ARRAY, "blob")));
 }
 
 Anticheat *Anticheat::get_singleton() {
@@ -67,6 +71,43 @@ void Anticheat::_register_screenshot_receiver() {
 	loader.cl_set_screenshot_receiver(&Anticheat::_screenshot_receiver);
 }
 
+int Anticheat::_send_packet(const void *data, int len) {
+	if (!singleton || !data || len <= 0) {
+		return 1;
+	}
+	PackedByteArray blob;
+	blob.resize(len);
+	memcpy(blob.ptrw(), data, static_cast<size_t>(len));
+	singleton->emit_signal("outgoing_packet", blob);
+	return 0;
+}
+
+int Anticheat::_file_hash(const char *path, unsigned char out32[32]) {
+	if (!path || !out32) {
+		return 1;
+	}
+	String p = String::utf8(path);
+	if (!p.begins_with("res://") && !p.begins_with("user://") && !p.is_absolute_path()) {
+		p = String("res://") + p;
+	}
+	const String sha = FileAccess::get_sha256(p).to_lower();
+	if (sha.length() != 64) {
+		memset(out32, 0, 32);
+		return 1;
+	}
+	for (int i = 0; i < 32; i++) {
+		CharString pair = sha.substr(i * 2, 2).utf8();
+		out32[i] = (unsigned char)strtol(pair.get_data(), nullptr, 16);
+	}
+	return 0;
+}
+
+void Anticheat::_register_runtime_callbacks() {
+	loader.cl_set_send_packet(&Anticheat::_send_packet);
+	loader.cl_set_file_hash(&Anticheat::_file_hash);
+	_register_screenshot_receiver();
+}
+
 bool Anticheat::is_available() {
 	if (dll_available) {
 		return true;
@@ -98,7 +139,7 @@ int Anticheat::initialize() {
 	if (err != 0) {
 		return ANTICHEAT_ERR_INIT;
 	}
-	_register_screenshot_receiver();
+	_register_runtime_callbacks();
 	initialized = true;
 	return ANTICHEAT_OK;
 }

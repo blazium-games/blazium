@@ -21,6 +21,10 @@ public:
 	typedef int (*BZCL_OnCommandFn)(const char *utf8);
 	typedef void (*BZCL_ScreenshotFn)(const unsigned char *rgba, int w, int h, int bpp);
 	typedef void (*BZCL_SetScreenshotReceiverFn)(BZCL_ScreenshotFn fn);
+	typedef int (*BZCL_SendPacketFn)(const void *data, int len);
+	typedef int (*BZCL_FileHashFn)(const char *path, unsigned char out32[32]);
+	typedef void (*BZCL_SetSendPacketFn)(BZCL_SendPacketFn fn);
+	typedef void (*BZCL_SetFileHashFn)(BZCL_FileHashFn fn);
 
 	typedef int (*BZSV_InitFn)();
 	typedef void (*BZSV_ShutdownFn)();
@@ -47,6 +51,8 @@ public:
 	int cl_on_packet(const void *data, int len);
 	int cl_on_command(const char *utf8);
 	void cl_set_screenshot_receiver(BZCL_ScreenshotFn fn);
+	void cl_set_send_packet(BZCL_SendPacketFn fn);
+	void cl_set_file_hash(BZCL_FileHashFn fn);
 
 	int sv_init();
 	void sv_shutdown();
@@ -76,6 +82,8 @@ private:
 	BZCL_OnPacketFn fn_cl_on_packet = nullptr;
 	BZCL_OnCommandFn fn_cl_on_command = nullptr;
 	BZCL_SetScreenshotReceiverFn fn_cl_set_screenshot = nullptr;
+	BZCL_SetSendPacketFn fn_cl_set_send = nullptr;
+	BZCL_SetFileHashFn fn_cl_set_hash = nullptr;
 
 	BZSV_InitFn fn_sv_init = nullptr;
 	BZSV_ShutdownFn fn_sv_shutdown = nullptr;
