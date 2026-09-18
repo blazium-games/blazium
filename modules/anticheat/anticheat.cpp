@@ -43,6 +43,7 @@ void Anticheat::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("outgoing_server_packet", PropertyInfo(Variant::INT, "client_index"), PropertyInfo(Variant::PACKED_BYTE_ARRAY, "blob")));
 	ADD_SIGNAL(MethodInfo("screenshot_ready", PropertyInfo(Variant::PACKED_BYTE_ARRAY, "png"), PropertyInfo(Variant::INT, "width"), PropertyInfo(Variant::INT, "height")));
 	ADD_SIGNAL(MethodInfo("server_drop_client", PropertyInfo(Variant::INT, "client_index"), PropertyInfo(Variant::STRING, "reason")));
+	ADD_SIGNAL(MethodInfo("ops_action", PropertyInfo(Variant::STRING, "json_line")));
 }
 
 Anticheat *Anticheat::get_singleton() {
@@ -258,11 +259,24 @@ int Anticheat::ops_connect() {
 	if (!get_server_available()) {
 		return ANTICHEAT_ERR_UNAVAILABLE;
 	}
+	const bool dev = OS::get_singleton() && OS::get_singleton()->get_environment("BLAZIUM_AC_DEV") == "1";
+	if (!dev && ProjectSettings::get_singleton()) {
+		String lic = ProjectSettings::get_singleton()->get("anticheat/ops/license_path");
+		if (!lic.is_empty()) {
+			if (lic.begins_with("res://") || lic.begins_with("user://")) {
+				lic = ProjectSettings::get_singleton()->globalize_path(lic);
+			}
+			if (!FileAccess::exists(lic)) {
+				return ANTICHEAT_ERR_CONNECT;
+			}
+		}
+	}
 	if (loader.sv_init() != 0) {
 		return ANTICHEAT_ERR_INIT;
 	}
 	loader.sv_set_send_packet(&Anticheat::_sv_send_packet);
 	loader.sv_set_notify_drop(&Anticheat::_sv_notify_drop);
+	loader.gb_set_action_receiver(&Anticheat::_ops_action);
 	const int timeout_s = ProjectSettings::get_singleton()->get("anticheat/ops/timeout_s");
 	loader.gb_set_timeout_ms(timeout_s > 0 ? timeout_s * 1000 : 30000);
 
@@ -322,6 +336,13 @@ void Anticheat::_sv_notify_drop(int client_index, const char *reason_utf8) {
 		return;
 	}
 	singleton->emit_signal("server_drop_client", client_index, String::utf8(reason_utf8 ? reason_utf8 : ""));
+}
+
+void Anticheat::_ops_action(const char *json_line, int len) {
+	if (!singleton || !json_line || len <= 0) {
+		return;
+	}
+	singleton->emit_signal("ops_action", String::utf8(json_line, len));
 }
 
 int Anticheat::sv_on_packet(int p_client_index, const PackedByteArray &p_data) {

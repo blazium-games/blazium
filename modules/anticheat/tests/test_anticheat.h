@@ -46,4 +46,10 @@ TEST_CASE("[Anticheat] screenshot command without viewport does not crash") {
 	CHECK(ac->submit_command("screenshot") == ANTICHEAT_ERR_INIT);
 }
 
+TEST_CASE("[Anticheat] ops_connect without dedicated runtimes is unavailable") {
+	Anticheat *ac = Anticheat::get_singleton();
+	REQUIRE(ac != nullptr);
+	CHECK(ac->ops_connect() == ANTICHEAT_ERR_UNAVAILABLE);
+}
+
 } // namespace TestAnticheat
