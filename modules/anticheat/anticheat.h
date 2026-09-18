@@ -25,7 +25,10 @@ private:
 	bool ops_connected = false;
 
 	void _register_screenshot_receiver();
+	void _register_runtime_callbacks();
 	static void _screenshot_receiver(const unsigned char *rgba, int w, int h, int bpp);
+	static int _send_packet(const void *data, int len);
+	static int _file_hash(const char *path, unsigned char out32[32]);
 
 protected:
 	static void _bind_methods();
