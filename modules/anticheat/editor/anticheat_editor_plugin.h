@@ -43,6 +43,12 @@ private:
 	void _on_ops_screenshot_request(const String &p_player_id, const String &p_side);
 	void _on_server_drop_client(int p_client_index, const String &p_reason);
 	void _on_screenshot_ready(const PackedByteArray &p_png, int p_width, int p_height);
+	void _on_ops_teleport(const String &p_player_id, const String &p_region, float p_x, float p_y, float p_z);
+	void _on_ops_global_message(const String &p_text);
+	void _on_ops_action(const String &p_json_line);
+	void _on_ops_warn(const String &p_player_id, const String &p_text);
+	void _on_ops_mute(const String &p_player_id, const String &p_text, int64_t p_until);
+	void _on_ops_spectate(const String &p_player_id, const String &p_text, int64_t p_until);
 	void _setup_dock();
 	void _teardown_dock();
 	void _connect_signals();

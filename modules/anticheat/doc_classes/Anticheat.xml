@@ -139,7 +139,7 @@
 			<return type="void" />
 			<param index="0" name="json_line" type="String" />
 			<description>
-				Applies one ops JSONL action: Kick/KickMsg if mapped, Message/GlobalMessage/Kill as signals, screenshot upload or [signal ops_screenshot_request] on dedicated, Teleport as [signal ops_teleport]. Always emits [signal ops_action].
+				Applies one ops JSONL action: Kick/KickMsg/Timeout if mapped, Message/GlobalMessage/Warn/Mute/Spectate/Kill as signals, screenshot upload or [signal ops_screenshot_request] on dedicated, Teleport as [signal ops_teleport]. Note is audit-only. Always emits [signal ops_action].
 			</description>
 		</method>
 		<method name="gb_send">
@@ -207,6 +207,29 @@
 			<param index="1" name="side" type="String" />
 			<description>
 				Dedicated server: ask that client's viewport for a PNG. Do not capture the dedicated process.
+			</description>
+		</signal>
+		<signal name="ops_warn">
+			<param index="0" name="player_id" type="String" />
+			<param index="1" name="text" type="String" />
+			<description>
+				Dedicated server: warn one player. The host must show an alert toast.
+			</description>
+		</signal>
+		<signal name="ops_mute">
+			<param index="0" name="player_id" type="String" />
+			<param index="1" name="text" type="String" />
+			<param index="2" name="until_unix" type="int" />
+			<description>
+				Dedicated server: mute combat for that player until [code]until_unix[/code] (0 means until leave).
+			</description>
+		</signal>
+		<signal name="ops_spectate">
+			<param index="0" name="player_id" type="String" />
+			<param index="1" name="text" type="String" />
+			<param index="2" name="until_unix" type="int" />
+			<description>
+				Dedicated server: mark the player as spectating until [code]until_unix[/code] (0 means until leave). The host must skip their fire and targeting.
 			</description>
 		</signal>
 	</signals>
