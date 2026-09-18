@@ -34,6 +34,7 @@
 #include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "core/string/ustring.h"
+#include "core/variant/dictionary.h"
 #include "core/variant/type_info.h"
 #include "core/variant/typed_array.h"
 
@@ -53,6 +54,11 @@ public:
 		ACTION_DEFEND = (int)turnbattle::Action::DEFEND,
 	};
 
+	enum GameType {
+		GAME_TYPE_TURN_BASED = 0,
+		GAME_TYPE_FPS = 1,
+	};
+
 	TownSdkClient();
 	~TownSdkClient() override;
 
@@ -64,9 +70,26 @@ public:
 	String get_server_version() const;
 
 	void authenticate(const String &p_jwt_token);
+	void authenticate_username(const String &p_username);
+	void set_game_type(GameType p_type);
+	GameType get_game_type() const;
 	void enter_region(const String &p_region_id);
 	void leave_region();
 	void send_move(int p_held, double p_delta);
+	void send_move_look(int p_held, double p_delta, double p_yaw, double p_pitch, bool p_flashlight = false,
+			bool p_weapon_light = false);
+	void send_move_pose(int p_held, double p_delta, double p_yaw, double p_pitch, bool p_flashlight,
+			bool p_weapon_light, const String &p_stance, bool p_ads);
+	void send_melee();
+	void send_fire();
+	void send_use(int p_slot);
+	void send_reload();
+	void request_inventory();
+	void send_equip(int p_slot);
+	void send_interact(const String &p_interactable_id, const Dictionary &p_extra = Dictionary());
+	void send_pickup(const String &p_pickup_id);
+	void send_drop(const String &p_kind, int p_slot);
+	void send_craft(const String &p_recipe);
 
 	void battle_action(const String &p_battle_id, BattleAction p_action, const String &p_target_id = String());
 	void leave_battle(const String &p_battle_id);
@@ -75,6 +98,8 @@ public:
 	void admin_kick(const String &p_username, const String &p_reason = String());
 	void admin_stats_request();
 	void admin_broadcast(const String &p_message, bool p_is_alert = false);
+	void send_integrity(const PackedByteArray &p_blob);
+	void send_screenshot_data(const Dictionary &p_payload);
 
 	void set_auto_reconnect(bool p_enabled);
 	void manual_reconnect();
@@ -103,3 +128,4 @@ private:
 };
 
 VARIANT_ENUM_CAST(TownSdkClient::BattleAction);
+VARIANT_ENUM_CAST(TownSdkClient::GameType);

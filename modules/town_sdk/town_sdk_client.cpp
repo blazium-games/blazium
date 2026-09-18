@@ -35,6 +35,7 @@
 #include "core/math/math_funcs.h"
 #include "core/object/class_db.h"
 #include "core/string/print_string.h"
+#include "core/io/json.h"
 #include "core/variant/variant.h"
 
 #include <vector>
@@ -73,6 +74,20 @@ TownSdkClient::~TownSdkClient() {
 	if (client) {
 		client->on_snapshot({});
 		client->on_move_state({});
+		client->on_hello({});
+		client->on_entity_spawn({});
+		client->on_entity_despawn({});
+		client->on_interactable_state({});
+		client->on_inventory_update({});
+		client->on_shot({});
+		client->on_health({});
+		client->on_death({});
+		client->on_respawn({});
+		client->on_points({});
+		client->on_scoreboard({});
+		client->on_pickup_state({});
+		client->on_toast({});
+		client->on_alert({});
 		client->on_battle_start({});
 		client->on_battle_state({});
 		client->on_battle_log({});
@@ -88,6 +103,10 @@ TownSdkClient::~TownSdkClient() {
 		client->on_admin_kick({});
 		client->on_admin_stats({});
 		client->on_admin_broadcast({});
+		client->on_integrity({});
+		client->on_screenshot_req({});
+		client->on_ops_action({});
+		client->on_anim_fx({});
 		client.reset();
 	}
 
@@ -107,6 +126,62 @@ void TownSdkClient::_attach_callbacks() {
 
 	client->on_move_state([this](const Variant &p_state) {
 		emit_signal("move_state", p_state);
+	});
+
+	client->on_hello([this](const Variant &p_hello) {
+		emit_signal("hello_received", p_hello);
+	});
+
+	client->on_entity_spawn([this](const Variant &p_payload) {
+		emit_signal("entity_spawned", p_payload);
+	});
+
+	client->on_entity_despawn([this](const Variant &p_payload) {
+		emit_signal("entity_despawned", p_payload);
+	});
+
+	client->on_interactable_state([this](const Variant &p_payload) {
+		emit_signal("interactable_state", p_payload);
+	});
+
+	client->on_inventory_update([this](const Variant &p_payload) {
+		emit_signal("inventory_update", p_payload);
+	});
+
+	client->on_shot([this](const Variant &p_payload) {
+		emit_signal("shot", p_payload);
+	});
+
+	client->on_health([this](const Variant &p_payload) {
+		emit_signal("health", p_payload);
+	});
+
+	client->on_death([this](const Variant &p_payload) {
+		emit_signal("death", p_payload);
+	});
+
+	client->on_respawn([this](const Variant &p_payload) {
+		emit_signal("respawn", p_payload);
+	});
+
+	client->on_points([this](const Variant &p_payload) {
+		emit_signal("points", p_payload);
+	});
+
+	client->on_scoreboard([this](const Variant &p_payload) {
+		emit_signal("scoreboard", p_payload);
+	});
+
+	client->on_pickup_state([this](const Variant &p_payload) {
+		emit_signal("pickup_state", p_payload);
+	});
+
+	client->on_toast([this](const Variant &p_payload) {
+		emit_signal("toast", p_payload);
+	});
+
+	client->on_alert([this](const Variant &p_payload) {
+		emit_signal("alert", p_payload);
 	});
 
 	client->on_battle_start([this](const Variant &p_battle) {
@@ -168,6 +243,19 @@ void TownSdkClient::_attach_callbacks() {
 	client->on_admin_broadcast([this](const Variant &p_payload) {
 		emit_signal("admin_broadcast_received", p_payload);
 	});
+	client->on_integrity([this](const Variant &p_payload) {
+		emit_signal("integrity_received", p_payload);
+	});
+	client->on_screenshot_req([this](const Variant &p_payload) {
+		emit_signal("screenshot_req_received", p_payload);
+	});
+	client->on_ops_action([this](const Variant &p_payload) {
+		emit_signal("ops_action_received", p_payload);
+	});
+
+	client->on_anim_fx([this](const Variant &p_payload) {
+		emit_signal("anim_fx", p_payload);
+	});
 }
 
 std::string TownSdkClient::_string_to_std(const String &p_string) {
@@ -215,6 +303,25 @@ void TownSdkClient::authenticate(const String &p_jwt_token) {
 	}
 }
 
+void TownSdkClient::authenticate_username(const String &p_username) {
+	if (client) {
+		client->auth_username(_string_to_std(p_username));
+	}
+}
+
+void TownSdkClient::set_game_type(GameType p_type) {
+	if (client) {
+		client->set_game_type(p_type == GAME_TYPE_FPS ? "fps" : "turn_based");
+	}
+}
+
+TownSdkClient::GameType TownSdkClient::get_game_type() const {
+	if (!client) {
+		return GAME_TYPE_TURN_BASED;
+	}
+	return client->get_game_type() == "fps" ? GAME_TYPE_FPS : GAME_TYPE_TURN_BASED;
+}
+
 void TownSdkClient::enter_region(const String &p_region_id) {
 	if (client) {
 		client->enter_region(_string_to_std(p_region_id));
@@ -231,6 +338,83 @@ void TownSdkClient::send_move(int p_held, double p_delta) {
 	if (client) {
 		uint8_t held = (uint8_t)CLAMP(p_held, 0, 255);
 		client->send_move(held, (float)p_delta);
+	}
+}
+
+void TownSdkClient::send_move_look(int p_held, double p_delta, double p_yaw, double p_pitch, bool p_flashlight,
+		bool p_weapon_light) {
+	if (client) {
+		uint8_t held = (uint8_t)CLAMP(p_held, 0, 255);
+		client->send_move_look(held, (float)p_delta, (float)p_yaw, (float)p_pitch, p_flashlight, p_weapon_light);
+	}
+}
+
+void TownSdkClient::send_move_pose(int p_held, double p_delta, double p_yaw, double p_pitch, bool p_flashlight,
+		bool p_weapon_light, const String &p_stance, bool p_ads) {
+	if (client) {
+		uint8_t held = (uint8_t)CLAMP(p_held, 0, 255);
+		client->send_move_pose(held, (float)p_delta, (float)p_yaw, (float)p_pitch, p_flashlight, p_weapon_light,
+				_string_to_std(p_stance), p_ads);
+	}
+}
+
+void TownSdkClient::send_melee() {
+	if (client) {
+		client->send_melee();
+	}
+}
+
+void TownSdkClient::send_fire() {
+	if (client) {
+		client->send_fire();
+	}
+}
+
+void TownSdkClient::send_use(int p_slot) {
+	if (client) {
+		client->send_use(p_slot);
+	}
+}
+
+void TownSdkClient::send_reload() {
+	if (client) {
+		client->send_reload();
+	}
+}
+
+void TownSdkClient::request_inventory() {
+	if (client) {
+		client->request_inventory();
+	}
+}
+
+void TownSdkClient::send_equip(int p_slot) {
+	if (client) {
+		client->send_equip(p_slot);
+	}
+}
+
+void TownSdkClient::send_interact(const String &p_interactable_id, const Dictionary &p_extra) {
+	if (client) {
+		client->send_interact(_string_to_std(p_interactable_id), p_extra);
+	}
+}
+
+void TownSdkClient::send_pickup(const String &p_pickup_id) {
+	if (client) {
+		client->send_pickup(_string_to_std(p_pickup_id));
+	}
+}
+
+void TownSdkClient::send_drop(const String &p_kind, int p_slot) {
+	if (client) {
+		client->send_drop(_string_to_std(p_kind), p_slot);
+	}
+}
+
+void TownSdkClient::send_craft(const String &p_recipe) {
+	if (client) {
+		client->send_craft(_string_to_std(p_recipe));
 	}
 }
 
@@ -271,6 +455,24 @@ void TownSdkClient::admin_broadcast(const String &p_message, bool p_is_alert) {
 	if (client) {
 		client->admin_broadcast(_string_to_std(p_message), p_is_alert);
 	}
+}
+
+void TownSdkClient::send_integrity(const PackedByteArray &p_blob) {
+	if (!client || p_blob.is_empty()) {
+		return;
+	}
+	String hex;
+	for (int i = 0; i < p_blob.size(); i++) {
+		hex += String::num_int64(p_blob[i], 16).pad_zeros(2);
+	}
+	client->send_integrity(_string_to_std(hex));
+}
+
+void TownSdkClient::send_screenshot_data(const Dictionary &p_payload) {
+	if (!client) {
+		return;
+	}
+	client->send_screenshot_data(_string_to_std(JSON::stringify(p_payload)));
 }
 
 void TownSdkClient::set_auto_reconnect(bool p_enabled) {
@@ -340,15 +542,35 @@ void TownSdkClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_client_connected"), &TownSdkClient::is_client_connected);
 	ClassDB::bind_method(D_METHOD("get_server_version"), &TownSdkClient::get_server_version);
 	ClassDB::bind_method(D_METHOD("authenticate", "jwt_token"), &TownSdkClient::authenticate);
+	ClassDB::bind_method(D_METHOD("authenticate_username", "username"), &TownSdkClient::authenticate_username);
+	ClassDB::bind_method(D_METHOD("set_game_type", "type"), &TownSdkClient::set_game_type);
+	ClassDB::bind_method(D_METHOD("get_game_type"), &TownSdkClient::get_game_type);
 	ClassDB::bind_method(D_METHOD("enter_region", "region_id"), &TownSdkClient::enter_region);
 	ClassDB::bind_method(D_METHOD("leave_region"), &TownSdkClient::leave_region);
 	ClassDB::bind_method(D_METHOD("send_move", "held", "delta"), &TownSdkClient::send_move);
+	ClassDB::bind_method(D_METHOD("send_move_look", "held", "delta", "yaw", "pitch", "flashlight", "weapon_light"),
+			&TownSdkClient::send_move_look, DEFVAL(false), DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("send_move_pose", "held", "delta", "yaw", "pitch", "flashlight", "weapon_light",
+								 "stance", "ads"),
+			&TownSdkClient::send_move_pose);
+	ClassDB::bind_method(D_METHOD("send_melee"), &TownSdkClient::send_melee);
+	ClassDB::bind_method(D_METHOD("send_fire"), &TownSdkClient::send_fire);
+	ClassDB::bind_method(D_METHOD("send_use", "slot"), &TownSdkClient::send_use);
+	ClassDB::bind_method(D_METHOD("send_reload"), &TownSdkClient::send_reload);
+	ClassDB::bind_method(D_METHOD("request_inventory"), &TownSdkClient::request_inventory);
+	ClassDB::bind_method(D_METHOD("send_equip", "slot"), &TownSdkClient::send_equip);
+	ClassDB::bind_method(D_METHOD("send_interact", "id", "extra"), &TownSdkClient::send_interact, DEFVAL(Dictionary()));
+	ClassDB::bind_method(D_METHOD("send_pickup", "id"), &TownSdkClient::send_pickup);
+	ClassDB::bind_method(D_METHOD("send_drop", "kind", "slot"), &TownSdkClient::send_drop);
+	ClassDB::bind_method(D_METHOD("send_craft", "recipe"), &TownSdkClient::send_craft);
 	ClassDB::bind_method(D_METHOD("battle_action", "battle_id", "action", "target_id"), &TownSdkClient::battle_action, DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("leave_battle", "battle_id"), &TownSdkClient::leave_battle);
 	ClassDB::bind_method(D_METHOD("admin_reload", "scope"), &TownSdkClient::admin_reload);
 	ClassDB::bind_method(D_METHOD("admin_kick", "username", "reason"), &TownSdkClient::admin_kick, DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("admin_stats_request"), &TownSdkClient::admin_stats_request);
 	ClassDB::bind_method(D_METHOD("admin_broadcast", "message", "is_alert"), &TownSdkClient::admin_broadcast, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("send_integrity", "blob"), &TownSdkClient::send_integrity);
+	ClassDB::bind_method(D_METHOD("send_screenshot_data", "payload"), &TownSdkClient::send_screenshot_data);
 	ClassDB::bind_method(D_METHOD("set_auto_reconnect", "enabled"), &TownSdkClient::set_auto_reconnect);
 	ClassDB::bind_method(D_METHOD("manual_reconnect"), &TownSdkClient::manual_reconnect);
 	ClassDB::bind_method(D_METHOD("poll", "delta"), &TownSdkClient::poll);
@@ -364,6 +586,20 @@ void TownSdkClient::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("connection_failed"));
 	ADD_SIGNAL(MethodInfo("snapshot_received", PropertyInfo(Variant::DICTIONARY, "snapshot")));
 	ADD_SIGNAL(MethodInfo("move_state", PropertyInfo(Variant::DICTIONARY, "state")));
+	ADD_SIGNAL(MethodInfo("hello_received", PropertyInfo(Variant::DICTIONARY, "hello")));
+	ADD_SIGNAL(MethodInfo("entity_spawned", PropertyInfo(Variant::DICTIONARY, "payload")));
+	ADD_SIGNAL(MethodInfo("entity_despawned", PropertyInfo(Variant::DICTIONARY, "payload")));
+	ADD_SIGNAL(MethodInfo("interactable_state", PropertyInfo(Variant::DICTIONARY, "state")));
+	ADD_SIGNAL(MethodInfo("inventory_update", PropertyInfo(Variant::DICTIONARY, "update")));
+	ADD_SIGNAL(MethodInfo("shot", PropertyInfo(Variant::DICTIONARY, "shot")));
+	ADD_SIGNAL(MethodInfo("health", PropertyInfo(Variant::DICTIONARY, "health")));
+	ADD_SIGNAL(MethodInfo("death", PropertyInfo(Variant::DICTIONARY, "death")));
+	ADD_SIGNAL(MethodInfo("respawn", PropertyInfo(Variant::DICTIONARY, "respawn")));
+	ADD_SIGNAL(MethodInfo("points", PropertyInfo(Variant::DICTIONARY, "points")));
+	ADD_SIGNAL(MethodInfo("scoreboard", PropertyInfo(Variant::DICTIONARY, "scoreboard")));
+	ADD_SIGNAL(MethodInfo("pickup_state", PropertyInfo(Variant::DICTIONARY, "state")));
+	ADD_SIGNAL(MethodInfo("toast", PropertyInfo(Variant::DICTIONARY, "toast")));
+	ADD_SIGNAL(MethodInfo("alert", PropertyInfo(Variant::DICTIONARY, "alert")));
 	ADD_SIGNAL(MethodInfo("battle_start", PropertyInfo(Variant::DICTIONARY, "battle")));
 	ADD_SIGNAL(MethodInfo("battle_state", PropertyInfo(Variant::DICTIONARY, "state")));
 	ADD_SIGNAL(MethodInfo("battle_log", PropertyInfo(Variant::STRING, "log")));
@@ -379,8 +615,16 @@ void TownSdkClient::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("admin_kick_received", PropertyInfo(Variant::DICTIONARY, "payload")));
 	ADD_SIGNAL(MethodInfo("admin_stats_received", PropertyInfo(Variant::DICTIONARY, "payload")));
 	ADD_SIGNAL(MethodInfo("admin_broadcast_received", PropertyInfo(Variant::DICTIONARY, "payload")));
+	ADD_SIGNAL(MethodInfo("integrity_received", PropertyInfo(Variant::DICTIONARY, "payload")));
+	ADD_SIGNAL(MethodInfo("screenshot_req_received", PropertyInfo(Variant::DICTIONARY, "payload")));
+	ADD_SIGNAL(MethodInfo("ops_action_received", PropertyInfo(Variant::DICTIONARY, "payload")));
+	ADD_SIGNAL(MethodInfo("anim_fx", PropertyInfo(Variant::DICTIONARY, "fx")));
 
 	BIND_ENUM_CONSTANT(ACTION_ATTACK);
 	BIND_ENUM_CONSTANT(ACTION_BLOCK);
 	BIND_ENUM_CONSTANT(ACTION_DEFEND);
+	BIND_ENUM_CONSTANT(GAME_TYPE_TURN_BASED);
+	BIND_ENUM_CONSTANT(GAME_TYPE_FPS);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "game_type", PROPERTY_HINT_ENUM, "turn_based,fps"), "set_game_type",
+			"get_game_type");
 }

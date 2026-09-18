@@ -43,23 +43,51 @@ inline constexpr uint16_t HELLO = 1;
 inline constexpr uint16_t HELLO_ACK = 2;
 inline constexpr uint16_t DISCONNECT = 3;
 inline constexpr uint16_t VERSION_MISMATCH = 4;
+inline constexpr uint16_t CHARACTER_SELECT = 5;
+inline constexpr uint16_t CHARACTER_SELECT_ACK = 6;
 
 inline constexpr uint16_t REGION_ENTER = 10;
 inline constexpr uint16_t REGION_LEAVE = 11;
 inline constexpr uint16_t MOVE_INPUT = 12;
+inline constexpr uint16_t EQUIP = 13;
+inline constexpr uint16_t USE = 14;
+inline constexpr uint16_t INVENTORY_GET = 15;
+inline constexpr uint16_t INVENTORY_UPDATE = 16;
+inline constexpr uint16_t INTERACT = 17;
+inline constexpr uint16_t FIRE = 18;
+inline constexpr uint16_t RELOAD = 19;
 
 inline constexpr uint16_t REGION_SNAPSHOT = 20;
+inline constexpr uint16_t ENTITY_SPAWN = 21;
+inline constexpr uint16_t ENTITY_DESPAWN = 22;
 inline constexpr uint16_t MOVE_STATE = 23;
+inline constexpr uint16_t INTERACTABLE_STATE = 24;
+inline constexpr uint16_t SHOT = 25;
+inline constexpr uint16_t HEALTH = 26;
+inline constexpr uint16_t DEATH = 27;
+inline constexpr uint16_t RESPAWN = 28;
+inline constexpr uint16_t POINTS = 29;
+
+inline constexpr uint16_t SCOREBOARD = 40;
+inline constexpr uint16_t PICKUP = 41;
+inline constexpr uint16_t PICKUP_STATE = 42;
+inline constexpr uint16_t INVENTORY_MOVE = 43;
+inline constexpr uint16_t MELEE = 44;
+inline constexpr uint16_t ANIM_FX = 45;
 
 inline constexpr uint16_t BATTLE_INDICATOR_SPAWN = 30;
 inline constexpr uint16_t BATTLE_INDICATOR_DESPAWN = 31;
+inline constexpr uint16_t BATTLE_JOIN = 32;
+inline constexpr uint16_t BATTLE_LEAVE = 33;
 inline constexpr uint16_t BATTLE_START = 34;
 inline constexpr uint16_t BATTLE_STATE = 35;
 inline constexpr uint16_t BATTLE_ACTION = 36;
 inline constexpr uint16_t BATTLE_RESULT = 37;
 inline constexpr uint16_t BATTLE_END = 38;
 inline constexpr uint16_t BATTLE_LOG = 39;
-inline constexpr uint16_t BATTLE_LEAVE = 33;
+
+inline constexpr uint16_t TOAST = 50;
+inline constexpr uint16_t ALERT = 51;
 
 inline constexpr uint16_t ADMIN_RELOAD = 100;
 inline constexpr uint16_t RELOAD_OK = 101;
@@ -67,6 +95,12 @@ inline constexpr uint16_t ADMIN_KICK = 102;
 inline constexpr uint16_t ADMIN_STATS_REQUEST = 103;
 inline constexpr uint16_t ADMIN_STATS_RESPONSE = 104;
 inline constexpr uint16_t ADMIN_BROADCAST = 105;
+inline constexpr uint16_t ADMIN_BANK = 106;
+inline constexpr uint16_t INTEGRITY_C2S = 107;
+inline constexpr uint16_t INTEGRITY_S2C = 108;
+inline constexpr uint16_t SCREENSHOT_REQ = 109;
+inline constexpr uint16_t SCREENSHOT_DATA = 110;
+inline constexpr uint16_t OPS_ACTION = 111;
 
 inline constexpr uint16_t ERROR_MSG = 200;
 } //namespace MessageType

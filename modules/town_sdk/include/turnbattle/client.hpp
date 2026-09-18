@@ -30,6 +30,9 @@
 #pragma once
 #include "handlers.hpp"
 #include "types.hpp"
+
+#include "core/variant/dictionary.h"
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -53,11 +56,28 @@ public:
 
 	// Auth
 	void auth(const std::string &jwt_token);
+	void auth_username(const std::string &username);
+	void set_game_type(const std::string &game_type);
+	std::string get_game_type() const;
 
 	// Region
 	void enter_region(const std::string &region_id);
 	void leave_region();
 	void send_move(uint8_t held, float dt);
+	void send_move_look(uint8_t held, float dt, float yaw, float pitch, bool flashlight = false,
+			bool weapon_light = false);
+	void send_move_pose(uint8_t held, float dt, float yaw, float pitch, bool flashlight,
+			bool weapon_light, const std::string &stance, bool ads);
+	void send_melee();
+	void send_fire();
+	void send_use(int slot);
+	void send_reload();
+	void request_inventory();
+	void send_equip(int slot);
+	void send_interact(const std::string &interactable_id, const Dictionary &extra = Dictionary());
+	void send_pickup(const std::string &pickup_id);
+	void send_drop(const std::string &kind, int slot);
+	void send_craft(const std::string &recipe);
 
 	// Battle
 	void battle_action(const std::string &battle_id, Action action,
@@ -70,9 +90,26 @@ public:
 	void admin_stats_request();
 	void admin_broadcast(const std::string &message, bool is_alert = false);
 
+	void send_integrity(const std::string &hex_blob);
+	void send_screenshot_data(const std::string &payload_json);
+
 	// Callbacks
 	void on_snapshot(OnSnapshotCallback cb);
 	void on_move_state(OnMoveStateCallback cb);
+	void on_hello(OnHelloCallback cb);
+	void on_entity_spawn(OnEntitySpawnCallback cb);
+	void on_entity_despawn(OnEntityDespawnCallback cb);
+	void on_interactable_state(OnInteractableStateCallback cb);
+	void on_inventory_update(OnInventoryUpdateCallback cb);
+	void on_shot(OnShotCallback cb);
+	void on_health(OnHealthCallback cb);
+	void on_death(OnDeathCallback cb);
+	void on_respawn(OnRespawnCallback cb);
+	void on_points(OnPointsCallback cb);
+	void on_scoreboard(OnScoreboardCallback cb);
+	void on_pickup_state(OnPickupStateCallback cb);
+	void on_toast(OnToastCallback cb);
+	void on_alert(OnAlertCallback cb);
 	void on_battle_start(OnBattleStartCallback cb);
 	void on_battle_state(OnBattleStateCallback cb);
 	void on_battle_log(OnBattleLogCallback cb);
@@ -94,6 +131,10 @@ public:
 	void on_admin_kick(OnAdminKickCallback cb);
 	void on_admin_stats(OnAdminStatsCallback cb);
 	void on_admin_broadcast(OnAdminBroadcastCallback cb);
+	void on_integrity(OnIntegrityCallback cb);
+	void on_screenshot_req(OnScreenshotReqCallback cb);
+	void on_ops_action(OnOpsActionCallback cb);
+	void on_anim_fx(OnAnimFxCallback cb);
 
 	// Update (call each frame)
 	void update(float dt);
