@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "turnbattle/client.hpp"
+
 #include "turnbattle/protocol.hpp"
 #include "turnbattle/version.hpp"
 
@@ -40,9 +41,12 @@
 #include "core/variant/variant.h"
 
 #include <enet/enet.h>
+
 #include <chrono>
 #include <cstring>
 #include <functional>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace turnbattle {
@@ -66,6 +70,20 @@ static std::string variant_to_json_string(const Variant &p_variant) {
 	return std::string(utf8.get_data(), utf8.length());
 }
 
+static std::string loc_debug(const Dictionary &loc) {
+	String out = String(loc.get("kind", "bag"));
+	if (loc.has("slot")) {
+		out += vformat(" slot=%d", (int)loc.get("slot", -1));
+	}
+	if (loc.has("x") || loc.has("y")) {
+		out += vformat(" x=%d y=%d", (int)loc.get("x", -1), (int)loc.get("y", -1));
+	}
+	if (loc.has("rot")) {
+		out += vformat(" rot=%d", (int)loc.get("rot", 0));
+	}
+	return to_std_string(out);
+}
+
 static bool parse_json_payload(const std::string &p_payload, Variant &r_result, String &r_error) {
 	Ref<JSON> json;
 	json.instantiate();
@@ -85,6 +103,16 @@ static bool ensure_dictionary(const Variant &p_value, Dictionary &r_dict) {
 	}
 	r_dict = p_value;
 	return true;
+}
+
+static double variant_to_double(const Variant &p_value, double p_def = 0.0) {
+	switch (p_value.get_type()) {
+		case Variant::FLOAT:
+		case Variant::INT:
+			return p_value;
+		default:
+			return p_def;
+	}
 }
 
 } // namespace
@@ -123,6 +151,8 @@ struct Client::Impl {
 	OnBattleIndicatorDespawnCallback on_battle_indicator_despawn;
 	OnErrorCallback on_error;
 	OnDisconnectCallback on_disconnect;
+	std::string voip_host;
+	uint16_t voip_port = 0;
 
 	// Reconnection state
 	std::string last_jwt_token;
@@ -155,6 +185,7 @@ struct Client::Impl {
 	bool debug_capture = false;
 	size_t debug_history_limit = 64;
 	std::vector<std::string> log_history;
+	std::unordered_map<std::string, double> trace_last;
 	std::string last_error_message;
 	std::string last_warning_message;
 	std::string last_info_message;
@@ -201,6 +232,81 @@ void Client::log_error(const std::string &p_message) {
 	}
 	impl_->last_error_message = p_message;
 	append_log_entry("ERROR", p_message);
+}
+
+void Client::log_trace(const std::string &p_message) {
+	if (!impl_ || !impl_->debug_capture) {
+		return;
+	}
+	print_line("[TownSDK] " + String::utf8(p_message.c_str()));
+	impl_->last_info_message = p_message;
+	append_log_entry("TRACE", p_message);
+}
+
+bool Client::trace_rate(const std::string &p_key, double p_interval_s) {
+	if (!impl_ || !impl_->debug_capture) {
+		return false;
+	}
+	using clock = std::chrono::steady_clock;
+	const double now = std::chrono::duration<double>(clock::now().time_since_epoch()).count();
+	double &last = impl_->trace_last[p_key.empty() ? "-" : p_key];
+	if (last > 0.0 && (now - last) < p_interval_s) {
+		return false;
+	}
+	last = now;
+	return true;
+}
+
+void Client::log_inbound(uint16_t p_type, const Variant &p_parsed) {
+	if (!impl_ || !impl_->debug_capture) {
+		return;
+	}
+	Dictionary data;
+	ensure_dictionary(p_parsed, data);
+
+	if (p_type == protocol::MessageType::MOVE_STATE && data.has("entities")) {
+		Array entities = data["entities"];
+		Dictionary npc;
+		for (int i = 0; i < entities.size(); i++) {
+			Dictionary e;
+			if (!ensure_dictionary(entities[i], e)) {
+				continue;
+			}
+			const std::string eid = e.has("id") ? to_std_string(e["id"]) : std::string();
+			const std::string etype = e.has("type") ? to_std_string(e["type"]) : std::string();
+			if (eid.rfind("npc_", 0) == 0 || etype == "survival_zombie") {
+				npc = e;
+				break;
+			}
+		}
+		if (npc.is_empty() && entities.size() > 0) {
+			ensure_dictionary(entities[0], npc);
+		}
+		const std::string id = npc.has("id") ? to_std_string(npc["id"]) : std::string("-");
+		const std::string action = npc.has("action") ? to_std_string(npc["action"]) : std::string("-");
+		const std::string anim = npc.has("anim") ? to_std_string(npc["anim"]) : std::string("-");
+		const double vx = npc.has("vx") ? variant_to_double(npc["vx"]) : 0.0;
+		const double vy = npc.has("vy") ? variant_to_double(npc["vy"]) : 0.0;
+		if (!trace_rate(std::to_string(p_type) + ":" + id + ":" + action, 1.0)) {
+			return;
+		}
+		log_trace("type=" + std::to_string(p_type) + " id=" + id + " action=" + action + " anim=" + anim +
+				" vx=" + std::to_string(vx) + " vy=" + std::to_string(vy) +
+				" entities=" + std::to_string(entities.size()));
+		return;
+	}
+
+	const std::string id = data.has("id") ? to_std_string(data["id"]) : std::string("-");
+	const std::string anim = data.has("anim") ? to_std_string(data["anim"]) : std::string("-");
+	const std::string action = data.has("action") ? to_std_string(data["action"]) : std::string("-");
+	const std::string item_id = data.has("item_id") ? to_std_string(data["item_id"]) : std::string("-");
+	const double vx = data.has("vx") ? variant_to_double(data["vx"]) : 0.0;
+	const double vy = data.has("vy") ? variant_to_double(data["vy"]) : 0.0;
+	if (!trace_rate(std::to_string(p_type) + ":" + id + ":" + anim + ":" + action, 1.0)) {
+		return;
+	}
+	log_trace("type=" + std::to_string(p_type) + " id=" + id + " anim=" + anim + " action=" + action +
+			" vx=" + std::to_string(vx) + " vy=" + std::to_string(vy) + " item_id=" + item_id);
 }
 
 Client::Client() :
@@ -389,6 +495,10 @@ std::string Client::get_server_version() const {
 }
 
 void Client::disconnect() {
+	if (impl_) {
+		impl_->voip_host.clear();
+		impl_->voip_port = 0;
+	}
 	if (!is_ready()) {
 		return;
 	}
@@ -413,6 +523,8 @@ void Client::disconnect() {
 
 	impl_->peer = nullptr;
 	impl_->connected = false;
+	impl_->voip_host.clear();
+	impl_->voip_port = 0;
 }
 
 bool Client::is_connected() const {
@@ -442,6 +554,7 @@ void Client::auth_username(const std::string &username) {
 	impl_->last_username = username;
 	impl_->last_jwt_token.clear();
 
+	log_trace("op=auth_username type=1");
 	Dictionary payload;
 	payload["username"] = String::utf8(username.c_str());
 	payload["game_type"] = String::utf8(impl_->game_type.c_str());
@@ -449,6 +562,7 @@ void Client::auth_username(const std::string &username) {
 }
 
 void Client::enter_region(const std::string &region_id) {
+	log_trace("op=enter_region type=10 region=" + region_id);
 	Dictionary payload;
 	payload["region_id"] = String::utf8(region_id.c_str());
 	send_message(protocol::MessageType::REGION_ENTER, variant_to_json_string(payload), protocol::Channel::CONTROL);
@@ -493,22 +607,32 @@ void Client::send_move_pose(uint8_t held, float dt, float yaw, float pitch, bool
 }
 
 void Client::send_melee() {
+	if (trace_rate("send_melee", 1.0)) {
+		log_trace("op=send_melee type=44");
+	}
 	Dictionary payload;
 	send_message(protocol::MessageType::MELEE, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
 
 void Client::send_fire() {
+	if (trace_rate("send_fire", 1.0)) {
+		log_trace("op=send_fire type=18");
+	}
 	Dictionary payload;
 	send_message(protocol::MessageType::FIRE, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
 
 void Client::send_use(int slot) {
+	log_trace("op=send_use type=14 slot=" + std::to_string(slot));
 	Dictionary payload;
 	payload["slot"] = slot;
 	send_message(protocol::MessageType::USE, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
 
 void Client::send_reload() {
+	if (trace_rate("send_reload", 1.0)) {
+		log_trace("op=send_reload type=19");
+	}
 	Dictionary payload;
 	send_message(protocol::MessageType::RELOAD, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
@@ -557,6 +681,14 @@ void Client::send_craft(const std::string &recipe) {
 	Dictionary payload;
 	payload["recipe"] = String::utf8(recipe.c_str());
 	send_message(protocol::MessageType::USE, variant_to_json_string(payload), protocol::Channel::CONTROL);
+}
+
+void Client::send_inventory_move(const Dictionary &from, const Dictionary &to) {
+	log_info("inventory_move from=" + loc_debug(from) + " to=" + loc_debug(to));
+	Dictionary payload;
+	payload["from"] = from;
+	payload["to"] = to;
+	send_message(protocol::MessageType::INVENTORY_MOVE, variant_to_json_string(payload), protocol::Channel::CONTROL);
 }
 
 void Client::battle_action(const std::string &battle_id, Action action, const std::string &target_id) {
@@ -626,6 +758,60 @@ void Client::on_move_state(OnMoveStateCallback cb) {
 void Client::on_hello(OnHelloCallback cb) {
 	impl_->on_hello = cb;
 }
+
+void Client::apply_hello_ack(const Dictionary &p_data) {
+	if (!impl_) {
+		return;
+	}
+	if (p_data.has("session_id")) {
+		impl_->session_id = to_std_string(p_data["session_id"]);
+	}
+
+	impl_->voip_host.clear();
+	impl_->voip_port = 0;
+	if (p_data.has("voip") && p_data["voip"].get_type() == Variant::DICTIONARY) {
+		const Dictionary voip = p_data["voip"];
+		impl_->voip_host = to_std_string(voip.get("host", String()));
+		const int port = (int)voip.get("port", 0);
+		if (port > 0 && port <= 65535) {
+			impl_->voip_port = static_cast<uint16_t>(port);
+		}
+	}
+	if (has_voip()) {
+		log_info("voip stored " + impl_->voip_host + ":" + std::to_string(impl_->voip_port));
+	} else {
+		log_info("voip none");
+	}
+
+	const bool resumed = (bool)p_data.get("resumed", false);
+	if (resumed) {
+		impl_->is_reconnecting = false;
+		impl_->reconnect_attempts = 0;
+		if (impl_->on_reconnected) {
+			impl_->on_reconnected(p_data.get("resume_state", Variant()));
+		}
+	}
+
+	if (p_data.has("reconnection_token")) {
+		impl_->reconnection_token = to_std_string(p_data["reconnection_token"]);
+	}
+	if (impl_->on_hello) {
+		impl_->on_hello(p_data);
+	}
+}
+
+bool Client::has_voip() const {
+	return impl_ && !impl_->voip_host.empty() && impl_->voip_port != 0;
+}
+
+std::string Client::get_voip_host() const {
+	return impl_ ? impl_->voip_host : std::string();
+}
+
+uint16_t Client::get_voip_port() const {
+	return impl_ ? impl_->voip_port : 0;
+}
+
 void Client::on_entity_spawn(OnEntitySpawnCallback cb) {
 	impl_->on_entity_spawn = cb;
 }
@@ -873,28 +1059,7 @@ void Client::handle_message(uint16_t type, const std::string &payload) {
 				log_warning("HELLO_ACK payload is not a dictionary");
 				return;
 			}
-
-			if (data.has("session_id")) {
-				impl_->session_id = to_std_string(data["session_id"]);
-			}
-
-			bool resumed = (bool)data.get("resumed", false);
-			if (resumed) {
-				impl_->is_reconnecting = false;
-				impl_->reconnect_attempts = 0;
-
-				if (impl_->on_reconnected) {
-					impl_->on_reconnected(data.get("resume_state", Variant()));
-				}
-			}
-
-			if (data.has("reconnection_token")) {
-				impl_->reconnection_token = to_std_string(data["reconnection_token"]);
-			}
-
-			if (impl_->on_hello) {
-				impl_->on_hello(data);
-			}
+			apply_hello_ack(data);
 			break;
 		}
 
@@ -905,18 +1070,21 @@ void Client::handle_message(uint16_t type, const std::string &payload) {
 			break;
 
 		case protocol::MessageType::MOVE_STATE:
+			log_inbound(protocol::MessageType::MOVE_STATE, parsed);
 			if (impl_->on_move_state) {
 				impl_->on_move_state(parsed);
 			}
 			break;
 
 		case protocol::MessageType::ENTITY_SPAWN:
+			log_inbound(protocol::MessageType::ENTITY_SPAWN, parsed);
 			if (impl_->on_entity_spawn) {
 				impl_->on_entity_spawn(parsed);
 			}
 			break;
 
 		case protocol::MessageType::ENTITY_DESPAWN:
+			log_inbound(protocol::MessageType::ENTITY_DESPAWN, parsed);
 			if (impl_->on_entity_despawn) {
 				impl_->on_entity_despawn(parsed);
 			}
@@ -929,30 +1097,35 @@ void Client::handle_message(uint16_t type, const std::string &payload) {
 			break;
 
 		case protocol::MessageType::INVENTORY_UPDATE:
+			log_inbound(protocol::MessageType::INVENTORY_UPDATE, parsed);
 			if (impl_->on_inventory_update) {
 				impl_->on_inventory_update(parsed);
 			}
 			break;
 
 		case protocol::MessageType::SHOT:
+			log_inbound(protocol::MessageType::SHOT, parsed);
 			if (impl_->on_shot) {
 				impl_->on_shot(parsed);
 			}
 			break;
 
 		case protocol::MessageType::HEALTH:
+			log_inbound(protocol::MessageType::HEALTH, parsed);
 			if (impl_->on_health) {
 				impl_->on_health(parsed);
 			}
 			break;
 
 		case protocol::MessageType::DEATH:
+			log_inbound(protocol::MessageType::DEATH, parsed);
 			if (impl_->on_death) {
 				impl_->on_death(parsed);
 			}
 			break;
 
 		case protocol::MessageType::RESPAWN:
+			log_inbound(protocol::MessageType::RESPAWN, parsed);
 			if (impl_->on_respawn) {
 				impl_->on_respawn(parsed);
 			}
@@ -1071,6 +1244,7 @@ void Client::handle_message(uint16_t type, const std::string &payload) {
 			break;
 
 		case protocol::MessageType::ANIM_FX:
+			log_inbound(protocol::MessageType::ANIM_FX, parsed);
 			if (impl_->on_anim_fx) {
 				impl_->on_anim_fx(parsed);
 			}

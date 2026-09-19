@@ -78,6 +78,7 @@ public:
 	void send_pickup(const std::string &pickup_id);
 	void send_drop(const std::string &kind, int slot);
 	void send_craft(const std::string &recipe);
+	void send_inventory_move(const Dictionary &from, const Dictionary &to);
 
 	// Battle
 	void battle_action(const std::string &battle_id, Action action,
@@ -119,6 +120,11 @@ public:
 	void on_error(OnErrorCallback cb);
 	void on_disconnect(OnDisconnectCallback cb);
 
+	void apply_hello_ack(const Dictionary &p_data);
+	bool has_voip() const;
+	std::string get_voip_host() const;
+	uint16_t get_voip_port() const;
+
 	// Reconnection
 	void set_auto_reconnect(bool enabled);
 	void manual_reconnect();
@@ -157,6 +163,9 @@ private:
 	void log_info(const std::string &p_message);
 	void log_warning(const std::string &p_message);
 	void log_error(const std::string &p_message);
+	void log_trace(const std::string &p_message);
+	bool trace_rate(const std::string &p_key, double p_interval_s);
+	void log_inbound(uint16_t p_type, const Variant &p_parsed);
 
 	struct Impl;
 	std::unique_ptr<Impl> impl_;

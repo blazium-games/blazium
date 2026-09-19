@@ -29,7 +29,7 @@
 
 #pragma once
 
-#include "turnbattle/types.hpp"
+#include "include/turnbattle/types.hpp"
 
 #include "core/object/class_db.h"
 #include "core/object/object.h"
@@ -69,6 +69,11 @@ public:
 	bool is_client_connected() const;
 	String get_server_version() const;
 
+	void apply_hello_ack(const Dictionary &p_data);
+	bool has_voip() const;
+	String get_voip_host() const;
+	int get_voip_port() const;
+
 	void authenticate(const String &p_jwt_token);
 	void authenticate_username(const String &p_username);
 	void set_game_type(GameType p_type);
@@ -90,6 +95,7 @@ public:
 	void send_pickup(const String &p_pickup_id);
 	void send_drop(const String &p_kind, int p_slot);
 	void send_craft(const String &p_recipe);
+	void send_inventory_move(const Dictionary &p_from, const Dictionary &p_to);
 
 	void battle_action(const String &p_battle_id, BattleAction p_action, const String &p_target_id = String());
 	void leave_battle(const String &p_battle_id);

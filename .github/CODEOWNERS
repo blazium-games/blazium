@@ -256,6 +256,7 @@
 /modules/town_sdk/                            @blazium-games
 /modules/trenchbroom/                         @blazium-games
 /modules/twitchapi/                           @blazium-games
+/modules/warcry/                              @blazium-games
 /modules/xbox_module/                         @blazium-games
 
 # Platform
