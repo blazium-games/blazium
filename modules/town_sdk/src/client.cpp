@@ -105,6 +105,16 @@ static bool ensure_dictionary(const Variant &p_value, Dictionary &r_dict) {
 	return true;
 }
 
+static double variant_to_double(const Variant &p_value, double p_def = 0.0) {
+	switch (p_value.get_type()) {
+		case Variant::FLOAT:
+		case Variant::INT:
+			return p_value;
+		default:
+			return p_def;
+	}
+}
+
 } // namespace
 
 // Private implementation
@@ -253,13 +263,50 @@ void Client::log_inbound(uint16_t p_type, const Variant &p_parsed) {
 	}
 	Dictionary data;
 	ensure_dictionary(p_parsed, data);
-	const std::string id = data.has("id") ? to_std_string(data["id"]) : std::string("-");
-	const std::string anim = data.has("anim") ? to_std_string(data["anim"]) : std::string("-");
-	const std::string item_id = data.has("item_id") ? to_std_string(data["item_id"]) : std::string("-");
-	if (!trace_rate(std::to_string(p_type) + ":" + id + ":" + anim, 1.0)) {
+
+	if (p_type == protocol::MessageType::MOVE_STATE && data.has("entities")) {
+		Array entities = data["entities"];
+		Dictionary npc;
+		for (int i = 0; i < entities.size(); i++) {
+			Dictionary e;
+			if (!ensure_dictionary(entities[i], e)) {
+				continue;
+			}
+			const std::string eid = e.has("id") ? to_std_string(e["id"]) : std::string();
+			const std::string etype = e.has("type") ? to_std_string(e["type"]) : std::string();
+			if (eid.rfind("npc_", 0) == 0 || etype == "survival_zombie") {
+				npc = e;
+				break;
+			}
+		}
+		if (npc.is_empty() && entities.size() > 0) {
+			ensure_dictionary(entities[0], npc);
+		}
+		const std::string id = npc.has("id") ? to_std_string(npc["id"]) : std::string("-");
+		const std::string action = npc.has("action") ? to_std_string(npc["action"]) : std::string("-");
+		const std::string anim = npc.has("anim") ? to_std_string(npc["anim"]) : std::string("-");
+		const double vx = npc.has("vx") ? variant_to_double(npc["vx"]) : 0.0;
+		const double vy = npc.has("vy") ? variant_to_double(npc["vy"]) : 0.0;
+		if (!trace_rate(std::to_string(p_type) + ":" + id + ":" + action, 1.0)) {
+			return;
+		}
+		log_trace("type=" + std::to_string(p_type) + " id=" + id + " action=" + action + " anim=" + anim +
+				" vx=" + std::to_string(vx) + " vy=" + std::to_string(vy) +
+				" entities=" + std::to_string(entities.size()));
 		return;
 	}
-	log_trace("type=" + std::to_string(p_type) + " id=" + id + " anim=" + anim + " item_id=" + item_id);
+
+	const std::string id = data.has("id") ? to_std_string(data["id"]) : std::string("-");
+	const std::string anim = data.has("anim") ? to_std_string(data["anim"]) : std::string("-");
+	const std::string action = data.has("action") ? to_std_string(data["action"]) : std::string("-");
+	const std::string item_id = data.has("item_id") ? to_std_string(data["item_id"]) : std::string("-");
+	const double vx = data.has("vx") ? variant_to_double(data["vx"]) : 0.0;
+	const double vy = data.has("vy") ? variant_to_double(data["vy"]) : 0.0;
+	if (!trace_rate(std::to_string(p_type) + ":" + id + ":" + anim + ":" + action, 1.0)) {
+		return;
+	}
+	log_trace("type=" + std::to_string(p_type) + " id=" + id + " anim=" + anim + " action=" + action +
+			" vx=" + std::to_string(vx) + " vy=" + std::to_string(vy) + " item_id=" + item_id);
 }
 
 Client::Client() :
@@ -1023,6 +1070,7 @@ void Client::handle_message(uint16_t type, const std::string &payload) {
 			break;
 
 		case protocol::MessageType::MOVE_STATE:
+			log_inbound(protocol::MessageType::MOVE_STATE, parsed);
 			if (impl_->on_move_state) {
 				impl_->on_move_state(parsed);
 			}
