@@ -32,10 +32,10 @@
 #include "turnbattle/client.hpp"
 
 #include "core/error/error_macros.h"
+#include "core/io/json.h"
 #include "core/math/math_funcs.h"
 #include "core/object/class_db.h"
 #include "core/string/print_string.h"
-#include "core/io/json.h"
 #include "core/variant/variant.h"
 
 #include <vector>
