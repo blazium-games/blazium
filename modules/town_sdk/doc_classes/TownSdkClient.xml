@@ -40,6 +40,12 @@
 			<description>
 			</description>
 		</method>
+		<method name="authenticate_username">
+			<return type="void" />
+			<param index="0" name="username" type="String" />
+			<description>
+			</description>
+		</method>
 		<method name="battle_action">
 			<return type="void" />
 			<param index="0" name="battle_id" type="String" />
@@ -133,10 +139,104 @@
 			<description>
 			</description>
 		</method>
+		<method name="request_inventory">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="send_craft">
+			<return type="void" />
+			<param index="0" name="recipe" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="send_drop">
+			<return type="void" />
+			<param index="0" name="kind" type="String" />
+			<param index="1" name="slot" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="send_equip">
+			<return type="void" />
+			<param index="0" name="slot" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="send_fire">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="send_integrity">
+			<return type="void" />
+			<param index="0" name="blob" type="PackedByteArray" />
+			<description>
+			</description>
+		</method>
+		<method name="send_interact">
+			<return type="void" />
+			<param index="0" name="id" type="String" />
+			<param index="1" name="extra" type="Dictionary" default="{}" />
+			<description>
+			</description>
+		</method>
+		<method name="send_melee">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
 		<method name="send_move">
 			<return type="void" />
 			<param index="0" name="held" type="int" />
 			<param index="1" name="delta" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="send_move_look">
+			<return type="void" />
+			<param index="0" name="held" type="int" />
+			<param index="1" name="delta" type="float" />
+			<param index="2" name="yaw" type="float" />
+			<param index="3" name="pitch" type="float" />
+			<param index="4" name="flashlight" type="bool" default="false" />
+			<param index="5" name="weapon_light" type="bool" default="false" />
+			<description>
+			</description>
+		</method>
+		<method name="send_move_pose">
+			<return type="void" />
+			<param index="0" name="held" type="int" />
+			<param index="1" name="delta" type="float" />
+			<param index="2" name="yaw" type="float" />
+			<param index="3" name="pitch" type="float" />
+			<param index="4" name="flashlight" type="bool" />
+			<param index="5" name="weapon_light" type="bool" />
+			<param index="6" name="stance" type="String" />
+			<param index="7" name="ads" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="send_pickup">
+			<return type="void" />
+			<param index="0" name="id" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="send_reload">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="send_screenshot_data">
+			<return type="void" />
+			<param index="0" name="payload" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="send_use">
+			<return type="void" />
+			<param index="0" name="slot" type="int" />
 			<description>
 			</description>
 		</method>
@@ -154,6 +254,10 @@
 			</description>
 		</method>
 	</methods>
+	<members>
+		<member name="game_type" type="int" setter="set_game_type" getter="get_game_type" enum="TownSdkClient.GameType" default="0">
+		</member>
+	</members>
 	<signals>
 		<signal name="admin_broadcast_received">
 			<param index="0" name="payload" type="Dictionary" />
@@ -172,6 +276,16 @@
 		</signal>
 		<signal name="admin_stats_received">
 			<param index="0" name="payload" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="alert">
+			<param index="0" name="alert" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="anim_fx">
+			<param index="0" name="fx" type="Dictionary" />
 			<description>
 			</description>
 		</signal>
@@ -205,6 +319,11 @@
 			<description>
 			</description>
 		</signal>
+		<signal name="death">
+			<param index="0" name="death" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
 		<signal name="connected">
 			<description>
 			</description>
@@ -218,13 +337,63 @@
 			<description>
 			</description>
 		</signal>
+		<signal name="entity_despawned">
+			<param index="0" name="payload" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="entity_spawned">
+			<param index="0" name="payload" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
 		<signal name="error">
 			<param index="0" name="message" type="String" />
 			<description>
 			</description>
 		</signal>
+		<signal name="health">
+			<param index="0" name="health" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="hello_received">
+			<param index="0" name="hello" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="integrity_received">
+			<param index="0" name="payload" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="interactable_state">
+			<param index="0" name="state" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="inventory_update">
+			<param index="0" name="update" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
 		<signal name="move_state">
 			<param index="0" name="state" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="ops_action_received">
+			<param index="0" name="payload" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="pickup_state">
+			<param index="0" name="state" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="points">
+			<param index="0" name="points" type="Dictionary" />
 			<description>
 			</description>
 		</signal>
@@ -244,8 +413,33 @@
 			<description>
 			</description>
 		</signal>
+		<signal name="respawn">
+			<param index="0" name="respawn" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="scoreboard">
+			<param index="0" name="scoreboard" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="screenshot_req_received">
+			<param index="0" name="payload" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="shot">
+			<param index="0" name="shot" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
 		<signal name="snapshot_received">
 			<param index="0" name="snapshot" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+		<signal name="toast">
+			<param index="0" name="toast" type="Dictionary" />
 			<description>
 			</description>
 		</signal>
@@ -256,6 +450,10 @@
 		<constant name="ACTION_BLOCK" value="1" enum="BattleAction">
 		</constant>
 		<constant name="ACTION_DEFEND" value="2" enum="BattleAction">
+		</constant>
+		<constant name="GAME_TYPE_TURN_BASED" value="0" enum="GameType">
+		</constant>
+		<constant name="GAME_TYPE_FPS" value="1" enum="GameType">
 		</constant>
 	</constants>
 </class>
