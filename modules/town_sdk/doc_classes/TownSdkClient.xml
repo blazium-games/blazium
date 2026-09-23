@@ -319,16 +319,16 @@
 			<description>
 			</description>
 		</signal>
-		<signal name="death">
-			<param index="0" name="death" type="Dictionary" />
-			<description>
-			</description>
-		</signal>
 		<signal name="connected">
 			<description>
 			</description>
 		</signal>
 		<signal name="connection_failed">
+			<description>
+			</description>
+		</signal>
+		<signal name="death">
+			<param index="0" name="death" type="Dictionary" />
 			<description>
 			</description>
 		</signal>
