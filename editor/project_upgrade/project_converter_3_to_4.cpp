@@ -155,7 +155,7 @@ public:
 	// Index represents Godot 3's value, entry represents Godot 4 value equivalency.
 	// i.e: Button4(L1 - Godot3) -> joypad_button_mappings[4]=9 -> Button9(L1 - Godot4).
 	int joypad_button_mappings[23] = { 0, 1, 2, 3, 9, 10, -1 /*L2*/, -1 /*R2*/, 7, 8, 4, 6, 11, 12, 13, 14, 5, 15, 16, 17, 18, 19, 20 };
-	// Entries for L2 and R2 are -1 since they match to joypad axes and no longer to joypad buttons in Godot 4.
+	// Entries for L2 and R2 are -1 since they match to joypad axes and no longer to joypad buttons in Blazium 4.
 
 	// Animation suffixes.
 	RegEx animation_suffix = RegEx("([\"'])([a-zA-Z0-9_-]+)(-(?:loop|cycle))([\"'])");
@@ -823,10 +823,10 @@ bool ProjectConverter3To4::test_conversion(RegExContainer &reg_container) {
 	valid = valid && test_conversion_gdscript_builtin("\tif OS.get_borderless_window(): pass", "\tif get_window().borderless: pass", &ProjectConverter3To4::rename_gdscript_functions, "custom rename", reg_container, false);
 	valid = valid && test_conversion_gdscript_builtin("\tOS.set_borderless_window(Settings.borderless)", "\tget_window().borderless = (Settings.borderless)", &ProjectConverter3To4::rename_gdscript_functions, "custom rename", reg_container, false);
 
-	valid = valid && test_conversion_gdscript_builtin("\tvar aa = roman(r.move_and_slide( a, b, c, d, e, f )) # Roman", "\tr.set_velocity(a)\n\tr.set_up_direction(b)\n\tr.set_floor_stop_on_slope_enabled(c)\n\tr.set_max_slides(d)\n\tr.set_floor_max_angle(e)\n\t# TODOConverter3To4 infinite_inertia were removed in Godot 4 - previous value `f`\n\tr.move_and_slide()\n\tvar aa = roman(r.velocity) # Roman", &ProjectConverter3To4::rename_gdscript_functions, "custom rename", reg_container, false);
-	valid = valid && test_conversion_gdscript_builtin("\tmove_and_slide( a, b, c, d, e, f ) # Roman", "\tset_velocity(a)\n\tset_up_direction(b)\n\tset_floor_stop_on_slope_enabled(c)\n\tset_max_slides(d)\n\tset_floor_max_angle(e)\n\t# TODOConverter3To4 infinite_inertia were removed in Godot 4 - previous value `f`\n\tmove_and_slide() # Roman", &ProjectConverter3To4::rename_gdscript_functions, "custom rename", reg_container, false);
-	valid = valid && test_conversion_gdscript_builtin("\tvar aa = roman(r.move_and_slide_with_snap( a, g, b, c, d, e, f )) # Roman", "\tr.set_velocity(a)\n\t# TODOConverter3To4 looks that snap in Godot 4 is float, not vector like in Godot 3 - previous value `g`\n\tr.set_up_direction(b)\n\tr.set_floor_stop_on_slope_enabled(c)\n\tr.set_max_slides(d)\n\tr.set_floor_max_angle(e)\n\t# TODOConverter3To4 infinite_inertia were removed in Godot 4 - previous value `f`\n\tr.move_and_slide()\n\tvar aa = roman(r.velocity) # Roman", &ProjectConverter3To4::rename_gdscript_functions, "custom rename", reg_container, false);
-	valid = valid && test_conversion_gdscript_builtin("\tmove_and_slide_with_snap( a, g, b, c, d, e, f ) # Roman", "\tset_velocity(a)\n\t# TODOConverter3To4 looks that snap in Godot 4 is float, not vector like in Godot 3 - previous value `g`\n\tset_up_direction(b)\n\tset_floor_stop_on_slope_enabled(c)\n\tset_max_slides(d)\n\tset_floor_max_angle(e)\n\t# TODOConverter3To4 infinite_inertia were removed in Godot 4 - previous value `f`\n\tmove_and_slide() # Roman", &ProjectConverter3To4::rename_gdscript_functions, "custom rename", reg_container, false);
+	valid = valid && test_conversion_gdscript_builtin("\tvar aa = roman(r.move_and_slide( a, b, c, d, e, f )) # Roman", "\tr.set_velocity(a)\n\tr.set_up_direction(b)\n\tr.set_floor_stop_on_slope_enabled(c)\n\tr.set_max_slides(d)\n\tr.set_floor_max_angle(e)\n\t# TODOConverter3To4 infinite_inertia were removed in Blazium 4 - previous value `f`\n\tr.move_and_slide()\n\tvar aa = roman(r.velocity) # Roman", &ProjectConverter3To4::rename_gdscript_functions, "custom rename", reg_container, false);
+	valid = valid && test_conversion_gdscript_builtin("\tmove_and_slide( a, b, c, d, e, f ) # Roman", "\tset_velocity(a)\n\tset_up_direction(b)\n\tset_floor_stop_on_slope_enabled(c)\n\tset_max_slides(d)\n\tset_floor_max_angle(e)\n\t# TODOConverter3To4 infinite_inertia were removed in Blazium 4 - previous value `f`\n\tmove_and_slide() # Roman", &ProjectConverter3To4::rename_gdscript_functions, "custom rename", reg_container, false);
+	valid = valid && test_conversion_gdscript_builtin("\tvar aa = roman(r.move_and_slide_with_snap( a, g, b, c, d, e, f )) # Roman", "\tr.set_velocity(a)\n\t# TODOConverter3To4 looks that snap in Blazium 4 is float, not vector like in Godot 3 - previous value `g`\n\tr.set_up_direction(b)\n\tr.set_floor_stop_on_slope_enabled(c)\n\tr.set_max_slides(d)\n\tr.set_floor_max_angle(e)\n\t# TODOConverter3To4 infinite_inertia were removed in Blazium 4 - previous value `f`\n\tr.move_and_slide()\n\tvar aa = roman(r.velocity) # Roman", &ProjectConverter3To4::rename_gdscript_functions, "custom rename", reg_container, false);
+	valid = valid && test_conversion_gdscript_builtin("\tmove_and_slide_with_snap( a, g, b, c, d, e, f ) # Roman", "\tset_velocity(a)\n\t# TODOConverter3To4 looks that snap in Blazium 4 is float, not vector like in Godot 3 - previous value `g`\n\tset_up_direction(b)\n\tset_floor_stop_on_slope_enabled(c)\n\tset_max_slides(d)\n\tset_floor_max_angle(e)\n\t# TODOConverter3To4 infinite_inertia were removed in Blazium 4 - previous value `f`\n\tmove_and_slide() # Roman", &ProjectConverter3To4::rename_gdscript_functions, "custom rename", reg_container, false);
 
 	valid = valid && test_conversion_gdscript_builtin("remove_and_slide(a,b,c,d,e,f)", "remove_and_slide(a,b,c,d,e,f)", &ProjectConverter3To4::rename_gdscript_functions, "custom rename", reg_container, false);
 
@@ -1119,13 +1119,13 @@ bool ProjectConverter3To4::test_array_names() {
 
 			// Light2D, Texture, Viewport are special classes(probably virtual ones).
 			if (ClassDB::class_exists(StringName(old_class)) && old_class != "Light2D" && old_class != "Texture" && old_class != "Viewport") {
-				ERR_PRINT(vformat("Class \"%s\" exists in Godot 4, so it cannot be renamed to something else.", old_class));
+				ERR_PRINT(vformat("Class \"%s\" exists in Blazium 4, so it cannot be renamed to something else.", old_class));
 				valid = false; // This probably should be only a warning, but not 100% sure - this would need to be added to CI.
 			}
 
 			// Callable is special class, to which normal classes may be renamed.
 			if (!ClassDB::class_exists(StringName(new_class)) && new_class != "Callable") {
-				ERR_PRINT(vformat("Class \"%s\" does not exist in Godot 4, so it cannot be used in the conversion.", new_class));
+				ERR_PRINT(vformat("Class \"%s\" does not exist in Blazium 4, so it cannot be used in the conversion.", new_class));
 				valid = false; // This probably should be only a warning, but not 100% sure - this would need to be added to CI.
 			}
 		}
@@ -1175,7 +1175,7 @@ bool ProjectConverter3To4::test_array_names() {
 		}
 	}
 	if (!valid) {
-		ERR_PRINT("Found function which is used in the converter, but it cannot be found in Godot 4. Rename this element or remove its entry if it's obsolete.");
+		ERR_PRINT("Found function which is used in the converter, but it cannot be found in Blazium 4. Rename this element or remove its entry if it's obsolete.");
 	}
 
 	valid = valid && test_single_array(RenamesMap3To4::enum_renames);
@@ -1820,7 +1820,7 @@ void ProjectConverter3To4::process_gdscript_line(String &line, const RegExContai
 
 				// infiinite_interia
 				if (parts.size() >= 6) {
-					line_new += starting_space + "# TODOConverter3To4 infinite_inertia were removed in Godot 4 - previous value `" + parts[5] + "`\n";
+					line_new += starting_space + "# TODOConverter3To4 infinite_inertia were removed in Blazium 4 - previous value `" + parts[5] + "`\n";
 				}
 
 				line_new += starting_space + base_obj + "move_and_slide()";
@@ -1851,7 +1851,7 @@ void ProjectConverter3To4::process_gdscript_line(String &line, const RegExContai
 
 				// snap
 				if (parts.size() >= 2) {
-					line_new += starting_space + "# TODOConverter3To4 looks that snap in Godot 4 is float, not vector like in Godot 3 - previous value `" + parts[1] + "`\n";
+					line_new += starting_space + "# TODOConverter3To4 looks that snap in Blazium 4 is float, not vector like in Godot 3 - previous value `" + parts[1] + "`\n";
 				}
 
 				// up_direction
@@ -1876,7 +1876,7 @@ void ProjectConverter3To4::process_gdscript_line(String &line, const RegExContai
 
 				// infiinite_interia
 				if (parts.size() >= 7) {
-					line_new += starting_space + "# TODOConverter3To4 infinite_inertia were removed in Godot 4 - previous value `" + parts[6] + "`\n";
+					line_new += starting_space + "# TODOConverter3To4 infinite_inertia were removed in Blazium 4 - previous value `" + parts[6] + "`\n";
 				}
 
 				line_new += starting_space + base_obj + "move_and_slide()";
@@ -2694,7 +2694,7 @@ void ProjectConverter3To4::rename_joypad_buttons_and_axes(Vector<SourceLine> &so
 				PackedStringArray strings = match->get_strings();
 				const String &button_index_entry = strings[0];
 				int button_index_value = strings[1].to_int();
-				if (button_index_value == 6) { // L2 and R2 are mapped to joypad axes in Godot 4.
+				if (button_index_value == 6) { // L2 and R2 are mapped to joypad axes in Blazium 4.
 					line = line.replace("InputEventJoypadButton", "InputEventJoypadMotion");
 					line = line.replace(button_index_entry, ",\"axis\":4,\"axis_value\":1.0");
 				} else if (button_index_value == 7) {
@@ -2734,7 +2734,7 @@ Vector<String> ProjectConverter3To4::check_for_rename_joypad_buttons_and_axes(Ve
 				PackedStringArray strings = match->get_strings();
 				const String &button_index_entry = strings[0];
 				int button_index_value = strings[1].to_int();
-				if (button_index_value == 6) { // L2 and R2 are mapped to joypad axes in Godot 4.
+				if (button_index_value == 6) { // L2 and R2 are mapped to joypad axes in Blazium 4.
 					found_renames.append(line_formatter(current_line, "InputEventJoypadButton", "InputEventJoypadMotion", line));
 					found_renames.append(line_formatter(current_line, button_index_entry, ",\"axis\":4", line));
 				} else if (button_index_value == 7) {

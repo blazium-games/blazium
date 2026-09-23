@@ -1,4 +1,4 @@
-name: Export Godot project
+name: Export Blazium project
 description: Export a test Godot project.
 
 inputs:

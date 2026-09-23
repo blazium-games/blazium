@@ -623,10 +623,10 @@ Vector<T> GLTFAccessor::_decode_raw_numbers(const Ref<GLTFState> &p_gltf_state, 
 	ERR_FAIL_INDEX_V(raw_buffer_view_index, p_buffer_views.size(), ret_numbers);
 	const Ref<GLTFBufferView> raw_buffer_view = p_buffer_views[raw_buffer_view_index];
 	if (raw_buffer_view->get_byte_offset() % bytes_per_component != 0) {
-		WARN_PRINT("glTF import: Buffer view byte offset is not a multiple of accessor component size. This file is invalid per the glTF specification and will not load correctly in some glTF viewers, but Godot will try to load it anyway.");
+		WARN_PRINT("glTF import: Buffer view byte offset is not a multiple of accessor component size. This file is invalid per the glTF specification and will not load correctly in some glTF viewers, but Blazium will try to load it anyway.");
 	}
 	if (byte_offset % bytes_per_component != 0) {
-		WARN_PRINT("glTF import: Accessor byte offset is not a multiple of accessor component size. This file is invalid per the glTF specification and will not load correctly in some glTF viewers, but Godot will try to load it anyway.");
+		WARN_PRINT("glTF import: Accessor byte offset is not a multiple of accessor component size. This file is invalid per the glTF specification and will not load correctly in some glTF viewers, but Blazium will try to load it anyway.");
 	}
 	int64_t declared_byte_stride = raw_buffer_view->get_byte_stride();
 	int64_t actual_byte_stride = bytes_per_vector;
@@ -1333,7 +1333,7 @@ PackedByteArray GLTFAccessor::encode_floats_as_bytes(const PackedFloat64Array &p
 				*(uint64_t *)&ret_write[ret_byte_offset] = filtered_numbers[i];
 			} break;
 			default: {
-				ERR_FAIL_V_MSG(ret, "glTF export: Godot does not support writing glTF accessor components of type '" + itos(component_type) + "'.");
+				ERR_FAIL_V_MSG(ret, "glTF export: Blazium does not support writing glTF accessor components of type '" + itos(component_type) + "'.");
 			} break;
 		}
 		ret_byte_offset += bytes_per_component;
@@ -1401,7 +1401,7 @@ PackedByteArray GLTFAccessor::encode_ints_as_bytes(const PackedInt64Array &p_inp
 				*(uint64_t *)&ret_write[ret_byte_offset] = p_input_numbers[i];
 			} break;
 			default: {
-				ERR_FAIL_V_MSG(ret, "glTF export: Godot does not support writing glTF accessor components of type '" + itos(component_type) + "'.");
+				ERR_FAIL_V_MSG(ret, "glTF export: Blazium does not support writing glTF accessor components of type '" + itos(component_type) + "'.");
 			} break;
 		}
 		ret_byte_offset += bytes_per_component;

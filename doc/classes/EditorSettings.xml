@@ -5,7 +5,7 @@
 	</brief_description>
 	<description>
 		Object that holds the project-independent editor settings. These settings are generally visible in the [b]Editor &gt; Editor Settings[/b] menu.
-		Property names use slash delimiters to distinguish sections. Setting values can be of any [Variant] type. It's recommended to use [code]snake_case[/code] for editor settings to be consistent with the Godot editor itself.
+		Property names use slash delimiters to distinguish sections. Setting values can be of any [Variant] type. It's recommended to use [code]snake_case[/code] for editor settings to be consistent with the Blazium editor itself.
 		Editor settings are saved automatically when changed.
 		Accessing the settings can be done using the following methods, such as:
 		[codeblocks]
@@ -1336,7 +1336,7 @@
 			All update modes will ignore builds with different major versions (e.g. Godot 4 -&gt; Godot 5).
 		</member>
 		<member name="network/connection/network_mode" type="int" setter="" getter="">
-			Determines whether online features, such as the Asset Store or update checks, are enabled in the editor. If this is a privacy concern, disabling these online features prevents the editor from making HTTP requests to the Godot website or third-party platforms hosting assets from the Asset Store.
+			Determines whether online features, such as the Asset Store or update checks, are enabled in the editor. If this is a privacy concern, disabling these online features prevents the editor from making HTTP requests to the Blazium website or third-party platforms hosting assets from the Asset Store.
 			Editor plugins and tool scripts are recommended to follow this setting. However, Godot can't prevent them from violating this rule.
 		</member>
 		<member name="network/debug/remote_host" type="String" setter="" getter="">

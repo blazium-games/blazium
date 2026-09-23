@@ -1,4 +1,4 @@
-name: Godot hash compatibility test
+name: Blazium hash compatibility test
 description: Check if methods with given hashes used by the older GDExtensions still can be loaded with given Godot version.
 
 inputs:

@@ -58,7 +58,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y p7zip-full
 
-      - name: Restore Godot build cache
+      - name: Restore Blazium build cache
         uses: ./.github/actions/godot-cache-restore
         with:
           cache-name: ${{ matrix.cache-name }}
@@ -76,7 +76,7 @@ jobs:
           tests: ${{ matrix.tests }}
           scons-cache-limit: 0.5
 
-      - name: Save Godot build cache
+      - name: Save Blazium build cache
         uses: ./.github/actions/godot-cache-save
         with:
           cache-name: ${{ matrix.cache-name }}

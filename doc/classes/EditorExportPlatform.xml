@@ -75,7 +75,7 @@
 				[param save_cb] is called for all exported files and have the following arguments: [code]info: Dictionary[/code], [code]file_data: PackedByteArray[/code]. The [code]info[/code] dictionary contains the following values: [code]path: String[/code], [code]source_path: String[/code], [code]file_index: int[/code], [code]file_count: int[/code].
 				[param shared_cb] is called for exported native shared/static libraries and have the following arguments: [code]file_path: String[/code], [code]tags: PackedStringArray[/code], [code]target_folder: String[/code].
 				[b]Note:[/b] [code]file_index[/code] and [code]file_count[/code] are intended for progress tracking only and aren't necessarily unique and precise.
-				[b]Note:[/b] The signature of [param save_cb] changed in Godot 4.8. There is compatibility code to automatically handle the [url=https://docs.godotengine.org/en/4.7/classes/class_editorexportplatform.html#class-editorexportplatform-method-export-project-files]previous signature[/url] if the passed callable has 7 arguments.
+				[b]Note:[/b] The signature of [param save_cb] changed in Godot 4.8. There is compatibility code to automatically handle the [url=https://docs.blazium.app/en/4.7/classes/class_editorexportplatform.html#class-editorexportplatform-method-export-project-files]previous signature[/url] if the passed callable has 7 arguments.
 			</description>
 		</method>
 		<method name="export_zip">

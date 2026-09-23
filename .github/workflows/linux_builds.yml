@@ -152,7 +152,7 @@ jobs:
           sudo rm -rf /usr/local/lib/android
           echo "Disk usage after:" && df -h
 
-      - name: Restore Godot build cache
+      - name: Restore Blazium build cache
         uses: ./.github/actions/godot-cache-restore
         with:
           cache-name: ${{ matrix.cache-name }}
@@ -224,7 +224,7 @@ jobs:
           scons-flags: target=template_debug dev_build=yes verbose=yes
           godot-cpp-branch: ${{ env.BLAZIUM_CPP_BRANCH }}
 
-      - name: Save Godot build cache
+      - name: Save Blazium build cache
         uses: ./.github/actions/godot-cache-save
         with:
           cache-name: ${{ matrix.cache-name }}
@@ -289,7 +289,7 @@ jobs:
           reftags: "4.5-stable,4.4-stable"
 
       # Download and run the test project
-      - name: Test Godot project
+      - name: Test Blazium project
         uses: ./.github/actions/godot-project-test
         if: matrix.proj-test
         with:

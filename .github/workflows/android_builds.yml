@@ -61,7 +61,7 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Restore Godot build cache
+      - name: Restore Blazium build cache
         uses: ./.github/actions/godot-cache-restore
         with:
           cache-name: ${{ matrix.cache-name }}
@@ -90,13 +90,13 @@ jobs:
           tests: ${{ matrix.tests }}
           scons-cache-limit: ${{ matrix.cache-limit }}
 
-      - name: Save Godot build cache
+      - name: Save Blazium build cache
         uses: ./.github/actions/godot-cache-save
         with:
           cache-name: ${{ matrix.cache-name }}
         continue-on-error: true
 
-      - name: Generate Godot templates
+      - name: Generate Blazium templates
         if: matrix.target == 'template_release'
         run: |
           cd platform/android/java
@@ -104,7 +104,7 @@ jobs:
           cd ../../..
           ls -l bin/
 
-      - name: Generate Godot editor
+      - name: Generate Blazium editor
         if: matrix.target == 'editor'
         run: |
           cd platform/android/java

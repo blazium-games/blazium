@@ -847,8 +847,8 @@ Error Main::test_setup() {
 			OS::get_singleton()->set_cwd(OS::get_singleton()->get_cwd().get_base_dir());
 			tests_exist = DirAccess::dir_exists_absolute(OS::get_singleton()->get_cwd().path_join("tests").path_join("data"));
 		}
-		ERR_FAIL_COND_V_MSG(!tests_exist, FAILED, "Test data not found, tests should be run from the Godot source repository root.");
-		WARN_PRINT("Tests should be run from the Godot source repository root, working directory was changed to " + OS::get_singleton()->get_cwd());
+		ERR_FAIL_COND_V_MSG(!tests_exist, FAILED, "Test data not found, tests should be run from the Blazium source repository root.");
+		WARN_PRINT("Tests should be run from the Blazium source repository root, working directory was changed to " + OS::get_singleton()->get_cwd());
 	}
 
 	// From `Main::setup2()`.
@@ -1662,7 +1662,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 					separate_thread_render = 0;
 #ifndef DISABLE_DEPRECATED
 				} else if (N->get() == "unsafe") {
-					OS::get_singleton()->print("The --render-thread unsafe option is unsupported in Godot 4 and will be removed.\n");
+					OS::get_singleton()->print("The --render-thread unsafe option is unsupported in Blazium 4 and will be removed.\n");
 					separate_thread_render = 0;
 #endif
 				} else if (N->get() == "separate") {

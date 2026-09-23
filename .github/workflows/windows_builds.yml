@@ -121,7 +121,7 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Restore Godot build cache
+      - name: Restore Blazium build cache
         uses: ./.github/actions/godot-cache-restore
         with:
           cache-name: ${{ matrix.cache-name }}
@@ -291,7 +291,7 @@ jobs:
         if: ${{ matrix.cache-name == 'windows-editor-mono' }}
         run: python modules/mono/build_scripts/build_assemblies.py --godot-output-dir=./bin
 
-      - name: Save Godot build cache
+      - name: Save Blazium build cache
         uses: ./.github/actions/godot-cache-save
         with:
           cache-name: ${{ matrix.cache-name }}

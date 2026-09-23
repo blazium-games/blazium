@@ -24,7 +24,7 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Restore Godot build cache
+      - name: Restore Blazium build cache
         uses: ./.github/actions/godot-cache-restore
         continue-on-error: true
 
@@ -39,7 +39,7 @@ jobs:
           target: template_release
           tests: false
 
-      - name: Save Godot build cache
+      - name: Save Blazium build cache
         uses: ./.github/actions/godot-cache-save
         continue-on-error: true
 

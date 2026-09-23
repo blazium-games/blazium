@@ -4693,7 +4693,7 @@ Error Image::load_exr_from_buffer(const Vector<uint8_t> &p_array) {
 	ERR_FAIL_NULL_V_MSG(
 			_exr_mem_loader_func,
 			ERR_UNAVAILABLE,
-			"The TinyEXR module isn't enabled. Recompile the Godot editor or export template binary with the `module_tinyexr_enabled=yes` SCons option.");
+			"The TinyEXR module isn't enabled. Recompile the Blazium editor or export template binary with the `module_tinyexr_enabled=yes` SCons option.");
 	return _load_from_buffer(p_array, _exr_mem_loader_func);
 }
 
@@ -4705,7 +4705,7 @@ Error Image::load_tga_from_buffer(const Vector<uint8_t> &p_array) {
 	ERR_FAIL_NULL_V_MSG(
 			_tga_mem_loader_func,
 			ERR_UNAVAILABLE,
-			"The TGA module isn't enabled. Recompile the Godot editor or export template binary with the `module_tga_enabled=yes` SCons option.");
+			"The TGA module isn't enabled. Recompile the Blazium editor or export template binary with the `module_tga_enabled=yes` SCons option.");
 	return _load_from_buffer(p_array, _tga_mem_loader_func);
 }
 
@@ -4713,7 +4713,7 @@ Error Image::load_bmp_from_buffer(const Vector<uint8_t> &p_array) {
 	ERR_FAIL_NULL_V_MSG(
 			_bmp_mem_loader_func,
 			ERR_UNAVAILABLE,
-			"The BMP module isn't enabled. Recompile the Godot editor or export template binary with the `module_bmp_enabled=yes` SCons option.");
+			"The BMP module isn't enabled. Recompile the Blazium editor or export template binary with the `module_bmp_enabled=yes` SCons option.");
 	return _load_from_buffer(p_array, _bmp_mem_loader_func);
 }
 
@@ -4721,7 +4721,7 @@ Error Image::load_dds_from_buffer(const Vector<uint8_t> &p_array) {
 	ERR_FAIL_NULL_V_MSG(
 			_dds_mem_loader_func,
 			ERR_UNAVAILABLE,
-			"The DDS module isn't enabled. Recompile the Godot editor or export template binary with the `module_dds_enabled=yes` SCons option.");
+			"The DDS module isn't enabled. Recompile the Blazium editor or export template binary with the `module_dds_enabled=yes` SCons option.");
 	return _load_from_buffer(p_array, _dds_mem_loader_func);
 }
 
@@ -4729,7 +4729,7 @@ Error Image::load_svg_from_buffer(const Vector<uint8_t> &p_array, float p_scale)
 	ERR_FAIL_NULL_V_MSG(
 			_svg_scalable_mem_loader_func,
 			ERR_UNAVAILABLE,
-			"The SVG module isn't enabled. Recompile the Godot editor or export template binary with the `module_svg_enabled=yes` SCons option.");
+			"The SVG module isn't enabled. Recompile the Blazium editor or export template binary with the `module_svg_enabled=yes` SCons option.");
 
 	int buffer_size = p_array.size();
 
@@ -4751,7 +4751,7 @@ Error Image::load_ktx_from_buffer(const Vector<uint8_t> &p_array) {
 	ERR_FAIL_NULL_V_MSG(
 			_ktx_mem_loader_func,
 			ERR_UNAVAILABLE,
-			"The KTX module isn't enabled. Recompile the Godot editor or export template binary with the `module_ktx_enabled=yes` SCons option.");
+			"The KTX module isn't enabled. Recompile the Blazium editor or export template binary with the `module_ktx_enabled=yes` SCons option.");
 	return _load_from_buffer(p_array, _ktx_mem_loader_func);
 }
 

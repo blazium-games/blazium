@@ -869,7 +869,7 @@ Rect2 OS_AppleEmbedded::calculate_boot_screen_rect(const Size2 &p_window_size, c
 	} else if (scalemodestr == "center") {
 		return OS_Unix::calculate_boot_screen_rect(p_window_size, p_imgrect_size);
 	} else {
-		WARN_PRINT(vformat("Boot screen scale mode mismatch between iOS and Godot: %s not supported", scalemodestr));
+		WARN_PRINT(vformat("Boot screen scale mode mismatch between iOS and Blazium: %s not supported", scalemodestr));
 		return OS_Unix::calculate_boot_screen_rect(p_window_size, p_imgrect_size);
 	}
 }

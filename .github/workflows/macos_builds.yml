@@ -51,7 +51,7 @@ jobs:
           xcode-select -p
           xcodebuild -version
 
-      - name: Restore Godot build cache
+      - name: Restore Blazium build cache
         uses: ./.github/actions/godot-cache-restore
         with:
           cache-name: ${{ matrix.cache-name }}
@@ -112,7 +112,7 @@ jobs:
           tests: ${{ matrix.tests }}
           scons-cache-limit: ${{ matrix.cache-limit }}
 
-      - name: Save Godot build cache
+      - name: Save Blazium build cache
         uses: ./.github/actions/godot-cache-save
         with:
           cache-name: ${{ matrix.cache-name }}

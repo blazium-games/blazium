@@ -1232,10 +1232,10 @@
 			Notification received when [method reset_physics_interpolation] is called on the node or its ancestors.
 		</constant>
 		<constant name="NOTIFICATION_EDITOR_PRE_SAVE" value="9001">
-			Notification received right before the scene with the node is saved in the editor. This notification is only sent in the Godot editor and will not occur in exported projects.
+			Notification received right before the scene with the node is saved in the editor. This notification is only sent in the Blazium editor and will not occur in exported projects.
 		</constant>
 		<constant name="NOTIFICATION_EDITOR_POST_SAVE" value="9002">
-			Notification received right after the scene with the node is saved in the editor. This notification is only sent in the Godot editor and will not occur in exported projects.
+			Notification received right after the scene with the node is saved in the editor. This notification is only sent in the Blazium editor and will not occur in exported projects.
 		</constant>
 		<constant name="NOTIFICATION_WM_MOUSE_ENTER" value="1002">
 			Notification received when the mouse enters the window.

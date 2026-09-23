@@ -3060,7 +3060,7 @@ Error GLTFDocument::_parse_materials(Ref<GLTFState> p_state) {
 					if (primary_texture_coord == -1) {
 						primary_texture_coord = spec_gloss_tex_coord;
 					} else if (spec_gloss_tex_coord != primary_texture_coord) {
-						WARN_PRINT("glTF: File uses different UV maps for specular/glossiness and diffuse textures. Godot does not support this. Using diffuse texture's UV map only and ignoring specular/glossiness texture's UV map.");
+						WARN_PRINT("glTF: File uses different UV maps for specular/glossiness and diffuse textures. Blazium does not support this. Using diffuse texture's UV map only and ignoring specular/glossiness texture's UV map.");
 					}
 				}
 			}
@@ -3129,7 +3129,7 @@ Error GLTFDocument::_parse_materials(Ref<GLTFState> p_state) {
 					if (primary_texture_coord == -1) {
 						primary_texture_coord = metal_rough_tex_coord;
 					} else if (metal_rough_tex_coord != primary_texture_coord) {
-						WARN_PRINT("glTF: File uses different UV maps for metallic/roughness and base color textures. Godot does not support this. Using base color texture's UV map only and ignoring metallic/roughness texture's UV map.");
+						WARN_PRINT("glTF: File uses different UV maps for metallic/roughness and base color textures. Blazium does not support this. Using base color texture's UV map only and ignoring metallic/roughness texture's UV map.");
 					}
 				}
 			}
@@ -3146,7 +3146,7 @@ Error GLTFDocument::_parse_materials(Ref<GLTFState> p_state) {
 				if (primary_texture_coord == -1) {
 					primary_texture_coord = normal_tex_coord;
 				} else if (normal_tex_coord != primary_texture_coord) {
-					WARN_PRINT("glTF: File uses different UV maps for normal and base color textures. Godot does not support this. Using base color texture's UV map only and ignoring normal texture's UV map.");
+					WARN_PRINT("glTF: File uses different UV maps for normal and base color textures. Blazium does not support this. Using base color texture's UV map only and ignoring normal texture's UV map.");
 				}
 			}
 			if (normal_tex_dict.has("scale")) {
@@ -3201,7 +3201,7 @@ Error GLTFDocument::_parse_materials(Ref<GLTFState> p_state) {
 						secondary_texture_coord = emissive_tex_coord;
 						material->set_flag(BaseMaterial3D::FLAG_EMISSION_ON_UV2, true);
 					} else {
-						WARN_PRINT("glTF: File uses different UV maps for emission, occlusion, and primary textures (baseColor/normal/etc). Godot does not support this, it only supports up to two UV maps. Using occlusion texture's UV map only and ignoring emission texture's UV map.");
+						WARN_PRINT("glTF: File uses different UV maps for emission, occlusion, and primary textures (baseColor/normal/etc). Blazium does not support this, it only supports up to two UV maps. Using occlusion texture's UV map only and ignoring emission texture's UV map.");
 					}
 				}
 			}
@@ -6661,7 +6661,7 @@ void GLTFDocument::_convert_animation(Ref<GLTFState> p_state, AnimationPlayer *p
 				case GLTFObjectModelProperty::GLTF_OBJECT_MODEL_TYPE_INT: {
 					channel.interpolation = GLTFAnimation::INTERP_STEP;
 					if (gltf_interpolation != GLTFAnimation::INTERP_STEP) {
-						WARN_PRINT(vformat("glTF export: Animation track %d on property %s is animating an int or bool, so it MUST use STEP interpolation (Godot \"Nearest\"), but the track in the Godot AnimationPlayer is using a different interpolation. Forcing STEP interpolation. Correct this track's interpolation in the source AnimationPlayer to avoid this warning.", track_index, String(track_path)));
+						WARN_PRINT(vformat("glTF export: Animation track %d on property %s is animating an int or bool, so it MUST use STEP interpolation (Blazium \"Nearest\"), but the track in the Blazium AnimationPlayer is using a different interpolation. Forcing STEP interpolation. Correct this track's interpolation in the source AnimationPlayer to avoid this warning.", track_index, String(track_path)));
 					}
 				} break;
 				default: {
@@ -7254,7 +7254,7 @@ Node *GLTFDocument::generate_scene(Ref<GLTFState> p_state, float p_bake_fps, boo
 	ERR_FAIL_COND_V(p_state.is_null(), nullptr);
 	// The glTF file must have nodes, and have some marked as root nodes, in order to generate a scene.
 	if (p_state->nodes.is_empty()) {
-		WARN_PRINT("glTF: This glTF file has no nodes, the generated Godot scene will be empty.");
+		WARN_PRINT("glTF: This glTF file has no nodes, the generated Blazium scene will be empty.");
 	}
 	// Now that we know that we have glTF nodes, we can begin generating a scene from the parsed glTF data.
 	Error err = OK;

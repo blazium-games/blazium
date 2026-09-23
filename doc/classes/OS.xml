@@ -876,7 +876,7 @@
 			<param index="0" name="enabled" type="bool" />
 			<description>
 				If [param enabled] is [code]true[/code], when opening a file for writing, a temporary file is used in its place. When closed, it is automatically applied to the target file.
-				This can useful when files may be opened by other applications, such as antiviruses, text editors, or even the Godot editor itself.
+				This can useful when files may be opened by other applications, such as antiviruses, text editors, or even the Blazium editor itself.
 			</description>
 		</method>
 		<method name="shell_open">

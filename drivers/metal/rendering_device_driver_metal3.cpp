@@ -82,7 +82,7 @@ Error RenderingDeviceDriverMetal::_create_device() {
 
 	device_queue = NS::TransferPtr(device->newCommandQueue());
 	ERR_FAIL_NULL_V(device_queue.get(), ERR_CANT_CREATE);
-	device_queue->setLabel(MTLSTR("Godot Main Command Queue"));
+	device_queue->setLabel(MTLSTR("Blazium Main Command Queue"));
 
 	return OK;
 }

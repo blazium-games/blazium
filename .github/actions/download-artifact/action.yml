@@ -1,4 +1,4 @@
-name: Download Godot artifact
+name: Download Blazium artifact
 description: Download the Godot artifact.
 
 inputs:
@@ -13,7 +13,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Download Godot Artifact
+    - name: Download Blazium Artifact
       uses: actions/download-artifact@v8
       with:
         name: ${{ inputs.name }}
