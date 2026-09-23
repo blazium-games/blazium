@@ -32,7 +32,6 @@
 
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
-#include "core/io/zip_io.h"
 #include "core/object/callable_mp.h"
 #include "core/os/os.h"
 #include "editor/editor_node.h"
@@ -42,7 +41,10 @@
 #include "scene/gui/progress_bar.h"
 #include "scene/gui/rich_text_label.h"
 
+#include "modules/modules_enabled.gen.h" // For ZIPReader.
+#ifdef MODULE_ZIP_ENABLED
 #include "modules/zip/zip_reader.h"
+#endif
 
 static const char *ANDROID_CLI_URL_LINUX = "https://dl.google.com/android/cli/latest/linux_x86_64/android";
 static const char *ANDROID_CLI_URL_MAC_X86 = "https://dl.google.com/android/cli/latest/darwin_x86_64/android";
@@ -509,6 +511,10 @@ void AndroidSDKManager::_java_sdk_installed() {
 Error AndroidSDKManager::_extract_java_sdk(const String &p_file, const String &p_target_path) {
 	print_verbose(vformat("Extracting Java SDK from %s to %s", p_file, p_target_path));
 	if (OS::get_singleton()->has_feature("windows")) {
+#ifndef MODULE_ZIP_ENABLED
+		ERR_PRINT("Extracting the Java SDK on Windows requires the zip module.");
+		return ERR_UNAVAILABLE;
+#else
 		Ref<ZIPReader> reader;
 		reader.instantiate();
 		Error err = reader->open(p_file);
@@ -551,6 +557,7 @@ Error AndroidSDKManager::_extract_java_sdk(const String &p_file, const String &p
 			}
 		}
 		return OK;
+#endif
 	} else {
 		// Use `tar` for extraction on Linux and macOS.
 		Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
