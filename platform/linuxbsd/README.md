@@ -15,9 +15,9 @@ name; mime data registers both.
 
 ## Documentation
 
-- [Compiling for Linux/*BSD](https://docs.godotengine.org/en/latest/engine_details/development/compiling/compiling_for_linuxbsd.html)
+- [Compiling for Linux/*BSD](https://docs.blazium.app/en/latest/engine_details/development/compiling/compiling_for_linuxbsd.html)
   - Instructions on building this platform port from source.
-- [Exporting for Linux/*BSD](https://docs.godotengine.org/en/latest/tutorials/export/exporting_for_linux.html)
+- [Exporting for Linux/*BSD](https://docs.blazium.app/en/latest/tutorials/export/exporting_for_linux.html)
   - Instructions on using the compiled export templates to export a project.
 
 ## Artwork license
