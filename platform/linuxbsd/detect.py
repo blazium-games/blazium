@@ -105,9 +105,11 @@ def configure(env: "SConsEnvironment"):
     host_is_64_bit = sys.maxsize > 2**32
     if host_is_64_bit and env["arch"] == "x86_32":
         env.Append(CCFLAGS=["-m32"])
+        env.Append(ASFLAGS=["-m32"])
         env.Append(LINKFLAGS=["-m32"])
     elif not host_is_64_bit and env["arch"] == "x86_64":
         env.Append(CCFLAGS=["-m64"])
+        env.Append(ASFLAGS=["-m64"])
         env.Append(LINKFLAGS=["-m64"])
 
     # CPU architecture flags.
