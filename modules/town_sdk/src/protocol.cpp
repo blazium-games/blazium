@@ -27,14 +27,14 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
+#include "turnbattle/protocol.hpp"
+
+#include "core/error/error_macros.h"
+
 #include <cstdint>
 #include <cstring>
 #include <string>
 #include <utility>
-
-#include "core/error/error_macros.h"
-
-#include "turnbattle/protocol.hpp"
 
 namespace turnbattle {
 namespace protocol {

@@ -1655,6 +1655,8 @@
 		<member name="OS" type="OS" setter="" getter="">
 			The [OS] singleton.
 		</member>
+		<member name="Obfuscation" type="Obfuscation" setter="" getter="">
+		</member>
 		<member name="Performance" type="Performance" setter="" getter="">
 			The [Performance] singleton.
 		</member>
@@ -1711,6 +1713,9 @@
 			The [TranslationServer] singleton.
 		</member>
 		<member name="TwitchAPI" type="TwitchAPI" setter="" getter="">
+		</member>
+		<member name="Warcry" type="WarcryClient" setter="" getter="">
+			The [WarcryClient] singleton for Opus voice over an out-of-tree Politeia server.
 		</member>
 		<member name="WorkerThreadPool" type="WorkerThreadPool" setter="" getter="">
 			The [WorkerThreadPool] singleton.

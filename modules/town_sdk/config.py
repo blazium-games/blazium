@@ -3,7 +3,8 @@ def can_build(env, platform):
 
 
 def configure(env):
-    pass
+    # Public headers use turnbattle/*; tests compile outside this module's SCsub.
+    env.Prepend(CPPPATH=["#modules/town_sdk/include"])
 
 
 def get_doc_classes():

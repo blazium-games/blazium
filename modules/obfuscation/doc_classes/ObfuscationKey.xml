@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ObfuscationKey" inherits="Resource" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Loaded identity handle. The private half is not serialized into [code]res://[/code].
+	</brief_description>
+	<description>
+		Wraps the RSA key, HMAC secret, and publisher/project ids kept under [code]user://obfuscation/[/code]. Export plugins never pack this resource. [method has_private] is [code]false[/code] for verify-only public keys.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_project_id" qualifiers="const">
+			<return type="String" />
+			<description>
+				Project id stored with the identity.
+			</description>
+		</method>
+		<method name="get_public_key" qualifiers="const">
+			<return type="CryptoKey" />
+			<description>
+				Public (or full) crypto key.
+			</description>
+		</method>
+		<method name="get_publisher_id" qualifiers="const">
+			<return type="String" />
+			<description>
+				Publisher id stored with the identity.
+			</description>
+		</method>
+		<method name="has_private" qualifiers="const">
+			<return type="bool" />
+			<description>
+				[code]true[/code] when the key includes the private half.
+			</description>
+		</method>
+	</methods>
+</class>

@@ -103,6 +103,7 @@ TownSdkClient::~TownSdkClient() {
 		client->on_admin_kick({});
 		client->on_admin_stats({});
 		client->on_admin_broadcast({});
+		client->on_admin_bank({});
 		client->on_integrity({});
 		client->on_screenshot_req({});
 		client->on_ops_action({});
@@ -243,6 +244,9 @@ void TownSdkClient::_attach_callbacks() {
 	client->on_admin_broadcast([this](const Variant &p_payload) {
 		emit_signal("admin_broadcast_received", p_payload);
 	});
+	client->on_admin_bank([this](const Variant &p_payload) {
+		emit_signal("admin_bank_received", p_payload);
+	});
 	client->on_integrity([this](const Variant &p_payload) {
 		emit_signal("integrity_received", p_payload);
 	});
@@ -288,6 +292,24 @@ void TownSdkClient::disconnect_from_server() {
 
 bool TownSdkClient::is_client_connected() const {
 	return client ? client->is_connected() : false;
+}
+
+void TownSdkClient::apply_hello_ack(const Dictionary &p_data) {
+	if (client) {
+		client->apply_hello_ack(p_data);
+	}
+}
+
+bool TownSdkClient::has_voip() const {
+	return client && client->has_voip();
+}
+
+String TownSdkClient::get_voip_host() const {
+	return client ? _std_to_string(client->get_voip_host()) : String();
+}
+
+int TownSdkClient::get_voip_port() const {
+	return client ? (int)client->get_voip_port() : 0;
 }
 
 String TownSdkClient::get_server_version() const {
@@ -418,6 +440,12 @@ void TownSdkClient::send_craft(const String &p_recipe) {
 	}
 }
 
+void TownSdkClient::send_inventory_move(const Dictionary &p_from, const Dictionary &p_to) {
+	if (client) {
+		client->send_inventory_move(p_from, p_to);
+	}
+}
+
 void TownSdkClient::battle_action(const String &p_battle_id, BattleAction p_action, const String &p_target_id) {
 	if (!client) {
 		return;
@@ -454,6 +482,14 @@ void TownSdkClient::admin_stats_request() {
 void TownSdkClient::admin_broadcast(const String &p_message, bool p_is_alert) {
 	if (client) {
 		client->admin_broadcast(_string_to_std(p_message), p_is_alert);
+	}
+}
+
+void TownSdkClient::admin_bank(const String &p_op, const String &p_username, int p_amount,
+		const String &p_pin) {
+	if (client) {
+		client->admin_bank(_string_to_std(p_op), _string_to_std(p_username), p_amount,
+				_string_to_std(p_pin));
 	}
 }
 
@@ -541,6 +577,10 @@ void TownSdkClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("disconnect_from_server"), &TownSdkClient::disconnect_from_server);
 	ClassDB::bind_method(D_METHOD("is_client_connected"), &TownSdkClient::is_client_connected);
 	ClassDB::bind_method(D_METHOD("get_server_version"), &TownSdkClient::get_server_version);
+	ClassDB::bind_method(D_METHOD("apply_hello_ack", "data"), &TownSdkClient::apply_hello_ack);
+	ClassDB::bind_method(D_METHOD("has_voip"), &TownSdkClient::has_voip);
+	ClassDB::bind_method(D_METHOD("get_voip_host"), &TownSdkClient::get_voip_host);
+	ClassDB::bind_method(D_METHOD("get_voip_port"), &TownSdkClient::get_voip_port);
 	ClassDB::bind_method(D_METHOD("authenticate", "jwt_token"), &TownSdkClient::authenticate);
 	ClassDB::bind_method(D_METHOD("authenticate_username", "username"), &TownSdkClient::authenticate_username);
 	ClassDB::bind_method(D_METHOD("set_game_type", "type"), &TownSdkClient::set_game_type);
@@ -563,12 +603,14 @@ void TownSdkClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("send_pickup", "id"), &TownSdkClient::send_pickup);
 	ClassDB::bind_method(D_METHOD("send_drop", "kind", "slot"), &TownSdkClient::send_drop);
 	ClassDB::bind_method(D_METHOD("send_craft", "recipe"), &TownSdkClient::send_craft);
+	ClassDB::bind_method(D_METHOD("send_inventory_move", "from", "to"), &TownSdkClient::send_inventory_move);
 	ClassDB::bind_method(D_METHOD("battle_action", "battle_id", "action", "target_id"), &TownSdkClient::battle_action, DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("leave_battle", "battle_id"), &TownSdkClient::leave_battle);
 	ClassDB::bind_method(D_METHOD("admin_reload", "scope"), &TownSdkClient::admin_reload);
 	ClassDB::bind_method(D_METHOD("admin_kick", "username", "reason"), &TownSdkClient::admin_kick, DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("admin_stats_request"), &TownSdkClient::admin_stats_request);
 	ClassDB::bind_method(D_METHOD("admin_broadcast", "message", "is_alert"), &TownSdkClient::admin_broadcast, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("admin_bank", "op", "username", "amount", "pin"), &TownSdkClient::admin_bank, DEFVAL(0), DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("send_integrity", "blob"), &TownSdkClient::send_integrity);
 	ClassDB::bind_method(D_METHOD("send_screenshot_data", "payload"), &TownSdkClient::send_screenshot_data);
 	ClassDB::bind_method(D_METHOD("set_auto_reconnect", "enabled"), &TownSdkClient::set_auto_reconnect);
@@ -615,6 +657,7 @@ void TownSdkClient::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("admin_kick_received", PropertyInfo(Variant::DICTIONARY, "payload")));
 	ADD_SIGNAL(MethodInfo("admin_stats_received", PropertyInfo(Variant::DICTIONARY, "payload")));
 	ADD_SIGNAL(MethodInfo("admin_broadcast_received", PropertyInfo(Variant::DICTIONARY, "payload")));
+	ADD_SIGNAL(MethodInfo("admin_bank_received", PropertyInfo(Variant::DICTIONARY, "payload")));
 	ADD_SIGNAL(MethodInfo("integrity_received", PropertyInfo(Variant::DICTIONARY, "payload")));
 	ADD_SIGNAL(MethodInfo("screenshot_req_received", PropertyInfo(Variant::DICTIONARY, "payload")));
 	ADD_SIGNAL(MethodInfo("ops_action_received", PropertyInfo(Variant::DICTIONARY, "payload")));

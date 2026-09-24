@@ -74,6 +74,7 @@ using OnAdminReloadCallback = VariantCallback;
 using OnAdminKickCallback = VariantCallback;
 using OnAdminStatsCallback = VariantCallback;
 using OnAdminBroadcastCallback = VariantCallback;
+using OnAdminBankCallback = VariantCallback;
 using OnIntegrityCallback = VariantCallback;
 using OnScreenshotReqCallback = VariantCallback;
 using OnOpsActionCallback = VariantCallback;
