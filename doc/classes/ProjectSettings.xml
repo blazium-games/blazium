@@ -591,51 +591,6 @@
 		<member name="blazium/autowork/show_runtime_ui" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], Autowork places [AutoworkRuntimeUI] on the scene root when a runner starts. Disabled by default. The Autowork module is not compiled into release export templates.
 		</member>
-		<member name="blazium/coldstorage/auto_pull" type="bool" setter="" getter="" default="false">
-			If [code]true[/code], runs [code]syncAll("#head")[/code] after a successful ColdStorage connect (or when [code]--coldstorage-auto-pull[/code] is passed).
-		</member>
-		<member name="blazium/coldstorage/autoload_on_startup" type="bool" setter="" getter="" default="false">
-			If [code]true[/code] and [member blazium/coldstorage/enabled] is also [code]true[/code], connects ColdStorage when the editor becomes ready.
-		</member>
-		<member name="blazium/coldstorage/ca_file" type="String" setter="" getter="" default="&quot;&quot;">
-			Optional path to a CA certificate file used when [member blazium/coldstorage/use_tls] is [code]true[/code].
-		</member>
-		<member name="blazium/coldstorage/enabled" type="bool" setter="" getter="" default="false">
-			Master enable for the ColdStorage editor integration.
-		</member>
-		<member name="blazium/coldstorage/host" type="String" setter="" getter="" default="&quot;127.0.0.1&quot;">
-			ColdStorage server hostname or IP address.
-		</member>
-		<member name="blazium/coldstorage/override_editor_settings" type="bool" setter="" getter="" default="false">
-			If [code]true[/code], Project Settings values override Editor Settings for ColdStorage connection options. Secrets (password, ticket, JWT) always stay in Editor Settings and are never written to [code]project.godot[/code].
-		</member>
-		<member name="blazium/coldstorage/port" type="int" setter="" getter="" default="1666">
-			ColdStorage server TCP port.
-		</member>
-		<member name="blazium/coldstorage/repo" type="String" setter="" getter="" default="&quot;default&quot;">
-			Repository name scoped on the ColdStorage server.
-		</member>
-		<member name="blazium/coldstorage/tls_insecure" type="bool" setter="" getter="" default="false">
-			If [code]true[/code], skips TLS peer certificate verification (development only).
-		</member>
-		<member name="blazium/coldstorage/use_tls" type="bool" setter="" getter="" default="false">
-			If [code]true[/code], connects to ColdStorage over TLS.
-		</member>
-		<member name="blazium/coldstorage/user" type="String" setter="" getter="" default="&quot;&quot;">
-			Username for ColdStorage login.
-		</member>
-		<member name="blazium/coldstorage/validate_on_startup" type="bool" setter="" getter="" default="true">
-			If [code]true[/code], calls server [code]info()[/code] after connect and reports failure if validation fails.
-		</member>
-		<member name="blazium/coldstorage/workspace" type="String" setter="" getter="" default="&quot;default&quot;">
-			Workspace name used for the ColdStorage client session.
-		</member>
-		<member name="blazium/coldstorage/workspace_root" type="String" setter="" getter="" default="&quot;&quot;">
-			Local workspace root path. When empty, the project resource directory is used.
-		</member>
-		<member name="blazium/coldstorage/z_connection_controls" type="String" setter="" getter="" default="&quot;&quot;">
-			Sentinel property that injects ColdStorage connection controls into the settings inspector. Not meant to be edited directly.
-		</member>
 		<member name="blazium/gif/capture_hotkey" type="int" setter="" getter="" default="0">
 			Physical key code that starts or stops [GIFRecorder] capture in exported templates. [code]0[/code] disables the hotkey. Ignored in the editor.
 		</member>
@@ -2230,18 +2185,6 @@
 		<member name="blazium/semanticsearch/max_concurrent_async_jobs" type="int" setter="" getter="" default="8">
 		</member>
 		<member name="blazium/semanticsearch/scan_filesystem" type="bool" setter="" getter="" default="false">
-		</member>
-		<member name="blazium/warcry/host" type="String" setter="" getter="" default="&quot;127.0.0.1&quot;">
-			Default Politeia / Warcry server hostname used by [WarcryClient] and the editor admin dock.
-		</member>
-		<member name="blazium/warcry/password" type="String" setter="" getter="" default="&quot;&quot;">
-			Optional password sent with [method WarcryClient.authenticate].
-		</member>
-		<member name="blazium/warcry/port" type="int" setter="" getter="" default="27015">
-			Default Politeia / Warcry server port.
-		</member>
-		<member name="blazium/warcry/username" type="String" setter="" getter="" default="&quot;editor&quot;">
-			Default username for [method WarcryClient.connect_to_server] and [method WarcryClient.authenticate].
 		</member>
 		<member name="collada/use_ambient" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], ambient lights will be imported from COLLADA models as [DirectionalLight3D]. If [code]false[/code], ambient lights will be ignored.
@@ -5163,9 +5106,6 @@
 		</member>
 		<member name="threading/worker_pool/max_threads" type="int" setter="" getter="" default="-1">
 			Maximum number of threads to be used by [WorkerThreadPool]. Value of [code]-1[/code] means no limit.
-		</member>
-		<member name="town_sdk/game_type" type="int" setter="" getter="" default="0">
-			Default TownSDK game type advertised on HELLO. [code]0[/code] is turn-based, [code]1[/code] is FPS.
 		</member>
 		<member name="xr/openxr/binding_modifiers/analog_threshold" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], enables the analog threshold binding modifier if supported by the XR runtime.

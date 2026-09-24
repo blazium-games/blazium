@@ -30,6 +30,9 @@
 		<member name="forced_selected_button" type="int" setter="set_forced_selected_button" getter="get_forced_selected_button" default="0">
 			HLI forced-selected button override, or [code]0[/code] to use [member default_button].
 		</member>
+		<member name="goup_pgc" type="int" setter="set_goup_pgc" getter="get_goup_pgc" default="0">
+			Go-Up PGC number.
+		</member>
 		<member name="menu_type" type="int" setter="set_menu_type" getter="get_menu_type" enum="InterDVDMenu.MenuType" default="2">
 			PGCI_UT menu id: Title 2, Root 3, Subpicture 4, Audio 5, Angle 6, Chapter 7.
 		</member>
@@ -39,23 +42,20 @@
 		<member name="next_pgc" type="int" setter="set_next_pgc" getter="get_next_pgc" default="1">
 			Next PGC number (default loops this menu).
 		</member>
-		<member name="prev_pgc" type="int" setter="set_prev_pgc" getter="get_prev_pgc" default="1">
-			Previous PGC number.
-		</member>
 		<member name="parental_id" type="int" setter="set_parental_id" getter="get_parental_id" default="0">
 			Parental id written on the menu PGCI search pointer.
 		</member>
-		<member name="uops" type="int" setter="set_uops" getter="get_uops" default="0">
-			Prohibited user operations for this menu PGC.
+		<member name="prev_pgc" type="int" setter="set_prev_pgc" getter="get_prev_pgc" default="1">
+			Previous PGC number.
 		</member>
-		<member name="goup_pgc" type="int" setter="set_goup_pgc" getter="get_goup_pgc" default="0">
-			Go-Up PGC number.
+		<member name="still_time" type="int" setter="set_still_time" getter="get_still_time" default="0">
+			PGC still time in seconds ([code]255[/code] = infinite).
 		</member>
 		<member name="title_set_nr" type="int" setter="set_title_set_nr" getter="get_title_set_nr" default="0">
 			VTS number for VTSM menus. Title menus stay in VMGM ([code]0[/code]).
 		</member>
-		<member name="still_time" type="int" setter="set_still_time" getter="get_still_time" default="0">
-			PGC still time in seconds ([code]255[/code] = infinite).
+		<member name="uops" type="int" setter="set_uops" getter="get_uops" default="0">
+			Prohibited user operations for this menu PGC.
 		</member>
 	</members>
 	<constants>

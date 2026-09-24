@@ -135,11 +135,10 @@ public:
 	enum class VCSMetadata {
 		NONE,
 		GIT,
-		COLDSTORAGE,
 	};
 	static void create_vcs_metadata_files(VCSMetadata p_vcs_metadata_type, String &p_dir);
 
-	// Proxies to the editor for use. Virtual so in-tree native providers (e.g. ColdStorage)
+	// Proxies to the editor for use. Virtual so in-tree native providers
 	// can override; GDExtension/script providers continue via GDVIRTUAL in the base impl.
 	virtual bool initialize(const String &p_project_path);
 	virtual void set_credentials(const String &p_username, const String &p_password, const String &p_ssh_public_key_path, const String &p_ssh_private_key_path, const String &p_ssh_passphrase);

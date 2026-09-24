@@ -24,8 +24,11 @@
 		</method>
 	</methods>
 	<members>
+		<member name="custom_minimum_size" type="Vector2" setter="set_custom_minimum_size" getter="get_custom_minimum_size" overrides="Control" default="Vector2(720, 480)" />
 		<member name="duration_sec" type="float" setter="set_duration_sec" getter="get_duration_sec" default="4.0">
 			Bake length when [member source] is [constant InterDVDChapter.SOURCE_SCENE].
+		</member>
+		<member name="goup_pgc" type="int" setter="set_goup_pgc" getter="get_goup_pgc" default="0">
 		</member>
 		<member name="menu_type" type="int" setter="set_menu_type" getter="get_menu_type" enum="InterDVDMenu.MenuType" default="2">
 			Title (VMGM) or Root/Audio/Subpicture/Angle/Chapter (VTSM).
@@ -33,9 +36,14 @@
 		<member name="motion" type="bool" setter="set_motion" getter="is_motion" default="false">
 			Motion menu flag.
 		</member>
+		<member name="offset_bottom" type="float" setter="set_offset" getter="get_offset" overrides="Control" default="480.0" />
+		<member name="offset_right" type="float" setter="set_offset" getter="get_offset" overrides="Control" default="720.0" />
 		<member name="packed_scene" type="PackedScene" setter="set_packed_scene" getter="get_packed_scene">
 			Background scene when [member source] is [constant InterDVDChapter.SOURCE_SCENE].
 		</member>
+		<member name="parental_id" type="int" setter="set_parental_id" getter="get_parental_id" default="0">
+		</member>
+		<member name="size" type="Vector2" setter="_set_size" getter="get_size" overrides="Control" default="Vector2(720, 480)" />
 		<member name="source" type="int" setter="set_source" getter="get_source" enum="InterDVDChapter.Source" default="1">
 			Video file or PackedScene for the menu cell.
 		</member>
@@ -44,6 +52,8 @@
 		</member>
 		<member name="still_time" type="int" setter="set_still_time" getter="get_still_time" default="0">
 			Menu PGC still time. Keep 0 on VMGM title menus.
+		</member>
+		<member name="uops" type="int" setter="set_uops" getter="get_uops" default="0">
 		</member>
 	</members>
 </class>
