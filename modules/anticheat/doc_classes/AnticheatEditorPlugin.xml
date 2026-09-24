@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AnticheatEditorPlugin" inherits="EditorPlugin" api_type="editor" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Editor dock for Anticheat availability and a one-shot initialize/tick.
+	</brief_description>
+	<description>
+		Does not expose detector configuration. Dedicated wiring: Status, Initialize, sv_initialize, ops_connect, Tick, Shutdown, bind_player, apply_ops_line.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

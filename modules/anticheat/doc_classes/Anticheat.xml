@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Anticheat" inherits="Object" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Loads first-party anticheat runtimes next to the executable and forwards ticks.
+	</brief_description>
+	<description>
+		The Anticheat singleton dynamically loads [code]bzcl[/code] (and dedicated [code]bzsv[/code]/[code]bzgb[/code]) from the executable directory. If the library is missing, [method is_available] is [code]false[/code]. Game scripts must not configure detectors or ops credentials.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="apply_ops_line">
+			<return type="void" />
+			<param index="0" name="json_line" type="String" />
+			<description>
+				Applies one ops JSONL action: Kick/KickMsg/Timeout if mapped, Message/GlobalMessage/Warn/Mute/Spectate/Kill as signals, screenshot upload or [signal ops_screenshot_request] on dedicated, Teleport as [signal ops_teleport]. Note is audit-only. Always emits [signal ops_action].
+			</description>
+		</method>
+		<method name="bind_player">
+			<return type="void" />
+			<param index="0" name="client_index" type="int" />
+			<param index="1" name="player_id" type="String" />
+			<description>
+				Maps a game account id to a dedicated client slot so ops Kick can emit [signal server_drop_client].
+			</description>
+		</method>
+		<method name="gb_send">
+			<return type="int" />
+			<param index="0" name="data" type="PackedByteArray" />
+			<description>
+				Dedicated server: send a JSONL line to ops after [method ops_connect].
+			</description>
+		</method>
+		<method name="get_server_available">
+			<return type="bool" />
+			<description>
+				Dedicated server only. Returns [code]true[/code] when [code]bzsv[/code] and [code]bzgb[/code] loaded.
+			</description>
+		</method>
+		<method name="initialize">
+			<return type="int" />
+			<description>
+				Calls [code]BZCL_Init[/code]. Returns 0 on success.
+			</description>
+		</method>
+		<method name="is_available">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when the private client runtime loaded and required symbols bound.
+			</description>
+		</method>
+		<method name="is_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when the client runtime is initialized and enabled.
+			</description>
+		</method>
+		<method name="is_initialized" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] after a successful client [method initialize].
+			</description>
+		</method>
+		<method name="is_ops_connected" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when [code]bzgb[/code] is connected after [method ops_connect].
+			</description>
+		</method>
+		<method name="is_server_initialized" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] after a successful [method sv_initialize].
+			</description>
+		</method>
+		<method name="ops_connect">
+			<return type="int" />
+			<description>
+				Dedicated server: connect [code]bzgb[/code] using ProjectSettings and [code]BLAZIUM_AC_API_KEY[/code] for SaaS. Internal mode requires [code]anticheat/ops/license_path[/code] unless [code]BLAZIUM_AC_DEV=1[/code].
+			</description>
+		</method>
+		<method name="player_client_index" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="player_id" type="String" />
+			<description>
+				Returns the bound client slot, or [code]-1[/code] if the player is not mapped.
+			</description>
+		</method>
+		<method name="shutdown">
+			<return type="void" />
+			<description>
+				Shuts down the loaded runtime.
+			</description>
+		</method>
+		<method name="submit_command">
+			<return type="int" />
+			<param index="0" name="command" type="String" />
+			<description>
+				Optional debug command. Do not use in production.
+			</description>
+		</method>
+		<method name="submit_packet">
+			<return type="int" />
+			<param index="0" name="data" type="PackedByteArray" />
+			<description>
+				Forwards an integrity tunnel blob from the net layer.
+			</description>
+		</method>
+		<method name="sv_client_join">
+			<return type="int" />
+			<param index="0" name="client_index" type="int" />
+			<description>
+				Dedicated server: starts the integrity hello for a client slot.
+			</description>
+		</method>
+		<method name="sv_drop_client">
+			<return type="int" />
+			<param index="0" name="client_index" type="int" />
+			<param index="1" name="reason" type="String" default="&quot;&quot;" />
+			<description>
+				Dedicated server: drop an integrity slot and emit [signal server_drop_client].
+			</description>
+		</method>
+		<method name="sv_initialize">
+			<return type="int" />
+			<description>
+				Dedicated server: calls [code]BZSV_Init[/code] without connecting ops. Returns 0 on success.
+			</description>
+		</method>
+		<method name="sv_on_packet">
+			<return type="int" />
+			<param index="0" name="client_index" type="int" />
+			<param index="1" name="data" type="PackedByteArray" />
+			<description>
+				Dedicated server: forwards a client integrity blob to [code]bzsv[/code].
+			</description>
+		</method>
+		<method name="tick">
+			<return type="void" />
+			<param index="0" name="tick_limit_ms" type="int" default="0" />
+			<description>
+				Forwards a tick to the private runtime. 0 means unbounded.
+			</description>
+		</method>
+		<method name="unbind_player">
+			<return type="void" />
+			<param index="0" name="client_index" type="int" />
+			<description>
+				Clears the account mapping for a client slot.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="ops_action">
+			<param index="0" name="json_line" type="String" />
+			<description>
+				Raw ops JSONL from [code]bzgb[/code]. Named actions are also handled as documented on [method apply_ops_line].
+			</description>
+		</signal>
+		<signal name="ops_global_message">
+			<param index="0" name="text" type="String" />
+			<description>
+				Dedicated server: broadcast a toast or chat line. The host must show it.
+			</description>
+		</signal>
+		<signal name="ops_kill">
+			<param index="0" name="player_id" type="String" />
+			<description>
+				Dedicated server: force death on that player. The host must apply HP/death.
+			</description>
+		</signal>
+		<signal name="ops_message">
+			<param index="0" name="player_id" type="String" />
+			<param index="1" name="text" type="String" />
+			<description>
+				Dedicated server: deliver a toast or chat line to one player. The host must show it.
+			</description>
+		</signal>
+		<signal name="ops_mute">
+			<param index="0" name="player_id" type="String" />
+			<param index="1" name="text" type="String" />
+			<param index="2" name="until_unix" type="int" />
+			<description>
+				Dedicated server: mute combat for that player until [param until_unix] (0 means until leave).
+			</description>
+		</signal>
+		<signal name="ops_screenshot_request">
+			<param index="0" name="player_id" type="String" />
+			<param index="1" name="side" type="String" />
+			<description>
+				Dedicated server: ask that client's viewport for a PNG. Do not capture the dedicated process.
+			</description>
+		</signal>
+		<signal name="ops_spectate">
+			<param index="0" name="player_id" type="String" />
+			<param index="1" name="text" type="String" />
+			<param index="2" name="until_unix" type="int" />
+			<description>
+				Dedicated server: mark the player as spectating until [param until_unix] (0 means until leave). The host must skip their fire and targeting.
+			</description>
+		</signal>
+		<signal name="ops_teleport">
+			<param index="0" name="player_id" type="String" />
+			<param index="1" name="region" type="String" />
+			<param index="2" name="x" type="float" />
+			<param index="3" name="y" type="float" />
+			<param index="4" name="z" type="float" />
+			<description>
+				Dedicated server: Teleport action. The host must move the player; the module does not.
+			</description>
+		</signal>
+		<signal name="ops_unmute">
+			<param index="0" name="player_id" type="String" />
+			<description>
+				Dedicated server: clear a combat mute for that player. The host must restore combat.
+			</description>
+		</signal>
+		<signal name="ops_warn">
+			<param index="0" name="player_id" type="String" />
+			<param index="1" name="text" type="String" />
+			<description>
+				Dedicated server: warn one player. The host must show an alert toast.
+			</description>
+		</signal>
+		<signal name="outgoing_packet">
+			<param index="0" name="blob" type="PackedByteArray" />
+			<description>
+				Integrity tunnel blob the net layer should send to the dedicated server.
+			</description>
+		</signal>
+		<signal name="outgoing_server_packet">
+			<param index="0" name="client_index" type="int" />
+			<param index="1" name="blob" type="PackedByteArray" />
+			<description>
+				Dedicated server: integrity blob to send to that client slot.
+			</description>
+		</signal>
+		<signal name="screenshot_ready">
+			<param index="0" name="png" type="PackedByteArray" />
+			<param index="1" name="width" type="int" />
+			<param index="2" name="height" type="int" />
+			<description>
+				PNG captured from the local viewport after an ops screenshot request.
+			</description>
+		</signal>
+		<signal name="server_drop_client">
+			<param index="0" name="client_index" type="int" />
+			<param index="1" name="reason" type="String" />
+			<description>
+				Dedicated server: drop that client slot after an ops Kick or integrity failure.
+			</description>
+		</signal>
+	</signals>
+</class>

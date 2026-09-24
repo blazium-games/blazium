@@ -217,6 +217,7 @@
 
 ## Blazium
 /modules/analytics/                           @blazium-games
+/modules/anticheat/                           @blazium-games
 /modules/assettags/                           @blazium-games
 /modules/autowork/                            @blazium-games
 /modules/clickertools/                        @blazium-games
