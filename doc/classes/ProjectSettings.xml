@@ -300,6 +300,30 @@
 		<member name="animation/warnings/check_invalid_track_paths" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], [AnimationMixer] prints the warning of no matching object of the track path in the scene.
 		</member>
+		<member name="anticheat/export/bin_dir" type="String" setter="" getter="" default="&quot;res://anticheat/bin&quot;">
+		</member>
+		<member name="anticheat/ops/address" type="String" setter="" getter="" default="&quot;127.0.0.1&quot;">
+		</member>
+		<member name="anticheat/ops/license_path" type="String" setter="" getter="" default="&quot;bzops.license.json&quot;">
+		</member>
+		<member name="anticheat/ops/mode" type="String" setter="" getter="" default="&quot;internal&quot;">
+		</member>
+		<member name="anticheat/ops/port" type="int" setter="" getter="" default="8730">
+		</member>
+		<member name="anticheat/ops/saas_endpoint" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+		<member name="anticheat/ops/source_id" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+		<member name="anticheat/ops/timeout_s" type="int" setter="" getter="" default="30">
+		</member>
+		<member name="anticheat/ops/title_id" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+		<member name="anticheat/require_agent" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="anticheat/runtime_public_key" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+		<member name="anticheat/verify_runtime_signature" type="bool" setter="" getter="" default="false">
+		</member>
 		<member name="application/analytics/anonymous" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], game analytics events omit [code]device_uid[/code]. Identity fields such as [code]app_id[/code] are still sent.
 		</member>

@@ -1552,6 +1552,8 @@
 		</member>
 		<member name="Analytics" type="Analytics" setter="" getter="">
 		</member>
+		<member name="Anticheat" type="Anticheat" setter="" getter="">
+		</member>
 		<member name="AudioServer" type="AudioServer" setter="" getter="">
 			The [AudioServer] singleton.
 		</member>
