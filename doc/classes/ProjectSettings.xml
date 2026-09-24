@@ -606,10 +606,6 @@
 		<member name="blazium/gif/max_frames" type="int" setter="" getter="" default="4096">
 			Maximum number of frames accepted when decoding or capturing a GIF.
 		</member>
-		<member name="blazium/inter_dvd/cache_path" type="String" setter="" getter="" default="&quot;res://.inter_dvd_cache&quot;">
-		</member>
-		<member name="blazium/inter_dvd/project" type="String" setter="" getter="" default="&quot;&quot;">
-		</member>
 		<member name="blazium/justamcp/accepted_protocol_versions" type="String" setter="" getter="" default="&quot;&quot;">
 			Optional comma-separated allowlist of MCP protocol versions this process will serve. Empty accepts every implemented version ([code]2026-07-28[/code] through [code]2024-11-05[/code]).
 		</member>
@@ -2158,12 +2154,6 @@
 		<member name="blazium/justamcp/z_mcp_config" type="String" setter="" getter="" default="&quot;&quot;">
 			Advanced JustAMCP JSON configuration managed by the editor plugin UI. Stores supplemental MCP server options not exposed as individual project settings.
 		</member>
-		<member name="blazium/livewallpaper/cover_all_screens" type="bool" setter="" getter="" default="true">
-		</member>
-		<member name="blazium/livewallpaper/enabled" type="bool" setter="" getter="" default="false">
-		</member>
-		<member name="blazium/livewallpaper/pause_on_lock" type="bool" setter="" getter="" default="true">
-		</member>
 		<member name="blazium/remote_control/allow_eval" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], [RemoteControlServer] allows [code]POST /v1/eval[/code] expression evaluation.
 		</member>
@@ -2181,28 +2171,6 @@
 		</member>
 		<member name="blazium/remote_control/token" type="String" setter="" getter="" default="&quot;&quot;">
 			Optional auth token for remote control requests. Override with [code]--remote-control-token=&lt;token&gt;[/code].
-		</member>
-		<member name="blazium/screensaver/change_password_scene" type="String" setter="" getter="" default="&quot;&quot;">
-		</member>
-		<member name="blazium/screensaver/configure_scene" type="String" setter="" getter="" default="&quot;&quot;">
-		</member>
-		<member name="blazium/screensaver/cover_all_screens" type="bool" setter="" getter="" default="true">
-		</member>
-		<member name="blazium/screensaver/cover_mode" type="String" setter="" getter="" default="&quot;virtual&quot;">
-		</member>
-		<member name="blazium/screensaver/enabled" type="bool" setter="" getter="" default="false">
-		</member>
-		<member name="blazium/screensaver/lock_workstation_on_exit" type="bool" setter="" getter="" default="false">
-		</member>
-		<member name="blazium/screensaver/password_enabled" type="bool" setter="" getter="" default="false">
-		</member>
-		<member name="blazium/screensaver/quit_on_input" type="bool" setter="" getter="" default="true">
-		</member>
-		<member name="blazium/screensaver/quit_on_mouse_move_threshold" type="int" setter="" getter="" default="5">
-		</member>
-		<member name="blazium/screensaver/screen" type="int" setter="" getter="" default="-1">
-		</member>
-		<member name="blazium/screensaver/unlock_scene" type="String" setter="" getter="" default="&quot;&quot;">
 		</member>
 		<member name="blazium/semanticsearch/async_job_ttl_ms" type="int" setter="" getter="" default="1800000">
 		</member>

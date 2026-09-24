@@ -1628,8 +1628,6 @@
 		<member name="KickAPI" type="KickAPI" setter="" getter="">
 			The [KickAPI] singleton.
 		</member>
-		<member name="LiveWallpaper" type="LiveWallpaper" setter="" getter="">
-		</member>
 		<member name="Marshalls" type="Marshalls" setter="" getter="">
 			The [Marshalls] singleton.
 		</member>
@@ -1692,8 +1690,6 @@
 		</member>
 		<member name="ResourceUID" type="ResourceUID" setter="" getter="">
 			The [ResourceUID] singleton.
-		</member>
-		<member name="Screensaver" type="Screensaver" setter="" getter="">
 		</member>
 		<member name="SocketIOClient" type="SocketIOClient" setter="" getter="">
 			The [SocketIOClient] singleton.
