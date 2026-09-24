@@ -20,9 +20,47 @@
 		<member name="action" type="int" setter="set_action" getter="get_action" enum="InterDVDButton.Action" default="0">
 			DVD navigation action written on the compiled button.
 		</member>
+		<member name="action_color" type="Color" setter="set_action_color" getter="get_action_color" default="Color(1, 0.35, 0.1, 1)">
+			Highlight color when activated.
+		</member>
+		<member name="adjacent_down" type="int" setter="set_adjacent_down" getter="get_adjacent_down" default="0">
+		</member>
+		<member name="adjacent_left" type="int" setter="set_adjacent_left" getter="get_adjacent_left" default="0">
+		</member>
+		<member name="adjacent_right" type="int" setter="set_adjacent_right" getter="get_adjacent_right" default="0">
+		</member>
+		<member name="adjacent_up" type="int" setter="set_adjacent_up" getter="get_adjacent_up" default="0">
+		</member>
+		<member name="auto_action" type="bool" setter="set_auto_action" getter="get_auto_action" default="false">
+			Activate the button when highlighted.
+		</member>
+		<member name="command" type="PackedByteArray" setter="set_command" getter="get_command" default="PackedByteArray()">
+			Raw 8-byte VM command when [member action] is Custom.
+		</member>
 		<member name="destination" type="NodePath" setter="set_destination" getter="get_destination" default="NodePath(&quot;&quot;)">
 			Target [InterDVDTitle], [InterDVDChapter], or [InterDVDMenuPage]. Empty keeps [member target].
 		</member>
+		<member name="forced_activated" type="bool" setter="set_forced_activated" getter="is_forced_activated" default="false">
+			Force-activate this button.
+		</member>
+		<member name="forced_selected" type="bool" setter="set_forced_selected" getter="is_forced_selected" default="false">
+			Force this button as the selected highlight.
+		</member>
+		<member name="hidden" type="bool" setter="set_hidden" getter="is_hidden" default="false">
+			Hide the highlight until selected.
+		</member>
+		<member name="numeric_select" type="bool" setter="set_numeric_select" getter="get_numeric_select" default="true">
+			Allow numeric remote selection.
+		</member>
+		<member name="offset_bottom" type="float" setter="set_offset" getter="get_offset" overrides="Control" default="260.0" />
+		<member name="offset_left" type="float" setter="set_offset" getter="get_offset" overrides="Control" default="80.0" />
+		<member name="offset_right" type="float" setter="set_offset" getter="get_offset" overrides="Control" default="320.0" />
+		<member name="offset_top" type="float" setter="set_offset" getter="get_offset" overrides="Control" default="200.0" />
+		<member name="position" type="Vector2" setter="_set_position" getter="get_position" overrides="Control" default="Vector2(80, 200)" />
+		<member name="select_color" type="Color" setter="set_select_color" getter="get_select_color" default="Color(1, 0.92, 0.2, 1)">
+			Highlight color when selected.
+		</member>
+		<member name="size" type="Vector2" setter="_set_size" getter="get_size" overrides="Control" default="Vector2(240, 60)" />
 		<member name="stream" type="int" setter="set_stream" getter="get_stream" default="0">
 			Stream index for Set Audio / Subtitle / Angle.
 		</member>
@@ -31,30 +69,6 @@
 		</member>
 		<member name="target" type="int" setter="set_target" getter="get_target" default="1">
 			Numeric destination when [member destination] is empty (chapter, PGC, or cell). Jump Menu defaults to Title Menu (2).
-		</member>
-		<member name="auto_action" type="bool" setter="set_auto_action" getter="get_auto_action" default="false">
-			Activate the button when highlighted.
-		</member>
-		<member name="hidden" type="bool" setter="set_hidden" getter="is_hidden" default="false">
-			Hide the highlight until selected.
-		</member>
-		<member name="forced_selected" type="bool" setter="set_forced_selected" getter="is_forced_selected" default="false">
-			Force this button as the selected highlight.
-		</member>
-		<member name="forced_activated" type="bool" setter="set_forced_activated" getter="is_forced_activated" default="false">
-			Force-activate this button.
-		</member>
-		<member name="numeric_select" type="bool" setter="set_numeric_select" getter="get_numeric_select" default="true">
-			Allow numeric remote selection.
-		</member>
-		<member name="select_color" type="Color" setter="set_select_color" getter="get_select_color" default="Color(1, 0.92, 0.2, 1)">
-			Highlight color when selected.
-		</member>
-		<member name="action_color" type="Color" setter="set_action_color" getter="get_action_color" default="Color(1, 0.35, 0.1, 1)">
-			Highlight color when activated.
-		</member>
-		<member name="command" type="PackedByteArray" setter="set_command" getter="get_command" default="PackedByteArray()">
-			Raw 8-byte VM command when [member action] is Custom.
 		</member>
 	</members>
 </class>

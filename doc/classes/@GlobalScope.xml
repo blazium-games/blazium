@@ -1628,6 +1628,8 @@
 		<member name="KickAPI" type="KickAPI" setter="" getter="">
 			The [KickAPI] singleton.
 		</member>
+		<member name="LiveWallpaper" type="LiveWallpaper" setter="" getter="">
+		</member>
 		<member name="Marshalls" type="Marshalls" setter="" getter="">
 			The [Marshalls] singleton.
 		</member>
@@ -1691,6 +1693,8 @@
 		<member name="ResourceUID" type="ResourceUID" setter="" getter="">
 			The [ResourceUID] singleton.
 		</member>
+		<member name="Screensaver" type="Screensaver" setter="" getter="">
+		</member>
 		<member name="SocketIOClient" type="SocketIOClient" setter="" getter="">
 			The [SocketIOClient] singleton.
 		</member>
@@ -1705,16 +1709,11 @@
 		<member name="Time" type="Time" setter="" getter="">
 			The [Time] singleton.
 		</member>
-		<member name="TownSDK" type="TownSdkClient" setter="" getter="">
-		</member>
 		<member name="TranslationServer" type="TranslationServer" setter="" getter="">
 			The [TranslationServer] singleton.
 		</member>
 		<member name="TwitchAPI" type="TwitchAPI" setter="" getter="">
 			The [TwitchAPI] singleton.
-		</member>
-		<member name="Warcry" type="WarcryClient" setter="" getter="">
-			The [WarcryClient] singleton for Opus voice over an out-of-tree Politeia server.
 		</member>
 		<member name="WorkerThreadPool" type="WorkerThreadPool" setter="" getter="">
 			The [WorkerThreadPool] singleton.

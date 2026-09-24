@@ -37,8 +37,14 @@
 		<member name="default_button" type="int" setter="set_default_button" getter="get_default_button" default="1">
 			Forced-selected title-domain button when this PGC has highlight buttons.
 		</member>
+		<member name="goup_pgc" type="int" setter="set_goup_pgc" getter="get_goup_pgc" default="0">
+			Go-Up PGC number at IFO offset [code]0xA0[/code].
+		</member>
 		<member name="next_pgc" type="int" setter="set_next_pgc" getter="get_next_pgc" default="0">
 			Next PGC number. Titles with highlight buttons default to looping this PGC when unset.
+		</member>
+		<member name="parental_id" type="int" setter="set_parental_id" getter="get_parental_id" default="0">
+			Parental id for TT_SRPT and PGCI search pointer.
 		</member>
 		<member name="post_commands" type="PackedByteArray[]" setter="set_post_commands" getter="get_post_commands" default="[]">
 			PGC post commands (used after the last cell).
@@ -52,17 +58,11 @@
 		<member name="still_time" type="int" setter="set_still_time" getter="get_still_time" default="0">
 			Still time in seconds written on the last cell ([code]255[/code] = infinite).
 		</member>
-		<member name="parental_id" type="int" setter="set_parental_id" getter="get_parental_id" default="0">
-			Parental id for TT_SRPT and PGCI search pointer.
+		<member name="title_set_nr" type="int" setter="set_title_set_nr" getter="get_title_set_nr" default="0">
+			1-based VTS number. [code]0[/code] compiles as VTS 1.
 		</member>
 		<member name="uops" type="int" setter="set_uops" getter="get_uops" default="0">
 			Prohibited user operations written at PGC offset 8.
-		</member>
-		<member name="goup_pgc" type="int" setter="set_goup_pgc" getter="get_goup_pgc" default="0">
-			Go-Up PGC number at IFO offset [code]0xA0[/code].
-		</member>
-		<member name="title_set_nr" type="int" setter="set_title_set_nr" getter="get_title_set_nr" default="0">
-			1-based VTS number. [code]0[/code] compiles as VTS 1.
 		</member>
 	</members>
 </class>

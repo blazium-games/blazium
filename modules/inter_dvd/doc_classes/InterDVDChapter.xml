@@ -24,6 +24,9 @@
 		</method>
 	</methods>
 	<members>
+		<member name="angle" type="int" setter="set_angle" getter="get_angle" default="1">
+			Angle number 1–9. Same-title siblings with different angles become one sequential angle-block.
+		</member>
 		<member name="audio_path" type="String" setter="set_audio_path" getter="get_audio_path" default="&quot;&quot;">
 			Optional menu or title audio file.
 		</member>
@@ -62,9 +65,6 @@
 		</member>
 		<member name="source_path" type="String" setter="set_source_path" getter="get_source_path" default="&quot;&quot;">
 			Host video path when [member source] is [constant SOURCE_VIDEO].
-		</member>
-		<member name="angle" type="int" setter="set_angle" getter="get_angle" default="1">
-			Angle number 1–9. Same-title siblings with different angles become one sequential angle-block.
 		</member>
 		<member name="streams" type="InterDVDStream[]" setter="set_streams" getter="get_streams" default="[]">
 			Extra audio and subtitle streams copied onto the compiled cell.

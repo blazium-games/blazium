@@ -17,6 +17,9 @@
 		</method>
 	</methods>
 	<members>
+		<member name="angle" type="int" setter="set_angle" getter="get_angle" default="1">
+			Angle number 1–9 written as an IFO angle-block cell when siblings differ.
+		</member>
 		<member name="audio_path" type="String" setter="set_audio_path" getter="get_audio_path" default="&quot;&quot;">
 			Optional menu music file. Used when [member include_audio] is on and the cell has no picture-in-picture audio. A [member pip_source_path] soundtrack replaces this file.
 		</member>
@@ -64,9 +67,6 @@
 		</member>
 		<member name="streams" type="InterDVDStream[]" setter="set_streams" getter="get_streams" default="[]">
 			Extra audio ([code]0x81+[/code]) and subtitle ([code]0x20+[/code]) streams. [member audio_path] remains stream 0.
-		</member>
-		<member name="angle" type="int" setter="set_angle" getter="get_angle" default="1">
-			Angle number 1–9 written as an IFO angle-block cell when siblings differ.
 		</member>
 	</members>
 </class>

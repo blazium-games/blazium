@@ -1,7 +1,0 @@
-# Godot master SHAs the 4.8 sync must not cherry-pick.
-# One full SHA per line. Blank lines and # comments are ignored.
-#
-# 5691c874 was resolved on blazium_4.8 as Blazium branding / JustAMCP
-# (docs.blazium.app, VERSION_DOCS_URL). Godot's contributing-docs URL
-# rewrite will never match that patch-id, so git cherry keeps listing it.
-5691c87490c42363a1518b54ed4cb1740139c34a
