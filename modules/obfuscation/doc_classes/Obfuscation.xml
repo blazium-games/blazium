@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Obfuscation" inherits="Object" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		First-party identity, mark, copyright lattice, and evidence singleton.
+	</brief_description>
+	<description>
+		[Obfuscation] plants verifiable marks in images, WAV PCM, scripts, and packed trees. When [code]obfuscation/pack/scramble_names[/code] is on, export and [method write_obfuscated_tree] also HMAC-rename every packed path (except [code]project.godot[/code]), every user GDScript identifier, and scene-tree names (node names, [NodePath] segments, groups, ExtResource/SubResource ids, autoload keys, and input actions). With [code]obfuscation/scripts/minify[/code] and [code]obfuscation/scripts/comment_lattice[/code] (both on by default), author comments are stripped first, then seeds, copyright shards, and reference strings are stored in HMAC-tagged [code]# ~[/code] / [code]-- ~[/code] pseudo-comments. [method comment_ref] lookups fail if those comments are removed. Engine APIs, keywords, class names, UI text, and helper names such as [code]_obfuscation_cref[/code] stay readable so the game still runs and scanners can still identify marks by content. This is evidence and friction, not a replacement for pack encryption. Private keys stay under [code]user://obfuscation/[/code] and are never packed. Generate and verify claim images with the BlazeSeal app, or use [code]--obfuscation-verify[/code] after scene initialization. Seed assignment is case-insensitive, so renaming [code]Foo.gd[/code] to [code]foo.GD[/code] still matches.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="can_watermark_image" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="image" type="Image" />
+			<description>
+				Returns [code]true[/code] when [param image] meets the configured minimum size.
+			</description>
+		</method>
+		<method name="canonicalize_path" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Returns a case-folded, slash-normalized path used for seed and shard assignment. [code]res://Foo/Bar.GD[/code] and [code]res://foo/bar.gd[/code] canonicalize to the same string.
+			</description>
+		</method>
+		<method name="clear_identity">
+			<return type="void" />
+			<description>
+				Deletes the local identity. Refused in packed (non-editor) builds.
+			</description>
+		</method>
+		<method name="collect_copyright_shards" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="sources" type="PackedStringArray" />
+			<description>
+				Collects [code]_CI[/code]/[code]_CR[/code] shard dictionaries from script sources.
+			</description>
+		</method>
+		<method name="collect_script_identifiers" qualifiers="const">
+			<return type="PackedStringArray" />
+			<param index="0" name="source" type="String" />
+			<description>
+				Returns user [code]var[/code]/[code]func[/code]/[code]const[/code]/[code]signal[/code]/[code]enum[/code]/[code]class_name[/code] names from [param source]. Keywords, ClassDB types, engine virtuals, and identity markers such as [code]_CK[/code] are omitted.
+			</description>
+		</method>
+		<method name="comment_ref" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="source" type="String" />
+			<param index="1" name="packed_path" type="String" />
+			<param index="2" name="slot" type="String" />
+			<description>
+				Returns the MAC-valid lattice value for [param slot] from [param source], or an empty [Variant] if the comment is missing, stripped, or bound to a different packed path.
+			</description>
+		</method>
+		<method name="copyright_hash" qualifiers="const">
+			<return type="PackedByteArray" />
+			<description>
+				Returns SHA-256 of the base64 copyright notice, or zeros when unset.
+			</description>
+		</method>
+		<method name="copyright_hash_matches" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="hash" type="PackedByteArray" />
+			<description>
+				Returns [code]true[/code] when [param hash] equals [method copyright_hash].
+			</description>
+		</method>
+		<method name="decode_seal_file">
+			<return type="ObfuscationClaim" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Loads an image from [param path] and decodes a claim seal.
+			</description>
+		</method>
+		<method name="decode_seal_image">
+			<return type="ObfuscationClaim" />
+			<param index="0" name="image" type="Image" />
+			<description>
+				Decodes a 256×256 claim image into [ObfuscationClaim].
+			</description>
+		</method>
+		<method name="derive_seed" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Returns the first 8 bytes of HMAC-SHA256(identity, [method canonicalize_path] of [param path]) as a signed integer.
+			</description>
+		</method>
+		<method name="derive_seed_bytes" qualifiers="const">
+			<return type="PackedByteArray" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Returns the 8-byte HMAC seed for the canonicalized [param path].
+			</description>
+		</method>
+		<method name="embed_spectrogram">
+			<return type="PackedByteArray" />
+			<param index="0" name="pcm" type="PackedByteArray" />
+			<param index="1" name="mix_rate" type="int" />
+			<param index="2" name="image" type="Image" />
+			<description>
+				Embeds a compact spectrogram digest of [param image] into float32 PCM.
+			</description>
+		</method>
+		<method name="export_public_key" qualifiers="const">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Writes the public half of the current identity to [param path].
+			</description>
+		</method>
+		<method name="extract_image_watermark">
+			<return type="PackedByteArray" />
+			<param index="0" name="image" type="Image" />
+			<description>
+				Extracts a 16-byte image mark, or an empty array if none is present.
+			</description>
+		</method>
+		<method name="extract_pcm_watermark">
+			<return type="PackedByteArray" />
+			<param index="0" name="pcm" type="PackedByteArray" />
+			<param index="1" name="mix_rate" type="int" />
+			<param index="2" name="channels" type="int" />
+			<description>
+				Extracts a 16-byte mark from float32 PCM.
+			</description>
+		</method>
+		<method name="extract_seeds_from_source" qualifiers="const">
+			<return type="PackedInt64Array" />
+			<param index="0" name="source" type="String" />
+			<description>
+				Finds [code]const _CK[/code] numeric seeds and MAC-decoded lattice [code]k[/code] slots in script source.
+			</description>
+		</method>
+		<method name="extract_stream_watermark">
+			<return type="PackedByteArray" />
+			<param index="0" name="stream" type="AudioStream" />
+			<description>
+				Extracts a PCM mark from an [AudioStreamWAV] 16-bit stream.
+			</description>
+		</method>
+		<method name="generate_identity">
+			<return type="int" enum="Error" />
+			<param index="0" name="publisher_id" type="String" />
+			<param index="1" name="project_id" type="String" />
+			<description>
+				Creates an RSA-2048 identity and HMAC secret under [code]user://obfuscation/[/code].
+			</description>
+		</method>
+		<method name="generate_seal_image">
+			<return type="Image" />
+			<description>
+				Returns a deterministic 256×256 claim PNG image for the current identity.
+			</description>
+		</method>
+		<method name="get_copyright_base64" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the in-engine base64 encoding of [method get_copyright_canonical].
+			</description>
+		</method>
+		<method name="get_copyright_canonical" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns [code]author|license|text[/code] with empty fields omitted.
+			</description>
+		</method>
+		<method name="get_owner_id" qualifiers="const">
+			<return type="PackedByteArray" />
+			<description>
+				Returns the first 16 bytes of SHA-256 of the public key PEM.
+			</description>
+		</method>
+		<method name="get_project_id" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the identity project id, or the Project Settings fallback.
+			</description>
+		</method>
+		<method name="get_public_key" qualifiers="const">
+			<return type="CryptoKey" />
+			<description>
+				Returns the current public key, or [code]null[/code].
+			</description>
+		</method>
+		<method name="has_identity" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when an identity key is loaded.
+			</description>
+		</method>
+		<method name="import_public_key">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Loads a public key from [param path] for verify-only use.
+			</description>
+		</method>
+		<method name="inject_copyright_source" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="source" type="String" />
+			<param index="1" name="path" type="String" />
+			<description>
+				Inserts consumed [code]_CI[/code]/[code]_CR[/code] shard constants for [param path].
+			</description>
+		</method>
+		<method name="inject_into_pack_tree">
+			<return type="int" enum="Error" />
+			<param index="0" name="output_dir" type="String" />
+			<description>
+				Writes [code]claimkey.png[/code] and [code]manifest.bin[/code] under [param output_dir], using [method output_artifact_path] so packed names can be scrambled.
+			</description>
+		</method>
+		<method name="inject_script_source" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="source" type="String" />
+			<param index="1" name="path" type="String" />
+			<description>
+				Inserts [code]const _CK[/code] and optional copyright shards into GDScript source, or HMAC-tagged lattice comments when [code]obfuscation/scripts/comment_lattice[/code] is on.
+			</description>
+		</method>
+		<method name="is_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns the [code]obfuscation/enabled[/code] Project Setting.
+			</description>
+		</method>
+		<method name="load_identity">
+			<return type="int" enum="Error" />
+			<description>
+				Loads the identity from [code]user://obfuscation/[/code].
+			</description>
+		</method>
+		<method name="output_artifact_path" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="logical" type="String" />
+			<description>
+				Pack path for a logical artifact. When [code]obfuscation/pack/scramble_names[/code] is on, this is [method scramble_output_path]; otherwise [param logical] is returned unchanged.
+			</description>
+		</method>
+		<method name="parse_script_comments" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="source" type="String" />
+			<param index="1" name="packed_path" type="String" />
+			<description>
+				Scans [code]# ~[/code] and [code]-- ~[/code] lattice comments in [param source] and returns slot to value for lines whose HMAC matches [param packed_path]. Decoys and copies planted in the wrong file are ignored.
+			</description>
+		</method>
+		<method name="preview_spectrogram">
+			<return type="Image" />
+			<param index="0" name="pcm" type="PackedByteArray" />
+			<param index="1" name="mix_rate" type="int" />
+			<param index="2" name="height" type="int" default="256" />
+			<description>
+				Renders a spectrogram preview image from float32 PCM.
+			</description>
+		</method>
+		<method name="reconstruct_copyright" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="collected" type="Array" />
+			<description>
+				Reassembles the notice from shards when the hash matches; otherwise returns empty.
+			</description>
+		</method>
+		<method name="save_seal_image">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Writes the claim PNG to [param path].
+			</description>
+		</method>
+		<method name="scan_image">
+			<return type="ObfuscationScan" />
+			<param index="0" name="image" type="Image" />
+			<description>
+				Scans a single image for a seal and DWT mark.
+			</description>
+		</method>
+		<method name="scan_path">
+			<return type="ObfuscationScan" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Scans a folder, PNG, pack, or similar tree for marks and returns a score.
+			</description>
+		</method>
+		<method name="scan_script">
+			<return type="ObfuscationScan" />
+			<param index="0" name="source" type="String" />
+			<param index="1" name="path" type="String" />
+			<description>
+				Scans GDScript source for seed and copyright lattice constants.
+			</description>
+		</method>
+		<method name="scan_stream">
+			<return type="ObfuscationScan" />
+			<param index="0" name="stream" type="AudioStream" />
+			<description>
+				Scans an audio stream for a PCM mark.
+			</description>
+		</method>
+		<method name="scramble_identifier" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="name" type="String" />
+			<description>
+				One-way HMAC mapping from a user identifier to a valid GDScript name ([code]_[/code] plus 12 hex characters). The original name cannot be recovered. Stable for a given identity.
+			</description>
+		</method>
+		<method name="scramble_output_path" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="logical" type="String" />
+			<description>
+				One-way HMAC mapping from [param logical] to a [code]res://[/code] path with two random folder names and a random file stem. The original name cannot be recovered. The file extension is kept so scanners can still decode PNG and similar payloads.
+			</description>
+		</method>
+		<method name="scramble_script_source" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="source" type="String" />
+			<param index="1" name="path" type="String" />
+			<description>
+				Injects [code]_CK[/code]/[code]_CR[/code] then rewrites user identifiers and [code]res://[/code] strings in [param source]. Reserved names and UI string literals that are not exact identifier matches are kept.
+			</description>
+		</method>
+		<method name="seed_matches" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="value" type="int" />
+			<description>
+				Returns [code]true[/code] when [param value] equals [method derive_seed] for [param path] (case-insensitive) or for the file name alone.
+			</description>
+		</method>
+		<method name="split_copyright_shards" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				Splits the base64 notice into [code]obfuscation/copyright/shard_count[/code] pieces.
+			</description>
+		</method>
+		<method name="verify_seal">
+			<return type="bool" />
+			<param index="0" name="image" type="Image" />
+			<param index="1" name="public_key" type="CryptoKey" default="null" />
+			<description>
+				Returns [code]true[/code] when the claim image signature verifies.
+			</description>
+		</method>
+		<method name="watermark_image">
+			<return type="Image" />
+			<param index="0" name="image" type="Image" />
+			<param index="1" name="payload" type="PackedByteArray" default="PackedByteArray()" />
+			<description>
+				Embeds a Haar DWT + QIM mark. Empty [param payload] uses [method get_owner_id].
+			</description>
+		</method>
+		<method name="watermark_pcm">
+			<return type="PackedByteArray" />
+			<param index="0" name="pcm" type="PackedByteArray" />
+			<param index="1" name="mix_rate" type="int" />
+			<param index="2" name="channels" type="int" />
+			<param index="3" name="payload" type="PackedByteArray" default="PackedByteArray()" />
+			<description>
+				Embeds a spread-spectrum mark into float32 PCM.
+			</description>
+		</method>
+		<method name="watermark_stream">
+			<return type="AudioStream" />
+			<param index="0" name="stream" type="AudioStream" />
+			<param index="1" name="payload" type="PackedByteArray" default="PackedByteArray()" />
+			<description>
+				Watermarks a 16-bit [AudioStreamWAV] in place and returns it.
+			</description>
+		</method>
+		<method name="watermark_strength" qualifiers="const">
+			<return type="float" />
+			<description>
+				Relative image-mark strength used by embed (currently 1.0).
+			</description>
+		</method>
+		<method name="write_evidence">
+			<return type="int" enum="Error" />
+			<param index="0" name="scan" type="ObfuscationScan" />
+			<param index="1" name="out_path" type="String" />
+			<description>
+				Writes JSON, Markdown, or a small PDF evidence file from [param scan].
+			</description>
+		</method>
+		<method name="write_obfuscated_tree">
+			<return type="int" enum="Error" />
+			<param index="0" name="src_dir" type="String" />
+			<param index="1" name="out_dir" type="String" />
+			<description>
+				Copies [param src_dir] into [param out_dir] with identity marks injected, PNG watermarks applied, user identifiers and scene-tree names HMAC-renamed, and every file path scrambled except [code]project.godot[/code]. Then writes the seal and manifest via [method inject_into_pack_tree]. Used when export templates are unavailable; the editor export plugin applies the same transform into a pack.
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="MARK_SEAL" value="0" enum="MarkKind">
+			Claim seal image.
+		</constant>
+		<constant name="MARK_IMAGE_DWT" value="1" enum="MarkKind">
+			Haar DWT image mark.
+		</constant>
+		<constant name="MARK_IMAGE_GUTTER" value="2" enum="MarkKind">
+			Optional gutter padding mark.
+		</constant>
+		<constant name="MARK_AUDIO" value="3" enum="MarkKind">
+			PCM spread-spectrum mark.
+		</constant>
+		<constant name="MARK_SPECTRO" value="4" enum="MarkKind">
+			Optional spectrogram embed.
+		</constant>
+		<constant name="MARK_SEED" value="5" enum="MarkKind">
+			Script [code]_CK[/code] seed or MAC-valid lattice [code]k[/code] comment.
+		</constant>
+		<constant name="MARK_COPYRIGHT" value="6" enum="MarkKind">
+			Copyright lattice shard.
+		</constant>
+		<constant name="MARK_MANIFEST" value="7" enum="MarkKind">
+			Pack manifest.
+		</constant>
+		<constant name="MARK_CTEX_TRAILER" value="8" enum="MarkKind">
+			Compressed texture trailer.
+		</constant>
+	</constants>
+</class>

@@ -244,6 +244,7 @@
 /modules/multiuser_editor/                    @blazium-games
 /modules/navimesh_export/                     @blazium-games
 /modules/obsclient/                           @blazium-games
+/modules/obfuscation/                         @blazium-games
 /modules/rcon/                                @blazium-games
 /modules/remote_control/                      @blazium-games
 /modules/screensaver/                         @blazium-games
@@ -256,6 +257,7 @@
 /modules/town_sdk/                            @blazium-games
 /modules/trenchbroom/                         @blazium-games
 /modules/twitchapi/                           @blazium-games
+/modules/warcry/                              @blazium-games
 /modules/xbox_module/                         @blazium-games
 
 # Platform

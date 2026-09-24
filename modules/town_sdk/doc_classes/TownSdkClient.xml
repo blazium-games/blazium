@@ -9,6 +9,15 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="admin_bank">
+			<return type="void" />
+			<param index="0" name="op" type="String" />
+			<param index="1" name="username" type="String" />
+			<param index="2" name="amount" type="int" default="0" />
+			<param index="3" name="pin" type="String" default="&quot;&quot;" />
+			<description>
+			</description>
+		</method>
 		<method name="admin_broadcast">
 			<return type="void" />
 			<param index="0" name="message" type="String" />
@@ -31,6 +40,12 @@
 		</method>
 		<method name="admin_stats_request">
 			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="apply_hello_ack">
+			<return type="void" />
+			<param index="0" name="data" type="Dictionary" />
 			<description>
 			</description>
 		</method>
@@ -107,6 +122,21 @@
 			<description>
 			</description>
 		</method>
+		<method name="get_voip_host" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_voip_port" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="has_voip" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
 		<method name="is_client_connected" qualifiers="const">
 			<return type="bool" />
 			<description>
@@ -179,6 +209,14 @@
 			<param index="0" name="id" type="String" />
 			<param index="1" name="extra" type="Dictionary" default="{}" />
 			<description>
+			</description>
+		</method>
+		<method name="send_inventory_move">
+			<return type="void" />
+			<param index="0" name="from" type="Dictionary" />
+			<param index="1" name="to" type="Dictionary" />
+			<description>
+				Move or rotate an inventory item. [param from] and [param to] use [code]kind[/code] [code]bag[/code] or [code]hotbar[/code], plus [code]x[/code]/[code]y[/code] or [code]slot[/code].
 			</description>
 		</method>
 		<method name="send_melee">
@@ -259,6 +297,11 @@
 		</member>
 	</members>
 	<signals>
+		<signal name="admin_bank_received">
+			<param index="0" name="payload" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
 		<signal name="admin_broadcast_received">
 			<param index="0" name="payload" type="Dictionary" />
 			<description>

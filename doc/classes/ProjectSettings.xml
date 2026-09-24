@@ -2303,6 +2303,18 @@
 		</member>
 		<member name="blazium/semanticsearch/scan_filesystem" type="bool" setter="" getter="" default="false">
 		</member>
+		<member name="blazium/warcry/host" type="String" setter="" getter="" default="&quot;127.0.0.1&quot;">
+			Default Politeia / Warcry server hostname used by [WarcryClient] and the editor admin dock.
+		</member>
+		<member name="blazium/warcry/password" type="String" setter="" getter="" default="&quot;&quot;">
+			Optional password sent with [method WarcryClient.authenticate].
+		</member>
+		<member name="blazium/warcry/port" type="int" setter="" getter="" default="27015">
+			Default Politeia / Warcry server port.
+		</member>
+		<member name="blazium/warcry/username" type="String" setter="" getter="" default="&quot;editor&quot;">
+			Default username for [method WarcryClient.connect_to_server] and [method WarcryClient.authenticate].
+		</member>
 		<member name="collada/use_ambient" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], ambient lights will be imported from COLLADA models as [DirectionalLight3D]. If [code]false[/code], ambient lights will be ignored.
 		</member>
@@ -4413,6 +4425,46 @@
 		<member name="network/tls/enable_tls_v1.3" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], enable TLSv1.3 negotiation.
 			[b]Note:[/b] Only supported when using Mbed TLS 3.0 or later (Linux distribution packages may be compiled against older system Mbed TLS packages), otherwise the maximum supported TLS version is always TLSv1.2.
+		</member>
+		<member name="obfuscation/audio/spectro_path" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+		<member name="obfuscation/audio/spread_spectrum" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="obfuscation/copyright/author" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+		<member name="obfuscation/copyright/license" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+		<member name="obfuscation/copyright/shard_count" type="int" setter="" getter="" default="8">
+		</member>
+		<member name="obfuscation/copyright/text" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+		<member name="obfuscation/enabled" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="obfuscation/pack/inject_seal" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="obfuscation/pack/scramble_names" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="obfuscation/project_id" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+		<member name="obfuscation/publisher_id" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+		<member name="obfuscation/scripts/comment_decoys" type="int" setter="" getter="" default="8">
+		</member>
+		<member name="obfuscation/scripts/comment_lattice" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="obfuscation/scripts/inject_ck" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="obfuscation/scripts/inject_copyright" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="obfuscation/scripts/minify" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="obfuscation/textures/dwt" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="obfuscation/textures/gutter" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="obfuscation/textures/min_size" type="int" setter="" getter="" default="256">
+		</member>
+		<member name="obfuscation/textures/overlay" type="bool" setter="" getter="" default="false">
 		</member>
 		<member name="physics/2d/default_angular_damp" type="float" setter="" getter="" default="1.0">
 			The default rotational motion damping in 2D. Damping is used to gradually slow down physical objects over time. RigidBodies will fall back to this value when combining their own damping values and no area damping value is present.
