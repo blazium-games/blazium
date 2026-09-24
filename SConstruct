@@ -1010,7 +1010,10 @@ elif env["arch"] == "x86_32":
     else:
         # Use `-mfpmath=sse` to use SSE for floating-point math, which is more stable than x87.
         # `-mstackrealign` is needed for it to work.
-        env.Append(CCFLAGS=["-msse2", "-mfpmath=sse", "-mstackrealign"])
+        # Host clang-cl is 64-bit and emits x64 objects unless `-m32` is set. Do not pass
+        # `-m32` to lld-link; Windows clang-cl uses `/MACHINE:X86` instead.
+        env.Append(CCFLAGS=["-m32", "-msse2", "-mfpmath=sse", "-mstackrealign"])
+        env.Append(ASFLAGS=["-m32"])
 
 # Explicitly specify colored output.
 if methods.using_gcc(env):

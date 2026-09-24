@@ -281,6 +281,29 @@ def get_flags():
     }
 
 
+def clang_windows_runtime_dir(rt_name: str) -> str:
+    """Directory that contains clang_rt.builtins-<arch>.lib for clang-cl."""
+    try:
+        out = subprocess.check_output(
+            ["clang-cl", "-print-runtime-dir"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return ""
+    if not out:
+        return ""
+    lib = rt_name + ".lib"
+    candidates = [out, os.path.join(out, "windows")]
+    for directory in candidates:
+        if os.path.isfile(os.path.join(directory, lib)):
+            return directory
+    for directory in candidates:
+        if os.path.isdir(directory):
+            return directory
+    return ""
+
+
 def configure_msvc(env: "SConsEnvironment"):
     """Configure env to work with MSVC"""
 
@@ -547,7 +570,15 @@ def configure_msvc(env: "SConsEnvironment"):
         LIBS += ["psapi", "dbghelp"]
 
     if env["use_llvm"]:
-        LIBS += [f"clang_rt.builtins-{env['arch']}"]
+        # LLVM names the 32-bit Windows runtime clang_rt.builtins-i386.lib, not x86_32.
+        rt_arch = {"x86_32": "i386"}.get(env["arch"], env["arch"])
+        rt_name = f"clang_rt.builtins-{rt_arch}"
+        LIBS += [rt_name]
+        rt_dir = clang_windows_runtime_dir(rt_name)
+        if rt_dir:
+            env.Append(LIBPATH=[rt_dir])
+        if env["arch"] == "x86_32":
+            env.Append(LINKFLAGS=["/MACHINE:X86"])
 
     env.Append(LINKFLAGS=[p + env["LIBSUFFIX"] for p in LIBS])
 
