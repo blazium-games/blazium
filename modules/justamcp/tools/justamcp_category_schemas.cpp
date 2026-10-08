@@ -866,20 +866,20 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{}, Vector<String>{});
 	add_schema("changes_since_disconnect", "Returns actions recorded since the last session change.",
 			Vector<String>{}, Vector<String>{});
-	add_schema("scene_diff", "Captures or compares the current scene node names.",
+	add_schema("scene_diff", "Captures or compares scene nodes, including parent changes.",
 			Vector<String>{ "capture", "boolean" }, Vector<String>{});
-	add_schema("project_map", "Lists nodes in the edited scene.",
-			Vector<String>{}, Vector<String>{});
+	add_schema("project_map", "Lists the edited scene, autoloads, input map, main scene, and recent errors.",
+			Vector<String>{ "budget", "number" }, Vector<String>{});
 	add_schema("spatial_scene_relations", "Reports rests-on, near, attached-to-bone, and shared-script relations.",
 			Vector<String>{}, Vector<String>{});
 	add_schema("validate_scene_grounding", "Flags floating nodes and bodies missing collision shapes.",
 			Vector<String>{}, Vector<String>{});
-	add_schema("validate_conventions", "Checks bone and node names against the project convention.",
-			Vector<String>{ "bone", "string" }, Vector<String>{});
-	add_schema("validate_import", "Checks that an import path stays inside the project and exists.",
+	add_schema("validate_conventions", "Checks bone names, empty translation keys, and allocations inside _process.",
+			Vector<String>{ "bone", "string", "script", "string", "path", "string" }, Vector<String>{});
+	add_schema("validate_import", "Checks that an import file and its .import sidecar match project conventions.",
 			Vector<String>{ "path", "string" }, Vector<String>{});
-	add_schema("run_simulation", "Returns a deterministic simulation summary without starting Play Mode.",
-			Vector<String>{ "steps", "number", "seed", "number" }, Vector<String>{});
+	add_schema("run_simulation", "Returns one deterministic simulation row per run without starting Play Mode.",
+			Vector<String>{ "steps", "number", "seed", "number", "runs", "number" }, Vector<String>{});
 	add_schema("runtime_feel_metrics", "Returns frame and input latency metrics.",
 			Vector<String>{}, Vector<String>{});
 	add_schema("runtime_integration_report", "Returns a short runtime integration report.",
@@ -890,8 +890,8 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{}, Vector<String>{});
 	add_schema("verify_change", "Compares expected and actual values.",
 			Vector<String>{ "expected", "any", "actual", "any" }, Vector<String>{});
-	add_schema("runtime_commit_knobs", "Writes runtime knobs and reads them back.",
-			Vector<String>{ "knobs", "object" }, Vector<String>{});
+	add_schema("runtime_commit_knobs", "Applies runtime knobs, including Engine time scale, and can write them to a project JSON file.",
+			Vector<String>{ "knobs", "object", "path", "string", "time_scale", "number" }, Vector<String>{});
 	add_schema("xr_set_head_pose", "Sets an XR head pose when an interface is active.",
 			Vector<String>{ "position", "object" }, Vector<String>{});
 	add_schema("xr_set_controller", "Sets an XR controller pose when an interface is active.",
@@ -911,6 +911,8 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 	add_schema("agent_probe_value", "Reads the agent probe counter.",
 			Vector<String>{}, Vector<String>{});
 	add_schema("export_audit_log", "Returns the in-memory agent action audit.",
+			Vector<String>{}, Vector<String>{});
+	add_schema("playtest_handoff", "Returns the current scene, what to try, and the latest editor error count.",
 			Vector<String>{}, Vector<String>{});
 }
 

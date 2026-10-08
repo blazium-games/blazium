@@ -599,9 +599,9 @@ Dictionary JustAMCPEditorTools::editor_undo(const Dictionary &p_args) {
 	}
 	const int restored = JustAMCPAgentPolicy::undo_snapshots(steps);
 	bool native = false;
-	if (editor_plugin && editor_plugin->get_editor_interface() && EditorUndoRedoManager::get_singleton()) {
+	if (restored == 0 && editor_plugin && editor_plugin->get_editor_interface() && EditorUndoRedoManager::get_singleton()) {
 		EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
-		for (int i = 0; i < steps && undo_redo->has_undo(); i++) {
+		if (undo_redo->has_undo()) {
 			undo_redo->undo();
 			native = true;
 		}

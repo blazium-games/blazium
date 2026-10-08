@@ -678,11 +678,21 @@ bool JustAMCPToolExecutor::bearer_authorizes(const String &p_authorization) {
 }
 
 Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const Dictionary &p_args) {
-	Dictionary early;
-	if (JustAMCPAgentPolicy::before_execute(p_tool_name, p_args, early)) {
-		return JustAMCPAgentPolicy::after_execute(p_tool_name, p_args, early);
+	const bool claimed_active = active_instance == nullptr;
+	if (claimed_active) {
+		active_instance = this;
 	}
-	return JustAMCPAgentPolicy::after_execute(p_tool_name, p_args, execute_tool_inner(p_tool_name, p_args));
+	Dictionary early;
+	Dictionary result;
+	if (JustAMCPAgentPolicy::before_execute(p_tool_name, p_args, early)) {
+		result = JustAMCPAgentPolicy::after_execute(p_tool_name, p_args, early);
+	} else {
+		result = JustAMCPAgentPolicy::after_execute(p_tool_name, p_args, execute_tool_inner(p_tool_name, p_args));
+	}
+	if (claimed_active && active_instance == this) {
+		active_instance = nullptr;
+	}
+	return result;
 }
 
 Dictionary JustAMCPToolExecutor::execute_tool_inner(const String &p_tool_name, const Dictionary &p_args) {

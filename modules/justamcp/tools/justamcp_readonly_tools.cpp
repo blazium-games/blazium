@@ -156,6 +156,7 @@ bool JustAMCPReadonlyTools::is_readonly_tool(const String &p_tool_name) {
 		"client_config",
 		"agent_probe_value",
 		"export_audit_log",
+		"playtest_handoff",
 		nullptr,
 	};
 	for (int i = 0; k_readonly_tools[i] != nullptr; i++) {

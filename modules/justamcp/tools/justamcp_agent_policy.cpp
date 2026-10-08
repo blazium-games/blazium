@@ -37,17 +37,21 @@
 #include "justamcp_json_rpc_router.h"
 #include "justamcp_readonly_tools.h"
 #include "justamcp_settings_resolver.h"
+#include "justamcp_tool_executor.h"
 #include "resources/justamcp_resource_json.h"
 
+#include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/math/math_funcs.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/io/json.h"
+#include "core/os/mutex.h"
 #include "core/os/os.h"
 #include "core/os/thread.h"
 #include "core/os/time.h"
 #include "core/templates/hash_map.h"
+#include "core/templates/hash_set.h"
 
 struct JustAMCPAgentSession {
 	String id;
@@ -114,7 +118,30 @@ static Array g_audit;
 static Dictionary g_knobs;
 static String g_screenshot_summary = "No screenshot captured yet.";
 static String g_bearer;
-static bool g_applying_queue = false;
+static thread_local bool g_applying_queue = false;
+static HashSet<String> g_closed_sessions;
+static Mutex g_policy_mutex;
+
+static String _claim_key(const String &p_path) {
+	String key = p_path;
+	while (key.length() > 6 && key.ends_with("/")) {
+		key = key.substr(0, key.length() - 1);
+	}
+	return key;
+}
+
+static bool _claim_covers(const String &p_claim_path, bool p_subtree, const String &p_path) {
+	const String key = _claim_key(p_claim_path);
+	const String path = _claim_key(p_path);
+	if (key == path) {
+		return true;
+	}
+	return p_subtree && path.begins_with(key + "/");
+}
+
+static bool _session_closed(const String &p_id) {
+	return !p_id.is_empty() && p_id != "editor" && g_closed_sessions.has(p_id);
+}
 
 static String _internal_name(const String &p_tool_name) {
 	String name = p_tool_name;
@@ -181,8 +208,16 @@ static JustAMCPAgentSession &_session(const String &p_id) {
 	if (p_id.is_empty() || p_id == "editor") {
 		return _ensure_editor();
 	}
-	if (!g_sessions.has(p_id)) {
+	if (!g_sessions.has(p_id) && !g_closed_sessions.has(p_id)) {
 		JustAMCPAgentPolicy::open_session(p_id, p_id, true);
+	}
+	if (!g_sessions.has(p_id)) {
+		static JustAMCPAgentSession missing;
+		missing = JustAMCPAgentSession();
+		missing.id = p_id;
+		missing.name = p_id;
+		missing.read_only = true;
+		return missing;
 	}
 	return g_sessions[p_id];
 }
@@ -260,32 +295,63 @@ static String _git_head() {
 	return output.strip_edges();
 }
 
-static void _apply_queued(const String &p_path) {
+static Array _apply_queued(const String &p_path, bool p_subtree) {
+	Vector<String> tools;
+	Vector<String> sessions;
+	Vector<Dictionary> arg_copies;
 	Vector<JustAMCPQueuedWrite> remain;
-	g_applying_queue = true;
 	for (int i = 0; i < g_queue.size(); i++) {
-		const JustAMCPQueuedWrite &item = g_queue[i];
-		if (!p_path.is_empty() && item.path != p_path) {
-			remain.push_back(item);
+		const String path = g_queue[i].path;
+		const String tool = g_queue[i].tool;
+		const String session_id = g_queue[i].session_id;
+		const Dictionary args = g_queue[i].args.duplicate(true);
+		if (!p_path.is_empty() && !_claim_covers(p_path, p_subtree, path)) {
+			JustAMCPQueuedWrite kept;
+			kept.path = path;
+			kept.tool = tool;
+			kept.session_id = session_id;
+			kept.args = args;
+			remain.push_back(kept);
 			continue;
 		}
-		if (_internal_name(item.tool) == "agent_probe_increment") {
-			JustAMCPAgentPolicy::probe_increment();
-		}
+		tools.push_back(tool);
+		sessions.push_back(session_id);
+		arg_copies.push_back(args);
 	}
 	g_queue = remain;
+	g_applying_queue = true;
+	JustAMCPToolExecutor *executor = JustAMCPToolExecutor::get_active_instance();
+	g_policy_mutex.unlock();
+	Array results;
+	for (int i = 0; i < tools.size(); i++) {
+		if (executor) {
+			Dictionary args = arg_copies[i];
+			if (!sessions[i].is_empty()) {
+				args["_session_id"] = sessions[i];
+			}
+			const String tool = tools[i].begins_with("blazium_") ? tools[i] : String("blazium_") + tools[i];
+			results.push_back(executor->execute_tool(tool, args));
+		} else if (_internal_name(tools[i]) == "agent_probe_increment") {
+			Dictionary fallback;
+			fallback["ok"] = true;
+			fallback["value"] = JustAMCPAgentPolicy::probe_increment();
+			results.push_back(fallback);
+		}
+	}
+	g_policy_mutex.lock();
 	g_applying_queue = false;
+	return results;
 }
 
 static void _drop_claims_for_session(const String &p_id) {
-	Vector<String> released;
+	Vector<JustAMCPClaim> released;
 	Vector<String> keys;
 	for (const KeyValue<String, JustAMCPClaim> &entry : g_claims) {
 		keys.push_back(entry.key);
 	}
 	for (int i = 0; i < keys.size(); i++) {
 		if (g_claims[keys[i]].session_id == p_id) {
-			released.push_back(keys[i]);
+			released.push_back(g_claims[keys[i]]);
 			g_claims.erase(keys[i]);
 		}
 	}
@@ -297,7 +363,7 @@ static void _drop_claims_for_session(const String &p_id) {
 	}
 	g_queue = remain;
 	for (int i = 0; i < released.size(); i++) {
-		_apply_queued(released[i]);
+		_apply_queued(released[i].path, released[i].subtree);
 	}
 }
 
@@ -314,6 +380,7 @@ static Dictionary _session_dict(const JustAMCPAgentSession &p_session) {
 }
 
 String JustAMCPAgentPolicy::instance_bearer() {
+	MutexLock lock(g_policy_mutex);
 	if (g_bearer.is_empty()) {
 		g_bearer = "jamcp-" + String::num_uint64(OS::get_singleton() ? OS::get_singleton()->get_ticks_usec() : 1);
 	}
@@ -337,7 +404,13 @@ bool JustAMCPAgentPolicy::save_requires_confirmation() {
 }
 
 void JustAMCPAgentPolicy::open_session(const String &p_id, const String &p_name, bool p_from_initialize) {
+	MutexLock lock(g_policy_mutex);
 	if (p_id.is_empty()) {
+		return;
+	}
+	const bool resurrect = g_closed_sessions.has(p_id);
+	g_closed_sessions.erase(p_id);
+	if (g_sessions.has(p_id) && !resurrect) {
 		return;
 	}
 	JustAMCPAgentSession session;
@@ -346,15 +419,24 @@ void JustAMCPAgentPolicy::open_session(const String &p_id, const String &p_name,
 	const bool read_only = p_from_initialize && JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/session_starts_read_only", true);
 	session.read_only = read_only;
 	session.has_read = !read_only;
+	g_sessions.erase(p_id);
 	g_sessions.insert(p_id, session);
 }
 
 void JustAMCPAgentPolicy::close_session(const String &p_id) {
+	MutexLock lock(g_policy_mutex);
+	if (p_id.is_empty()) {
+		return;
+	}
 	_drop_claims_for_session(p_id);
 	g_sessions.erase(p_id);
+	if (p_id != "editor") {
+		g_closed_sessions.insert(p_id);
+	}
 }
 
 Array JustAMCPAgentPolicy::list_sessions() {
+	MutexLock lock(g_policy_mutex);
 	_ensure_editor();
 	Array sessions;
 	for (const KeyValue<String, JustAMCPAgentSession> &entry : g_sessions) {
@@ -371,11 +453,20 @@ String JustAMCPAgentPolicy::current_session_id() {
 }
 
 Dictionary JustAMCPAgentPolicy::session_state(const String &p_id) {
-	return _session_dict(_session(p_id.is_empty() ? current_session_id() : p_id));
+	MutexLock lock(g_policy_mutex);
+	const String id = p_id.is_empty() ? current_session_id() : p_id;
+	if (_session_closed(id)) {
+		return _err("session is closed");
+	}
+	return _session_dict(_session(id));
 }
 
 Dictionary JustAMCPAgentPolicy::set_access(const String &p_id, const String &p_mode) {
+	MutexLock lock(g_policy_mutex);
 	const String id = p_id.is_empty() ? current_session_id() : p_id;
+	if (_session_closed(id)) {
+		return _err("session is closed");
+	}
 	JustAMCPAgentSession &session = _session(id);
 	if (p_mode == "write") {
 		session.read_only = false;
@@ -390,10 +481,19 @@ Dictionary JustAMCPAgentPolicy::set_access(const String &p_id, const String &p_m
 }
 
 bool JustAMCPAgentPolicy::before_execute(const String &p_tool_name, const Dictionary &p_args, Dictionary &r_early) {
-	if (!_on_main_thread()) {
-		return false;
-	}
+	MutexLock lock(g_policy_mutex);
 	const String name = _internal_name(p_tool_name);
+	if (!_on_main_thread()) {
+		if (_read_tool(name)) {
+			const String session_id = _resolve_session_id(p_args);
+			if (!_session_closed(session_id)) {
+				_session(session_id).has_read = true;
+			}
+			return false;
+		}
+		r_early = _err("write tools must run on the main thread");
+		return true;
+	}
 	const String session_id = _resolve_session_id(p_args);
 	g_session_stack.push_back(session_id);
 	g_policy_depth++;
@@ -412,6 +512,10 @@ bool JustAMCPAgentPolicy::before_execute(const String &p_tool_name, const Dictio
 
 	if (g_applying_queue || _control_tool(name)) {
 		return false;
+	}
+	if (_session_closed(session_id)) {
+		r_early = _err("session is closed");
+		return true;
 	}
 
 	const bool read = _read_tool(name);
@@ -479,14 +583,12 @@ bool JustAMCPAgentPolicy::before_execute(const String &p_tool_name, const Dictio
 		return true;
 	}
 
-	if (!read) {
+	if (!read && name != "claim_scene" && name != "claim_subtree" && name != "release_claim") {
 		const String path = _claim_path_from_args(p_args);
 		if (!path.is_empty()) {
 			const JustAMCPClaim *held = nullptr;
 			for (const KeyValue<String, JustAMCPClaim> &entry : g_claims) {
-				const bool exact = entry.key == path;
-				const bool nested = entry.value.subtree && path.begins_with(entry.key);
-				if (exact || nested) {
+				if (_claim_covers(entry.key, entry.value.subtree, path)) {
 					held = &entry.value;
 					break;
 				}
@@ -503,7 +605,7 @@ bool JustAMCPAgentPolicy::before_execute(const String &p_tool_name, const Dictio
 				queued.path = path;
 				queued.session_id = session_id;
 				queued.tool = name;
-				queued.args = p_args.duplicate();
+				queued.args = p_args.duplicate(true);
 				g_queue.push_back(queued);
 				Dictionary early;
 				early["ok"] = true;
@@ -535,6 +637,7 @@ Dictionary JustAMCPAgentPolicy::after_execute(const String &p_tool_name, const D
 	if (!_on_main_thread() || g_policy_depth <= 0) {
 		return p_result;
 	}
+	MutexLock lock(g_policy_mutex);
 	g_policy_depth--;
 	const String session_id = g_session_stack.is_empty() ? String("editor") : g_session_stack[g_session_stack.size() - 1];
 	if (!g_session_stack.is_empty()) {
@@ -567,7 +670,12 @@ Dictionary JustAMCPAgentPolicy::after_execute(const String &p_tool_name, const D
 	}
 	if (!failed && !_read_tool(name) && !_control_tool(name)) {
 		session.revision++;
-		if (!p_result.has("read_back")) {
+		if (p_result.has("before") && p_result.has("after")) {
+			Dictionary read_back;
+			read_back["before"] = p_result["before"];
+			read_back["after"] = p_result["after"];
+			p_result["read_back"] = read_back;
+		} else if (!p_result.has("read_back")) {
 			p_result["read_back"] = true;
 		}
 		if (!p_result.has("changed")) {
@@ -647,12 +755,14 @@ Dictionary JustAMCPAgentPolicy::after_execute(const String &p_tool_name, const D
 }
 
 void JustAMCPAgentPolicy::note_grouped_undo(int p_steps) {
+	MutexLock lock(g_policy_mutex);
 	if (p_steps > 1) {
 		g_grouped_undo = p_steps;
 	}
 }
 
 int JustAMCPAgentPolicy::take_grouped_undo() {
+	MutexLock lock(g_policy_mutex);
 	const int steps = g_grouped_undo;
 	g_grouped_undo = 0;
 	return steps;
@@ -663,6 +773,7 @@ void JustAMCPAgentPolicy::clear_grouped_undo() {
 }
 
 int JustAMCPAgentPolicy::undo_snapshots(int p_steps) {
+	MutexLock lock(g_policy_mutex);
 	int restored = 0;
 	for (int i = 0; i < p_steps && !g_undo.is_empty(); i++) {
 		const JustAMCPUndoEntry entry = g_undo[g_undo.size() - 1];
@@ -785,8 +896,10 @@ Dictionary JustAMCPAgentPolicy::read_agent_resource(const String &p_uri, const S
 	}
 	if (p_canonical == "blazium://reference/tools") {
 		String body = "Tool reference generated from the live editor catalog.\n";
-		for (int i = 0; i < g_tool_names.size() && i < 80; i++) {
-			body += "- " + g_tool_names[i] + "\n";
+		for (int i = 0; i < g_tool_names.size(); i++) {
+			const String tool_name = g_tool_names[i];
+			const bool readonly = JustAMCPReadonlyTools::is_readonly_tool(tool_name);
+			body += "- " + tool_name + " readonly=" + String(readonly ? "true" : "false") + "\n";
 		}
 		body += "Small-model profile: prefer recipe_add_player_controller, project_map, and EditorHelp docs before inventing API calls.\n";
 		return JustAMCPResourceJson::make_text_contents(p_uri, body, "text/plain");
@@ -801,7 +914,12 @@ Dictionary JustAMCPAgentPolicy::read_agent_resource(const String &p_uri, const S
 		Dictionary payload;
 		payload["profile"] = "small-model";
 		payload["instructions"] = justamcp_server_instructions();
-		payload["license"] = "Engine tools ship with the Blazium editor. No marketplace plugin is required.";
+		String protocol = "2025-11-25";
+		if (ProjectSettings::get_singleton()) {
+			protocol = String(ProjectSettings::get_singleton()->get_setting("blazium/justamcp/protocol_version", protocol));
+		}
+		payload["protocol_version"] = protocol;
+		payload["license"] = "The editor MCP ships with the engine at no extra license.";
 		return JustAMCPResourceJson::make_json_contents(p_uri, payload);
 	}
 	if (p_canonical == "blazium://meta/tools_list_bytes") {
@@ -882,10 +1000,12 @@ Dictionary JustAMCPAgentPolicy::write_client_config(const String &p_client, cons
 }
 
 int JustAMCPAgentPolicy::probe_value() {
+	MutexLock lock(g_policy_mutex);
 	return g_probe;
 }
 
 void JustAMCPAgentPolicy::probe_reset() {
+	MutexLock lock(g_policy_mutex);
 	g_probe = 0;
 	g_undo.clear();
 	g_grouped_undo = 0;
@@ -893,6 +1013,7 @@ void JustAMCPAgentPolicy::probe_reset() {
 }
 
 int JustAMCPAgentPolicy::probe_increment() {
+	MutexLock lock(g_policy_mutex);
 	const int previous = g_probe;
 	g_probe++;
 	_push_undo_probe(previous);
@@ -900,24 +1021,34 @@ int JustAMCPAgentPolicy::probe_increment() {
 }
 
 Dictionary JustAMCPAgentPolicy::claim_path(const String &p_path, bool p_subtree) {
+	MutexLock lock(g_policy_mutex);
 	if (!_safe_project_path(p_path)) {
 		return _err("claim path must be res:// or user://");
 	}
 	const String session_id = current_session_id();
+	if (_session_closed(session_id)) {
+		return _err("session is closed");
+	}
 	const JustAMCPAgentSession &session = _session(session_id);
-	if (g_claims.has(p_path) && g_claims[p_path].session_id != session_id) {
-		Dictionary result = _err("path is claimed");
-		result["holder"] = g_claims[p_path].holder;
-		const int wait_ms = JustAMCPSettingsResolver::resolve_int("blazium/justamcp/claim_wait_ms", 30000);
-		result["timeout"] = wait_ms == 0;
-		result["busy"] = wait_ms != 0;
-		return result;
+	for (const KeyValue<String, JustAMCPClaim> &entry : g_claims) {
+		if (entry.value.session_id == session_id) {
+			continue;
+		}
+		if (_claim_covers(entry.key, entry.value.subtree, p_path) || _claim_covers(p_path, p_subtree, entry.key)) {
+			Dictionary result = _err("path is claimed");
+			result["holder"] = entry.value.holder;
+			const int wait_ms = JustAMCPSettingsResolver::resolve_int("blazium/justamcp/claim_wait_ms", 30000);
+			result["timeout"] = wait_ms == 0;
+			result["busy"] = wait_ms != 0;
+			return result;
+		}
 	}
 	JustAMCPClaim claim;
 	claim.path = p_path;
 	claim.session_id = session_id;
 	claim.holder = session.name;
 	claim.subtree = p_subtree;
+	g_claims.erase(p_path);
 	g_claims.insert(p_path, claim);
 	Dictionary result;
 	result["ok"] = true;
@@ -928,6 +1059,7 @@ Dictionary JustAMCPAgentPolicy::claim_path(const String &p_path, bool p_subtree)
 }
 
 Dictionary JustAMCPAgentPolicy::release_claim(const String &p_path) {
+	MutexLock lock(g_policy_mutex);
 	if (!g_claims.has(p_path)) {
 		return _err("claim not found");
 	}
@@ -936,17 +1068,20 @@ Dictionary JustAMCPAgentPolicy::release_claim(const String &p_path) {
 		result["holder"] = g_claims[p_path].holder;
 		return result;
 	}
+	const bool subtree = g_claims[p_path].subtree;
 	g_claims.erase(p_path);
 	const int before = g_probe;
-	_apply_queued(p_path);
+	const Array replay = _apply_queued(p_path, subtree);
 	Dictionary result;
 	result["ok"] = true;
 	result["released"] = p_path;
 	result["applied"] = g_probe - before;
+	result["replay"] = replay;
 	return result;
 }
 
 Array JustAMCPAgentPolicy::list_claims() {
+	MutexLock lock(g_policy_mutex);
 	Array claims;
 	for (const KeyValue<String, JustAMCPClaim> &entry : g_claims) {
 		Dictionary claim;
@@ -1119,12 +1254,27 @@ void JustAMCPAgentPolicy::store_screenshot_summary(const String &p_summary) {
 }
 
 Dictionary JustAMCPAgentPolicy::commit_knobs(const Dictionary &p_knobs) {
-	Array keys = p_knobs.keys();
+	MutexLock lock(g_policy_mutex);
+	Dictionary stored = p_knobs.duplicate();
+	const String path = String(stored.get("path", ""));
+	stored.erase("path");
+	Array keys = stored.keys();
 	for (int i = 0; i < keys.size(); i++) {
-		g_knobs[keys[i]] = p_knobs[keys[i]];
+		g_knobs[keys[i]] = stored[keys[i]];
 	}
 	Dictionary result;
 	result["ok"] = true;
+	if (stored.has("time_scale") && Engine::get_singleton()) {
+		Engine::get_singleton()->set_time_scale(double(stored["time_scale"]));
+		result["time_scale"] = Engine::get_singleton()->get_time_scale();
+	}
+	if (path.ends_with(".json") && _safe_project_path(path)) {
+		Ref<FileAccess> file = FileAccess::open(path, FileAccess::WRITE);
+		if (file.is_valid()) {
+			file->store_string(JSON::stringify(stored));
+			result["written"] = path;
+		}
+	}
 	result["knobs"] = g_knobs.duplicate();
 	return result;
 }

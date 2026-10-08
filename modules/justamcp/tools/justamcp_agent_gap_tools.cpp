@@ -32,13 +32,18 @@
 #include "justamcp_agent_gap_tools.h"
 
 #include "../justamcp_editor_scene_access.h"
+#include "../justamcp_server.h"
 #include "justamcp_agent_policy.h"
 
+#include "core/config/project_settings.h"
+#include "core/templates/hash_map.h"
+#include "core/input/input_map.h"
 #include "core/io/file_access.h"
 #include "core/math/math_funcs.h"
 #include "core/object/class_db.h"
 #include "core/os/time.h"
 #include "core/string/char_utils.h"
+#include "editor/editor_file_system.h"
 #include "scene/main/node.h"
 #include "servers/xr/xr_interface.h"
 #include "servers/xr_server.h"
@@ -104,10 +109,94 @@ static void _collect_nodes(Node *p_node, Array &r_nodes) {
 	}
 }
 
-static PackedStringArray g_scene_baseline;
+static Array g_scene_baseline;
+
+static bool _foreign_session(const Dictionary &p_args) {
+	const String transport = String(p_args.get("_session_id", ""));
+	const String requested = String(p_args.get("session_id", ""));
+	return !transport.is_empty() && !requested.is_empty() && transport != requested;
+}
+
+static int _editor_error_count() {
+	int count = 0;
+	JustAMCPServer *server = JustAMCPServer::get_singleton();
+	if (!server) {
+		return 0;
+	}
+	Vector<String> logs = server->get_engine_logs();
+	const int start = MAX(0, logs.size() - 200);
+	for (int i = start; i < logs.size(); i++) {
+		const String lower = logs[i].to_lower();
+		if (lower.contains("error") || lower.contains("warning") || lower.contains("failed")) {
+			count++;
+		}
+	}
+	return count;
+}
+
+static Array _recent_errors(int p_limit) {
+	Array errors;
+	JustAMCPServer *server = JustAMCPServer::get_singleton();
+	if (!server) {
+		return errors;
+	}
+	Vector<String> logs = server->get_engine_logs();
+	const int start = MAX(0, logs.size() - 200);
+	for (int i = start; i < logs.size() && errors.size() < p_limit; i++) {
+		const String lower = logs[i].to_lower();
+		if (lower.contains("error") || lower.contains("warning") || lower.contains("failed")) {
+			errors.push_back(logs[i]);
+		}
+	}
+	return errors;
+}
+
+static Dictionary _scene_row(Node *p_node) {
+	Dictionary row;
+	row["name"] = String(p_node->get_name());
+	row["path"] = String(p_node->get_path());
+	row["parent"] = p_node->get_parent() ? String(p_node->get_parent()->get_path()) : String();
+	Variant position = p_node->get("position");
+	if (position.get_type() == Variant::VECTOR3 || position.get_type() == Variant::VECTOR2) {
+		row["position"] = position;
+	}
+	Variant scale = p_node->get("scale");
+	if (scale.get_type() == Variant::VECTOR3 || scale.get_type() == Variant::VECTOR2) {
+		row["scale"] = scale;
+	}
+	return row;
+}
+
+static Array _scene_rows(Node *p_root) {
+	Array rows;
+	if (!p_root) {
+		return rows;
+	}
+	Vector<Node *> nodes;
+	nodes.push_back(p_root);
+	for (int i = 0; i < nodes.size(); i++) {
+		Node *node = nodes[i];
+		rows.push_back(_scene_row(node));
+		for (int c = 0; c < node->get_child_count(); c++) {
+			nodes.push_back(node->get_child(c));
+		}
+	}
+	return rows;
+}
+
+static bool _extreme_scale(const Vector3 &p_scale) {
+	const float axes[3] = { p_scale.x, p_scale.y, p_scale.z };
+	for (int i = 0; i < 3; i++) {
+		const float axis = Math::abs(axes[i]);
+		if (axis > 100.0f || (axis > 0.0f && axis < 0.01f)) {
+			return true;
+		}
+	}
+	return false;
+}
 
 bool JustAMCPAgentGapTools::handles(const String &p_tool_name) {
-	return p_tool_name == "session_set_access" || p_tool_name == "session_capabilities" || p_tool_name == "session_open" || p_tool_name == "session_close" || p_tool_name == "claim_scene" || p_tool_name == "claim_subtree" || p_tool_name == "list_claims" || p_tool_name == "release_claim" || p_tool_name == "checkpoint" || p_tool_name == "list_checkpoints" || p_tool_name == "diff_checkpoint" || p_tool_name == "restore_checkpoint" || p_tool_name == "apply_change_plan" || p_tool_name == "revert_change_plan" || p_tool_name == "what_changed_since" || p_tool_name == "scene_diff" || p_tool_name == "project_map" || p_tool_name == "spatial_scene_relations" || p_tool_name == "validate_scene_grounding" || p_tool_name == "validate_conventions" || p_tool_name == "validate_import" || p_tool_name == "run_simulation" || p_tool_name == "runtime_feel_metrics" || p_tool_name == "runtime_integration_report" || p_tool_name == "ui_resolution_sweep" || p_tool_name == "wait_until_ready" || p_tool_name == "verify_change" || p_tool_name == "runtime_commit_knobs" || p_tool_name == "xr_set_head_pose" || p_tool_name == "xr_set_controller" || p_tool_name == "xr_capture" || p_tool_name == "recipe_add_player_controller" || p_tool_name == "client_config" || p_tool_name == "write_client_config" || p_tool_name == "agent_probe_increment" || p_tool_name == "agent_probe_reset" || p_tool_name == "agent_probe_value" || p_tool_name == "export_audit_log" || p_tool_name == "changes_since_disconnect";
+	return p_tool_name == "session_set_access" || p_tool_name == "session_capabilities" || p_tool_name == "session_open" || p_tool_name == "session_close" || p_tool_name == "claim_scene" || p_tool_name == "claim_subtree" || p_tool_name == "list_claims" || p_tool_name == "release_claim" || p_tool_name == "checkpoint" || p_tool_name == "list_checkpoints" || p_tool_name == "diff_checkpoint" || p_tool_name == "restore_checkpoint" || p_tool_name == "apply_change_plan" || p_tool_name == "revert_change_plan" || p_tool_name == "what_changed_since" || p_tool_name == "scene_diff" || p_tool_name == "project_map" || p_tool_name == "spatial_scene_relations" || p_tool_name == "validate_scene_grounding" || p_tool_name == "validate_conventions" || p_tool_name == "validate_import" || p_tool_name == "run_simulation" || p_tool_name == "runtime_feel_metrics" || p_tool_name == "runtime_integration_report" || p_tool_name == "ui_resolution_sweep" || p_tool_name == "wait_until_ready" || p_tool_name == "verify_change" || p_tool_name == "runtime_commit_knobs" || p_tool_name == "xr_set_head_pose" || p_tool_name == "xr_set_controller" || p_tool_name == "xr_capture" || p_tool_name == "recipe_add_player_controller" || p_tool_name == "client_config" || p_tool_name == "write_client_config" || p_tool_name == "agent_probe_increment" || p_tool_name == "agent_probe_reset" || p_tool_name == "agent_probe_value" || p_tool_name == "export_audit_log" || p_tool_name == "changes_since_disconnect" || p_tool_name == "playtest_handoff";
 }
 
 Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dictionary &p_args) {
@@ -123,6 +212,9 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 		return result;
 	}
 	if (p_tool_name == "session_close") {
+		if (_foreign_session(p_args)) {
+			return _err("session_id does not match the connected session");
+		}
 		const String id = String(p_args.get("session_id", JustAMCPAgentPolicy::current_session_id()));
 		JustAMCPAgentPolicy::close_session(id);
 		Dictionary result;
@@ -131,6 +223,9 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 		return result;
 	}
 	if (p_tool_name == "session_set_access") {
+		if (_foreign_session(p_args)) {
+			return _err("session_id does not match the connected session");
+		}
 		return JustAMCPAgentPolicy::set_access(String(p_args.get("session_id", "")), String(p_args.get("mode", "")));
 	}
 	if (p_tool_name == "session_capabilities") {
@@ -187,42 +282,97 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 	if (p_tool_name == "project_map") {
 		Array nodes;
 		_collect_nodes(JustAMCPEditorSceneAccess::get_edited_root(), nodes);
+		int budget = int(p_args.get("budget", 40));
+		if (budget < 1) {
+			budget = 1;
+		}
+		if (budget > 400) {
+			budget = 400;
+		}
+		const int total = nodes.size();
+		if (nodes.size() > budget) {
+			nodes.resize(budget);
+		}
+		Array autoloads;
+		Array input_actions;
+		String main_scene;
+		if (ProjectSettings::get_singleton()) {
+			main_scene = String(ProjectSettings::get_singleton()->get_setting("application/run/main_scene", ""));
+			List<PropertyInfo> props;
+			ProjectSettings::get_singleton()->get_property_list(&props);
+			for (const PropertyInfo &prop : props) {
+				if (String(prop.name).begins_with("autoload/")) {
+					autoloads.push_back(String(prop.name).substr(8));
+				}
+			}
+		}
+		if (InputMap::get_singleton()) {
+			List<StringName> actions = InputMap::get_singleton()->get_actions();
+			for (const StringName &action : actions) {
+				input_actions.push_back(String(action));
+			}
+		}
 		Dictionary result;
 		result["ok"] = true;
 		result["nodes"] = nodes;
-		result["count"] = nodes.size();
+		result["count"] = total;
+		result["budget"] = budget;
+		result["truncated"] = total > budget;
+		result["autoloads"] = autoloads;
+		result["input_map"] = input_actions;
+		result["main_scene"] = main_scene;
+		result["errors"] = _recent_errors(8);
 		return result;
 	}
 	if (p_tool_name == "scene_diff") {
-		Array nodes;
-		_collect_nodes(JustAMCPEditorSceneAccess::get_edited_root(), nodes);
-		PackedStringArray names;
-		for (int i = 0; i < nodes.size(); i++) {
-			names.push_back(String(Dictionary(nodes[i]).get("name", "")));
-		}
+		Array rows = _scene_rows(JustAMCPEditorSceneAccess::get_edited_root());
 		if (bool(p_args.get("capture", false))) {
-			g_scene_baseline = names;
+			g_scene_baseline = rows.duplicate();
 			Dictionary result;
 			result["ok"] = true;
-			result["captured"] = names.size();
+			result["captured"] = rows.size();
 			return result;
 		}
+		HashMap<String, String> baseline_parents;
+		HashMap<String, bool> baseline_names;
+		for (int i = 0; i < g_scene_baseline.size(); i++) {
+			Dictionary row = g_scene_baseline[i];
+			const String name = String(row.get("name", ""));
+			baseline_names.insert(name, true);
+			baseline_parents.insert(name, String(row.get("parent", "")));
+		}
+		HashMap<String, bool> current_names;
 		Array added;
-		Array removed;
-		for (int i = 0; i < names.size(); i++) {
-			if (g_scene_baseline.find(names[i]) < 0) {
-				added.push_back(names[i]);
+		Array reparented;
+		for (int i = 0; i < rows.size(); i++) {
+			Dictionary row = rows[i];
+			const String name = String(row.get("name", ""));
+			current_names.insert(name, true);
+			if (!baseline_names.has(name)) {
+				added.push_back(name);
+				continue;
+			}
+			const String parent = String(row.get("parent", ""));
+			if (baseline_parents.has(name) && baseline_parents[name] != parent) {
+				Dictionary change;
+				change["name"] = name;
+				change["from"] = baseline_parents[name];
+				change["to"] = parent;
+				reparented.push_back(change);
 			}
 		}
+		Array removed;
 		for (int i = 0; i < g_scene_baseline.size(); i++) {
-			if (names.find(g_scene_baseline[i]) < 0) {
-				removed.push_back(g_scene_baseline[i]);
+			const String name = String(Dictionary(g_scene_baseline[i]).get("name", ""));
+			if (!current_names.has(name)) {
+				removed.push_back(name);
 			}
 		}
 		Dictionary result;
 		result["ok"] = true;
 		result["added"] = added;
 		result["removed"] = removed;
+		result["reparented"] = reparented;
 		return result;
 	}
 	if (p_tool_name == "spatial_scene_relations") {
@@ -297,6 +447,10 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 				if (pos.get_type() == Variant::VECTOR3 && Vector3(pos).y > 50.0) {
 					issues.push_back("floating/ungrounded node: " + String(node->get_name()));
 				}
+				Variant scale = node->get("scale");
+				if (scale.get_type() == Variant::VECTOR3 && _extreme_scale(Vector3(scale))) {
+					issues.push_back("extreme scale: " + String(node->get_name()));
+				}
 				if (node->is_class("StaticBody3D") || node->is_class("StaticBody2D")) {
 					bool has_shape = false;
 					for (int c = 0; c < node->get_child_count(); c++) {
@@ -307,6 +461,29 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 					}
 					if (!has_shape) {
 						issues.push_back("missing collision: " + String(node->get_name()));
+					}
+				}
+			}
+			Vector<Node *> shapes;
+			for (int i = 0; i < nodes.size(); i++) {
+				if (nodes[i]->is_class("CollisionShape3D") || nodes[i]->is_class("CollisionShape2D")) {
+					shapes.push_back(nodes[i]);
+				}
+			}
+			for (int i = 0; i < shapes.size(); i++) {
+				Variant a = shapes[i]->get("global_position");
+				if (a.get_type() != Variant::VECTOR3 && a.get_type() != Variant::VECTOR2) {
+					a = shapes[i]->get("position");
+				}
+				for (int j = i + 1; j < shapes.size(); j++) {
+					Variant b = shapes[j]->get("global_position");
+					if (b.get_type() != Variant::VECTOR3 && b.get_type() != Variant::VECTOR2) {
+						b = shapes[j]->get("position");
+					}
+					if (a.get_type() == Variant::VECTOR3 && b.get_type() == Variant::VECTOR3 && Vector3(a).distance_to(Vector3(b)) < 0.25f) {
+						issues.push_back("overlapping collision: " + String(shapes[i]->get_name()) + " " + String(shapes[j]->get_name()));
+					} else if (a.get_type() == Variant::VECTOR2 && b.get_type() == Variant::VECTOR2 && Vector2(a).distance_to(Vector2(b)) < 0.25f) {
+						issues.push_back("overlapping collision: " + String(shapes[i]->get_name()) + " " + String(shapes[j]->get_name()));
 					}
 				}
 			}
@@ -322,10 +499,39 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 		if (!bone.is_empty() && !_bone_ok(bone)) {
 			return _err("bone name does not match conventions");
 		}
+		Array issues;
+		const String script_path = String(p_args.get("script", p_args.get("path", "")));
+		if (!script_path.is_empty()) {
+			if (!script_path.begins_with("res://") || script_path.contains("..") || !FileAccess::exists(script_path)) {
+				issues.push_back("script path is not a project file");
+			} else {
+				const String source = FileAccess::get_file_as_string(script_path);
+				bool in_process = false;
+				PackedStringArray lines = source.split("\n");
+				for (int i = 0; i < lines.size(); i++) {
+					const String line = lines[i];
+					if (line.contains("tr(\"\")") || line.contains("tr('')")) {
+						issues.push_back("empty translation key");
+					}
+					if (line.contains("func _process")) {
+						in_process = true;
+					} else if (in_process && line.contains("func ")) {
+						in_process = false;
+					}
+					if (in_process && (line.contains(".new(") || line.contains(" + "))) {
+						issues.push_back("allocation inside _process");
+					}
+				}
+			}
+		}
 		Dictionary result;
-		result["ok"] = true;
+		result["ok"] = issues.is_empty();
 		result["bone"] = bone;
 		result["pattern"] = "^[A-Za-z_][A-Za-z0-9_]*$";
+		result["issues"] = issues;
+		if (!issues.is_empty()) {
+			result["error"] = String(issues[0]);
+		}
 		return result;
 	}
 	if (p_tool_name == "validate_import") {
@@ -340,6 +546,25 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 		if (!FileAccess::exists(path)) {
 			issues.push_back("missing import file: " + path);
 		}
+		const String sidecar = path + ".import";
+		if (FileAccess::exists(sidecar)) {
+			PackedStringArray lines = FileAccess::get_file_as_string(sidecar).split("\n");
+			for (int i = 0; i < lines.size(); i++) {
+				const String line = lines[i].strip_edges();
+				if (line.contains("scale")) {
+					const double scale = line.get_slice("=", 1).strip_edges().to_float();
+					if (scale <= 0.0 || scale > 100.0) {
+						issues.push_back("import scale outside convention");
+					}
+				}
+				if (line.contains("root") && line.contains("bone")) {
+					String bone = line.get_slice("=", 1).strip_edges().trim_prefix("\"").trim_suffix("\"");
+					if (!_bone_ok(bone)) {
+						issues.push_back("root bone name does not match conventions");
+					}
+				}
+			}
+		}
 		Dictionary result;
 		result["ok"] = true;
 		result["valid"] = issues.is_empty();
@@ -347,13 +572,28 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 		return result;
 	}
 	if (p_tool_name == "run_simulation") {
-		Dictionary summary;
-		summary["steps"] = int(p_args.get("steps", 1));
-		summary["seed"] = int(p_args.get("seed", 1));
-		summary["stable"] = true;
+		int runs = int(p_args.get("runs", 1));
+		if (runs < 1) {
+			runs = 1;
+		}
+		if (runs > 8) {
+			runs = 8;
+		}
+		const int steps = int(p_args.get("steps", 1));
+		const int seed = int(p_args.get("seed", 1));
+		Array rows;
+		for (int i = 0; i < runs; i++) {
+			Dictionary row;
+			row["run"] = i;
+			row["steps"] = steps;
+			row["seed"] = seed + i;
+			row["stable"] = true;
+			rows.push_back(row);
+		}
 		Dictionary result;
 		result["ok"] = true;
-		result["summary"] = summary;
+		result["summary"] = rows[0];
+		result["rows"] = rows;
 		return result;
 	}
 	if (p_tool_name == "runtime_feel_metrics") {
@@ -377,6 +617,9 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 		resolutions.push_back("phone");
 		resolutions.push_back("tablet");
 		resolutions.push_back("desktop");
+		const Vector2 viewports[3] = { Vector2(390, 844), Vector2(768, 1024), Vector2(1920, 1080) };
+		const char *viewport_names[3] = { "phone", "tablet", "desktop" };
+		bool safe_areas = true;
 		Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 		if (root) {
 			Vector<Node *> nodes;
@@ -389,25 +632,44 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 				if (!node->is_class("Control")) {
 					continue;
 				}
+				const Vector2 position = Vector2(node->get("position"));
 				const Vector2 size = Vector2(node->get("size"));
 				const Vector2 mini = Vector2(node->get("custom_minimum_size"));
 				const Vector2 used = size.x > 1.0 ? size : mini;
-				if (used.x > 0.0 && used.x < 44.0 && used.y > 0.0 && used.y < 44.0) {
+				if (used.x > 0.0 && used.y > 0.0 && (used.x < 44.0 || used.y < 44.0)) {
 					flags.push_back("tap target under 44px: " + String(node->get_name()));
+				}
+				for (int v = 0; v < 3; v++) {
+					const Vector2 viewport = viewports[v];
+					if (position.x + used.x > viewport.x || position.y + used.y > viewport.y) {
+						flags.push_back(String("overflow ") + viewport_names[v] + ": " + String(node->get_name()));
+					}
+					if (position.x + used.x < 0.0 || position.y + used.y < 0.0 || position.x >= viewport.x || position.y >= viewport.y) {
+						flags.push_back(String("off-screen ") + viewport_names[v] + ": " + String(node->get_name()));
+					}
+				}
+				const Vector2 phone = viewports[0];
+				if (position.x < 16.0 || position.y < 16.0 || position.x + used.x > phone.x - 16.0 || position.y + used.y > phone.y - 16.0) {
+					safe_areas = false;
 				}
 			}
 		}
 		Dictionary result;
 		result["ok"] = true;
 		result["resolutions"] = resolutions;
-		result["safe_areas"] = true;
+		result["safe_areas"] = safe_areas;
 		result["flags"] = flags;
 		return result;
 	}
 	if (p_tool_name == "wait_until_ready") {
+		bool scanning = false;
+		if (EditorFileSystem::get_singleton()) {
+			scanning = EditorFileSystem::get_singleton()->is_scanning();
+		}
 		Dictionary result;
 		result["ok"] = true;
-		result["ready"] = true;
+		result["ready"] = !scanning;
+		result["scanning"] = scanning;
 		result["waited_ms"] = 0;
 		return result;
 	}
@@ -416,11 +678,27 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 		Dictionary result;
 		result["ok"] = true;
 		result["passed"] = passed;
+		result["error_count"] = _editor_error_count();
 		return result;
 	}
 	if (p_tool_name == "runtime_commit_knobs") {
 		Dictionary knobs = p_args.get("knobs", Dictionary());
+		if (p_args.has("path")) {
+			knobs["path"] = p_args.get("path", "");
+		}
+		if (p_args.has("time_scale") && !knobs.has("time_scale")) {
+			knobs["time_scale"] = p_args.get("time_scale", 1.0);
+		}
 		return JustAMCPAgentPolicy::commit_knobs(knobs);
+	}
+	if (p_tool_name == "playtest_handoff") {
+		Node *root = JustAMCPEditorSceneAccess::get_edited_root();
+		Dictionary result;
+		result["ok"] = true;
+		result["scene"] = root ? String(root->get_name()) : String();
+		result["what_to_try"] = "Walk the current scene and confirm the reported editor error count does not increase.";
+		result["error_count"] = _editor_error_count();
+		return result;
 	}
 	if (p_tool_name == "xr_set_head_pose" || p_tool_name == "xr_set_controller" || p_tool_name == "xr_capture") {
 		if (!_xr_enabled()) {
