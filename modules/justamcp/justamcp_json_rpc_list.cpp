@@ -90,7 +90,7 @@ Dictionary JustAMCPJsonRpcRouter::route_runtime_host_initialize(JustAMCPServer *
 	Dictionary result;
 	result["protocolVersion"] = negotiated;
 	result["capabilities"] = capabilities;
-	result["instructions"] = "Project-owned MCP tools and prompts registered from res://mcp. No editor catalog.";
+	result["instructions"] = justamcp_game_host_instructions();
 	result["serverInfo"] = serverInfo;
 
 	Dictionary rpc_result;

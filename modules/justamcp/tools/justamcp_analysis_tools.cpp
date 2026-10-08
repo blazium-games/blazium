@@ -39,6 +39,7 @@
 #include "core/io/file_access.h"
 #include "core/io/resource_loader.h"
 #include "core/object/script_language.h"
+#include "core/templates/hash_set.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
 #include "justamcp_profiling_tools.h"
@@ -87,6 +88,8 @@ Dictionary JustAMCPAnalysisTools::execute_tool(const String &p_tool_name, const 
 		} else {
 			if (root->get_scene_file_path().is_empty()) {
 				issues.push_back("The current scene has not been saved to a scene file.");
+			} else if (!FileAccess::exists(root->get_scene_file_path())) {
+				issues.push_back("Scene file is missing on disk: " + root->get_scene_file_path());
 			}
 			List<Node *> stack;
 			stack.push_back(root);
@@ -95,6 +98,14 @@ Dictionary JustAMCPAnalysisTools::execute_tool(const String &p_tool_name, const 
 				stack.pop_front();
 				if (node != root && !node->get_owner()) {
 					issues.push_back("Node has no owner and may not be saved: " + String(root->get_path_to(node)));
+				}
+				HashSet<String> sibling_names;
+				for (int i = 0; i < node->get_child_count(); i++) {
+					const String child_name = String(node->get_child(i)->get_name());
+					if (sibling_names.has(child_name)) {
+						issues.push_back("Duplicate sibling name (unstable order): " + child_name);
+					}
+					sibling_names.insert(child_name);
 				}
 				Ref<Script> node_script = node->get_script();
 				if (node_script.is_valid() && !node_script->get_path().is_empty() && !ResourceLoader::exists(node_script->get_path())) {

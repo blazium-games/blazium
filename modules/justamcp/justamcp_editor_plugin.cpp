@@ -39,6 +39,7 @@
 #include "tools/justamcp_mcp_client_bridge.h"
 #include "tools/justamcp_prompt_executor.h"
 #include "tools/justamcp_resource_executor.h"
+#include "tools/justamcp_agent_policy.h"
 #include "tools/justamcp_settings_resolver.h"
 #include "tools/justamcp_tool_executor.h"
 #include "tools/justamcp_tool_schema_cache.h"
@@ -446,6 +447,25 @@ String JustAMCPEditorPlugin::get_mcp_config_json(MCPConfigClient p_client) {
 	const String client_id = JustAMCPSettingsResolver::resolve_string("blazium/justamcp/client_id");
 	const String client_secret = JustAMCPSettingsResolver::resolve_string("blazium/justamcp/client_secret");
 
+	if (p_client == MCP_CONFIG_CODEX) {
+		return JustAMCPAgentPolicy::client_config("codex");
+	}
+	if (p_client == MCP_CONFIG_CLAUDE) {
+		return JustAMCPAgentPolicy::client_config("claude");
+	}
+	if (p_client == MCP_CONFIG_VSCODE) {
+		return JustAMCPAgentPolicy::client_config("vscode");
+	}
+	if (p_client == MCP_CONFIG_GEMINI) {
+		return JustAMCPAgentPolicy::client_config("gemini");
+	}
+	if (p_client == MCP_CONFIG_GROK) {
+		return JustAMCPAgentPolicy::client_config("grok");
+	}
+	if (p_client == MCP_CONFIG_WINDSURF) {
+		return JustAMCPAgentPolicy::client_config("windsurf");
+	}
+
 	const String mcp_url = "http://127.0.0.1:" + itos(port) + "/mcp";
 	const String game_url = "http://127.0.0.1:" + itos(game_port) + "/mcp";
 	const bool game_enabled = JustAMCPSettingsResolver::resolve_runtime_enabled();
@@ -457,6 +477,7 @@ String JustAMCPEditorPlugin::get_mcp_config_json(MCPConfigClient p_client) {
 		json_config += "    \"blazium-mcp\": {\n";
 		json_config += "      \"type\": \"remote\",\n";
 		json_config += "      \"url\": \"" + mcp_url + "\",\n";
+		json_config += "      \"headers\": {\"Authorization\": \"Bearer " + JustAMCPAgentPolicy::instance_bearer() + "\"},\n";
 		json_config += "      \"enabled\": true\n";
 		json_config += "    }";
 		if (game_enabled) {
@@ -479,6 +500,7 @@ String JustAMCPEditorPlugin::get_mcp_config_json(MCPConfigClient p_client) {
 	} else {
 		json_config += "      \"serverUrl\": \"" + mcp_url + "\"";
 	}
+	json_config += ",\n      \"headers\": {\"Authorization\": \"Bearer " + JustAMCPAgentPolicy::instance_bearer() + "\"}";
 
 	if (oauth_enabled && (!client_id.is_empty() || !client_secret.is_empty())) {
 		json_config += ",\n      \"oauth\": {\n";

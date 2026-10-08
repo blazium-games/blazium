@@ -32,6 +32,7 @@
 #include "justamcp_tool_schema_builder.h"
 
 #include "../justamcp_mcp_spec.h"
+#include "justamcp_agent_policy.h"
 #include "justamcp_settings_resolver.h"
 
 #include "core/config/project_settings.h"
@@ -86,6 +87,7 @@ Dictionary JustAMCPToolSchemaBuilder::build_tool_schema(const String &p_full_nam
 	}
 	t["inputSchema"] = schema;
 	justamcp_attach_icons(t);
+	JustAMCPAgentPolicy::attach_annotations(t);
 	if (p_task_support != "forbidden" || p_thread_affinity == "worker") {
 		Dictionary execution;
 		if (!p_task_support.is_empty() && p_task_support != "forbidden") {

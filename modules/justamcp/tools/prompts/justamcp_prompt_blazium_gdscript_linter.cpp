@@ -71,6 +71,7 @@ Dictionary JustAMCPPromptBlaziumGDScriptLinter::get_messages(const Dictionary &p
 	content["type"] = "text";
 
 	String text = String("You are a senior Blazium developer performing a strict GDScript code quality audit on: ") + target + String("\n\n");
+	text += String("Read the target class from EditorHelp at blazium://docs/class/{class} before rewriting a call. If EditorHelp disagrees with training data, follow EditorHelp.\n\n");
 	text += String("Treat ANY dynamically typed declaration as an error. Apply ALL of the following rules without exception:\n\n");
 
 	text += String("## Variables - All must have explicit types\n");

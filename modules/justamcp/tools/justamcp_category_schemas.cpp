@@ -831,6 +831,87 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "path", "string", "include_addons", "boolean", "lod", "number" }, Vector<String>{});
 	add_schema("scene_dependency_graph", "Returns scene dependency information using the existing batch scene dependency analyzer.",
 			Vector<String>{ "scene_path", "string", "path", "string" }, Vector<String>{});
+
+	current_category = "agent_gap_tools";
+	is_core = true;
+	add_schema("session_set_access", "Sets a connected agent session to read or write.",
+			Vector<String>{ "session_id", "string", "mode", "string" }, Vector<String>{});
+	add_schema("session_capabilities", "Returns the current agent session access, revision, and profile.",
+			Vector<String>{ "session_id", "string" }, Vector<String>{});
+	add_schema("session_open", "Opens a named agent session. Fresh sessions start read-only.",
+			Vector<String>{ "name", "string", "session_id", "string" }, Vector<String>{});
+	add_schema("session_close", "Closes an agent session and drops its scene claims.",
+			Vector<String>{ "session_id", "string" }, Vector<String>{});
+	add_schema("claim_scene", "Leases a scene path so other agents queue writes instead of overlapping.",
+			Vector<String>{ "path", "string" }, Vector<String>{});
+	add_schema("claim_subtree", "Leases a scene path and its nested paths.",
+			Vector<String>{ "path", "string" }, Vector<String>{});
+	add_schema("list_claims", "Lists scene and subtree claims held by connected agents.",
+			Vector<String>{}, Vector<String>{});
+	add_schema("release_claim", "Releases a claim and applies queued writes for that path.",
+			Vector<String>{ "path", "string" }, Vector<String>{});
+	add_schema("checkpoint", "Snapshots allow-listed project files so they can be diffed and restored.",
+			Vector<String>{ "path", "string", "paths", "array" }, Vector<String>{});
+	add_schema("list_checkpoints", "Lists checkpoint ids created in this editor process.",
+			Vector<String>{}, Vector<String>{});
+	add_schema("diff_checkpoint", "Compares current files with a checkpoint snapshot.",
+			Vector<String>{ "checkpoint_id", "string" }, Vector<String>{});
+	add_schema("restore_checkpoint", "Copies a checkpoint snapshot back onto the project files.",
+			Vector<String>{ "checkpoint_id", "string" }, Vector<String>{});
+	add_schema("apply_change_plan", "Applies a dry-run change plan.",
+			Vector<String>{ "plan_id", "string" }, Vector<String>{});
+	add_schema("revert_change_plan", "Reverts a change plan when the revision still matches.",
+			Vector<String>{ "plan_id", "string" }, Vector<String>{});
+	add_schema("what_changed_since", "Returns the agent audit log.",
+			Vector<String>{}, Vector<String>{});
+	add_schema("changes_since_disconnect", "Returns actions recorded since the last session change.",
+			Vector<String>{}, Vector<String>{});
+	add_schema("scene_diff", "Captures or compares the current scene node names.",
+			Vector<String>{ "capture", "boolean" }, Vector<String>{});
+	add_schema("project_map", "Lists nodes in the edited scene.",
+			Vector<String>{}, Vector<String>{});
+	add_schema("spatial_scene_relations", "Reports rests-on, near, attached-to-bone, and shared-script relations.",
+			Vector<String>{}, Vector<String>{});
+	add_schema("validate_scene_grounding", "Flags floating nodes and bodies missing collision shapes.",
+			Vector<String>{}, Vector<String>{});
+	add_schema("validate_conventions", "Checks bone and node names against the project convention.",
+			Vector<String>{ "bone", "string" }, Vector<String>{});
+	add_schema("validate_import", "Checks that an import path stays inside the project and exists.",
+			Vector<String>{ "path", "string" }, Vector<String>{});
+	add_schema("run_simulation", "Returns a deterministic simulation summary without starting Play Mode.",
+			Vector<String>{ "steps", "number", "seed", "number" }, Vector<String>{});
+	add_schema("runtime_feel_metrics", "Returns frame and input latency metrics.",
+			Vector<String>{}, Vector<String>{});
+	add_schema("runtime_integration_report", "Returns a short runtime integration report.",
+			Vector<String>{}, Vector<String>{});
+	add_schema("ui_resolution_sweep", "Checks phone, tablet, and desktop tap targets and safe areas.",
+			Vector<String>{}, Vector<String>{});
+	add_schema("wait_until_ready", "Reports whether the editor scene is ready for the next check.",
+			Vector<String>{}, Vector<String>{});
+	add_schema("verify_change", "Compares expected and actual values.",
+			Vector<String>{ "expected", "any", "actual", "any" }, Vector<String>{});
+	add_schema("runtime_commit_knobs", "Writes runtime knobs and reads them back.",
+			Vector<String>{ "knobs", "object" }, Vector<String>{});
+	add_schema("xr_set_head_pose", "Sets an XR head pose when an interface is active.",
+			Vector<String>{ "position", "object" }, Vector<String>{});
+	add_schema("xr_set_controller", "Sets an XR controller pose when an interface is active.",
+			Vector<String>{ "position", "object" }, Vector<String>{});
+	add_schema("xr_capture", "Captures an XR view when an interface is active.",
+			Vector<String>{}, Vector<String>{});
+	add_schema("recipe_add_player_controller", "Small-model recipe that describes, and optionally adds, a player controller.",
+			Vector<String>{ "apply", "boolean" }, Vector<String>{});
+	add_schema("client_config", "Returns a client MCP config containing the local URL and bearer token.",
+			Vector<String>{ "client", "string" }, Vector<String>{});
+	add_schema("write_client_config", "Writes a client MCP config and pings initialize in-process.",
+			Vector<String>{ "client", "string", "path", "string" }, Vector<String>{});
+	add_schema("agent_probe_increment", "Test probe that increments a process counter and records an undo snapshot.",
+			Vector<String>{ "path", "string", "idempotency_key", "string", "expected_revision", "number", "dry_run", "boolean" }, Vector<String>{});
+	add_schema("agent_probe_reset", "Resets the agent probe counter and undo snapshots.",
+			Vector<String>{}, Vector<String>{});
+	add_schema("agent_probe_value", "Reads the agent probe counter.",
+			Vector<String>{}, Vector<String>{});
+	add_schema("export_audit_log", "Returns the in-memory agent action audit.",
+			Vector<String>{}, Vector<String>{});
 }
 
 #endif

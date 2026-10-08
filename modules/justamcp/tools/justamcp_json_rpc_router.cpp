@@ -326,7 +326,7 @@ Dictionary JustAMCPJsonRpcRouter::route_initialize(JustAMCPServer *p_server, con
 		capabilities["elicitation"] = elicitation_cap;
 	}
 	result["capabilities"] = capabilities;
-	result["instructions"] = "Use blazium_* tools and blazium:// resources. Prefer editor tools for scene/resource edits, runtime_* tools only when a game bridge is active, and guide resources such as blazium://guide/tool-index for workflow orientation.";
+	result["instructions"] = justamcp_server_instructions();
 	Dictionary serverInfo;
 	serverInfo["name"] = "blazium-mcp-server";
 	if (justamcp_protocol_supports(negotiated, JUSTAMCP_FEATURE_SERVER_TITLE)) {
@@ -377,7 +377,7 @@ Dictionary JustAMCPJsonRpcRouter::route_discover(JustAMCPServer *p_server, const
 	extensions["io.modelcontextprotocol/ui"] = Dictionary();
 	capabilities["extensions"] = extensions;
 	result["capabilities"] = capabilities;
-	result["instructions"] = "Use blazium_* tools and blazium:// resources. Prefer editor tools for scene/resource edits, runtime_* tools only when a game bridge is active, and guide resources such as blazium://guide/tool-index for workflow orientation.";
+	result["instructions"] = justamcp_server_instructions();
 	result["ttlMs"] = 3600000;
 	result["cacheScope"] = "public";
 	result["resultType"] = "complete";

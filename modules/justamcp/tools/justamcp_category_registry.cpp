@@ -63,6 +63,7 @@ static const JustAMCPCategoryRegistryEntry g_category_registry[] = {
 	{ "Environment", "environment_tools", "World environment tools." },
 	{ "Analysis", "analysis_tools", "Project analysis and validation tools." },
 	{ "Autowork", "autowork_tools", "Autowork test runner tools.", false, true },
+	{ "Agent", "agent_gap_tools", "Multi-agent session, safety, verification, and client setup tools." },
 };
 
 int JustAMCPCategoryRegistry::get_entry_count() {

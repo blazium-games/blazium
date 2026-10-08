@@ -123,6 +123,7 @@ private:
 
 	void _init_tools();
 	void _wait_for_tracked_worker_tasks();
+	Dictionary execute_tool_inner(const String &p_tool_name, const Dictionary &p_args);
 
 protected:
 	static void _bind_methods();
@@ -149,6 +150,8 @@ public:
 	static Node *test_scene_root;
 	static void set_test_scene_root(Node *p_node);
 	static Node *get_test_scene_root();
+	static String instance_bearer();
+	static bool bearer_authorizes(const String &p_authorization);
 
 	JustAMCPToolExecutor();
 	~JustAMCPToolExecutor();

@@ -41,6 +41,7 @@ void test_justamcp_http_protocol_header_optional_for_older_versions();
 void test_justamcp_batch_rejected_for_newer_protocols();
 void test_justamcp_http_list_toolsets_smoke_per_strict_protocol();
 void test_justamcp_json_rpc_rejects_null_id();
+void test_justamcp_agent_policy_envelope();
 void test_justamcp_http_modern_discover_and_list();
 void test_justamcp_http_modern_header_mismatch_and_unsupported();
 void test_justamcp_http_initialize_modern_client_stays_legacy();
@@ -86,6 +87,10 @@ TEST_CASE("[Modules][JustAMCP] http list toolsets smoke per strict protocol") {
 
 TEST_CASE("[Modules][JustAMCP] json-rpc rejects null id") {
 	test_justamcp_json_rpc_rejects_null_id();
+}
+
+TEST_CASE("[Modules][JustAMCP] agent policy envelope") {
+	test_justamcp_agent_policy_envelope();
 }
 
 TEST_CASE("[Modules][JustAMCP] http modern discover and tools/list") {

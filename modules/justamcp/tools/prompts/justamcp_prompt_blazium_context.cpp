@@ -69,6 +69,7 @@ Dictionary JustAMCPPromptBlaziumContext::get_messages(const Dictionary &p_args) 
 	text += "Mode: " + mode + "\n\n";
 	text += "For substantial work, prefer the `blazium_project_intake` prompt first. It embeds project, scene, selection, and JustAMCP guide resources so the client starts with reliable context.\n";
 	text += "Use `blazium://guide/tool-index` and `blazium://guide/troubleshooting` for orientation, and prefer deterministic `blazium_*` tools for editor/runtime state, validation, tests, and resource reads.\n";
+	text += "Class, member, signal, and constant facts come from the running editor's EditorHelp, not training data. Read blazium://docs/class/{class} before writing an API call. If EditorHelp disagrees with training data, follow EditorHelp.\n";
 #ifdef MODULE_ASSETTAGS_ENABLED
 	if (AssetTagManager *tag_manager = AssetTagManager::get_singleton()) {
 		PackedStringArray tags = tag_manager->list_tags();

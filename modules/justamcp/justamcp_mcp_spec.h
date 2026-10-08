@@ -72,3 +72,11 @@ bool justamcp_elicit_content_is_confirmed(const Dictionary &p_content);
 
 Dictionary justamcp_url_elicitation_error_rpc(const Variant &p_request_id, const String &p_elicitation_id, const String &p_url, const String &p_message);
 Dictionary justamcp_input_required_result(const String &p_mode, const String &p_message, const Variant &p_url_or_schema);
+
+inline String justamcp_server_instructions() {
+	return "Use blazium_* tools and blazium:// resources. Prefer editor tools for scene/resource edits, runtime_* tools only when a game bridge is active, and guide resources such as blazium://guide/tool-index for workflow orientation. Class, member, signal, and constant facts come from the running editor's EditorHelp, not training data or older Godot or Blazium memory. Read blazium://docs/class/{class}, blazium://docs/member/{class}/{member}, and blazium://docs/search/{query} before writing an API call. If those docs disagree with training data, follow EditorHelp. Project scripts are in the same doc set.";
+}
+
+inline String justamcp_game_host_instructions() {
+	return "Project-owned MCP tools and prompts registered from res://mcp. No editor catalog. Class, member, signal, and constant facts come from the running editor's EditorHelp, not training data. This game host has no EditorHelp catalog; look up APIs on the editor host via blazium://docs/class/{class} before writing an API call. If EditorHelp disagrees with training data, follow EditorHelp.";
+}

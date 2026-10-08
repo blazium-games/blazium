@@ -32,6 +32,8 @@
 #include "../justamcp_editor_scene_access.h"
 #include "../justamcp_read_limits.h"
 #include "../justamcp_tool_context.h"
+#include "justamcp_agent_policy.h"
+#include "justamcp_readonly_tools.h"
 #include "justamcp_tool_executor.h"
 
 #ifdef TOOLS_ENABLED
@@ -108,8 +110,10 @@ Dictionary JustAMCPBatchTools::execute_tool(const String &p_tool_name, const Dic
 		Array steps = p_args.get("steps", Array());
 		bool stop_on_error = p_args.get("stop_on_error", true);
 		bool undo_on_error = p_args.get("undo_on_error", false);
+		bool transaction = p_args.get("transaction", true);
 		Array results;
 		int completed = 0;
+		int writes = 0;
 		const int total_steps = steps.size();
 		justamcp_report_progress(0, total_steps > 0 ? total_steps : 1, "Starting batch_execute");
 		for (int i = 0; i < steps.size(); i++) {
@@ -168,6 +172,9 @@ Dictionary JustAMCPBatchTools::execute_tool(const String &p_tool_name, const Dic
 				}
 			} else {
 				completed++;
+				if (!JustAMCPReadonlyTools::is_readonly_tool(tool_name)) {
+					writes++;
+				}
 			}
 		}
 		justamcp_report_progress(total_steps > 0 ? total_steps : 1, total_steps > 0 ? total_steps : 1, "batch_execute finished");
@@ -176,6 +183,10 @@ Dictionary JustAMCPBatchTools::execute_tool(const String &p_tool_name, const Dic
 		ret["results"] = results;
 		ret["completed"] = completed;
 		ret["count"] = results.size();
+		if (transaction && writes > 1) {
+			JustAMCPAgentPolicy::note_grouped_undo(writes);
+			ret["undo_steps"] = 1;
+		}
 		return ret;
 	}
 
@@ -502,6 +513,9 @@ Dictionary JustAMCPBatchTools::_cross_scene_set_property(const Dictionary &p_par
 	if (path_filter == "res://" || path_filter.is_empty()) {
 		return MCP_ERROR(-32602, "cross_scene_set_property requires a narrower path_filter than res:// (pass a subdirectory).");
 	}
+	if (JustAMCPAgentPolicy::save_requires_confirmation() && !bool(p_params.get("confirm", false))) {
+		return MCP_ERROR(-32602, "cross_scene_set_property requires confirm=true");
+	}
 
 	Array scenes_affected;
 	int total_nodes = 0;
@@ -560,6 +574,7 @@ Dictionary JustAMCPBatchTools::_cross_scene_set_property(const Dictionary &p_par
 	res["total_scenes"] = scenes_affected.size();
 	res["total_nodes"] = total_nodes;
 	res["truncated"] = truncated;
+	res["conflict_label"] = "saving changes into file system";
 	return MCP_SUCCESS(res);
 }
 

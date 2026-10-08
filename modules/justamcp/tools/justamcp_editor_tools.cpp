@@ -31,6 +31,7 @@
 
 #include "justamcp_editor_tools.h"
 #include "../justamcp_editor_plugin.h"
+#include "justamcp_agent_policy.h"
 #include "../justamcp_editor_scene_access.h"
 #include "../justamcp_mcp_tool_macros.h"
 #include "../justamcp_pagination.h"
@@ -592,13 +593,26 @@ Dictionary JustAMCPEditorTools::editor_get_selected(const Dictionary &p_args) {
 
 Dictionary JustAMCPEditorTools::editor_undo(const Dictionary &p_args) {
 	Dictionary result;
+	int steps = JustAMCPAgentPolicy::take_grouped_undo();
+	if (steps < 1) {
+		steps = 1;
+	}
+	const int restored = JustAMCPAgentPolicy::undo_snapshots(steps);
+	bool native = false;
 	if (editor_plugin && editor_plugin->get_editor_interface() && EditorUndoRedoManager::get_singleton()) {
-		if (EditorUndoRedoManager::get_singleton()->has_undo()) {
-			EditorUndoRedoManager::get_singleton()->undo();
-			result["ok"] = true;
-			result["message"] = "Undo step executed natively.";
-			return result;
+		EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
+		for (int i = 0; i < steps && undo_redo->has_undo(); i++) {
+			undo_redo->undo();
+			native = true;
 		}
+	}
+	if (restored > 0 || native) {
+		result["ok"] = true;
+		result["undo_steps"] = restored > 0 ? restored : steps;
+		result["message"] = "Undo step executed natively.";
+		return result;
+	}
+	if (editor_plugin && editor_plugin->get_editor_interface() && EditorUndoRedoManager::get_singleton()) {
 		result["ok"] = false;
 		result["error"] = "There are no history iterations left to undo.";
 		return result;

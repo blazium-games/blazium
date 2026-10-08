@@ -90,6 +90,14 @@ void JustAMCPProjectSettings::register_project_settings() {
 	GLOBAL_DEF_BASIC("blazium/justamcp/mcp_clients", Array());
 	GLOBAL_DEF_BASIC("blazium/justamcp/bridge_url_allow_hosts", Array());
 	GLOBAL_DEF_BASIC("blazium/justamcp/in_flight_cancel_deadline_ms", 5000);
+	GLOBAL_DEF_BASIC("blazium/justamcp/session_starts_read_only", true);
+	GLOBAL_DEF_BASIC("blazium/justamcp/require_local_bearer", true);
+	GLOBAL_DEF_BASIC("blazium/justamcp/require_read_before_write", true);
+	GLOBAL_DEF_BASIC("blazium/justamcp/save_requires_confirmation", false);
+	GLOBAL_DEF_BASIC("blazium/justamcp/screenshot_soft_cap", 0);
+	GLOBAL_DEF_BASIC("blazium/justamcp/play_mode_soft_cap", 0);
+	GLOBAL_DEF_BASIC("blazium/justamcp/claim_wait_ms", 30000);
+	GLOBAL_DEF_BASIC("blazium/justamcp/checkpoint_before_destructive", false);
 
 	JustAMCPToolExecutor::register_tool_settings();
 	JustAMCPPromptExecutor::register_settings();
@@ -227,6 +235,23 @@ void JustAMCPProjectSettings::register_editor_settings() {
 
 	EDITOR_DEF_BASIC("blazium/justamcp/in_flight_cancel_deadline_ms", 5000);
 	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::INT, "blazium/justamcp/in_flight_cancel_deadline_ms", PROPERTY_HINT_RANGE, "0,120000,100"));
+
+	EDITOR_DEF_BASIC("blazium/justamcp/session_starts_read_only", true);
+	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::BOOL, "blazium/justamcp/session_starts_read_only"));
+	EDITOR_DEF_BASIC("blazium/justamcp/require_local_bearer", true);
+	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::BOOL, "blazium/justamcp/require_local_bearer"));
+	EDITOR_DEF_BASIC("blazium/justamcp/require_read_before_write", true);
+	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::BOOL, "blazium/justamcp/require_read_before_write"));
+	EDITOR_DEF_BASIC("blazium/justamcp/save_requires_confirmation", false);
+	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::BOOL, "blazium/justamcp/save_requires_confirmation"));
+	EDITOR_DEF_BASIC("blazium/justamcp/screenshot_soft_cap", 0);
+	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::INT, "blazium/justamcp/screenshot_soft_cap", PROPERTY_HINT_RANGE, "0,10000,1"));
+	EDITOR_DEF_BASIC("blazium/justamcp/play_mode_soft_cap", 0);
+	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::INT, "blazium/justamcp/play_mode_soft_cap", PROPERTY_HINT_RANGE, "0,10000,1"));
+	EDITOR_DEF_BASIC("blazium/justamcp/claim_wait_ms", 30000);
+	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::INT, "blazium/justamcp/claim_wait_ms", PROPERTY_HINT_RANGE, "0,120000,1"));
+	EDITOR_DEF_BASIC("blazium/justamcp/checkpoint_before_destructive", false);
+	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::BOOL, "blazium/justamcp/checkpoint_before_destructive"));
 
 	JustAMCPToolExecutor::register_tool_settings();
 	JustAMCPPromptExecutor::register_settings();

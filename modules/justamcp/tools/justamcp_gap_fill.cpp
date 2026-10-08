@@ -37,6 +37,9 @@
 #include "justamcp_agent_helpers.h"
 
 #include "modules/modules_enabled.gen.h"
+#ifdef MODULE_GDSCRIPT_ENABLED
+#include "modules/gdscript/gdscript.h"
+#endif
 
 #include "core/config/project_settings.h"
 #include "core/crypto/crypto.h"
@@ -315,6 +318,11 @@ static Dictionary _asset_get_json(const String &p_path) {
 
 bool justamcp_gdscript_source_compiles(const String &p_source, String &r_error) {
 #ifdef MODULE_GDSCRIPT_ENABLED
+	if (GDScriptLanguage *lang = GDScriptLanguage::get_singleton()) {
+		if (!lang->get_global_map().has(StringName("Node"))) {
+			lang->init();
+		}
+	}
 	Object *obj = ClassDB::instantiate("GDScript");
 	if (!obj) {
 		r_error = "GDScript is not available.";
@@ -418,7 +426,41 @@ static String _godot3_hint(const String &p_source) {
 	return String();
 }
 
+static int _count_token(const String &p_source, const String &p_token) {
+	int count = 0;
+	int from = 0;
+	while (true) {
+		const int at = p_source.find(p_token, from);
+		if (at < 0) {
+			return count;
+		}
+		const bool left_ok = at == 0 || !(is_ascii_alphanumeric_char(p_source[at - 1]) || p_source[at - 1] == '_');
+		const int end = at + p_token.length();
+		const bool right_ok = end >= p_source.length() || !(is_ascii_alphanumeric_char(p_source[end]) || p_source[end] == '_');
+		if (left_ok && right_ok) {
+			count++;
+		}
+		from = at + 1;
+	}
+}
+
 Dictionary justamcp_guard_gdscript_write(const String &p_path, const String &p_content, const Dictionary &p_params) {
+	const String ext = p_path.get_extension().to_lower();
+	if ((ext == "luau" || ext == "lua") && !(p_params.has("validate") && !bool(p_params["validate"]))) {
+		const int functions = _count_token(p_content, "function");
+		const int ends = _count_token(p_content, "end");
+		int paren = 0;
+		for (int i = 0; i < p_content.length(); i++) {
+			if (p_content[i] == '(') {
+				paren++;
+			} else if (p_content[i] == ')') {
+				paren--;
+			}
+		}
+		if (functions != ends || paren != 0) {
+			return _err("Luau parse error: unbalanced function/end or parentheses.");
+		}
+	}
 	if (!justamcp_script_write_requires_validate(p_path, p_params)) {
 		return Dictionary();
 	}
