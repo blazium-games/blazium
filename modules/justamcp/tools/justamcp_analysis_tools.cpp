@@ -83,6 +83,7 @@ Dictionary JustAMCPAnalysisTools::execute_tool(const String &p_tool_name, const 
 		Dictionary ret;
 		Array issues;
 		Node *root = JustAMCPEditorSceneAccess::get_edited_root();
+		bool truncated = false;
 		if (!root) {
 			issues.push_back("No edited scene is open.");
 		} else {
@@ -91,11 +92,13 @@ Dictionary JustAMCPAnalysisTools::execute_tool(const String &p_tool_name, const 
 			} else if (!FileAccess::exists(root->get_scene_file_path())) {
 				issues.push_back("Scene file is missing on disk: " + root->get_scene_file_path());
 			}
-			List<Node *> stack;
+			Vector<Node *> stack;
 			stack.push_back(root);
+			int visited = 0;
 			while (!stack.is_empty()) {
-				Node *node = stack.front()->get();
-				stack.pop_front();
+				Node *node = stack[stack.size() - 1];
+				stack.resize(stack.size() - 1);
+				visited++;
 				if (node != root && !node->get_owner()) {
 					issues.push_back("Node has no owner and may not be saved: " + String(root->get_path_to(node)));
 				}
@@ -111,6 +114,10 @@ Dictionary JustAMCPAnalysisTools::execute_tool(const String &p_tool_name, const 
 				if (node_script.is_valid() && !node_script->get_path().is_empty() && !ResourceLoader::exists(node_script->get_path())) {
 					issues.push_back("Missing script resource on node: " + String(root->get_path_to(node)));
 				}
+				if (visited >= 4096) {
+					truncated = node->get_child_count() > 0 || !stack.is_empty();
+					break;
+				}
 				for (int i = 0; i < node->get_child_count(); i++) {
 					stack.push_back(node->get_child(i));
 				}
@@ -119,6 +126,7 @@ Dictionary JustAMCPAnalysisTools::execute_tool(const String &p_tool_name, const 
 		ret["ok"] = true;
 		ret["valid"] = issues.is_empty();
 		ret["issues"] = issues;
+		ret["truncated"] = truncated;
 		return ret;
 	}
 	if (owner) {
@@ -348,10 +356,15 @@ Dictionary JustAMCPAnalysisTools::find_unused_resources(const Dictionary &p_para
 	return MCP_SUCCESS(res);
 }
 
-void JustAMCPAnalysisTools::_collect_signal_data(Node *p_node, Node *p_root, Array &r_out, int p_max_nodes, bool &r_truncated) {
+void JustAMCPAnalysisTools::_collect_signal_data(Node *p_node, Node *p_root, Array &r_out, int p_max_nodes, int &r_visited, bool &r_truncated) {
 	if (!p_node || !p_root || r_truncated) {
 		return;
 	}
+	if (r_visited >= 4096) {
+		r_truncated = true;
+		return;
+	}
+	r_visited++;
 	if (p_max_nodes > 0 && r_out.size() >= p_max_nodes) {
 		r_truncated = true;
 		return;
@@ -416,7 +429,11 @@ void JustAMCPAnalysisTools::_collect_signal_data(Node *p_node, Node *p_root, Arr
 	}
 
 	for (int i = 0; i < p_node->get_child_count(); i++) {
-		_collect_signal_data(p_node->get_child(i), p_root, r_out, p_max_nodes, r_truncated);
+		if (r_visited >= 4096) {
+			r_truncated = true;
+			return;
+		}
+		_collect_signal_data(p_node->get_child(i), p_root, r_out, p_max_nodes, r_visited, r_truncated);
 		if (r_truncated) {
 			return;
 		}
@@ -432,7 +449,8 @@ Dictionary JustAMCPAnalysisTools::analyze_signal_flow(const Dictionary &p_params
 	const int max_nodes = CLAMP(int(p_params.get("max_nodes", 2000)), 1, 10000);
 	Array nodes_data;
 	bool truncated = false;
-	_collect_signal_data(root, root, nodes_data, max_nodes, truncated);
+	int visited = 0;
+	_collect_signal_data(root, root, nodes_data, max_nodes, visited, truncated);
 
 	Dictionary res;
 	res["scene"] = root->get_scene_file_path();

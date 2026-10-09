@@ -779,6 +779,8 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "asset_id", "number", "id", "number" }, Vector<String>{});
 	add_schema("asset_lib_install", "Downloads an Asset Library entry and extracts it inside the open project.",
 			Vector<String>{ "asset_id", "number", "id", "number", "destination", "string" }, Vector<String>{});
+	add_schema("extract_zip", "Extracts a sandboxed res:// or user:// zip into a sandboxed destination. Does not download and does not spawn a process.",
+			Vector<String>{ "zip_path", "string", "destination", "string" }, Vector<String>{ "zip_path", "destination" });
 
 	current_category = "blueprint_tools";
 	is_core = false;
@@ -890,6 +892,8 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{}, Vector<String>{});
 	add_schema("verify_change", "Compares expected and actual values.",
 			Vector<String>{ "expected", "any", "actual", "any" }, Vector<String>{});
+	add_schema("verify_game_change", "Runs the edited scene through the editor play path and reports whether play started without new editor errors.",
+			Vector<String>{ "scene_path", "string", "scene", "string", "duration_ms", "number", "expected", "any", "actual", "any" }, Vector<String>{});
 	add_schema("runtime_commit_knobs", "Applies runtime knobs, including Engine time scale, and can write them to a project JSON file.",
 			Vector<String>{ "knobs", "object", "path", "string", "time_scale", "number" }, Vector<String>{});
 	add_schema("xr_set_head_pose", "Sets an XR head pose when an interface is active.",

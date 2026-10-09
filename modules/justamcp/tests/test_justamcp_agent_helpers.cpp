@@ -46,6 +46,10 @@
 #include "modules/modules_enabled.gen.h"
 #include "tests/test_macros.h"
 
+#ifdef MODULE_GDSCRIPT_ENABLED
+#include "modules/gdscript/gdscript.h"
+#endif
+
 #ifdef MODULE_AUTOWORK_ENABLED
 #include "modules/autowork/autowork_main.h"
 #endif
@@ -515,6 +519,13 @@ void test_justamcp_agent_gap_dispatch() {
 }
 
 void test_justamcp_play_clock_and_script_guard() {
+#ifdef MODULE_GDSCRIPT_ENABLED
+	if (GDScriptLanguage *lang = GDScriptLanguage::get_singleton()) {
+		if (!lang->get_global_map().has(StringName("Node"))) {
+			lang->init();
+		}
+	}
+#endif
 	Dictionary both;
 	both["duration_ms"] = 16;
 	both["frames"] = 1;

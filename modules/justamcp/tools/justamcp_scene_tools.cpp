@@ -33,6 +33,7 @@
 #include "../justamcp_editor_filesystem.h"
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
+#include "justamcp_agent_policy.h"
 #include "justamcp_route_helpers.h"
 
 #include "core/config/project_settings.h"
@@ -190,6 +191,7 @@ Dictionary JustAMCPSceneTools::_pack_and_save_scene(Node *p_scene_root, const St
 		ret["error"] = "Failed to pack scene";
 		return ret;
 	}
+	JustAMCPAgentPolicy::note_file_undo(p_scene_path);
 	if (ResourceSaver::save(packed, p_scene_path) != OK) {
 		if (p_free_root) {
 			memdelete(p_scene_root);

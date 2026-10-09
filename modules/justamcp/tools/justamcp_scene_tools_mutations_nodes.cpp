@@ -31,6 +31,7 @@
 
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
+#include "justamcp_agent_policy.h"
 #include "justamcp_scene_path_lock.h"
 #include "justamcp_scene_tools.h"
 
@@ -135,7 +136,7 @@ Dictionary JustAMCPSceneTools::add_node(const Dictionary &p_args) {
 
 	if (is_active) {
 		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
-		ur->create_action(TTR("AI Local: Add Node"), UndoRedo::MERGE_DISABLE, parent);
+		ur->create_action(String(TTR("AI Local: Add Node")) + " [" + JustAMCPAgentPolicy::current_session_id() + "]", UndoRedo::MERGE_DISABLE, parent);
 		ur->add_do_method(parent, "add_child", new_node, true);
 		ur->add_do_method(new_node, "set_owner", root);
 		ur->add_do_reference(new_node);
@@ -251,7 +252,7 @@ Dictionary JustAMCPSceneTools::instance_scene(const Dictionary &p_args) {
 
 	if (is_active) {
 		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
-		ur->create_action(TTR("AI Local: Instance Scene"), UndoRedo::MERGE_DISABLE, parent);
+		ur->create_action(String(TTR("AI Local: Instance Scene")) + " [" + JustAMCPAgentPolicy::current_session_id() + "]", UndoRedo::MERGE_DISABLE, parent);
 		ur->add_do_method(parent, "add_child", new_node, true);
 		ur->add_do_method(new_node, "set_owner", root);
 		ur->add_do_reference(new_node);
@@ -332,7 +333,7 @@ Dictionary JustAMCPSceneTools::delete_node(const Dictionary &p_args) {
 
 	if (is_active) {
 		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
-		ur->create_action(TTR("AI Local: Delete Node"), UndoRedo::MERGE_DISABLE, node);
+		ur->create_action(String(TTR("AI Local: Delete Node")) + " [" + JustAMCPAgentPolicy::current_session_id() + "]", UndoRedo::MERGE_DISABLE, node);
 		ur->add_do_method(parent, "remove_child", node);
 
 		ur->add_undo_method(node, "set_owner", root);
@@ -445,7 +446,7 @@ Dictionary JustAMCPSceneTools::duplicate_node(const Dictionary &p_args) {
 
 	if (is_active) {
 		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
-		ur->create_action(TTR("AI Local: Duplicate Node"), UndoRedo::MERGE_DISABLE, duplicated_node);
+		ur->create_action(String(TTR("AI Local: Duplicate Node")) + " [" + JustAMCPAgentPolicy::current_session_id() + "]", UndoRedo::MERGE_DISABLE, duplicated_node);
 		ur->add_do_method(target_parent, "add_child", duplicated_node, true);
 		if (root->is_ancestor_of(target_parent) || target_parent == root) {
 			ur->add_do_method(duplicated_node, "set_owner", root);
@@ -577,9 +578,28 @@ Dictionary JustAMCPSceneTools::set_node_properties(const Dictionary &p_args) {
 		return ret;
 	}
 
+	if (p_args.has("before") && p_args["before"].get_type() == Variant::DICTIONARY) {
+		const Dictionary before = p_args["before"];
+		Array before_keys = before.keys();
+		for (int i = 0; i < before_keys.size(); i++) {
+			const String prop_name = before_keys[i];
+			bool valid = false;
+			const Variant current = node->get(prop_name, &valid);
+			if (!valid || current != before[prop_name]) {
+				if (!is_active) {
+					memdelete(root);
+				}
+				Dictionary ret;
+				ret["ok"] = false;
+				ret["error"] = "property changed before the write";
+				return ret;
+			}
+		}
+	}
+
 	if (is_active) {
 		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
-		ur->create_action(TTR("AI Local: Set Properties"), UndoRedo::MERGE_DISABLE, node);
+		ur->create_action(String(TTR("AI Local: Set Properties")) + " [" + JustAMCPAgentPolicy::current_session_id() + "]", UndoRedo::MERGE_DISABLE, node);
 		Array keys = properties.keys();
 		for (int i = 0; i < keys.size(); i++) {
 			String prop_name = keys[i];

@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "justamcp_physics_tools.h"
+#include "justamcp_agent_policy.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_undo_redo_manager.h"
@@ -251,7 +252,7 @@ Dictionary JustAMCPPhysicsTools::_setup_collision(const Dictionary &p_params) {
 #ifdef TOOLS_ENABLED
 	EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
 	if (ur) {
-		ur->create_action("MCP: Add CollisionShape to " + node->get_name());
+		ur->create_action(String("MCP: Add CollisionShape to ") + node->get_name() + " [" + JustAMCPAgentPolicy::current_session_id() + "]");
 		ur->add_do_method(node, "add_child", collision_node);
 		ur->add_do_method(collision_node, "set_owner", root);
 		ur->add_do_reference(collision_node);
@@ -340,7 +341,7 @@ Dictionary JustAMCPPhysicsTools::_autofit(const Dictionary &p_params) {
 			}
 			if (shape.is_valid()) {
 				if (ur) {
-					ur->create_action("Autofit Shape 3D");
+					ur->create_action(String("Autofit Shape 3D [") + JustAMCPAgentPolicy::current_session_id() + "]");
 					ur->add_do_property(cs, "shape", shape);
 					ur->add_undo_property(cs, "shape", cs->get_shape());
 					ur->add_do_reference(shape.ptr());
@@ -373,7 +374,7 @@ Dictionary JustAMCPPhysicsTools::_autofit(const Dictionary &p_params) {
 			}
 			if (shape.is_valid()) {
 				if (ur) {
-					ur->create_action("Autofit Shape 2D");
+					ur->create_action(String("Autofit Shape 2D [") + JustAMCPAgentPolicy::current_session_id() + "]");
 					ur->add_do_property(cs, "shape", shape);
 					ur->add_undo_property(cs, "shape", cs->get_shape());
 					ur->add_do_reference(shape.ptr());

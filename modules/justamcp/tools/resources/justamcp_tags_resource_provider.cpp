@@ -33,6 +33,7 @@
 
 #include "../../justamcp_pagination.h"
 #include "core/io/json.h"
+#include "core/os/mutex.h"
 #include "modules/modules_enabled.gen.h"
 
 #ifdef MODULE_ASSETTAGS_ENABLED
@@ -64,8 +65,10 @@ static Dictionary _tags_json_error(const String &p_uri, const String &p_error) {
 
 static uint32_t g_tags_dictionary_cache_fingerprint = 0;
 static Dictionary g_tags_dictionary_cache_payload;
+static Mutex g_tags_dictionary_cache_mutex;
 
 void JustAMCPTagsResourceProvider::invalidate_dictionary_cache() {
+	MutexLock lock(g_tags_dictionary_cache_mutex);
 	g_tags_dictionary_cache_fingerprint = 0;
 	g_tags_dictionary_cache_payload = Dictionary();
 }
@@ -111,8 +114,19 @@ Dictionary JustAMCPTagsResourceProvider::read(const String &p_uri, const String 
 		}
 		PackedStringArray all_tags = tag_manager->list_all_tags();
 		const uint32_t fingerprint = _tags_dictionary_fingerprint(tag_manager);
-		if (cursor.is_empty() && fingerprint == g_tags_dictionary_cache_fingerprint && !g_tags_dictionary_cache_payload.is_empty()) {
-			return _tags_json_contents(p_uri, g_tags_dictionary_cache_payload);
+		if (cursor.is_empty()) {
+			Dictionary cached;
+			bool hit = false;
+			{
+				MutexLock lock(g_tags_dictionary_cache_mutex);
+				if (fingerprint == g_tags_dictionary_cache_fingerprint && !g_tags_dictionary_cache_payload.is_empty()) {
+					cached = g_tags_dictionary_cache_payload;
+					hit = true;
+				}
+			}
+			if (hit) {
+				return _tags_json_contents(p_uri, cached);
+			}
 		}
 		Dictionary page = justamcp_pagination_slice_strings(all_tags, cursor, "tag_names");
 		Array page_tags = page.get("tag_names", Array());
@@ -128,8 +142,10 @@ Dictionary JustAMCPTagsResourceProvider::read(const String &p_uri, const String 
 			payload["nextUri"] = justamcp_pagination_next_uri("blazium://tags/dictionary", String(page["nextCursor"]));
 		}
 		if (cursor.is_empty()) {
+			const Dictionary stored = payload.duplicate(true);
+			MutexLock lock(g_tags_dictionary_cache_mutex);
 			g_tags_dictionary_cache_fingerprint = fingerprint;
-			g_tags_dictionary_cache_payload = payload;
+			g_tags_dictionary_cache_payload = stored;
 		}
 		return _tags_json_contents(p_uri, payload);
 	}

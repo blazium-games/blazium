@@ -161,10 +161,11 @@ JustAMCPToolExecutor::JustAMCPToolExecutor() {
 }
 
 JustAMCPToolExecutor::~JustAMCPToolExecutor() {
+	// Workers in execute_tool read active_instance. Wait before clearing it.
+	_wait_for_tracked_worker_tasks();
 	if (active_instance == this) {
 		active_instance = nullptr;
 	}
-	_wait_for_tracked_worker_tasks();
 	if (scene_tools) {
 		memdelete(scene_tools);
 	}

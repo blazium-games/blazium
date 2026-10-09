@@ -31,6 +31,7 @@
 
 #include "justamcp_blazium_resource_registry.h"
 
+#include "justamcp_agent_resource_provider.h"
 #include "justamcp_docs_resource_provider.h"
 #include "justamcp_guides_resource_provider.h"
 #include "justamcp_logs_resource_provider.h"
@@ -41,7 +42,6 @@
 #include "justamcp_script_resource_provider.h"
 #include "justamcp_selection_resource_provider.h"
 #include "justamcp_semantic_resource_provider.h"
-#include "justamcp_agent_resource_provider.h"
 #include "justamcp_sessions_resource_provider.h"
 #include "justamcp_tags_resource_provider.h"
 

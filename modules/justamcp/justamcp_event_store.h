@@ -42,8 +42,12 @@ class MCPEventStore {
 	String session_id;
 	String stream_id;
 	Vector<MCPEventRecord> events;
+	int event_count = 0;
+	int event_next = 0;
 	uint64_t next_seq = 1;
 	int max_entries = 500;
+
+	int _logical_slot(int p_logical) const;
 
 public:
 	void configure(const String &p_session_id, const String &p_stream_id, int p_max_entries);

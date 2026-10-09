@@ -237,6 +237,39 @@ Dictionary JustAMCPScriptTools::_validate_script(const Dictionary &p_params) {
 	String source_code = file->get_as_text();
 	file->close();
 
+	if (path.get_extension().to_lower() == "cs") {
+		Dictionary res;
+		res["path"] = path;
+		if (!ClassDB::class_exists("CSharpScript")) {
+			res["valid"] = false;
+			res["compiler"] = "unavailable";
+			res["message"] = "The C# compiler is not in this build.";
+			return MCP_SUCCESS(res);
+		}
+		Object *csharp = ClassDB::instantiate("CSharpScript");
+		Ref<Script> csharp_script = Object::cast_to<Script>(csharp);
+		if (csharp_script.is_null()) {
+			if (csharp) {
+				memdelete(csharp);
+			}
+			res["valid"] = false;
+			res["compiler"] = "unavailable";
+			res["message"] = "The C# compiler is not in this build.";
+			return MCP_SUCCESS(res);
+		}
+		csharp_script->set_source_code(source_code);
+		const Error csharp_err = csharp_script->reload();
+		res["compiler"] = "csharp";
+		res["valid"] = csharp_err == OK;
+		if (csharp_err == OK) {
+			res["message"] = "Script compiles successfully";
+		} else {
+			res["error_code"] = csharp_err;
+			res["message"] = "Compilation failed.";
+		}
+		return MCP_SUCCESS(res);
+	}
+
 	Object *obj = ClassDB::instantiate("GDScript");
 	if (!obj) {
 		return MCP_INTERNAL("Godot Engine is not compiled with GDScript support");

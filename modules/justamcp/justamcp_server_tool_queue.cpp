@@ -471,13 +471,20 @@ void JustAMCPServer::_insert_tool_result_tombstone(const String &p_tombstone_key
 	if (completed_tool_request_tombstones.has(p_tombstone_key)) {
 		return;
 	}
-	while (completed_tool_request_tombstone_order.size() >= COMPLETED_TOOL_REQUEST_TOMBSTONE_MAX) {
-		const String oldest = completed_tool_request_tombstone_order[0];
-		completed_tool_request_tombstone_order.remove_at(0);
-		completed_tool_request_tombstones.erase(oldest);
+	if (completed_tool_request_tombstone_slots.size() != COMPLETED_TOOL_REQUEST_TOMBSTONE_MAX) {
+		completed_tool_request_tombstone_slots.resize(COMPLETED_TOOL_REQUEST_TOMBSTONE_MAX);
+		completed_tool_request_tombstone_count = 0;
+		completed_tool_request_tombstone_next = 0;
 	}
+	if (completed_tool_request_tombstone_count >= COMPLETED_TOOL_REQUEST_TOMBSTONE_MAX) {
+		completed_tool_request_tombstones.erase(completed_tool_request_tombstone_slots[completed_tool_request_tombstone_next]);
+	}
+	completed_tool_request_tombstone_slots.write[completed_tool_request_tombstone_next] = p_tombstone_key;
 	completed_tool_request_tombstones.insert(p_tombstone_key);
-	completed_tool_request_tombstone_order.push_back(p_tombstone_key);
+	completed_tool_request_tombstone_next = (completed_tool_request_tombstone_next + 1) % COMPLETED_TOOL_REQUEST_TOMBSTONE_MAX;
+	if (completed_tool_request_tombstone_count < COMPLETED_TOOL_REQUEST_TOMBSTONE_MAX) {
+		completed_tool_request_tombstone_count++;
+	}
 }
 
 bool JustAMCPServer::_has_tool_result_tombstone(const String &p_tombstone_key) const {

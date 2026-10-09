@@ -35,21 +35,40 @@ void MCPEventStore::configure(const String &p_session_id, const String &p_stream
 	max_entries = MAX(1, p_max_entries);
 	next_seq = 1;
 	events.clear();
+	event_count = 0;
+	event_next = 0;
 }
 
 void MCPEventStore::clear() {
 	events.clear();
 	next_seq = 1;
+	event_count = 0;
+	event_next = 0;
+}
+
+int MCPEventStore::_logical_slot(int p_logical) const {
+	const int cap = events.size();
+	if (cap <= 0 || p_logical < 0 || p_logical >= event_count) {
+		return 0;
+	}
+	const int start = event_count < cap ? 0 : event_next;
+	return (start + p_logical) % cap;
 }
 
 String MCPEventStore::append_event(const String &p_event_type, const String &p_data) {
+	if (events.size() != max_entries) {
+		events.resize(max_entries);
+		event_count = 0;
+		event_next = 0;
+	}
 	MCPEventRecord record;
 	record.id = session_id + ":" + stream_id + ":" + itos(next_seq++);
 	record.event_type = p_event_type;
 	record.data = p_data;
-	events.push_back(record);
-	while (events.size() > max_entries) {
-		events.remove_at(0);
+	events.write[event_next] = record;
+	event_next = (event_next + 1) % max_entries;
+	if (event_count < max_entries) {
+		event_count++;
 	}
 	return record.id;
 }
@@ -58,8 +77,8 @@ int MCPEventStore::find_index_after(const String &p_last_event_id) const {
 	if (p_last_event_id.is_empty()) {
 		return -1;
 	}
-	for (int i = 0; i < events.size(); i++) {
-		if (events[i].id == p_last_event_id) {
+	for (int i = 0; i < event_count; i++) {
+		if (events[_logical_slot(i)].id == p_last_event_id) {
 			return i;
 		}
 	}
@@ -75,8 +94,8 @@ Vector<MCPEventRecord> MCPEventStore::events_after(const String &p_last_event_id
 	if (idx == -2) {
 		return replay;
 	}
-	for (int i = idx + 1; i < events.size(); i++) {
-		replay.push_back(events[i]);
+	for (int i = idx + 1; i < event_count; i++) {
+		replay.push_back(events[_logical_slot(i)]);
 	}
 	return replay;
 }

@@ -30,6 +30,7 @@
 #include "../justamcp_editor_filesystem.h"
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
+#include "justamcp_agent_policy.h"
 #include "justamcp_animation_tools.h"
 
 #include "core/io/file_access.h"
@@ -119,6 +120,7 @@ Dictionary JustAMCPAnimationTools::_save_scene(Node *p_scene_root, const String 
 		ret["error"] = "Failed to pack scene";
 		return ret;
 	}
+	JustAMCPAgentPolicy::note_file_undo(p_scene_path);
 	if (ResourceSaver::save(packed, p_scene_path) != OK) {
 		memdelete(p_scene_root);
 		ret["ok"] = false;

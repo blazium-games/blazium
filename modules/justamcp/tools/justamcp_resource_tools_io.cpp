@@ -33,6 +33,7 @@
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_read_limits.h"
 #include "justamcp_agent_helpers.h"
+#include "justamcp_agent_policy.h"
 #include "justamcp_resource_tools.h"
 
 #include "core/config/project_settings.h"
@@ -180,6 +181,7 @@ Error JustAMCPResourceTools::_save_scene_root(Node *p_root, const String &p_scen
 	if (err != OK) {
 		return err;
 	}
+	JustAMCPAgentPolicy::note_file_undo(p_scene_path);
 	return ResourceSaver::save(packed, p_scene_path);
 }
 

@@ -30,6 +30,7 @@
 #include "justamcp_draw_tools.h"
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
+#include "justamcp_agent_policy.h"
 
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
@@ -143,7 +144,7 @@ Dictionary JustAMCPDrawTools::control_draw_recipe(const Dictionary &p_args) {
 	}
 
 	if (ur) {
-		ur->create_action("Attach Draw Recipe to " + node->get_name());
+		ur->create_action(String("Attach Draw Recipe to ") + node->get_name() + " [" + JustAMCPAgentPolicy::current_session_id() + "]");
 		ur->add_do_method(node, "set_script", gds);
 		ur->add_do_method(node, "set_meta", "_ops", recipe_ops);
 		ur->add_do_method(node, "queue_redraw");

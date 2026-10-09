@@ -32,6 +32,7 @@
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
 #include "../justamcp_read_limits.h"
+#include "justamcp_agent_policy.h"
 #include "justamcp_resource_tools.h"
 
 #include "core/config/project_settings.h"
@@ -119,7 +120,7 @@ Dictionary JustAMCPResourceTools::create_resource(const Dictionary &p_args) {
 			if (target) {
 				EditorUndoRedoManager *ur = editor_plugin->get_editor_interface()->get_editor_undo_redo();
 				if (ur) {
-					ur->create_action("Create Resource: " + res_type);
+					ur->create_action(String("Create Resource: ") + res_type + " [" + JustAMCPAgentPolicy::current_session_id() + "]");
 					ur->add_do_property(target, property, resource);
 					ur->add_undo_property(target, property, target->get(property));
 					ur->add_do_reference(resource.ptr());

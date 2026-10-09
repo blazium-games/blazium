@@ -58,6 +58,9 @@ public:
 	static int take_grouped_undo();
 	static void clear_grouped_undo();
 	static int undo_snapshots(int p_steps);
+	static void note_batch_undo(const Array &p_property_restores, const Array &p_added_node_ids);
+	static void note_file_undo(const String &p_path);
+	static void note_tile_undo(const Array &p_cells);
 
 	static void note_tool_name(const String &p_name);
 	static void attach_annotations(Dictionary &p_schema);
@@ -90,6 +93,8 @@ public:
 	static Array audit_log();
 	static Dictionary usage_report();
 	static void store_screenshot_summary(const String &p_summary);
+	static void store_scene_baseline(const Array &p_rows);
+	static Array copy_scene_baseline();
 
 	static Dictionary commit_knobs(const Dictionary &p_knobs);
 	static Dictionary current_knobs();

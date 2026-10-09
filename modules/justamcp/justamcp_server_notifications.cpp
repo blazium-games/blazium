@@ -67,10 +67,30 @@ void JustAMCPServer::_append_mcp_notification_log(const String &p_level, const S
 	entry["timestamp_usec"] = Time::get_singleton()->get_ticks_usec();
 
 	MutexLock lock(mcp_notification_log_mutex);
-	mcp_notification_log.push_back(entry);
-	const int max_entries = justamcp_mcp_log_buffer_size();
-	while (mcp_notification_log.size() > max_entries) {
-		mcp_notification_log.remove_at(0);
+	const int cap = justamcp_mcp_log_buffer_size();
+	if (mcp_notification_log_slots.size() != cap) {
+		Vector<Dictionary> ordered;
+		const int old_cap = mcp_notification_log_slots.size();
+		if (old_cap > 0 && mcp_notification_log_count > 0) {
+			const int start = mcp_notification_log_count < old_cap ? 0 : mcp_notification_log_next;
+			const int keep = MIN(mcp_notification_log_count, cap);
+			const int skip = mcp_notification_log_count - keep;
+			ordered.resize(keep);
+			for (int i = 0; i < keep; i++) {
+				ordered.write[i] = mcp_notification_log_slots[(start + skip + i) % old_cap];
+			}
+		}
+		mcp_notification_log_slots.resize(cap);
+		for (int i = 0; i < ordered.size(); i++) {
+			mcp_notification_log_slots.write[i] = ordered[i];
+		}
+		mcp_notification_log_count = ordered.size();
+		mcp_notification_log_next = ordered.is_empty() ? 0 : ordered.size() % cap;
+	}
+	mcp_notification_log_slots.write[mcp_notification_log_next] = entry;
+	mcp_notification_log_next = (mcp_notification_log_next + 1) % cap;
+	if (mcp_notification_log_count < cap) {
+		mcp_notification_log_count++;
 	}
 }
 
@@ -87,13 +107,17 @@ Dictionary JustAMCPServer::get_mcp_notification_log_page(const String &p_cursor)
 	int total = 0;
 	{
 		MutexLock lock(mcp_notification_log_mutex);
-		total = mcp_notification_log.size();
+		total = mcp_notification_log_count;
 		if (offset < 0) {
 			offset = 0;
 		}
+		const int cap = mcp_notification_log_slots.size();
 		const int page_size = justamcp_pagination_page_size();
-		for (int i = offset; i < total && page.size() < page_size; i++) {
-			page.push_back(mcp_notification_log[i]);
+		if (cap > 0 && total > 0) {
+			const int start = total < cap ? 0 : mcp_notification_log_next;
+			for (int i = offset; i < total && page.size() < page_size; i++) {
+				page.push_back(mcp_notification_log_slots[(start + i) % cap]);
+			}
 		}
 	}
 	Dictionary result;

@@ -32,6 +32,7 @@
 #include "../justamcp_editor_scene_access.h"
 #include "../justamcp_play_clock.h"
 #include "../justamcp_read_limits.h"
+#include "justamcp_agent_policy.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_interface.h"
@@ -502,6 +503,7 @@ Dictionary JustAMCPScriptTools::_attach_script(const Dictionary &p_params) {
 		memdelete(scene_root);
 		return MCP_INTERNAL("Failed to pack scene after attach: " + scene_path);
 	}
+	JustAMCPAgentPolicy::note_file_undo(scene_path);
 	if (ResourceSaver::save(out_packed, scene_path) != OK) {
 		memdelete(scene_root);
 		return MCP_INTERNAL("Failed to save scene after attach: " + scene_path);

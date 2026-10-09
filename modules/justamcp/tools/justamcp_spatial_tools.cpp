@@ -32,6 +32,8 @@
 #include "justamcp_spatial_tools.h"
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
+#include "core/math/math_funcs.h"
+#include "core/templates/hash_map.h"
 #include "editor/editor_interface.h"
 #include "justamcp_gap_fill.h"
 #include "scene/2d/navigation_agent_2d.h"
@@ -70,7 +72,11 @@ Node *JustAMCPSpatialTools::_get_node(const String &p_path) {
 	}
 }
 
-void JustAMCPSpatialTools::_collect_spatial_nodes(Node *p_node, Array &p_list_2d, Array &p_list_3d, bool p_inc_2d, bool p_inc_3d) {
+bool JustAMCPSpatialTools::_collect_spatial_nodes(Node *p_node, Array &p_list_2d, Array &p_list_3d, bool p_inc_2d, bool p_inc_3d, int &r_visited) {
+	if (!p_node || r_visited >= 4096) {
+		return r_visited >= 4096;
+	}
+	r_visited++;
 	if (p_inc_2d) {
 		Node2D *n2d = Object::cast_to<Node2D>(p_node);
 		if (n2d) {
@@ -102,19 +108,41 @@ void JustAMCPSpatialTools::_collect_spatial_nodes(Node *p_node, Array &p_list_2d
 		}
 	}
 
+	bool truncated = false;
 	for (int i = 0; i < p_node->get_child_count(); ++i) {
-		_collect_spatial_nodes(p_node->get_child(i), p_list_2d, p_list_3d, p_inc_2d, p_inc_3d);
+		if (r_visited >= 4096) {
+			truncated = true;
+			break;
+		}
+		if (_collect_spatial_nodes(p_node->get_child(i), p_list_2d, p_list_3d, p_inc_2d, p_inc_3d, r_visited)) {
+			truncated = true;
+			break;
+		}
 	}
+	return truncated;
 }
 
-void JustAMCPSpatialTools::_collect_node3d(Node *p_node, Vector<Node3D *> &p_list) {
+bool JustAMCPSpatialTools::_collect_node3d(Node *p_node, Vector<Node3D *> &p_list, int &r_visited) {
+	if (!p_node || r_visited >= 4096) {
+		return r_visited >= 4096;
+	}
+	r_visited++;
 	Node3D *n3d = Object::cast_to<Node3D>(p_node);
 	if (n3d) {
 		p_list.push_back(n3d);
 	}
+	bool truncated = false;
 	for (int i = 0; i < p_node->get_child_count(); ++i) {
-		_collect_node3d(p_node->get_child(i), p_list);
+		if (r_visited >= 4096) {
+			truncated = true;
+			break;
+		}
+		if (_collect_node3d(p_node->get_child(i), p_list, r_visited)) {
+			truncated = true;
+			break;
+		}
 	}
+	return truncated;
 }
 
 Dictionary JustAMCPSpatialTools::spatial_analyze_layout(const Dictionary &p_args) {
@@ -138,7 +166,8 @@ Dictionary JustAMCPSpatialTools::spatial_analyze_layout(const Dictionary &p_args
 	bool first_2d = true;
 	bool first_3d = true;
 
-	_collect_spatial_nodes(root, nodes_2d, nodes_3d, include_2d, include_3d);
+	int visited = 0;
+	const bool truncated = _collect_spatial_nodes(root, nodes_2d, nodes_3d, include_2d, include_3d, visited);
 
 	for (int i = 0; i < nodes_2d.size(); ++i) {
 		Dictionary info = nodes_2d[i];
@@ -167,6 +196,7 @@ Dictionary JustAMCPSpatialTools::spatial_analyze_layout(const Dictionary &p_args
 	result["ok"] = true;
 	result["nodes_2d"] = nodes_2d.size();
 	result["nodes_3d"] = nodes_3d.size();
+	result["truncated"] = truncated;
 
 	if (!first_2d) {
 		Dictionary b2d;
@@ -275,21 +305,55 @@ Dictionary JustAMCPSpatialTools::spatial_detect_overlaps(const Dictionary &p_arg
 	}
 
 	Vector<Node3D *> nodes_3d;
-	_collect_node3d(root, nodes_3d);
+	int visited = 0;
+	bool truncated = _collect_node3d(root, nodes_3d, visited);
 	Array overlaps;
-
+	const double cell = threshold > 0.0 ? threshold : 0.01;
+	HashMap<String, Vector<int>> bins;
 	for (int i = 0; i < nodes_3d.size(); ++i) {
-		for (int j = i + 1; j < nodes_3d.size(); ++j) {
-			Node3D *a = nodes_3d[i];
-			Node3D *b = nodes_3d[j];
-			double dist = a->get_global_position().distance_to(b->get_global_position());
-			if (dist < threshold) {
-				Dictionary over;
-				over["node_a"] = String(a->get_path());
-				over["node_b"] = String(b->get_path());
-				over["distance"] = dist;
-				over["type"] = "position_overlap";
-				overlaps.push_back(over);
+		const Vector3 pos = nodes_3d[i]->get_global_position();
+		const String key = String::num_int64(int(Math::floor(pos.x / cell))) + "," + String::num_int64(int(Math::floor(pos.y / cell))) + "," + String::num_int64(int(Math::floor(pos.z / cell)));
+		if (!bins.has(key)) {
+			bins.insert(key, Vector<int>());
+		}
+		bins[key].push_back(i);
+	}
+	for (int i = 0; i < nodes_3d.size(); ++i) {
+		const Vector3 pa = nodes_3d[i]->get_global_position();
+		const int cx = int(Math::floor(pa.x / cell));
+		const int cy = int(Math::floor(pa.y / cell));
+		const int cz = int(Math::floor(pa.z / cell));
+		for (int ox = -1; ox <= 1; ox++) {
+			for (int oy = -1; oy <= 1; oy++) {
+				for (int oz = -1; oz <= 1; oz++) {
+					const String key = String::num_int64(cx + ox) + "," + String::num_int64(cy + oy) + "," + String::num_int64(cz + oz);
+					if (!bins.has(key)) {
+						continue;
+					}
+					const Vector<int> &there = bins[key];
+					int compared = 0;
+					for (int b = 0; b < there.size(); b++) {
+						const int other_index = there[b];
+						if (other_index <= i) {
+							continue;
+						}
+						if (compared >= 8) {
+							truncated = true;
+							break;
+						}
+						compared++;
+						Node3D *b_node = nodes_3d[other_index];
+						const double dist = pa.distance_to(b_node->get_global_position());
+						if (dist < threshold) {
+							Dictionary over;
+							over["node_a"] = String(nodes_3d[i]->get_path());
+							over["node_b"] = String(b_node->get_path());
+							over["distance"] = dist;
+							over["type"] = "position_overlap";
+							overlaps.push_back(over);
+						}
+					}
+				}
 			}
 		}
 	}
@@ -298,6 +362,7 @@ Dictionary JustAMCPSpatialTools::spatial_detect_overlaps(const Dictionary &p_arg
 	result["checked_nodes"] = nodes_3d.size();
 	result["overlap_count"] = overlaps.size();
 	result["overlaps"] = overlaps;
+	result["truncated"] = truncated;
 	return result;
 }
 
@@ -462,9 +527,12 @@ Dictionary JustAMCPSpatialTools::navigation_get_info(const Dictionary &p_args) {
 	Array agents;
 	Vector<Node *> stack;
 	stack.push_back(root);
+	int visited = 0;
+	bool truncated = false;
 	while (!stack.is_empty()) {
 		Node *node = stack[stack.size() - 1];
 		stack.resize(stack.size() - 1);
+		visited++;
 		if (NavigationRegion3D *region3d = Object::cast_to<NavigationRegion3D>(node)) {
 			Dictionary info;
 			info["path"] = String(region3d->get_path());
@@ -496,6 +564,10 @@ Dictionary JustAMCPSpatialTools::navigation_get_info(const Dictionary &p_args) {
 			info["target_desired_distance"] = agent2d->get_target_desired_distance();
 			agents.push_back(info);
 		}
+		if (visited >= 4096) {
+			truncated = node->get_child_count() > 0 || !stack.is_empty();
+			break;
+		}
 		for (int i = 0; i < node->get_child_count(); i++) {
 			stack.push_back(node->get_child(i));
 		}
@@ -506,6 +578,7 @@ Dictionary JustAMCPSpatialTools::navigation_get_info(const Dictionary &p_args) {
 	result["agents"] = agents;
 	result["region_count"] = regions.size();
 	result["agent_count"] = agents.size();
+	result["truncated"] = truncated;
 	return result;
 }
 

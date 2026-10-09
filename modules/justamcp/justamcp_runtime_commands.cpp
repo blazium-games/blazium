@@ -370,17 +370,29 @@ Dictionary JustAMCPRuntime::_cmd_get_log_tail(const Dictionary &p_params) {
 		count = 500;
 	}
 
-	MutexLock lock(_error_log_mutex);
+	Vector<Dictionary> slots;
+	int stored = 0;
+	int next = 0;
+	{
+		MutexLock lock(_error_log_mutex);
+		slots = _error_log_slots;
+		stored = _error_log_count;
+		next = _error_log_next;
+	}
 	Array tail;
-	int start = MAX(0, (int)_error_log.size() - count);
-	for (int i = start; i < _error_log.size(); i++) {
-		tail.push_back(_error_log[i]);
+	if (stored > 0 && slots.size() > 0) {
+		const int cap = slots.size();
+		const int start_slot = stored < cap ? 0 : next;
+		const int from = MAX(0, stored - count);
+		for (int i = from; i < stored; i++) {
+			tail.push_back(slots[(start_slot + i) % cap]);
+		}
 	}
 
 	Dictionary ret;
 	ret["type"] = "log_tail";
 	ret["logs"] = tail;
-	ret["total_available"] = _error_log.size();
+	ret["total_available"] = stored;
 	return ret;
 }
 

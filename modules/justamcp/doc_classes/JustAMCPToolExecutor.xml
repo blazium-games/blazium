@@ -16,6 +16,12 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="bearer_authorizes" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="authorization" type="String" />
+			<description>
+			</description>
+		</method>
 		<method name="execute_tool">
 			<return type="Dictionary" />
 			<param index="0" name="tool_name" type="String" />
@@ -32,6 +38,11 @@
 			<param index="3" name="include_disabled_tools" type="bool" default="false" />
 			<description>
 				Returns MCP JSON schema dictionaries for the available tools. Set [param register_only] to return registration metadata only, or [param ignore_settings] to bypass editor filtering.
+			</description>
+		</method>
+		<method name="instance_bearer" qualifiers="static">
+			<return type="String" />
+			<description>
 			</description>
 		</method>
 		<method name="list_tools" qualifiers="static">

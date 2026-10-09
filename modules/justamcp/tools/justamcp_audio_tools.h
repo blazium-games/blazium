@@ -41,7 +41,7 @@ private:
 	EditorPlugin *editor_plugin = nullptr;
 
 	Dictionary _get_effect_params(Object *p_effect);
-	void _collect_audio_players(Node *p_node, Array &r_result);
+	bool _collect_audio_players(Node *p_node, Array &r_result, int &r_visited);
 	Node *_find_node_by_path(const String &p_path);
 
 	Dictionary _get_audio_bus_layout(const Dictionary &p_params);

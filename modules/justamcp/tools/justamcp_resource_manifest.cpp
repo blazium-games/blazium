@@ -93,6 +93,7 @@ Array JustAMCPResourceManifest::get_static_resource_schemas() {
 	resources.push_back(_manifest_resource_schema("blazium://reference/tools", "Tool Reference", "Generated tool reference for the live catalog.", "text/plain"));
 	resources.push_back(_manifest_resource_schema("blazium://mcp/clients", "MCP Clients", "Client config matrix."));
 	resources.push_back(_manifest_resource_schema("blazium://mcp/compatibility", "MCP Compatibility", "Small-model profile and EditorHelp instructions."));
+	resources.push_back(_manifest_resource_schema("blazium://mcp/benchmark_tasks", "Benchmark Tasks", "Static tool names for a manual benchmark. No model is called."));
 	resources.push_back(_manifest_resource_schema("blazium://meta/tools_list_bytes", "Tool List Size", "Approximate tools/list payload size."));
 	resources.push_back(_manifest_resource_schema("blazium://project/conventions", "Project Conventions", "Bone and node naming conventions."));
 	resources.push_back(_manifest_resource_schema("blazium://screenshot/latest", "Latest Screenshot", "Latest screenshot diff summary.", "text/plain"));

@@ -149,33 +149,89 @@ String JustAMCPTaskManager::create_task(int p_ttl_ms, int p_poll_interval_ms, co
 }
 
 Dictionary JustAMCPTaskManager::list_tasks(const String &p_cursor) {
-	MutexLock lock(tasks_mutex);
-	_purge_expired_tasks();
-	Array arr;
-	for (const KeyValue<String, JustAMCPTaskRecord *> &kv : tasks) {
-		if (kv.value) {
-			arr.push_back(_task_to_dict(*kv.value));
+	struct TaskFields {
+		String task_id;
+		String status;
+		String status_message;
+		String created_at;
+		String last_updated_at;
+		int ttl_ms = 0;
+		int poll_interval_ms = 0;
+	};
+	Vector<TaskFields> copied;
+	{
+		MutexLock lock(tasks_mutex);
+		_purge_expired_tasks();
+		for (const KeyValue<String, JustAMCPTaskRecord *> &kv : tasks) {
+			if (!kv.value) {
+				continue;
+			}
+			TaskFields fields;
+			fields.task_id = kv.value->task_id;
+			fields.status = kv.value->status;
+			fields.status_message = kv.value->status_message;
+			fields.created_at = kv.value->created_at;
+			fields.last_updated_at = kv.value->last_updated_at;
+			fields.ttl_ms = kv.value->ttl_ms;
+			fields.poll_interval_ms = kv.value->poll_interval_ms;
+			copied.push_back(fields);
 		}
+	}
+	Array arr;
+	for (int i = 0; i < copied.size(); i++) {
+		Dictionary row;
+		row["taskId"] = copied[i].task_id;
+		row["status"] = copied[i].status;
+		if (!copied[i].status_message.is_empty()) {
+			row["statusMessage"] = copied[i].status_message;
+		}
+		row["createdAt"] = copied[i].created_at;
+		row["lastUpdatedAt"] = copied[i].last_updated_at;
+		row["ttl"] = copied[i].ttl_ms;
+		row["pollInterval"] = copied[i].poll_interval_ms;
+		arr.push_back(row);
 	}
 	return justamcp_pagination_slice_array(arr, p_cursor, "tasks");
 }
 
 Dictionary JustAMCPTaskManager::get_task(const String &p_task_id) {
-	MutexLock lock(tasks_mutex);
-	_purge_expired_tasks();
-	if (!tasks.has(p_task_id) || !tasks[p_task_id]) {
-		Dictionary err;
-		err["ok"] = false;
-		err["error_code"] = -32602;
-		err["error"] = "Failed to retrieve task: Task not found";
-		return err;
+	String task_id;
+	String status;
+	String status_message;
+	String created_at;
+	String last_updated_at;
+	int ttl_ms = 0;
+	int poll_interval_ms = 0;
+	{
+		MutexLock lock(tasks_mutex);
+		_purge_expired_tasks();
+		if (!tasks.has(p_task_id) || !tasks[p_task_id]) {
+			Dictionary err;
+			err["ok"] = false;
+			err["error_code"] = -32602;
+			err["error"] = "Failed to retrieve task: Task not found";
+			return err;
+		}
+		const JustAMCPTaskRecord *task = tasks[p_task_id];
+		task_id = task->task_id;
+		status = task->status;
+		status_message = task->status_message;
+		created_at = task->created_at;
+		last_updated_at = task->last_updated_at;
+		ttl_ms = task->ttl_ms;
+		poll_interval_ms = task->poll_interval_ms;
 	}
 	Dictionary result;
 	result["ok"] = true;
-	Dictionary task_dict = _task_to_dict(*tasks[p_task_id]);
-	for (int i = 0; i < task_dict.size(); i++) {
-		result[task_dict.keys()[i]] = task_dict.values()[i];
+	result["taskId"] = task_id;
+	result["status"] = status;
+	if (!status_message.is_empty()) {
+		result["statusMessage"] = status_message;
 	}
+	result["createdAt"] = created_at;
+	result["lastUpdatedAt"] = last_updated_at;
+	result["ttl"] = ttl_ms;
+	result["pollInterval"] = poll_interval_ms;
 	return result;
 }
 
@@ -245,26 +301,38 @@ Dictionary JustAMCPTaskManager::get_task_result(const String &p_task_id, bool p_
 		}
 	}
 
-	MutexLock lock(tasks_mutex);
-	_purge_expired_tasks();
-	if (!tasks.has(p_task_id) || !tasks[p_task_id]) {
+	Dictionary shared;
+	bool has_error = false;
+	int error_code = -32603;
+	String error_message = "Task failed.";
+	{
+		MutexLock lock(tasks_mutex);
+		_purge_expired_tasks();
+		if (!tasks.has(p_task_id) || !tasks[p_task_id]) {
+			Dictionary err;
+			err["ok"] = false;
+			err["error_code"] = -32602;
+			err["error"] = "Failed to retrieve task: Task not found";
+			return err;
+		}
+		const JustAMCPTaskRecord *task = tasks[p_task_id];
+		if (task->has_stored_error) {
+			has_error = true;
+			error_code = int(task->stored_error.get("code", -32603));
+			error_message = String(task->stored_error.get("message", "Task failed."));
+		} else {
+			shared = task->stored_result;
+		}
+	}
+	if (has_error) {
 		Dictionary err;
 		err["ok"] = false;
-		err["error_code"] = -32602;
-		err["error"] = "Failed to retrieve task: Task not found";
+		err["error_code"] = error_code;
+		err["error"] = error_message;
 		return err;
 	}
 
-	const JustAMCPTaskRecord *task = tasks[p_task_id];
-	if (task->has_stored_error) {
-		Dictionary err;
-		err["ok"] = false;
-		err["error_code"] = task->stored_error.get("code", -32603);
-		err["error"] = task->stored_error.get("message", "Task failed.");
-		return err;
-	}
-
-	Dictionary result = task->stored_result.duplicate();
+	Dictionary result = shared.duplicate();
 	result["ok"] = true;
 	Dictionary meta;
 	Dictionary related;
@@ -299,6 +367,7 @@ Dictionary JustAMCPTaskManager::cancel_task(const String &p_task_id) {
 }
 
 void JustAMCPTaskManager::complete_task(const String &p_task_id, const Dictionary &p_result, bool p_is_error) {
+	const Dictionary stored = p_result.duplicate();
 	MutexLock lock(tasks_mutex);
 	if (!tasks.has(p_task_id) || !tasks[p_task_id]) {
 		return;
@@ -307,7 +376,7 @@ void JustAMCPTaskManager::complete_task(const String &p_task_id, const Dictionar
 	if (_is_terminal_status(task->status)) {
 		return;
 	}
-	task->stored_result = p_result.duplicate();
+	task->stored_result = stored;
 	task->has_stored_error = false;
 	if (p_is_error) {
 		task->status = "failed";

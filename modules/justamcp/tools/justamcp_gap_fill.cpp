@@ -35,10 +35,14 @@
 #include "../justamcp_mcp_tool_macros.h"
 #include "../justamcp_play_clock.h"
 #include "justamcp_agent_helpers.h"
+#include "justamcp_agent_policy.h"
 
 #include "modules/modules_enabled.gen.h"
 #ifdef MODULE_GDSCRIPT_ENABLED
 #include "modules/gdscript/gdscript.h"
+#endif
+#ifdef MODULE_LUAU_MODULE_ENABLED
+#include "modules/luau_module/luau.h"
 #endif
 
 #include "core/config/project_settings.h"
@@ -318,11 +322,6 @@ static Dictionary _asset_get_json(const String &p_path) {
 
 bool justamcp_gdscript_source_compiles(const String &p_source, String &r_error) {
 #ifdef MODULE_GDSCRIPT_ENABLED
-	if (GDScriptLanguage *lang = GDScriptLanguage::get_singleton()) {
-		if (!lang->get_global_map().has(StringName("Node"))) {
-			lang->init();
-		}
-	}
 	Object *obj = ClassDB::instantiate("GDScript");
 	if (!obj) {
 		r_error = "GDScript is not available.";
@@ -426,6 +425,7 @@ static String _godot3_hint(const String &p_source) {
 	return String();
 }
 
+#ifndef MODULE_LUAU_MODULE_ENABLED
 static int _count_token(const String &p_source, const String &p_token) {
 	int count = 0;
 	int from = 0;
@@ -443,10 +443,23 @@ static int _count_token(const String &p_source, const String &p_token) {
 		from = at + 1;
 	}
 }
+#endif
 
 Dictionary justamcp_guard_gdscript_write(const String &p_path, const String &p_content, const Dictionary &p_params) {
 	const String ext = p_path.get_extension().to_lower();
 	if ((ext == "luau" || ext == "lua") && !(p_params.has("validate") && !bool(p_params["validate"]))) {
+#ifdef MODULE_LUAU_MODULE_ENABLED
+		const luau_module::LuauCompileResult compiled = luau_module::Luau::compile_with_diagnostics(p_content);
+		if (!compiled.succeeded()) {
+			String message = compiled.error_message.is_empty() ? String("Luau parse error.") : compiled.error_message;
+			if (compiled.error_line >= 0) {
+				message = "Luau parse error: line " + String::num_int64(compiled.error_line) + ": " + message;
+			} else if (!message.begins_with("Luau")) {
+				message = "Luau parse error: " + message;
+			}
+			return _err(message);
+		}
+#else
 		const int functions = _count_token(p_content, "function");
 		const int ends = _count_token(p_content, "end");
 		int paren = 0;
@@ -460,6 +473,7 @@ Dictionary justamcp_guard_gdscript_write(const String &p_path, const String &p_c
 		if (functions != ends || paren != 0) {
 			return _err("Luau parse error: unbalanced function/end or parentheses.");
 		}
+#endif
 	}
 	if (!justamcp_script_write_requires_validate(p_path, p_params)) {
 		return Dictionary();
@@ -766,9 +780,16 @@ Dictionary justamcp_scene3d_render_probe(const Dictionary &p_args) {
 	Array nodes;
 	List<Node *> stack;
 	stack.push_back(start);
-	while (!stack.is_empty() && nodes.size() < limit) {
+	int visited = 0;
+	bool truncated = false;
+	while (!stack.is_empty()) {
+		if (nodes.size() >= limit) {
+			truncated = true;
+			break;
+		}
 		Node *node = stack.front()->get();
 		stack.pop_front();
+		visited++;
 		if (Node3D *node3d = Object::cast_to<Node3D>(node)) {
 			Dictionary info;
 			info["path"] = String(node3d->get_path());
@@ -809,6 +830,10 @@ Dictionary justamcp_scene3d_render_probe(const Dictionary &p_args) {
 			info["material_cull"] = material_cull;
 			nodes.push_back(info);
 		}
+		if (visited >= 4096) {
+			truncated = node->get_child_count() > 0 || !stack.is_empty();
+			break;
+		}
 		for (int i = 0; i < node->get_child_count(); i++) {
 			stack.push_back(node->get_child(i));
 		}
@@ -818,6 +843,7 @@ Dictionary justamcp_scene3d_render_probe(const Dictionary &p_args) {
 	result["nodes"] = nodes;
 	result["count"] = nodes.size();
 	result["has_camera"] = camera != nullptr;
+	result["truncated"] = truncated;
 	return result;
 }
 
@@ -1147,6 +1173,7 @@ Dictionary justamcp_asset_lib_install(const Dictionary &p_args) {
 			continue;
 		}
 		DirAccess::make_dir_recursive_absolute(target.get_base_dir());
+		JustAMCPAgentPolicy::note_file_undo(destination.path_join(entry));
 		Ref<FileAccess> out = FileAccess::open(target, FileAccess::WRITE);
 		if (out.is_null()) {
 			continue;
@@ -1158,6 +1185,79 @@ Dictionary justamcp_asset_lib_install(const Dictionary &p_args) {
 	Dictionary result;
 	result["ok"] = true;
 	result["asset_id"] = asset_id;
+	result["destination"] = destination;
+	result["files"] = written;
+	result["count"] = written.size();
+	return result;
+#endif
+}
+
+Dictionary justamcp_extract_zip(const Dictionary &p_args) {
+#ifndef MODULE_ZIP_ENABLED
+	(void)p_args;
+	return _err("Zip support is not compiled in.");
+#else
+	const String zip_path = String(p_args.get("zip_path", ""));
+	const String destination = String(p_args.get("destination", ""));
+	if (zip_path.is_empty() || destination.is_empty()) {
+		return _err("zip_path and destination are required.");
+	}
+	if (zip_path.contains("..") || destination.contains("..")) {
+		return _err("zip_path and destination must stay inside the project.");
+	}
+	if (!(zip_path.begins_with("res://") || zip_path.begins_with("user://"))) {
+		return _err("zip_path must be a res:// or user:// path.");
+	}
+	if (!(destination.begins_with("res://") || destination.begins_with("user://"))) {
+		return _err("destination must be a res:// or user:// path.");
+	}
+	String zip_error;
+	String absolute_zip;
+	if (!_sandbox_absolute(zip_path, absolute_zip, zip_error)) {
+		return _err(zip_error);
+	}
+	String dest_error;
+	String absolute_dest;
+	if (!_sandbox_absolute(destination, absolute_dest, dest_error)) {
+		return _err(dest_error);
+	}
+	if (!FileAccess::exists(absolute_zip)) {
+		return _err("Zip file was not found.");
+	}
+	Ref<ZIPReader> reader;
+	reader.instantiate();
+	if (reader->open(absolute_zip) != OK) {
+		return _err("Could not read the zip archive.");
+	}
+	DirAccess::make_dir_recursive_absolute(absolute_dest);
+	const PackedStringArray entries = reader->get_files();
+	Array written;
+	for (int i = 0; i < entries.size() && written.size() < 256; i++) {
+		const String entry = entries[i].replace("\\", "/");
+		if (entry.is_empty() || entry.contains("..") || entry.begins_with("/") || entry.contains(":")) {
+			continue;
+		}
+		const String target = absolute_dest.path_join(entry).simplify_path();
+		if (!_contained_in(target, absolute_dest)) {
+			continue;
+		}
+		if (entry.ends_with("/")) {
+			DirAccess::make_dir_recursive_absolute(target);
+			continue;
+		}
+		DirAccess::make_dir_recursive_absolute(target.get_base_dir());
+		const String project_target = destination.path_join(entry).simplify_path();
+		JustAMCPAgentPolicy::note_file_undo(project_target);
+		Ref<FileAccess> out = FileAccess::open(target, FileAccess::WRITE);
+		if (out.is_null()) {
+			continue;
+		}
+		out->store_buffer(reader->read_file(entry, true));
+		written.push_back(project_target);
+	}
+	reader->close();
+	Dictionary result;
+	result["ok"] = true;
 	result["destination"] = destination;
 	result["files"] = written;
 	result["count"] = written.size();

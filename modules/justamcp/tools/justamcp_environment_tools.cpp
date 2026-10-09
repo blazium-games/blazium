@@ -30,6 +30,7 @@
 #include "justamcp_environment_tools.h"
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
+#include "justamcp_agent_policy.h"
 
 #include "scene/3d/world_environment.h"
 #include "scene/main/node.h"
@@ -148,7 +149,7 @@ Dictionary JustAMCPEnvironmentTools::create_environment(const Dictionary &p_args
 	}
 
 	if (ur) {
-		ur->create_action("Set Environment Preset: " + preset);
+		ur->create_action(String("Set Environment Preset: ") + preset + " [" + JustAMCPAgentPolicy::current_session_id() + "]");
 		ur->add_do_property(we, "environment", env);
 		ur->add_undo_property(we, "environment", we->get_environment());
 		ur->commit_action();

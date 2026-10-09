@@ -34,30 +34,62 @@
 #include "../justamcp_editor_scene_access.h"
 #include "../justamcp_server.h"
 #include "justamcp_agent_policy.h"
+#include "justamcp_tool_executor.h"
 
 #include "core/config/project_settings.h"
-#include "core/templates/hash_map.h"
 #include "core/input/input_map.h"
 #include "core/io/file_access.h"
+#include "core/io/resource_loader.h"
 #include "core/math/math_funcs.h"
 #include "core/object/class_db.h"
+#include "core/object/message_queue.h"
+#include "core/os/os.h"
+#include "core/os/thread.h"
 #include "core/os/time.h"
 #include "core/string/char_utils.h"
+#include "core/templates/hash_map.h"
 #include "editor/editor_file_system.h"
+#include "editor/editor_interface.h"
+#include "editor/editor_undo_redo_manager.h"
+#include "main/performance.h"
+#include "scene/3d/skeleton_3d.h"
+#include "scene/gui/control.h"
 #include "scene/main/node.h"
+#include "scene/main/viewport.h"
+#include "scene/resources/mesh.h"
+#include "scene/resources/packed_scene.h"
+#include "servers/display_server.h"
 #include "servers/xr/xr_interface.h"
+#include "servers/xr/xr_positional_tracker.h"
 #include "servers/xr_server.h"
-
-static Dictionary _ok(Dictionary p_data) {
-	p_data["ok"] = true;
-	return p_data;
-}
 
 static Dictionary _err(const String &p_message) {
 	Dictionary result;
 	result["ok"] = false;
 	result["error"] = p_message;
 	return result;
+}
+
+static constexpr int k_scene_walk_cap = 4096;
+
+static bool _note_empty_skeletons(Node *p_node, Array &r_issues, int &r_visited) {
+	if (!p_node) {
+		return false;
+	}
+	if (r_visited >= k_scene_walk_cap) {
+		return true;
+	}
+	r_visited++;
+	if (Skeleton3D *skeleton = Object::cast_to<Skeleton3D>(p_node)) {
+		if (skeleton->get_bone_count() <= 0) {
+			r_issues.push_back("skeleton has no bones");
+		}
+	}
+	bool truncated = r_visited >= k_scene_walk_cap;
+	for (int i = 0; i < p_node->get_child_count() && !truncated; i++) {
+		truncated = _note_empty_skeletons(p_node->get_child(i), r_issues, r_visited);
+	}
+	return truncated;
 }
 
 static bool _bone_ok(const String &p_bone) {
@@ -92,24 +124,188 @@ static bool _xr_enabled() {
 }
 
 static Dictionary _xr_disabled() {
-	return _err("XR not enabled");
+	Dictionary result = _err("XR not enabled");
+	result["available"] = false;
+	return result;
 }
 
-static void _collect_nodes(Node *p_node, Array &r_nodes) {
-	if (!p_node) {
-		return;
-	}
-	Dictionary row;
-	row["name"] = String(p_node->get_name());
-	row["class"] = p_node->get_class();
-	row["path"] = String(p_node->get_path());
-	r_nodes.push_back(row);
-	for (int i = 0; i < p_node->get_child_count(); i++) {
-		_collect_nodes(p_node->get_child(i), r_nodes);
-	}
+static Dictionary _xr_unavailable(const String &p_reason) {
+	Dictionary result = _err(p_reason);
+	result["available"] = false;
+	return result;
 }
 
-static Array g_scene_baseline;
+static Ref<XRPositionalTracker> _first_tracker(int p_mask) {
+	XRServer *xr = XRServer::get_singleton();
+	if (!xr) {
+		return Ref<XRPositionalTracker>();
+	}
+	const Dictionary trackers = xr->get_trackers(p_mask);
+	const Array keys = trackers.keys();
+	for (int i = 0; i < keys.size(); i++) {
+		Ref<XRPositionalTracker> tracker = trackers[keys[i]];
+		if (tracker.is_valid()) {
+			return tracker;
+		}
+	}
+	return Ref<XRPositionalTracker>();
+}
+
+static bool _set_tracker_pose(const Ref<XRPositionalTracker> &p_tracker, const Dictionary &p_args) {
+	if (p_tracker.is_null() || !XRServer::get_singleton()) {
+		return false;
+	}
+	Vector3 origin;
+	if (p_args.get("position", Variant()).get_type() == Variant::VECTOR3) {
+		origin = p_args["position"];
+	}
+	Transform3D pose;
+	pose.origin = origin;
+	StringName pose_name = "default";
+	const PackedStringArray suggested = XRServer::get_singleton()->get_suggested_pose_names(p_tracker->get_tracker_name());
+	if (!suggested.is_empty()) {
+		pose_name = suggested[0];
+	}
+	p_tracker->set_pose(pose_name, pose, Vector3(), Vector3());
+	return true;
+}
+
+static bool _step_processing_nodes(Node *p_node, double p_delta, int &r_visited) {
+	if (!p_node || !p_node->is_inside_tree()) {
+		return false;
+	}
+	if (r_visited >= k_scene_walk_cap) {
+		return true;
+	}
+	r_visited++;
+	if (p_node->get_script_instance()) {
+		if (p_node->is_processing() && p_node->get_script_instance()->has_method("_process")) {
+			p_node->get_script_instance()->call("_process", p_delta);
+		}
+		if (p_node->is_physics_processing() && p_node->get_script_instance()->has_method("_physics_process")) {
+			p_node->get_script_instance()->call("_physics_process", p_delta);
+		}
+	}
+	bool truncated = r_visited >= k_scene_walk_cap;
+	for (int i = 0; i < p_node->get_child_count() && !truncated; i++) {
+		truncated = _step_processing_nodes(p_node->get_child(i), p_delta, r_visited);
+	}
+	return truncated;
+}
+
+static bool _collect_scene_nodes(Node *p_root, Vector<Node *> &r_nodes) {
+	r_nodes.clear();
+	if (!p_root) {
+		return false;
+	}
+	r_nodes.push_back(p_root);
+	bool truncated = false;
+	for (int i = 0; i < r_nodes.size(); i++) {
+		Node *node = r_nodes[i];
+		for (int c = 0; c < node->get_child_count(); c++) {
+			if (r_nodes.size() >= k_scene_walk_cap) {
+				truncated = true;
+				break;
+			}
+			r_nodes.push_back(node->get_child(c));
+		}
+	}
+	return truncated;
+}
+
+static int _collect_map_nodes(Node *p_root, int p_budget, Array &r_nodes) {
+	r_nodes.clear();
+	if (!p_root) {
+		return 0;
+	}
+	Vector<Node *> nodes;
+	nodes.push_back(p_root);
+	for (int i = 0; i < nodes.size(); i++) {
+		Node *node = nodes[i];
+		if (r_nodes.size() < p_budget) {
+			Dictionary row;
+			row["name"] = String(node->get_name());
+			row["class"] = node->get_class();
+			row["path"] = String(node->get_path());
+			r_nodes.push_back(row);
+		}
+		for (int c = 0; c < node->get_child_count(); c++) {
+			if (nodes.size() >= k_scene_walk_cap) {
+				break;
+			}
+			nodes.push_back(node->get_child(c));
+		}
+	}
+	return nodes.size();
+}
+
+static void _note_shape_overlaps(const Vector<Node *> &p_shapes, Array &r_issues) {
+	struct ShapePoint {
+		Vector3 position;
+		bool is_3d = false;
+		bool valid = false;
+	};
+	Vector<ShapePoint> points;
+	HashMap<String, Vector<int>> bins;
+	for (int i = 0; i < p_shapes.size(); i++) {
+		Variant pos = p_shapes[i]->get("global_position");
+		if (pos.get_type() != Variant::VECTOR3 && pos.get_type() != Variant::VECTOR2) {
+			pos = p_shapes[i]->get("position");
+		}
+		ShapePoint point;
+		if (pos.get_type() == Variant::VECTOR3) {
+			point.position = Vector3(pos);
+			point.is_3d = true;
+			point.valid = true;
+		} else if (pos.get_type() == Variant::VECTOR2) {
+			const Vector2 flat = Vector2(pos);
+			point.position = Vector3(flat.x, flat.y, 0.0);
+			point.valid = true;
+		}
+		points.push_back(point);
+		if (!point.valid) {
+			continue;
+		}
+		const String key = String::num_int64(int(Math::floor(point.position.x / 0.25))) + "," + String::num_int64(int(Math::floor(point.position.y / 0.25))) + "," + String::num_int64(int(Math::floor(point.position.z / 0.25)));
+		if (!bins.has(key)) {
+			bins.insert(key, Vector<int>());
+		}
+		bins[key].push_back(i);
+	}
+	for (int i = 0; i < points.size(); i++) {
+		if (!points[i].valid) {
+			continue;
+		}
+		const Vector3 pa = points[i].position;
+		const int cx = int(Math::floor(pa.x / 0.25));
+		const int cy = int(Math::floor(pa.y / 0.25));
+		const int cz = int(Math::floor(pa.z / 0.25));
+		for (int ox = -1; ox <= 1; ox++) {
+			for (int oy = -1; oy <= 1; oy++) {
+				for (int oz = -1; oz <= 1; oz++) {
+					const String key = String::num_int64(cx + ox) + "," + String::num_int64(cy + oy) + "," + String::num_int64(cz + oz);
+					if (!bins.has(key)) {
+						continue;
+					}
+					const Vector<int> &there = bins[key];
+					int compared = 0;
+					for (int b = 0; b < there.size() && compared < 8; b++) {
+						const int other_index = there[b];
+						if (other_index <= i || !points[other_index].valid || points[other_index].is_3d != points[i].is_3d) {
+							continue;
+						}
+						compared++;
+						const Vector3 pb = points[other_index].position;
+						const bool overlap = points[i].is_3d ? pa.distance_to(pb) < 0.25f : Vector2(pa.x, pa.y).distance_to(Vector2(pb.x, pb.y)) < 0.25f;
+						if (overlap) {
+							r_issues.push_back("overlapping collision: " + String(p_shapes[i]->get_name()) + " " + String(p_shapes[other_index]->get_name()));
+						}
+					}
+				}
+			}
+		}
+	}
+}
 
 static bool _foreign_session(const Dictionary &p_args) {
 	const String transport = String(p_args.get("_session_id", ""));
@@ -132,6 +328,23 @@ static int _editor_error_count() {
 		}
 	}
 	return count;
+}
+
+static Dictionary _feel_metrics() {
+	Dictionary metrics;
+	Performance *performance = Performance::get_singleton();
+	if (!performance) {
+		metrics["available"] = false;
+		metrics["frame_ms"] = Variant();
+		metrics["physics_frame_ms"] = Variant();
+		metrics["input_latency_available"] = false;
+		return metrics;
+	}
+	metrics["available"] = true;
+	metrics["frame_ms"] = performance->get_monitor(Performance::TIME_PROCESS) * 1000.0;
+	metrics["physics_frame_ms"] = performance->get_monitor(Performance::TIME_PHYSICS_PROCESS) * 1000.0;
+	metrics["input_latency_available"] = false;
+	return metrics;
 }
 
 static Array _recent_errors(int p_limit) {
@@ -167,28 +380,21 @@ static Dictionary _scene_row(Node *p_node) {
 	return row;
 }
 
-static Array _scene_rows(Node *p_root) {
+static Array _scene_rows(Node *p_root, bool &r_truncated) {
 	Array rows;
-	if (!p_root) {
-		return rows;
-	}
 	Vector<Node *> nodes;
-	nodes.push_back(p_root);
+	r_truncated = _collect_scene_nodes(p_root, nodes);
 	for (int i = 0; i < nodes.size(); i++) {
-		Node *node = nodes[i];
-		rows.push_back(_scene_row(node));
-		for (int c = 0; c < node->get_child_count(); c++) {
-			nodes.push_back(node->get_child(c));
-		}
+		rows.push_back(_scene_row(nodes[i]));
 	}
 	return rows;
 }
 
 static bool _extreme_scale(const Vector3 &p_scale) {
-	const float axes[3] = { p_scale.x, p_scale.y, p_scale.z };
+	const real_t axes[3] = { p_scale.x, p_scale.y, p_scale.z };
 	for (int i = 0; i < 3; i++) {
-		const float axis = Math::abs(axes[i]);
-		if (axis > 100.0f || (axis > 0.0f && axis < 0.01f)) {
+		const real_t axis = Math::abs(axes[i]);
+		if (axis > 100.0 || (axis > 0.0 && axis < 0.01)) {
 			return true;
 		}
 	}
@@ -196,7 +402,7 @@ static bool _extreme_scale(const Vector3 &p_scale) {
 }
 
 bool JustAMCPAgentGapTools::handles(const String &p_tool_name) {
-	return p_tool_name == "session_set_access" || p_tool_name == "session_capabilities" || p_tool_name == "session_open" || p_tool_name == "session_close" || p_tool_name == "claim_scene" || p_tool_name == "claim_subtree" || p_tool_name == "list_claims" || p_tool_name == "release_claim" || p_tool_name == "checkpoint" || p_tool_name == "list_checkpoints" || p_tool_name == "diff_checkpoint" || p_tool_name == "restore_checkpoint" || p_tool_name == "apply_change_plan" || p_tool_name == "revert_change_plan" || p_tool_name == "what_changed_since" || p_tool_name == "scene_diff" || p_tool_name == "project_map" || p_tool_name == "spatial_scene_relations" || p_tool_name == "validate_scene_grounding" || p_tool_name == "validate_conventions" || p_tool_name == "validate_import" || p_tool_name == "run_simulation" || p_tool_name == "runtime_feel_metrics" || p_tool_name == "runtime_integration_report" || p_tool_name == "ui_resolution_sweep" || p_tool_name == "wait_until_ready" || p_tool_name == "verify_change" || p_tool_name == "runtime_commit_knobs" || p_tool_name == "xr_set_head_pose" || p_tool_name == "xr_set_controller" || p_tool_name == "xr_capture" || p_tool_name == "recipe_add_player_controller" || p_tool_name == "client_config" || p_tool_name == "write_client_config" || p_tool_name == "agent_probe_increment" || p_tool_name == "agent_probe_reset" || p_tool_name == "agent_probe_value" || p_tool_name == "export_audit_log" || p_tool_name == "changes_since_disconnect" || p_tool_name == "playtest_handoff";
+	return p_tool_name == "session_set_access" || p_tool_name == "session_capabilities" || p_tool_name == "session_open" || p_tool_name == "session_close" || p_tool_name == "claim_scene" || p_tool_name == "claim_subtree" || p_tool_name == "list_claims" || p_tool_name == "release_claim" || p_tool_name == "checkpoint" || p_tool_name == "list_checkpoints" || p_tool_name == "diff_checkpoint" || p_tool_name == "restore_checkpoint" || p_tool_name == "apply_change_plan" || p_tool_name == "revert_change_plan" || p_tool_name == "what_changed_since" || p_tool_name == "scene_diff" || p_tool_name == "project_map" || p_tool_name == "spatial_scene_relations" || p_tool_name == "validate_scene_grounding" || p_tool_name == "validate_conventions" || p_tool_name == "validate_import" || p_tool_name == "run_simulation" || p_tool_name == "runtime_feel_metrics" || p_tool_name == "runtime_integration_report" || p_tool_name == "ui_resolution_sweep" || p_tool_name == "wait_until_ready" || p_tool_name == "verify_change" || p_tool_name == "verify_game_change" || p_tool_name == "runtime_commit_knobs" || p_tool_name == "xr_set_head_pose" || p_tool_name == "xr_set_controller" || p_tool_name == "xr_capture" || p_tool_name == "recipe_add_player_controller" || p_tool_name == "client_config" || p_tool_name == "write_client_config" || p_tool_name == "agent_probe_increment" || p_tool_name == "agent_probe_reset" || p_tool_name == "agent_probe_value" || p_tool_name == "export_audit_log" || p_tool_name == "changes_since_disconnect" || p_tool_name == "playtest_handoff";
 }
 
 Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dictionary &p_args) {
@@ -280,8 +486,6 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 		return result;
 	}
 	if (p_tool_name == "project_map") {
-		Array nodes;
-		_collect_nodes(JustAMCPEditorSceneAccess::get_edited_root(), nodes);
 		int budget = int(p_args.get("budget", 40));
 		if (budget < 1) {
 			budget = 1;
@@ -289,10 +493,8 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 		if (budget > 400) {
 			budget = 400;
 		}
-		const int total = nodes.size();
-		if (nodes.size() > budget) {
-			nodes.resize(budget);
-		}
+		Array nodes;
+		const int total = _collect_map_nodes(JustAMCPEditorSceneAccess::get_edited_root(), budget, nodes);
 		Array autoloads;
 		Array input_actions;
 		String main_scene;
@@ -325,18 +527,21 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 		return result;
 	}
 	if (p_tool_name == "scene_diff") {
-		Array rows = _scene_rows(JustAMCPEditorSceneAccess::get_edited_root());
+		bool truncated = false;
+		Array rows = _scene_rows(JustAMCPEditorSceneAccess::get_edited_root(), truncated);
 		if (bool(p_args.get("capture", false))) {
-			g_scene_baseline = rows.duplicate();
+			JustAMCPAgentPolicy::store_scene_baseline(rows);
 			Dictionary result;
 			result["ok"] = true;
 			result["captured"] = rows.size();
+			result["truncated"] = truncated;
 			return result;
 		}
+		const Array baseline = JustAMCPAgentPolicy::copy_scene_baseline();
 		HashMap<String, String> baseline_parents;
 		HashMap<String, bool> baseline_names;
-		for (int i = 0; i < g_scene_baseline.size(); i++) {
-			Dictionary row = g_scene_baseline[i];
+		for (int i = 0; i < baseline.size(); i++) {
+			Dictionary row = baseline[i];
 			const String name = String(row.get("name", ""));
 			baseline_names.insert(name, true);
 			baseline_parents.insert(name, String(row.get("parent", "")));
@@ -362,8 +567,8 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 			}
 		}
 		Array removed;
-		for (int i = 0; i < g_scene_baseline.size(); i++) {
-			const String name = String(Dictionary(g_scene_baseline[i]).get("name", ""));
+		for (int i = 0; i < baseline.size(); i++) {
+			const String name = String(Dictionary(baseline[i]).get("name", ""));
 			if (!current_names.has(name)) {
 				removed.push_back(name);
 			}
@@ -373,51 +578,35 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 		result["added"] = added;
 		result["removed"] = removed;
 		result["reparented"] = reparented;
+		result["truncated"] = truncated;
 		return result;
 	}
 	if (p_tool_name == "spatial_scene_relations") {
 		Array relations;
+		bool truncated = false;
 		Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 		if (root) {
 			Vector<Node *> nodes;
-			nodes.push_back(root);
+			truncated = _collect_scene_nodes(root, nodes);
+			HashMap<String, Vector<int>> bins;
+			HashMap<String, Vector<String>> scripts;
 			for (int i = 0; i < nodes.size(); i++) {
-				Node *node = nodes[i];
-				for (int c = 0; c < node->get_child_count(); c++) {
-					nodes.push_back(node->get_child(c));
+				Variant pos = nodes[i]->get("position");
+				if (pos.get_type() == Variant::VECTOR3) {
+					const Vector3 point = Vector3(pos);
+					const String key = String::num_int64(int(Math::floor(point.x / 2.0))) + "," + String::num_int64(int(Math::floor(point.y / 2.0))) + "," + String::num_int64(int(Math::floor(point.z / 2.0)));
+					if (!bins.has(key)) {
+						bins.insert(key, Vector<int>());
+					}
+					bins[key].push_back(i);
 				}
-			}
-			for (int i = 0; i < nodes.size(); i++) {
-				for (int j = i + 1; j < nodes.size(); j++) {
-					Variant a = nodes[i]->get("position");
-					Variant b = nodes[j]->get("position");
-					if (a.get_type() != Variant::VECTOR3 || b.get_type() != Variant::VECTOR3) {
-						continue;
+				Ref<Script> script = nodes[i]->get_script();
+				if (script.is_valid() && !script->get_path().is_empty()) {
+					const String path = script->get_path();
+					if (!scripts.has(path)) {
+						scripts.insert(path, Vector<String>());
 					}
-					const Vector3 pa = Vector3(a);
-					const Vector3 pb = Vector3(b);
-					if (Math::abs(pa.y - pb.y) > 0.4 && Math::abs(pa.x - pb.x) < 1.5 && Math::abs(pa.z - pb.z) < 1.5) {
-						Dictionary row;
-						row["relation"] = "rests-on";
-						row["from"] = String(nodes[i]->get_name());
-						row["to"] = String(nodes[j]->get_name());
-						relations.push_back(row);
-					} else if (pa.distance_to(pb) < 2.0) {
-						Dictionary row;
-						row["relation"] = "near";
-						row["from"] = String(nodes[i]->get_name());
-						row["to"] = String(nodes[j]->get_name());
-						relations.push_back(row);
-					}
-					Ref<Script> sa = nodes[i]->get_script();
-					Ref<Script> sb = nodes[j]->get_script();
-					if (sa.is_valid() && sb.is_valid() && sa->get_path() == sb->get_path() && !sa->get_path().is_empty()) {
-						Dictionary row;
-						row["relation"] = "shared script";
-						row["from"] = String(nodes[i]->get_name());
-						row["to"] = String(nodes[j]->get_name());
-						relations.push_back(row);
-					}
+					scripts[path].push_back(String(nodes[i]->get_name()));
 				}
 				if (String(nodes[i]->get_name()).contains("Bone") || String(nodes[i]->get_class()).contains("Bone")) {
 					Dictionary row;
@@ -426,23 +615,76 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 					relations.push_back(row);
 				}
 			}
+			for (const KeyValue<String, Vector<int>> &bin : bins) {
+				const Vector<int> &here = bin.value;
+				for (int a = 0; a < here.size(); a++) {
+					const int ia = here[a];
+					const Vector3 pa = Vector3(nodes[ia]->get("position"));
+					const int cx = int(Math::floor(pa.x / 2.0));
+					const int cy = int(Math::floor(pa.y / 2.0));
+					const int cz = int(Math::floor(pa.z / 2.0));
+					for (int ox = -1; ox <= 1; ox++) {
+						for (int oy = -1; oy <= 1; oy++) {
+							for (int oz = -1; oz <= 1; oz++) {
+								const String key = String::num_int64(cx + ox) + "," + String::num_int64(cy + oy) + "," + String::num_int64(cz + oz);
+								if (!bins.has(key)) {
+									continue;
+								}
+								const Vector<int> &there = bins[key];
+								const bool same_cell = ox == 0 && oy == 0 && oz == 0;
+								int compared = 0;
+								for (int b = same_cell ? a + 1 : 0; b < there.size() && compared < 8; b++) {
+									const int ib = there[b];
+									if (ib <= ia) {
+										continue;
+									}
+									compared++;
+									const Vector3 pb = Vector3(nodes[ib]->get("position"));
+									if (Math::abs(pa.y - pb.y) > 0.4 && Math::abs(pa.x - pb.x) < 1.5 && Math::abs(pa.z - pb.z) < 1.5) {
+										Dictionary row;
+										row["relation"] = "rests-on";
+										row["from"] = String(nodes[ia]->get_name());
+										row["to"] = String(nodes[ib]->get_name());
+										relations.push_back(row);
+									} else if (pa.distance_to(pb) < 2.0) {
+										Dictionary row;
+										row["relation"] = "near";
+										row["from"] = String(nodes[ia]->get_name());
+										row["to"] = String(nodes[ib]->get_name());
+										relations.push_back(row);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			for (const KeyValue<String, Vector<String>> &group : scripts) {
+				const Vector<String> &names = group.value;
+				for (int i = 1; i < names.size(); i++) {
+					Dictionary row;
+					row["relation"] = "shared script";
+					row["from"] = names[i];
+					row["to"] = names[0];
+					relations.push_back(row);
+				}
+			}
 		}
 		Dictionary result;
 		result["ok"] = true;
 		result["relations"] = relations;
+		result["truncated"] = truncated;
 		return result;
 	}
 	if (p_tool_name == "validate_scene_grounding") {
 		Array issues;
+		bool truncated = false;
 		Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 		if (root) {
 			Vector<Node *> nodes;
-			nodes.push_back(root);
+			truncated = _collect_scene_nodes(root, nodes);
 			for (int i = 0; i < nodes.size(); i++) {
 				Node *node = nodes[i];
-				for (int c = 0; c < node->get_child_count(); c++) {
-					nodes.push_back(node->get_child(c));
-				}
 				Variant pos = node->get("position");
 				if (pos.get_type() == Variant::VECTOR3 && Vector3(pos).y > 50.0) {
 					issues.push_back("floating/ungrounded node: " + String(node->get_name()));
@@ -470,28 +712,13 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 					shapes.push_back(nodes[i]);
 				}
 			}
-			for (int i = 0; i < shapes.size(); i++) {
-				Variant a = shapes[i]->get("global_position");
-				if (a.get_type() != Variant::VECTOR3 && a.get_type() != Variant::VECTOR2) {
-					a = shapes[i]->get("position");
-				}
-				for (int j = i + 1; j < shapes.size(); j++) {
-					Variant b = shapes[j]->get("global_position");
-					if (b.get_type() != Variant::VECTOR3 && b.get_type() != Variant::VECTOR2) {
-						b = shapes[j]->get("position");
-					}
-					if (a.get_type() == Variant::VECTOR3 && b.get_type() == Variant::VECTOR3 && Vector3(a).distance_to(Vector3(b)) < 0.25f) {
-						issues.push_back("overlapping collision: " + String(shapes[i]->get_name()) + " " + String(shapes[j]->get_name()));
-					} else if (a.get_type() == Variant::VECTOR2 && b.get_type() == Variant::VECTOR2 && Vector2(a).distance_to(Vector2(b)) < 0.25f) {
-						issues.push_back("overlapping collision: " + String(shapes[i]->get_name()) + " " + String(shapes[j]->get_name()));
-					}
-				}
-			}
+			_note_shape_overlaps(shapes, issues);
 		}
 		Dictionary result;
 		result["ok"] = true;
 		result["valid"] = issues.is_empty();
 		result["issues"] = issues;
+		result["truncated"] = truncated;
 		return result;
 	}
 	if (p_tool_name == "validate_conventions") {
@@ -547,6 +774,39 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 			issues.push_back("missing import file: " + path);
 		}
 		const String sidecar = path + ".import";
+		Ref<Resource> loaded = ResourceLoader::exists(path) ? ResourceLoader::load(path) : Ref<Resource>();
+		Ref<Mesh> mesh = loaded.is_valid() ? Ref<Mesh>(Object::cast_to<Mesh>(loaded.ptr())) : Ref<Mesh>();
+		if (mesh.is_valid()) {
+			if (mesh->get_surface_count() <= 0) {
+				issues.push_back("mesh has no surfaces");
+			} else {
+				const Array arrays = mesh->surface_get_arrays(0);
+				const bool missing_uv = arrays.size() <= Mesh::ARRAY_TEX_UV || arrays[Mesh::ARRAY_TEX_UV].get_type() == Variant::NIL || (arrays[Mesh::ARRAY_TEX_UV].get_type() == Variant::PACKED_VECTOR2_ARRAY && PackedVector2Array(arrays[Mesh::ARRAY_TEX_UV]).is_empty());
+				if (missing_uv) {
+					issues.push_back("mesh missing UV");
+				}
+			}
+			const Vector3 size = mesh->get_aabb().size;
+			const real_t longest = MAX(size.x, MAX(size.y, size.z));
+			if (longest <= 0.0 || longest > 1000.0) {
+				issues.push_back("mesh scale outside convention");
+			}
+		}
+		if (Skeleton3D *skeleton = Object::cast_to<Skeleton3D>(loaded.ptr())) {
+			if (skeleton->get_bone_count() <= 0) {
+				issues.push_back("skeleton has no bones");
+			}
+		}
+		bool truncated = false;
+		Ref<PackedScene> packed = loaded;
+		if (packed.is_valid()) {
+			Node *instance = packed->instantiate();
+			int visited = 0;
+			truncated = _note_empty_skeletons(instance, issues, visited);
+			if (instance) {
+				memdelete(instance);
+			}
+		}
 		if (FileAccess::exists(sidecar)) {
 			PackedStringArray lines = FileAccess::get_file_as_string(sidecar).split("\n");
 			for (int i = 0; i < lines.size(); i++) {
@@ -569,25 +829,71 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 		result["ok"] = true;
 		result["valid"] = issues.is_empty();
 		result["issues"] = issues;
+		result["truncated"] = truncated;
 		return result;
 	}
 	if (p_tool_name == "run_simulation") {
+		Array values;
+		if (p_args.has("values") && p_args.get("values", Variant()).get_type() == Variant::ARRAY) {
+			values = p_args["values"];
+		}
 		int runs = int(p_args.get("runs", 1));
+		if (!values.is_empty()) {
+			runs = values.size();
+		}
 		if (runs < 1) {
 			runs = 1;
 		}
 		if (runs > 8) {
 			runs = 8;
 		}
-		const int steps = int(p_args.get("steps", 1));
+		int steps = int(p_args.get("steps", 1));
+		if (steps < 1) {
+			steps = 1;
+		}
+		if (steps > 32) {
+			steps = 32;
+		}
 		const int seed = int(p_args.get("seed", 1));
+		const bool on_main = Thread::is_main_thread();
 		Array rows;
 		for (int i = 0; i < runs; i++) {
+			const int row_seed = seed + i;
+			bool inside = false;
+			bool stepped = false;
+			bool step_truncated = false;
+			if (on_main) {
+				Math::seed(uint64_t(row_seed < 0 ? 0 : row_seed));
+				Node *root = JustAMCPEditorSceneAccess::get_edited_root();
+				if (root) {
+					const uint64_t started_usec = Time::get_singleton()->get_ticks_usec();
+					const uint64_t budget_usec = 50000;
+					for (int s = 0; s < steps; s++) {
+						if (Time::get_singleton()->get_ticks_usec() - started_usec >= budget_usec) {
+							break;
+						}
+						if (root->is_inside_tree()) {
+							int visited = 0;
+							if (_step_processing_nodes(root, 1.0 / 60.0, visited)) {
+								step_truncated = true;
+							}
+						}
+					}
+					inside = root->is_inside_tree();
+					stepped = true;
+				}
+			}
 			Dictionary row;
 			row["run"] = i;
 			row["steps"] = steps;
-			row["seed"] = seed + i;
-			row["stable"] = true;
+			row["seed"] = row_seed;
+			row["stepped"] = stepped;
+			row["inside_tree"] = inside;
+			row["stable"] = inside;
+			row["truncated"] = step_truncated;
+			if (i < values.size()) {
+				row["value"] = values[i];
+			}
 			rows.push_back(row);
 		}
 		Dictionary result;
@@ -597,18 +903,22 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 		return result;
 	}
 	if (p_tool_name == "runtime_feel_metrics") {
-		Dictionary metrics;
-		metrics["frame_ms"] = 0;
-		metrics["input_latency_ms"] = 0;
 		Dictionary result;
 		result["ok"] = true;
-		result["metrics"] = metrics;
+		result["metrics"] = _feel_metrics();
 		return result;
 	}
 	if (p_tool_name == "runtime_integration_report") {
+		Node *root = JustAMCPEditorSceneAccess::get_edited_root();
+		const String scene_name = root ? String(root->get_name()) : String();
+		const int errors = _editor_error_count();
+		const Dictionary metrics = _feel_metrics();
 		Dictionary result;
 		result["ok"] = true;
-		result["report"] = "headless integration report";
+		result["scene"] = scene_name;
+		result["error_count"] = errors;
+		result["metrics"] = metrics;
+		result["report"] = "scene=" + scene_name + " errors=" + String::num_int64(errors);
 		return result;
 	}
 	if (p_tool_name == "ui_resolution_sweep") {
@@ -620,22 +930,26 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 		const Vector2 viewports[3] = { Vector2(390, 844), Vector2(768, 1024), Vector2(1920, 1080) };
 		const char *viewport_names[3] = { "phone", "tablet", "desktop" };
 		bool safe_areas = true;
+		bool truncated = false;
 		Node *root = JustAMCPEditorSceneAccess::get_edited_root();
 		if (root) {
 			Vector<Node *> nodes;
-			nodes.push_back(root);
+			truncated = _collect_scene_nodes(root, nodes);
 			for (int i = 0; i < nodes.size(); i++) {
 				Node *node = nodes[i];
-				for (int c = 0; c < node->get_child_count(); c++) {
-					nodes.push_back(node->get_child(c));
-				}
-				if (!node->is_class("Control")) {
+				Control *control = Object::cast_to<Control>(node);
+				if (!control) {
 					continue;
 				}
-				const Vector2 position = Vector2(node->get("position"));
-				const Vector2 size = Vector2(node->get("size"));
-				const Vector2 mini = Vector2(node->get("custom_minimum_size"));
-				const Vector2 used = size.x > 1.0 ? size : mini;
+				const Rect2 global_rect = control->get_global_rect();
+				Vector2 position = global_rect.position;
+				Vector2 used = global_rect.size;
+				if (used.x <= 1.0 || used.y <= 1.0) {
+					position = control->get_global_position();
+					const Vector2 size = control->get_size();
+					const Vector2 mini = control->get_custom_minimum_size();
+					used = size.x > 1.0 ? size : mini;
+				}
 				if (used.x > 0.0 && used.y > 0.0 && (used.x < 44.0 || used.y < 44.0)) {
 					flags.push_back("tap target under 44px: " + String(node->get_name()));
 				}
@@ -659,18 +973,24 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 		result["resolutions"] = resolutions;
 		result["safe_areas"] = safe_areas;
 		result["flags"] = flags;
+		result["truncated"] = truncated;
 		return result;
 	}
 	if (p_tool_name == "wait_until_ready") {
-		bool scanning = false;
-		if (EditorFileSystem::get_singleton()) {
-			scanning = EditorFileSystem::get_singleton()->is_scanning();
+		const uint64_t started_msec = OS::get_singleton()->get_ticks_msec();
+		bool scanning = EditorFileSystem::get_singleton() && EditorFileSystem::get_singleton()->is_scanning();
+		while (scanning && OS::get_singleton()->get_ticks_msec() - started_msec < 2000) {
+			if (MessageQueue::get_singleton()) {
+				MessageQueue::get_singleton()->flush();
+			}
+			OS::get_singleton()->delay_usec(10000);
+			scanning = EditorFileSystem::get_singleton() && EditorFileSystem::get_singleton()->is_scanning();
 		}
 		Dictionary result;
 		result["ok"] = true;
 		result["ready"] = !scanning;
 		result["scanning"] = scanning;
-		result["waited_ms"] = 0;
+		result["waited_ms"] = OS::get_singleton()->get_ticks_msec() - started_msec;
 		return result;
 	}
 	if (p_tool_name == "verify_change") {
@@ -679,6 +999,43 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 		result["ok"] = true;
 		result["passed"] = passed;
 		result["error_count"] = _editor_error_count();
+		return result;
+	}
+	if (p_tool_name == "verify_game_change") {
+		int duration_ms = int(p_args.get("duration_ms", 500));
+		duration_ms = CLAMP(duration_ms, 1, 2000);
+		Dictionary play_args;
+		play_args["duration_ms"] = duration_ms;
+		const String scene_path = String(p_args.get("scene_path", p_args.get("scene", "")));
+		if (!scene_path.is_empty()) {
+			play_args["scene_path"] = scene_path;
+		}
+		const int errors_before = _editor_error_count();
+		JustAMCPToolExecutor *executor = JustAMCPToolExecutor::get_active_instance();
+		if (!executor) {
+			Dictionary result;
+			result["ok"] = false;
+			result["played"] = false;
+			result["passed"] = false;
+			result["error"] = "Failed to evaluate play request.";
+			return result;
+		}
+		const Dictionary played_result = executor->execute_tool("blazium_editor_play_scene", play_args);
+		const bool played = bool(played_result.get("ok", false));
+		executor->execute_tool("blazium_editor_stop_play", Dictionary());
+		const int errors_after = _editor_error_count();
+		bool expected_ok = true;
+		if (p_args.has("expected") && p_args.has("actual")) {
+			expected_ok = p_args.get("expected", Variant()) == p_args.get("actual", Variant());
+		}
+		Dictionary result;
+		result["ok"] = played;
+		result["played"] = played;
+		result["passed"] = played && errors_after <= errors_before && expected_ok;
+		result["error_count"] = errors_after;
+		if (!played) {
+			result["error"] = played_result.get("error", "Failed to evaluate play request.");
+		}
 		return result;
 	}
 	if (p_tool_name == "runtime_commit_knobs") {
@@ -700,13 +1057,45 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 		result["error_count"] = _editor_error_count();
 		return result;
 	}
-	if (p_tool_name == "xr_set_head_pose" || p_tool_name == "xr_set_controller" || p_tool_name == "xr_capture") {
+	if (p_tool_name == "xr_set_head_pose" || p_tool_name == "xr_set_controller") {
 		if (!_xr_enabled()) {
 			return _xr_disabled();
 		}
+		const int mask = p_tool_name == "xr_set_head_pose" ? XRServer::TRACKER_HEAD : XRServer::TRACKER_CONTROLLER;
+		const Ref<XRPositionalTracker> tracker = _first_tracker(mask);
+		if (tracker.is_null() || !_set_tracker_pose(tracker, p_args)) {
+			return _xr_unavailable(p_tool_name == "xr_set_head_pose" ? String("XR head tracker unavailable") : String("XR controller tracker unavailable"));
+		}
 		Dictionary result;
 		result["ok"] = true;
+		result["available"] = true;
 		result["xr"] = true;
+		result["tracker"] = String(tracker->get_tracker_name());
+		return result;
+	}
+	if (p_tool_name == "xr_capture") {
+		if (!_xr_enabled()) {
+			return _xr_disabled();
+		}
+		Ref<Image> image;
+		if (EditorInterface::get_singleton()) {
+			SubViewport *viewport = EditorInterface::get_singleton()->get_editor_viewport_3d(0);
+			if (viewport && viewport->get_texture().is_valid()) {
+				image = viewport->get_texture()->get_image();
+			}
+		}
+		if ((image.is_null() || image->is_empty()) && DisplayServer::get_singleton()) {
+			image = DisplayServer::get_singleton()->screen_get_image(DisplayServer::get_singleton()->get_primary_screen());
+		}
+		if (image.is_null() || image->is_empty()) {
+			return _xr_unavailable("XR capture unavailable");
+		}
+		Dictionary result;
+		result["ok"] = true;
+		result["available"] = true;
+		result["xr"] = true;
+		result["width"] = image->get_width();
+		result["height"] = image->get_height();
 		return result;
 	}
 	if (p_tool_name == "recipe_add_player_controller") {
@@ -720,8 +1109,55 @@ Dictionary JustAMCPAgentGapTools::execute(const String &p_tool_name, const Dicti
 				Node *player = Object::cast_to<Node>(created);
 				if (player) {
 					player->set_name("Player");
-					root->add_child(player);
-					player->set_owner(root);
+					Object *shape_created = ClassDB::instantiate("CollisionShape2D");
+					Object *camera_created = ClassDB::instantiate("Camera2D");
+					Node *shape = Object::cast_to<Node>(shape_created);
+					Node *camera = Object::cast_to<Node>(camera_created);
+					if (shape) {
+						shape->set_name("CollisionShape2D");
+					} else if (shape_created) {
+						memdelete(shape_created);
+					}
+					if (camera) {
+						camera->set_name("Camera2D");
+					} else if (camera_created) {
+						memdelete(camera_created);
+					}
+					EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
+					if (undo_redo) {
+						undo_redo->create_action("AI Local: Add Player [" + JustAMCPAgentPolicy::current_session_id() + "]", UndoRedo::MERGE_DISABLE);
+						undo_redo->add_do_method(root, "add_child", player, true);
+						undo_redo->add_do_method(player, "set_owner", root);
+						undo_redo->add_do_reference(player);
+						if (shape) {
+							undo_redo->add_do_method(player, "add_child", shape, true);
+							undo_redo->add_do_method(shape, "set_owner", root);
+							undo_redo->add_do_reference(shape);
+						}
+						if (camera) {
+							undo_redo->add_do_method(player, "add_child", camera, true);
+							undo_redo->add_do_method(camera, "set_owner", root);
+							undo_redo->add_do_reference(camera);
+						}
+						undo_redo->add_undo_method(root, "remove_child", player);
+						undo_redo->commit_action(true);
+					} else {
+						root->add_child(player);
+						player->set_owner(root);
+						if (shape) {
+							player->add_child(shape);
+							shape->set_owner(root);
+						}
+						if (camera) {
+							player->add_child(camera);
+							camera->set_owner(root);
+						}
+						Array added_ids;
+						added_ids.push_back(int64_t(player->get_instance_id()));
+						JustAMCPAgentPolicy::note_batch_undo(Array(), added_ids);
+					}
+				} else if (created) {
+					memdelete(created);
 				}
 			}
 		}
