@@ -31,6 +31,7 @@
 
 #include "justamcp_guides_resource_provider.h"
 
+#include "../justamcp_agent_policy.h"
 #include "justamcp_resource_json.h"
 
 bool JustAMCPGuidesResourceProvider::can_read(const String &p_canonical_uri) {
@@ -82,7 +83,7 @@ Dictionary JustAMCPGuidesResourceProvider::read(const String &p_uri, const Strin
 			   "3. Assign tags with `blazium_tags_set_on_asset`, `blazium_tags_add_to_asset`, or remove with `blazium_tags_remove_from_asset`.\n"
 			   "4. Verify assignments with `blazium_tags_get_on_asset` or `blazium_tags_find_assets`.\n"
 			   "5. Search across assets with `blazium_tags_search_assets`. Mutating dictionary tools require explicit user permission.\n";
-	} else {
+	} else if (!JustAMCPAgentPolicy::read_extra_guide(slug, title, body)) {
 		return JustAMCPResourceJson::make_json_error(p_uri, "Unknown guide: " + slug);
 	}
 

@@ -32,6 +32,7 @@
 #include "../justamcp_editor_filesystem.h"
 #include "../justamcp_mcp_tool_macros.h"
 #include "justamcp_agent_helpers.h"
+#include "justamcp_agent_policy.h"
 #include "justamcp_gap_fill.h"
 
 #include "core/config/project_settings.h"
@@ -56,6 +57,9 @@ Dictionary JustAMCPAssetTools::execute_tool(const String &p_tool_name, const Dic
 	}
 	if (tool_name == "lib_install") {
 		return justamcp_asset_lib_install(p_args);
+	}
+	if (p_tool_name == "extract_zip") {
+		return justamcp_extract_zip(p_args);
 	}
 	if (tool_name == "generate_2d_asset") {
 		return generate_2d_asset(p_args);
@@ -120,6 +124,7 @@ Dictionary JustAMCPAssetTools::generate_2d_asset(const Dictionary &p_args) {
 
 	String full_path = save_path + filename;
 	String global_path = ProjectSettings::get_singleton()->globalize_path(full_path);
+	JustAMCPAgentPolicy::note_file_undo(full_path);
 	err = image->save_png(global_path);
 
 	if (err != OK) {
@@ -194,6 +199,7 @@ Dictionary JustAMCPAssetTools::save_pixel_art(const Dictionary &p_args) {
 	if (dir.is_valid() && !dir->dir_exists("res://assets/generated")) {
 		dir->make_dir_recursive("res://assets/generated");
 	}
+	JustAMCPAgentPolicy::note_file_undo(dest);
 	if (image->save_png(dest) != OK) {
 		return MCP_ERROR(-32000, "Failed to save PNG: " + dest);
 	}
@@ -206,6 +212,7 @@ Dictionary JustAMCPAssetTools::save_pixel_art(const Dictionary &p_args) {
 	ret["height"] = image->get_height();
 	if (p_args.get("metadata", Variant()).get_type() == Variant::DICTIONARY) {
 		const String meta_path = dest.get_basename() + ".metadata.json";
+		JustAMCPAgentPolicy::note_file_undo(meta_path);
 		Ref<FileAccess> meta_file = FileAccess::open(meta_path, FileAccess::WRITE);
 		if (meta_file.is_valid()) {
 			meta_file->store_string(JSON::stringify(Dictionary(p_args["metadata"])));

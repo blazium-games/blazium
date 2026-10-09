@@ -27,21 +27,24 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "justamcp_server.h"
-
 #include "justamcp_json_rpc_transport.h"
 #include "justamcp_mcp_apps.h"
 #include "justamcp_mcp_client_oauth.h"
 #include "justamcp_mcp_spec.h"
 #include "justamcp_oauth_discovery.h"
+#include "justamcp_server.h"
 #include "justamcp_session_manager.h"
 #include "tools/justamcp_settings_resolver.h"
+#ifdef TOOLS_ENABLED
+#include "tools/justamcp_agent_policy.h"
+#endif
 
 #include "core/config/project_settings.h"
 #include "core/crypto/crypto.h"
 #include "core/crypto/crypto_core.h"
 #include "core/io/json.h"
 #include "core/os/os.h"
+
 #include "modules/httpserver/http_server.h"
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
@@ -155,6 +158,14 @@ bool JustAMCPServer::_validate_mcp_oauth(Ref<HTTPRequestContext> p_context, Ref<
 			p_response->set_status(401);
 			_apply_oauth_www_authenticate(p_response);
 			p_response->set_body("Unauthorized - Invalid OAuth credentials");
+			return false;
+		}
+	} else if (JustAMCPAgentPolicy::require_local_bearer()) {
+		Dictionary headers = p_context->get_headers();
+		String authorization = headers.get("authorization", headers.get("Authorization", ""));
+		if (!JustAMCPAgentPolicy::bearer_authorizes(authorization)) {
+			p_response->set_status(401);
+			p_response->set_body("Unauthorized - local bearer required");
 			return false;
 		}
 	}

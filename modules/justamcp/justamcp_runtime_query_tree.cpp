@@ -140,9 +140,12 @@ Dictionary JustAMCPRuntime::_cmd_get_tree(const Dictionary &p_params) {
 		return err;
 	}
 
+	int visited = 0;
+	bool truncated = false;
 	Dictionary ret;
 	ret["type"] = "tree";
-	ret["root"] = _serialize_node_tree(root, 0, max_depth, include_properties);
+	ret["root"] = _serialize_node_tree(root, 0, max_depth, include_properties, visited, truncated);
+	ret["truncated"] = truncated;
 	return ret;
 }
 

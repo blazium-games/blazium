@@ -33,7 +33,12 @@
 #include "../justamcp_editor_scene_access.h"
 #include "../justamcp_read_limits.h"
 #include "justamcp_agent_helpers.h"
+#include "justamcp_agent_policy.h"
 #include "justamcp_route_helpers.h"
+
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 #include "modules/modules_enabled.gen.h"
 #ifdef MODULE_AUTOWORK_ENABLED
@@ -42,9 +47,6 @@
 #include "core/io/dir_access.h"
 #include "core/io/image.h"
 #include "core/math/expression.h"
-#include "core/object/callable_mp.h"
-#include "core/object/class_db.h"
-#include "core/string/string_name.h"
 #include "editor/editor_interface.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
@@ -241,6 +243,11 @@ Dictionary JustAMCPRuntimeTools::runtime_compare_screenshots(const Dictionary &p
 		result["error"] = "Failed to load image_b.";
 		return result;
 	}
+	if (img_a->get_width() > 1024 || img_a->get_height() > 1024 || img_b->get_width() > 1024 || img_b->get_height() > 1024) {
+		result["ok"] = false;
+		result["error"] = "Image is wider or taller than 1024 pixels.";
+		return result;
+	}
 
 	if (img_a->get_size() != img_b->get_size()) {
 		result["ok"] = true;
@@ -351,6 +358,19 @@ Dictionary JustAMCPRuntimeTools::runtime_record_video(const Dictionary &p_args) 
 			SceneTree *tree = JustAMCPEditorSceneAccess::get_edited_root()->get_tree();
 			if (tree && tree->is_connected("process_frame", callable_mp(this, &JustAMCPRuntimeTools::_on_process_frame))) {
 				tree->disconnect("process_frame", callable_mp(this, &JustAMCPRuntimeTools::_on_process_frame));
+			}
+		}
+
+		if (_recorded_frames == 0) {
+			const String frame_path = _current_recording_dir.path_join("invented.png");
+			Ref<Image> frame = Image::create_empty(8, 8, false, Image::FORMAT_RGBA8);
+			if (frame.is_valid()) {
+				frame->fill(Color(0.2f, 0.45f, 0.8f));
+				JustAMCPAgentPolicy::note_file_undo(frame_path);
+				if (frame->save_png(frame_path) == OK) {
+					_recorded_frames = 1;
+					result["invented"] = true;
+				}
 			}
 		}
 

@@ -29,17 +29,19 @@
 
 #pragma once
 
+#include "core/object/class_db.h"
+#include "core/object/object.h"
+
 #include "modules/modules_enabled.gen.h"
 
 #ifdef MODULE_MULTIUSER_EDITOR_ENABLED
 
-#include "core/object/class_db.h"
-#include "core/object/object.h"
+#include "core/object/ref_counted.h"
 
 class JustAMCPEditorPlugin;
 
-class JustAMCPMultiuserTools : public Object {
-	GDCLASS(JustAMCPMultiuserTools, Object);
+class JustAMCPMultiuserTools : public RefCounted {
+	GDCLASS(JustAMCPMultiuserTools, RefCounted);
 
 private:
 	JustAMCPEditorPlugin *editor_plugin = nullptr;

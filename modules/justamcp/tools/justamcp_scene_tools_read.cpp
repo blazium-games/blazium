@@ -57,13 +57,12 @@
 #include "scene/3d/sprite_3d.h"
 #include "scene/resources/packed_scene.h"
 
-Dictionary JustAMCPSceneTools::_build_node_tree(Node *p_node, bool p_include_properties, int p_depth, int p_current_depth, const String &p_node_path) {
+Dictionary JustAMCPSceneTools::_build_node_tree(Node *p_node, bool p_include_properties, int p_depth, int p_current_depth, const String &p_node_path, int &r_visited, bool &r_truncated) {
 	Dictionary tree_data;
 	tree_data["name"] = String(p_node->get_name());
 	tree_data["type"] = p_node->get_class();
 	tree_data["path"] = p_node_path;
-	Array children;
-	tree_data["children"] = children;
+	r_visited++;
 
 	if (p_include_properties) {
 		Dictionary props;
@@ -82,18 +81,23 @@ Dictionary JustAMCPSceneTools::_build_node_tree(Node *p_node, bool p_include_pro
 		tree_data["properties"] = props;
 	}
 
-	if (p_depth >= 0 && p_current_depth >= p_depth) {
-		return tree_data;
+	Array children;
+	const bool depth_stop = p_depth >= 0 && p_current_depth >= p_depth;
+	if (!depth_stop) {
+		for (int i = 0; i < p_node->get_child_count(); i++) {
+			if (r_visited >= 4096) {
+				r_truncated = true;
+				break;
+			}
+			Node *child = p_node->get_child(i);
+			String child_path = (p_node_path == ".") ? String(child->get_name()) : p_node_path + "/" + String(child->get_name());
+			children.push_back(_build_node_tree(child, p_include_properties, p_depth, p_current_depth + 1, child_path, r_visited, r_truncated));
+			if (r_truncated) {
+				break;
+			}
+		}
 	}
-
-	for (int i = 0; i < p_node->get_child_count(); i++) {
-		Node *child = p_node->get_child(i);
-		String child_path = (p_node_path == ".") ? String(child->get_name()) : p_node_path + "/" + String(child->get_name());
-		Dictionary child_tree = _build_node_tree(child, p_include_properties, p_depth, p_current_depth + 1, child_path);
-		Array c = tree_data["children"];
-		c.push_back(child_tree);
-		tree_data["children"] = c;
-	}
+	tree_data["children"] = children;
 
 	return tree_data;
 }
@@ -130,12 +134,15 @@ Dictionary JustAMCPSceneTools::list_scene_nodes(const Dictionary &p_args) {
 	}
 
 	Node *root = Object::cast_to<Node>(result[0]);
-	Dictionary tree = _build_node_tree(root, include_properties, depth, 0, ".");
+	int visited = 0;
+	bool truncated = false;
+	Dictionary tree = _build_node_tree(root, include_properties, depth, 0, ".", visited, truncated);
 	memdelete(root);
 
 	Dictionary ret;
 	ret["ok"] = true;
 	ret["tree"] = tree;
+	ret["truncated"] = truncated;
 	return ret;
 }
 
@@ -512,11 +519,14 @@ Dictionary JustAMCPSceneTools::get_node_warnings(const Dictionary &p_args) {
 	}
 
 	Array warnings;
-	List<Node *> stack;
+	Vector<Node *> stack;
 	stack.push_back(root);
+	int visited = 0;
+	bool truncated = false;
 	while (!stack.is_empty()) {
-		Node *node = stack.front()->get();
-		stack.pop_front();
+		Node *node = stack[stack.size() - 1];
+		stack.resize(stack.size() - 1);
+		visited++;
 		PackedStringArray node_warnings = node->get_configuration_warnings();
 		if (!node_warnings.is_empty()) {
 			Dictionary item;
@@ -529,6 +539,10 @@ Dictionary JustAMCPSceneTools::get_node_warnings(const Dictionary &p_args) {
 			item["warnings"] = texts;
 			warnings.push_back(item);
 		}
+		if (visited >= 4096) {
+			truncated = node->get_child_count() > 0 || !stack.is_empty();
+			break;
+		}
 		for (int i = 0; i < node->get_child_count(); i++) {
 			stack.push_back(node->get_child(i));
 		}
@@ -539,6 +553,7 @@ Dictionary JustAMCPSceneTools::get_node_warnings(const Dictionary &p_args) {
 	ret["scene_path"] = file_path.is_empty() ? root->get_scene_file_path() : justamcp_resolve_project_path(file_path);
 	ret["warnings"] = warnings;
 	ret["count"] = warnings.size();
+	ret["truncated"] = truncated;
 	if (owned) {
 		memdelete(owned);
 	}

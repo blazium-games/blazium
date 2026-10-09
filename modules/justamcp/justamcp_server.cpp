@@ -228,9 +228,13 @@ void JustAMCPServer::_print_handler_callback(void *p_user_data, const String &p_
 	{
 		MutexLock lock(server->engine_logs_mutex);
 		String prefix = p_error ? "[ERROR] " : "";
-		server->engine_logs.push_back((prefix + p_string).strip_escapes());
-		if (server->engine_logs.size() > 500) {
-			server->engine_logs.remove_at(0);
+		if (server->engine_log_slots.size() != 500) {
+			server->engine_log_slots.resize(500);
+		}
+		server->engine_log_slots[server->engine_log_next] = (prefix + p_string).strip_escapes();
+		server->engine_log_next = (server->engine_log_next + 1) % 500;
+		if (server->engine_log_count < 500) {
+			server->engine_log_count++;
 		}
 	}
 
@@ -248,8 +252,25 @@ void JustAMCPServer::_print_handler_callback(void *p_user_data, const String &p_
 }
 
 Vector<String> JustAMCPServer::get_engine_logs() {
-	MutexLock lock(engine_logs_mutex);
-	return engine_logs;
+	Array slots;
+	int count = 0;
+	int next = 0;
+	{
+		MutexLock lock(engine_logs_mutex);
+		slots = engine_log_slots.duplicate();
+		count = engine_log_count;
+		next = engine_log_next;
+	}
+	Vector<String> logs;
+	if (count <= 0 || slots.is_empty()) {
+		return logs;
+	}
+	logs.resize(count);
+	const int start = count < 500 ? 0 : next;
+	for (int i = 0; i < count; i++) {
+		logs.set(i, String(slots[(start + i) % 500]));
+	}
+	return logs;
 }
 
 Dictionary JustAMCPServer::get_engine_logs_page(const String &p_cursor) {
@@ -265,13 +286,14 @@ Dictionary JustAMCPServer::get_engine_logs_page(const String &p_cursor) {
 	int total = 0;
 	{
 		MutexLock lock(engine_logs_mutex);
-		total = engine_logs.size();
+		total = engine_log_count;
 		if (offset < 0) {
 			offset = 0;
 		}
 		const int page_size = justamcp_pagination_page_size();
+		const int start = total < 500 ? 0 : engine_log_next;
 		for (int i = offset; i < total && page.size() < page_size; i++) {
-			page.push_back(engine_logs[i]);
+			page.push_back(engine_log_slots[(start + i) % 500]);
 		}
 	}
 	Dictionary result;
@@ -300,25 +322,12 @@ JustAMCPServer::JustAMCPServer() {
 	print_handler.printfunc = _print_handler_callback;
 	print_handler.userdata = this;
 	add_print_handler(&print_handler);
-	// Prompt/resource executors construct many Objects. Creating them here
-	// nests that work in this constructor's stack frame and SIGSEGVs under TSan.
-}
 
-void JustAMCPServer::_ensure_tools_executors() {
 #ifdef TOOLS_ENABLED
-	if (singleton != this) {
-		return;
-	}
-	if (!prompt_executor) {
-		prompt_executor = memnew(JustAMCPPromptExecutor);
-	}
-	if (!resource_executor) {
-		resource_executor = memnew(JustAMCPResourceExecutor);
-	}
-	if (!task_manager) {
-		task_manager = memnew(JustAMCPTaskManager);
-		task_manager->set_server(this);
-	}
+	prompt_executor = memnew(JustAMCPPromptExecutor);
+	resource_executor = memnew(JustAMCPResourceExecutor);
+	task_manager = memnew(JustAMCPTaskManager);
+	task_manager->set_server(this);
 #endif
 }
 
@@ -363,9 +372,6 @@ JustAMCPServer::~JustAMCPServer() {
 
 void JustAMCPServer::_notification(int p_what) {
 	switch (p_what) {
-		case NOTIFICATION_POSTINITIALIZE: {
-			_ensure_tools_executors();
-		} break;
 		case NOTIFICATION_ENTER_TREE: {
 			_setup_settings();
 			_start_server();
@@ -641,7 +647,9 @@ void JustAMCPServer::_stop_server() {
 	{
 		MutexLock lock(completed_tool_request_mutex);
 		completed_tool_request_tombstones.clear();
-		completed_tool_request_tombstone_order.clear();
+		completed_tool_request_tombstone_slots.clear();
+		completed_tool_request_tombstone_count = 0;
+		completed_tool_request_tombstone_next = 0;
 	}
 
 #if defined(MODULE_HTTPSERVER_ENABLED)

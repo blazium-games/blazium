@@ -34,12 +34,14 @@
 #include "../../justamcp_pagination.h"
 
 #include "core/io/json.h"
+#include "core/os/mutex.h"
 #include "core/os/thread.h"
 #include "core/string/string_name.h"
 #include "editor/file_system/editor_file_system.h"
 
 static Dictionary g_materials_cache_payload;
 static bool g_materials_cache_valid = false;
+static Mutex g_materials_cache_mutex;
 static const int JUSTAMCP_MATERIALS_CACHE_MAX = 2000;
 
 static bool _is_material_resource_type(const StringName &p_type) {
@@ -74,15 +76,30 @@ static void _collect_materials_from_efs(EditorFileSystemDirectory *p_dir, Array 
 	}
 }
 
-static void _rebuild_materials_cache() {
-	Array materials;
-	if (Thread::is_main_thread() && EditorFileSystem::get_singleton() && EditorFileSystem::get_singleton()->get_filesystem()) {
-		_collect_materials_from_efs(EditorFileSystem::get_singleton()->get_filesystem(), materials);
+static Dictionary _empty_materials_payload() {
+	Dictionary payload;
+	payload["materials"] = Array();
+	payload["count"] = 0;
+	payload["truncated"] = false;
+	return payload;
+}
+
+static Dictionary _rebuild_materials_cache() {
+	if (!Thread::is_main_thread() || !EditorFileSystem::get_singleton() || !EditorFileSystem::get_singleton()->get_filesystem()) {
+		return _empty_materials_payload();
 	}
-	g_materials_cache_payload["materials"] = materials;
-	g_materials_cache_payload["count"] = materials.size();
-	g_materials_cache_payload["truncated"] = materials.size() >= JUSTAMCP_MATERIALS_CACHE_MAX;
-	g_materials_cache_valid = true;
+	Array materials;
+	_collect_materials_from_efs(EditorFileSystem::get_singleton()->get_filesystem(), materials);
+	Dictionary payload;
+	payload["materials"] = materials;
+	payload["count"] = materials.size();
+	payload["truncated"] = materials.size() >= JUSTAMCP_MATERIALS_CACHE_MAX;
+	{
+		MutexLock lock(g_materials_cache_mutex);
+		g_materials_cache_payload = payload;
+		g_materials_cache_valid = true;
+	}
+	return payload.duplicate();
 }
 
 static Dictionary _materials_json_contents(const String &p_uri, const Dictionary &p_payload) {
@@ -107,6 +124,7 @@ static String _materials_cursor_from_uri(const String &p_uri) {
 }
 
 void JustAMCPMaterialsResourceProvider::invalidate_cache() {
+	MutexLock lock(g_materials_cache_mutex);
 	g_materials_cache_valid = false;
 	g_materials_cache_payload = Dictionary();
 }
@@ -118,6 +136,7 @@ void JustAMCPMaterialsResourceProvider::invalidate_cache_for_path(const String &
 	}
 	const String lower = p_changed_path.to_lower();
 	if (lower == "res://" || lower.ends_with(".tres") || lower.ends_with(".res") || lower.ends_with(".material")) {
+		MutexLock lock(g_materials_cache_mutex);
 		g_materials_cache_valid = false;
 		g_materials_cache_payload = Dictionary();
 	}
@@ -129,11 +148,30 @@ bool JustAMCPMaterialsResourceProvider::can_read(const String &p_canonical_uri) 
 
 Dictionary JustAMCPMaterialsResourceProvider::read(const String &p_uri, const String &p_canonical_uri) {
 	(void)p_canonical_uri;
-	if (!g_materials_cache_valid) {
-		_rebuild_materials_cache();
+	Dictionary cached;
+	{
+		Dictionary shared;
+		bool hit = false;
+		{
+			MutexLock lock(g_materials_cache_mutex);
+			if (g_materials_cache_valid) {
+				shared = g_materials_cache_payload;
+				hit = true;
+			}
+		}
+		if (hit) {
+			cached = shared.duplicate();
+		}
+	}
+	if (cached.is_empty()) {
+		if (Thread::is_main_thread()) {
+			cached = _rebuild_materials_cache();
+		} else {
+			cached = _empty_materials_payload();
+		}
 	}
 	const String cursor = _materials_cursor_from_uri(p_uri);
-	const Array all_materials = g_materials_cache_payload.get("materials", Array());
+	const Array all_materials = cached.get("materials", Array());
 	const Dictionary page = justamcp_pagination_slice_array(all_materials, cursor, "materials");
 	Dictionary payload;
 	payload["materials"] = page.get("materials", Array());

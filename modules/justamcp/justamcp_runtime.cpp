@@ -38,6 +38,7 @@
 #include "core/crypto/crypto_core.h"
 #include "core/input/input.h"
 #include "core/input/input_event.h"
+#include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/io/image.h"
 #include "core/io/json.h"
@@ -48,6 +49,7 @@
 #include "core/object/script_language.h"
 #include "core/os/os.h"
 #include "core/os/time.h"
+#include "core/string/string_name.h"
 #include "main/performance.h"
 #include "scene/gui/base_button.h"
 #include "scene/gui/control.h"
@@ -60,8 +62,6 @@
 #ifdef TOOLS_ENABLED
 #include "tools/justamcp_tool_executor.h"
 
-#include "core/io/dir_access.h"
-#include "core/string/string_name.h"
 #include "editor/settings/editor_settings.h"
 #endif
 

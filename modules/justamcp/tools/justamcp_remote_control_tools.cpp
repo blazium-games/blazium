@@ -29,6 +29,8 @@
 
 #ifdef TOOLS_ENABLED
 
+#include "core/object/class_db.h"
+
 #include "modules/modules_enabled.gen.h"
 
 #ifdef MODULE_REMOTE_CONTROL_ENABLED
@@ -38,7 +40,6 @@
 #include "justamcp_tool_schema_builder.h"
 
 #include "core/config/project_settings.h"
-#include "core/object/class_db.h"
 #include "editor/settings/editor_settings.h"
 
 #include "modules/remote_control/remote_control_builtins.h"

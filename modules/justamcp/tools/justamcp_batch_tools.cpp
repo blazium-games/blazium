@@ -33,11 +33,17 @@
 #include "../justamcp_editor_scene_access.h"
 #include "../justamcp_read_limits.h"
 #include "../justamcp_tool_context.h"
+#include "justamcp_agent_policy.h"
+#include "justamcp_readonly_tools.h"
 #include "justamcp_tool_executor.h"
+
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
+#include "editor/editor_undo_redo_manager.h"
 #endif
 
 #include "../justamcp_mcp_tool_macros.h"
@@ -47,15 +53,43 @@
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
 #include "core/math/expression.h"
-#include "core/object/class_db.h"
 #include "core/string/regex.h"
-#include "core/string/string_name.h"
 #include "scene/resources/packed_scene.h"
 
 void JustAMCPBatchTools::_bind_methods() {}
 
 JustAMCPBatchTools::JustAMCPBatchTools() {}
 JustAMCPBatchTools::~JustAMCPBatchTools() {}
+
+static String _batch_action(const String &p_verb) {
+	return "AI Local: " + p_verb + " [" + JustAMCPAgentPolicy::current_session_id() + "]";
+}
+
+static void _collect_typed_nodes(Node *p_node, const String &p_type_name, Vector<Node *> &r_nodes) {
+	if (!p_node) {
+		return;
+	}
+	if (p_node->is_class(p_type_name) || String(p_node->get_class()) == p_type_name) {
+		r_nodes.push_back(p_node);
+	}
+	for (int i = 0; i < p_node->get_child_count(); i++) {
+		_collect_typed_nodes(p_node->get_child(i), p_type_name, r_nodes);
+	}
+}
+
+static bool _dependency_missing(const String &p_dep) {
+	const Vector<String> parts = p_dep.split("::");
+	String path;
+	for (int i = 0; i < parts.size(); i++) {
+		if (parts[i].begins_with("res://") || parts[i].begins_with("user://")) {
+			path = parts[i];
+		}
+	}
+	if (path.is_empty()) {
+		return false;
+	}
+	return !ResourceLoader::exists(path) && !FileAccess::exists(path);
+}
 
 Node *JustAMCPBatchTools::_find_node_by_path(const String &p_path) {
 	Node *root = JustAMCPEditorSceneAccess::get_edited_root();
@@ -111,8 +145,10 @@ Dictionary JustAMCPBatchTools::execute_tool(const String &p_tool_name, const Dic
 		Array steps = p_args.get("steps", Array());
 		bool stop_on_error = p_args.get("stop_on_error", true);
 		bool undo_on_error = p_args.get("undo_on_error", false);
+		bool transaction = p_args.get("transaction", true);
 		Array results;
 		int completed = 0;
+		int writes = 0;
 		const int total_steps = steps.size();
 		justamcp_report_progress(0, total_steps > 0 ? total_steps : 1, "Starting batch_execute");
 		for (int i = 0; i < steps.size(); i++) {
@@ -171,6 +207,9 @@ Dictionary JustAMCPBatchTools::execute_tool(const String &p_tool_name, const Dic
 				}
 			} else {
 				completed++;
+				if (!JustAMCPReadonlyTools::is_readonly_tool(tool_name)) {
+					writes++;
+				}
 			}
 		}
 		justamcp_report_progress(total_steps > 0 ? total_steps : 1, total_steps > 0 ? total_steps : 1, "batch_execute finished");
@@ -179,6 +218,10 @@ Dictionary JustAMCPBatchTools::execute_tool(const String &p_tool_name, const Dic
 		ret["results"] = results;
 		ret["completed"] = completed;
 		ret["count"] = results.size();
+		if (transaction && writes > 1) {
+			JustAMCPAgentPolicy::note_grouped_undo(writes);
+			ret["undo_steps"] = 1;
+		}
 		return ret;
 	}
 
@@ -320,8 +363,55 @@ Dictionary JustAMCPBatchTools::_batch_set_property(const Dictionary &p_params) {
 		return MCP_ERROR(-32000, "No scene is currently open");
 	}
 
+	Vector<Node *> nodes;
+	_collect_typed_nodes(root, type_name, nodes);
+	if (p_params.has("before")) {
+		const Variant before = p_params["before"];
+		for (int i = 0; i < nodes.size(); i++) {
+			bool valid = false;
+			const Variant current = nodes[i]->get(property, &valid);
+			if (!valid || current != before) {
+				return MCP_ERROR(-32602, "property changed before the write");
+			}
+		}
+	}
+
 	Array affected;
-	_batch_set_recursive(root, root, type_name, property, value, affected);
+#ifdef TOOLS_ENABLED
+	EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
+	if (undo_redo && !nodes.is_empty()) {
+		undo_redo->create_action(_batch_action("Batch Set Property"), UndoRedo::MERGE_DISABLE);
+		for (int i = 0; i < nodes.size(); i++) {
+			bool valid = false;
+			const Variant old_value = nodes[i]->get(property, &valid);
+			if (!valid) {
+				continue;
+			}
+			undo_redo->add_do_property(nodes[i], property, value);
+			undo_redo->add_undo_property(nodes[i], property, old_value);
+			affected.push_back(JustAMCPEditorSceneAccess::safe_path_to(root, nodes[i]));
+		}
+		undo_redo->commit_action(true);
+	} else
+#endif
+	{
+		Array restores;
+		for (int i = 0; i < nodes.size(); i++) {
+			bool valid = false;
+			const Variant old_value = nodes[i]->get(property, &valid);
+			if (!valid) {
+				continue;
+			}
+			nodes[i]->set(property, value);
+			Dictionary row;
+			row["id"] = int64_t(nodes[i]->get_instance_id());
+			row["property"] = property;
+			row["value"] = old_value;
+			restores.push_back(row);
+			affected.push_back(JustAMCPEditorSceneAccess::safe_path_to(root, nodes[i]));
+		}
+		JustAMCPAgentPolicy::note_batch_undo(restores, Array());
+	}
 
 	Dictionary res;
 	res["property"] = property;
@@ -354,7 +444,12 @@ Dictionary JustAMCPBatchTools::_batch_add_nodes(const Dictionary &p_params) {
 		return MCP_INVALID_PARAMS("Missing param: nodes");
 	}
 
-	Array created;
+	struct PendingNode {
+		Node *node = nullptr;
+		Node *parent = nullptr;
+		Dictionary properties;
+	};
+	Vector<PendingNode> pending;
 	for (int i = 0; i < node_defs.size(); i++) {
 		if (node_defs[i].get_type() != Variant::DICTIONARY) {
 			continue;
@@ -375,21 +470,62 @@ Dictionary JustAMCPBatchTools::_batch_add_nodes(const Dictionary &p_params) {
 			continue;
 		}
 		node->set_name(def.get("name", type_name));
-		parent->add_child(node);
-		if (root == node || root->is_ancestor_of(node)) {
-			node->set_owner(root);
-		}
-		Dictionary properties = def.get("properties", Dictionary());
-		Array keys = properties.keys();
-		for (int j = 0; j < keys.size(); j++) {
-			node->set(keys[j], properties[keys[j]]);
-		}
+		PendingNode row;
+		row.node = node;
+		row.parent = parent;
+		row.properties = def.get("properties", Dictionary());
+		pending.push_back(row);
+	}
 
-		Dictionary info;
-		info["name"] = node->get_name();
-		info["type"] = node->get_class();
-		info["path"] = JustAMCPEditorSceneAccess::safe_path_to(root, node);
-		created.push_back(info);
+	Array created;
+#ifdef TOOLS_ENABLED
+	EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
+	if (undo_redo && !pending.is_empty()) {
+		undo_redo->create_action(_batch_action("Batch Add Nodes"), UndoRedo::MERGE_DISABLE);
+		for (int i = 0; i < pending.size(); i++) {
+			Node *node = pending[i].node;
+			Node *parent = pending[i].parent;
+			undo_redo->add_do_method(parent, "add_child", node, true);
+			undo_redo->add_do_method(node, "set_owner", root);
+			undo_redo->add_do_reference(node);
+			undo_redo->add_undo_method(parent, "remove_child", node);
+			Array keys = pending[i].properties.keys();
+			for (int j = 0; j < keys.size(); j++) {
+				undo_redo->add_do_property(node, keys[j], pending[i].properties[keys[j]]);
+			}
+		}
+		undo_redo->commit_action(true);
+		for (int i = 0; i < pending.size(); i++) {
+			Node *node = pending[i].node;
+			Dictionary info;
+			info["name"] = node->get_name();
+			info["type"] = node->get_class();
+			info["path"] = JustAMCPEditorSceneAccess::safe_path_to(root, node);
+			created.push_back(info);
+		}
+	} else
+#endif
+	{
+		Array added_ids;
+		for (int i = 0; i < pending.size(); i++) {
+			Node *node = pending[i].node;
+			Node *parent = pending[i].parent;
+			parent->add_child(node);
+			if (root == node || root->is_ancestor_of(node)) {
+				node->set_owner(root);
+			}
+			Array keys = pending[i].properties.keys();
+			for (int j = 0; j < keys.size(); j++) {
+				node->set(keys[j], pending[i].properties[keys[j]]);
+			}
+			added_ids.push_back(int64_t(node->get_instance_id()));
+			Dictionary info;
+			info["name"] = node->get_name();
+			info["type"] = node->get_class();
+			info["path"] = JustAMCPEditorSceneAccess::safe_path_to(root, node);
+			created.push_back(info);
+		}
+		JustAMCPAgentPolicy::note_batch_undo(Array(), added_ids);
 	}
 
 #ifdef TOOLS_ENABLED
@@ -505,6 +641,9 @@ Dictionary JustAMCPBatchTools::_cross_scene_set_property(const Dictionary &p_par
 	if (path_filter == "res://" || path_filter.is_empty()) {
 		return MCP_ERROR(-32602, "cross_scene_set_property requires a narrower path_filter than res:// (pass a subdirectory).");
 	}
+	if (JustAMCPAgentPolicy::save_requires_confirmation() && !bool(p_params.get("confirm", false))) {
+		return MCP_ERROR(-32602, "cross_scene_set_property requires confirm=true");
+	}
 
 	Array scenes_affected;
 	int total_nodes = 0;
@@ -531,12 +670,30 @@ Dictionary JustAMCPBatchTools::_cross_scene_set_property(const Dictionary &p_par
 			Ref<PackedScene> new_packed;
 			new_packed.instantiate();
 			new_packed->pack(instance);
-			ResourceSaver::save(new_packed, scene_path);
+			JustAMCPAgentPolicy::note_file_undo(scene_path);
+			const Error save_error = ResourceSaver::save(new_packed, scene_path);
+			bool reload_ok = save_error == OK;
+			if (reload_ok) {
+				Error load_error = OK;
+				Ref<PackedScene> reloaded = ResourceLoader::load(scene_path, "", ResourceFormatLoader::CACHE_MODE_IGNORE, &load_error);
+				reload_ok = load_error == OK && reloaded.is_valid();
+				if (reload_ok) {
+					List<String> deps;
+					ResourceLoader::get_dependencies(scene_path, &deps);
+					for (const String &dep : deps) {
+						if (_dependency_missing(dep)) {
+							reload_ok = false;
+							break;
+						}
+					}
+				}
+			}
 
 			Dictionary d;
 			d["scene"] = scene_path;
 			d["nodes"] = affected_nodes;
 			d["count"] = affected_nodes.size();
+			d["reload_ok"] = reload_ok;
 			scenes_affected.push_back(d);
 			total_nodes += affected_nodes.size();
 		}
@@ -556,13 +713,22 @@ Dictionary JustAMCPBatchTools::_cross_scene_set_property(const Dictionary &p_par
 	}
 #endif
 
+	Array reload_failures;
+	for (int i = 0; i < scenes_affected.size(); i++) {
+		Dictionary scene_row = scenes_affected[i];
+		if (!bool(scene_row.get("reload_ok", true))) {
+			reload_failures.push_back(scene_row.get("scene", ""));
+		}
+	}
 	Dictionary res;
 	res["type"] = type_name;
 	res["property"] = property;
 	res["scenes_affected"] = scenes_affected;
+	res["reload_failures"] = reload_failures;
 	res["total_scenes"] = scenes_affected.size();
 	res["total_nodes"] = total_nodes;
 	res["truncated"] = truncated;
+	res["conflict_label"] = "saving changes into file system";
 	return MCP_SUCCESS(res);
 }
 

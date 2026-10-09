@@ -28,7 +28,10 @@
 /**************************************************************************/
 
 #include "../justamcp_editor_scene_access.h"
+#include "justamcp_agent_policy.h"
 #include "justamcp_node_tools.h"
+
+#include "core/string/string_name.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_interface.h"
@@ -41,7 +44,6 @@
 #include "core/config/project_settings.h"
 #include "core/io/resource_loader.h"
 #include "core/object/script_language.h"
-#include "core/string/string_name.h"
 #include "scene/gui/control.h"
 
 static String _justamcp_safe_path_to(Node *p_root, Node *p_node) {
@@ -113,7 +115,7 @@ Dictionary JustAMCPNodeTools::_set_anchor_preset(const Dictionary &p_params) {
 #ifdef TOOLS_ENABLED
 	if (EditorUndoRedoManager::get_singleton()) {
 		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
-		ur->create_action("MCP: Set anchor preset");
+		ur->create_action(String("MCP: Set anchor preset [") + JustAMCPAgentPolicy::current_session_id() + "]");
 
 		ur->add_do_method(control, "set_anchors_and_offsets_preset", preset, mode);
 
@@ -165,7 +167,7 @@ Dictionary JustAMCPNodeTools::_rename_node(const Dictionary &p_params) {
 #ifdef TOOLS_ENABLED
 	if (EditorUndoRedoManager::get_singleton()) {
 		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
-		ur->create_action("MCP: Rename " + old_name + " to " + new_name);
+		ur->create_action(String("MCP: Rename ") + old_name + " to " + new_name + " [" + JustAMCPAgentPolicy::current_session_id() + "]");
 		ur->add_do_property(node, "name", new_name);
 		ur->add_undo_property(node, "name", old_name);
 		ur->commit_action();
@@ -386,16 +388,22 @@ Dictionary JustAMCPNodeTools::_find_nodes_in_group(const Dictionary &p_params) {
 	}
 
 	Array matches;
-	_find_in_group_recursive(root, root, group_name, matches);
+	int visited = 0;
+	const bool truncated = _find_in_group_recursive(root, root, group_name, matches, visited);
 
 	Dictionary res;
 	res["group"] = group_name;
 	res["nodes"] = matches;
 	res["count"] = matches.size();
+	res["truncated"] = truncated;
 	return MCP_SUCCESS(res);
 }
 
-void JustAMCPNodeTools::_find_in_group_recursive(Node *p_node, Node *p_root, const String &p_group_name, Array &r_matches) {
+bool JustAMCPNodeTools::_find_in_group_recursive(Node *p_node, Node *p_root, const String &p_group_name, Array &r_matches, int &r_visited) {
+	if (!p_node || r_visited >= 4096) {
+		return r_visited >= 4096;
+	}
+	r_visited++;
 	if (p_node->is_in_group(p_group_name)) {
 		Dictionary m;
 		m["name"] = p_node->get_name();
@@ -403,7 +411,16 @@ void JustAMCPNodeTools::_find_in_group_recursive(Node *p_node, Node *p_root, con
 		m["type"] = p_node->get_class();
 		r_matches.push_back(m);
 	}
+	bool truncated = false;
 	for (int i = 0; i < p_node->get_child_count(); i++) {
-		_find_in_group_recursive(p_node->get_child(i), p_root, p_group_name, r_matches);
+		if (r_visited >= 4096) {
+			truncated = true;
+			break;
+		}
+		if (_find_in_group_recursive(p_node->get_child(i), p_root, p_group_name, r_matches, r_visited)) {
+			truncated = true;
+			break;
+		}
 	}
+	return truncated;
 }

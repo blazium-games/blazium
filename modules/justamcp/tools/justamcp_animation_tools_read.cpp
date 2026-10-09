@@ -30,6 +30,7 @@
 #include "../justamcp_editor_filesystem.h"
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
+#include "justamcp_agent_policy.h"
 #include "justamcp_animation_tools.h"
 
 #include "core/io/file_access.h"
@@ -119,6 +120,7 @@ Dictionary JustAMCPAnimationTools::_save_scene(Node *p_scene_root, const String 
 		ret["error"] = "Failed to pack scene";
 		return ret;
 	}
+	JustAMCPAgentPolicy::note_file_undo(p_scene_path);
 	if (ResourceSaver::save(packed, p_scene_path) != OK) {
 		memdelete(p_scene_root);
 		ret["ok"] = false;
@@ -285,7 +287,7 @@ Dictionary JustAMCPAnimationTools::_serialize_state_machine(const Ref<AnimationN
 	info["type"] = "AnimationNodeStateMachine";
 
 	Array states;
-	LocalVector<StringName> node_names = p_state_machine->get_node_list();
+	const LocalVector<StringName> node_names = p_state_machine->get_node_list();
 	for (const StringName &name : node_names) {
 		Ref<AnimationNode> child = p_state_machine->get_node(name);
 		Dictionary state = _serialize_animation_node(child);
@@ -324,7 +326,7 @@ Dictionary JustAMCPAnimationTools::_serialize_blend_tree(const Ref<AnimationNode
 	info["type"] = "AnimationNodeBlendTree";
 
 	Array nodes;
-	LocalVector<StringName> node_names = p_blend_tree->get_node_list();
+	const LocalVector<StringName> node_names = p_blend_tree->get_node_list();
 	for (const StringName &name : node_names) {
 		Ref<AnimationNode> child = p_blend_tree->get_node(name);
 		Dictionary node = _serialize_animation_node(child);

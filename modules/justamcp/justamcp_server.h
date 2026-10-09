@@ -30,6 +30,7 @@
 #pragma once
 
 #include "core/os/mutex.h"
+#include "core/string/ustring.h"
 #include "core/templates/hash_map.h"
 #include "core/templates/hash_set.h"
 #include "core/variant/array.h"
@@ -50,7 +51,6 @@
 #include "mcp_tool_queue_entry.h"
 
 #include "core/string/print_string.h"
-#include "core/string/ustring.h"
 
 class JustAMCPNotificationBus;
 
@@ -90,7 +90,9 @@ private:
 	Mutex session_enqueue_rate_mutex;
 
 	HashSet<String> completed_tool_request_tombstones;
-	Vector<String> completed_tool_request_tombstone_order;
+	Vector<String> completed_tool_request_tombstone_slots;
+	int completed_tool_request_tombstone_count = 0;
+	int completed_tool_request_tombstone_next = 0;
 	static const int COMPLETED_TOOL_REQUEST_TOMBSTONE_MAX = 2048;
 	mutable Mutex completed_tool_request_mutex;
 #ifdef TESTS_ENABLED
@@ -128,7 +130,6 @@ private:
 	mutable Mutex pending_elicitation_mutex;
 
 	void _setup_settings();
-	void _ensure_tools_executors();
 	void _start_server();
 	void _start_server_internal(bool p_ignore_cmdline_block);
 	void _stop_server();
@@ -136,9 +137,13 @@ private:
 	int _resolve_listening_port_from_settings() const;
 
 	static JustAMCPServer *singleton;
-	Vector<String> engine_logs;
+	Array engine_log_slots;
+	int engine_log_count = 0;
+	int engine_log_next = 0;
 	Mutex engine_logs_mutex;
-	Vector<Dictionary> mcp_notification_log;
+	Vector<Dictionary> mcp_notification_log_slots;
+	int mcp_notification_log_count = 0;
+	int mcp_notification_log_next = 0;
 	Mutex mcp_notification_log_mutex;
 	PrintHandlerList print_handler;
 	static void _print_handler_callback(void *p_user_data, const String &p_string, bool p_error, bool p_rich);

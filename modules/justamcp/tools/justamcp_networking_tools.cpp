@@ -33,6 +33,7 @@
 
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
+#include "justamcp_agent_policy.h"
 
 #include "core/object/class_db.h"
 #include "editor/editor_interface.h"
@@ -95,7 +96,7 @@ Dictionary JustAMCPNetworkingTools::networking_create_http_request(const Diction
 
 	Node *scene_root = _get_scene_root();
 	if (EditorUndoRedoManager::get_singleton()) {
-		EditorUndoRedoManager::get_singleton()->create_action("Add HTTPRequest '" + node_name + "'");
+		EditorUndoRedoManager::get_singleton()->create_action(String("Add HTTPRequest '") + node_name + "' [" + JustAMCPAgentPolicy::current_session_id() + "]");
 		EditorUndoRedoManager::get_singleton()->add_do_method(parent, "add_child", node, true);
 		EditorUndoRedoManager::get_singleton()->add_do_method(node, "set_owner", scene_root);
 		EditorUndoRedoManager::get_singleton()->add_do_reference(node);
@@ -131,7 +132,7 @@ Dictionary JustAMCPNetworkingTools::networking_setup_websocket(const Dictionary 
 
 	Node *scene_root = _get_scene_root();
 	if (EditorUndoRedoManager::get_singleton()) {
-		EditorUndoRedoManager::get_singleton()->create_action("Add WebSocket '" + node_name + "'");
+		EditorUndoRedoManager::get_singleton()->create_action(String("Add WebSocket '") + node_name + "' [" + JustAMCPAgentPolicy::current_session_id() + "]");
 		EditorUndoRedoManager::get_singleton()->add_do_method(parent, "add_child", node, true);
 		EditorUndoRedoManager::get_singleton()->add_do_method(node, "set_owner", scene_root);
 		EditorUndoRedoManager::get_singleton()->add_do_reference(node);
@@ -171,7 +172,7 @@ Dictionary JustAMCPNetworkingTools::networking_setup_multiplayer(const Dictionar
 
 	Node *scene_root = _get_scene_root();
 	if (EditorUndoRedoManager::get_singleton()) {
-		EditorUndoRedoManager::get_singleton()->create_action("Add MultiplayerManager");
+		EditorUndoRedoManager::get_singleton()->create_action(String("Add MultiplayerManager [") + JustAMCPAgentPolicy::current_session_id() + "]");
 		EditorUndoRedoManager::get_singleton()->add_do_method(parent, "add_child", node, true);
 		EditorUndoRedoManager::get_singleton()->add_do_method(node, "set_owner", scene_root);
 		EditorUndoRedoManager::get_singleton()->add_do_reference(node);
@@ -270,7 +271,7 @@ Dictionary JustAMCPNetworkingTools::networking_setup_sync(const Dictionary &p_ar
 
 	Node *scene_root = _get_scene_root();
 	if (EditorUndoRedoManager::get_singleton()) {
-		EditorUndoRedoManager::get_singleton()->create_action("Add MultiplayerSynchronizer '" + node_name + "'");
+		EditorUndoRedoManager::get_singleton()->create_action(String("Add MultiplayerSynchronizer '") + node_name + "' [" + JustAMCPAgentPolicy::current_session_id() + "]");
 		EditorUndoRedoManager::get_singleton()->add_do_method(parent, "add_child", node, true);
 		EditorUndoRedoManager::get_singleton()->add_do_method(node, "set_owner", scene_root);
 		EditorUndoRedoManager::get_singleton()->add_do_reference(node);

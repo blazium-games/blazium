@@ -36,6 +36,7 @@
 #include "justamcp_server.h"
 #include "justamcp_tool_context.h"
 #include "justamcp_tool_dispatch.h"
+#include "tools/justamcp_agent_policy.h"
 #include "tools/justamcp_json_rpc_helpers.h"
 #include "tools/justamcp_mcp_client_bridge.h"
 #include "tools/justamcp_prompt_executor.h"
@@ -293,8 +294,6 @@ void JustAMCPEditorPlugin::_notification(int p_what) {
 				}
 			}
 
-			_setup_status_indicator();
-
 			inspector_plugin.instantiate();
 			EditorInspector::add_inspector_plugin(inspector_plugin);
 
@@ -332,6 +331,8 @@ void JustAMCPEditorPlugin::_notification(int p_what) {
 			open_host->set_text("Open host");
 			open_host->connect("pressed", callable_mp(this, &JustAMCPEditorPlugin::_open_apps_host));
 			apps_dock->add_child(open_host);
+			_setup_status_indicator();
+			apps_dock->move_child(status_label, 0);
 			add_blazium_window("JustAMCP", "Apps", apps_dock);
 			_refresh_apps_dock();
 			call_deferred(SNAME("_auto_connect_bridges"));
@@ -340,6 +341,7 @@ void JustAMCPEditorPlugin::_notification(int p_what) {
 
 		case NOTIFICATION_EXIT_TREE: {
 			remove_blazium_item("JustAMCP", "Configuration");
+			remove_blazium_item("JustAMCP", "Apps");
 
 			if (inspector_plugin.is_valid()) {
 				EditorInspector::remove_inspector_plugin(inspector_plugin);
@@ -363,15 +365,9 @@ void JustAMCPEditorPlugin::_notification(int p_what) {
 			}
 
 			if (apps_dock) {
-				remove_blazium_item("JustAMCP", "Apps");
-				memdelete(apps_dock);
+				apps_dock->queue_free();
 				apps_dock = nullptr;
 				apps_list = nullptr;
-			}
-
-			if (status_label) {
-				remove_control_from_container(CONTAINER_TOOLBAR, status_label);
-				status_label->queue_free();
 				status_label = nullptr;
 			}
 		} break;
@@ -384,7 +380,7 @@ void JustAMCPEditorPlugin::_setup_status_indicator() {
 	status_label->add_theme_color_override("font_color", Color(0, 1, 0));
 	status_label->add_theme_font_size_override("font_size", 12);
 	status_label->set_visible(mcp_server && mcp_server->is_server_started());
-	add_control_to_container(CONTAINER_TOOLBAR, status_label);
+	apps_dock->add_child(status_label);
 }
 
 void JustAMCPEditorPlugin::_on_server_status_changed(bool p_started) {
@@ -454,6 +450,25 @@ String JustAMCPEditorPlugin::get_mcp_config_json(MCPConfigClient p_client) {
 	const String client_id = JustAMCPSettingsResolver::resolve_string("blazium/justamcp/client_id");
 	const String client_secret = JustAMCPSettingsResolver::resolve_string("blazium/justamcp/client_secret");
 
+	if (p_client == MCP_CONFIG_CODEX) {
+		return JustAMCPAgentPolicy::client_config("codex");
+	}
+	if (p_client == MCP_CONFIG_CLAUDE) {
+		return JustAMCPAgentPolicy::client_config("claude");
+	}
+	if (p_client == MCP_CONFIG_VSCODE) {
+		return JustAMCPAgentPolicy::client_config("vscode");
+	}
+	if (p_client == MCP_CONFIG_GEMINI) {
+		return JustAMCPAgentPolicy::client_config("gemini");
+	}
+	if (p_client == MCP_CONFIG_GROK) {
+		return JustAMCPAgentPolicy::client_config("grok");
+	}
+	if (p_client == MCP_CONFIG_WINDSURF) {
+		return JustAMCPAgentPolicy::client_config("windsurf");
+	}
+
 	const String mcp_url = "http://127.0.0.1:" + itos(port) + "/mcp";
 	const String game_url = "http://127.0.0.1:" + itos(game_port) + "/mcp";
 	const bool game_enabled = JustAMCPSettingsResolver::resolve_runtime_enabled();
@@ -465,6 +480,7 @@ String JustAMCPEditorPlugin::get_mcp_config_json(MCPConfigClient p_client) {
 		json_config += "    \"blazium-mcp\": {\n";
 		json_config += "      \"type\": \"remote\",\n";
 		json_config += "      \"url\": \"" + mcp_url + "\",\n";
+		json_config += "      \"headers\": {\"Authorization\": \"Bearer " + JustAMCPAgentPolicy::instance_bearer() + "\"},\n";
 		json_config += "      \"enabled\": true\n";
 		json_config += "    }";
 		if (game_enabled) {
@@ -487,6 +503,7 @@ String JustAMCPEditorPlugin::get_mcp_config_json(MCPConfigClient p_client) {
 	} else {
 		json_config += "      \"serverUrl\": \"" + mcp_url + "\"";
 	}
+	json_config += ",\n      \"headers\": {\"Authorization\": \"Bearer " + JustAMCPAgentPolicy::instance_bearer() + "\"}";
 
 	if (oauth_enabled && (!client_id.is_empty() || !client_secret.is_empty())) {
 		json_config += ",\n      \"oauth\": {\n";

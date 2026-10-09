@@ -30,7 +30,10 @@
 #include "justamcp_node_tools.h"
 
 #include "justamcp_agent_helpers.h"
+#include "justamcp_agent_policy.h"
 #include "justamcp_scene_file_io.h"
+
+#include "core/object/class_db.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_undo_redo_manager.h"
@@ -41,7 +44,6 @@
 
 #include "core/config/project_settings.h"
 #include "core/io/resource_loader.h"
-#include "core/object/class_db.h"
 #include "core/object/script_language.h"
 #include "scene/gui/control.h"
 
@@ -187,7 +189,7 @@ Dictionary JustAMCPNodeTools::_add_node(const Dictionary &p_params) {
 #ifdef TOOLS_ENABLED
 	if (EditorUndoRedoManager::get_singleton()) {
 		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
-		ur->create_action("MCP: Add " + type);
+		ur->create_action(String("MCP: Add ") + type + " [" + JustAMCPAgentPolicy::current_session_id() + "]");
 		ur->add_do_method(parent, "add_child", node);
 		ur->add_do_method(node, "set_owner", root);
 		ur->add_do_reference(node);
@@ -234,7 +236,7 @@ Dictionary JustAMCPNodeTools::_delete_node(const Dictionary &p_params) {
 #ifdef TOOLS_ENABLED
 	if (EditorUndoRedoManager::get_singleton()) {
 		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
-		ur->create_action("MCP: Delete " + node_name);
+		ur->create_action(String("MCP: Delete ") + node_name + " [" + JustAMCPAgentPolicy::current_session_id() + "]");
 		ur->add_do_method(parent, "remove_child", node);
 
 		ur->add_undo_method(node, "set_owner", root);
@@ -289,7 +291,7 @@ Dictionary JustAMCPNodeTools::_duplicate_node(const Dictionary &p_params) {
 #ifdef TOOLS_ENABLED
 	if (EditorUndoRedoManager::get_singleton()) {
 		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
-		ur->create_action("MCP: Duplicate " + node->get_name());
+		ur->create_action(String("MCP: Duplicate ") + node->get_name() + " [" + JustAMCPAgentPolicy::current_session_id() + "]");
 		ur->add_do_method(parent, "add_child", dup);
 		ur->add_do_method(dup, "set_owner", root);
 		ur->add_do_reference(dup);
@@ -351,7 +353,7 @@ Dictionary JustAMCPNodeTools::_move_node(const Dictionary &p_params) {
 #ifdef TOOLS_ENABLED
 	if (EditorUndoRedoManager::get_singleton()) {
 		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
-		ur->create_action("MCP: Move " + node->get_name());
+		ur->create_action(String("MCP: Move ") + node->get_name() + " [" + JustAMCPAgentPolicy::current_session_id() + "]");
 		ur->add_do_method(old_parent, "remove_child", node);
 		ur->add_do_method(new_parent, "add_child", node);
 		ur->add_do_method(node, "set_owner", root);
@@ -412,7 +414,7 @@ Dictionary JustAMCPNodeTools::_update_property(const Dictionary &p_params) {
 #ifdef TOOLS_ENABLED
 	if (EditorUndoRedoManager::get_singleton()) {
 		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
-		ur->create_action("MCP: Set " + String(node->get_name()) + "." + property);
+		ur->create_action(String("MCP: Set ") + String(node->get_name()) + "." + property + " [" + JustAMCPAgentPolicy::current_session_id() + "]");
 		ur->add_do_property(node, property, value);
 		ur->add_undo_property(node, property, old_value);
 		ur->commit_action();
@@ -555,7 +557,7 @@ Dictionary JustAMCPNodeTools::_add_resource(const Dictionary &p_params) {
 #ifdef TOOLS_ENABLED
 	if (EditorUndoRedoManager::get_singleton()) {
 		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
-		ur->create_action("MCP: Add " + resource_type + " to " + String(node->get_name()));
+		ur->create_action(String("MCP: Add ") + resource_type + " to " + String(node->get_name()) + " [" + JustAMCPAgentPolicy::current_session_id() + "]");
 		ur->add_do_property(node, property, resource);
 		ur->add_undo_property(node, property, old_value);
 		ur->commit_action();

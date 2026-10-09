@@ -429,16 +429,22 @@ Dictionary JustAMCPAudioTools::_get_audio_info(const Dictionary &p_params) {
 	}
 
 	Array players;
-	_collect_audio_players(node, players);
+	int visited = 0;
+	const bool truncated = _collect_audio_players(node, players, visited);
 
 	Dictionary res;
 	res["node_path"] = node_path;
 	res["audio_player_count"] = players.size();
 	res["players"] = players;
+	res["truncated"] = truncated;
 	return MCP_SUCCESS(res);
 }
 
-void JustAMCPAudioTools::_collect_audio_players(Node *p_node, Array &r_result) {
+bool JustAMCPAudioTools::_collect_audio_players(Node *p_node, Array &r_result, int &r_visited) {
+	if (!p_node || r_visited >= 4096) {
+		return r_visited >= 4096;
+	}
+	r_visited++;
 	if (p_node->is_class("AudioStreamPlayer") || p_node->is_class("AudioStreamPlayer2D") || p_node->is_class("AudioStreamPlayer3D")) {
 		Dictionary info;
 		info["name"] = p_node->get_name();
@@ -475,7 +481,16 @@ void JustAMCPAudioTools::_collect_audio_players(Node *p_node, Array &r_result) {
 		r_result.push_back(info);
 	}
 
+	bool truncated = false;
 	for (int i = 0; i < p_node->get_child_count(); i++) {
-		_collect_audio_players(p_node->get_child(i), r_result);
+		if (r_visited >= 4096) {
+			truncated = true;
+			break;
+		}
+		if (_collect_audio_players(p_node->get_child(i), r_result, r_visited)) {
+			truncated = true;
+			break;
+		}
 	}
+	return truncated;
 }

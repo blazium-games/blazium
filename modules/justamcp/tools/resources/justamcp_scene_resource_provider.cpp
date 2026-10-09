@@ -76,14 +76,18 @@ static Dictionary _serialize_node_brief(Node *p_node, Node *p_root) {
 	return data;
 }
 
-static void _append_node_tree(Node *p_node, Node *p_root, int p_depth, int p_max_depth, Array &r_nodes) {
-	if (!p_node || p_depth > p_max_depth) {
-		return;
+static constexpr int k_hierarchy_node_cap = 4096;
+
+static bool _append_node_tree(Node *p_node, Node *p_root, int p_depth, int p_max_depth, Array &r_nodes) {
+	if (!p_node || p_depth > p_max_depth || r_nodes.size() >= k_hierarchy_node_cap) {
+		return r_nodes.size() >= k_hierarchy_node_cap;
 	}
 	r_nodes.push_back(_serialize_node_brief(p_node, p_root));
-	for (int i = 0; i < p_node->get_child_count(); i++) {
-		_append_node_tree(p_node->get_child(i), p_root, p_depth + 1, p_max_depth, r_nodes);
+	bool truncated = r_nodes.size() >= k_hierarchy_node_cap;
+	for (int i = 0; i < p_node->get_child_count() && !truncated; i++) {
+		truncated = _append_node_tree(p_node->get_child(i), p_root, p_depth + 1, p_max_depth, r_nodes);
 	}
+	return truncated;
 }
 
 bool JustAMCPSceneResourceProvider::can_read(const String &p_canonical_uri) {
@@ -112,10 +116,11 @@ Dictionary JustAMCPSceneResourceProvider::read(const String &p_uri, const String
 			return _scene_json_contents(p_uri, payload);
 		}
 		Array nodes;
-		_append_node_tree(root, root, 0, 10, nodes);
+		const bool truncated = _append_node_tree(root, root, 0, 10, nodes);
 		Dictionary payload;
 		payload["nodes"] = nodes;
 		payload["total_count"] = nodes.size();
+		payload["truncated"] = truncated;
 		return _scene_json_contents(p_uri, payload);
 	}
 

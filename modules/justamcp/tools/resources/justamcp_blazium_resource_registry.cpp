@@ -31,6 +31,7 @@
 
 #include "justamcp_blazium_resource_registry.h"
 
+#include "justamcp_agent_resource_provider.h"
 #include "justamcp_docs_resource_provider.h"
 #include "justamcp_guides_resource_provider.h"
 #include "justamcp_logs_resource_provider.h"
@@ -62,6 +63,7 @@ static const BlaziumResourceProviderEntry g_blazium_resource_providers[] = {
 	{ JustAMCPSelectionResourceProvider::can_read, JustAMCPSelectionResourceProvider::read },
 	{ JustAMCPMaterialsResourceProvider::can_read, JustAMCPMaterialsResourceProvider::read },
 	{ JustAMCPSessionsResourceProvider::can_read, JustAMCPSessionsResourceProvider::read },
+	{ JustAMCPAgentResourceProvider::can_read, JustAMCPAgentResourceProvider::read },
 };
 
 bool JustAMCPBlaziumResourceRegistry::can_read(const String &p_canonical_uri) {

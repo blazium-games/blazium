@@ -47,8 +47,8 @@ class JustAMCPSpatialTools : public Object {
 	Node *_get_scene_root();
 	Node *_get_node(const String &p_path);
 
-	void _collect_spatial_nodes(Node *p_node, Array &p_list_2d, Array &p_list_3d, bool p_inc_2d, bool p_inc_3d);
-	void _collect_node3d(Node *p_node, Vector<Node3D *> &p_list);
+	bool _collect_spatial_nodes(Node *p_node, Array &p_list_2d, Array &p_list_3d, bool p_inc_2d, bool p_inc_3d, int &r_visited);
+	bool _collect_node3d(Node *p_node, Vector<Node3D *> &p_list, int &r_visited);
 
 protected:
 	static void _bind_methods();

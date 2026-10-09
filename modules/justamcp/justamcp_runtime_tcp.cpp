@@ -184,11 +184,15 @@ void JustAMCPRuntime::push_error_log(const String &p_message, bool p_is_error) {
 		entry["type"] = "log";
 	}
 	entry["timestamp"] = Time::get_singleton()->get_unix_time_from_system();
-	_error_log.push_back(entry);
-
-	if (_error_log.size() > 500) {
-		_error_log.remove_at(0);
+	if (_error_log_slots.size() != 500) {
+		_error_log_slots.resize(500);
 	}
+	_error_log_slots.write[_error_log_next] = entry;
+	_error_log_next = (_error_log_next + 1) % 500;
+	if (_error_log_count < 500) {
+		_error_log_count++;
+	}
+	_error_log_written++;
 }
 
 static void _justamcp_load_project_scripts_idle() {

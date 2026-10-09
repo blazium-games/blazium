@@ -49,4 +49,5 @@ Dictionary justamcp_export_patch_pck(const Dictionary &p_args);
 Dictionary justamcp_asset_lib_search(const Dictionary &p_args);
 Dictionary justamcp_asset_lib_info(const Dictionary &p_args);
 Dictionary justamcp_asset_lib_install(const Dictionary &p_args);
+Dictionary justamcp_extract_zip(const Dictionary &p_args);
 Dictionary justamcp_remote_control_run_headless_script(const Dictionary &p_args);

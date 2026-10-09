@@ -49,7 +49,7 @@ private:
 	String _read_file_text(const String &p_file_path);
 	Dictionary _read_file_text_checked(const String &p_file_path, String &r_text);
 
-	void _collect_signal_data(Node *p_node, Node *p_root, Array &r_out, int p_max_nodes, bool &r_truncated);
+	void _collect_signal_data(Node *p_node, Node *p_root, Array &r_out, int p_max_nodes, int &r_visited, bool &r_truncated);
 	void _analyze_node(Node *p_node, Node *p_root, int p_depth, int &r_total_nodes, int &r_max_depth, Dictionary &r_types, Array &r_scripts, Dictionary &r_resources, int p_max_nodes, bool &r_truncated);
 	int _count_nodes_recursive(Node *p_node, int p_max_nodes, bool &r_truncated);
 	int _get_max_depth(Node *p_node, int p_current_depth, int p_max_nodes, int &r_visited, bool &r_truncated);

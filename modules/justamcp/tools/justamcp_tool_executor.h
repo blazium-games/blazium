@@ -74,6 +74,10 @@ class JustAMCPThemeTools;
 class JustAMCPTileMapTools;
 class JustAMCPAutoworkTools;
 class JustAMCPMultiuserTools;
+#include "modules/modules_enabled.gen.h"
+#ifdef MODULE_MULTIUSER_EDITOR_ENABLED
+#include "justamcp_multiuser_tools.h"
+#endif
 
 class JustAMCPToolExecutor : public Object {
 	GDCLASS(JustAMCPToolExecutor, Object);
@@ -113,7 +117,11 @@ private:
 	JustAMCPThemeTools *theme_tools = nullptr;
 	JustAMCPTileMapTools *tilemap_tools = nullptr;
 	JustAMCPAutoworkTools *autowork_tools = nullptr;
+#ifdef MODULE_MULTIUSER_EDITOR_ENABLED
+	Ref<JustAMCPMultiuserTools> multiuser_tools;
+#else
 	JustAMCPMultiuserTools *multiuser_tools = nullptr;
+#endif
 
 	bool initialized = false;
 	bool allow_disabled_dispatch = false;
@@ -123,6 +131,7 @@ private:
 
 	void _init_tools();
 	void _wait_for_tracked_worker_tasks();
+	Dictionary execute_tool_inner(const String &p_tool_name, const Dictionary &p_args);
 
 protected:
 	static void _bind_methods();
@@ -149,6 +158,8 @@ public:
 	static Node *test_scene_root;
 	static void set_test_scene_root(Node *p_node);
 	static Node *get_test_scene_root();
+	static String instance_bearer();
+	static bool bearer_authorizes(const String &p_authorization);
 
 	JustAMCPToolExecutor();
 	~JustAMCPToolExecutor();

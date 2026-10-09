@@ -37,7 +37,7 @@
 // Non-blocking MCP calls must return immediately. Sanitizers inflate wall time
 // enough that the 50ms budget flakes (CI saw 63ms under ASan/UBSan).
 static inline uint64_t justamcp_nonblocking_call_budget_ms() {
-#if defined(TSAN_ENABLED) || defined(ASAN_ENABLED) || defined(UBSAN_ENABLED)
+#ifdef SANITIZERS_ENABLED
 	return 250;
 #else
 	return 50;
@@ -45,34 +45,23 @@ static inline uint64_t justamcp_nonblocking_call_budget_ms() {
 }
 
 class JustAMCPTestServerFixture {
-	JustAMCPServer *server = nullptr;
+	JustAMCPServer server;
 
 public:
-	JustAMCPTestServerFixture() {
-		// Heap-allocate: JustAMCPServer is a Node with large sanitizer stack frames,
-		// and Object-derived types must go through memnew() for _postinitialize().
-		server = memnew(JustAMCPServer);
-	}
-
 	JustAMCPServer &get_server() {
-		return *server;
-	}
-
-	JustAMCPServer *operator->() {
 		return server;
 	}
 
+	JustAMCPServer *operator->() {
+		return &server;
+	}
+
 	~JustAMCPTestServerFixture() {
-		if (!server) {
-			return;
-		}
-		server->test_stop_server();
-		server->test_clear_tool_queue();
-		if (MCPSessionManager *session_manager = server->test_get_session_manager()) {
+		server.test_stop_server();
+		server.test_clear_tool_queue();
+		if (MCPSessionManager *session_manager = server.test_get_session_manager()) {
 			session_manager->clear_all();
 		}
-		memdelete(server);
-		server = nullptr;
 	}
 };
 

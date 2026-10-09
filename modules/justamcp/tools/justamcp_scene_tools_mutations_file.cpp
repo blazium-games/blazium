@@ -151,7 +151,7 @@ Dictionary JustAMCPSceneTools::delete_scene_file(const Dictionary &p_args) {
 		return ret;
 	}
 	const String main_scene = ProjectSettings::get_singleton() ? String(ProjectSettings::get_singleton()->get_setting("application/run/main_scene", "")) : String();
-	if ((!main_scene.is_empty() && scene_path == main_scene) || JustAMCPEditorSceneAccess::is_project_settings_file(scene_path) || scene_path == "res://export_presets.cfg") {
+	if ((!main_scene.is_empty() && scene_path == main_scene) || ProjectSettings::is_project_settings_file(scene_path) || scene_path == "res://export_presets.cfg") {
 		Dictionary ret;
 		ret["ok"] = false;
 		ret["error"] = "Refusing to delete protected project path: " + scene_path;
@@ -340,15 +340,8 @@ Dictionary JustAMCPSceneTools::close_scene(const Dictionary &p_args) {
 		EditorNode::get_singleton()->save_scene_if_open(closed_path);
 	}
 
-	if (editor_data.get_edited_scene() != idx) {
-		editor_data.set_edited_scene(idx);
-	}
-	if (!EditorNode::get_singleton()->close_scene()) {
-		ret["ok"] = false;
-		ret["error"] = "Failed to close scene tab.";
-		ret["path"] = closed_path;
-		return ret;
-	}
+	editor_data.set_edited_scene(idx);
+	EditorNode::get_singleton()->close_scene();
 
 	ret["ok"] = true;
 	ret["path"] = closed_path;

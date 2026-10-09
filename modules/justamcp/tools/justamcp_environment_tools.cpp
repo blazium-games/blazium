@@ -28,18 +28,19 @@
 /**************************************************************************/
 
 #include "justamcp_environment_tools.h"
+
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
+#include "justamcp_agent_policy.h"
 
+#include "editor/editor_interface.h"
+#include "editor/editor_undo_redo_manager.h"
 #include "scene/3d/world_environment.h"
 #include "scene/main/node.h"
 #include "scene/main/viewport.h"
 #include "scene/resources/3d/sky_material.h"
 #include "scene/resources/environment.h"
 #include "scene/resources/sky.h"
-
-#include "editor/editor_interface.h"
-#include "editor/editor_undo_redo_manager.h"
 
 void JustAMCPEnvironmentTools::_bind_methods() {}
 
@@ -148,7 +149,7 @@ Dictionary JustAMCPEnvironmentTools::create_environment(const Dictionary &p_args
 	}
 
 	if (ur) {
-		ur->create_action("Set Environment Preset: " + preset);
+		ur->create_action(String("Set Environment Preset: ") + preset + " [" + JustAMCPAgentPolicy::current_session_id() + "]");
 		ur->add_do_property(we, "environment", env);
 		ur->add_undo_property(we, "environment", we->get_environment());
 		ur->commit_action();

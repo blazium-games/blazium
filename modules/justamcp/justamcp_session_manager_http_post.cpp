@@ -27,12 +27,17 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
+#include "justamcp_json_rpc_transport.h"
+
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
 #include "core/os/time.h"
-#include "justamcp_json_rpc_transport.h"
+#ifdef TOOLS_ENABLED
+#include "tools/justamcp_agent_policy.h"
+#endif
 #include "justamcp_server.h"
 #include "justamcp_session_manager.h"
+
 #include "modules/modules_enabled.gen.h"
 #if defined(MODULE_HTTPSERVER_ENABLED)
 #include "modules/httpserver/http_request_context.h"
@@ -260,6 +265,14 @@ bool MCPSessionManager::handle_mcp_post(const Ref<HTTPRequestContext> &p_context
 		owner->transport_negotiated_protocol = session.negotiated_protocol;
 		apply_cors_headers(p_response, p_context);
 		p_response->add_header("MCP-Session-Id", session_id);
+#ifdef TOOLS_ENABLED
+		String agent_name = "agent";
+		if (payload.has("params") && Dictionary(payload["params"]).has("clientInfo")) {
+			const Dictionary client_info = Dictionary(payload["params"])["clientInfo"];
+			agent_name = String(client_info.get("name", agent_name));
+		}
+		JustAMCPAgentPolicy::open_session(session_id, agent_name, true);
+#endif
 	}
 
 	const bool async_rpc = (method == "tools/call");

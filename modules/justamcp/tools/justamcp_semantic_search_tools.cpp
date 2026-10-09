@@ -36,6 +36,7 @@
 #include "justamcp_tool_schema_builder.h"
 
 #include "core/config/project_settings.h"
+#include "core/object/class_db.h"
 #include "editor/settings/editor_settings.h"
 #ifdef TOOLS_ENABLED
 #include "editor/file_system/editor_file_system.h"
@@ -44,8 +45,6 @@
 #include "modules/modules_enabled.gen.h"
 
 #ifdef MODULE_SEMANTICSEARCH_ENABLED
-#include "core/object/class_db.h"
-
 #include "modules/semanticsearch/semantic_asset_index.h"
 #include "modules/semanticsearch/semantic_async_search_worker.h"
 #include "modules/semanticsearch/semantic_search_backend.h"

@@ -33,10 +33,13 @@
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_read_limits.h"
 #include "justamcp_agent_helpers.h"
+#include "justamcp_agent_policy.h"
 #include "justamcp_resource_tools.h"
 
 #include "core/config/project_settings.h"
 #include "core/io/resource_loader.h"
+#include "core/object/class_db.h"
+#include "core/string/string_name.h"
 
 #ifdef MODULE_ASSETTAGS_ENABLED
 #include "modules/assettags/asset_tag_registry.h"
@@ -46,9 +49,7 @@
 #include "core/io/image_loader.h"
 #include "core/io/json.h"
 #include "core/io/resource_saver.h"
-#include "core/object/class_db.h"
 #include "core/os/thread.h"
-#include "core/string/string_name.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
 #include "editor/editor_undo_redo_manager.h"
@@ -183,6 +184,7 @@ Error JustAMCPResourceTools::_save_scene_root(Node *p_root, const String &p_scen
 	if (err != OK) {
 		return err;
 	}
+	JustAMCPAgentPolicy::note_file_undo(p_scene_path);
 	return ResourceSaver::save(packed, p_scene_path);
 }
 

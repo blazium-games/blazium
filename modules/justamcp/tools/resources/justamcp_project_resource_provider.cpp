@@ -41,6 +41,7 @@
 #include "core/input/input_event.h"
 #include "core/input/input_map.h"
 #include "core/io/json.h"
+#include "core/string/string_name.h"
 #include "core/variant/typed_array.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
@@ -48,7 +49,6 @@
 #include "scene/main/node.h"
 
 #ifdef MODULE_ASSETTAGS_ENABLED
-#include "core/string/string_name.h"
 #include "core/templates/hash_set.h"
 
 #include "modules/assettags/asset_tag_manager.h"
@@ -163,10 +163,10 @@ Dictionary JustAMCPProjectResourceProvider::read(const String &p_uri, const Stri
 	if (p_canonical_uri == "blazium://input_map") {
 		Dictionary actions;
 		if (InputMap::get_singleton()) {
-			TypedArray<StringName> action_names = InputMap::get_singleton()->get_actions();
-			for (const Variant &action_var : action_names) {
-				const StringName action_name = action_var;
-				String action = String(action_name);
+			const TypedArray<StringName> action_names = InputMap::get_singleton()->get_actions();
+			for (int action_index = 0; action_index < action_names.size(); action_index++) {
+				const StringName action_name = action_names[action_index];
+				String action = action_name;
 				if (action.begins_with("ui_")) {
 					continue;
 				}

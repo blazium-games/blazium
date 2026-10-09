@@ -32,6 +32,8 @@
 #include "justamcp_sessions_resource_provider.h"
 
 #include "../../justamcp_server.h"
+#include "../justamcp_agent_policy.h"
+
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
@@ -55,15 +57,29 @@ bool JustAMCPSessionsResourceProvider::can_read(const String &p_canonical_uri) {
 
 Dictionary JustAMCPSessionsResourceProvider::read(const String &p_uri, const String &p_canonical_uri) {
 	(void)p_canonical_uri;
-	Dictionary session;
-	session["session_id"] = "justamcp-editor";
-	session["godot_version"] = Engine::get_singleton()->get_version_info().get("string", "unknown");
-	session["project_path"] = ProjectSettings::get_singleton()->get_resource_path();
-	session["project_name"] = ProjectSettings::get_singleton()->get_setting("application/config/name", "");
-	session["is_active"] = JustAMCPServer::get_singleton() ? JustAMCPServer::get_singleton()->is_server_started() : true;
-
-	Array sessions;
-	sessions.push_back(session);
+	Array sessions = JustAMCPAgentPolicy::list_sessions();
+	bool saw_editor = false;
+	for (int i = 0; i < sessions.size(); i++) {
+		Dictionary existing = sessions[i];
+		if (String(existing.get("session_id", "")) == "editor" || String(existing.get("name", "")) == "editor") {
+			existing["session_id"] = "justamcp-editor";
+			existing["godot_version"] = Engine::get_singleton()->get_version_info().get("string", "unknown");
+			existing["project_path"] = ProjectSettings::get_singleton()->get_resource_path();
+			existing["project_name"] = ProjectSettings::get_singleton()->get_setting("application/config/name", "");
+			sessions[i] = existing;
+			saw_editor = true;
+		}
+	}
+	if (!saw_editor) {
+		Dictionary session;
+		session["session_id"] = "justamcp-editor";
+		session["name"] = "editor";
+		session["godot_version"] = Engine::get_singleton()->get_version_info().get("string", "unknown");
+		session["project_path"] = ProjectSettings::get_singleton()->get_resource_path();
+		session["project_name"] = ProjectSettings::get_singleton()->get_setting("application/config/name", "");
+		session["is_active"] = JustAMCPServer::get_singleton() ? JustAMCPServer::get_singleton()->is_server_started() : true;
+		sessions.push_back(session);
+	}
 	Dictionary payload;
 	payload["count"] = sessions.size();
 	payload["sessions"] = sessions;

@@ -28,21 +28,21 @@
 /**************************************************************************/
 
 #include "justamcp_server.h"
+#include "justamcp_server_request_lookup.h"
+#include "justamcp_session_manager.h"
+#include "justamcp_tool_context.h"
+#include "justamcp_tool_dispatch.h"
+#include "justamcp_tool_queue_state.h"
+#include "tools/justamcp_json_rpc_helpers.h"
+#include "tools/justamcp_readonly_tools.h"
+#include "tools/justamcp_settings_resolver.h"
 
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
 #include "core/object/worker_thread_pool.h"
 #include "core/os/os.h"
 #include "core/os/time.h"
-#include "justamcp_server_request_lookup.h"
-#include "justamcp_session_manager.h"
-#include "justamcp_tool_context.h"
-#include "justamcp_tool_dispatch.h"
-#include "justamcp_tool_queue_state.h"
 #include "scene/main/scene_tree.h"
-#include "tools/justamcp_json_rpc_helpers.h"
-#include "tools/justamcp_readonly_tools.h"
-#include "tools/justamcp_settings_resolver.h"
 #ifdef TOOLS_ENABLED
 #include "tools/justamcp_task_manager.h"
 #include "tools/justamcp_tool_executor.h"
@@ -471,13 +471,20 @@ void JustAMCPServer::_insert_tool_result_tombstone(const String &p_tombstone_key
 	if (completed_tool_request_tombstones.has(p_tombstone_key)) {
 		return;
 	}
-	while (completed_tool_request_tombstone_order.size() >= COMPLETED_TOOL_REQUEST_TOMBSTONE_MAX) {
-		const String oldest = completed_tool_request_tombstone_order[0];
-		completed_tool_request_tombstone_order.remove_at(0);
-		completed_tool_request_tombstones.erase(oldest);
+	if (completed_tool_request_tombstone_slots.size() != COMPLETED_TOOL_REQUEST_TOMBSTONE_MAX) {
+		completed_tool_request_tombstone_slots.resize(COMPLETED_TOOL_REQUEST_TOMBSTONE_MAX);
+		completed_tool_request_tombstone_count = 0;
+		completed_tool_request_tombstone_next = 0;
 	}
+	if (completed_tool_request_tombstone_count >= COMPLETED_TOOL_REQUEST_TOMBSTONE_MAX) {
+		completed_tool_request_tombstones.erase(completed_tool_request_tombstone_slots[completed_tool_request_tombstone_next]);
+	}
+	completed_tool_request_tombstone_slots.write[completed_tool_request_tombstone_next] = p_tombstone_key;
 	completed_tool_request_tombstones.insert(p_tombstone_key);
-	completed_tool_request_tombstone_order.push_back(p_tombstone_key);
+	completed_tool_request_tombstone_next = (completed_tool_request_tombstone_next + 1) % COMPLETED_TOOL_REQUEST_TOMBSTONE_MAX;
+	if (completed_tool_request_tombstone_count < COMPLETED_TOOL_REQUEST_TOMBSTONE_MAX) {
+		completed_tool_request_tombstone_count++;
+	}
 }
 
 bool JustAMCPServer::_has_tool_result_tombstone(const String &p_tombstone_key) const {

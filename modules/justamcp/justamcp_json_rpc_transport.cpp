@@ -32,7 +32,6 @@
 #if defined(MODULE_HTTPSERVER_ENABLED)
 
 #include "justamcp_json_rpc_transport.h"
-
 #include "justamcp_log_levels.h"
 #include "justamcp_mcp_spec.h"
 #include "justamcp_pagination.h"
@@ -541,6 +540,12 @@ Dictionary JustAMCPJsonRpcTransport::_handle_json_rpc_payload(JustAMCPServer *p_
 		}
 		tool_name = params["name"];
 		args = params.has("arguments") && params["arguments"].get_type() == Variant::DICTIONARY ? Dictionary(params["arguments"]) : Dictionary();
+#endif
+#ifdef TOOLS_ENABLED
+		if (!p_caller_session_id.is_empty()) {
+			args = args.duplicate();
+			args["_session_id"] = p_caller_session_id;
+		}
 #endif
 
 		if (JustAMCPProjectRegistry::has_tool(tool_name)) {

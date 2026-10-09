@@ -58,7 +58,7 @@ private:
 	Dictionary _set_node_groups(const Dictionary &p_params);
 	Dictionary _find_nodes_in_group(const Dictionary &p_params);
 
-	void _find_in_group_recursive(Node *p_node, Node *p_root, const String &p_group_name, Array &r_matches);
+	bool _find_in_group_recursive(Node *p_node, Node *p_root, const String &p_group_name, Array &r_matches, int &r_visited);
 
 protected:
 	static void _bind_methods();

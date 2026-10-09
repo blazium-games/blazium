@@ -64,8 +64,8 @@ private:
 
 	struct CacheEntry {
 		Array all_tools;
-		HashMap<String, Dictionary> by_name;
-		HashMap<String, Array> by_category;
+		Dictionary by_name;
+		Dictionary by_category;
 		uint64_t generation = 0;
 		bool all_tools_dirty = false;
 	};

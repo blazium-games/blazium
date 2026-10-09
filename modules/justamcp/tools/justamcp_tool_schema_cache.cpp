@@ -57,8 +57,9 @@ void JustAMCPToolSchemaCache::invalidate_category(const String &p_category) {
 void JustAMCPToolSchemaCache::mark_all_cached_categories_dirty() {
 	MutexLock lock(cache_mutex);
 	for (KeyValue<uint32_t, CacheEntry> &kv : cache_entries) {
-		for (const KeyValue<String, Array> &cat : kv.value.by_category) {
-			dirty_categories.insert(cat.key);
+		const Array categories = kv.value.by_category.keys();
+		for (int i = 0; i < categories.size(); i++) {
+			dirty_categories.insert(String(categories[i]));
 		}
 	}
 	if (dirty_categories.is_empty()) {
@@ -91,15 +92,16 @@ JustAMCPToolSchemaCache::CacheEntry &JustAMCPToolSchemaCache::_get_entry(bool p_
 
 void JustAMCPToolSchemaCache::_rebuild_all_tools_from_categories(CacheEntry &p_cache) {
 	Array rebuilt_all;
-	HashMap<String, Dictionary> rebuilt_by_name;
-	for (const KeyValue<String, Array> &kv : p_cache.by_category) {
-		const Array &bucket = kv.value;
+	Dictionary rebuilt_by_name;
+	const Array categories = p_cache.by_category.keys();
+	for (int c = 0; c < categories.size(); c++) {
+		const Array bucket = p_cache.by_category[categories[c]];
 		for (int i = 0; i < bucket.size(); i++) {
 			rebuilt_all.push_back(bucket[i]);
 			Dictionary tool = bucket[i];
 			const String name = tool.get("name", "");
 			if (!name.is_empty()) {
-				rebuilt_by_name.insert(name, tool);
+				rebuilt_by_name[name] = tool;
 			}
 		}
 	}
@@ -131,17 +133,15 @@ void JustAMCPToolSchemaCache::_rebuild_if_needed(bool p_register_only, bool p_ig
 		Dictionary tool = built.all_tools[i];
 		const String name = tool.get("name", "");
 		if (!name.is_empty()) {
-			built.by_name.insert(name, tool);
+			built.by_name[name] = tool;
 		}
 		if (tool.has("_meta")) {
 			Dictionary meta = tool["_meta"];
 			const String category = meta.get("category", "");
 			if (!category.is_empty()) {
-				if (!built.by_category.has(category)) {
-					built.by_category.insert(category, Array());
-				}
-				Array &bucket = built.by_category[category];
+				Array bucket = built.by_category.get(category, Array());
 				bucket.push_back(tool);
+				built.by_category[category] = bucket;
 			}
 		}
 	}
@@ -192,36 +192,44 @@ void JustAMCPToolSchemaCache::_rebuild_category_if_needed(bool p_register_only, 
 		const Array refreshed_category = JustAMCPToolExecutor::collect_tool_schemas_for_category(
 				p_category, register_only, ignore_settings, include_disabled);
 
-		MutexLock lock(cache_mutex);
-		if (!dirty_categories.has(p_category)) {
-			return;
-		}
-		CacheEntry &cache = cache_entries[key];
-		if (cache.by_category.has(p_category)) {
-			const Array &old_bucket = cache.by_category[p_category];
-			for (int i = 0; i < old_bucket.size(); i++) {
-				Dictionary tool = old_bucket[i];
-				const String name = tool.get("name", "");
-				if (!name.is_empty()) {
-					cache.by_name.erase(name);
-				}
+		Dictionary names;
+		Array old_bucket;
+		{
+			MutexLock lock(cache_mutex);
+			if (!dirty_categories.has(p_category)) {
+				return;
+			}
+			CacheEntry &cache = cache_entries[key];
+			names = cache.by_name;
+			if (cache.by_category.has(p_category)) {
+				old_bucket = cache.by_category[p_category];
 			}
 		}
-
+		Dictionary rebuilt = names.duplicate();
+		for (int i = 0; i < old_bucket.size(); i++) {
+			Dictionary tool = old_bucket[i];
+			const String name = tool.get("name", "");
+			if (!name.is_empty()) {
+				rebuilt.erase(name);
+			}
+		}
 		for (int i = 0; i < refreshed_category.size(); i++) {
 			Dictionary tool = refreshed_category[i];
 			const String name = tool.get("name", "");
 			if (!name.is_empty()) {
-				cache.by_name.insert(name, tool);
+				rebuilt[name] = tool;
 			}
 		}
-
-		if (cache.by_category.has(p_category)) {
+		{
+			MutexLock lock(cache_mutex);
+			if (!dirty_categories.has(p_category)) {
+				return;
+			}
+			CacheEntry &cache = cache_entries[key];
+			cache.by_name = rebuilt;
 			cache.by_category[p_category] = refreshed_category;
-		} else {
-			cache.by_category.insert(p_category, refreshed_category);
+			cache.all_tools_dirty = true;
 		}
-		cache.all_tools_dirty = true;
 	}
 
 	MutexLock lock(cache_mutex);
@@ -247,10 +255,24 @@ void JustAMCPToolSchemaCache::_rebuild_dirty_categories_if_needed(bool p_registe
 Array JustAMCPToolSchemaCache::get_schemas(bool p_register_only, bool p_ignore_settings, bool p_apply_discovery_filter, bool p_include_disabled_tools) {
 	_rebuild_dirty_categories_if_needed(p_register_only, p_ignore_settings, p_apply_discovery_filter, p_include_disabled_tools);
 	_rebuild_if_needed(p_register_only, p_ignore_settings, p_apply_discovery_filter, p_include_disabled_tools);
+	Dictionary categories;
+	{
+		MutexLock lock(cache_mutex);
+		CacheEntry &cache = _get_entry(p_register_only, p_ignore_settings, p_apply_discovery_filter, p_include_disabled_tools);
+		if (!cache.all_tools_dirty) {
+			return cache.all_tools;
+		}
+		categories = cache.by_category;
+	}
+	CacheEntry rebuilt;
+	rebuilt.by_category = categories;
+	_rebuild_all_tools_from_categories(rebuilt);
 	MutexLock lock(cache_mutex);
 	CacheEntry &cache = _get_entry(p_register_only, p_ignore_settings, p_apply_discovery_filter, p_include_disabled_tools);
 	if (cache.all_tools_dirty) {
-		_rebuild_all_tools_from_categories(cache);
+		cache.all_tools = rebuilt.all_tools;
+		cache.by_name = rebuilt.by_name;
+		cache.all_tools_dirty = false;
 	}
 	return cache.all_tools;
 }
@@ -258,10 +280,27 @@ Array JustAMCPToolSchemaCache::get_schemas(bool p_register_only, bool p_ignore_s
 Dictionary JustAMCPToolSchemaCache::find_tool_schema(const String &p_full_name, bool p_include_disabled_tools) {
 	_rebuild_dirty_categories_if_needed(false, false, false, p_include_disabled_tools);
 	_rebuild_if_needed(false, false, false, p_include_disabled_tools);
+	Dictionary categories;
+	{
+		MutexLock lock(cache_mutex);
+		CacheEntry &cache = _get_entry(false, false, false, p_include_disabled_tools);
+		if (!cache.all_tools_dirty) {
+			if (cache.by_name.has(p_full_name)) {
+				return cache.by_name[p_full_name];
+			}
+			return Dictionary();
+		}
+		categories = cache.by_category;
+	}
+	CacheEntry rebuilt;
+	rebuilt.by_category = categories;
+	_rebuild_all_tools_from_categories(rebuilt);
 	MutexLock lock(cache_mutex);
 	CacheEntry &cache = _get_entry(false, false, false, p_include_disabled_tools);
 	if (cache.all_tools_dirty) {
-		_rebuild_all_tools_from_categories(cache);
+		cache.all_tools = rebuilt.all_tools;
+		cache.by_name = rebuilt.by_name;
+		cache.all_tools_dirty = false;
 	}
 	if (cache.by_name.has(p_full_name)) {
 		return cache.by_name[p_full_name];
@@ -283,7 +322,7 @@ Array JustAMCPToolSchemaCache::get_category_schemas(const String &p_category, bo
 	MutexLock lock(cache_mutex);
 	const CacheEntry &cache = _get_entry(p_register_only, p_ignore_settings, false, p_include_disabled_tools);
 	if (cache.by_category.has(p_category)) {
-		return cache.by_category[p_category];
+		return cache.by_category.get(p_category, Array());
 	}
 	return Array();
 }

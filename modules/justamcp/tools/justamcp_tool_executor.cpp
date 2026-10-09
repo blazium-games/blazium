@@ -34,7 +34,9 @@
 #include "../justamcp_runtime.h"
 #include "../justamcp_server.h"
 #include "../justamcp_tool_context.h"
+#include "justamcp_agent_gap_tools.h"
 #include "justamcp_agent_helpers.h"
+#include "justamcp_agent_policy.h"
 #include "justamcp_analysis_tools.h"
 #include "justamcp_animation_tools.h"
 #include "justamcp_asset_tags_tools.h"
@@ -77,6 +79,7 @@
 #include "core/config/project_settings.h"
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
+#include "core/object/class_db.h"
 #include "core/os/os.h"
 #include "core/templates/hash_set.h"
 
@@ -101,8 +104,6 @@
 
 #ifdef MODULE_MULTIUSER_EDITOR_ENABLED
 #include "justamcp_multiuser_tools.h"
-
-#include "core/object/class_db.h"
 #endif
 
 void JustAMCPToolExecutor::_bind_methods() {
@@ -110,6 +111,8 @@ void JustAMCPToolExecutor::_bind_methods() {
 	ClassDB::bind_static_method("JustAMCPToolExecutor", D_METHOD("get_tool_schemas", "register_only", "ignore_settings", "apply_discovery_filter", "include_disabled_tools"), &JustAMCPToolExecutor::get_tool_schemas, DEFVAL(false), DEFVAL(false), DEFVAL(true), DEFVAL(false));
 	ClassDB::bind_static_method("JustAMCPToolExecutor", D_METHOD("list_tools", "cursor"), &JustAMCPToolExecutor::list_tools, DEFVAL(""));
 	ClassDB::bind_static_method("JustAMCPToolExecutor", D_METHOD("set_test_scene_root", "node"), &JustAMCPToolExecutor::set_test_scene_root);
+	ClassDB::bind_static_method("JustAMCPToolExecutor", D_METHOD("instance_bearer"), &JustAMCPToolExecutor::instance_bearer);
+	ClassDB::bind_static_method("JustAMCPToolExecutor", D_METHOD("bearer_authorizes", "authorization"), &JustAMCPToolExecutor::bearer_authorizes);
 }
 
 Node *JustAMCPToolExecutor::test_scene_root = nullptr;
@@ -163,10 +166,11 @@ JustAMCPToolExecutor::JustAMCPToolExecutor() {
 }
 
 JustAMCPToolExecutor::~JustAMCPToolExecutor() {
+	// Workers in execute_tool read active_instance. Wait before clearing it.
+	_wait_for_tracked_worker_tasks();
 	if (active_instance == this) {
 		active_instance = nullptr;
 	}
-	_wait_for_tracked_worker_tasks();
 	if (scene_tools) {
 		memdelete(scene_tools);
 	}
@@ -245,9 +249,7 @@ JustAMCPToolExecutor::~JustAMCPToolExecutor() {
 	}
 #endif
 #ifdef MODULE_MULTIUSER_EDITOR_ENABLED
-	if (multiuser_tools) {
-		memdelete(multiuser_tools);
-	}
+	multiuser_tools.unref();
 #endif
 	if (asset_tools) {
 		memdelete(asset_tools);
@@ -336,7 +338,7 @@ void JustAMCPToolExecutor::set_editor_plugin(JustAMCPEditorPlugin *p_plugin) {
 	}
 #endif
 #ifdef MODULE_MULTIUSER_EDITOR_ENABLED
-	if (multiuser_tools) {
+	if (multiuser_tools.is_valid()) {
 		multiuser_tools->set_editor_plugin(p_plugin);
 	}
 #endif
@@ -497,6 +499,7 @@ static Array _collect_tool_schemas(bool p_register_only, bool p_ignore_settings,
 		}
 		t["inputSchema"] = schema;
 		justamcp_attach_icons(t);
+		JustAMCPAgentPolicy::attach_annotations(t);
 		if (p_task_support != "forbidden" || p_thread_affinity == "worker") {
 			Dictionary execution;
 			if (p_task_support != "forbidden") {
@@ -670,7 +673,33 @@ Dictionary JustAMCPToolExecutor::list_tools(const String &p_cursor) {
 	return justamcp_pagination_slice_array(JustAMCPToolSchemaCache::get_schemas(false, false, apply_discovery_filter, false), p_cursor, "tools");
 }
 
+String JustAMCPToolExecutor::instance_bearer() {
+	return JustAMCPAgentPolicy::instance_bearer();
+}
+
+bool JustAMCPToolExecutor::bearer_authorizes(const String &p_authorization) {
+	return JustAMCPAgentPolicy::bearer_authorizes(p_authorization);
+}
+
 Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const Dictionary &p_args) {
+	const bool claimed_active = active_instance == nullptr;
+	if (claimed_active) {
+		active_instance = this;
+	}
+	Dictionary early;
+	Dictionary result;
+	if (JustAMCPAgentPolicy::before_execute(p_tool_name, p_args, early)) {
+		result = JustAMCPAgentPolicy::after_execute(p_tool_name, p_args, early);
+	} else {
+		result = JustAMCPAgentPolicy::after_execute(p_tool_name, p_args, execute_tool_inner(p_tool_name, p_args));
+	}
+	if (claimed_active && active_instance == this) {
+		active_instance = nullptr;
+	}
+	return result;
+}
+
+Dictionary JustAMCPToolExecutor::execute_tool_inner(const String &p_tool_name, const Dictionary &p_args) {
 	Dictionary result;
 
 	if (!scene_tools || !resource_tools || !animation_tools || !project_tools || !profiling_tools || !export_tools || !batch_tools || !script_tools || !node_tools || !audio_tools || !blueprint_tools || !input_tools || !particle_tools || !physics_tools || !scene_3d_tools || !shader_tools || !theme_tools || !tilemap_tools || !analysis_tools || !asset_tools || !draw_tools || !environment_tools) {
@@ -816,6 +845,10 @@ Dictionary JustAMCPToolExecutor::execute_tool(const String &p_tool_name, const D
 
 	if (JustAMCPMetaTools::handles(internal_name)) {
 		return JustAMCPMetaTools::execute(this, internal_name, args);
+	}
+
+	if (JustAMCPAgentGapTools::handles(internal_name)) {
+		return JustAMCPAgentGapTools::execute(internal_name, args);
 	}
 
 	String routed_category;

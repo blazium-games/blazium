@@ -27,12 +27,17 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "core/io/json.h"
-#include "core/os/time.h"
 #include "justamcp_server.h"
 #include "justamcp_session_manager.h"
-#include "modules/modules_enabled.gen.h"
 #include "tools/justamcp_settings_resolver.h"
+
+#include "core/io/json.h"
+#include "core/os/time.h"
+
+#include "modules/modules_enabled.gen.h"
+#ifdef TOOLS_ENABLED
+#include "tools/justamcp_agent_policy.h"
+#endif
 #if defined(MODULE_HTTPSERVER_ENABLED)
 #include "modules/httpserver/http_request_context.h"
 #include "modules/httpserver/http_response.h"
@@ -88,6 +93,9 @@ bool MCPSessionManager::handle_mcp_delete(const Ref<HTTPRequestContext> &p_conte
 	post_sse_upgrade_sessions.erase(session_id);
 	sessions.erase(session_id);
 	lock.temp_unlock();
+#ifdef TOOLS_ENABLED
+	JustAMCPAgentPolicy::close_session(session_id);
+#endif
 
 	for (int i = 0; i < connection_ids.size(); i++) {
 		clear_request_routes_for_connection(connection_ids[i]);

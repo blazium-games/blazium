@@ -31,10 +31,11 @@
 
 #include "../justamcp_editor_scene_access.h"
 #include "../justamcp_mcp_tool_macros.h"
+#include "justamcp_agent_policy.h"
+#include "justamcp_scene_3d_tools.h"
+
 #include "core/io/resource_loader.h"
 #include "editor/editor_undo_redo_manager.h"
-#include "justamcp_scene_3d_tools.h"
-#include "modules/gridmap/grid_map.h"
 #include "scene/3d/camera_3d.h"
 #include "scene/3d/light_3d.h"
 #include "scene/3d/mesh_instance_3d.h"
@@ -45,6 +46,8 @@
 #include "scene/resources/material.h"
 #include "scene/resources/packed_scene.h"
 #include "scene/resources/sky.h"
+
+#include "modules/gridmap/grid_map.h"
 
 Dictionary JustAMCPScene3DTools::set_material_3d(const Dictionary &p_params) {
 	if (!p_params.has("node_path")) {
@@ -139,7 +142,7 @@ Dictionary JustAMCPScene3DTools::set_material_3d(const Dictionary &p_params) {
 
 	Ref<Material> old_mat = mesh_inst->get_surface_override_material(surface_index);
 	EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
-	undo_redo->create_action("MCP: Set material on " + mesh_inst->get_name());
+	undo_redo->create_action(String("MCP: Set material on ") + mesh_inst->get_name() + " [" + JustAMCPAgentPolicy::current_session_id() + "]");
 	undo_redo->add_do_method(mesh_inst, "set_surface_override_material", surface_index, mat);
 	undo_redo->add_undo_method(mesh_inst, "set_surface_override_material", surface_index, old_mat);
 	undo_redo->commit_action();

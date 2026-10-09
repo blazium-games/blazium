@@ -35,6 +35,7 @@
 #include "../justamcp_read_limits.h"
 #include "../justamcp_tool_context.h"
 #include "justamcp_agent_helpers.h"
+#include "justamcp_agent_policy.h"
 #include "justamcp_autowork_tools.h"
 
 #include "core/io/dir_access.h"
@@ -172,6 +173,7 @@ static Dictionary _execute_autowork(Autowork *p_autowork, int p_timeout_sec) {
 		incomplete["pass_count"] = result["pass_count"];
 		incomplete["fail_count"] = result["fail_count"];
 		incomplete["test_count"] = result["test_count"];
+		JustAMCPAgentPolicy::note_file_undo("user://autowork_results.json");
 		Ref<FileAccess> out = FileAccess::open("user://autowork_results.json", FileAccess::WRITE);
 		if (out.is_valid()) {
 			out->store_string(JSON::stringify(incomplete));

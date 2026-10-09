@@ -29,10 +29,10 @@
 
 #include "justamcp_multiuser_tools.h"
 
+#include "core/object/class_db.h"
+
 #ifdef MODULE_MULTIUSER_EDITOR_ENABLED
 #ifdef TOOLS_ENABLED
-
-#include "core/object/class_db.h"
 
 #include "modules/multiuser_editor/multiuser_editor_plugin.h"
 

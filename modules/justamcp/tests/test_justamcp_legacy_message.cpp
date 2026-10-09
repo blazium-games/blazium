@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "test_justamcp_legacy_message.h"
+
 #include "test_justamcp_fixture.h"
 
 #ifdef TESTS_ENABLED
@@ -36,10 +37,14 @@
 
 #include "../justamcp_json_rpc_transport.h"
 #include "../justamcp_server.h"
+#ifdef TOOLS_ENABLED
+#include "../tools/justamcp_agent_policy.h"
+#endif
 #include "core/io/json.h"
+#include "tests/test_macros.h"
+
 #include "modules/httpserver/http_request_context.h"
 #include "modules/httpserver/http_response.h"
-#include "tests/test_macros.h"
 
 void test_justamcp_legacy_message_routes_result() {
 	JustAMCPTestServerFixture fixture;
@@ -54,6 +59,11 @@ void test_justamcp_legacy_message_routes_result() {
 	Dictionary query;
 	query["sessionId"] = "77";
 	context->set_query_params(query);
+#ifdef TOOLS_ENABLED
+	Dictionary headers;
+	headers["Authorization"] = "Bearer " + JustAMCPAgentPolicy::instance_bearer();
+	context->set_headers(headers);
+#endif
 	const String body = "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"ping\"}";
 	context->set_body(body);
 

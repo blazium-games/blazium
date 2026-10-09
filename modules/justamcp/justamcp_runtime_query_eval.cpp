@@ -135,30 +135,51 @@ Dictionary JustAMCPRuntime::_cmd_runtime_info(const Dictionary &p_params) {
 }
 
 Dictionary JustAMCPRuntime::_cmd_runtime_get_errors(const Dictionary &p_params) {
-	int since_index = p_params.get("since_index", 0);
-
-	MutexLock lock(_error_log_mutex);
-
-	Array entries;
-	for (int i = since_index; i < _error_log.size(); i++) {
-		entries.push_back(_error_log[i]);
+	int64_t since_index = int64_t(p_params.get("since_index", 0));
+	if (since_index < 0) {
+		since_index = 0;
 	}
 
+	Vector<Dictionary> slots;
+	int count = 0;
+	int next = 0;
+	int64_t written = 0;
+	{
+		MutexLock lock(_error_log_mutex);
+		slots = _error_log_slots;
+		count = _error_log_count;
+		next = _error_log_next;
+		written = _error_log_written;
+	}
+
+	Array entries;
 	int error_count = 0;
 	int warning_count = 0;
-	for (int i = 0; i < _error_log.size(); i++) {
-		String t = _error_log[i].get("type", "");
-		if (t == "error") {
-			error_count++;
-		} else {
-			warning_count++;
+	if (count > 0 && slots.size() > 0) {
+		const int cap = slots.size();
+		const int start = count < cap ? 0 : next;
+		const int64_t oldest = written - count;
+		int64_t from = since_index < oldest ? oldest : since_index;
+		if (from < written) {
+			const int logical_from = int(from - oldest);
+			for (int i = logical_from; i < count; i++) {
+				entries.push_back(slots[(start + i) % cap]);
+			}
+		}
+		for (int i = 0; i < count; i++) {
+			String t = slots[(start + i) % cap].get("type", "");
+			if (t == "error") {
+				error_count++;
+			} else {
+				warning_count++;
+			}
 		}
 	}
 
 	Dictionary ret;
 	ret["type"] = "runtime_errors";
 	ret["errors"] = entries;
-	ret["next_index"] = _error_log.size();
+	ret["next_index"] = written;
 	ret["error_count"] = error_count;
 	ret["warning_count"] = warning_count;
 	return ret;

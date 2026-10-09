@@ -34,12 +34,20 @@
 #include "core/variant/variant.h"
 #include "scene/main/node.h"
 
-Dictionary JustAMCPRuntime::_serialize_node_tree(Node *p_node, int p_depth, int p_max_depth, bool p_include_properties) {
+Dictionary JustAMCPRuntime::_serialize_node_tree(Node *p_node, int p_depth, int p_max_depth, bool p_include_properties, int &r_visited, bool &r_truncated) {
 	Dictionary result = _serialize_node(p_node, p_include_properties);
+	r_visited++;
 	if (p_depth < p_max_depth) {
 		Array children;
 		for (int i = 0; i < p_node->get_child_count(); i++) {
-			children.push_back(_serialize_node_tree(p_node->get_child(i), p_depth + 1, p_max_depth, p_include_properties));
+			if (r_visited >= 4096) {
+				r_truncated = true;
+				break;
+			}
+			children.push_back(_serialize_node_tree(p_node->get_child(i), p_depth + 1, p_max_depth, p_include_properties, r_visited, r_truncated));
+			if (r_truncated) {
+				break;
+			}
 		}
 		result["children"] = children;
 	}
@@ -222,8 +230,7 @@ Variant JustAMCPRuntime::_serialize_value(const Variant &p_value) {
 		case Variant::DICTIONARY: {
 			Dictionary d = p_value;
 			Dictionary res;
-			LocalVector<Variant> keys = d.get_key_list();
-			for (const Variant &k : keys) {
+			for (const Variant &k : d.get_key_list()) {
 				res[String(k)] = _serialize_value(d[k]);
 			}
 			return res;
@@ -259,8 +266,7 @@ Variant JustAMCPRuntime::_deserialize_value(const Variant &p_value) {
 		}
 
 		Dictionary res;
-		LocalVector<Variant> keys = d.get_key_list();
-		for (const Variant &k : keys) {
+		for (const Variant &k : d.get_key_list()) {
 			res[k] = _deserialize_value(d[k]);
 		}
 		return res;

@@ -212,10 +212,16 @@ Dictionary JustAMCPMCPAppsHost::get_open_app(const String &p_uri) const {
 }
 
 Array JustAMCPMCPAppsHost::list_open_apps() const {
+	Array shared;
+	{
+		MutexLock lock(apps_mutex);
+		for (const KeyValue<String, Dictionary> &E : open_apps) {
+			shared.push_back(E.value);
+		}
+	}
 	Array out;
-	MutexLock lock(apps_mutex);
-	for (const KeyValue<String, Dictionary> &E : open_apps) {
-		Dictionary row = E.value.duplicate();
+	for (int i = 0; i < shared.size(); i++) {
+		Dictionary row = Dictionary(shared[i]).duplicate();
 		row.erase("html");
 		out.push_back(row);
 	}

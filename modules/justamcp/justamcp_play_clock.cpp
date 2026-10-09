@@ -410,21 +410,19 @@ bool justamcp_try_play_clock_command(const String &p_command, const Dictionary &
 		}
 		const Vector3 origin = camera->project_ray_origin(screen);
 		const Vector3 dir = camera->project_ray_normal(screen);
-		const float length = float(p_params.get("length", 1000.0));
+		const real_t length = real_t(p_params.get("length", 1000.0));
 		Dictionary hit;
 		if (camera->get_world_3d().is_valid()) {
 			PhysicsDirectSpaceState3D *space = camera->get_world_3d()->get_direct_space_state();
 			if (space) {
-				Ref<PhysicsRayQueryParameters3D> query;
-				query.instantiate();
-				query->set_from(origin);
-				query->set_to(origin + dir * length);
-				PS3DT::RayResult ray_result;
-				if (space->intersect_ray(query->get_parameters(), ray_result)) {
+				PhysicsServer3DTypes::RayParameters ray_params;
+				ray_params.from = origin;
+				ray_params.to = origin + dir * length;
+				PhysicsServer3DTypes::RayResult ray_result;
+				if (space->intersect_ray(ray_params, ray_result)) {
 					hit["position"] = ray_result.position;
 					hit["normal"] = ray_result.normal;
-					Object *collider = ray_result.get_collider();
-					if (collider) {
+					if (Object *collider = ray_result.get_collider()) {
 						hit["collider"] = collider->get_class();
 					}
 				}

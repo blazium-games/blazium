@@ -31,6 +31,7 @@
 
 #include "../justamcp_editor_filesystem.h"
 #include "justamcp_agent_helpers.h"
+#include "justamcp_agent_policy.h"
 
 #include "core/io/file_access.h"
 #include "core/io/resource_loader.h"
@@ -119,6 +120,7 @@ Dictionary justamcp_save_scene_root(Node *p_root, const String &p_path, bool p_f
 		err["error"] = "Failed to pack scene: " + path;
 		return err;
 	}
+	JustAMCPAgentPolicy::note_file_undo(path);
 	if (ResourceSaver::save(packed, path) != OK) {
 		if (p_free_root) {
 			memdelete(p_root);

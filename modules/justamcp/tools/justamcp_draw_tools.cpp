@@ -28,16 +28,18 @@
 /**************************************************************************/
 
 #include "justamcp_draw_tools.h"
+
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
+#include "justamcp_agent_policy.h"
 
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
-#include "modules/gdscript/gdscript.h"
-#include "scene/gui/control.h"
-
 #include "editor/editor_interface.h"
 #include "editor/editor_undo_redo_manager.h"
+#include "scene/gui/control.h"
+
+#include "modules/gdscript/gdscript.h"
 
 void JustAMCPDrawTools::_bind_methods() {}
 
@@ -143,7 +145,7 @@ Dictionary JustAMCPDrawTools::control_draw_recipe(const Dictionary &p_args) {
 	}
 
 	if (ur) {
-		ur->create_action("Attach Draw Recipe to " + node->get_name());
+		ur->create_action(String("Attach Draw Recipe to ") + node->get_name() + " [" + JustAMCPAgentPolicy::current_session_id() + "]");
 		ur->add_do_method(node, "set_script", gds);
 		ur->add_do_method(node, "set_meta", "_ops", recipe_ops);
 		ur->add_do_method(node, "queue_redraw");

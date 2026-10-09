@@ -37,10 +37,13 @@
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
 
+#include "../justamcp_editor_plugin.h"
 #include "../justamcp_json_rpc_transport.h"
 #include "../justamcp_server.h"
 #include "../justamcp_session_manager.h"
+#include "../tools/justamcp_agent_policy.h"
 #include "../tools/justamcp_json_rpc_router.h"
+#include "../tools/justamcp_tool_executor.h"
 
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
@@ -221,6 +224,14 @@ void test_justamcp_initialize_result_shape() {
 	CHECK(routed.has("result"));
 	Dictionary result = routed["result"];
 	CHECK(result.has("instructions"));
+	CHECK(String(result.get("instructions", "")).contains("EditorHelp"));
+	CHECK(String(result.get("instructions", "")).contains("blazium://docs/class/"));
+	CHECK(String(result.get("instructions", "")).contains("training data"));
+	Dictionary discovered = JustAMCPJsonRpcRouter::route_discover(&fixture.get_server(), 2);
+	CHECK(bool(discovered.get("handled", false)));
+	Dictionary discovered_result = discovered["result"];
+	CHECK(String(discovered_result.get("instructions", "")).contains("EditorHelp"));
+	CHECK(String(discovered_result.get("instructions", "")).contains("blazium://docs/class/"));
 	CHECK(result.has("capabilities"));
 	CHECK(result.has("serverInfo"));
 	Dictionary capabilities = result["capabilities"];
@@ -595,6 +606,64 @@ void test_justamcp_json_rpc_rejects_null_id() {
 	CHECK(String(Dictionary(bad_id["error"]).get("message", "")).contains("string or integer"));
 }
 
+void test_justamcp_agent_policy_envelope() {
+#ifdef TOOLS_ENABLED
+	Ref<HTTPRequestContext> ctx;
+	ctx.instantiate();
+	ctx->set_method("POST");
+	ctx->set_path("/mcp");
+	ctx->set_headers(Dictionary());
+	Ref<HTTPResponse> denied;
+	denied.instantiate();
+	JustAMCPTestServerFixture fixture;
+	ERR_PRINT_OFF;
+	CHECK(!fixture.get_server().test_validate_mcp_oauth(ctx, denied));
+	ERR_PRINT_ON;
+	CHECK(denied->get_status() == 401);
+
+	Dictionary headers;
+	headers["Authorization"] = "Bearer " + JustAMCPAgentPolicy::instance_bearer();
+	ctx->set_headers(headers);
+	Ref<HTTPResponse> allowed;
+	allowed.instantiate();
+	CHECK(fixture.get_server().test_validate_mcp_oauth(ctx, allowed));
+
+	const String codex = JustAMCPEditorPlugin::get_mcp_config_json(JustAMCPEditorPlugin::MCP_CONFIG_CODEX);
+	CHECK(codex.contains("[mcp_servers.blazium]"));
+	CHECK(codex.contains("bearer_token"));
+	CHECK(codex.contains("/mcp"));
+
+	JustAMCPToolExecutor executor;
+	Array schemas = JustAMCPToolExecutor::get_tool_schemas(false, true, false, true);
+	bool saw_annotations = false;
+	for (int i = 0; i < schemas.size(); i++) {
+		Dictionary schema = schemas[i];
+		if (String(schema.get("name", "")) != "blazium_add_node") {
+			continue;
+		}
+		Dictionary annotations = schema.get("annotations", Dictionary());
+		CHECK(annotations.has("readOnlyHint"));
+		CHECK(annotations.has("destructiveHint"));
+		CHECK(annotations.has("idempotentHint"));
+		CHECK(!bool(annotations.get("readOnlyHint", true)));
+		saw_annotations = true;
+	}
+	CHECK(saw_annotations);
+
+	JustAMCPAgentPolicy::probe_reset();
+	Dictionary args;
+	args["idempotency_key"] = "cpp-probe";
+	Dictionary first = executor.execute_tool("agent_probe_increment", args);
+	Dictionary second = executor.execute_tool("agent_probe_increment", args);
+	CHECK(bool(first.get("ok", false)));
+	CHECK(int(first.get("value", 0)) == int(second.get("value", -1)));
+	CHECK(bool(second.get("idempotent_replay", false)));
+	CHECK(JustAMCPAgentPolicy::probe_value() == 1);
+#else
+	SUCCEED();
+#endif
+}
+
 #else
 
 void test_justamcp_negotiate_protocol_versions() {
@@ -625,6 +694,9 @@ void test_justamcp_http_list_toolsets_smoke_per_strict_protocol() {
 	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required");
 }
 void test_justamcp_json_rpc_rejects_null_id() {
+	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required");
+}
+void test_justamcp_agent_policy_envelope() {
 	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required");
 }
 void test_justamcp_http_modern_discover_and_list() {

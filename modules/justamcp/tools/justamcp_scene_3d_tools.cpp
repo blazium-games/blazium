@@ -33,6 +33,7 @@
 
 #include "../justamcp_editor_scene_access.h"
 #include "../justamcp_mcp_tool_macros.h"
+#include "justamcp_agent_policy.h"
 #include "justamcp_gap_fill.h"
 
 #include "core/io/resource_loader.h"
@@ -70,7 +71,7 @@ Node *JustAMCPScene3DTools::_find_node_by_path(const String &p_path) {
 void JustAMCPScene3DTools::_add_child_with_undo(Node *p_node, Node *p_parent, Node *p_root, const String &p_action_name) {
 	EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
 
-	undo_redo->create_action(p_action_name);
+	undo_redo->create_action(p_action_name + " [" + JustAMCPAgentPolicy::current_session_id() + "]");
 	undo_redo->add_do_method(p_parent, "add_child", p_node);
 	undo_redo->add_do_method(p_node, "set_owner", p_root);
 	undo_redo->add_do_reference(p_node);

@@ -84,7 +84,7 @@ Dictionary JustAMCPMCPClient::client_info() {
 	Dictionary info;
 	info["name"] = "JustAMCP";
 	info["title"] = "JustAMCP";
-	info["version"] = String(GODOT_VERSION_FULL_NAME);
+	info["version"] = String(VERSION_FULL_NAME);
 	info["websiteUrl"] = "https://blazium.app";
 	return info;
 }
@@ -274,11 +274,12 @@ Dictionary JustAMCPMCPClient::_rpc(const String &p_method, const Dictionary &p_p
 	if (p_use_cache && result.get("ok", false)) {
 		const int ttl_ms = int(result.get("ttlMs", Dictionary(result.get("result", Dictionary())).get("ttlMs", 0)));
 		if (ttl_ms > 0) {
+			const String key = p_method + ":" + JSON::stringify(p_params);
 			CacheEntry entry;
 			entry.payload = result;
 			entry.expires_usec = (Time::get_singleton() ? Time::get_singleton()->get_ticks_usec() : 0) + uint64_t(ttl_ms) * 1000ULL;
 			MutexLock lock(cache_mutex);
-			result_cache[p_method + ":" + JSON::stringify(p_params)] = entry;
+			result_cache[key] = entry;
 		}
 	}
 	return result;

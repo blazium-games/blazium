@@ -109,7 +109,7 @@ private:
 	Dictionary _parse_properties_arg(const Variant &p_raw_properties);
 	void _ensure_parent_dir_for_scene(const String &p_scene_path);
 	void _set_owner_recursive(Node *p_node, Node *p_scene_owner);
-	Dictionary _build_node_tree(Node *p_node, bool p_include_properties, int p_depth, int p_current_depth, const String &p_node_path);
+	Dictionary _build_node_tree(Node *p_node, bool p_include_properties, int p_depth, int p_current_depth, const String &p_node_path, int &r_visited, bool &r_truncated);
 	void _collect_nodes_recursive(Node *p_node, const String &p_path, Array &r_out_nodes, int p_max_nodes = 4096);
 
 public:

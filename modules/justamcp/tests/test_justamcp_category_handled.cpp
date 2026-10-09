@@ -151,6 +151,7 @@ void test_justamcp_crash_guards_bundle() {
 	Dictionary via = executor.execute_tool("blazium_validate_script", bad_script);
 	CHECK(via.has("ok"));
 	CHECK(!bool(via.get("ok", true)));
+
 	ProjectSettings::get_singleton()->set_setting("application/run/main_scene", prev_main_scene);
 }
 

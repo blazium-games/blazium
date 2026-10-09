@@ -6,6 +6,15 @@ Import("env_modules")
 
 env_justamcp = env_modules.Clone()
 
+if env["module_luau_module_enabled"]:
+    env_justamcp.Prepend(
+        CPPPATH=[
+            "#modules/luau_module/",
+            "#thirdparty/luau/Common/include",
+            "#thirdparty/luau/VM/include",
+        ]
+    )
+
 
 def make_justamcp_host_html(target, source, env):
     with open(source[0].srcnode().abspath, "r", encoding="utf-8") as src:

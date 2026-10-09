@@ -69,7 +69,10 @@ private:
 	Vector<Object *> project_mcp_instances;
 	bool project_scripts_loaded = false;
 
-	Vector<Dictionary> _error_log;
+	Vector<Dictionary> _error_log_slots;
+	int _error_log_count = 0;
+	int _error_log_next = 0;
+	int64_t _error_log_written = 0;
 	Mutex _error_log_mutex;
 	PrintHandlerList _print_handler;
 	static void _print_handler_callback(void *p_user_data, const String &p_string, bool p_error, bool p_rich);
@@ -146,7 +149,7 @@ private:
 	Dictionary _cmd_tags_list(const Dictionary &p_params);
 	Dictionary _cmd_tags_find_assets(const Dictionary &p_params);
 
-	Dictionary _serialize_node_tree(Node *p_node, int p_depth, int p_max_depth, bool p_include_properties);
+	Dictionary _serialize_node_tree(Node *p_node, int p_depth, int p_max_depth, bool p_include_properties, int &r_visited, bool &r_truncated);
 	Dictionary _serialize_node(Node *p_node, bool p_include_properties);
 	Variant _serialize_value(const Variant &p_value);
 	Variant _deserialize_value(const Variant &p_value);

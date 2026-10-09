@@ -38,6 +38,7 @@
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
 
 #include "modules/modules_enabled.gen.h"
 
@@ -95,8 +96,6 @@
 #include "tools/prompts/justamcp_prompt_project_info.h"
 #include "tools/resources/justamcp_resource.h"
 #include "tools/resources/justamcp_resource_project_file.h"
-
-#include "core/object/class_db.h"
 #endif
 
 #if defined(TESTS_ENABLED) && defined(TOOLS_ENABLED)

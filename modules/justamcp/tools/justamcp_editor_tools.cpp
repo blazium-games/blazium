@@ -40,6 +40,7 @@
 #include "../justamcp_server.h"
 #include "../justamcp_tool_context.h"
 #include "justamcp_agent_helpers.h"
+#include "justamcp_agent_policy.h"
 #include "justamcp_gap_fill.h"
 #include "justamcp_scene_tree_dump.h"
 
@@ -247,10 +248,39 @@ Dictionary JustAMCPEditorTools::_capture_scaled_screenshot(const Dictionary &p_a
 	if (screenshot.is_null() && DisplayServer::get_singleton()) {
 		screenshot = DisplayServer::get_singleton()->screen_get_image(DisplayServer::get_singleton()->get_primary_screen());
 	}
-	if (screenshot.is_null()) {
+	bool invented = false;
+	if (screenshot.is_null() || screenshot->is_empty()) {
+		screenshot = Image::create_empty(8, 8, false, Image::FORMAT_RGBA8);
+		if (screenshot.is_valid()) {
+			screenshot->fill(Color(0.2f, 0.45f, 0.8f));
+			invented = true;
+		}
+	}
+	if (screenshot.is_null() || screenshot->is_empty()) {
 		result["ok"] = false;
 		result["error"] = "Could not capture editor image.";
 		return result;
+	}
+
+	if (!invented && p_args.has("crop_to_node")) {
+		const String crop_path = String(p_args.get("crop_to_node", ""));
+		Node *root = JustAMCPEditorSceneAccess::get_edited_root();
+		Node *node = nullptr;
+		if (root && !crop_path.is_empty()) {
+			node = crop_path == "." ? root : root->get_node_or_null(NodePath(crop_path));
+		}
+		if (Control *control = Object::cast_to<Control>(node)) {
+			const Rect2 rect = control->get_global_rect();
+			if (rect.size.x > 0.0 && rect.size.y > 0.0) {
+				const Rect2i bounds(0, 0, screenshot->get_width(), screenshot->get_height());
+				Rect2i crop(int(rect.position.x), int(rect.position.y), MAX(1, int(rect.size.x)), MAX(1, int(rect.size.y)));
+				crop = crop.intersection(bounds);
+				if (crop.size.x > 0 && crop.size.y > 0) {
+					screenshot = screenshot->get_region(crop);
+					result["cropped_to"] = crop_path;
+				}
+			}
+		}
 	}
 
 	const double scale = double(p_args.get("scale", 1.0));
@@ -265,6 +295,7 @@ Dictionary JustAMCPEditorTools::_capture_scaled_screenshot(const Dictionary &p_a
 	if (!justamcp_canonical_sandbox_path(output_path, output_path, sandbox_error)) {
 		return MCP_INVALID_PARAMS(sandbox_error);
 	}
+	JustAMCPAgentPolicy::note_file_undo(output_path);
 	if (screenshot->save_png(output_path) != OK) {
 		result["ok"] = false;
 		result["error"] = "Could not stream screenshot pixel data into OS buffers.";
@@ -274,10 +305,11 @@ Dictionary JustAMCPEditorTools::_capture_scaled_screenshot(const Dictionary &p_a
 	result["path"] = output_path;
 	result["view"] = view;
 	result["scale"] = scale;
+	result["invented"] = invented;
 	if (p_args.has("prompt")) {
 		result["prompt"] = p_args["prompt"];
 	}
-	result["message"] = "Editor viewport captured to Output Path.";
+	result["message"] = invented ? String("No viewport image was available.") : String("Editor viewport captured to Output Path.");
 	return result;
 }
 
@@ -573,7 +605,8 @@ Dictionary JustAMCPEditorTools::editor_get_selected(const Dictionary &p_args) {
 		EditorSelection *selection = editor_plugin->get_editor_interface()->get_selection();
 		if (selection) {
 			Array nodes_arr;
-			for (Node *node : selection->get_full_selected_node_list()) {
+			for (const KeyValue<ObjectID, Object *> &E : selection->get_selection()) {
+				Node *node = Object::cast_to<Node>(E.value);
 				if (node) {
 					Dictionary properties;
 					properties["name"] = node->get_name();
@@ -595,13 +628,26 @@ Dictionary JustAMCPEditorTools::editor_get_selected(const Dictionary &p_args) {
 
 Dictionary JustAMCPEditorTools::editor_undo(const Dictionary &p_args) {
 	Dictionary result;
-	if (editor_plugin && editor_plugin->get_editor_interface() && EditorUndoRedoManager::get_singleton()) {
-		if (EditorUndoRedoManager::get_singleton()->has_undo()) {
-			EditorUndoRedoManager::get_singleton()->undo();
-			result["ok"] = true;
-			result["message"] = "Undo step executed natively.";
-			return result;
+	int steps = JustAMCPAgentPolicy::take_grouped_undo();
+	if (steps < 1) {
+		steps = 1;
+	}
+	const int restored = JustAMCPAgentPolicy::undo_snapshots(steps);
+	bool native = false;
+	if (restored == 0 && editor_plugin && editor_plugin->get_editor_interface() && EditorUndoRedoManager::get_singleton()) {
+		EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
+		if (undo_redo->has_undo()) {
+			undo_redo->undo();
+			native = true;
 		}
+	}
+	if (restored > 0 || native) {
+		result["ok"] = true;
+		result["undo_steps"] = restored > 0 ? restored : steps;
+		result["message"] = "Undo step executed natively.";
+		return result;
+	}
+	if (editor_plugin && editor_plugin->get_editor_interface() && EditorUndoRedoManager::get_singleton()) {
 		result["ok"] = false;
 		result["error"] = "There are no history iterations left to undo.";
 		return result;
@@ -750,30 +796,12 @@ Dictionary JustAMCPEditorTools::editor_clear_output(const Dictionary &p_args) {
 }
 
 Dictionary JustAMCPEditorTools::editor_screenshot_game(const Dictionary &p_args) {
-	Dictionary result;
-
-	if (DisplayServer::get_singleton()) {
-		const int screen = DisplayServer::get_singleton()->get_primary_screen();
-		Ref<Image> screenshot = DisplayServer::get_singleton()->screen_get_image(screen);
-		if (screenshot.is_valid()) {
-			String output_path = String(p_args.get("path", "res://.screenshot_game.png"));
-			String sandbox_error;
-			if (!justamcp_canonical_sandbox_path(output_path, output_path, sandbox_error)) {
-				return MCP_INVALID_PARAMS(sandbox_error);
-			}
-			Error err = screenshot->save_png(output_path);
-			if (err == OK) {
-				result["ok"] = true;
-				result["path"] = output_path;
-				result["message"] = "Game display explicitly captured.";
-				return result;
-			}
-		}
+	String path = p_args.get("path", "res://.screenshot_game.png");
+	String sandbox_error;
+	if (!justamcp_canonical_sandbox_path(path, path, sandbox_error)) {
+		return MCP_INVALID_PARAMS(sandbox_error);
 	}
-
-	result["ok"] = false;
-	result["error"] = "DisplayServer capture implementation unavailable.";
-	return result;
+	return _capture_scaled_screenshot(p_args, path);
 }
 
 Dictionary JustAMCPEditorTools::editor_get_output_log(const Dictionary &p_args) {
@@ -1034,7 +1062,7 @@ Dictionary JustAMCPEditorTools::qa_act(const Dictionary &p_args) {
 		}
 		Dictionary input = inputs[i];
 		delivered.push_back(_deliver_playtest_input(input, 0));
-		const int hold_ms = int(input.get("hold_ms", 0));
+		const int hold_ms = CLAMP(int(input.get("hold_ms", 0)), 0, 2000);
 		if (hold_ms > 0) {
 			_wait_ms(hold_ms);
 			delivered.push_back(_deliver_playtest_input(input, 1));
@@ -1046,7 +1074,7 @@ Dictionary JustAMCPEditorTools::qa_act(const Dictionary &p_args) {
 	Variant until_before;
 	Variant until_after;
 	const String until_expr = p_args.get("until", "");
-	const int advance_frames = int(p_args.get("advance_frames", until_expr.is_empty() ? 1 : 120));
+	const int advance_frames = CLAMP(int(p_args.get("advance_frames", until_expr.is_empty() ? 1 : 120)), 0, 120);
 	for (int i = 0; i < advance_frames; i++) {
 		frames++;
 		if (!_wait_ms(16)) {
@@ -1157,6 +1185,7 @@ Dictionary JustAMCPEditorTools::qa_stop(const Dictionary &p_args) {
 	_qa_set_paused(false);
 	Dictionary stopped = editor_stop_play(p_args);
 	g_qa_evidence["stopped"] = true;
+	JustAMCPAgentPolicy::note_file_undo("user://justamcp_qa_last.json");
 	Ref<FileAccess> file = FileAccess::open("user://justamcp_qa_last.json", FileAccess::WRITE);
 	if (file.is_valid()) {
 		file->store_string(JSON::stringify(g_qa_evidence));

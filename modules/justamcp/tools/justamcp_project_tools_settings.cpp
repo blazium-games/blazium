@@ -318,10 +318,10 @@ Dictionary JustAMCPProjectTools::get_input_actions(const Dictionary &p_args) {
 	}
 
 	bool include_builtin = p_args.get("include_builtin", false);
-	TypedArray<StringName> action_names = InputMap::get_singleton()->get_actions();
-	for (const Variant &action_var : action_names) {
-		const StringName action_name = action_var;
-		String action = String(action_name);
+	const TypedArray<StringName> action_names = InputMap::get_singleton()->get_actions();
+	for (int action_index = 0; action_index < action_names.size(); action_index++) {
+		const StringName action_name = action_names[action_index];
+		String action = action_name;
 		if (!include_builtin && action.begins_with("ui_")) {
 			continue;
 		}

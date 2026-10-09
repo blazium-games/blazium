@@ -200,8 +200,7 @@ void test_justamcp_runtime_host_refuses_editor_port() {
 	ps->set_setting("blazium/justamcp/game_control_enabled", true);
 	CHECK(JustAMCPSettingsResolver::runtime_port_conflicts_with_editor());
 
-	JustAMCPTestServerFixture fixture;
-	JustAMCPServer &server = fixture.get_server();
+	JustAMCPServer server;
 	server.set_runtime_host(true);
 	server.test_start_server();
 	CHECK(!server.is_server_started());
@@ -265,8 +264,7 @@ void test_justamcp_runtime_host_call_and_get() {
 	CHECK(String(Dictionary(content[0]).get("text", "")) == "hello cursor");
 
 #if defined(MODULE_HTTPSERVER_ENABLED)
-	JustAMCPTestServerFixture fixture;
-	JustAMCPServer &server = fixture.get_server();
+	JustAMCPServer server;
 	server.set_runtime_host(true);
 
 	Dictionary call_params;

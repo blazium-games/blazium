@@ -28,11 +28,13 @@
 /**************************************************************************/
 
 #include "justamcp_blueprint_tools.h"
+
 #include "../justamcp_editor_plugin.h"
 #include "../justamcp_editor_scene_access.h"
+#include "justamcp_agent_policy.h"
 
-#include "modules/noise/fastnoise_lite.h"
-#include "modules/noise/noise_texture_2d.h"
+#include "editor/editor_interface.h"
+#include "editor/editor_undo_redo_manager.h"
 #include "scene/2d/camera_2d.h"
 #include "scene/2d/gpu_particles_2d.h"
 #include "scene/3d/camera_3d.h"
@@ -43,8 +45,8 @@
 #include "scene/resources/material.h"
 #include "scene/resources/particle_process_material.h"
 
-#include "editor/editor_interface.h"
-#include "editor/editor_undo_redo_manager.h"
+#include "modules/noise/fastnoise_lite.h"
+#include "modules/noise/noise_texture_2d.h"
 
 void JustAMCPBlueprintTools::_bind_methods() {}
 
@@ -198,7 +200,7 @@ Dictionary JustAMCPBlueprintTools::create_particle_preset(const Dictionary &p_ar
 		GPUParticles3D *p = Object::cast_to<GPUParticles3D>(node);
 		if (p) {
 			if (ur) {
-				ur->create_action("Apply Particle Preset: " + preset);
+				ur->create_action(String("Apply Particle Preset: ") + preset + " [" + JustAMCPAgentPolicy::current_session_id() + "]");
 				ur->add_do_property(p, "process_material", mat);
 				ur->add_do_property(p, "amount", amount);
 				ur->add_do_property(p, "lifetime", lifetime);
@@ -232,7 +234,7 @@ Dictionary JustAMCPBlueprintTools::create_particle_preset(const Dictionary &p_ar
 		GPUParticles2D *p = Object::cast_to<GPUParticles2D>(node);
 		if (p) {
 			if (ur) {
-				ur->create_action("Apply Particle Preset: " + preset);
+				ur->create_action(String("Apply Particle Preset: ") + preset + " [" + JustAMCPAgentPolicy::current_session_id() + "]");
 				ur->add_do_property(p, "process_material", mat);
 				ur->add_do_property(p, "amount", amount);
 				ur->add_do_property(p, "lifetime", lifetime);
@@ -313,7 +315,7 @@ Dictionary JustAMCPBlueprintTools::create_material_preset(const Dictionary &p_ar
 
 	if (node->has_method("set_material")) {
 		if (ur) {
-			ur->create_action("Apply Material Preset: " + preset);
+			ur->create_action(String("Apply Material Preset: ") + preset + " [" + JustAMCPAgentPolicy::current_session_id() + "]");
 			ur->add_do_method(node, "set_material", mat);
 			ur->commit_action();
 		} else {
@@ -321,7 +323,7 @@ Dictionary JustAMCPBlueprintTools::create_material_preset(const Dictionary &p_ar
 		}
 	} else if (node->has_method("set_surface_override_material")) {
 		if (ur) {
-			ur->create_action("Apply Material Preset: " + preset);
+			ur->create_action(String("Apply Material Preset: ") + preset + " [" + JustAMCPAgentPolicy::current_session_id() + "]");
 			ur->add_do_method(node, "set_surface_override_material", 0, mat);
 			ur->commit_action();
 		} else {
@@ -366,7 +368,7 @@ Dictionary JustAMCPBlueprintTools::setup_camera_preset(const Dictionary &p_args)
 		Camera2D *cam = Object::cast_to<Camera2D>(node);
 		if (cam) {
 			if (ur) {
-				ur->create_action("Camera Preset: " + preset);
+				ur->create_action(String("Camera Preset: ") + preset + " [" + JustAMCPAgentPolicy::current_session_id() + "]");
 				if (preset == "topdown_2d") {
 					ur->add_do_property(cam, "zoom", Vector2(2, 2));
 					ur->add_do_property(cam, "position_smoothing_enabled", true);
@@ -391,7 +393,7 @@ Dictionary JustAMCPBlueprintTools::setup_camera_preset(const Dictionary &p_args)
 		Camera3D *cam = Object::cast_to<Camera3D>(node);
 		if (cam) {
 			if (ur) {
-				ur->create_action("Camera Preset: " + preset);
+				ur->create_action(String("Camera Preset: ") + preset + " [" + JustAMCPAgentPolicy::current_session_id() + "]");
 				if (preset == "cinematic_3d") {
 					ur->add_do_property(cam, "fov", 40.0);
 					ur->add_do_property(cam, "near", 0.1);
@@ -471,7 +473,7 @@ Dictionary JustAMCPBlueprintTools::create_texture_preset(const Dictionary &p_arg
 	}
 
 	if (ur) {
-		ur->create_action("Setup Texture Preset: " + preset);
+		ur->create_action(String("Setup Texture Preset: ") + preset + " [" + JustAMCPAgentPolicy::current_session_id() + "]");
 		ur->add_do_property(node, property, tex);
 		ur->add_undo_property(node, property, node->get(property));
 		ur->add_do_reference(tex.ptr());
