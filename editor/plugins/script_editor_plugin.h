@@ -530,6 +530,7 @@ protected:
 
 public:
 	static ScriptEditor *get_singleton() { return script_editor; }
+	bool is_disk_changed_dialog_visible() const { return disk_changed && disk_changed->is_visible(); }
 
 	bool toggle_files_panel();
 	bool is_files_panel_toggled();

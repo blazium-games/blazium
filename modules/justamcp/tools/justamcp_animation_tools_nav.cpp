@@ -104,11 +104,9 @@ Dictionary JustAMCPAnimationTools::create_navigation_region(const Dictionary &p_
 
 	Dictionary save_err = _save_scene(scene_root, scene_path);
 	if (!save_err.is_empty()) {
-		memdelete(scene_root);
 		return save_err;
 	}
 
-	memdelete(scene_root);
 	Dictionary ret;
 	ret["ok"] = true;
 	ret["nodeName"] = node_name;
@@ -173,11 +171,9 @@ Dictionary JustAMCPAnimationTools::create_navigation_agent(const Dictionary &p_a
 
 	Dictionary save_err = _save_scene(scene_root, scene_path);
 	if (!save_err.is_empty()) {
-		memdelete(scene_root);
 		return save_err;
 	}
 
-	memdelete(scene_root);
 	Dictionary ret;
 	ret["ok"] = true;
 	ret["nodeName"] = node_name;

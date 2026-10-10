@@ -441,6 +441,52 @@ bool MCPSessionManager::_handle_modern_post(const Ref<HTTPRequestContext> &p_con
 		return true;
 	}
 
+	const bool wants_sse = method == "tools/call" && p_payload.has("id") && accepts_json_and_sse(p_context);
+	if (wants_sse) {
+		String session_id = get_header(p_context, "MCP-Session-Id");
+		if (session_id.is_empty()) {
+			session_id = "__modern_post__";
+		}
+		{
+			MutexLock lock(mutex);
+			_expire_sessions();
+			MCPSession *session = _get_session(session_id);
+			if (!session) {
+				MCPSession created;
+				created.session_id = session_id;
+				created.created_usec = Time::get_singleton()->get_ticks_usec();
+				created.last_activity_usec = created.created_usec;
+				created.negotiated_protocol = p_requested_version;
+				created.initialized = true;
+				sessions.insert(session_id, created);
+			} else {
+				session->negotiated_protocol = p_requested_version;
+				_touch_session(*session);
+			}
+			if (pending_post_sse_by_session.has(session_id)) {
+				apply_cors_headers(p_response, p_context);
+				p_response->set_status(409);
+				p_response->set_body("Concurrent streamable POST already pending for this MCP session");
+				return true;
+			}
+			PendingPostSse pending;
+			pending.body = p_body;
+			pending.session_id = session_id;
+			pending.wants_sse_response = true;
+			pending.requires_json_and_sse_accept = true;
+			pending.claim_armed = false;
+			pending.created_usec = Time::get_singleton()->get_ticks_usec();
+			pending_post_sse_by_session.insert(session_id, pending);
+			post_sse_upgrade_sessions.insert(session_id);
+		}
+		apply_cors_headers(p_response, p_context);
+		if (session_id != "__modern_post__") {
+			p_response->add_header("MCP-Session-Id", session_id);
+		}
+		p_response->start_sse();
+		return true;
+	}
+
 	apply_cors_headers(p_response, p_context);
 
 	const int client_id = p_context->get_client_id();

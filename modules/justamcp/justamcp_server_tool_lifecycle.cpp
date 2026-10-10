@@ -112,6 +112,32 @@ void JustAMCPServer::_complete_task_tool_entry(MCPToolQueueEntry *p_entry, bool 
 	_schedule_process_pending_tools();
 }
 
+void JustAMCPServer::_cancel_tools_for_connection(int p_connection_id) {
+	if (p_connection_id < 0) {
+		return;
+	}
+	Vector<Variant> request_ids;
+	{
+		MutexLock lock(mcp_tool_queue.mutex);
+		auto consider = [&](MCPToolQueueEntry *entry) {
+			if (!entry || entry->result_completed || entry->sse_connection_id != p_connection_id) {
+				return;
+			}
+			request_ids.push_back(entry->request_id);
+		};
+		for (int i = 0; i < mcp_tool_queue.pending.size(); i++) {
+			consider(mcp_tool_queue.pending[i]);
+		}
+		consider(mcp_tool_queue.current_write);
+		for (int i = 0; i < mcp_tool_queue.current_readonly_inflight.size(); i++) {
+			consider(mcp_tool_queue.current_readonly_inflight[i]);
+		}
+	}
+	for (int i = 0; i < request_ids.size(); i++) {
+		_on_request_cancelled(request_ids[i], "client disconnected", String());
+	}
+}
+
 void JustAMCPServer::_on_request_cancelled(const Variant &p_request_id, const String &p_reason, const String &p_caller_session_id) {
 	(void)p_reason;
 	MCPToolQueueEntry *target = nullptr;
@@ -267,6 +293,9 @@ void JustAMCPServer::_deferred_complete_tool_dict(const Variant &p_request_id, c
 		if (justamcp_protocol_at_least(transport_negotiated_protocol, "2026-07-28")) {
 			const String message = String(result.get("elicitation_message", "Additional input is required to continue."));
 			send_tool_result(p_request_id, true, justamcp_input_required_result(mode, message, schema), "");
+		} else {
+			const String message = String(result.get("error", "Explicit user confirmation required."));
+			send_tool_result(p_request_id, false, message, message);
 		}
 		return;
 	}

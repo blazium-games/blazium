@@ -690,6 +690,9 @@
 		<member name="blazium/justamcp/prompts/analyze_autowork_test_failures" type="bool" setter="" getter="" default="true">
 			Read-only MCP prompt template registered as [code]analyze_autowork_test_failures[/code]. Description: Diagnoses failing Autowork test output or Godot stack traces and returns structured root-cause analysis with corrected GDScript.
 		</member>
+		<member name="blazium/justamcp/prompts/blazium_asset_tagging_workflow" type="bool" setter="" getter="" default="true">
+			Read-only MCP prompt template registered as [code]blazium_asset_tagging_workflow[/code]. Description: Guides AI through listing tags, assigning tags to assets, and verifying tag-based asset lookup.
+		</member>
 		<member name="blazium/justamcp/prompts/blazium_autowork_fix_loop" type="bool" setter="" getter="" default="true">
 			Read-only MCP prompt template registered as [code]blazium_autowork_fix_loop[/code]. Description: Runs Autowork tests, reads results, diagnoses failures, patches scripts when requested, validates, and reruns. Template v1.
 		</member>
@@ -1360,6 +1363,9 @@
 		</member>
 		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_save_all_scenes" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_editor_save_all_scenes[/code] tool from the Editor Tools family to MCP clients. Saves all open editor scenes.
+		</member>
+		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_scene_is_loaded" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_editor_scene_is_loaded[/code] tool from the Editor Tools family to MCP clients. Reports whether a scene transition has finished.
 		</member>
 		<member name="blazium/justamcp/tools/editor_tools/blazium_editor_screenshot_game" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_editor_screenshot_game[/code] tool from the Editor Tools family to MCP clients. Captures the visible game display to a PNG file.

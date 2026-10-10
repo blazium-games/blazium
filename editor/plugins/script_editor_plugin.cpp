@@ -46,6 +46,10 @@
 #include "editor/editor_interface.h"
 #include "editor/editor_main_screen.h"
 #include "editor/editor_node.h"
+#include "modules/modules_enabled.gen.h"
+#ifdef MODULE_JUSTAMCP_ENABLED
+#include "modules/justamcp/justamcp_server.h"
+#endif
 #include "editor/editor_paths.h"
 #include "editor/editor_script.h"
 #include "editor/editor_settings.h"
@@ -1144,12 +1148,24 @@ void ScriptEditor::_live_auto_reload_running_scripts() {
 }
 
 bool ScriptEditor::_test_script_times_on_disk(Ref<Resource> p_for_script) {
+	if (disk_changed && disk_changed->is_visible()) {
+		return true;
+	}
+	if (EditorNode::get_singleton() && EditorNode::get_singleton()->is_disk_changed_dialog_visible()) {
+		return true;
+	}
+
 	disk_changed_list->clear();
 	TreeItem *r = disk_changed_list->create_item();
 
 	bool need_ask = false;
 	bool need_reload = false;
 	bool use_autoreload = EDITOR_GET("text_editor/behavior/files/auto_reload_scripts_on_external_change");
+	bool serving = false;
+#ifdef MODULE_JUSTAMCP_ENABLED
+	JustAMCPServer *mcp = JustAMCPServer::get_singleton();
+	serving = mcp && mcp->get_listening_port() > 0;
+#endif
 
 	for (int i = 0; i < tab_container->get_tab_count(); i++) {
 		ScriptEditorBase *se = Object::cast_to<ScriptEditorBase>(tab_container->get_tab_control(i));
@@ -1171,10 +1187,10 @@ bool ScriptEditor::_test_script_times_on_disk(Ref<Resource> p_for_script) {
 			uint64_t date = FileAccess::get_modified_time(se->edited_file_data.path);
 
 			if (last_date != date) {
-				TreeItem *ti = disk_changed_list->create_item(r);
-				ti->set_text(0, se->edited_file_data.path.get_file());
-
-				if (!use_autoreload || se->is_unsaved()) {
+				const bool quiet = (serving || use_autoreload) && !se->is_unsaved();
+				if (!quiet) {
+					TreeItem *ti = disk_changed_list->create_item(r);
+					ti->set_text(0, se->edited_file_data.path.get_file());
 					need_ask = true;
 				}
 				need_reload = true;

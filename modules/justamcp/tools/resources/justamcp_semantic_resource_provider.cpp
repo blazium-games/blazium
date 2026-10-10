@@ -63,26 +63,27 @@ static Dictionary _semantic_json_error(const String &p_uri, const String &p_erro
 }
 
 bool JustAMCPSemanticResourceProvider::can_read(const String &p_canonical_uri) {
-#ifdef MODULE_SEMANTICSEARCH_ENABLED
 	return p_canonical_uri.begins_with("blazium://semantic/");
-#else
-	(void)p_canonical_uri;
-	return false;
-#endif
 }
 
 Dictionary JustAMCPSemanticResourceProvider::read(const String &p_uri, const String &p_canonical_uri) {
 #ifdef MODULE_SEMANTICSEARCH_ENABLED
 	if (p_canonical_uri == "blazium://semantic/index/rebuild") {
-		return _semantic_json_error(p_uri, "Use blazium_semantic_rebuild_index tool instead of resources/read for index rebuild.");
+		Dictionary payload;
+		payload["message"] = "Use blazium_semantic_rebuild_index tool instead of resources/read for index rebuild.";
+		return _semantic_json_contents(p_uri, payload);
 	}
 
 	if (p_canonical_uri.begins_with("blazium://semantic/search/")) {
-		return _semantic_json_error(p_uri, "Use blazium_semantic_search tool instead of resources/read for search queries.");
+		Dictionary payload;
+		payload["message"] = "Use blazium_semantic_search tool instead of resources/read for search queries.";
+		return _semantic_json_contents(p_uri, payload);
 	}
 
 	if (p_canonical_uri.begins_with("blazium://semantic/similar/")) {
-		return _semantic_json_error(p_uri, "Use blazium_semantic_search tool instead of resources/read for similarity queries.");
+		Dictionary payload;
+		payload["message"] = "Use blazium_semantic_search tool instead of resources/read for similarity queries.";
+		return _semantic_json_contents(p_uri, payload);
 	}
 
 	if (p_canonical_uri == "blazium://semantic/index/stats") {

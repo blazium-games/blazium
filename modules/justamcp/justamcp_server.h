@@ -229,6 +229,7 @@ public:
 	void report_tool_progress(const String &p_token, double p_progress, double p_total, const String &p_message);
 	void broadcast_task_status(const String &p_task_id);
 	void _on_request_cancelled(const Variant &p_request_id, const String &p_reason, const String &p_caller_session_id = String());
+	void _cancel_tools_for_connection(int p_connection_id);
 	bool is_current_tool_cancel_requested() const;
 	bool is_tool_cancel_requested(const Variant &p_request_id) const;
 	String get_current_progress_token() const;

@@ -64,8 +64,10 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{ "view", "string", "scale", "number", "prompt", "string", "path", "string" }, Vector<String>{});
 	add_schema("editor_set_main_screen", "Switches between 2D, 3D, Script, and AssetLib views.",
 			Vector<String>{ "screen_name", "string" }, Vector<String>{ "screen_name" });
-	add_schema("editor_open_scene", "Invokes the editor natively to swap active tabs opening a given `.tscn` file onto the viewport.",
+	add_schema("editor_open_scene", "Invokes the editor natively to swap active tabs opening a given `.tscn` file onto the viewport. Wait until blazium_editor_scene_is_loaded reports loaded before node, animation, tilemap, theme, shader, or spatial tools.",
 			Vector<String>{ "path", "string" }, Vector<String>{ "path" });
+	add_schema("editor_scene_is_loaded", "Reports whether a scene transition has finished. After blazium_editor_open_scene, wait until loaded is true before node, animation, tilemap, theme, shader, or spatial tools. Optional path checks that the edited scene is that file.",
+			Vector<String>{ "path", "string" }, Vector<String>{});
 	add_schema("editor_get_settings", "Inspects current user-level settings configurations applied in EditorSettings directly.",
 			Vector<String>{ "setting", "string" }, Vector<String>{ "setting" });
 	add_schema("editor_set_settings", "Manipulates current user-level Editor configurations dynamically applying layout changes instantly.",

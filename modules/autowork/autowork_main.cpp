@@ -170,6 +170,15 @@ void Autowork::_restore_editor_scripting_if_needed() {
 #endif
 }
 
+bool Autowork::is_aborted() const {
+	if (!aborted && abort_after_usec != 0 && OS::get_singleton()) {
+		if (OS::get_singleton()->get_ticks_usec() >= abort_after_usec) {
+			aborted = true;
+		}
+	}
+	return aborted;
+}
+
 void Autowork::abort() {
 	if (finished && aborted) {
 		return;
@@ -263,7 +272,7 @@ void Autowork::run_tests() {
 					logger->set_hide_orphans(dict["hide_orphans"]);
 				}
 
-				if (dict.has("dirs") && dict["dirs"].get_type() == Variant::ARRAY) {
+				if (dict.has("dirs") && dict["dirs"].get_type() == Variant::ARRAY && collector->get_scripts().is_empty()) {
 					Array dirs = dict["dirs"];
 					for (int i = 0; i < dirs.size(); i++) {
 						collector->process_directory(dirs[i]);
@@ -271,7 +280,7 @@ void Autowork::run_tests() {
 					}
 				}
 
-				if (dict.has("tests") && dict["tests"].get_type() == Variant::ARRAY) {
+				if (dict.has("tests") && dict["tests"].get_type() == Variant::ARRAY && collector->get_scripts().is_empty()) {
 					Array tests = dict["tests"];
 					for (int i = 0; i < tests.size(); i++) {
 						collector->add_script(tests[i]);

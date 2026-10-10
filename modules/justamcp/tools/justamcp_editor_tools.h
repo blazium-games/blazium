@@ -61,6 +61,7 @@ public:
 	Dictionary editor_take_screenshot(const Dictionary &p_args);
 	Dictionary editor_set_main_screen(const Dictionary &p_args);
 	Dictionary editor_open_scene(const Dictionary &p_args);
+	Dictionary editor_scene_is_loaded(const Dictionary &p_args);
 	Dictionary editor_get_settings(const Dictionary &p_args);
 	Dictionary editor_set_settings(const Dictionary &p_args);
 	Dictionary editor_clear_output(const Dictionary &p_args);

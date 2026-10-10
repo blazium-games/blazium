@@ -31,6 +31,7 @@
 #include "editor_node.h"
 
 #include "editor/blazium_module_menu.h"
+#include "editor/plugins/script_editor_plugin.h"
 
 #include "core/config/project_settings.h"
 #include "core/extension/gdextension_manager.h"
@@ -174,6 +175,9 @@
 #include "editor/window_wrapper.h"
 
 #include "modules/modules_enabled.gen.h" // For gdscript, mono.
+#ifdef MODULE_JUSTAMCP_ENABLED
+#include "modules/justamcp/justamcp_server.h"
+#endif
 
 #include <stdlib.h>
 
@@ -1292,6 +1296,10 @@ void EditorNode::_remove_lock_file() {
 	OS::get_singleton()->remove_lock_file();
 }
 
+bool EditorNode::is_disk_changed_dialog_visible() const {
+	return disk_changed && disk_changed->is_visible();
+}
+
 bool EditorNode::is_path_excluded_from_external_change_check(const String &p_path) {
 	const PackedStringArray patterns = GLOBAL_GET("editor/external_changes/ignored_paths");
 	if (patterns.is_empty()) {
@@ -1311,12 +1319,24 @@ bool EditorNode::is_path_excluded_from_external_change_check(const String &p_pat
 }
 
 void EditorNode::_scan_external_changes() {
+	if (disk_changed && disk_changed->is_visible()) {
+		return;
+	}
+	if (ScriptEditor::get_singleton() && ScriptEditor::get_singleton()->is_disk_changed_dialog_visible()) {
+		return;
+	}
+
+	bool serving = false;
+#ifdef MODULE_JUSTAMCP_ENABLED
+	JustAMCPServer *mcp = JustAMCPServer::get_singleton();
+	serving = mcp && mcp->get_listening_port() > 0;
+#endif
+
 	disk_changed_list->clear();
 	TreeItem *r = disk_changed_list->create_item();
 	disk_changed_list->set_hide_root(true);
-	bool need_reload = false;
-
-	// Check if any edited scene has changed.
+	bool need_ask = false;
+	bool reload_clean = false;
 
 	for (int i = 0; i < editor_data.get_edited_scene_count(); i++) {
 		Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_RESOURCES);
@@ -1332,22 +1352,69 @@ void EditorNode::_scan_external_changes() {
 		uint64_t date = FileAccess::get_modified_time(editor_data.get_scene_path(i));
 
 		if (date > last_date) {
-			TreeItem *ti = disk_changed_list->create_item(r);
-			ti->set_text(0, editor_data.get_scene_path(i).get_file());
-			need_reload = true;
+			const bool unsaved = EditorUndoRedoManager::get_singleton()->is_history_unsaved(editor_data.get_scene_history_id(i));
+			if (serving && !unsaved) {
+				reload_clean = true;
+			} else {
+				TreeItem *ti = disk_changed_list->create_item(r);
+				ti->set_text(0, editor_data.get_scene_path(i).get_file());
+				need_ask = true;
+			}
 		}
 	}
 
 	String project_settings_path = ProjectSettings::get_singleton()->get_project_settings_path();
 	if (FileAccess::get_modified_time(project_settings_path) > ProjectSettings::get_singleton()->get_last_saved_time()) {
-		TreeItem *ti = disk_changed_list->create_item(r);
-		ti->set_text(0, ProjectSettings::get_singleton()->get_project_settings_text_file());
-		need_reload = true;
+		if (serving) {
+			ProjectSettings::get_singleton()->acknowledge_disk_modified_time();
+		} else {
+			TreeItem *ti = disk_changed_list->create_item(r);
+			ti->set_text(0, ProjectSettings::get_singleton()->get_project_settings_text_file());
+			need_ask = true;
+		}
 	}
 
-	if (need_reload) {
+	if (reload_clean) {
+		_reload_clean_external_scenes();
+	}
+
+	if (need_ask) {
 		callable_mp((Window *)disk_changed, &Window::popup_centered_ratio).call_deferred(0.3);
 	}
+}
+
+void EditorNode::_reload_clean_external_scenes() {
+	int current_idx = editor_data.get_edited_scene();
+
+	for (int i = 0; i < editor_data.get_edited_scene_count(); i++) {
+		if (editor_data.get_scene_path(i) == "") {
+			continue;
+		}
+		if (is_path_excluded_from_external_change_check(editor_data.get_scene_path(i))) {
+			continue;
+		}
+		if (EditorUndoRedoManager::get_singleton()->is_history_unsaved(editor_data.get_scene_history_id(i))) {
+			continue;
+		}
+
+		uint64_t last_date = editor_data.get_scene_modified_time(i);
+		uint64_t date = FileAccess::get_modified_time(editor_data.get_scene_path(i));
+		if (date <= last_date) {
+			continue;
+		}
+
+		String filename = editor_data.get_scene_path(i);
+		editor_data.set_edited_scene(i);
+		_remove_edited_scene(false);
+		Error err = load_scene(filename, false, false, false, true);
+		if (err != OK) {
+			ERR_PRINT(vformat("Failed to load scene: %s", filename));
+		}
+		editor_data.move_edited_scene_to_index(i);
+	}
+
+	_set_current_scene(current_idx);
+	scene_tabs->update_scene_tabs();
 }
 
 void EditorNode::_resave_scenes(String p_str) {

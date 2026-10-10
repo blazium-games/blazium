@@ -547,18 +547,25 @@ void MCPSessionManager::on_sse_connection_opened(int p_connection_id, const Stri
 	}
 
 	const String session_id = _get_header_from_dict(p_headers, "MCP-Session-Id");
+	String route_session_id = session_id;
+	if (route_session_id.is_empty()) {
+		MutexLock lock(mutex);
+		if (pending_post_sse_by_session.has("__modern_post__")) {
+			route_session_id = "__modern_post__";
+		}
+	}
 	const String accept = _get_header_from_dict(p_headers, "Accept");
 	const bool streamable_accept = accepts_json_and_sse_header(accept);
 
 	bool has_pending_post = false;
 	{
 		MutexLock lock(mutex);
-		if (!session_id.is_empty() && pending_post_sse_by_session.has(session_id)) {
-			if (post_sse_upgrade_sessions.has(session_id)) {
-				pending_post_sse_by_session[session_id].claim_armed = true;
-				post_sse_upgrade_sessions.erase(session_id);
+		if (!route_session_id.is_empty() && pending_post_sse_by_session.has(route_session_id)) {
+			if (post_sse_upgrade_sessions.has(route_session_id)) {
+				pending_post_sse_by_session[route_session_id].claim_armed = true;
+				post_sse_upgrade_sessions.erase(route_session_id);
 			}
-			const PendingPostSse &pending = pending_post_sse_by_session[session_id];
+			const PendingPostSse &pending = pending_post_sse_by_session[route_session_id];
 
 			if (pending.claim_armed && (!pending.requires_json_and_sse_accept || streamable_accept)) {
 				has_pending_post = true;
@@ -567,7 +574,7 @@ void MCPSessionManager::on_sse_connection_opened(int p_connection_id, const Stri
 	}
 
 	if (has_pending_post) {
-		_process_post_sse_opened(p_connection_id, session_id);
+		_process_post_sse_opened(p_connection_id, route_session_id);
 		return;
 	}
 

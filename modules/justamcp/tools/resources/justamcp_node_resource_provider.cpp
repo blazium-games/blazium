@@ -63,6 +63,12 @@ static Node *_node_provider_find_node(const String &p_path) {
 			path = path.substr(1);
 		}
 	}
+	if (path == root->get_name()) {
+		return root;
+	}
+	if (path.begins_with(String(root->get_name()) + "/")) {
+		path = path.substr(String(root->get_name()).length() + 1);
+	}
 	return root->get_node_or_null(NodePath(path));
 }
 

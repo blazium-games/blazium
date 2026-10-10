@@ -144,6 +144,7 @@ void RemoteControlRegistry::register_builtins() {
 
 RemoteControlRegistry::RemoteControlRegistry() {
 	singleton = this;
+	register_builtins();
 }
 
 RemoteControlRegistry::~RemoteControlRegistry() {

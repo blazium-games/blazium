@@ -257,7 +257,9 @@ Dictionary JustAMCPResourceExecutor::read_resource(const String &p_uri) {
 			bool match = false;
 			if (registered_resources[i]->is_template()) {
 				String tmpl = registered_resources[i]->get_uri();
-				if (tmpl.begins_with("res://") && p_uri.begins_with("res://")) {
+				const int brace = tmpl.find("{");
+				const String prefix = brace >= 0 ? tmpl.substr(0, brace) : tmpl;
+				if (!prefix.is_empty() && (p_uri.begins_with(prefix) || canonical_uri.begins_with(prefix))) {
 					match = true;
 				}
 			} else if (registered_resources[i]->get_uri() == p_uri || registered_resources[i]->get_uri() == canonical_uri) {
@@ -275,7 +277,7 @@ Dictionary JustAMCPResourceExecutor::read_resource(const String &p_uri) {
 
 	if (canonical_uri.begins_with("blazium://")) {
 		Dictionary result = _read_blazium_resource(p_uri);
-		if (result.get("ok", false)) {
+		if (result.get("ok", false) || JustAMCPBlaziumResourceRegistry::can_read(canonical_uri)) {
 			return result;
 		}
 	}

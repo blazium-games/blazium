@@ -29,6 +29,10 @@
 
 #include "justamcp_runtime.h"
 
+#ifdef TOOLS_ENABLED
+#include "justamcp_editor_scene_access.h"
+#endif
+
 #include "core/config/project_settings.h"
 #include "core/crypto/crypto_core.h"
 #include "core/input/input.h"
@@ -52,6 +56,20 @@
 #ifdef TOOLS_ENABLED
 #include "editor/editor_settings.h"
 #endif
+
+static Node *_runtime_resolve_node(SceneTree *p_tree, const String &p_path) {
+	if (p_tree && p_tree->get_root()) {
+		Node *node = p_tree->get_root()->get_node_or_null(NodePath(p_path));
+		if (node) {
+			return node;
+		}
+	}
+#ifdef TOOLS_ENABLED
+	return JustAMCPEditorSceneAccess::find_node_in_edited_scene(p_path);
+#else
+	return nullptr;
+#endif
+}
 
 void JustAMCPRuntime::_find_nodes_recursive(Node *p_node, const String &p_name, const String &p_type, const String &p_group, int p_limit, Array &r_results) {
 	if (r_results.size() >= p_limit) {
@@ -165,7 +183,7 @@ Dictionary JustAMCPRuntime::_cmd_get_node(const Dictionary &p_params) {
 		return err;
 	}
 
-	Node *node = tree->get_root()->get_node_or_null(node_path);
+	Node *node = _runtime_resolve_node(tree, node_path);
 	if (!node) {
 		Dictionary err;
 		err["type"] = "error";
@@ -199,7 +217,7 @@ Dictionary JustAMCPRuntime::_cmd_set_property(const Dictionary &p_params) {
 		return err;
 	}
 
-	Node *node = tree->get_root()->get_node_or_null(node_path);
+	Node *node = _runtime_resolve_node(tree, node_path);
 	if (!node) {
 		Dictionary err;
 		err["type"] = "error";
@@ -239,7 +257,7 @@ Dictionary JustAMCPRuntime::_cmd_call_method(const Dictionary &p_params) {
 		return err;
 	}
 
-	Node *node = tree->get_root()->get_node_or_null(node_path);
+	Node *node = _runtime_resolve_node(tree, node_path);
 	if (!node) {
 		Dictionary err;
 		err["type"] = "error";
@@ -328,7 +346,7 @@ Dictionary JustAMCPRuntime::_cmd_get_node_property(const Dictionary &p_params) {
 		return ret;
 	}
 
-	Node *node = tree->get_root()->get_node_or_null(node_path);
+	Node *node = _runtime_resolve_node(tree, node_path);
 	if (!node) {
 		Dictionary ret;
 		ret["type"] = "error";
@@ -374,7 +392,7 @@ Dictionary JustAMCPRuntime::_cmd_call_node_method(const Dictionary &p_params) {
 		return ret;
 	}
 
-	Node *node = tree->get_root()->get_node_or_null(node_path);
+	Node *node = _runtime_resolve_node(tree, node_path);
 	if (!node) {
 		Dictionary ret;
 		ret["type"] = "error";
@@ -462,7 +480,7 @@ Dictionary JustAMCPRuntime::_cmd_batch_get_properties(const Dictionary &p_params
 	Array rows;
 	for (int i = 0; i < node_paths.size(); i++) {
 		String node_path = node_paths[i];
-		Node *node = tree->get_root()->get_node_or_null(NodePath(node_path));
+		Node *node = _runtime_resolve_node(tree, node_path);
 		Dictionary row;
 		row["path"] = node_path;
 		row["found"] = node != nullptr;
@@ -494,7 +512,7 @@ Dictionary JustAMCPRuntime::_cmd_move_node(const Dictionary &p_params) {
 		return ret;
 	}
 	SceneTree *tree = Object::cast_to<SceneTree>(OS::get_singleton()->get_main_loop());
-	Node *node = tree && tree->get_root() ? tree->get_root()->get_node_or_null(NodePath(node_path)) : nullptr;
+	Node *node = _runtime_resolve_node(tree, node_path);
 	if (!node) {
 		Dictionary ret;
 		ret["type"] = "error";
@@ -519,7 +537,7 @@ Dictionary JustAMCPRuntime::_cmd_monitor_properties(const Dictionary &p_params) 
 		return ret;
 	}
 	SceneTree *tree = Object::cast_to<SceneTree>(OS::get_singleton()->get_main_loop());
-	Node *node = tree && tree->get_root() ? tree->get_root()->get_node_or_null(NodePath(node_path)) : nullptr;
+	Node *node = _runtime_resolve_node(tree, node_path);
 	if (!node) {
 		Dictionary ret;
 		ret["type"] = "error";
@@ -559,7 +577,7 @@ Dictionary JustAMCPRuntime::_cmd_wait_for_property(const Dictionary &p_params) {
 		return ret;
 	}
 
-	Node *node = tree->get_root()->get_node_or_null(node_path);
+	Node *node = _runtime_resolve_node(tree, node_path);
 	if (!node) {
 		Dictionary ret;
 		ret["type"] = "error";

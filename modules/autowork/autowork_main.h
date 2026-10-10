@@ -51,8 +51,9 @@ class Autowork : public Node {
 	bool restore_editor_scripting = false;
 #endif
 	bool finished = false;
-	bool aborted = false;
+	mutable bool aborted = false;
 	bool yield_frames = false;
+	mutable uint64_t abort_after_usec = 0;
 	Ref<RefCounted> runner_script;
 	String json_output_path;
 	String xml_output_path;
@@ -74,6 +75,7 @@ public:
 	void add_script(const String &p_path);
 	void set_test(const String &p_test_name);
 	void set_yield_frames(bool p_yield) { yield_frames = p_yield; }
+	void set_abort_after_usec(uint64_t p_usec) { abort_after_usec = p_usec; }
 	void run_tests();
 	void abort();
 	void maybe_place_runtime_ui();
@@ -84,7 +86,7 @@ public:
 	void set_json_output_path(const String &p_path) { json_output_path = p_path; }
 	void set_xml_output_path(const String &p_path) { xml_output_path = p_path; }
 	bool is_finished() const { return finished; }
-	bool is_aborted() const { return aborted; }
+	bool is_aborted() const;
 
 	int get_test_count() { return logger.is_valid() ? logger->get_test_count() : 0; }
 	int get_assert_count() { return logger.is_valid() ? (logger->get_passes() + logger->get_fails()) : 0; }

@@ -31,6 +31,10 @@
 
 #include "justamcp_runtime.h"
 
+#ifdef TOOLS_ENABLED
+#include "justamcp_editor_scene_access.h"
+#endif
+
 #include "core/config/engine.h"
 #include "core/error/error_macros.h"
 #include "core/math/math_funcs.h"
@@ -388,6 +392,15 @@ bool justamcp_try_play_clock_command(const String &p_command, const Dictionary &
 			return true;
 		}
 		Camera3D *camera = tree->get_root()->get_camera_3d();
+#ifdef TOOLS_ENABLED
+		if (!camera) {
+			Node *edited = JustAMCPEditorSceneAccess::get_edited_root();
+			Camera3D *scene_camera = Object::cast_to<Camera3D>(JustAMCPEditorSceneAccess::find_node(edited, "Camera3D"));
+			if (scene_camera && scene_camera->is_inside_tree() && scene_camera->get_viewport()) {
+				camera = scene_camera;
+			}
+		}
+#endif
 		if (!camera) {
 			r_result = _clock_error("No current Camera3D.");
 			return true;

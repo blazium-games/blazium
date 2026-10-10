@@ -45,14 +45,16 @@ Dictionary JustAMCPGuidesResourceProvider::read(const String &p_uri, const Strin
 
 	if (slug == "testing-loop") {
 		title = "Testing a Running Blazium Game from MCP";
-		body = "1. Start the game with `blazium_editor_play_scene` or `blazium_editor_play_main`.\n"
-			   "2. Check `blazium_editor_is_playing`, `blazium_runtime_info`, and `blazium_editor_get_errors` before sending input.\n"
+		body = "1. Open the scene with `blazium_editor_open_scene`, then wait until `blazium_editor_scene_is_loaded` reports loaded.\n"
+			   "2. Start the game with `blazium_editor_play_scene` or `blazium_editor_play_main`.\n"
+			   "3. Check `blazium_editor_is_playing`, `blazium_runtime_info`, and `blazium_editor_get_errors` before sending input.\n"
 			   "3. Drive input with `blazium_simulate_key`, `blazium_simulate_mouse_click`, `blazium_simulate_action`, or `blazium_send_input` when a runtime bridge is active.\n"
 			   "4. Use `blazium_wait` between actions, then inspect state with `blazium_runtime_inspect_node`, `blazium_query_runtime_node`, or `blazium_take_game_screenshot`.\n"
 			   "5. Stop with `blazium_editor_stop_play` before editing scripts that run every frame.\n";
 	} else if (slug == "scene-editing") {
 		title = "Scene Editing Patterns";
-		body = "- Create scenes with `blazium_create_scene` and add nodes with `blazium_add_node`.\n"
+		body = "- Open a scene with `blazium_editor_open_scene`, then wait until `blazium_editor_scene_is_loaded` reports loaded before node, animation, tilemap, theme, shader, or spatial tools.\n"
+			   "- Create scenes with `blazium_create_scene` and add nodes with `blazium_add_node`.\n"
 			   "- Use `blazium_set_node_properties` for multiple node values and `blazium_set_resource_property` for nested resources.\n"
 			   "- Replace common node resources with `blazium_set_collision_shape`, `blazium_set_sprite_texture`, `blazium_set_mesh`, and `blazium_set_material`.\n"
 			   "- Persist node-attached resources with `blazium_save_resource_to_file`.\n"

@@ -993,6 +993,10 @@ Error ProjectSettings::save() {
 	return error;
 }
 
+void ProjectSettings::acknowledge_disk_modified_time() {
+	last_save_time = FileAccess::get_modified_time(get_project_settings_path());
+}
+
 Error ProjectSettings::_save_settings_binary(const String &p_file, const RBMap<String, List<String>> &p_props, const CustomMap &p_custom, const String &p_custom_features) {
 	Error err;
 	Ref<FileAccess> file = FileAccess::open(p_file, FileAccess::WRITE, &err);

@@ -130,7 +130,13 @@ String JustAMCPTaskManager::create_task(int p_ttl_ms, int p_poll_interval_ms, co
 	_purge_expired_tasks();
 
 	const int max_tasks = JustAMCPSettingsResolver::resolve_int("blazium/justamcp/task_max_concurrent", 16);
-	if (tasks.size() >= (uint32_t)max_tasks) {
+	uint32_t active_tasks = 0;
+	for (const KeyValue<String, JustAMCPTaskRecord *> &kv : tasks) {
+		if (kv.value && !_is_terminal_status(kv.value->status)) {
+			active_tasks++;
+		}
+	}
+	if (active_tasks >= (uint32_t)max_tasks) {
 		return String();
 	}
 

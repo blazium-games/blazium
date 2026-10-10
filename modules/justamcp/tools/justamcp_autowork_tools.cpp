@@ -45,7 +45,6 @@
 #include "core/io/file_access.h"
 #include "core/io/json.h"
 #include "core/object/message_queue.h"
-#include "core/os/main_loop.h"
 #include "core/os/os.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
@@ -75,12 +74,11 @@ static void _justamcp_free_autowork(Autowork *p_autowork) {
 }
 
 static void _justamcp_pump_main_loop() {
+	// This runs on the editor main thread, which is already inside MainLoop::process.
+	// Calling process() again never returns, so the tool timeout cannot fire and a
+	// later MCP initialize waits forever on the same thread.
 	if (MessageQueue::get_singleton()) {
 		MessageQueue::get_singleton()->flush();
-	}
-	MainLoop *loop = OS::get_singleton() ? OS::get_singleton()->get_main_loop() : nullptr;
-	if (loop) {
-		loop->process(0.016);
 	}
 	if (DisplayServer::get_singleton()) {
 		DisplayServer::get_singleton()->process_events();
@@ -107,6 +105,11 @@ static Dictionary _execute_autowork(Autowork *p_autowork, int p_timeout_sec) {
 	p_autowork->set_json_output_path("user://autowork_results.json");
 	const uint64_t started_usec = OS::get_singleton()->get_ticks_usec();
 	const uint64_t max_usec = uint64_t(CLAMP(p_timeout_sec, 1, 120)) * 1000ULL * 1000ULL;
+	// A script finishes inside run_tests(). Yielding waits for a frame this call
+	// does not pump, so a one-assert script never returns. The deadline still
+	// stops a directory run between tests.
+	p_autowork->set_yield_frames(false);
+	p_autowork->set_abort_after_usec(started_usec + max_usec);
 	p_autowork->run_tests();
 
 	bool timed_out = false;
@@ -161,6 +164,9 @@ static Dictionary _execute_autowork(Autowork *p_autowork, int p_timeout_sec) {
 	}
 	result["failures"] = failures;
 	result["ok"] = !timed_out && int(result["fail_count"]) == 0;
+	if (!bool(result["ok"]) && !result.has("error")) {
+		result["error"] = failures.is_empty() ? String("Autowork reported test failures.") : String(JSON::stringify(failures));
+	}
 	if (timed_out) {
 		result["error"] = "Autowork run timed out before tests finished.";
 		result["incomplete"] = true;

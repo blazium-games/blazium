@@ -356,22 +356,29 @@ void JustAMCPParticleTools::_apply_gradient(Object *p_mat, const Array &p_stops)
 	Ref<Gradient> gradient;
 	gradient.instantiate();
 
-	while (gradient->get_point_count() > 0) {
-		gradient->remove_point(0);
-	}
-
+	// Gradient refuses to drop its last point, so clearing with remove_point never finishes.
+	Vector<float> offsets;
+	Vector<Color> colors;
 	for (int i = 0; i < p_stops.size(); i++) {
-		Dictionary stop = p_stops[i];
-		float offset = float(stop.get("offset", 0.0));
-		String color_str = "";
-		if (stop["color"].get_type() == Variant::COLOR) {
-			Color c = stop["color"];
-			gradient->add_point(offset, c);
-		} else {
-			color_str = stop.get("color", "#ffffff");
-			gradient->add_point(offset, _parse_color(color_str));
+		if (p_stops[i].get_type() != Variant::DICTIONARY) {
+			continue;
 		}
+		Dictionary stop = p_stops[i];
+		const float offset = float(stop.get("offset", 0.0));
+		Color color;
+		if (stop.has("color") && stop["color"].get_type() == Variant::COLOR) {
+			color = stop["color"];
+		} else {
+			color = _parse_color(String(stop.get("color", "#ffffff")));
+		}
+		offsets.push_back(offset);
+		colors.push_back(color);
 	}
+	if (offsets.is_empty()) {
+		return;
+	}
+	gradient->set_offsets(offsets);
+	gradient->set_colors(colors);
 
 	Ref<GradientTexture1D> grad_tex;
 	grad_tex.instantiate();

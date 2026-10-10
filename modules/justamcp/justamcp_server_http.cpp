@@ -262,6 +262,7 @@ void JustAMCPServer::_on_sse_connection_opened(int p_connection_id, const String
 }
 
 void JustAMCPServer::_on_sse_connection_closed(int p_connection_id) {
+	_cancel_tools_for_connection(p_connection_id);
 	if (session_manager) {
 		session_manager->on_sse_connection_closed(p_connection_id);
 	}

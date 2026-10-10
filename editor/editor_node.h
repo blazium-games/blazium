@@ -656,6 +656,7 @@ private:
 
 	void _resources_changed(const Vector<String> &p_resources);
 	void _scan_external_changes();
+	void _reload_clean_external_scenes();
 	void _reload_modified_scenes();
 	void _reload_project_settings();
 	void _resave_scenes(String p_str);
@@ -703,6 +704,7 @@ public:
 	static EditorNode *get_singleton() { return singleton; }
 
 	static bool is_path_excluded_from_external_change_check(const String &p_path);
+	bool is_disk_changed_dialog_visible() const;
 	static EditorLog *get_log() { return singleton->log; }
 	static EditorData &get_editor_data() { return singleton->editor_data; }
 	static EditorFolding &get_editor_folding() { return singleton->editor_folding; }

@@ -89,7 +89,7 @@ Array JustAMCPAnimationTools::_load_scene(const String &p_scene_path) {
 		return ret;
 	}
 
-	Ref<PackedScene> packed = ResourceLoader::load(p_scene_path);
+	Ref<PackedScene> packed = ResourceLoader::load(p_scene_path, "", ResourceFormatLoader::CACHE_MODE_REPLACE);
 	if (packed.is_null()) {
 		err["ok"] = false;
 		err["error"] = "Failed to load: " + p_scene_path;

@@ -39,6 +39,7 @@
 #include "../justamcp_runtime.h"
 #include "../justamcp_server.h"
 #include "../justamcp_tool_context.h"
+#include "core/config/project_settings.h"
 #include "core/input/input_event.h"
 #include "core/io/file_access.h"
 #include "core/io/image.h"
@@ -702,23 +703,76 @@ Dictionary JustAMCPEditorTools::editor_set_main_screen(const Dictionary &p_args)
 	return result;
 }
 
+static Dictionary _scene_loaded_state(const String &p_path) {
+	Dictionary result;
+	result["ok"] = true;
+	result["loaded"] = false;
+	result["changing"] = false;
+	result["scene_path"] = String();
+	if (!EditorNode::get_singleton()) {
+		result["ok"] = false;
+		result["error"] = "Editor context is unavailable.";
+		return result;
+	}
+	const bool changing = EditorNode::get_singleton()->is_changing_scene();
+	result["changing"] = changing;
+	Node *root = EditorNode::get_singleton()->get_edited_scene();
+	String scene_path;
+	if (root) {
+		scene_path = root->get_scene_file_path();
+	}
+	result["scene_path"] = scene_path;
+	bool path_matches = true;
+	String requested = p_path.strip_edges();
+	if (!requested.is_empty() && ProjectSettings::get_singleton()) {
+		requested = ProjectSettings::get_singleton()->localize_path(requested);
+		const String current = scene_path.is_empty() ? String() : ProjectSettings::get_singleton()->localize_path(scene_path);
+		path_matches = current == requested;
+	}
+	result["loaded"] = !changing && root != nullptr && path_matches;
+	return result;
+}
+
+Dictionary JustAMCPEditorTools::editor_scene_is_loaded(const Dictionary &p_args) {
+	const String path = String(p_args.get("path", p_args.get("scene_path", "")));
+	return _scene_loaded_state(path);
+}
+
 Dictionary JustAMCPEditorTools::editor_open_scene(const Dictionary &p_args) {
 	Dictionary result;
 	String path = p_args.get("path", "");
 	if (path.is_empty()) {
 		result["ok"] = false;
+		result["loaded"] = false;
 		result["error"] = "Requires path to a valid scene target format.";
+		return result;
+	}
+
+	if (EditorNode::get_singleton() && EditorNode::get_singleton()->is_changing_scene()) {
+		result["ok"] = false;
+		result["loaded"] = false;
+		result["changing"] = true;
+		result["error"] = "Scene transition in progress.";
 		return result;
 	}
 
 	if (editor_plugin && editor_plugin->get_editor_interface()) {
 		editor_plugin->get_editor_interface()->open_scene_from_path(path);
-		result["ok"] = true;
-		result["message"] = "Scene opened in editor.";
+		Dictionary loaded = _scene_loaded_state(path);
+		result["ok"] = bool(loaded.get("loaded", false));
+		result["loaded"] = loaded.get("loaded", false);
+		result["changing"] = loaded.get("changing", false);
+		result["scene_path"] = loaded.get("scene_path", "");
+		if (bool(result["ok"])) {
+			result["message"] = "Scene opened in editor.";
+		} else {
+			result["error"] = "Scene did not finish loading.";
+		}
 		return result;
 	}
 
 	result["ok"] = false;
+	result["loaded"] = false;
 	result["error"] = "Editor context is unavailable.";
 	return result;
 }
@@ -1227,6 +1281,9 @@ Dictionary JustAMCPEditorTools::execute_tool(const String &p_tool_name, const Di
 	}
 	if (p_tool_name == "editor_open_scene") {
 		return editor_open_scene(p_args);
+	}
+	if (p_tool_name == "editor_scene_is_loaded") {
+		return editor_scene_is_loaded(p_args);
 	}
 	if (p_tool_name == "editor_get_settings") {
 		return editor_get_settings(p_args);

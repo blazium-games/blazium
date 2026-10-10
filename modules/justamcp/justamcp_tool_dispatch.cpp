@@ -101,6 +101,11 @@ void JustAMCPToolDispatch::execute_and_send(JustAMCPServer *p_server, JustAMCPTo
 		if (justamcp_protocol_at_least(p_server->get_negotiated_protocol_version(), "2026-07-28")) {
 			const String message = String(result.get("elicitation_message", "Additional input is required to continue."));
 			p_server->send_tool_result(p_request_id, true, justamcp_input_required_result(mode, message, schema), "");
+		} else {
+			// Older clients never answer the form, so complete the call now.
+			// Leaving it pending fills the session queue until the client times out.
+			const String message = String(result.get("error", "Explicit user confirmation required."));
+			p_server->send_tool_result(p_request_id, false, message, message);
 		}
 		return;
 	}
