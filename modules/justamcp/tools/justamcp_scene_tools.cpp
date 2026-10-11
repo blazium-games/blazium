@@ -101,9 +101,12 @@ JustAMCPSceneTools::JustAMCPSceneTools() {
 JustAMCPSceneTools::~JustAMCPSceneTools() {
 }
 
-void JustAMCPSceneTools::_refresh_and_reload(const String &p_scene_path) {
+void JustAMCPSceneTools::_refresh_and_reload(const String &p_scene_path, bool p_reload_open_scene) {
+	JustAMCPEditorSceneAccess::acknowledge_saved_scene(p_scene_path);
 	_refresh_filesystem(p_scene_path);
-	_reload_scene_in_editor(p_scene_path);
+	if (p_reload_open_scene) {
+		_reload_scene_in_editor(p_scene_path);
+	}
 }
 
 void JustAMCPSceneTools::_reload_scene_in_editor(const String &p_scene_path) {
@@ -203,10 +206,14 @@ Dictionary JustAMCPSceneTools::_pack_and_save_scene(Node *p_scene_root, const St
 		ret["error"] = "Failed to save scene";
 		return ret;
 	}
-	if (p_free_root) {
+	Node *edited = JustAMCPEditorSceneAccess::get_edited_root();
+	const bool saved_live_root = edited && p_scene_root == edited;
+	if (p_free_root && !saved_live_root) {
 		memdelete(p_scene_root);
 	}
-	_refresh_and_reload(p_scene_path);
+	// The live edited root is already the tree that was packed. Reloading it
+	// makes the external-change scan treat the save as an outside edit.
+	_refresh_and_reload(p_scene_path, !saved_live_root);
 	return Dictionary();
 }
 

@@ -506,26 +506,20 @@ Dictionary JustAMCPBatchTools::_batch_add_nodes(const Dictionary &p_params) {
 	} else
 #endif
 	{
-		Array added_ids;
 		for (int i = 0; i < pending.size(); i++) {
 			Node *node = pending[i].node;
 			Node *parent = pending[i].parent;
-			parent->add_child(node);
-			if (root == node || root->is_ancestor_of(node)) {
-				node->set_owner(root);
-			}
 			Array keys = pending[i].properties.keys();
 			for (int j = 0; j < keys.size(); j++) {
 				node->set(keys[j], pending[i].properties[keys[j]]);
 			}
-			added_ids.push_back(int64_t(node->get_instance_id()));
+			JustAMCPEditorSceneAccess::add_child_with_undo(node, parent, root, "Batch Add Nodes");
 			Dictionary info;
 			info["name"] = node->get_name();
 			info["type"] = node->get_class();
 			info["path"] = JustAMCPEditorSceneAccess::safe_path_to(root, node);
 			created.push_back(info);
 		}
-		JustAMCPAgentPolicy::note_batch_undo(Array(), added_ids);
 	}
 
 #ifdef TOOLS_ENABLED

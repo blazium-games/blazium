@@ -924,6 +924,266 @@ void JustAMCPCategorySchemas::register_category_schemas(const JustAMCPCategorySc
 			Vector<String>{}, Vector<String>{});
 	add_schema("playtest_handoff", "Returns the current scene, what to try, and the latest editor error count.",
 			Vector<String>{}, Vector<String>{});
+
+	current_category = "scene_tools";
+	is_core = true;
+	add_schema("save_branch_as_scene", "Packs a node and its children into a new scene file.",
+			Vector<String>{ "node_path", "string", "dest_path", "string", "path", "string" }, Vector<String>{});
+	add_schema("replace_node_type", "Replaces a node's type and keeps its name, transform, and children.",
+			Vector<String>{ "node_path", "string", "node_type", "string" }, Vector<String>{});
+	add_schema("set_unique_name", "Sets or clears a node's unique name in its owner.",
+			Vector<String>{ "node_path", "string", "unique", "boolean" }, Vector<String>{});
+	add_schema("add_timer", "Adds a Timer with a wait time and autostart flag.",
+			Vector<String>{ "parent_path", "string", "node_name", "string", "wait_time", "number", "autostart", "boolean" }, Vector<String>{});
+	add_schema("align_nodes", "Aligns listed Node2D or Control nodes on the x or y axis.",
+			Vector<String>{ "node_paths", "array", "axis", "string" }, Vector<String>{});
+	add_schema("distribute_nodes", "Spaces listed Node2D or Control nodes evenly along an axis.",
+			Vector<String>{ "node_paths", "array", "axis", "string" }, Vector<String>{});
+	add_schema("set_node_transform_2d", "Sets a Node2D or Control position, rotation, and scale.",
+			Vector<String>{ "node_path", "string", "x", "number", "y", "number", "rotation", "number", "scale", "number" }, Vector<String>{});
+	add_schema("set_node_transform_3d", "Sets a Node3D position and rotation.",
+			Vector<String>{ "node_path", "string", "x", "number", "y", "number", "z", "number", "rotation_x", "number", "rotation_y", "number", "rotation_z", "number" }, Vector<String>{});
+	add_schema("look_at_node", "Points a Node3D at another Node3D.",
+			Vector<String>{ "node_path", "string", "target_path", "string" }, Vector<String>{});
+	add_schema("batch_get_properties", "Reads one or more properties from several nodes.",
+			Vector<String>{ "node_paths", "array", "properties", "array", "property", "string" }, Vector<String>{});
+	add_schema("set_property_across_scenes", "Sets one property on a node path inside several scene files.",
+			Vector<String>{ "scene_paths", "array", "node_path", "string", "property", "string", "value", "any" }, Vector<String>{});
+	add_schema("add_sprite", "Adds a Sprite2D to the edited scene.",
+			Vector<String>{ "parent_path", "string", "node_name", "string" }, Vector<String>{});
+	add_schema("add_animated_sprite", "Adds an AnimatedSprite2D to the edited scene.",
+			Vector<String>{ "parent_path", "string", "node_name", "string" }, Vector<String>{});
+	add_schema("add_canvas_modulate", "Adds a CanvasModulate to the edited scene.",
+			Vector<String>{ "parent_path", "string", "node_name", "string" }, Vector<String>{});
+	add_schema("add_light_2d", "Adds a PointLight2D to the edited scene.",
+			Vector<String>{ "parent_path", "string", "node_name", "string" }, Vector<String>{});
+	add_schema("add_light_occluder_2d", "Adds a LightOccluder2D to the edited scene.",
+			Vector<String>{ "parent_path", "string", "node_name", "string" }, Vector<String>{});
+	add_schema("create_placeholder_texture", "Writes a small solid PNG texture.",
+			Vector<String>{ "path", "string" }, Vector<String>{});
+	add_schema("set_camera_limits", "Sets the left, top, right, and bottom limits of a Camera2D.",
+			Vector<String>{ "node_path", "string", "left", "number", "top", "number", "right", "number", "bottom", "number" }, Vector<String>{});
+	add_schema("add_ui_control", "Adds a Control, defaulting to a Label.",
+			Vector<String>{ "parent_path", "string", "node_name", "string", "node_type", "string" }, Vector<String>{});
+	add_schema("add_ui_container", "Adds a UI container, defaulting to a VBoxContainer.",
+			Vector<String>{ "parent_path", "string", "node_name", "string", "node_type", "string" }, Vector<String>{});
+	add_schema("add_progress_bar", "Adds a ProgressBar to the edited scene.",
+			Vector<String>{ "parent_path", "string", "node_name", "string" }, Vector<String>{});
+	add_schema("add_ui_dialog", "Adds an AcceptDialog to the edited scene.",
+			Vector<String>{ "parent_path", "string", "node_name", "string" }, Vector<String>{});
+	add_schema("configure_popup_menu", "Adds or fills a PopupMenu.",
+			Vector<String>{ "node_path", "string", "parent_path", "string", "items", "array" }, Vector<String>{});
+	add_schema("configure_menu_bar", "Adds a MenuBar to the edited scene.",
+			Vector<String>{ "parent_path", "string", "node_name", "string" }, Vector<String>{});
+	add_schema("set_item_list_items", "Replaces the items of an ItemList or PopupMenu.",
+			Vector<String>{ "node_path", "string", "items", "array" }, Vector<String>{});
+	add_schema("set_option_button_items", "Replaces the items of an OptionButton.",
+			Vector<String>{ "node_path", "string", "items", "array" }, Vector<String>{});
+	add_schema("set_texture_rect", "Adds a TextureRect and optionally assigns a texture.",
+			Vector<String>{ "parent_path", "string", "node_name", "string", "texture_path", "string" }, Vector<String>{});
+	add_schema("set_control_icon", "Sets a Button icon from a texture path.",
+			Vector<String>{ "node_path", "string", "texture_path", "string" }, Vector<String>{});
+	add_schema("load_font", "Assigns a font file, or a system font, to a Control.",
+			Vector<String>{ "node_path", "string", "font_path", "string" }, Vector<String>{});
+	add_schema("set_control_style", "Sets a Control modulate color or a flat style override.",
+			Vector<String>{ "node_path", "string", "color", "string" }, Vector<String>{});
+	add_schema("wire_button", "Connects a Button pressed signal to a method on another node.",
+			Vector<String>{ "node_path", "string", "target_path", "string", "method", "string" }, Vector<String>{});
+	add_schema("add_marker", "Adds a Marker2D, or a Marker3D when is_3d is true.",
+			Vector<String>{ "parent_path", "string", "node_name", "string", "is_3d", "boolean" }, Vector<String>{});
+	add_schema("add_remote_transform", "Adds a RemoteTransform2D, or a RemoteTransform3D when is_3d is true.",
+			Vector<String>{ "parent_path", "string", "node_name", "string", "is_3d", "boolean" }, Vector<String>{});
+	add_schema("add_path", "Adds a Path2D, or a Path3D when is_3d is true.",
+			Vector<String>{ "parent_path", "string", "node_name", "string", "is_3d", "boolean" }, Vector<String>{});
+	add_schema("add_path_follow", "Adds a PathFollow2D, or a PathFollow3D when is_3d is true.",
+			Vector<String>{ "parent_path", "string", "node_name", "string", "is_3d", "boolean" }, Vector<String>{});
+	add_schema("add_visibility_notifier", "Adds a VisibleOnScreenNotifier2D, or the 3D notifier when is_3d is true.",
+			Vector<String>{ "parent_path", "string", "node_name", "string", "is_3d", "boolean" }, Vector<String>{});
+
+	current_category = "scene3d_tools";
+	is_core = false;
+	add_schema("add_decal", "Adds a Decal to the edited scene.",
+			Vector<String>{ "parent_path", "string", "node_name", "string" }, Vector<String>{});
+	add_schema("add_reflection_probe", "Adds a ReflectionProbe to the edited scene.",
+			Vector<String>{ "parent_path", "string", "node_name", "string" }, Vector<String>{});
+	add_schema("add_subviewport", "Adds a SubViewport to the edited scene.",
+			Vector<String>{ "parent_path", "string", "node_name", "string" }, Vector<String>{});
+	add_schema("add_bone_attachment_3d", "Adds a BoneAttachment3D to the edited scene.",
+			Vector<String>{ "parent_path", "string", "node_name", "string" }, Vector<String>{});
+	add_schema("add_text_mesh", "Adds a TextMesh to the edited scene.",
+			Vector<String>{ "parent_path", "string", "node_name", "string" }, Vector<String>{});
+	add_schema("add_spring_arm", "Adds a SpringArm3D to the edited scene.",
+			Vector<String>{ "parent_path", "string", "node_name", "string" }, Vector<String>{});
+	add_schema("add_global_illumination", "Adds a VoxelGI node to the edited scene.",
+			Vector<String>{ "parent_path", "string", "node_name", "string" }, Vector<String>{});
+	add_schema("create_material_preset", "Creates a metal, glass, or wood StandardMaterial3D and can assign it to a mesh.",
+			Vector<String>{ "preset", "string", "path", "string", "node_path", "string" }, Vector<String>{});
+	add_schema("set_material_property", "Sets a property on a mesh material override, creating a StandardMaterial3D when needed.",
+			Vector<String>{ "node_path", "string", "property", "string", "value", "any" }, Vector<String>{});
+	add_schema("set_csg_operation", "Sets a CSG shape operation to union, intersection, or subtraction.",
+			Vector<String>{ "node_path", "string", "operation", "string" }, Vector<String>{});
+	add_schema("gridmap_set_cell", "Sets one GridMap cell item.",
+			Vector<String>{ "node_path", "string", "x", "number", "y", "number", "z", "number", "item", "number" }, Vector<String>{});
+	add_schema("paint_gridmap_region", "Paints a GridMap region, capped at 256 cells.",
+			Vector<String>{ "node_path", "string", "x0", "number", "y0", "number", "z0", "number", "x1", "number", "y1", "number", "z1", "number", "item", "number" }, Vector<String>{});
+	add_schema("create_terrain", "Adds a subdivided PlaneMesh terrain, capped at 16 subdivisions.",
+			Vector<String>{ "parent_path", "string", "node_name", "string", "size", "number", "subdivide", "number" }, Vector<String>{});
+	add_schema("scatter_multimesh", "Scatters a MultiMesh, capped at 32 instances.",
+			Vector<String>{ "parent_path", "string", "node_name", "string", "count", "number" }, Vector<String>{});
+
+	current_category = "tilemap_tools";
+	is_core = false;
+	add_schema("configure_tileset_layers", "Adds a physics layer to the edited tile set.",
+			Vector<String>{ "node_path", "string", "tileset_path", "string" }, Vector<String>{});
+	add_schema("configure_tileset_terrains", "Adds a terrain set and one named terrain.",
+			Vector<String>{ "node_path", "string", "tileset_path", "string", "terrain_name", "string" }, Vector<String>{});
+	add_schema("set_tileset_tile_data", "Creates an atlas tile at the given coordinates.",
+			Vector<String>{ "node_path", "string", "tileset_path", "string", "x", "number", "y", "number" }, Vector<String>{});
+	add_schema("tilemap_paint_terrain", "Paints connected terrain cells on a TileMapLayer.",
+			Vector<String>{ "node_path", "string", "cells", "array", "terrain_set", "number", "terrain", "number" }, Vector<String>{});
+	add_schema("tilemap_set_cells", "Sets several TileMapLayer cells in one call.",
+			Vector<String>{ "node_path", "string", "cells", "array", "source_id", "number" }, Vector<String>{});
+
+	current_category = "theme_tools";
+	is_core = false;
+	add_schema("assign_theme", "Assigns a Theme resource to a Control.",
+			Vector<String>{ "node_path", "string", "theme_path", "string" }, Vector<String>{});
+	add_schema("merge_theme", "Merges a Theme into a duplicate assigned to a Control.",
+			Vector<String>{ "node_path", "string", "other_path", "string" }, Vector<String>{});
+	add_schema("configure_theme", "Creates a Theme, sets a color and constant, and assigns it to a Control.",
+			Vector<String>{ "node_path", "string", "theme_type", "string", "path", "string" }, Vector<String>{});
+
+	current_category = "shader_tools";
+	is_core = false;
+	add_schema("add_shader_preset", "Writes a named spatial, canvas, or outline shader preset.",
+			Vector<String>{ "path", "string", "preset", "string" }, Vector<String>{});
+	add_schema("create_visual_shader", "Creates a VisualShader resource.",
+			Vector<String>{ "path", "string", "mode", "string" }, Vector<String>{});
+	add_schema("add_visual_shader_node", "Adds a float constant node to a visual shader graph.",
+			Vector<String>{ "path", "string", "shader_type", "string", "value", "number", "x", "number", "y", "number" }, Vector<String>{});
+	add_schema("connect_visual_shader_nodes", "Connects two nodes in a visual shader graph.",
+			Vector<String>{ "path", "string", "shader_type", "string", "from_node", "number", "from_port", "number", "to_node", "number", "to_port", "number" }, Vector<String>{});
+	add_schema("disconnect_visual_shader_nodes", "Disconnects two nodes in a visual shader graph.",
+			Vector<String>{ "path", "string", "shader_type", "string", "from_node", "number", "from_port", "number", "to_node", "number", "to_port", "number" }, Vector<String>{});
+	add_schema("remove_visual_shader_node", "Removes a node from a visual shader graph.",
+			Vector<String>{ "path", "string", "shader_type", "string", "node_id", "number" }, Vector<String>{});
+	add_schema("set_visual_shader_node_property", "Sets a property on a visual shader node.",
+			Vector<String>{ "path", "string", "shader_type", "string", "node_id", "number", "property", "string", "value", "any" }, Vector<String>{});
+	add_schema("get_visual_shader_info", "Reads the node count and mode of a visual shader.",
+			Vector<String>{ "path", "string", "shader_type", "string" }, Vector<String>{});
+
+	current_category = "animation_tools";
+	is_core = false;
+	add_schema("add_bone", "Adds a bone to a Skeleton3D.",
+			Vector<String>{ "node_path", "string", "bone_name", "string" }, Vector<String>{});
+	add_schema("set_bone_rest", "Sets a Skeleton3D bone rest origin.",
+			Vector<String>{ "node_path", "string", "bone", "number", "x", "number", "y", "number", "z", "number" }, Vector<String>{});
+	add_schema("set_bone_pose", "Sets a Skeleton3D bone pose position.",
+			Vector<String>{ "node_path", "string", "bone", "number", "x", "number", "y", "number", "z", "number" }, Vector<String>{});
+	add_schema("reset_bone_poses", "Resets a Skeleton3D to its rest poses.",
+			Vector<String>{ "node_path", "string" }, Vector<String>{});
+	add_schema("get_skeleton_info", "Lists bones on a Skeleton3D.",
+			Vector<String>{ "node_path", "string" }, Vector<String>{});
+	add_schema("set_blend_shape", "Sets a mesh blend shape, creating a placeholder mesh when the shape is missing.",
+			Vector<String>{ "node_path", "string", "shape", "string", "value", "number" }, Vector<String>{});
+	add_schema("get_mesh_info", "Reads surface and blend-shape counts from a MeshInstance3D.",
+			Vector<String>{ "node_path", "string" }, Vector<String>{});
+	add_schema("list_model_animations", "Lists animations on an AnimationPlayer in a packed scene.",
+			Vector<String>{ "path", "string" }, Vector<String>{});
+	add_schema("create_skeleton_2d", "Adds a Skeleton2D to the edited scene.",
+			Vector<String>{ "parent_path", "string", "node_name", "string" }, Vector<String>{});
+	add_schema("create_bone_map", "Saves an empty BoneMap resource.",
+			Vector<String>{ "path", "string" }, Vector<String>{});
+	add_schema("auto_bone_map", "Saves a BoneMap resource for later profile assignment.",
+			Vector<String>{ "path", "string" }, Vector<String>{});
+	add_schema("add_ik_chain", "Adds a SkeletonIK3D node.",
+			Vector<String>{ "parent_path", "string", "node_name", "string" }, Vector<String>{});
+	add_schema("add_look_at_modifier", "Adds a LookAtModifier3D node.",
+			Vector<String>{ "parent_path", "string", "node_name", "string" }, Vector<String>{});
+	add_schema("rename_animation", "Renames an animation inside the player's default library.",
+			Vector<String>{ "node_path", "string", "from", "string", "to", "string" }, Vector<String>{});
+	add_schema("list_animation_tracks", "Lists tracks on an animation.",
+			Vector<String>{ "node_path", "string", "animation", "string" }, Vector<String>{});
+	add_schema("configure_animation_track", "Adds a value track and one keyframe.",
+			Vector<String>{ "node_path", "string", "animation", "string", "track_path", "string" }, Vector<String>{});
+	add_schema("remove_animation_track", "Removes one animation track.",
+			Vector<String>{ "node_path", "string", "animation", "string", "track", "number" }, Vector<String>{});
+	add_schema("set_animation_keyframes", "Inserts one or more keyframes on an animation track.",
+			Vector<String>{ "node_path", "string", "animation", "string", "track", "number", "keys", "array", "time", "number", "value", "any" }, Vector<String>{});
+	add_schema("remove_animation_keyframe", "Removes one keyframe from an animation track.",
+			Vector<String>{ "node_path", "string", "animation", "string", "track", "number", "key", "number" }, Vector<String>{});
+	add_schema("connect_animation_blend_nodes", "Adds an animation node to a blend tree and connects it to the output.",
+			Vector<String>{ "node_path", "string", "node_name", "string", "animation", "string", "input", "number" }, Vector<String>{});
+	add_schema("remove_animation_blend_node", "Removes a node from an animation blend tree.",
+			Vector<String>{ "node_path", "string", "node_name", "string" }, Vector<String>{});
+
+	current_category = "physics_tools";
+	is_core = false;
+	add_schema("add_collision_polygon", "Adds a CollisionPolygon2D, or CollisionPolygon3D when is_3d is true.",
+			Vector<String>{ "parent_path", "string", "node_name", "string", "is_3d", "boolean" }, Vector<String>{});
+	add_schema("add_mesh_collision", "Adds a CollisionShape3D with a box shape.",
+			Vector<String>{ "parent_path", "string", "node_name", "string" }, Vector<String>{});
+	add_schema("add_shape_cast", "Adds a ShapeCast2D, or ShapeCast3D when is_3d is true.",
+			Vector<String>{ "parent_path", "string", "node_name", "string", "is_3d", "boolean" }, Vector<String>{});
+	add_schema("set_physics_material", "Assigns a physics material override with friction and bounce.",
+			Vector<String>{ "node_path", "string", "friction", "number", "bounce", "number" }, Vector<String>{});
+	add_schema("set_collision_layers_by_name", "Sets collision layer and mask from a named project layer.",
+			Vector<String>{ "node_path", "string", "layer_name", "string", "is_3d", "boolean" }, Vector<String>{});
+
+	current_category = "particle_tools";
+	is_core = false;
+	add_schema("add_particle_collision", "Adds a GPUParticlesCollisionBox3D node.",
+			Vector<String>{ "parent_path", "string", "node_name", "string" }, Vector<String>{});
+	add_schema("set_particle_process", "Edits or creates a particle process material gravity.",
+			Vector<String>{ "node_path", "string", "gravity_y", "number" }, Vector<String>{});
+
+	current_category = "audio_tools";
+	is_core = false;
+	add_schema("create_audio_randomizer", "Adds an AudioStreamPlayer with an AudioStreamRandomizer.",
+			Vector<String>{ "parent_path", "string", "node_name", "string" }, Vector<String>{});
+	add_schema("save_bus_layout", "Saves the current AudioServer bus layout.",
+			Vector<String>{ "path", "string" }, Vector<String>{});
+
+	current_category = "spatial_tools";
+	is_core = false;
+	add_schema("add_navigation_obstacle", "Adds a NavigationObstacle2D, or NavigationObstacle3D when is_3d is true.",
+			Vector<String>{ "parent_path", "string", "node_name", "string", "is_3d", "boolean" }, Vector<String>{});
+	add_schema("add_navigation_link", "Adds a NavigationLink2D, or NavigationLink3D when is_3d is true.",
+			Vector<String>{ "parent_path", "string", "node_name", "string", "is_3d", "boolean" }, Vector<String>{});
+
+	current_category = "project_tools";
+	is_core = true;
+	add_schema("list_plugins", "Lists editor plugins enabled in project settings.",
+			Vector<String>{}, Vector<String>{});
+	add_schema("enable_plugin", "Enables or disables an editor plugin by path.",
+			Vector<String>{ "plugin", "string", "enabled", "boolean" }, Vector<String>{});
+	add_schema("add_translation", "Writes a CSV translation entry and can register a res:// path.",
+			Vector<String>{ "path", "string", "key", "string", "value", "string" }, Vector<String>{});
+	add_schema("set_locale", "Sets the project locale. Saves project settings only when persist is true.",
+			Vector<String>{ "locale", "string", "persist", "boolean" }, Vector<String>{});
+
+	current_category = "resource_tools";
+	is_core = false;
+	add_schema("set_import_options", "Writes keys into an asset .import sidecar.",
+			Vector<String>{ "path", "string", "options", "object" }, Vector<String>{});
+	add_schema("get_image_info", "Reads an image width, height, and format.",
+			Vector<String>{ "path", "string" }, Vector<String>{});
+	add_schema("diff_images", "Samples two images and reports how many sampled pixels differ.",
+			Vector<String>{ "left", "string", "right", "string" }, Vector<String>{});
+
+	current_category = "analysis_tools";
+	is_core = false;
+	add_schema("check_all_scripts", "Reloads up to 32 GDScript files at the project root and reports failures.",
+			Vector<String>{}, Vector<String>{});
+	add_schema("project_health_report", "Summarizes script reload results and the open scene node count.",
+			Vector<String>{}, Vector<String>{});
+	add_schema("describe_scene_visual", "Counts nodes, cameras, and lights in the open scene and reports 2D bounds.",
+			Vector<String>{}, Vector<String>{});
+
+	current_category = "export_tools";
+	is_core = false;
+	add_schema("create_export_preset", "Appends an export preset to export_presets.cfg.",
+			Vector<String>{ "path", "string", "name", "string", "platform", "string" }, Vector<String>{});
 }
 
 #endif

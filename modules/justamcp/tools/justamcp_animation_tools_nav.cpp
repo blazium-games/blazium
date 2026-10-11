@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "../justamcp_editor_plugin.h"
+#include "../justamcp_editor_scene_access.h"
 #include "justamcp_animation_tools.h"
 
 #include "core/io/file_access.h"
@@ -99,8 +100,7 @@ Dictionary JustAMCPAnimationTools::create_navigation_region(const Dictionary &p_
 	}
 
 	nav->set_name(node_name);
-	parent->add_child(nav);
-	nav->set_owner(scene_root);
+	JustAMCPEditorSceneAccess::add_child_with_undo(nav, parent, scene_root, "Add Navigation Region");
 
 	Dictionary save_err = _save_scene(scene_root, scene_path);
 	if (!save_err.is_empty()) {
@@ -168,8 +168,7 @@ Dictionary JustAMCPAnimationTools::create_navigation_agent(const Dictionary &p_a
 		agent = agent2d;
 	}
 
-	parent->add_child(agent);
-	agent->set_owner(scene_root);
+	JustAMCPEditorSceneAccess::add_child_with_undo(agent, parent, scene_root, "Add Navigation Agent");
 
 	Dictionary save_err = _save_scene(scene_root, scene_path);
 	if (!save_err.is_empty()) {

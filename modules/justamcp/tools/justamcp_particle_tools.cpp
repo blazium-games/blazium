@@ -29,17 +29,16 @@
 
 #include "justamcp_particle_tools.h"
 
+#include "../justamcp_editor_scene_access.h"
+#include "../justamcp_mcp_tool_macros.h"
+
+#include "core/math/expression.h"
 #include "scene/2d/cpu_particles_2d.h"
 #include "scene/2d/gpu_particles_2d.h"
 #include "scene/3d/cpu_particles_3d.h"
 #include "scene/3d/gpu_particles_3d.h"
 #include "scene/resources/gradient_texture.h"
 #include "scene/resources/particle_process_material.h"
-
-#include "core/math/expression.h"
-
-#include "../justamcp_editor_scene_access.h"
-#include "../justamcp_mcp_tool_macros.h"
 
 void JustAMCPParticleTools::_bind_methods() {}
 
@@ -204,8 +203,7 @@ Dictionary JustAMCPParticleTools::_create_particles(const Dictionary &p_params) 
 		particles_node = p;
 	}
 
-	parent->add_child(particles_node, true);
-	particles_node->set_owner(root);
+	JustAMCPEditorSceneAccess::add_child_with_undo(particles_node, parent, root, "Add Particles");
 
 	Dictionary res;
 	res["name"] = particles_node->get_name();

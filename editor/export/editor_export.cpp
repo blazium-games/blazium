@@ -418,7 +418,10 @@ void EditorExport::load_config() {
 
 		String option_section = "preset." + itos(index) + ".options";
 
-		Vector<String> options = config->get_section_keys(option_section);
+		Vector<String> options;
+		if (config->has_section(option_section)) {
+			options = config->get_section_keys(option_section);
+		}
 
 		for (const String &E : options) {
 			Variant value = config->get_value(option_section, E);
