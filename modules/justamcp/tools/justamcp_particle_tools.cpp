@@ -204,8 +204,7 @@ Dictionary JustAMCPParticleTools::_create_particles(const Dictionary &p_params) 
 		particles_node = p;
 	}
 
-	parent->add_child(particles_node, true);
-	particles_node->set_owner(root);
+	JustAMCPEditorSceneAccess::add_child_with_undo(particles_node, parent, root, "Add Particles");
 
 	Dictionary res;
 	res["name"] = particles_node->get_name();

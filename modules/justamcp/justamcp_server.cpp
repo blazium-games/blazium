@@ -450,8 +450,14 @@ void JustAMCPServer::_start_server_internal(bool p_ignore_cmdline_block) {
 
 	bool enabled = runtime_host ? JustAMCPSettingsResolver::resolve_runtime_enabled() : JustAMCPSettingsResolver::resolve_server_enabled();
 	int port = _resolve_listening_port_from_settings();
+	if (port > 0 && port == listen_failed_port) {
+		return;
+	}
 	if (runtime_host && JustAMCPSettingsResolver::runtime_port_conflicts_with_editor()) {
-		ERR_PRINT("JustAMCP: Game MCP port " + itos(port) + " equals the editor port. Set blazium/justamcp/export_port or --mcp-game-port to a different value.");
+		if (listen_failed_port != port) {
+			ERR_PRINT("JustAMCP: Game MCP port " + itos(port) + " equals the editor port. Set blazium/justamcp/export_port or --mcp-game-port to a different value.");
+			listen_failed_port = port;
+		}
 		return;
 	}
 	bool bind_to_localhost = JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/bind_to_localhost_only", true);
@@ -553,8 +559,10 @@ void JustAMCPServer::_start_server_internal(bool p_ignore_cmdline_block) {
 			{
 				ERR_PRINT("JustAMCP: Failed to listen on port " + itos(port) + " (error " + itos(listen_err) + ").");
 			}
+			listen_failed_port = port;
 			return;
 		}
+		listen_failed_port = -1;
 	} else {
 		print_line("JustAMCP: HTTPServer already listening; registering MCP routes on the existing socket.");
 	}
@@ -640,6 +648,7 @@ void JustAMCPServer::_on_headless_tool_requested(const Variant &p_request_id, co
 #endif
 
 void JustAMCPServer::_stop_server() {
+	listen_failed_port = -1;
 	if (!server_started) {
 		return;
 	}

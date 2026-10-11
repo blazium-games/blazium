@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  justamcp_runtime_tools.h                                              */
+/*  justamcp_addon_gap_tools.h                                            */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             BLAZIUM ENGINE                             */
@@ -29,38 +29,15 @@
 
 #pragma once
 
-#include "core/object/class_db.h"
-#include "core/object/object.h"
+#ifdef TOOLS_ENABLED
 
-class JustAMCPEditorPlugin;
+#include "core/string/ustring.h"
+#include "core/variant/dictionary.h"
 
-class JustAMCPRuntimeTools : public Object {
-	GDCLASS(JustAMCPRuntimeTools, Object);
-
-	JustAMCPEditorPlugin *editor_plugin = nullptr;
-
-	bool _recording_video = false;
-	int _recorded_frames = 0;
-	String _current_recording_dir;
-
-	void _disconnect_recording();
-
-	Vector<String> _console_buffer;
-
-protected:
-	static void _bind_methods();
-
+class JustAMCPAddonGapTools {
 public:
-	void _on_process_frame();
-	void set_editor_plugin(JustAMCPEditorPlugin *p_plugin) { editor_plugin = p_plugin; }
-
-	Dictionary runtime_execute_gdscript(const Dictionary &p_args);
-	Dictionary runtime_signal_emit(const Dictionary &p_args);
-	Dictionary runtime_capture_output(const Dictionary &p_args);
-	Dictionary runtime_compare_screenshots(const Dictionary &p_args);
-	Dictionary runtime_record_video(const Dictionary &p_args);
-	Dictionary execute_tool(const String &p_tool_name, const Dictionary &p_args);
-
-	JustAMCPRuntimeTools() {}
-	~JustAMCPRuntimeTools() {}
+	static bool handles(const String &p_tool_name);
+	static Dictionary execute(const String &p_tool_name, const Dictionary &p_args);
 };
+
+#endif

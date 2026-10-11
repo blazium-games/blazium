@@ -2873,18 +2873,29 @@ bool EditorExportPlatformAndroid::has_valid_export_configuration(const Ref<Edito
 		valid = false;
 	}
 	if (AndroidSDKManager::is_android_sdk_setup(&err)) {
-		// Validate that apksigner is available.
 		String target_sdk_version = p_preset->get("gradle_build/target_sdk");
 		if (!target_sdk_version.is_valid_int()) {
 			target_sdk_version = itos(AndroidSDKManager::DEFAULT_TARGET_SDK_VERSION);
 		}
 
-		String apksigner_path = AndroidSDKManager::get_apksigner_path(target_sdk_version.to_int());
-		if (!FileAccess::exists(apksigner_path)) {
-			err += TTR("Unable to find Android SDK build-tools' apksigner command.") + " ";
-			err += TTR("Please check in the Android SDK directory specified in Editor Settings.");
+		// Skip the apksigner probe when build-tools did not open. That call prints
+		// on its own, and the missing-directory message is enough.
+		const String sdk_path = EDITOR_GET("export/android/android_sdk_path");
+		Error tools_err;
+		Ref<DirAccess> build_tools = DirAccess::open(sdk_path.path_join("build-tools"), &tools_err);
+		if (tools_err != OK) {
+			err += TTR("Invalid Android SDK path in Editor Settings.") + " ";
+			err += TTR("Missing 'build-tools' directory!");
 			err += "\n";
 			valid = false;
+		} else {
+			String apksigner_path = AndroidSDKManager::get_apksigner_path(target_sdk_version.to_int());
+			if (!FileAccess::exists(apksigner_path)) {
+				err += TTR("Unable to find Android SDK build-tools' apksigner command.") + " ";
+				err += TTR("Please check in the Android SDK directory specified in Editor Settings.");
+				err += "\n";
+				valid = false;
+			}
 		}
 	} else {
 		valid = false;

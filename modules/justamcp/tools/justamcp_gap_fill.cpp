@@ -962,8 +962,7 @@ Dictionary justamcp_spatial_repeat_along(const Dictionary &p_args) {
 		const float t = count == 1 ? 1.0f : float(i + 1) / float(count);
 		Node *copy = node->duplicate();
 		copy->set_name(String(node->get_name()) + "_" + String::num_int64(i + 1));
-		node->get_parent()->add_child(copy);
-		copy->set_owner(root);
+		JustAMCPEditorSceneAccess::add_child_with_undo(copy, node->get_parent(), root, "Repeat Node");
 		if (Node3D *copy3d = Object::cast_to<Node3D>(copy)) {
 			copy3d->set_global_position(from.lerp(to, t));
 		}
