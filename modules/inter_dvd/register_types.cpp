@@ -56,6 +56,15 @@ void initialize_inter_dvd_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_CORE) {
 		GLOBAL_DEF_BASIC(PropertyInfo(Variant::STRING, "blazium/inter_dvd/project", PROPERTY_HINT_FILE, "*.tres,*.res"), String());
 		GLOBAL_DEF_BASIC(PropertyInfo(Variant::STRING, "blazium/inter_dvd/cache_path", PROPERTY_HINT_DIR), "res://.inter_dvd_cache");
+		GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "blazium/inter_dvd/default_region_mask", PROPERTY_HINT_RANGE, "1,63,1"), 1);
+		GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "blazium/inter_dvd/default_parental_level", PROPERTY_HINT_RANGE, "1,8,1"), 1);
+		GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "blazium/inter_dvd/ac3_bitrate_k", PROPERTY_HINT_RANGE, "32,640,32"), 192);
+		GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "blazium/inter_dvd/ac3_channels", PROPERTY_HINT_RANGE, "1,6,1"), 2);
+		GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "blazium/inter_dvd/gop_size", PROPERTY_HINT_RANGE, "1,30,1"), 15);
+		GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "blazium/inter_dvd/title_safe_bottom", PROPERTY_HINT_RANGE, "0,480,1"), 432);
+		GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "blazium/inter_dvd/bake_warmup_frames", PROPERTY_HINT_RANGE, "0,30,1"), 2);
+		GLOBAL_DEF_BASIC(PropertyInfo(Variant::FLOAT, "blazium/inter_dvd/pip_blackdetect_sec", PROPERTY_HINT_RANGE, "0,30,0.1"), 2.5);
+		GLOBAL_DEF_BASIC(PropertyInfo(Variant::FLOAT, "blazium/inter_dvd/pip_blackdetect_pix_th", PROPERTY_HINT_RANGE, "0,1,0.01"), 0.12);
 		return;
 	}
 
