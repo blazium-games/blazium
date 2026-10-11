@@ -886,6 +886,19 @@ void InterDVDProject::reset_encode_defaults() {
 
 void InterDVDProject::seed_from_project_settings() {
 	reset_encode_defaults();
+	region_mask = InterDVDSettings::setting_int("blazium/inter_dvd/default_region_mask", region_mask);
+	parental_level = InterDVDSettings::setting_int("blazium/inter_dvd/default_parental_level", parental_level);
+	ac3_bitrate_k = InterDVDSettings::setting_int("blazium/inter_dvd/ac3_bitrate_k", ac3_bitrate_k);
+	ac3_channels = InterDVDSettings::setting_int("blazium/inter_dvd/ac3_channels", ac3_channels);
+	gop_size = InterDVDSettings::setting_int("blazium/inter_dvd/gop_size", gop_size);
+	title_safe_bottom = InterDVDSettings::setting_int("blazium/inter_dvd/title_safe_bottom", title_safe_bottom);
+	bake_warmup_frames = InterDVDSettings::setting_int("blazium/inter_dvd/bake_warmup_frames", bake_warmup_frames);
+	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/inter_dvd/pip_blackdetect_sec")) {
+		pip_blackdetect_sec = double(ProjectSettings::get_singleton()->get_setting("blazium/inter_dvd/pip_blackdetect_sec"));
+	}
+	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/inter_dvd/pip_blackdetect_pix_th")) {
+		pip_blackdetect_pix_th = double(ProjectSettings::get_singleton()->get_setting("blazium/inter_dvd/pip_blackdetect_pix_th"));
+	}
 }
 
 namespace InterDVDSettings {
