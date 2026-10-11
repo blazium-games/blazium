@@ -91,7 +91,7 @@ public:
 	Dictionary execute_tool(const String &p_tool_name, const Dictionary &p_args);
 
 private:
-	void _refresh_and_reload(const String &p_scene_path);
+	void _refresh_and_reload(const String &p_scene_path, bool p_reload_open_scene = true);
 	void _refresh_filesystem(const String &p_changed_path = String());
 	void _deferred_refresh_filesystem();
 	void _reload_scene_in_editor(const String &p_scene_path);

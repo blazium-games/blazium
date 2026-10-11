@@ -522,8 +522,7 @@ Dictionary JustAMCPPhysicsTools::_add_raycast(const Dictionary &p_params) {
 	}
 
 	rc->set_name(p_params.get("name", "RayCast"));
-	parent->add_child(rc, true);
-	rc->set_owner(root);
+	JustAMCPEditorSceneAccess::add_child_with_undo(rc, parent, root, "Add RayCast");
 
 	Dictionary res;
 	res["node_path"] = root->get_path_to(rc);
@@ -593,8 +592,7 @@ Dictionary JustAMCPPhysicsTools::_setup_physics_body(const Dictionary &p_params)
 		body->set("collision_mask", int(p_params["collision_mask"]));
 	}
 
-	parent->add_child(body, true);
-	body->set_owner(root);
+	JustAMCPEditorSceneAccess::add_child_with_undo(body, parent, root, "Add Physics Body");
 
 	Dictionary res;
 	res["node_path"] = root->get_path_to(body);

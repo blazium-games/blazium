@@ -402,8 +402,7 @@ Dictionary JustAMCPAudioTools::_add_audio_player(const Dictionary &p_params) {
 		}
 	}
 
-	parent->add_child(player);
-	player->set_owner(root);
+	JustAMCPEditorSceneAccess::add_child_with_undo(player, parent, root, "Add Audio Player");
 
 	Dictionary res;
 	res["name"] = player_name;

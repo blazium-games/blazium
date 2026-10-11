@@ -98,6 +98,10 @@ struct JustAMCPUndoEntry {
 	Array property_restores;
 	Array added_node_ids;
 	Array tile_restores;
+	bool has_setting = false;
+	String setting_name;
+	Variant setting_previous;
+	bool setting_existed = false;
 };
 
 struct JustAMCPCheckpoint {
@@ -131,6 +135,8 @@ static HashMap<String, JustAMCPCheckpoint> g_checkpoints;
 static Vector<String> g_checkpoint_order;
 static HashMap<String, Dictionary> g_idempotency;
 static HashMap<String, JustAMCPChangePlan> g_plans;
+static Vector<String> g_plan_order;
+static uint64_t g_plan_serial = 0;
 static Array g_audit_slots;
 static int g_audit_count = 0;
 static int g_audit_next = 0;
@@ -141,6 +147,7 @@ static String g_bearer;
 static thread_local bool g_applying_queue = false;
 static thread_local bool g_snapshot_skipped = false;
 static HashSet<String> g_closed_sessions;
+static Vector<String> g_closed_order;
 static Mutex g_policy_mutex;
 static Vector<String> g_idempotency_order;
 static HashMap<int, Vector<int>> g_tools_by_length;
@@ -152,6 +159,8 @@ static constexpr int k_audit_cap = 256;
 static constexpr int k_checkpoint_cap = 32;
 static constexpr int k_idempotency_cap = 128;
 static constexpr int k_undo_cap = 64;
+static constexpr int k_lifetime_cap = 32;
+static constexpr uint64_t k_undo_byte_cap = 8 * 1024 * 1024;
 static constexpr int k_session_call_cap = 4096;
 
 static String _claim_key(const String &p_path) {
@@ -423,8 +432,22 @@ static int _edit_distance(const String &p_a, const String &p_b) {
 	return prev[m];
 }
 
+static uint64_t _undo_entry_bytes(const JustAMCPUndoEntry &p_entry) {
+	return uint64_t(p_entry.previous.length()) + uint64_t(p_entry.previous_bytes.size()) + uint64_t(p_entry.dest_previous_bytes.size());
+}
+
 static void _trim_undo() {
 	while (g_undo.size() > k_undo_cap) {
+		g_undo.remove_at(0);
+	}
+	while (g_undo.size() > 1) {
+		uint64_t total = 0;
+		for (int i = 0; i < g_undo.size(); i++) {
+			total += _undo_entry_bytes(g_undo[i]);
+		}
+		if (total <= k_undo_byte_cap) {
+			break;
+		}
 		g_undo.remove_at(0);
 	}
 }
@@ -683,6 +706,29 @@ bool JustAMCPAgentPolicy::save_requires_confirmation() {
 	return JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/save_requires_confirmation", false);
 }
 
+static void _forget_closed_session(const String &p_id) {
+	g_closed_sessions.erase(p_id);
+	for (int i = 0; i < g_closed_order.size(); i++) {
+		if (g_closed_order[i] == p_id) {
+			g_closed_order.remove_at(i);
+			break;
+		}
+	}
+}
+
+static void _remember_closed_session(const String &p_id) {
+	if (p_id.is_empty() || p_id == "editor" || g_closed_sessions.has(p_id)) {
+		return;
+	}
+	g_closed_sessions.insert(p_id);
+	g_closed_order.push_back(p_id);
+	while (g_closed_order.size() > k_lifetime_cap) {
+		const String oldest = g_closed_order[0];
+		g_closed_order.remove_at(0);
+		g_closed_sessions.erase(oldest);
+	}
+}
+
 void JustAMCPAgentPolicy::open_session(const String &p_id, const String &p_name, bool p_from_initialize) {
 	const bool read_only = p_from_initialize && JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/session_starts_read_only", true);
 	MutexLock lock(g_policy_mutex);
@@ -690,7 +736,7 @@ void JustAMCPAgentPolicy::open_session(const String &p_id, const String &p_name,
 		return;
 	}
 	const bool resurrect = g_closed_sessions.has(p_id);
-	g_closed_sessions.erase(p_id);
+	_forget_closed_session(p_id);
 	if (g_sessions.has(p_id) && !resurrect) {
 		return;
 	}
@@ -712,13 +758,26 @@ void JustAMCPAgentPolicy::close_session(const String &p_id) {
 		}
 		released = _drop_claims_for_session(p_id);
 		g_sessions.erase(p_id);
-		if (p_id != "editor") {
-			g_closed_sessions.insert(p_id);
-		}
+		_remember_closed_session(p_id);
 	}
 	for (int i = 0; i < released.size(); i++) {
 		_apply_queued(released[i].path, released[i].subtree);
 	}
+}
+
+int JustAMCPAgentPolicy::closed_session_count() {
+	MutexLock lock(g_policy_mutex);
+	return g_closed_sessions.size();
+}
+
+int JustAMCPAgentPolicy::plan_count() {
+	MutexLock lock(g_policy_mutex);
+	return g_plans.size();
+}
+
+int JustAMCPAgentPolicy::queued_write_count() {
+	MutexLock lock(g_policy_mutex);
+	return g_queue.size();
 }
 
 Array JustAMCPAgentPolicy::list_sessions() {
@@ -885,7 +944,7 @@ bool JustAMCPAgentPolicy::before_execute(const String &p_tool_name, const Dictio
 			}
 
 			if (!read && bool(p_args.get("dry_run", false))) {
-				dry_plan_id = "plan-" + String::num_uint64(Time::get_singleton()->get_ticks_usec());
+				dry_plan_id = "plan-" + String::num_uint64(Time::get_singleton()->get_ticks_usec()) + "-" + String::num_uint64(++g_plan_serial);
 				dry_tool = name;
 				dry_args_shared = p_args;
 				dry_session_id = session_id;
@@ -972,6 +1031,12 @@ bool JustAMCPAgentPolicy::before_execute(const String &p_tool_name, const Dictio
 		{
 			MutexLock lock(g_policy_mutex);
 			g_plans.insert(plan.id, plan);
+			g_plan_order.push_back(plan.id);
+			while (g_plan_order.size() > k_lifetime_cap) {
+				const String oldest = g_plan_order[0];
+				g_plan_order.remove_at(0);
+				g_plans.erase(oldest);
+			}
 		}
 		Dictionary early;
 		early["ok"] = true;
@@ -990,6 +1055,9 @@ bool JustAMCPAgentPolicy::before_execute(const String &p_tool_name, const Dictio
 		{
 			MutexLock lock(g_policy_mutex);
 			g_queue.push_back(queued);
+			while (g_queue.size() > k_lifetime_cap) {
+				g_queue.remove_at(0);
+			}
 		}
 		Dictionary early;
 		early["ok"] = true;
@@ -1213,6 +1281,20 @@ void JustAMCPAgentPolicy::note_batch_undo(const Array &p_property_restores, cons
 	_trim_undo();
 }
 
+void JustAMCPAgentPolicy::note_setting_undo(const String &p_setting, const Variant &p_previous, bool p_existed) {
+	if (p_setting.is_empty()) {
+		return;
+	}
+	MutexLock lock(g_policy_mutex);
+	JustAMCPUndoEntry entry;
+	entry.has_setting = true;
+	entry.setting_name = p_setting;
+	entry.setting_previous = p_previous;
+	entry.setting_existed = p_existed;
+	g_undo.push_back(entry);
+	_trim_undo();
+}
+
 void JustAMCPAgentPolicy::note_file_undo(const String &p_path) {
 	if (!_safe_project_path(p_path)) {
 		return;
@@ -1295,6 +1377,19 @@ int JustAMCPAgentPolicy::undo_snapshots(int p_steps) {
 					}
 				} else if (TileMap *map = Object::cast_to<TileMap>(object)) {
 					map->set_cell(int(row.get("layer_index", 0)), coords, source_id, atlas, alternative);
+				}
+			}
+			g_policy_mutex.lock();
+		} else if (entry.has_setting) {
+			const String setting_name = entry.setting_name;
+			const Variant previous = entry.setting_previous;
+			const bool existed = entry.setting_existed;
+			g_policy_mutex.unlock();
+			if (ProjectSettings *settings = ProjectSettings::get_singleton()) {
+				if (existed) {
+					settings->set_setting(setting_name, previous);
+				} else if (settings->has_setting(setting_name)) {
+					settings->clear(setting_name);
 				}
 			}
 			g_policy_mutex.lock();

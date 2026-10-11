@@ -335,7 +335,9 @@ void EditorExport::load_config() {
 		String option_section = "preset." + itos(index) + ".options";
 
 		List<String> options;
-		config->get_section_keys(option_section, &options);
+		if (config->has_section(option_section)) {
+			config->get_section_keys(option_section, &options);
+		}
 
 		for (const String &E : options) {
 			Variant value = config->get_value(option_section, E);

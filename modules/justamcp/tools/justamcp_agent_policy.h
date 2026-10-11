@@ -60,6 +60,10 @@ public:
 	static int undo_snapshots(int p_steps);
 	static void note_batch_undo(const Array &p_property_restores, const Array &p_added_node_ids);
 	static void note_file_undo(const String &p_path);
+	static void note_setting_undo(const String &p_setting, const Variant &p_previous, bool p_existed);
+	static int closed_session_count();
+	static int plan_count();
+	static int queued_write_count();
 	static void note_tile_undo(const Array &p_cells);
 
 	static void note_tool_name(const String &p_name);

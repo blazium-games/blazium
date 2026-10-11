@@ -96,6 +96,7 @@
 #endif
 
 #if defined(TESTS_ENABLED) && defined(TOOLS_ENABLED)
+#include "tests/test_justamcp_addon_gap_tools.cpp"
 #include "tests/test_justamcp_agent_helpers.cpp"
 #include "tests/test_justamcp_analysis_read_cap.cpp"
 #include "tests/test_justamcp_asset_tags_tools.cpp"

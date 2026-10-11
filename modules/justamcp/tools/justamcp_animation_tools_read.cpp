@@ -58,6 +58,7 @@
 #include "scene/resources/navigation_mesh.h"
 
 void JustAMCPAnimationTools::_refresh_and_reload(const String &p_scene_path) {
+	JustAMCPEditorSceneAccess::acknowledge_saved_scene(p_scene_path);
 	_refresh_filesystem(p_scene_path);
 	_reload_scene_in_editor(p_scene_path);
 }
