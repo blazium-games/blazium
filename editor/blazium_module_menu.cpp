@@ -38,6 +38,7 @@
 #include "scene/gui/label.h"
 #include "scene/gui/panel_container.h"
 #include "scene/gui/popup_menu.h"
+#include "scene/gui/scroll_container.h"
 #include "scene/main/window.h"
 #include "servers/display/display_server.h"
 
@@ -103,9 +104,18 @@ public:
 		close->connect(SceneStringName(pressed), callable_mp(p_window, &Window::hide));
 		title->add_child(close);
 
+		// Module panels can be taller than the window (autowrapped labels
+		// report a large minimum height before they have a width), so scroll
+		// instead of letting the content overflow the window.
+		ScrollContainer *scroll = memnew(ScrollContainer);
+		scroll->set_horizontal_scroll_mode(ScrollContainer::SCROLL_MODE_DISABLED);
+		scroll->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+		scroll->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+		box->add_child(scroll);
+
 		p_content->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 		p_content->set_v_size_flags(Control::SIZE_EXPAND_FILL);
-		box->add_child(p_content);
+		scroll->add_child(p_content);
 	}
 };
 
@@ -204,6 +214,9 @@ void BlaziumModuleMenu::_open_window(Control *p_control, const String &p_title) 
 	}
 	if (!window) {
 		window = memnew(Window);
+		// Windows start visible. Hide it so the settings below (force_native
+		// can't change while shown) and the placement further down apply.
+		window->set_visible(false);
 		window->set_title(p_title);
 		window->set_force_native(true);
 		// The OS frame was not showing, so the frame below is the border and the drag handle.
@@ -261,6 +274,9 @@ void BlaziumModuleMenu::_open_window(Control *p_control, const String &p_title) 
 		pos.y = CLAMP(pos.y, min_y, max_y);
 		window->set_position(pos);
 		window->set_visible(true);
+		// The size was set while the window was hidden. Apply it again now that
+		// the native window exists, or it can stay blank until it's resized.
+		window->set_size(wanted);
 
 		const Point2i decorated = window->get_position_with_decorations();
 		Point2i nudge;
