@@ -83,8 +83,14 @@ Node *TiledTilemapCreator::create_tilemap(const String &p_source_file) {
 		_custom_types->merge_custom_properties(extracted_dict, "map");
 	}
 	_tileson.instantiate();
-	// Core backward-compatible JSON serialization. TiledDictionaryBuilder supports XML/TMX/TMJ into dictionaries natively.
-	// removed bad json backup
+	// XML/TMX is normalized to a Tiled JSON dictionary. tileson only parses JSON.
+	String map_json;
+	if (!extracted_dict.is_empty()) {
+		map_json = JSON::stringify(extracted_dict);
+	} else {
+		map_json = String::utf8((const char *)map_content.ptr(), map_content.size());
+	}
+	_base_map = _tileson->parse_string(map_json);
 
 	if (!_base_map.is_valid()) {
 		ERR_PRINT("Tiled failed to parse dynamic map.");
