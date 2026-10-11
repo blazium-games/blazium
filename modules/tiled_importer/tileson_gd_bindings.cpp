@@ -34,8 +34,6 @@
 #include "core/config/project_settings.h"
 #include "core/io/file_access.h"
 
-#include <exception>
-
 // -------------------------------------------------------------
 // TiledTileson
 // -------------------------------------------------------------
@@ -58,33 +56,22 @@ static Ref<TiledMap> _map_from_parsed(std::unique_ptr<tson::Map> p_parsed) {
 
 Ref<TiledMap> TiledTileson::parse_file(const String &p_path) {
 	String global = ProjectSettings::get_singleton()->globalize_path(p_path);
-	try {
-		tson::Tileson parser;
-		return _map_from_parsed(parser.parse(::fs::path(to_std_string(global).c_str())));
-	} catch (const std::exception &e) {
-		ERR_PRINT(vformat("TiledTileson: exception parsing %s: %s", p_path, e.what()));
-	} catch (...) {
-		ERR_PRINT("TiledTileson: exception parsing " + p_path);
+	tson::Tileson parser;
+	Ref<TiledMap> godot_map = _map_from_parsed(parser.parse(::fs::path(to_std_string(global).c_str())));
+	if (godot_map.is_null()) {
+		ERR_PRINT("TiledTileson: Failed to parse map " + p_path);
 	}
-	ERR_PRINT("TiledTileson: Failed to parse map " + p_path);
-	return Ref<TiledMap>();
+	return godot_map;
 }
 
 Ref<TiledMap> TiledTileson::parse_string(const String &p_json) {
-	try {
-		tson::Tileson parser;
-		CharString utf8 = p_json.utf8();
-		Ref<TiledMap> godot_map = _map_from_parsed(parser.parse(utf8.get_data(), utf8.length()));
-		if (godot_map.is_valid()) {
-			return godot_map;
-		}
-	} catch (const std::exception &e) {
-		ERR_PRINT(vformat("TiledTileson: exception parsing map: %s", e.what()));
-	} catch (...) {
-		ERR_PRINT("TiledTileson: exception parsing map.");
+	tson::Tileson parser;
+	CharString utf8 = p_json.utf8();
+	Ref<TiledMap> godot_map = _map_from_parsed(parser.parse(utf8.get_data(), utf8.length()));
+	if (godot_map.is_null()) {
+		ERR_PRINT("TiledTileson: Failed to parse map.");
 	}
-	ERR_PRINT("TiledTileson: Failed to parse map.");
-	return Ref<TiledMap>();
+	return godot_map;
 }
 
 // -------------------------------------------------------------
