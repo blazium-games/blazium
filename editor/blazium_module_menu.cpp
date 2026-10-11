@@ -31,13 +31,16 @@
 
 #include "core/error/error_macros.h"
 #include "editor/editor_node.h"
+#include "editor/editor_string_names.h"
 #include "editor/themes/editor_scale.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/button.h"
 #include "scene/gui/label.h"
 #include "scene/gui/panel_container.h"
 #include "scene/gui/popup_menu.h"
+#include "scene/gui/scroll_container.h"
 #include "scene/main/window.h"
+#include "scene/resources/style_box_flat.h"
 #include "servers/display_server.h"
 
 // Drawn inside the window so the screen can be dragged even when the OS frame
@@ -77,6 +80,27 @@ class BlaziumModuleWindowFrame : public PanelContainer {
 protected:
 	static void _bind_methods() {}
 
+	bool updating_style = false;
+
+	void _notification(int p_what) {
+		// Adding the override sends THEME_CHANGED again.
+		if (p_what == NOTIFICATION_THEME_CHANGED && !updating_style) {
+			updating_style = true;
+			// The editor's panel color, as behind the selected scene tab,
+			// rather than the plain gray of a PanelContainer.
+			Ref<StyleBoxFlat> style;
+			style.instantiate();
+			style->set_bg_color(get_theme_color(SNAME("base_color"), EditorStringName(Editor)));
+			// The window has no OS frame; a thin edge keeps it apart from
+			// the editor behind it.
+			style->set_border_width_all(MAX(1, int(EDSCALE)));
+			style->set_border_color(get_theme_color(SNAME("contrast_color_1"), EditorStringName(Editor)));
+			style->set_content_margin_all(6 * EDSCALE);
+			add_theme_style_override(SceneStringName(panel), style);
+			updating_style = false;
+		}
+	}
+
 public:
 	void build(Window *p_window, const String &p_title, Control *p_content) {
 		VBoxContainer *box = memnew(VBoxContainer);
@@ -102,9 +126,18 @@ public:
 		close->connect(SceneStringName(pressed), callable_mp(p_window, &Window::hide));
 		title->add_child(close);
 
+		// Module panels can be taller than the window (autowrapped labels
+		// report a large minimum height before they have a width), so scroll
+		// instead of letting the content overflow the window.
+		ScrollContainer *scroll = memnew(ScrollContainer);
+		scroll->set_horizontal_scroll_mode(ScrollContainer::SCROLL_MODE_DISABLED);
+		scroll->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+		scroll->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+		box->add_child(scroll);
+
 		p_content->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 		p_content->set_v_size_flags(Control::SIZE_EXPAND_FILL);
-		box->add_child(p_content);
+		scroll->add_child(p_content);
 	}
 };
 
@@ -203,6 +236,9 @@ void BlaziumModuleMenu::_open_window(Control *p_control, const String &p_title) 
 	}
 	if (!window) {
 		window = memnew(Window);
+		// Windows start visible. Hide it so the settings below (force_native
+		// can't change while shown) and the placement further down apply.
+		window->set_visible(false);
 		window->set_title(p_title);
 		window->set_force_native(true);
 		// The OS frame was not showing, so the frame below is the border and the drag handle.
