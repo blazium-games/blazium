@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "../justamcp_editor_plugin.h"
+#include "../justamcp_editor_scene_access.h"
 #include "justamcp_animation_tools.h"
 
 #include "core/io/file_access.h"
@@ -126,8 +127,7 @@ Dictionary JustAMCPAnimationTools::create_animation_tree(const Dictionary &p_arg
 	}
 
 	anim_tree->set_root_animation_node(root);
-	parent->add_child(anim_tree);
-	anim_tree->set_owner(scene_root);
+	JustAMCPEditorSceneAccess::add_child_with_undo(anim_tree, parent, scene_root, "Add Animation Tree");
 
 	Dictionary save_err = _save_scene(scene_root, scene_path);
 	if (!save_err.is_empty()) {

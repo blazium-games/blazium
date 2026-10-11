@@ -38,6 +38,7 @@
 #include "core/io/resource_saver.h"
 #include "core/os/os.h"
 #include "core/templates/hash_set.h"
+#include "justamcp_addon_gap_tools.h"
 #include "justamcp_agent_gap_tools.h"
 #include "justamcp_agent_helpers.h"
 #include "justamcp_agent_policy.h"
@@ -846,6 +847,10 @@ Dictionary JustAMCPToolExecutor::execute_tool_inner(const String &p_tool_name, c
 
 	if (JustAMCPAgentGapTools::handles(internal_name)) {
 		return JustAMCPAgentGapTools::execute(internal_name, args);
+	}
+
+	if (JustAMCPAddonGapTools::handles(internal_name)) {
+		return JustAMCPAddonGapTools::execute(internal_name, args);
 	}
 
 	String routed_category;

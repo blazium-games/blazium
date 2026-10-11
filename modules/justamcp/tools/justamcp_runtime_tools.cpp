@@ -38,10 +38,12 @@
 #ifdef MODULE_AUTOWORK_ENABLED
 #include "justamcp_autowork_tools.h"
 #endif
+#include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
 #include "core/io/image.h"
 #include "core/math/expression.h"
 #include "editor/editor_interface.h"
+#include "editor/editor_node.h"
 #include "modules/gdscript/gdscript.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
@@ -278,18 +280,65 @@ Dictionary JustAMCPRuntimeTools::runtime_compare_screenshots(const Dictionary &p
 	return result;
 }
 
+static constexpr int k_max_recorded_frames = 30;
+
+static bool _ensure_recording_directory(const String &p_res_path) {
+	ProjectSettings *settings = ProjectSettings::get_singleton();
+	if (!settings) {
+		return false;
+	}
+	const String absolute = settings->globalize_path(p_res_path);
+	Ref<DirAccess> fs = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
+	if (fs.is_null()) {
+		return false;
+	}
+	if (!fs->dir_exists(absolute)) {
+		const Error err = fs->make_dir_recursive(absolute);
+		if (err != OK && err != ERR_ALREADY_EXISTS) {
+			return false;
+		}
+	}
+	return fs->dir_exists(absolute);
+}
+
+void JustAMCPRuntimeTools::_disconnect_recording() {
+	_recording_video = false;
+	SceneTree *tree = nullptr;
+	if (EditorNode::get_singleton()) {
+		tree = EditorNode::get_singleton()->get_tree();
+	} else if (Node *root = JustAMCPEditorSceneAccess::get_edited_root()) {
+		tree = root->get_tree();
+	}
+	if (tree && tree->is_connected("process_frame", callable_mp(this, &JustAMCPRuntimeTools::_on_process_frame))) {
+		tree->disconnect("process_frame", callable_mp(this, &JustAMCPRuntimeTools::_on_process_frame));
+	}
+}
+
 void JustAMCPRuntimeTools::_on_process_frame() {
 	if (!_recording_video) {
 		return;
 	}
+	if (_recorded_frames >= k_max_recorded_frames) {
+		_disconnect_recording();
+		return;
+	}
 
+	Ref<Image> frame;
 	if (DisplayServer::get_singleton()) {
-		Ref<Image> frame = DisplayServer::get_singleton()->screen_get_image();
-		if (frame.is_valid()) {
-			String file_path = _current_recording_dir.path_join(vformat("frame_%06d.png", _recorded_frames));
-			frame->save_png(file_path);
-			_recorded_frames++;
-		}
+		frame = DisplayServer::get_singleton()->screen_get_image();
+	}
+	if (frame.is_null() || frame->is_empty()) {
+		return;
+	}
+
+	const String file_path = _current_recording_dir.path_join(vformat("frame_%06d.png", _recorded_frames));
+	if (frame->save_png(file_path) != OK) {
+		_disconnect_recording();
+		return;
+	}
+	_recorded_frames++;
+	if (_recorded_frames >= k_max_recorded_frames) {
+		_disconnect_recording();
 	}
 }
 
@@ -305,24 +354,22 @@ Dictionary JustAMCPRuntimeTools::runtime_record_video(const Dictionary &p_args) 
 		}
 
 		_current_recording_dir = "res://.video_recordings";
-		Ref<DirAccess> dir = DirAccess::open("res://");
-		if (dir.is_valid()) {
-			if (!dir->dir_exists(".video_recordings")) {
-				dir->make_dir(".video_recordings");
-			} else {
-				Ref<DirAccess> old_dir = DirAccess::open(_current_recording_dir);
-				if (old_dir.is_valid()) {
-					old_dir->list_dir_begin();
-					String file = old_dir->get_next();
-					while (!file.is_empty()) {
-						if (!old_dir->current_is_dir()) {
-							old_dir->remove(file);
-						}
-						file = old_dir->get_next();
-					}
-					old_dir->list_dir_end();
+		if (!_ensure_recording_directory(_current_recording_dir)) {
+			result["ok"] = false;
+			result["error"] = "Couldn't create the recording directory.";
+			return result;
+		}
+		Ref<DirAccess> old_dir = DirAccess::open(_current_recording_dir);
+		if (old_dir.is_valid()) {
+			old_dir->list_dir_begin();
+			String file = old_dir->get_next();
+			while (!file.is_empty()) {
+				if (!old_dir->current_is_dir()) {
+					old_dir->remove(file);
 				}
+				file = old_dir->get_next();
 			}
+			old_dir->list_dir_end();
 		}
 
 		_recording_video = true;
@@ -345,14 +392,7 @@ Dictionary JustAMCPRuntimeTools::runtime_record_video(const Dictionary &p_args) 
 			return result;
 		}
 
-		_recording_video = false;
-
-		if (editor_plugin && editor_plugin->get_editor_interface() && JustAMCPEditorSceneAccess::get_edited_root()) {
-			SceneTree *tree = JustAMCPEditorSceneAccess::get_edited_root()->get_tree();
-			if (tree && tree->is_connected("process_frame", callable_mp(this, &JustAMCPRuntimeTools::_on_process_frame))) {
-				tree->disconnect("process_frame", callable_mp(this, &JustAMCPRuntimeTools::_on_process_frame));
-			}
-		}
+		_disconnect_recording();
 
 		if (_recorded_frames == 0) {
 			const String frame_path = _current_recording_dir.path_join("invented.png");

@@ -1056,6 +1056,12 @@
 		<member name="blazium/justamcp/tools/analysis_tools/blazium_analyze_signal_flow" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_analyze_signal_flow[/code] tool from the Analysis Tools family to MCP clients. Dumps all complex recursive callable/signal graphs connecting dynamically natively.
 		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_check_all_scripts" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_check_all_scripts[/code] tool. Reloads up to 32 GDScript files at the project root and reports failures.
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_describe_scene_visual" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_describe_scene_visual[/code] tool. Counts nodes, cameras, and lights in the open scene and reports 2D bounds.
+		</member>
 		<member name="blazium/justamcp/tools/analysis_tools/blazium_detect_circular_dependencies" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_detect_circular_dependencies[/code] tool from the Analysis Tools family to MCP clients. Detects DFS recursion cycles detecting deep graph violations dynamically.
 		</member>
@@ -1070,6 +1076,9 @@
 		</member>
 		<member name="blazium/justamcp/tools/analysis_tools/blazium_project_advise" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_project_advise[/code] tool from the Analysis Tools family to MCP clients. Returns lightweight native project guidance based on current settings and scene state.
+		</member>
+		<member name="blazium/justamcp/tools/analysis_tools/blazium_project_health_report" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_project_health_report[/code] tool. Summarizes script reload results and the open scene node count.
 		</member>
 		<member name="blazium/justamcp/tools/analysis_tools/blazium_project_index" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_project_index[/code] tool from the Analysis Tools family to MCP clients. Builds a lightweight native project index from mapped scripts, scenes, and statistics.
@@ -1104,8 +1113,26 @@
 		<member name="blazium/justamcp/tools/animation_tools/blazium_add_animation_track" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_add_animation_track[/code] tool from the Animation Tools family to MCP clients. Injects animation tracks into an existing track layout.
 		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_add_bone" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_bone[/code] tool. Adds a bone to a Skeleton3D.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_add_ik_chain" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_ik_chain[/code] tool. Adds a SkeletonIK3D node.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_add_look_at_modifier" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_look_at_modifier[/code] tool. Adds a LookAtModifier3D node.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_auto_bone_map" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_auto_bone_map[/code] tool. Saves a BoneMap resource for later profile assignment.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_configure_animation_track" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_configure_animation_track[/code] tool. Adds a value track and one keyframe.
+		</member>
 		<member name="blazium/justamcp/tools/animation_tools/blazium_configure_sprite_frames" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_configure_sprite_frames[/code] tool from the Animation Tools family to MCP clients. Configures a SpriteFrames resource from frame lists or a generated atlas.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_connect_animation_blend_nodes" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_connect_animation_blend_nodes[/code] tool. Adds an animation node to a blend tree and connects it to the output.
 		</member>
 		<member name="blazium/justamcp/tools/animation_tools/blazium_connect_animation_states" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_connect_animation_states[/code] tool from the Animation Tools family to MCP clients. Binds state machine states together via transitions.
@@ -1116,11 +1143,17 @@
 		<member name="blazium/justamcp/tools/animation_tools/blazium_create_animation_tree" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_create_animation_tree[/code] tool from the Animation Tools family to MCP clients. Creates an animation tree container.
 		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_create_bone_map" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_bone_map[/code] tool. Saves an empty BoneMap resource.
+		</member>
 		<member name="blazium/justamcp/tools/animation_tools/blazium_create_navigation_agent" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_create_navigation_agent[/code] tool from the Animation Tools family to MCP clients. Injects a navigation agent node natively.
 		</member>
 		<member name="blazium/justamcp/tools/animation_tools/blazium_create_navigation_region" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_create_navigation_region[/code] tool from the Animation Tools family to MCP clients. Injects a navigation region structurally natively.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_create_skeleton_2d" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_skeleton_2d[/code] tool. Adds a Skeleton2D to the edited scene.
 		</member>
 		<member name="blazium/justamcp/tools/animation_tools/blazium_get_animation_info" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_get_animation_info[/code] tool from the Animation Tools family to MCP clients. Lists AnimationPlayer animations and track metadata.
@@ -1128,26 +1161,65 @@
 		<member name="blazium/justamcp/tools/animation_tools/blazium_get_animation_tree_structure" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_get_animation_tree_structure[/code] tool from the Animation Tools family to MCP clients. Reads an AnimationTree state machine or blend tree structure.
 		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_get_mesh_info" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_mesh_info[/code] tool. Reads surface and blend-shape counts from a MeshInstance3D.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_get_skeleton_info" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_skeleton_info[/code] tool. Lists bones on a Skeleton3D.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_list_animation_tracks" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_list_animation_tracks[/code] tool. Lists tracks on an animation.
+		</member>
 		<member name="blazium/justamcp/tools/animation_tools/blazium_list_animations" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_list_animations[/code] tool from the Animation Tools family to MCP clients. Lists animation names and metadata from an AnimationPlayer.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_list_model_animations" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_list_model_animations[/code] tool. Lists animations on an AnimationPlayer in a packed scene.
 		</member>
 		<member name="blazium/justamcp/tools/animation_tools/blazium_remove_animation" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_remove_animation[/code] tool from the Animation Tools family to MCP clients. Removes an animation from an AnimationPlayer's default library.
 		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_remove_animation_blend_node" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_remove_animation_blend_node[/code] tool. Removes a node from an animation blend tree.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_remove_animation_keyframe" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_remove_animation_keyframe[/code] tool. Removes one keyframe from an animation track.
+		</member>
 		<member name="blazium/justamcp/tools/animation_tools/blazium_remove_animation_state" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_remove_animation_state[/code] tool from the Animation Tools family to MCP clients. Removes a state from an AnimationTree state machine.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_remove_animation_track" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_remove_animation_track[/code] tool. Removes one animation track.
 		</member>
 		<member name="blazium/justamcp/tools/animation_tools/blazium_remove_animation_transition" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_remove_animation_transition[/code] tool from the Animation Tools family to MCP clients. Removes an AnimationTree state machine transition by index or endpoint states.
 		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_rename_animation" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_rename_animation[/code] tool. Renames an animation inside the player's default library.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_reset_bone_poses" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_reset_bone_poses[/code] tool. Resets a Skeleton3D to its rest poses.
+		</member>
 		<member name="blazium/justamcp/tools/animation_tools/blazium_set_animation_keyframe" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_set_animation_keyframe[/code] tool from the Animation Tools family to MCP clients. Sets or creates a value-track keyframe on an AnimationPlayer animation.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_set_animation_keyframes" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_animation_keyframes[/code] tool. Inserts one or more keyframes on an animation track.
 		</member>
 		<member name="blazium/justamcp/tools/animation_tools/blazium_set_animation_tree_parameter" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_set_animation_tree_parameter[/code] tool from the Animation Tools family to MCP clients. Sets an AnimationTree runtime parameter value in a scene resource.
 		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_set_blend_shape" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_blend_shape[/code] tool. Sets a mesh blend shape, creating a placeholder mesh when the shape is missing.
+		</member>
 		<member name="blazium/justamcp/tools/animation_tools/blazium_set_blend_tree_node" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_set_blend_tree_node[/code] tool from the Animation Tools family to MCP clients. Adds or replaces an AnimationNodeAnimation inside an AnimationNodeBlendTree.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_set_bone_pose" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_bone_pose[/code] tool. Sets a Skeleton3D bone pose position.
+		</member>
+		<member name="blazium/justamcp/tools/animation_tools/blazium_set_bone_rest" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_bone_rest[/code] tool. Sets a Skeleton3D bone rest origin.
 		</member>
 		<member name="blazium/justamcp/tools/asset_tags_tools" type="bool" setter="" getter="" default="true">
 		</member>
@@ -1217,8 +1289,14 @@
 		<member name="blazium/justamcp/tools/audio_tools/blazium_audio_get_players_info" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_audio_get_players_info[/code] tool from the Audio Tools family to MCP clients. Returns hierarchical node maps wrapping natively instantiated stream wrappers.
 		</member>
+		<member name="blazium/justamcp/tools/audio_tools/blazium_create_audio_randomizer" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_audio_randomizer[/code] tool. Adds an AudioStreamPlayer with an AudioStreamRandomizer.
+		</member>
 		<member name="blazium/justamcp/tools/audio_tools/blazium_get_audio_bus_layout" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_get_audio_bus_layout[/code] tool from the Audio Tools family to MCP clients. Returns native godot AudioServer state containing all available buses and their effects.
+		</member>
+		<member name="blazium/justamcp/tools/audio_tools/blazium_save_bus_layout" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_save_bus_layout[/code] tool. Saves the current AudioServer bus layout.
 		</member>
 		<member name="blazium/justamcp/tools/audio_tools/blazium_set_audio_bus" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_set_audio_bus[/code] tool from the Audio Tools family to MCP clients. Modifies specific index Godot audio buses layout.
@@ -1431,6 +1509,9 @@
 		<member name="blazium/justamcp/tools/export_tools" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], enables the Export Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/export_tools/[/code] can be toggled separately.
 		</member>
+		<member name="blazium/justamcp/tools/export_tools/blazium_create_export_preset" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_export_preset[/code] tool. Appends an export preset to export_presets.cfg.
+		</member>
 		<member name="blazium/justamcp/tools/export_tools/blazium_deploy_to_android" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_deploy_to_android[/code] tool from the Export Tools family to MCP clients. Exports, installs, and optionally launches an Android build through adb.
 		</member>
@@ -1597,6 +1678,9 @@
 		<member name="blazium/justamcp/tools/particle_tools" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], enables the Particle Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/particle_tools/[/code] can be toggled separately.
 		</member>
+		<member name="blazium/justamcp/tools/particle_tools/blazium_add_particle_collision" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_particle_collision[/code] tool. Adds a GPUParticlesCollisionBox3D node.
+		</member>
 		<member name="blazium/justamcp/tools/particle_tools/blazium_apply_particle_preset" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_apply_particle_preset[/code] tool from the Particle Tools family to MCP clients. Wraps multiple set calls interpolating variables representing default high quality VFX presets.
 		</member>
@@ -1612,11 +1696,23 @@
 		<member name="blazium/justamcp/tools/particle_tools/blazium_set_particle_material" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_set_particle_material[/code] tool from the Particle Tools family to MCP clients. Modifies inner Godot struct material values bounding Godot Variant types for particles.
 		</member>
+		<member name="blazium/justamcp/tools/particle_tools/blazium_set_particle_process" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_particle_process[/code] tool. Edits or creates a particle process material gravity.
+		</member>
 		<member name="blazium/justamcp/tools/physics_tools" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], enables the Physics Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/physics_tools/[/code] can be toggled separately.
 		</member>
+		<member name="blazium/justamcp/tools/physics_tools/blazium_add_collision_polygon" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_collision_polygon[/code] tool. Adds a CollisionPolygon2D, or CollisionPolygon3D when is_3d is true.
+		</member>
+		<member name="blazium/justamcp/tools/physics_tools/blazium_add_mesh_collision" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_mesh_collision[/code] tool. Adds a CollisionShape3D with a box shape.
+		</member>
 		<member name="blazium/justamcp/tools/physics_tools/blazium_add_raycast" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_add_raycast[/code] tool from the Physics Tools family to MCP clients. Instantiates native Godot RayCast queries pointing into logical coordinate targets asynchronously bounds.
+		</member>
+		<member name="blazium/justamcp/tools/physics_tools/blazium_add_shape_cast" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_shape_cast[/code] tool. Adds a ShapeCast2D, or ShapeCast3D when is_3d is true.
 		</member>
 		<member name="blazium/justamcp/tools/physics_tools/blazium_get_collision_info" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_get_collision_info[/code] tool from the Physics Tools family to MCP clients. Walks a sub-hierarchy scraping Godot shape configurations for runtime representations.
@@ -1624,8 +1720,14 @@
 		<member name="blazium/justamcp/tools/physics_tools/blazium_get_physics_layers" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_get_physics_layers[/code] tool from the Physics Tools family to MCP clients. Reads intrinsic properties parsing bitmask configurations exposing layers visually.
 		</member>
+		<member name="blazium/justamcp/tools/physics_tools/blazium_set_collision_layers_by_name" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_collision_layers_by_name[/code] tool. Sets collision layer and mask from a named project layer.
+		</member>
 		<member name="blazium/justamcp/tools/physics_tools/blazium_set_physics_layers" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_set_physics_layers[/code] tool from the Physics Tools family to MCP clients. Controls implicit bitmask configurations assigning node interaction overlap flags natively.
+		</member>
+		<member name="blazium/justamcp/tools/physics_tools/blazium_set_physics_material" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_physics_material[/code] tool. Assigns a physics material override with friction and bounce.
 		</member>
 		<member name="blazium/justamcp/tools/physics_tools/blazium_setup_collision" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_setup_collision[/code] tool from the Physics Tools family to MCP clients. Spawns and attaches native 2D/3D collision boundaries onto physical rigid bodies dynamically.
@@ -1651,11 +1753,14 @@
 		<member name="blazium/justamcp/tools/profiling_tools/blazium_profiling_monitor" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_profiling_monitor[/code] tool from the Profiling Tools family to MCP clients. Compares current Performance counters against caller-provided thresholds.
 		</member>
-		<member name="blazium/justamcp/tools/project_tools" type="bool" setter="" getter="" default="false">
+		<member name="blazium/justamcp/tools/project_tools" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], enables the Project Tools tool family for JustAMCP MCP clients. Enabled by default because this category is part of the core JustAMCP workflow. Individual tools under [code]blazium/justamcp/tools/project_tools/[/code] can be toggled separately.
 		</member>
 		<member name="blazium/justamcp/tools/project_tools/blazium_add_autoload" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_add_autoload[/code] tool from the Project Tools family to MCP clients. Injects a singleton scene or script as an autoload in project scope.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_add_translation" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_translation[/code] tool. Writes a CSV translation entry and can register a res:// path.
 		</member>
 		<member name="blazium/justamcp/tools/project_tools/blazium_asset_assign_uid" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_asset_assign_uid[/code] tool from the Project Tools family to MCP clients. Assigns a UID to a project asset path.
@@ -1678,6 +1783,9 @@
 		<member name="blazium/justamcp/tools/project_tools/blazium_edit_file" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_edit_file[/code] tool from the Project Tools family to MCP clients. Applies a search-and-replace edit to a sandboxed project file.
 		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_enable_plugin" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_enable_plugin[/code] tool. Enables or disables an editor plugin by path.
+		</member>
 		<member name="blazium/justamcp/tools/project_tools/blazium_get_filesystem_tree" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_get_filesystem_tree[/code] tool from the Project Tools family to MCP clients. Returns a recursive file tree with an option to filter by extension.
 		</member>
@@ -1695,6 +1803,9 @@
 		</member>
 		<member name="blazium/justamcp/tools/project_tools/blazium_inject_scroll" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_inject_scroll[/code] tool from the Project Tools family to MCP clients. Triggers a viewport scroll event at specified coordinates with a given delta.
+		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_list_plugins" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_list_plugins[/code] tool. Lists editor plugins enabled in project settings.
 		</member>
 		<member name="blazium/justamcp/tools/project_tools/blazium_move_file" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_move_file[/code] tool from the Project Tools family to MCP clients. Moves a sandboxed project file without overwriting an existing destination.
@@ -1747,6 +1858,9 @@
 		<member name="blazium/justamcp/tools/project_tools/blazium_search_in_files" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_search_in_files[/code] tool from the Project Tools family to MCP clients. Searches file contents using string matching or regex.
 		</member>
+		<member name="blazium/justamcp/tools/project_tools/blazium_set_locale" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_locale[/code] tool. Sets the project locale. Saves project settings only when persist is true.
+		</member>
 		<member name="blazium/justamcp/tools/project_tools/blazium_set_project_setting" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_set_project_setting[/code] tool from the Project Tools family to MCP clients. Sets a specific global setting in project.godot.
 		</member>
@@ -1794,8 +1908,14 @@
 		<member name="blazium/justamcp/tools/resource_tools/blazium_create_tileset" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_create_tileset[/code] tool from the Resource Tools family to MCP clients. Creates a standard tileset natively.
 		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_diff_images" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_diff_images[/code] tool. Samples two images and reports how many sampled pixels differ.
+		</member>
 		<member name="blazium/justamcp/tools/resource_tools/blazium_edit_resource_file" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_edit_resource_file[/code] tool from the Resource Tools family to MCP clients. Edits a resource file by replacing text content or setting resource properties.
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_get_image_info" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_image_info[/code] tool. Reads an image width, height, and format.
 		</member>
 		<member name="blazium/justamcp/tools/resource_tools/blazium_get_resource_dependencies" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_get_resource_dependencies[/code] tool from the Resource Tools family to MCP clients. Lists ResourceLoader dependencies for a resource path.
@@ -1826,6 +1946,9 @@
 		</member>
 		<member name="blazium/justamcp/tools/resource_tools/blazium_save_resource_as" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_save_resource_as[/code] tool from the Resource Tools family to MCP clients. Saves an existing resource to a new project path.
+		</member>
+		<member name="blazium/justamcp/tools/resource_tools/blazium_set_import_options" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_import_options[/code] tool. Writes keys into an asset .import sidecar.
 		</member>
 		<member name="blazium/justamcp/tools/resource_tools/blazium_set_theme_resource_color" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_set_theme_resource_color[/code] tool from the Resource Tools family to MCP clients. Configures theme colors natively.
@@ -1939,18 +2062,60 @@
 		<member name="blazium/justamcp/tools/scene3d_tools" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], enables the 3D Scene Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/scene3d_tools/[/code] can be toggled separately.
 		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_add_bone_attachment_3d" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_bone_attachment_3d[/code] tool. Adds a BoneAttachment3D to the edited scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_add_decal" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_decal[/code] tool. Adds a Decal to the edited scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_add_global_illumination" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_global_illumination[/code] tool. Adds a VoxelGI node to the edited scene.
+		</member>
 		<member name="blazium/justamcp/tools/scene3d_tools/blazium_add_gridmap" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_add_gridmap[/code] tool from the 3D Scene Tools family to MCP clients. Mints and instantiates Godot high performance GridMap bounding memory grids locally.
 		</member>
 		<member name="blazium/justamcp/tools/scene3d_tools/blazium_add_mesh_instance" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_add_mesh_instance[/code] tool from the 3D Scene Tools family to MCP clients. Mints and injects a MeshInstance3D primitive directly into Godot Scene tree natively.
 		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_add_reflection_probe" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_reflection_probe[/code] tool. Adds a ReflectionProbe to the edited scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_add_spring_arm" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_spring_arm[/code] tool. Adds a SpringArm3D to the edited scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_add_subviewport" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_subviewport[/code] tool. Adds a SubViewport to the edited scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_add_text_mesh" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_text_mesh[/code] tool. Adds a TextMesh to the edited scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_create_material_preset" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_material_preset[/code] tool. Creates a metal, glass, or wood StandardMaterial3D and can assign it to a mesh.
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_create_terrain" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_terrain[/code] tool. Adds a subdivided PlaneMesh terrain, capped at 16 subdivisions.
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_gridmap_set_cell" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_gridmap_set_cell[/code] tool. Sets one GridMap cell item.
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_paint_gridmap_region" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_paint_gridmap_region[/code] tool. Paints a GridMap region, capped at 256 cells.
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_scatter_multimesh" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_scatter_multimesh[/code] tool. Scatters a MultiMesh, capped at 32 instances.
+		</member>
 		<member name="blazium/justamcp/tools/scene3d_tools/blazium_scene3d_render_probe" type="bool" setter="" getter="" default="true">
 		</member>
 		<member name="blazium/justamcp/tools/scene3d_tools/blazium_scene3d_set_debug_draw" type="bool" setter="" getter="" default="true">
 		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_set_csg_operation" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_csg_operation[/code] tool. Sets a CSG shape operation to union, intersection, or subtraction.
+		</member>
 		<member name="blazium/justamcp/tools/scene3d_tools/blazium_set_material_3d" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_set_material_3d[/code] tool from the 3D Scene Tools family to MCP clients. Assigns and computes real-time StandardMaterial3D configurations over Godot primitive and loaded meshes.
+		</member>
+		<member name="blazium/justamcp/tools/scene3d_tools/blazium_set_material_property" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_material_property[/code] tool. Sets a property on a mesh material override, creating a StandardMaterial3D when needed.
 		</member>
 		<member name="blazium/justamcp/tools/scene3d_tools/blazium_setup_camera_3d" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_setup_camera_3d[/code] tool from the 3D Scene Tools family to MCP clients. Allocates viewport Camera3D projection mapping native structural properties inside godot runtime.
@@ -1964,11 +2129,68 @@
 		<member name="blazium/justamcp/tools/scene_tools" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], enables the Scene Tools tool family for JustAMCP MCP clients. Enabled by default because this category is part of the core JustAMCP workflow. Individual tools under [code]blazium/justamcp/tools/scene_tools/[/code] can be toggled separately.
 		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_add_animated_sprite" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_animated_sprite[/code] tool. Adds an AnimatedSprite2D to the edited scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_add_canvas_modulate" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_canvas_modulate[/code] tool. Adds a CanvasModulate to the edited scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_add_light_2d" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_light_2d[/code] tool. Adds a PointLight2D to the edited scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_add_light_occluder_2d" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_light_occluder_2d[/code] tool. Adds a LightOccluder2D to the edited scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_add_marker" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_marker[/code] tool. Adds a Marker2D, or a Marker3D when is_3d is true.
+		</member>
 		<member name="blazium/justamcp/tools/scene_tools/blazium_add_node" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_add_node[/code] tool from the Scene Tools family to MCP clients. Adds a new node to a scene tree structure.
 		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_add_path" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_path[/code] tool. Adds a Path2D, or a Path3D when is_3d is true.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_add_path_follow" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_path_follow[/code] tool. Adds a PathFollow2D, or a PathFollow3D when is_3d is true.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_add_progress_bar" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_progress_bar[/code] tool. Adds a ProgressBar to the edited scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_add_remote_transform" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_remote_transform[/code] tool. Adds a RemoteTransform2D, or a RemoteTransform3D when is_3d is true.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_add_sprite" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_sprite[/code] tool. Adds a Sprite2D to the edited scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_add_timer" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_timer[/code] tool. Adds a Timer with a wait time and autostart flag.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_add_ui_container" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_ui_container[/code] tool. Adds a UI container, defaulting to a VBoxContainer.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_add_ui_control" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_ui_control[/code] tool. Adds a Control, defaulting to a Label.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_add_ui_dialog" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_ui_dialog[/code] tool. Adds an AcceptDialog to the edited scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_add_visibility_notifier" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_visibility_notifier[/code] tool. Adds a VisibleOnScreenNotifier2D, or the 3D notifier when is_3d is true.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_align_nodes" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_align_nodes[/code] tool. Aligns listed Node2D or Control nodes on the x or y axis.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_batch_get_properties" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_batch_get_properties[/code] tool. Reads one or more properties from several nodes.
+		</member>
 		<member name="blazium/justamcp/tools/scene_tools/blazium_call_node_method" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_call_node_method[/code] tool from the Scene Tools family to MCP clients. Safely invokes a method on a node with arguments.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_configure_menu_bar" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_configure_menu_bar[/code] tool. Adds a MenuBar to the edited scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_configure_popup_menu" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_configure_popup_menu[/code] tool. Adds or fills a PopupMenu.
 		</member>
 		<member name="blazium/justamcp/tools/scene_tools/blazium_connect_signal" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_connect_signal[/code] tool from the Scene Tools family to MCP clients. Connects a Godot signal dynamically.
@@ -1985,6 +2207,9 @@
 		<member name="blazium/justamcp/tools/scene_tools/blazium_create_multimesh" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_create_multimesh[/code] tool from the Scene Tools family to MCP clients. Binds a MultiMeshInstance3D array enabling batch optimizations natively.
 		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_create_placeholder_texture" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_placeholder_texture[/code] tool. Writes a small solid PNG texture.
+		</member>
 		<member name="blazium/justamcp/tools/scene_tools/blazium_create_polygon_2d" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_create_polygon_2d[/code] tool from the Scene Tools family to MCP clients. Shapes a geometric Polygon2D boundary instantiating properly across the parent region context.
 		</member>
@@ -1999,6 +2224,9 @@
 		</member>
 		<member name="blazium/justamcp/tools/scene_tools/blazium_disconnect_signal" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_disconnect_signal[/code] tool from the Scene Tools family to MCP clients. Disconnects an existing signal binding.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_distribute_nodes" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_distribute_nodes[/code] tool. Spaces listed Node2D or Control nodes evenly along an axis.
 		</member>
 		<member name="blazium/justamcp/tools/scene_tools/blazium_duplicate_node" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_duplicate_node[/code] tool from the Scene Tools family to MCP clients. Duplicates an existing node within a scene.
@@ -2036,8 +2264,14 @@
 		<member name="blazium/justamcp/tools/scene_tools/blazium_list_scene_nodes" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_list_scene_nodes[/code] tool from the Scene Tools family to MCP clients. Lists the hierarchical node structure of a given scene.
 		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_load_font" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_load_font[/code] tool. Assigns a font file, or a system font, to a Control.
+		</member>
 		<member name="blazium/justamcp/tools/scene_tools/blazium_load_sprite" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_load_sprite[/code] tool from the Scene Tools family to MCP clients. Loads and sets a texture onto a Sprite node.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_look_at_node" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_look_at_node[/code] tool. Points a Node3D at another Node3D.
 		</member>
 		<member name="blazium/justamcp/tools/scene_tools/blazium_modify_node_property" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_modify_node_property[/code] tool from the Scene Tools family to MCP clients. Compatibility wrapper for setting one property on a scene node.
@@ -2047,6 +2281,12 @@
 		</member>
 		<member name="blazium/justamcp/tools/scene_tools/blazium_reparent_node" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_reparent_node[/code] tool from the Scene Tools family to MCP clients. Changes the parent of a specific node within a scene.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_replace_node_type" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_replace_node_type[/code] tool. Replaces a node's type and keeps its name, transform, and children.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_save_branch_as_scene" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_save_branch_as_scene[/code] tool. Packs a node and its children into a new scene file.
 		</member>
 		<member name="blazium/justamcp/tools/scene_tools/blazium_save_resource_to_file" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_save_resource_to_file[/code] tool from the Scene Tools family to MCP clients. Saves a node resource property to a .tres/.res file.
@@ -2075,8 +2315,20 @@
 		<member name="blazium/justamcp/tools/scene_tools/blazium_scene_set_current" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_scene_set_current[/code] tool from the Scene Tools family to MCP clients. Switches the active editor scene tab by opening a scene path.
 		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_set_camera_limits" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_camera_limits[/code] tool. Sets the left, top, right, and bottom limits of a Camera2D.
+		</member>
 		<member name="blazium/justamcp/tools/scene_tools/blazium_set_collision_shape" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_set_collision_shape[/code] tool from the Scene Tools family to MCP clients. Loads a Shape resource and assigns it to a CollisionShape node shape property.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_set_control_icon" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_control_icon[/code] tool. Sets a Button icon from a texture path.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_set_control_style" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_control_style[/code] tool. Sets a Control modulate color or a flat style override.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_set_item_list_items" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_item_list_items[/code] tool. Replaces the items of an ItemList or PopupMenu.
 		</member>
 		<member name="blazium/justamcp/tools/scene_tools/blazium_set_material" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_set_material[/code] tool from the Scene Tools family to MCP clients. Loads a Material resource and assigns it to a node material property.
@@ -2087,11 +2339,29 @@
 		<member name="blazium/justamcp/tools/scene_tools/blazium_set_node_properties" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_set_node_properties[/code] tool from the Scene Tools family to MCP clients. Modifies the internal properties of a specified node.
 		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_set_node_transform_2d" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_node_transform_2d[/code] tool. Sets a Node2D or Control position, rotation, and scale.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_set_node_transform_3d" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_node_transform_3d[/code] tool. Sets a Node3D position and rotation.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_set_option_button_items" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_option_button_items[/code] tool. Replaces the items of an OptionButton.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_set_property_across_scenes" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_property_across_scenes[/code] tool. Sets one property on a node path inside several scene files.
+		</member>
 		<member name="blazium/justamcp/tools/scene_tools/blazium_set_resource_property" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_set_resource_property[/code] tool from the Scene Tools family to MCP clients. Sets a resource or raw value on a node property.
 		</member>
 		<member name="blazium/justamcp/tools/scene_tools/blazium_set_sprite_texture" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_set_sprite_texture[/code] tool from the Scene Tools family to MCP clients. Loads a Texture2D resource and assigns it to a sprite/control texture property.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_set_texture_rect" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_texture_rect[/code] tool. Adds a TextureRect and optionally assigns a texture.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_set_unique_name" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_unique_name[/code] tool. Sets or clears a node's unique name in its owner.
 		</member>
 		<member name="blazium/justamcp/tools/scene_tools/blazium_setup_camera_2d" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_setup_camera_2d[/code] tool from the Scene Tools family to MCP clients. Generates Camera2D structure setting zoom ratios or smoothing filters directly.
@@ -2107,6 +2377,9 @@
 		</member>
 		<member name="blazium/justamcp/tools/scene_tools/blazium_wait_for_property" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_wait_for_property[/code] tool from the Scene Tools family to MCP clients. Polls until a node property matches an expected value or confirms the current state.
+		</member>
+		<member name="blazium/justamcp/tools/scene_tools/blazium_wire_button" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_wire_button[/code] tool. Connects a Button pressed signal to a method on another node.
 		</member>
 		<member name="blazium/justamcp/tools/script_tools" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], enables the Script Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/script_tools/[/code] can be toggled separately.
@@ -2172,11 +2445,26 @@
 		<member name="blazium/justamcp/tools/shader_tools" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], enables the Shader Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/shader_tools/[/code] can be toggled separately.
 		</member>
+		<member name="blazium/justamcp/tools/shader_tools/blazium_add_shader_preset" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_shader_preset[/code] tool. Writes a named spatial, canvas, or outline shader preset.
+		</member>
+		<member name="blazium/justamcp/tools/shader_tools/blazium_add_visual_shader_node" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_visual_shader_node[/code] tool. Adds a float constant node to a visual shader graph.
+		</member>
 		<member name="blazium/justamcp/tools/shader_tools/blazium_assign_shader_material" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_assign_shader_material[/code] tool from the Shader Tools family to MCP clients. Mints native generic ShaderMaterial instances binding active .gdshader onto target nodes.
 		</member>
+		<member name="blazium/justamcp/tools/shader_tools/blazium_connect_visual_shader_nodes" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_connect_visual_shader_nodes[/code] tool. Connects two nodes in a visual shader graph.
+		</member>
 		<member name="blazium/justamcp/tools/shader_tools/blazium_create_shader" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_create_shader[/code] tool from the Shader Tools family to MCP clients. Mints blank Godot Shader files injecting standard structure for canvas_item, script, and spatial types.
+		</member>
+		<member name="blazium/justamcp/tools/shader_tools/blazium_create_visual_shader" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_create_visual_shader[/code] tool. Creates a VisualShader resource.
+		</member>
+		<member name="blazium/justamcp/tools/shader_tools/blazium_disconnect_visual_shader_nodes" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_disconnect_visual_shader_nodes[/code] tool. Disconnects two nodes in a visual shader graph.
 		</member>
 		<member name="blazium/justamcp/tools/shader_tools/blazium_edit_shader" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_edit_shader[/code] tool from the Shader Tools family to MCP clients. Provides file patching replacing code strings directly inside the Shader Resource loading path.
@@ -2184,14 +2472,29 @@
 		<member name="blazium/justamcp/tools/shader_tools/blazium_get_shader_params" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_get_shader_params[/code] tool from the Shader Tools family to MCP clients. Extracts Godot shader variables directly from Inspector metadata representations natively.
 		</member>
+		<member name="blazium/justamcp/tools/shader_tools/blazium_get_visual_shader_info" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_get_visual_shader_info[/code] tool. Reads the node count and mode of a visual shader.
+		</member>
 		<member name="blazium/justamcp/tools/shader_tools/blazium_read_shader" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_read_shader[/code] tool from the Shader Tools family to MCP clients. Loads string source buffers straight out from .gdshader files dynamically mapped in file system.
+		</member>
+		<member name="blazium/justamcp/tools/shader_tools/blazium_remove_visual_shader_node" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_remove_visual_shader_node[/code] tool. Removes a node from a visual shader graph.
 		</member>
 		<member name="blazium/justamcp/tools/shader_tools/blazium_set_shader_param" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_set_shader_param[/code] tool from the Shader Tools family to MCP clients. Reflective native evaluation bounding GDScript variable evaluation parsing shader uniforms natively.
 		</member>
+		<member name="blazium/justamcp/tools/shader_tools/blazium_set_visual_shader_node_property" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_visual_shader_node_property[/code] tool. Sets a property on a visual shader node.
+		</member>
 		<member name="blazium/justamcp/tools/spatial_tools" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], enables the Spatial Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/spatial_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/spatial_tools/blazium_add_navigation_link" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_navigation_link[/code] tool. Adds a NavigationLink2D, or NavigationLink3D when is_3d is true.
+		</member>
+		<member name="blazium/justamcp/tools/spatial_tools/blazium_add_navigation_obstacle" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_add_navigation_obstacle[/code] tool. Adds a NavigationObstacle2D, or NavigationObstacle3D when is_3d is true.
 		</member>
 		<member name="blazium/justamcp/tools/spatial_tools/blazium_navigation_get_info" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_navigation_get_info[/code] tool from the Spatial Tools family to MCP clients. Lists navigation regions and agents below a scene node.
@@ -2221,11 +2524,20 @@
 		<member name="blazium/justamcp/tools/theme_tools" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], enables the Theme Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/theme_tools/[/code] can be toggled separately.
 		</member>
+		<member name="blazium/justamcp/tools/theme_tools/blazium_assign_theme" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_assign_theme[/code] tool. Assigns a Theme resource to a Control.
+		</member>
+		<member name="blazium/justamcp/tools/theme_tools/blazium_configure_theme" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_configure_theme[/code] tool. Creates a Theme, sets a color and constant, and assigns it to a Control.
+		</member>
 		<member name="blazium/justamcp/tools/theme_tools/blazium_create_theme" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_create_theme[/code] tool from the Theme Tools family to MCP clients. Generates a new Theme resource struct caching visual configuration layouts natively.
 		</member>
 		<member name="blazium/justamcp/tools/theme_tools/blazium_get_theme_info" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_get_theme_info[/code] tool from the Theme Tools family to MCP clients. Interrogates godot Inspector bindings wrapping metadata and dynamic lists natively.
+		</member>
+		<member name="blazium/justamcp/tools/theme_tools/blazium_merge_theme" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_merge_theme[/code] tool. Merges a Theme into a duplicate assigned to a Control.
 		</member>
 		<member name="blazium/justamcp/tools/theme_tools/blazium_set_control_theme_color" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_set_control_theme_color[/code] tool from the Theme Tools family to MCP clients. Injects property mappings explicitly setting color maps inside control nodes.
@@ -2244,6 +2556,15 @@
 		</member>
 		<member name="blazium/justamcp/tools/tilemap_tools" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], enables the TileMap Tools tool family for JustAMCP MCP clients. Individual tools under [code]blazium/justamcp/tools/tilemap_tools/[/code] can be toggled separately.
+		</member>
+		<member name="blazium/justamcp/tools/tilemap_tools/blazium_configure_tileset_layers" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_configure_tileset_layers[/code] tool. Adds a physics layer to the edited tile set.
+		</member>
+		<member name="blazium/justamcp/tools/tilemap_tools/blazium_configure_tileset_terrains" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_configure_tileset_terrains[/code] tool. Adds a terrain set and one named terrain.
+		</member>
+		<member name="blazium/justamcp/tools/tilemap_tools/blazium_set_tileset_tile_data" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_set_tileset_tile_data[/code] tool. Creates an atlas tile at the given coordinates.
 		</member>
 		<member name="blazium/justamcp/tools/tilemap_tools/blazium_tilemap_clear" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_tilemap_clear[/code] tool from the TileMap Tools family to MCP clients. Flushes runtime cell structs flushing grids locally for TileMapLayers natively.
@@ -2275,8 +2596,14 @@
 		<member name="blazium/justamcp/tools/tilemap_tools/blazium_tilemap_get_used_cells" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_tilemap_get_used_cells[/code] tool from the TileMap Tools family to MCP clients. Calculates bounds pulling physical active grid locations via vector pointers across TileMapLayers natively.
 		</member>
+		<member name="blazium/justamcp/tools/tilemap_tools/blazium_tilemap_paint_terrain" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_tilemap_paint_terrain[/code] tool. Paints connected terrain cells on a TileMapLayer.
+		</member>
 		<member name="blazium/justamcp/tools/tilemap_tools/blazium_tilemap_set_cell" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_tilemap_set_cell[/code] tool from the TileMap Tools family to MCP clients. Sets physical cell identifiers onto Grid memory iterations inside TileMapLayers natively.
+		</member>
+		<member name="blazium/justamcp/tools/tilemap_tools/blazium_tilemap_set_cells" type="bool" setter="" getter="" default="true">
+			If [code]true[/code], exposes the [code]blazium_tilemap_set_cells[/code] tool. Sets several TileMapLayer cells in one call.
 		</member>
 		<member name="blazium/justamcp/tools/tilemap_tools/blazium_validate_tilemap_structure" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], exposes the [code]blazium_validate_tilemap_structure[/code] tool from the TileMap Tools family to MCP clients. Analyzes TileMap or TileMapLayer structure in a scene file.

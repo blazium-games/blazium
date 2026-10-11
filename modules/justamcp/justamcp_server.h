@@ -83,6 +83,7 @@ private:
 	bool server_started = false;
 	bool runtime_host = false;
 	int active_listening_port = -1;
+	int listen_failed_port = -1;
 	HashMap<String, Vector<uint64_t>> session_enqueue_timestamps_usec;
 	Mutex session_enqueue_rate_mutex;
 
