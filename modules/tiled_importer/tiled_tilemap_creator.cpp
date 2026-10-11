@@ -70,6 +70,65 @@
 
 // Note: Replicates roughly 2200 lines of TilemapCreator.gd
 
+static void _fill_tileson_layer_defaults(Dictionary &p_layer) {
+	if (!p_layer.has("opacity")) {
+		p_layer["opacity"] = 1.0;
+	}
+	if (!p_layer.has("visible")) {
+		p_layer["visible"] = true;
+	}
+	if (!p_layer.has("x")) {
+		p_layer["x"] = 0;
+	}
+	if (!p_layer.has("y")) {
+		p_layer["y"] = 0;
+	}
+	if (p_layer.get("layers", Variant()).get_type() == Variant::ARRAY) {
+		Array layers = p_layer["layers"];
+		for (int i = 0; i < layers.size(); i++) {
+			if (layers[i].get_type() != Variant::DICTIONARY) {
+				continue;
+			}
+			Dictionary child = layers[i];
+			_fill_tileson_layer_defaults(child);
+			layers[i] = child;
+		}
+		p_layer["layers"] = layers;
+	}
+}
+
+static void _fill_tileson_defaults(Dictionary &p_dict) {
+	if (p_dict.get("tilesets", Variant()).get_type() == Variant::ARRAY) {
+		Array tilesets = p_dict["tilesets"];
+		for (int i = 0; i < tilesets.size(); i++) {
+			if (tilesets[i].get_type() != Variant::DICTIONARY) {
+				continue;
+			}
+			Dictionary tileset = tilesets[i];
+			if (!tileset.has("margin")) {
+				tileset["margin"] = 0;
+			}
+			if (!tileset.has("spacing")) {
+				tileset["spacing"] = 0;
+			}
+			tilesets[i] = tileset;
+		}
+		p_dict["tilesets"] = tilesets;
+	}
+	if (p_dict.get("layers", Variant()).get_type() == Variant::ARRAY) {
+		Array layers = p_dict["layers"];
+		for (int i = 0; i < layers.size(); i++) {
+			if (layers[i].get_type() != Variant::DICTIONARY) {
+				continue;
+			}
+			Dictionary layer = layers[i];
+			_fill_tileson_layer_defaults(layer);
+			layers[i] = layer;
+		}
+		p_dict["layers"] = layers;
+	}
+}
+
 TiledTilemapCreator::TiledTilemapCreator() {
 }
 
@@ -88,14 +147,25 @@ Node *TiledTilemapCreator::create_tilemap(const String &p_source_file) {
 		_custom_types->merge_custom_properties(extracted_dict, "map");
 	}
 	_tileson.instantiate();
-	// XML/TMX is normalized to a Tiled JSON dictionary. tileson only parses JSON.
+	// tileson only parses JSON. Keep real JSON as-is. XML/TMX is the dictionary builder's output, with the fields tileson treats as required.
+	String raw_text = String::utf8((const char *)map_content.ptr(), map_content.size());
+	String trimmed = raw_text.strip_edges();
 	String map_json;
-	if (!extracted_dict.is_empty()) {
+	if (trimmed.begins_with("{") || trimmed.begins_with("[")) {
+		map_json = raw_text;
+	} else if (!extracted_dict.is_empty()) {
+		_fill_tileson_defaults(extracted_dict);
 		map_json = JSON::stringify(extracted_dict);
 	} else {
-		map_json = String::utf8((const char *)map_content.ptr(), map_content.size());
+		map_json = raw_text;
 	}
-	_base_map = _tileson->parse_string(map_json);
+	String ext = p_source_file.get_extension().to_lower();
+	if ((ext == "json" || ext == "tmj") && (trimmed.begins_with("{") || trimmed.begins_with("["))) {
+		// Path parse keeps the map directory so external tilesets resolve.
+		_base_map = _tileson->parse_file(p_source_file);
+	} else {
+		_base_map = _tileson->parse_string(map_json);
+	}
 
 	if (!_base_map.is_valid()) {
 		ERR_PRINT("Tiled failed to parse dynamic map.");
@@ -109,7 +179,12 @@ Node *TiledTilemapCreator::create_tilemap(const String &p_source_file) {
 	_infinite = (_base_map.is_valid() ? _base_map->is_infinite() : false);
 	_parallax_origin_x = (_base_map.is_valid() ? _base_map->get_parallax_origin().x : 0);
 	_parallax_origin_y = (_base_map.is_valid() ? _base_map->get_parallax_origin().y : 0);
-	_background_color = (_base_map.is_valid() ? String("#") + _base_map->get_background_color().to_html(false) : String());
+	if (_base_map.is_valid()) {
+		Color background = _base_map->get_background_color();
+		if (background.a > 0.0f) {
+			_background_color = "#" + background.to_html(true);
+		}
+	}
 
 	if (_base_map.is_valid()) {
 		Array tilesets = _base_map->get_tilesets();
@@ -214,13 +289,12 @@ void TiledTilemapCreator::handle_layer(Ref<TiledLayer> p_layer, Node2D *p_parent
 	if (!p_layer.is_valid()) {
 		return;
 	}
-
 	float layer_offset_x = p_layer->get_offset().x;
 	float layer_offset_y = p_layer->get_offset().y;
 	float layer_opacity = p_layer->get_opacity();
 	bool layer_visible = p_layer->is_visible();
-	String layer_type = p_layer->get_tson_type();
-	String tint_color = String("#") + p_layer->get_tint_color().to_html(false);
+	String layer_type = p_layer->get_tson_type().to_lower();
+	String tint_color = "#" + p_layer->get_tint_color().to_html(false);
 
 	// v1.2: Skip layer check via property "no_import" (simplified)
 
@@ -294,7 +368,7 @@ void TiledTilemapCreator::handle_layer(Ref<TiledLayer> p_layer, Node2D *p_parent
 		}
 
 	} else if (layer_type == "objectgroup") {
-		GodotType node_type = get_godot_node_type(p_layer);
+		GodotType node_type = get_godot_type(p_layer->get_class_type());
 		Node2D *layer_node = nullptr;
 
 		if (node_type == GODOT_TYPE_PARALLAX) {
@@ -340,7 +414,7 @@ void TiledTilemapCreator::handle_layer(Ref<TiledLayer> p_layer, Node2D *p_parent
 		}
 
 	} else if (layer_type == "group") {
-		GodotType node_type = get_godot_node_type(p_layer);
+		GodotType node_type = get_godot_type(p_layer->get_class_type());
 		Node2D *group_node = nullptr;
 
 		if (node_type == GODOT_TYPE_PARALLAX) {
@@ -378,7 +452,7 @@ void TiledTilemapCreator::handle_layer(Ref<TiledLayer> p_layer, Node2D *p_parent
 		}
 
 	} else if (layer_type == "imagelayer") {
-		GodotType node_type = get_godot_node_type(p_layer);
+		GodotType node_type = get_godot_type(p_layer->get_class_type());
 		if (node_type == GODOT_TYPE_PARALLAX) {
 			Parallax2D *px_2d = memnew(Parallax2D);
 			p_parent->add_child(px_2d);
@@ -530,7 +604,7 @@ int TiledTilemapCreator::get_first_gid_index(int p_gid) {
 }
 
 int TiledTilemapCreator::get_atlas_source_index(int p_gid) {
-	if (_atlas_sources.is_empty()) {
+	if (_atlas_sources.is_empty() || _first_gids.is_empty()) {
 		return -1;
 	}
 	for (int i = 0; i < _atlas_sources.size(); i++) {
@@ -761,6 +835,9 @@ void TiledTilemapCreator::create_polygons_on_alternative_tiles(TileData *p_sourc
 	}
 }
 void TiledTilemapCreator::create_map_from_data(const Array &p_data, int p_offset_x, int p_offset_y, int p_width) {
+	if (p_width <= 0 || p_data.is_empty()) {
+		return;
+	}
 	const uint32_t FLIPPED_HORIZONTALLY_FLAG = 0x80000000;
 	const uint32_t FLIPPED_VERTICALLY_FLAG = 0x40000000;
 	const uint32_t FLIPPED_DIAGONALLY_FLAG = 0x20000000;
@@ -809,6 +886,9 @@ void TiledTilemapCreator::create_map_from_data(const Array &p_data, int p_offset
 		if (!atlas_source->has_tile(atlas_coords)) {
 			atlas_source->create_tile(atlas_coords);
 			TileData *current_tile = atlas_source->get_tile_data(atlas_coords, 0);
+			if (!current_tile) {
+				continue;
+			}
 			Vector2i tile_size = atlas_source->get_texture_region_size();
 			if (tile_size.x != _map_tile_width || tile_size.y != _map_tile_height) {
 				int diff_x = tile_size.x - _map_tile_width;
@@ -840,6 +920,9 @@ void TiledTilemapCreator::create_map_from_data(const Array &p_data, int p_offset
 				if (!atlas_source->has_alternative_tile(atlas_coords, alt_id)) {
 					atlas_source->create_alternative_tile(atlas_coords, alt_id);
 					TileData *tile_data = atlas_source->get_tile_data(atlas_coords, alt_id);
+					if (!tile_data) {
+						continue;
+					}
 					tile_data->set_flip_h(flipped_h);
 					tile_data->set_flip_v(flipped_v);
 					tile_data->set_transpose(flipped_d);
@@ -861,6 +944,9 @@ void TiledTilemapCreator::create_map_from_data(const Array &p_data, int p_offset
 					tile_data->set_texture_origin(tile_data->get_texture_origin() - tile_offset);
 
 					TileData *src_data = atlas_source->get_tile_data(atlas_coords, 0);
+					if (!src_data) {
+						continue;
+					}
 					create_polygons_on_alternative_tiles(src_data, tile_data, alt_id);
 
 					// Copy metadata to alternative tile
@@ -1172,6 +1258,9 @@ void TiledTilemapCreator::handle_object(Ref<TiledObject> p_obj_ro, Node *p_layer
 			}
 
 			Ref<TileSetAtlasSource> gid_source = p_tileset->get_source(source_id);
+			if (gid_source.is_null() || gid_source->get_texture().is_null()) {
+				return;
+			}
 			Sprite2D *obj_sprite = memnew(Sprite2D);
 			p_layer_node->add_child(obj_sprite);
 			obj_sprite->set_owner(_base_node);
@@ -1213,7 +1302,7 @@ void TiledTilemapCreator::handle_object(Ref<TiledObject> p_obj_ro, Node *p_layer
 					obj_sprite->set_region_enabled(true);
 					obj_sprite->set_region_rect(Rect2(gid_source->get_margins(), gid_source->get_texture_region_size()));
 				}
-				if (gid_width != obj_width || gid_height != obj_height) {
+				if ((gid_width != obj_width || gid_height != obj_height) && gid_width != 0.0f && gid_height != 0.0f) {
 					obj_sprite->set_scale(Vector2(obj_width / gid_width, obj_height / gid_height));
 				}
 				td = gid_source->get_tile_data(Vector2i(0, 0), 0);

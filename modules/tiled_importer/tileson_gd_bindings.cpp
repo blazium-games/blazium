@@ -31,6 +31,7 @@
 
 #include "tileson_gd_bindings.h"
 
+#include "core/config/project_settings.h"
 #include "core/io/file_access.h"
 #include "core/object/class_db.h"
 
@@ -44,30 +45,34 @@ void TiledTileson::_bind_methods() {
 
 TiledTileson::TiledTileson() {}
 
-Ref<TiledMap> TiledTileson::parse_file(const String &p_path) {
-	Ref<FileAccess> fa = FileAccess::open(p_path, FileAccess::READ);
-	if (fa.is_null()) {
-		ERR_PRINT("TiledTileson: Cannot open file " + p_path);
-		return Ref<TiledMap>();
+static Ref<TiledMap> _map_from_parsed(std::unique_ptr<tson::Map> p_parsed) {
+	if (p_parsed && p_parsed->getStatus() == tson::ParseStatus::OK) {
+		Ref<TiledMap> godot_map;
+		godot_map.instantiate();
+		godot_map->set_map(std::move(p_parsed));
+		return godot_map;
 	}
+	return Ref<TiledMap>();
+}
 
-	String content = fa->get_as_text();
-	return parse_string(content);
+Ref<TiledMap> TiledTileson::parse_file(const String &p_path) {
+	String global = ProjectSettings::get_singleton()->globalize_path(p_path);
+	tson::Tileson parser;
+	Ref<TiledMap> godot_map = _map_from_parsed(parser.parse(::fs::path(to_std_string(global).c_str())));
+	if (godot_map.is_null()) {
+		ERR_PRINT("TiledTileson: Failed to parse map " + p_path);
+	}
+	return godot_map;
 }
 
 Ref<TiledMap> TiledTileson::parse_string(const String &p_json) {
-	tson::Tileson t;
-	std::unique_ptr<tson::Map> parsed_map = t.parse(to_std_string(p_json).c_str(), p_json.utf8().length());
-
-	if (parsed_map && parsed_map->getStatus() == tson::ParseStatus::OK) {
-		Ref<TiledMap> godot_map;
-		godot_map.instantiate();
-		godot_map->set_map(std::move(parsed_map));
-		return godot_map;
+	tson::Tileson parser;
+	CharString utf8 = p_json.utf8();
+	Ref<TiledMap> godot_map = _map_from_parsed(parser.parse(utf8.get_data(), utf8.length()));
+	if (godot_map.is_null()) {
+		ERR_PRINT("TiledTileson: Failed to parse map.");
 	}
-
-	ERR_PRINT("TiledTileson: Failed to parse map.");
-	return Ref<TiledMap>();
+	return godot_map;
 }
 
 // -------------------------------------------------------------

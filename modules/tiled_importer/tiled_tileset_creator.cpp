@@ -76,6 +76,9 @@ Ref<TileSet> TiledTilesetCreator::create_from_dictionary_array(const Array &p_ti
 
 void TiledTilesetCreator::create_or_append(Ref<TiledTileset> p_tile_set_ro) {
 	Ref<TiledTileset> p_tile_set = p_tile_set_ro;
+	if (p_tile_set.is_null()) {
+		return;
+	}
 	if (p_tile_set->get_name() == "AutoMap Rules") {
 		return;
 	}
@@ -129,7 +132,7 @@ void TiledTilesetCreator::create_or_append(Ref<TiledTileset> p_tile_set_ro) {
 		}
 
 		Ref<Texture2D> texture = DataLoader::load_image(p_tile_set->get_image(), _base_path_tileset);
-		if (texture.is_valid()) {
+		if (texture.is_valid() && _tile_size.x > 0 && _tile_size.y > 0) {
 			_current_atlas_source->set_texture(texture);
 			_columns = texture->get_width() / _tile_size.x;
 			_tile_count = _columns * texture->get_height() / _tile_size.y;
@@ -158,6 +161,9 @@ void TiledTilesetCreator::create_or_append(Ref<TiledTileset> p_tile_set_ro) {
 
 TileData *TiledTilesetCreator::create_tile_if_not_existing_and_get_tiledata(int p_tile_id) {
 	if (p_tile_id < _tile_count) {
+		if (_columns <= 0) {
+			return nullptr;
+		}
 		int row = p_tile_id / _columns;
 		int col = p_tile_id % _columns;
 		Vector2i tile_coords(col, row);
@@ -185,6 +191,9 @@ TileData *TiledTilesetCreator::create_tile_if_not_existing_and_get_tiledata(int 
 void TiledTilesetCreator::handle_tiles(const Array &p_tiles) {
 	for (int i = 0; i < p_tiles.size(); i++) {
 		Ref<TiledTile> tile = p_tiles[i];
+		if (tile.is_null()) {
+			continue;
+		}
 		if (_custom_types.is_valid()) {
 		}
 		int tile_id = tile->get_id();
@@ -231,6 +240,9 @@ void TiledTilesetCreator::handle_tiles(const Array &p_tiles) {
 
 			_current_atlas_source->create_tile(Vector2i());
 			current_tile = _current_atlas_source->get_tile_data(Vector2i(), 0);
+			if (!current_tile) {
+				continue;
+			}
 			current_tile->set_probability(1.0 /* tileson doesn't expose hit prob */);
 		} else {
 			current_tile = create_tile_if_not_existing_and_get_tiledata(tile_id);
@@ -278,6 +290,10 @@ void TiledTilesetCreator::handle_wangsets_old_mapping(const Array &p_wangsets) {
 void TiledTilesetCreator::handle_wangsets(const Array &p_wangsets) {}
 void TiledTilesetCreator::handle_animation(Array p_frames, int p_tile_id) {
 	if (p_frames.is_empty()) {
+		return;
+	}
+
+	if (_columns <= 0) {
 		return;
 	}
 
@@ -358,7 +374,7 @@ void TiledTilesetCreator::handle_objectgroup(Ref<TiledLayer> p_object_group, Til
 
 	for (int i = 0; i < objects.size(); i++) {
 		Ref<TiledObject> obj = objects[i];
-		if (obj->is_point()) {
+		if (obj.is_null() || obj->is_point()) {
 			continue;
 		}
 
@@ -453,6 +469,9 @@ void TiledTilesetCreator::handle_objectgroup(Ref<TiledLayer> p_object_group, Til
 		Array obj_props = obj->get_properties();
 		for (int p_idx = 0; p_idx < obj_props.size(); p_idx++) {
 			Ref<TiledProperty> property = obj_props[p_idx];
+			if (property.is_null()) {
+				continue;
+			}
 			String name = property->get_name();
 			String type = property->get_property_type();
 			String val = property->get_value();
