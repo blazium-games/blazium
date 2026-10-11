@@ -1136,6 +1136,18 @@
 		<member name="interface/editor/localization/ui_layout_direction" type="int" setter="" getter="">
 			Editor UI default layout direction.
 		</member>
+		<member name="interface/editor/split_view/compare_scripts" type="bool" setter="" getter="">
+			If [code]true[/code], on the Script screen the split view shows another open script beside the one being edited, instead of the edited scene. The script you switch away from appears there; clicking it edits it.
+		</member>
+		<member name="interface/editor/split_view/enabled" type="bool" setter="" getter="">
+			If [code]true[/code], the 2D and 3D editors show a second open scene beside the edited one. The other scene renders live in its own pane; clicking that pane, or a node in its scene tree, makes its scene the edited one. By default the pane shows the previously edited scene; use [b]Show Beside Current Scene[/b] in a scene tab's context menu to pick another.
+		</member>
+		<member name="interface/editor/split_view/floating" type="bool" setter="" getter="">
+			If [code]true[/code], the split view shows the second scene in a window of its own instead of beside the current scene. Useful on smaller monitors, or to put the second scene on another monitor. Closing the window puts the scene back beside the current one. Has no effect when [member interface/editor/display/single_window_mode] is enabled or [member interface/multi_window/enable] is disabled.
+		</member>
+		<member name="interface/editor/split_view/show_pane_docks" type="bool" setter="" getter="">
+			If [code]true[/code], each split view pane shows its scene's own scene tree and inspector when there is room for them. The edited scene's pane only shows them while the Scene and Inspector docks are hidden (for example in distraction-free mode).
+		</member>
 		<member name="interface/editor/timers/dragging_hover_wait_seconds" type="float" setter="" getter="">
 			During a drag-and-drop, this is how long to wait over a UI element before it triggers a reaction (e.g. a section unfolds to show nested items).
 		</member>

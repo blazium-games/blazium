@@ -55,6 +55,19 @@ class ObfuscationExportPlugin : public EditorExportPlugin {
 	HashMap<String, String> exported_paths;
 	HashSet<String> setting_paths;
 
+	// What the last export did, for the editor's Obfuscation report.
+	String report_preset;
+	String report_platform;
+	String report_path;
+	bool report_debug = false;
+	int report_scripts = 0;
+	int report_images = 0;
+	int report_problems = 0;
+	bool report_lattice_skipped = false;
+	bool report_seal = false;
+	static Dictionary last_report;
+	static Callable report_callback;
+
 	void _add_script(const String &p_dest, const String &p_source);
 	void _add_imported(const String &p_path, const String &p_dest, const HashSet<String> &p_features);
 	Variant _rewrite_setting(const Variant &p_value);
@@ -76,6 +89,9 @@ public:
 	// this plugin rewrites scripts and tokenizes them itself.
 	virtual int get_export_order() const override { return 50; }
 	virtual String get_exported_path(const String &p_path) const override;
+
+	static Dictionary get_last_report() { return last_report; }
+	static void set_report_callback(const Callable &p_callback) { report_callback = p_callback; }
 };
 
 #endif

@@ -34,7 +34,9 @@
 #include "editor/plugins/editor_plugin.h"
 
 class Button;
+class GridContainer;
 class Label;
+class ScrollContainer;
 class LineEdit;
 class TextEdit;
 class TextureRect;
@@ -52,6 +54,21 @@ class ObfuscationEditorPlugin : public EditorPlugin {
 	TextEdit *notice_edit = nullptr;
 	TextureRect *preview = nullptr;
 
+	// Title bar badge and the export report in the bottom panel.
+	Button *badge = nullptr;
+	bool updating_badge = false;
+	ScrollContainer *report_scroll = nullptr;
+	VBoxContainer *report_panel = nullptr;
+	Label *report_title = nullptr;
+	Label *report_summary = nullptr;
+	GridContainer *report_grid = nullptr;
+	Label *report_notes = nullptr;
+
+	void _update_badge();
+	void _badge_pressed();
+	void _report_ready(const Dictionary &p_report);
+	void _add_report_tile(const String &p_label, const String &p_value, const Color &p_color);
+
 	void _refresh();
 	void _generate_pressed();
 	void _load_pressed();
@@ -61,6 +78,7 @@ class ObfuscationEditorPlugin : public EditorPlugin {
 
 protected:
 	static void _bind_methods() {}
+	void _notification(int p_what);
 
 public:
 	virtual String get_plugin_name() const override { return "Obfuscation"; }

@@ -39,6 +39,7 @@
 #include "core/io/json.h"
 #include "core/io/resource_loader.h"
 #include "core/object/object.h"
+#include "core/os/time.h"
 #include "core/string/translation.h"
 #include "core/templates/list.h"
 #include "editor/export/editor_export_platform.h"
@@ -72,6 +73,9 @@ static bool _obf_setting_path_exists(const String &p_text) {
 	}
 	return FileAccess::exists(path);
 }
+
+Dictionary ObfuscationExportPlugin::last_report;
+Callable ObfuscationExportPlugin::report_callback;
 
 Variant ObfuscationExportPlugin::_rewrite_setting(const Variant &p_value) {
 	Obfuscation *ob = Obfuscation::get_singleton();
@@ -123,6 +127,7 @@ Variant ObfuscationExportPlugin::_rewrite_setting(const Variant &p_value) {
 // Scripts go out the way the export preset asks for them. GDScript's own export
 // plugin runs after this one and never sees a script this plugin has packed.
 void ObfuscationExportPlugin::_add_script(const String &p_dest, const String &p_source) {
+	report_scripts++;
 #ifdef MODULE_GDSCRIPT_ENABLED
 	if (p_dest.get_extension().to_lower() == "gd" && script_mode != EditorExportPreset::MODE_SCRIPT_TEXT) {
 		const GDScriptTokenizerBuffer::CompressMode compress = script_mode == EditorExportPreset::MODE_SCRIPT_BINARY_TOKENS_COMPRESSED ? GDScriptTokenizerBuffer::COMPRESS_ZSTD : GDScriptTokenizerBuffer::COMPRESS_NONE;
@@ -189,6 +194,7 @@ void ObfuscationExportPlugin::_check_settings() {
 		if (exported_paths.has(path)) {
 			continue;
 		}
+		report_problems++;
 		const String msg = vformat("Project settings point at \"%s\", which scramble_names renamed, but the file was not packed under the new name. The exported game will not find it.", path);
 		Ref<EditorExportPlatform> platform = get_export_platform();
 		if (platform.is_valid()) {
@@ -231,10 +237,17 @@ void ObfuscationExportPlugin::_keep_text_server_data_check() {
 }
 
 void ObfuscationExportPlugin::_export_begin(const HashSet<String> &p_features, bool p_debug, const String &p_path, int p_flags) {
-	(void)p_debug;
-	(void)p_path;
 	(void)p_flags;
 	enabled = true;
+	report_preset = get_export_preset().is_valid() ? get_export_preset()->get_name() : String();
+	report_platform = get_export_platform().is_valid() ? get_export_platform()->get_name() : String();
+	report_path = p_path;
+	report_debug = p_debug;
+	report_scripts = 0;
+	report_images = 0;
+	report_problems = 0;
+	report_lattice_skipped = false;
+	report_seal = false;
 	scene_stamp_remaining = 4;
 	stripped_copyright = false;
 	scramble_pack = false;
@@ -266,6 +279,7 @@ void ObfuscationExportPlugin::_export_begin(const HashSet<String> &p_features, b
 	// binary tokens keep no comments, so lattice references would come back
 	// empty. Use the plain code injection for this export instead.
 	if (script_mode != EditorExportPreset::MODE_SCRIPT_TEXT && bool(GLOBAL_GET("obfuscation/scripts/comment_lattice"))) {
+		report_lattice_skipped = true;
 		saved_settings["obfuscation/scripts/comment_lattice"] = true;
 		ProjectSettings::get_singleton()->set("obfuscation/scripts/comment_lattice", false);
 		if (get_export_platform().is_valid()) {
@@ -347,6 +361,7 @@ void ObfuscationExportPlugin::_export_begin(const HashSet<String> &p_features, b
 			const Vector<uint8_t> png = seal->save_png_to_buffer();
 			if (!png.is_empty()) {
 				add_file(ob->output_artifact_path("res://.obfuscation/claimkey.png"), png, false);
+				report_seal = true;
 			}
 		}
 		Dictionary man;
@@ -369,6 +384,35 @@ void ObfuscationExportPlugin::_export_begin(const HashSet<String> &p_features, b
 void ObfuscationExportPlugin::_export_end() {
 	if (scramble_pack) {
 		_check_settings();
+	}
+	{
+		Dictionary report;
+		report["time"] = Time::get_singleton()->get_datetime_string_from_system(false, true);
+		report["preset"] = report_preset;
+		report["platform"] = report_platform;
+		report["path"] = report_path;
+		report["debug"] = report_debug;
+		Obfuscation *ob = Obfuscation::get_singleton();
+		int renamed = 0;
+		for (const KeyValue<String, String> &E : exported_paths) {
+			if (E.key != E.value) {
+				renamed++;
+			}
+		}
+		report["protected"] = enabled && ob && ob->has_identity();
+		report["scripts"] = report_scripts;
+		report["renamed"] = scramble_pack ? renamed : 0;
+		report["scramble_names"] = scramble_pack;
+		report["images"] = report_images;
+		report["scenes_stamped"] = enabled ? MAX(0, 4 - scene_stamp_remaining) : 0;
+		report["seal"] = report_seal;
+		report["lattice_skipped"] = report_lattice_skipped;
+		report["lattice_used"] = enabled && !report_lattice_skipped && bool(GLOBAL_GET("obfuscation/scripts/comment_lattice"));
+		report["problems"] = report_problems;
+		last_report = report;
+		if (report_callback.is_valid()) {
+			report_callback.call_deferred(report);
+		}
 	}
 	exported_paths.clear();
 	setting_paths.clear();
@@ -451,6 +495,7 @@ void ObfuscationExportPlugin::_export_file(const String &p_path, const String &p
 			if (img->load(p_path) == OK && ob->can_watermark_image(img)) {
 				img = ob->watermark_image(img);
 				bytes = img->save_png_to_buffer();
+				report_images++;
 			} else {
 				bytes = FileAccess::get_file_as_bytes(p_path);
 			}

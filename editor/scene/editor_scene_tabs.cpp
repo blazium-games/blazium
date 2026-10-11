@@ -207,6 +207,8 @@ void EditorSceneTabs::_update_context_menu(int p_index) {
 		scene_tabs_context_menu->add_separator();
 		scene_tabs_context_menu->add_item(TTR("Show in FileSystem"), SCENE_SHOW_IN_FILESYSTEM);
 		DISABLE_LAST_OPTION_IF(!ResourceLoader::exists(scene_path));
+		scene_tabs_context_menu->add_item(TTR("Show Beside Current Scene"), SCENE_SHOW_IN_SPLIT_VIEW);
+		DISABLE_LAST_OPTION_IF(no_root_node || tab_id == EditorNode::get_editor_data().get_edited_scene());
 		scene_tabs_context_menu->add_item(TTR("Play This Scene"), SCENE_RUN);
 		DISABLE_LAST_OPTION_IF(no_root_node);
 		scene_tabs_context_menu->add_item(TTR("Set as Main Scene"), SCENE_SET_AS_MAIN_SCENE);

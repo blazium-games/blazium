@@ -135,6 +135,7 @@
 #include "editor/scene/3d/root_motion_editor_plugin.h"
 #include "editor/scene/canvas_item_editor_plugin.h"
 #include "editor/scene/editor_scene_tabs.h"
+#include "editor/scene/editor_split_view.h"
 #include "editor/scene/material_editor_plugin.h"
 #include "editor/scene/particle_process_material_editor_plugin.h"
 #include "editor/script/editor_script.h"
@@ -804,6 +805,7 @@ void EditorNode::_update_theme(bool p_skip_creation) {
 		editor_main_screen->add_theme_style_override(SceneStringName(panel), theme->get_stylebox(SNAME("Content"), EditorStringName(EditorStyles)));
 		bottom_panel->_theme_changed();
 		distraction_free->set_button_icon(theme->get_icon(SNAME("DistractionFree"), EditorStringName(EditorIcons)));
+		split_view_button->set_button_icon(theme->get_icon(SNAME("Panels2"), EditorStringName(EditorIcons)));
 		update_distraction_free_button_theme();
 
 		_update_system_menu_icons(dark_mode);
@@ -1223,6 +1225,10 @@ void EditorNode::_notification(int p_what) {
 					other_file_extensions = updated_other_file_extensions;
 					EditorFileSystem::get_singleton()->scan();
 				}
+			}
+
+			if (EditorSettings::get_singleton()->check_changed_settings_in_group("interface/editor/split_view")) {
+				split_view_button->set_pressed_no_signal(EDITOR_GET("interface/editor/split_view/enabled"));
 			}
 
 			if (EditorSettings::get_singleton()->check_changed_settings_in_group("interface/editor/appearance")) {
@@ -3798,6 +3804,10 @@ void EditorNode::_menu_option_confirm(int p_option, bool p_confirmed) {
 			_discard_changes();
 		} break;
 
+		case EditorSceneTabs::SCENE_SHOW_IN_SPLIT_VIEW: {
+			split_view->show_scene_in_preview(scene_tabs->get_option_tab());
+			split_view_button->set_pressed_no_signal(true);
+		} break;
 		case EditorSceneTabs::SCENE_SHOW_IN_FILESYSTEM: {
 			String path = editor_data.get_scene_path(scene_tabs->get_option_tab());
 			if (!path.is_empty()) {
@@ -4729,6 +4739,9 @@ void EditorNode::_remove_edited_scene(bool p_change_tab) {
 	}
 
 	if (p_change_tab) {
+		if (split_view) {
+			split_view->set_closing_scene(editor_data.get_edited_scene_root(old_index));
+		}
 		_set_current_scene(new_index);
 	}
 	editor_data.remove_scene(old_index);
@@ -4902,6 +4915,10 @@ void EditorNode::_set_current_scene_nocheck(int p_idx, bool p_ignore_state) {
 	}
 
 	if (new_scene && new_scene->get_parent() != scene_root) {
+		if (new_scene->get_parent()) {
+			// Shown in the split view's preview pane.
+			new_scene->get_parent()->remove_child(new_scene);
+		}
 		scene_root->add_child(new_scene, true);
 	}
 
@@ -4911,6 +4928,10 @@ void EditorNode::_set_current_scene_nocheck(int p_idx, bool p_ignore_state) {
 		}
 
 		EditorUndoRedoManager::get_singleton()->clear_history(editor_data.get_scene_history_id(p_idx), false);
+	}
+
+	if (split_view) {
+		split_view->edited_scene_changed(old_scene != new_scene ? old_scene : nullptr, editor_data.get_edited_scene_root());
 	}
 	resource_count.clear();
 	SceneTreeDock::get_singleton()->get_tree_editor()->update_tree();
@@ -7026,6 +7047,13 @@ void EditorNode::_prepare_save_confirmation_popup() {
 	}
 }
 
+void EditorNode::_split_view_toggled(bool p_enabled) {
+	if (bool(EDITOR_GET("interface/editor/split_view/enabled")) != p_enabled) {
+		EditorSettings::get_singleton()->set("interface/editor/split_view/enabled", p_enabled);
+		EditorSettings::get_singleton()->notify_changes();
+	}
+}
+
 void EditorNode::_toggle_distraction_free_mode() {
 	if (EDITOR_GET("interface/editor/behavior/separate_distraction_mode")) {
 		Control *screen = editor_main_screen->get_current_tab_control();
@@ -7457,6 +7485,12 @@ void EditorNode::reload_instances_with_path_in_edited_scenes() {
 		}
 	}
 
+	// The code below moves scene roots in and out of scene_root, which needs
+	// them to have no parent; take the split view's previewed scene back.
+	if (split_view) {
+		split_view->release_scene(split_view->get_preview_scene());
+	}
+
 	// Save the current scene state/selection in case of lost.
 	Dictionary editor_state = _get_main_scene_state();
 	editor_data.save_edited_scene_state(editor_selection, &editor_history, editor_state);
@@ -7800,6 +7834,10 @@ void EditorNode::reload_instances_with_path_in_edited_scenes() {
 	editor_data.set_edited_scene(original_edited_scene_idx);
 
 	editor_data.restore_edited_scene_state(editor_selection, &editor_history);
+
+	if (split_view) {
+		split_view->queue_update();
+	}
 
 	progress.step(TTR("Reloading done."), editor_data.get_edited_scene_count());
 }
@@ -8370,6 +8408,41 @@ void EditorNode::_add_to_main_menu(const String &p_name, PopupMenu *p_menu) {
 	main_menu_items.push_back(p_menu);
 }
 
+// The menu bar sits in a scroll box so it can shrink on narrow windows, but a
+// scroll box asks for no width at all, so the spacers around the main screen
+// buttons took all the room and left only the scroll arrows. Give the menu
+// its full width whenever the title bar has space for it.
+void EditorNode::_update_main_menu_width() {
+	if (!menu_scroll_box || !main_menu_bar || !title_bar || menu_scroll_box->get_control() != main_menu_bar) {
+		return;
+	}
+	const int separation = title_bar->get_theme_constant(SNAME("separation"));
+	real_t used = 0;
+	int visible_children = 0;
+	for (int i = 0; i < title_bar->get_child_count(); i++) {
+		Control *child = Object::cast_to<Control>(title_bar->get_child(i));
+		if (!child || !child->is_visible() || child->is_set_as_top_level()) {
+			continue;
+		}
+		visible_children++;
+		if (child != menu_scroll_box) {
+			used += child->get_combined_minimum_size().x;
+		}
+	}
+	used += MAX(0, visible_children - 1) * separation;
+	// The menu sits in a ScrollContainer, whose panel adds its own margins.
+	const Ref<StyleBox> scroll_panel = menu_scroll_box->get_scroll_container()->get_theme_stylebox(SceneStringName(panel));
+	const real_t wanted = main_menu_bar->get_combined_minimum_size().x + (scroll_panel.is_valid() ? scroll_panel->get_minimum_size().x : 0);
+	// Measure against the window, not the title bar: the title bar can't get
+	// narrower than its minimum size, which includes the menu's own width.
+	const real_t margin = gui_base->get_theme_constant(SNAME("window_border_margin"), EditorStringName(Editor));
+	const real_t available = MAX((real_t)0, gui_base->get_size().x - 2 * margin - used);
+	const real_t width = MIN(wanted, available);
+	if (!Math::is_equal_approx(menu_scroll_box->get_custom_minimum_size().x, width)) {
+		menu_scroll_box->set_custom_minimum_size(Size2(width, 0));
+	}
+}
+
 void EditorNode::_update_main_menu_type() {
 	bool can_expand = bool(EDITOR_GET("interface/editor/appearance/expand_to_title")) && DisplayServer::get_singleton()->has_feature(DisplayServerEnums::FEATURE_EXTEND_TO_TITLE);
 	bool use_menu_button = EDITOR_GET("interface/editor/appearance/collapse_main_menu");
@@ -8463,6 +8536,7 @@ void EditorNode::_update_main_menu_type() {
 		main_menu_bar->set_start_index(0); // Main menu, add to the start of global menu.
 		main_menu_bar->set_prefer_global_menu(menu_type == MENU_TYPE_GLOBAL);
 		main_menu_bar->set_switch_on_hover(true);
+		main_menu_bar->connect(SceneStringName(minimum_size_changed), callable_mp(this, &EditorNode::_update_main_menu_width), CONNECT_DEFERRED);
 
 		for (PopupMenu *menu : main_menu_items) {
 			if (menu != apple_menu || menu_type == MENU_TYPE_GLOBAL) {
@@ -9108,8 +9182,20 @@ EditorNode::EditorNode() {
 	scene_tabs->add_extra_button(distraction_free);
 	distraction_free->connect(SceneStringName(pressed), callable_mp(this, &EditorNode::_toggle_distraction_free_mode));
 
+	split_view_button = memnew(Button);
+	split_view_button->set_theme_type_variation("FlatMenuButton");
+	ED_SHORTCUT_AND_COMMAND("editor/toggle_split_view", TTRC("Split View"), KeyModifierMask::CMD_OR_CTRL | KeyModifierMask::ALT | Key::BACKSLASH);
+	split_view_button->set_shortcut(ED_GET_SHORTCUT("editor/toggle_split_view"));
+	split_view_button->set_tooltip_text(TTRC("Show the previously edited scene beside this one.\nClick the other pane to edit its scene."));
+	split_view_button->set_toggle_mode(true);
+	split_view_button->set_pressed_no_signal(EDITOR_GET("interface/editor/split_view/enabled"));
+	scene_tabs->add_extra_button(split_view_button);
+	split_view_button->connect(SceneStringName(toggled), callable_mp(this, &EditorNode::_split_view_toggled));
+
 	editor_main_screen = memnew(EditorMainScreen);
-	srt->add_child(editor_main_screen);
+	split_view = memnew(EditorSplitView);
+	srt->add_child(split_view);
+	split_view->set_main_screen(editor_main_screen);
 	title_bar->set_center_control(editor_main_screen->get_internal_container());
 
 	editor_dock_manager->register_dock_slot(editor_main_screen);
@@ -9297,6 +9383,8 @@ EditorNode::EditorNode() {
 	menu_scroll_box = memnew(EditorHScrollBox);
 	menu_scroll_box->set_v_size_flags(Control::SIZE_SHRINK_CENTER);
 	title_bar->add_child(menu_scroll_box);
+	title_bar->connect(SceneStringName(resized), callable_mp(this, &EditorNode::_update_main_menu_width), CONNECT_DEFERRED);
+	gui_base->connect(SceneStringName(resized), callable_mp(this, &EditorNode::_update_main_menu_width), CONNECT_DEFERRED);
 
 	file_menu = memnew(PopupMenu);
 	file_menu->connect(SceneStringName(id_pressed), callable_mp(this, &EditorNode::_menu_option));

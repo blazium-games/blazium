@@ -42,6 +42,7 @@
 #include "editor/inspector/editor_context_menu_plugin.h"
 #include "editor/inspector/multi_node_edit.h"
 #include "editor/plugins/editor_plugin.h"
+#include "editor/scene/editor_split_view.h"
 #include "scene/main/scene_tree.h"
 #include "scene/property_utils.h"
 #include "scene/resources/packed_scene.h"
@@ -670,6 +671,9 @@ void EditorData::remove_scene(int p_idx) {
 
 		if (edited_scene[p_idx].root == SceneTree::get_singleton()->get_edited_scene_root()) {
 			SceneTree::get_singleton()->set_edited_scene_root(nullptr);
+		}
+		if (EditorSplitView::get_singleton()) {
+			EditorSplitView::get_singleton()->release_scene(edited_scene[p_idx].root);
 		}
 		memdelete(edited_scene[p_idx].root);
 		edited_scene.write[p_idx].root = nullptr;

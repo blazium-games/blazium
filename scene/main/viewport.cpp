@@ -4475,6 +4475,16 @@ bool Viewport::get_canvas_cull_mask_bit(uint32_t p_layer) const {
 	return (canvas_cull_mask & (1 << p_layer));
 }
 
+#ifdef TOOLS_ENABLED
+void Viewport::set_editor_preview_scene_root(Node *p_root) {
+	editor_preview_scene_root = p_root ? p_root->get_instance_id() : ObjectID();
+}
+
+Node *Viewport::get_editor_preview_scene_root() const {
+	return editor_preview_scene_root.is_valid() ? ObjectDB::get_instance<Node>(editor_preview_scene_root) : nullptr;
+}
+#endif // TOOLS_ENABLED
+
 #ifdef DEBUG_ENABLED
 bool Viewport::is_visible_subviewport() const {
 	if (!is_sub_viewport()) {

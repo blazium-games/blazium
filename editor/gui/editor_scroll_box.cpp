@@ -38,6 +38,7 @@
 #include "scene/gui/button.h"
 #include "scene/gui/scroll_bar.h"
 #include "scene/gui/scroll_container.h"
+#include "scene/resources/style_box.h"
 #include "scene/theme/theme_db.h"
 
 void EditorScrollBox::ensure_control_visible(Control *p_control) {
@@ -130,7 +131,16 @@ void EditorScrollBox::_scroll(bool p_right) {
 }
 
 void EditorScrollBox::_update_buttons() {
-	bool show_arrows = control && control->get_size()[is_vertical() ? 1 : 0] > scroll_container->get_size()[is_vertical() ? 1 : 0];
+	// Compare with the room the box has without the buttons: once they are
+	// shown they shrink the scroll container, so comparing with the container
+	// would keep them shown even after the box got wide enough.
+	const int axis = is_vertical() ? 1 : 0;
+	real_t room = get_size()[axis];
+	const Ref<StyleBox> panel = scroll_container->get_theme_stylebox(SceneStringName(panel));
+	if (panel.is_valid()) {
+		room -= panel->get_minimum_size()[axis];
+	}
+	bool show_arrows = control && control->get_size()[axis] > room;
 	first_button->set_visible(show_arrows);
 	second_button->set_visible(show_arrows);
 

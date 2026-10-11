@@ -757,6 +757,15 @@ public:
 	bool is_visible_subviewport() const;
 #endif // DEBUG_ENABLED
 
+#ifdef TOOLS_ENABLED
+	// The editor's split view previews a second open scene in a viewport of
+	// its own. Nodes of that scene count as part of the edited scene, so they
+	// keep their editor behavior (cameras, timers, listeners and so on don't
+	// act as if the game were running).
+	void set_editor_preview_scene_root(Node *p_root);
+	Node *get_editor_preview_scene_root() const;
+#endif // TOOLS_ENABLED
+
 	virtual bool is_size_2d_override_stretch_enabled() const { return true; }
 
 	Transform2D get_screen_transform() const;
@@ -768,6 +777,10 @@ public:
 	virtual bool is_sub_viewport() const { return false; }
 
 private:
+#ifdef TOOLS_ENABLED
+	ObjectID editor_preview_scene_root;
+#endif // TOOLS_ENABLED
+
 #if DEBUG_ENABLED
 	template <class T>
 	class CameraOverride {

@@ -64,7 +64,31 @@
 Node *SceneTreeEditor::get_scene_node() const {
 	ERR_FAIL_COND_V(!is_inside_tree(), nullptr);
 
+	if (use_scene_root_override) {
+		return scene_root_override.is_valid() ? ObjectDB::get_instance<Node>(scene_root_override) : nullptr;
+	}
 	return get_tree()->get_edited_scene_root();
+}
+
+void SceneTreeEditor::set_scene_root_override(Node *p_root) {
+	const ObjectID id = p_root ? p_root->get_instance_id() : ObjectID();
+	if (use_scene_root_override && scene_root_override == id) {
+		return;
+	}
+	// The items are about to be freed, and the shown nodes stay alive (they
+	// move to another view), so drop the tooltip connections bound to items.
+	const Callable delay_update_tooltip = callable_mp(this, &SceneTreeEditor::_queue_update_node_tooltip);
+	for (const KeyValue<Node *, CachedNode> &E : node_cache.cache) {
+		if (E.key->is_connected("editor_description_changed", delay_update_tooltip)) {
+			E.key->disconnect("editor_description_changed", delay_update_tooltip);
+		}
+	}
+	use_scene_root_override = true;
+	scene_root_override = id;
+	selected = nullptr;
+	_reset();
+	node_cache.current_scene_id = ObjectID();
+	_update_tree();
 }
 
 PackedStringArray SceneTreeEditor::_get_node_configuration_warnings(Node *p_node) {
@@ -2626,6 +2650,12 @@ void SceneTreeEditor::NodeCache::remove(Node *p_node, bool p_recursive) {
 
 	HashMap<Node *, CachedNode>::Iterator I = cache.find(p_node);
 	if (I) {
+		// The connection is bound to this node's TreeItem, which goes away. The
+		// node may live on in the tree (e.g. a scene shown in the split view).
+		const Callable delay_update_tooltip = callable_mp(editor, &SceneTreeEditor::_queue_update_node_tooltip);
+		if (p_node->is_connected("editor_description_changed", delay_update_tooltip)) {
+			p_node->disconnect("editor_description_changed", delay_update_tooltip);
+		}
 		if (editor->is_scene_tree_dock) {
 			EditorNode::get_singleton()->update_resource_count(I->key, true);
 		}

@@ -78,6 +78,7 @@ class BlaziumModuleMenu;
 class EditorAbout;
 class EditorBuildProfileManager;
 class EditorBottomPanel;
+class EditorSplitView;
 class EditorCommandPalette;
 class EditorDockManager;
 class EditorExport;
@@ -444,6 +445,8 @@ private:
 	Timer *editor_layout_save_delay_timer = nullptr;
 	Timer *scan_changes_timer = nullptr;
 	Button *distraction_free = nullptr;
+	Button *split_view_button = nullptr;
+	EditorSplitView *split_view = nullptr;
 	Callable palette_file_selected_callback;
 
 	EditorBottomPanel *bottom_panel = nullptr;
@@ -701,6 +704,8 @@ private:
 	void _update_addon_config();
 
 	void _toggle_distraction_free_mode();
+	void _split_view_toggled(bool p_enabled);
+	void _update_main_menu_width();
 
 	void _inherit_imported(const String &p_action);
 	void _open_imported();

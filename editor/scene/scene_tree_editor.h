@@ -110,6 +110,8 @@ class SceneTreeEditor : public Control {
 	};
 
 	NodeCache node_cache;
+	ObjectID scene_root_override;
+	bool use_scene_root_override = false;
 
 	Tree *tree = nullptr;
 	Node *selected = nullptr;
@@ -243,6 +245,9 @@ public:
 
 	void rename_node(Node *p_node, const String &p_name, TreeItem *p_item = nullptr);
 
+	// Shows this scene instead of the edited one, or nothing for nullptr
+	// (used by the split view).
+	void set_scene_root_override(Node *p_root);
 	void set_filter(const String &p_filter);
 	String get_filter() const;
 	String get_filter_term_warning();

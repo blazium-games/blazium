@@ -553,6 +553,12 @@ void EditorSettings::_load_defaults(Ref<ConfigFile> p_extra_config) {
 	EDITOR_SETTING(Variant::STRING, PROPERTY_HINT_GLOBAL_FILE, "interface/editor/fonts/code_font", "", "*.ttf,*.otf,*.woff,*.woff2,*.pfb,*.pfm")
 	EDITOR_SETTING(Variant::FLOAT, PROPERTY_HINT_RANGE, "interface/editor/timers/dragging_hover_wait_seconds", 0.5, "0.01,10,0.01,or_greater,suffix:s");
 	_initial_set("interface/editor/behavior/separate_distraction_mode", false, true);
+
+	// Split view
+	_initial_set("interface/editor/split_view/enabled", false, true);
+	_initial_set("interface/editor/split_view/show_pane_docks", true, true);
+	_initial_set("interface/editor/split_view/floating", false, true);
+	_initial_set("interface/editor/split_view/compare_scripts", false, true);
 	_initial_set("interface/editor/behavior/automatically_open_screenshots", true, true);
 	EDITOR_SETTING_USAGE(Variant::BOOL, PROPERTY_HINT_NONE, "interface/editor/display/single_window_mode", false, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_RESTART_IF_CHANGED | PROPERTY_USAGE_EDITOR_BASIC_SETTING)
 	_initial_set("interface/editor/input/mouse_extra_buttons_navigate_history", true);
