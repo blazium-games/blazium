@@ -155,10 +155,7 @@ Node *JustAMCPToolExecutor::get_test_scene_root() {
 }
 
 JustAMCPToolExecutor::JustAMCPToolExecutor() {
-#ifdef TESTS_ENABLED
-
 	_init_tools();
-#endif
 }
 
 JustAMCPToolExecutor::~JustAMCPToolExecutor() {
