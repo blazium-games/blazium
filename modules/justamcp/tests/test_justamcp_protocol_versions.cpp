@@ -41,6 +41,7 @@
 #include "../justamcp_json_rpc_transport.h"
 #include "../justamcp_server.h"
 #include "../justamcp_session_manager.h"
+#include "../justamcp_tool_context.h"
 #include "../tools/justamcp_agent_policy.h"
 #include "../tools/justamcp_json_rpc_router.h"
 #include "../tools/justamcp_tool_executor.h"
@@ -51,6 +52,7 @@
 
 #include "modules/httpserver/http_request_context.h"
 #include "modules/httpserver/http_response.h"
+#include "modules/httpserver/http_server.h"
 
 static const char *const k_legacy_protocols[] = {
 	"2025-11-25",
@@ -664,6 +666,89 @@ void test_justamcp_agent_policy_envelope() {
 #endif
 }
 
+void test_justamcp_sse_keepalive_interval() {
+	HTTPServer *http = HTTPServer::get_singleton();
+	TEST_FAIL_COND(http == nullptr, "HTTPServer is required");
+	const uint64_t opened_usec = 1000000;
+	CHECK(http->test_pump_sse_keepalive_once(9, opened_usec, opened_usec + 14000000) == 0);
+	CHECK(http->test_pump_sse_keepalive_once(9, opened_usec, opened_usec + 15000000) == 1);
+}
+
+void test_justamcp_modern_listen_receives_stateless_tool_result() {
+	JustAMCPTestServerFixture fixture;
+	JustAMCPServer &server = fixture.get_server();
+	MCPSessionManager *session_manager = server.test_get_session_manager();
+	TEST_FAIL_COND(session_manager == nullptr, "Session manager is required");
+	TEST_FAIL_COND(HTTPServer::get_singleton() == nullptr, "HTTPServer is required");
+
+	Ref<HTTPResponse> listen;
+	listen.instantiate();
+	CHECK(session_manager->handle_mcp_post(_make_ctx("POST", _modern_headers("subscriptions/listen"), _modern_body("subscriptions/listen", 8)), listen));
+	CHECK(listen->is_sse_response());
+	session_manager->on_sse_connection_opened(81, "/mcp", Dictionary());
+	CHECK(session_manager->test_has_modern_listen(81));
+
+	Dictionary queue_full;
+	MCPToolQueueEntry *entry = server.test_enqueue_tool_request(44, "blazium_logs_read", Dictionary(), queue_full);
+	CHECK(entry != nullptr);
+	entry->has_stateless_response = true;
+	entry->sse_connection_id = -1;
+	server.test_set_in_flight_entries(entry, nullptr);
+
+	const int before = session_manager->test_count_send_json_on_connection_calls();
+	Dictionary rpc;
+	rpc["jsonrpc"] = "2.0";
+	rpc["id"] = 44;
+	Dictionary result;
+	result["content"] = "ok";
+	rpc["result"] = result;
+	{
+		JustAMCPToolContextScope scope(44);
+		server.test_complete_current_tool_request(rpc);
+	}
+	CHECK(session_manager->test_count_send_json_on_connection_calls() == before + 1);
+	CHECK(listen->is_sse_response());
+	CHECK(listen->get_body().is_empty());
+
+	MCPToolQueueEntry *routed = server.test_enqueue_tool_request(45, "blazium_logs_read", Dictionary(), queue_full);
+	CHECK(routed != nullptr);
+	routed->has_stateless_response = true;
+	routed->sse_connection_id = 7;
+	server.test_set_in_flight_entries(routed, nullptr);
+	const int after_listen = session_manager->test_count_send_json_on_connection_calls();
+	Dictionary routed_rpc;
+	routed_rpc["jsonrpc"] = "2.0";
+	routed_rpc["id"] = 45;
+	routed_rpc["result"] = result;
+	{
+		JustAMCPToolContextScope scope(45);
+		server.test_complete_current_tool_request(routed_rpc);
+	}
+	CHECK(session_manager->test_count_send_json_on_connection_calls() == after_listen);
+
+	session_manager->on_sse_connection_closed(81);
+	CHECK(!session_manager->test_has_modern_listen(81));
+}
+
+void test_justamcp_cancelled_listen_header_accepted() {
+	JustAMCPTestServerFixture fixture;
+	MCPSessionManager *session_manager = fixture.get_server().test_get_session_manager();
+	TEST_FAIL_COND(session_manager == nullptr, "Session manager is required");
+
+	Ref<HTTPResponse> cancelled;
+	cancelled.instantiate();
+	CHECK(session_manager->handle_mcp_post(_make_ctx("POST", _modern_headers("subscriptions/listen"), _modern_body("notifications/cancelled", 12, "{\"requestId\":8}")), cancelled));
+	CHECK(cancelled->get_status() == 202);
+	CHECK(!String(cancelled->get_body()).contains("-32020"));
+
+	Ref<HTTPResponse> mismatch;
+	mismatch.instantiate();
+	CHECK(session_manager->handle_mcp_post(_make_ctx("POST", _modern_headers("tools/list"), _modern_body("tools/call", 13, "{\"name\":\"blazium_logs_read\"}")), mismatch));
+	CHECK(mismatch->get_status() == 400);
+	Dictionary mismatch_root = _parse_json_body(mismatch);
+	CHECK(int(Dictionary(mismatch_root["error"]).get("code", 0)) == -32020);
+}
+
 #else
 
 void test_justamcp_negotiate_protocol_versions() {
@@ -715,6 +800,15 @@ void test_justamcp_http_get_concatenated_modern_legacy_header() {
 	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required");
 }
 void test_justamcp_accepted_protocol_versions_pinning() {
+	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required");
+}
+void test_justamcp_sse_keepalive_interval() {
+	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required");
+}
+void test_justamcp_modern_listen_receives_stateless_tool_result() {
+	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required");
+}
+void test_justamcp_cancelled_listen_header_accepted() {
 	TEST_FAIL_COND(true, "MODULE_HTTPSERVER_ENABLED is required");
 }
 

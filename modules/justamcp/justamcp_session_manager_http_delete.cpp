@@ -86,6 +86,7 @@ bool MCPSessionManager::handle_mcp_delete(const Ref<HTTPRequestContext> &p_conte
 		connection_ids.push_back(conn.key);
 		connection_to_session.erase(conn.key);
 		all_sse_connection_ids.erase(conn.key);
+		modern_listen_connection_ids.erase(conn.key);
 	}
 	pending_post_sse_by_session.erase(session_id);
 	post_sse_upgrade_sessions.erase(session_id);

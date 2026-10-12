@@ -62,6 +62,19 @@ static int _justamcp_readonly_worker_concurrency() {
 	return concurrency;
 }
 
+void JustAMCPServer::_publish_unrouted_stateless_result(MCPToolQueueEntry *p_entry) {
+	if (!p_entry) {
+		return;
+	}
+	p_entry->signal_and_join_waiters();
+	// A held HTTP tools/call already answered 202. The JSON has to ride the listen stream.
+	// A routed POST SSE connection delivers the body itself, so skip that case.
+	if (p_entry->sse_connection_id >= 0 || p_entry->rpc_result.is_empty() || !session_manager) {
+		return;
+	}
+	session_manager->send_json_to_modern_listeners(JSON::stringify(p_entry->rpc_result));
+}
+
 void JustAMCPServer::_fail_and_remove_task_dispatch_entry(MCPToolQueueEntry *p_entry) {
 	if (!p_entry) {
 		return;
@@ -85,7 +98,7 @@ void JustAMCPServer::_fail_and_remove_task_dispatch_entry(MCPToolQueueEntry *p_e
 		JustAMCPToolQueueState::sync_processing_flag(mcp_tool_queue.current_write, mcp_tool_queue.current_readonly_inflight, mcp_tool_queue.processing);
 	}
 	if (p_entry->has_stateless_response) {
-		p_entry->signal_and_join_waiters();
+		_publish_unrouted_stateless_result(p_entry);
 	} else if (!p_entry->rpc_result.is_empty()) {
 		_send_sse_routed(JSON::stringify(p_entry->rpc_result), p_entry->session_id, p_entry->sse_connection_id);
 	}
@@ -254,7 +267,7 @@ void JustAMCPServer::_dispatch_task_augmented_tools_call(const Variant &p_reques
 
 	if (entry->cancel_requested) {
 		if (has_stateless) {
-			entry->signal_and_join_waiters();
+			_publish_unrouted_stateless_result(entry);
 		} else {
 			_send_sse_routed(JSON::stringify(entry->rpc_result), session_id, sse_connection_id);
 		}
@@ -454,7 +467,7 @@ void JustAMCPServer::_complete_tool_entry(MCPToolQueueEntry *p_entry, const Dict
 	_unregister_task_route(p_entry->task_id);
 
 	if (has_stateless) {
-		p_entry->signal_and_join_waiters();
+		_publish_unrouted_stateless_result(p_entry);
 	} else {
 		_send_sse_routed(JSON::stringify(p_rpc_result), p_entry->session_id, p_entry->sse_connection_id);
 	}

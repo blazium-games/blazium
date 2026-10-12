@@ -63,6 +63,7 @@ class HTTPServer : public Object {
 		bool is_sse = false;
 		bool is_held = false;
 		int sse_connection_id = 0;
+		uint64_t last_sse_keepalive_usec = 0;
 		bool headers_parsed = false;
 		int header_length = 0;
 		int body_length = 0;
@@ -84,6 +85,9 @@ private:
 	Mutex server_lock;
 	Mutex sse_lock;
 	Thread server_thread;
+#ifdef TESTS_ENABLED
+	int test_sse_keepalive_sends = 0;
+#endif
 
 	// Configuration
 	String cors_origin = "*";
@@ -99,6 +103,7 @@ private:
 	void _clear_client(int p_client_id);
 	void _poll();
 	void _poll_client(int p_client_id, ClientConnection &p_client);
+	void _pump_sse_keepalives(uint64_t p_now_usec);
 	void _parse_and_dispatch_request(int p_client_id, ClientConnection &p_client);
 	void _dispatch_request(int p_client_id, ClientConnection &p_client, Ref<HTTPRequestContext> p_context);
 	bool _match_route(const String &p_pattern, const String &p_path, Dictionary &r_params) const;
@@ -152,6 +157,10 @@ public:
 
 	// Async hold-client completion (handler called hold(); later complete from main/worker).
 	Error complete_response(int p_client_id, const Ref<HTTPResponse> &p_response);
+
+#ifdef TESTS_ENABLED
+	int test_pump_sse_keepalive_once(int p_connection_id, uint64_t p_last_keepalive_usec, uint64_t p_now_usec);
+#endif
 
 	HTTPServer();
 	~HTTPServer();

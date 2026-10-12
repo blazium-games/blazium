@@ -6,5 +6,9 @@ Import("env_modules")
 
 env_httpserver = env_modules.Clone()
 
+# Test helpers live in this module and are referenced by JustAMCP protocol tests.
+if env["tests"]:
+    env_httpserver.Append(CPPDEFINES=["TESTS_ENABLED"])
+
 # Blazium source files
 env_httpserver.add_source_files(env.modules_sources, "*.cpp")

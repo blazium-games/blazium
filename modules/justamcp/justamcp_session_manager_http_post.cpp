@@ -356,7 +356,9 @@ bool MCPSessionManager::_validate_modern_headers(const Ref<HTTPRequestContext> &
 		return false;
 	}
 	const String mcp_method = decode_mcp_header_value(get_header(p_context, "Mcp-Method"));
-	if (mcp_method.is_empty() || mcp_method != method) {
+	// Clients cancel a dead subscriptions/listen stream with Mcp-Method still set to that call.
+	const bool cancel_for_listen = method == "notifications/cancelled" && mcp_method == "subscriptions/listen";
+	if ((mcp_method.is_empty() || mcp_method != method) && !cancel_for_listen) {
 		r_error = "Mcp-Method does not match JSON-RPC method";
 		return false;
 	}
