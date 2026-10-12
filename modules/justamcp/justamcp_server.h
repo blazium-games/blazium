@@ -179,6 +179,7 @@ private:
 	void _on_pending_tools_process_frame();
 	bool pending_tools_drain_scheduled = false;
 	void _fail_and_remove_task_dispatch_entry(MCPToolQueueEntry *p_entry);
+	void _publish_unrouted_stateless_result(MCPToolQueueEntry *p_entry);
 	void _complete_tool_entry(MCPToolQueueEntry *p_entry, const Dictionary &p_rpc_result);
 	void _complete_current_tool_request(const Dictionary &p_rpc_result);
 	void _complete_task_tool_entry(MCPToolQueueEntry *p_entry, bool p_success, const Variant &p_result, const String &p_error);

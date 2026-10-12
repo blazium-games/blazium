@@ -51,6 +51,7 @@ void MCPSessionManager::clear_all() {
 	pending_post_sse_by_session.clear();
 	post_sse_upgrade_sessions.clear();
 	all_sse_connection_ids.clear();
+	modern_listen_connection_ids.clear();
 	request_router.clear_all();
 #if defined(MODULE_HTTPSERVER_ENABLED)
 	pending_modern_listen = 0;
@@ -531,6 +532,7 @@ void MCPSessionManager::on_sse_connection_opened(int p_connection_id, const Stri
 		if (pending_modern_listen > 0) {
 			pending_modern_listen--;
 			all_sse_connection_ids.insert(p_connection_id);
+			modern_listen_connection_ids.insert(p_connection_id);
 			claimed_modern_listen = true;
 		}
 	}

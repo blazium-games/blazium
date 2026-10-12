@@ -48,6 +48,9 @@ void test_justamcp_http_initialize_modern_client_stays_legacy();
 void test_justamcp_http_modern_get_delete_and_listen();
 void test_justamcp_http_get_concatenated_modern_legacy_header();
 void test_justamcp_accepted_protocol_versions_pinning();
+void test_justamcp_sse_keepalive_interval();
+void test_justamcp_modern_listen_receives_stateless_tool_result();
+void test_justamcp_cancelled_listen_header_accepted();
 
 TEST_CASE("[Modules][JustAMCP] negotiate protocol versions") {
 	test_justamcp_negotiate_protocol_versions();
@@ -115,4 +118,16 @@ TEST_CASE("[Modules][JustAMCP] http GET allows concatenated modern+legacy protoc
 
 TEST_CASE("[Modules][JustAMCP] accepted protocol versions pinning") {
 	test_justamcp_accepted_protocol_versions_pinning();
+}
+
+TEST_CASE("[Modules][JustAMCP] sse keepalive interval") {
+	test_justamcp_sse_keepalive_interval();
+}
+
+TEST_CASE("[Modules][JustAMCP] modern listen receives stateless tool result") {
+	test_justamcp_modern_listen_receives_stateless_tool_result();
+}
+
+TEST_CASE("[Modules][JustAMCP] cancelled listen header accepted") {
+	test_justamcp_cancelled_listen_header_accepted();
 }

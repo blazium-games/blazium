@@ -105,7 +105,7 @@ void JustAMCPServer::_complete_task_tool_entry(MCPToolQueueEntry *p_entry, bool 
 			rpc_with_id["id"] = completed_entry->request_id;
 			completed_entry->rpc_result = rpc_with_id;
 		}
-		completed_entry->signal_and_join_waiters();
+		_publish_unrouted_stateless_result(completed_entry);
 	}
 
 	memdelete(completed_entry);

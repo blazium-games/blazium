@@ -91,6 +91,7 @@ class MCPSessionManager {
 
 	HashSet<String> post_sse_upgrade_sessions;
 	HashSet<int> all_sse_connection_ids;
+	HashSet<int> modern_listen_connection_ids;
 
 	JustAMCPRequestRouter request_router;
 
@@ -146,6 +147,7 @@ public:
 	void complete_post_sse_stream_if_needed(int p_connection_id);
 
 	bool send_json_on_connection(int p_connection_id, const String &p_json, const String &p_event_type = "message");
+	void send_json_to_modern_listeners(const String &p_json);
 	bool send_json_to_session(const String &p_session_id, const String &p_json, int p_preferred_connection_id = -1);
 	bool send_json_legacy_connection(int p_connection_id, const String &p_json);
 
@@ -183,6 +185,7 @@ public:
 	int test_connection_map_size() const;
 	bool test_has_connection_mapping(int p_connection_id) const;
 	int test_count_send_json_on_connection_calls() const;
+	bool test_has_modern_listen(int p_connection_id) const;
 	void test_simulate_session_delete(const String &p_session_id);
 	bool test_try_set_pending_post_sse(const String &p_session_id, const String &p_body);
 	void test_backdate_request_route(const Variant &p_request_id, uint64_t p_age_usec);

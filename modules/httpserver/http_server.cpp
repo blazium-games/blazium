@@ -177,9 +177,37 @@ void HTTPServer::_poll() {
 	for (int client_id : clients_to_remove) {
 		_clear_client(client_id);
 	}
+
+	if (OS::get_singleton()) {
+		_pump_sse_keepalives(OS::get_singleton()->get_ticks_usec());
+	}
+}
+
+void HTTPServer::_pump_sse_keepalives(uint64_t p_now_usec) {
+	// Stay under the ~30s idle reset clients see on subscriptions/listen.
+	const uint64_t interval_usec = 15000000;
+	for (KeyValue<int, ClientConnection> &E : clients) {
+		ClientConnection &client = E.value;
+		if (!client.is_sse || client.sse_connection_id <= 0) {
+			continue;
+		}
+		if (client.last_sse_keepalive_usec != 0 && p_now_usec - client.last_sse_keepalive_usec < interval_usec) {
+			continue;
+		}
+		send_sse_comment(client.sse_connection_id, "keepalive");
+		client.last_sse_keepalive_usec = p_now_usec;
+#ifdef TESTS_ENABLED
+		test_sse_keepalive_sends++;
+#endif
+	}
 }
 
 void HTTPServer::_poll_client(int p_client_id, ClientConnection &p_client) {
+	if (p_client.tcp.is_null()) {
+		_clear_client(p_client_id);
+		return;
+	}
+
 	// Handle TLS handshake if needed
 	if (use_tls && p_client.tls.is_null() && p_client.tcp->get_status() == StreamPeerTCP::STATUS_CONNECTED) {
 		p_client.tls = Ref<StreamPeerTLS>(StreamPeerTLS::create());
@@ -199,6 +227,12 @@ void HTTPServer::_poll_client(int p_client_id, ClientConnection &p_client) {
 			_clear_client(p_client_id);
 			return;
 		}
+	}
+
+	// SSE sockets are otherwise never read. Poll so a peer FIN is observed
+	// instead of leaving the connection until a later write resets it.
+	if (p_client.is_sse) {
+		p_client.tcp->poll();
 	}
 
 	// Check connection status
@@ -412,6 +446,7 @@ void HTTPServer::_dispatch_request(int p_client_id, ClientConnection &p_client, 
 		int sse_id = next_connection_id++;
 		p_client.is_sse = true;
 		p_client.sse_connection_id = sse_id;
+		p_client.last_sse_keepalive_usec = OS::get_singleton() ? OS::get_singleton()->get_ticks_usec() : 0;
 
 		// Send SSE headers
 		_send_response(p_client_id, p_client, response);
@@ -864,6 +899,23 @@ Error HTTPServer::complete_response(int p_client_id, const Ref<HTTPResponse> &p_
 	_clear_client(p_client_id);
 	return OK;
 }
+
+#ifdef TESTS_ENABLED
+int HTTPServer::test_pump_sse_keepalive_once(int p_connection_id, uint64_t p_last_keepalive_usec, uint64_t p_now_usec) {
+	MutexLock lock(server_lock);
+	ClientConnection client;
+	client.is_sse = true;
+	client.sse_connection_id = p_connection_id;
+	client.last_sse_keepalive_usec = p_last_keepalive_usec;
+	const int client_id = next_client_id++;
+	clients[client_id] = client;
+	const int before = test_sse_keepalive_sends;
+	_pump_sse_keepalives(p_now_usec);
+	const int sent = test_sse_keepalive_sends - before;
+	clients.erase(client_id);
+	return sent;
+}
+#endif
 
 HTTPServer::HTTPServer() {
 	singleton = this;

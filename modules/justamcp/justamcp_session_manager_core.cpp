@@ -137,6 +137,7 @@ void MCPSessionManager::_expire_sessions() {
 		for (const KeyValue<int, String> &conn : session.connection_to_stream) {
 			connection_to_session.erase(conn.key);
 			all_sse_connection_ids.erase(conn.key);
+			modern_listen_connection_ids.erase(conn.key);
 			if (HTTPServer::get_singleton()) {
 				HTTPServer::get_singleton()->close_sse_connection(conn.key);
 			}
@@ -164,6 +165,7 @@ bool MCPSessionManager::_register_stream(MCPSession &p_session, int p_connection
 }
 
 void MCPSessionManager::_unregister_connection(int p_connection_id) {
+	modern_listen_connection_ids.erase(p_connection_id);
 	if (!connection_to_session.has(p_connection_id)) {
 		all_sse_connection_ids.erase(p_connection_id);
 		return;
@@ -230,6 +232,19 @@ bool MCPSessionManager::send_json_on_connection(int p_connection_id, const Strin
 #endif
 	const Error err = HTTPServer::get_singleton()->send_sse_event(p_connection_id, p_event_type, p_json, event_id);
 	return err == OK;
+}
+
+void MCPSessionManager::send_json_to_modern_listeners(const String &p_json) {
+	Vector<int> connection_ids;
+	{
+		MutexLock lock(mutex);
+		for (int connection_id : modern_listen_connection_ids) {
+			connection_ids.push_back(connection_id);
+		}
+	}
+	for (int i = 0; i < connection_ids.size(); i++) {
+		send_json_on_connection(connection_ids[i], p_json);
+	}
 }
 
 bool MCPSessionManager::send_json_to_session(const String &p_session_id, const String &p_json, int p_preferred_connection_id) {
@@ -542,6 +557,11 @@ int MCPSessionManager::test_count_send_json_on_connection_calls() const {
 	return test_send_json_on_connection_calls;
 }
 
+bool MCPSessionManager::test_has_modern_listen(int p_connection_id) const {
+	MutexLock lock(mutex);
+	return modern_listen_connection_ids.has(p_connection_id);
+}
+
 void MCPSessionManager::test_simulate_session_delete(const String &p_session_id) {
 	Vector<int> connection_ids;
 	{
@@ -554,6 +574,7 @@ void MCPSessionManager::test_simulate_session_delete(const String &p_session_id)
 			connection_ids.push_back(conn.key);
 			connection_to_session.erase(conn.key);
 			all_sse_connection_ids.erase(conn.key);
+			modern_listen_connection_ids.erase(conn.key);
 		}
 		pending_post_sse_by_session.erase(p_session_id);
 		sessions.erase(p_session_id);
