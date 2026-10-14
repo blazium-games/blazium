@@ -50,9 +50,9 @@ Unity, Unreal, and Blazium are different engines. They are not forks of each oth
 
 ## Blazium Games
 
-[Blazium Games](https://blazium.games) is a separate store, operated by Divine Games, Inc. It is the platform for playing and publishing games, applications, mods, and assets. A game on that store does not have to be made with the Blazium engine, and the engine does not require that store. `chauffeur` is the only upload tool for Blazium Games. Docs are at [docs.blazium.games](https://docs.blazium.games).
+[Blazium Games](https://blazium.games) is a separate game publishing platform, with an infrastructure focus, operated by Divine Games, Inc. It publishes games, applications, mods, and assets. A game on that platform does not have to be made with the Blazium engine, and the engine does not require that platform. `chauffeur` is the only upload tool for Blazium Games. Docs are at [docs.blazium.games](https://docs.blazium.games).
 
-The Godot and Blazium editor AssetLib can list packages from `https://api.blazium.online/api/v1/public/asset-library`. The store has a Made with Blazium shelf. Those are the bridges. They do not make the engine and the store the same product.
+The Godot and Blazium editor AssetLib can list packages from `https://api.blazium.online/api/v1/public/asset-library`. The publishing platform has a Made with Blazium shelf. Those are the bridges. They do not make the engine and the publishing platform the same product.
 
 ## Community
 
@@ -72,7 +72,7 @@ The Godot and Blazium editor AssetLib can list packages from `https://api.blaziu
 | [Toolchain](https://github.com/blazium-games/blazium-toolchain) | PS1, PS2, N64, and Interactive DVD. `ps3` and `ps4` are reserved and do not ship. | Linux and Windows, x86_64 and x86_32. Catalog: [toolchain.json](https://cdn.blazium.app/toolchain/toolchain.json) |
 | [Skills](https://github.com/blazium-games/blazium-skills) | Agent skill packs for Claude, Cursor, Codex, and Grok. Own semver, separate from the 0.8.x API baseline. | Catalog: [skills.json](https://cdn.blazium.app/skills/skills.json) |
 | [Subagents](https://github.com/blazium-games/blazium-subagents) | Studio roster that loads those skills. Own semver. | Catalog: [subagents.json](https://cdn.blazium.app/subagents/subagents.json) |
-| [Blazium Games](https://blazium.games) | Separate store. Upload with chauffeur, not with these tools. | Site [blazium.games](https://blazium.games), docs [docs.blazium.games](https://docs.blazium.games). |
+| [Blazium Games](https://blazium.games) | Separate game publishing platform, with an infrastructure focus. Upload with chauffeur, not with these tools. | Site [blazium.games](https://blazium.games), docs [docs.blazium.games](https://docs.blazium.games). |
 
 ## Getting the engine
 
