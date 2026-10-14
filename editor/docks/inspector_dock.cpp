@@ -568,8 +568,20 @@ void InspectorDock::set_info(const String &p_button_text, const String &p_messag
 void InspectorDock::clear() {
 }
 
+void InspectorDock::edit_outside_history(Object *p_object) {
+	// No note left from what was edited before, such as "read-only".
+	set_info(String(), String(), false);
+	inspector->edit(p_object);
+	object_selector->set_shown_object(p_object);
+	update(p_object);
+}
+
 void InspectorDock::update(Object *p_object) {
 	EditorSelectionHistory *editor_history = EditorNode::get_singleton()->get_editor_selection_history();
+	if (object_selector->get_shown_object() != (p_object ? p_object->get_instance_id() : ObjectID())) {
+		// Back to the selection.
+		object_selector->set_shown_object(nullptr);
+	}
 
 	backward_button->set_disabled(editor_history->is_at_beginning());
 	forward_button->set_disabled(editor_history->is_at_end());

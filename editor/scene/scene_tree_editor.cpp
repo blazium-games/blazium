@@ -241,7 +241,8 @@ void SceneTreeEditor::_cell_button_pressed(Object *p_item, int p_column, int p_i
 
 		undo_redo->create_action(TTR("Toggle Visible"));
 		_toggle_visible(n);
-		List<Node *> selection = editor_selection->get_top_selected_node_list();
+		// A tree without the editor's selection only toggles the node clicked.
+		const List<Node *> selection = editor_selection ? editor_selection->get_top_selected_node_list() : List<Node *>();
 		if (selection.size() > 1 && selection.find(n) != nullptr) {
 			for (Node *nv : selection) {
 				ERR_FAIL_NULL(nv);
@@ -551,7 +552,7 @@ void SceneTreeEditor::_update_node(Node *p_node, TreeItem *p_item, bool p_part_o
 		p_node->connect("editor_state_changed", callable_mp(this, &SceneTreeEditor::_node_editor_state_changed).bind(p_node));
 	}
 
-	if (connecting_signal || (can_open_instance && is_scene_tree_dock)) {
+	if (connecting_signal || (can_open_instance && is_scene_tree_dock) || show_node_buttons) {
 		if (!p_node->is_connected(CoreStringName(script_changed), callable_mp(this, &SceneTreeEditor::_node_script_changed))) {
 			p_node->connect(CoreStringName(script_changed), callable_mp(this, &SceneTreeEditor::_node_script_changed).bind(p_node));
 		}
@@ -709,7 +710,7 @@ void SceneTreeEditor::_update_node(Node *p_node, TreeItem *p_item, bool p_part_o
 	}
 
 	// Show buttons only when necessary (SceneTreeDock) to avoid crashes.
-	if (can_open_instance && is_scene_tree_dock) {
+	if ((can_open_instance && is_scene_tree_dock) || show_node_buttons) {
 		Ref<Script> scr = p_node->get_script();
 		if (scr.is_valid()) {
 			String additional_notes;
@@ -806,7 +807,7 @@ void SceneTreeEditor::_update_node_tooltip(Node *p_node, TreeItem *p_item) {
 			p_item->add_button(0, get_editor_theme_icon(SNAME("InstanceOptions")), BUTTON_SUBSCENE, false, TTR("Open in Editor"));
 		}
 		tooltip += String("\n" + TTR("Inherits:") + " " + p_node->get_scene_inherited_state()->get_path());
-	} else if (p_node != get_scene_node() && p_node->is_instance() && can_open_instance) {
+	} else if (p_node != get_scene_node() && p_node->is_instance() && (can_open_instance || show_node_buttons)) {
 		if (p_item->get_button_by_id(0, BUTTON_SUBSCENE) == -1) {
 			p_item->add_button(0, get_editor_theme_icon(SNAME("InstanceOptions")), BUTTON_SUBSCENE, false, TTR("Open in Editor"));
 		}
@@ -1885,6 +1886,10 @@ void SceneTreeEditor::set_show_all_nodes(bool p_show_all_nodes) {
 
 void SceneTreeEditor::set_as_scene_tree_dock() {
 	is_scene_tree_dock = true;
+}
+
+void SceneTreeEditor::set_show_node_buttons(bool p_show) {
+	show_node_buttons = p_show;
 }
 
 void SceneTreeEditor::set_display_foreign_nodes(bool p_display) {

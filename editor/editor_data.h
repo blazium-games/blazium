@@ -208,6 +208,8 @@ public:
 	int get_edited_scene() const;
 	int get_edited_scene_from_path(const String &p_path) const;
 	Node *get_edited_scene_root(int p_idx = -1);
+	// The root of the open scene p_node is part of, the edited one or not.
+	Node *get_open_scene_root_of(const Node *p_node);
 	int get_edited_scene_count() const;
 	Vector<EditedScene> get_edited_scenes() const;
 

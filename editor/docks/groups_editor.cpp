@@ -52,7 +52,9 @@ static bool can_edit(Node *p_node, const String &p_group) {
 	Node *n = p_node;
 	bool can_edit = true;
 	while (n) {
-		Ref<SceneState> ss = (n == EditorNode::get_singleton()->get_edited_scene()) ? n->get_scene_inherited_state() : n->get_scene_instance_state();
+		// The root of an open scene, whether it's the edited one or one
+		// edited beside it in the split view.
+		Ref<SceneState> ss = (n == EditorNode::get_editor_data().get_open_scene_root_of(n)) ? n->get_scene_inherited_state() : n->get_scene_instance_state();
 		if (ss.is_valid()) {
 			int path = ss->find_node_by_path(n->get_path_to(p_node));
 			if (path != -1) {
@@ -361,8 +363,14 @@ void GroupsEditor::set_selection(const Vector<Node *> &p_nodes) {
 	holder->show();
 	select_a_node->hide();
 
-	if (scene_tree->get_edited_scene_root() != scene_root_node) {
-		scene_root_node = scene_tree->get_edited_scene_root();
+	// The scene the nodes are in: the edited one, or another open scene
+	// edited beside it in the split view.
+	Node *root = EditorNode::get_editor_data().get_open_scene_root_of(p_nodes[0]);
+	if (!root) {
+		root = scene_tree->get_edited_scene_root();
+	}
+	if (root != scene_root_node) {
+		scene_root_node = root;
 		_update_scene_groups(scene_root_node->get_instance_id());
 		_update_groups();
 	}
@@ -379,8 +387,10 @@ void GroupsEditor::_item_edited() {
 	String name = ti->get_text(0);
 
 	EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
+	// In the history of the nodes' scene, which may not be the edited one
+	// when it's edited beside it in the split view.
 	if (ti->is_checked(0)) {
-		undo_redo->create_action(TTR("Add to Group"));
+		undo_redo->create_action(TTR("Add to Group"), UndoRedo::MERGE_DISABLE, scene_root_node);
 
 		Array nodes;
 		_get_group_mask(name, nodes, true);
@@ -397,7 +407,7 @@ void GroupsEditor::_item_edited() {
 		undo_redo->commit_action();
 
 	} else {
-		undo_redo->create_action(TTR("Remove from Group"));
+		undo_redo->create_action(TTR("Remove from Group"), UndoRedo::MERGE_DISABLE, scene_root_node);
 
 		Array nodes;
 		_get_group_mask(name, nodes, false);
@@ -539,15 +549,17 @@ void GroupsEditor::_confirm_add() {
 
 	String description = add_group_description->get_text();
 
+	bool is_local = !global_group_button->is_pressed();
+
 	EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
-	undo_redo->create_action(TTR("Add to Group"));
+	// A scene group goes in the history of the nodes' scene, which may not be
+	// the edited one when it's edited beside it in the split view.
+	undo_redo->create_action(TTR("Add to Group"), UndoRedo::MERGE_DISABLE, is_local ? scene_root_node : nullptr);
 
 	Array nodes;
 	_get_group_mask(name, nodes, true);
 	undo_redo->add_do_method(this, "_add_to_group", name, true, nodes);
 	undo_redo->add_undo_method(this, "_remove_from_group", name, nodes);
-
-	bool is_local = !global_group_button->is_pressed();
 	if (is_local) {
 		undo_redo->add_do_method(this, "_add_scene_group", name);
 		undo_redo->add_undo_method(this, "_remove_scene_group", name);

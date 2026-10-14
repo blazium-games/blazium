@@ -1765,8 +1765,21 @@ void EditorNode::_titlebar_resized() {
 
 void EditorNode::_update_undo_redo_allowed() {
 	EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
-	file_menu->set_item_disabled(file_menu->get_item_index(SCENE_UNDO), !undo_redo->has_undo());
-	file_menu->set_item_disabled(file_menu->get_item_index(SCENE_REDO), !undo_redo->has_redo());
+	bool has_undo = undo_redo->has_undo();
+	bool has_redo = undo_redo->has_redo();
+	// The split view's second pane, while edits go to it.
+	const int pane_history = split_view ? split_view->get_active_history_id() : EditorUndoRedoManager::INVALID_HISTORY;
+	if (pane_history != EditorUndoRedoManager::INVALID_HISTORY) {
+		const UndoRedo *pane_undo_redo = undo_redo->get_or_create_history(pane_history).undo_redo;
+		has_undo = pane_undo_redo->has_undo();
+		has_redo = pane_undo_redo->has_redo();
+	}
+	file_menu->set_item_disabled(file_menu->get_item_index(SCENE_UNDO), !has_undo);
+	file_menu->set_item_disabled(file_menu->get_item_index(SCENE_REDO), !has_redo);
+}
+
+void EditorNode::update_undo_redo_allowed() {
+	_update_undo_redo_allowed();
 }
 
 void EditorNode::_node_renamed() {
@@ -3730,6 +3743,19 @@ void EditorNode::_menu_option_confirm(int p_option, bool p_confirmed) {
 				log->add_message(TTR("Can't undo while mouse buttons are pressed."), EditorLog::MSG_TYPE_EDITOR);
 			} else {
 				EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
+				// The split view's second pane, while edits go to it.
+				const int pane_history = split_view ? split_view->get_active_history_id() : EditorUndoRedoManager::INVALID_HISTORY;
+				if (pane_history != EditorUndoRedoManager::INVALID_HISTORY) {
+					UndoRedo *pane_undo_redo = undo_redo->get_or_create_history(pane_history).undo_redo;
+					const String pane_action = pane_undo_redo ? pane_undo_redo->get_current_action_name() : String();
+					if (!pane_undo_redo || !pane_undo_redo->has_undo() || !undo_redo->undo_history(pane_history)) {
+						log->add_message(TTR("Nothing to undo."), EditorLog::MSG_TYPE_EDITOR);
+					} else if (!pane_action.is_empty()) {
+						log->add_message(vformat(TTR("Scene Undo: %s"), pane_action), EditorLog::MSG_TYPE_EDITOR);
+					}
+					_update_unsaved_cache();
+					break;
+				}
 				String action = undo_redo->get_current_action_name();
 				int id = undo_redo->get_current_action_history_id();
 				if (!undo_redo->undo()) {
@@ -3751,8 +3777,17 @@ void EditorNode::_menu_option_confirm(int p_option, bool p_confirmed) {
 		} break;
 		case SCENE_REDO: {
 			EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
+			const int pane_history = split_view ? split_view->get_active_history_id() : EditorUndoRedoManager::INVALID_HISTORY;
 			if ((int)Input::get_singleton()->get_mouse_button_mask() & button_mask_full) {
 				log->add_message(TTR("Can't redo while mouse buttons are pressed."), EditorLog::MSG_TYPE_EDITOR);
+			} else if (pane_history != EditorUndoRedoManager::INVALID_HISTORY) {
+				// The split view's second pane, while edits go to it.
+				UndoRedo *pane_undo_redo = undo_redo->get_or_create_history(pane_history).undo_redo;
+				if (!pane_undo_redo || !pane_undo_redo->has_redo() || !undo_redo->redo_history(pane_history)) {
+					log->add_message(TTR("Nothing to redo."), EditorLog::MSG_TYPE_EDITOR);
+				} else if (!pane_undo_redo->get_current_action_name().is_empty()) {
+					log->add_message(vformat(TTR("Scene Redo: %s"), pane_undo_redo->get_current_action_name()), EditorLog::MSG_TYPE_EDITOR);
+				}
 			} else {
 				if (!undo_redo->redo()) {
 					log->add_message(TTR("Nothing to redo."), EditorLog::MSG_TYPE_EDITOR);
@@ -7458,6 +7493,14 @@ void EditorNode::preload_reimporting_with_path_in_edited_scenes(const List<Strin
 	editor_data.set_edited_scene(original_edited_scene_idx);
 
 	progress.step(TTR("Preparation done."), editor_data.get_edited_scene_count());
+}
+
+void EditorNode::update_edited_scene_instances() {
+	// Picks up saved changes to the scenes it instances, as switching to its tab does.
+	const int idx = editor_data.get_edited_scene();
+	if (idx >= 0 && editor_data.get_edited_scene_root(idx)) {
+		_set_current_scene_nocheck(idx);
+	}
 }
 
 void EditorNode::reload_instances_with_path_in_edited_scenes() {

@@ -152,6 +152,10 @@ public:
 	void clear();
 	void set_info(const String &p_button_text, const String &p_message, bool p_is_warning);
 	void update(Object *p_object);
+	// Edits an object without selecting it, such as a node of the scene in
+	// the split view's second pane. The next update() goes back to the
+	// selection.
+	void edit_outside_history(Object *p_object);
 	Container *get_addon_area();
 	EditorInspector *get_inspector() { return inspector; }
 
