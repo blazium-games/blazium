@@ -1,0 +1,57 @@
+name: PS3 Platform Build
+
+on:
+  push:
+    paths:
+      - 'platform/ps3/**'
+      - 'modules/ps3_module/**'
+  pull_request:
+    paths:
+      - 'platform/ps3/**'
+      - 'modules/ps3_module/**'
+  workflow_dispatch:
+
+jobs:
+  build-ps3-template:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install host dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y autoconf automake bison flex gcc libelf-dev make \
+            texinfo libncurses-dev patch python3 python3-dev subversion wget \
+            zlib1g-dev libtool libtool-bin bzip2 libgmp-dev pkg-config g++ \
+            libssl-dev clang python-is-python3 scons
+
+      - name: Install prebuilt PS3DEV toolchain
+        run: |
+          curl -L -o ps3dev.tar.gz \
+            https://github.com/ps3dev/ps3toolchain/releases/download/2026-06-09/ps3dev-92534e60-ubuntu-latest.tar.gz
+          sudo mkdir -p /usr/local/ps3dev
+          sudo tar -xf ps3dev.tar.gz -C /usr/local/ps3dev --strip-components=1
+
+      - name: Configure PS3 environment
+        run: |
+          echo "PS3DEV=/usr/local/ps3dev" >> $GITHUB_ENV
+          echo "PSL1GHT=/usr/local/ps3dev" >> $GITHUB_ENV
+          echo "PATH=$PATH:/usr/local/ps3dev/bin:/usr/local/ps3dev/ppu/bin:/usr/local/ps3dev/spu/bin" >> $GITHUB_ENV
+
+      - name: Validate toolchain
+        run: bash platform/ps3/scripts/validate_toolchain.sh
+
+      - name: Build PS3 llvm_release template
+        run: bash platform/ps3/scripts/build_ps3_llvm_release.sh
+
+      - name: Smoke test (export validate)
+        run: bash platform/ps3/scripts/smoke_test.sh
+        env:
+          SKIP_BUILD: "1"
+
+      - name: Upload template artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ps3-template-ppc64
+          path: bin/ps3_*
+          if-no-files-found: error

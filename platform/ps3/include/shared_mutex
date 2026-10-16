@@ -1,0 +1,17 @@
+#pragma once
+
+namespace std {
+
+class shared_timed_mutex {
+public:
+	void lock() {}
+	void unlock() {}
+	bool try_lock() { return true; }
+	void lock_shared() const {}
+	void unlock_shared() const {}
+	bool try_lock_shared() const { return true; }
+};
+
+using shared_mutex = shared_timed_mutex;
+
+} // namespace std

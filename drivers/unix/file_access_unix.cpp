@@ -2,11 +2,10 @@
 /*  file_access_unix.cpp                                                  */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
-/*                        https://godotengine.org                         */
+/*                             BLAZIUM ENGINE                             */
+/*                          https://blazium.app                           */
 /**************************************************************************/
-/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
-/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
+/* Copyright (c) 2024-present Blazium Engine contributors.                */
 /*                                                                        */
 /* Permission is hereby granted, free of charge, to any person obtaining  */
 /* a copy of this software and associated documentation files (the        */
@@ -67,7 +66,7 @@ Error FileAccessUnix::open_internal(const String &p_path, int p_mode_flags) {
 
 	path_src = p_path;
 	path = fix_path(p_path);
-	//printf("opening %s, %i\n", path.utf8().get_data(), Memory::get_static_mem_usage());
+	
 
 	ERR_FAIL_COND_V_MSG(f, ERR_ALREADY_IN_USE, "File is already in use.");
 	const char *mode_string;
@@ -84,10 +83,9 @@ Error FileAccessUnix::open_internal(const String &p_path, int p_mode_flags) {
 		return ERR_INVALID_PARAMETER;
 	}
 
-	/* pretty much every implementation that uses fopen as primary
-	   backend (unix-compatible mostly) supports utf8 encoding */
+	
 
-	//printf("opening %s as %s\n", p_path.utf8().get_data(), path.utf8().get_data());
+	
 	struct stat st = {};
 	int err = stat(path.utf8().get_data(), &st);
 	if (!err) {
@@ -104,12 +102,12 @@ Error FileAccessUnix::open_internal(const String &p_path, int p_mode_flags) {
 	if (p_mode_flags & READ) {
 		String real_path = get_real_path();
 		if (real_path != path) {
-			// Don't warn on symlinks, since they can be used to simply share addons on multiple projects.
+			
 			if (real_path.to_lower() == path.to_lower()) {
-				// The File system is case insensitive, but other platforms can be sensitive to it
-				// To ease cross-platform development, we issue a warning if users try to access
-				// a file using the wrong case (which *works* on Windows and macOS, but won't on other
-				// platforms).
+				
+				
+				
+				
 				WARN_PRINT(vformat("Case mismatch opening requested file '%s', stored as '%s' in the filesystem. This file will not open when exported to other case-sensitive platforms.", path, real_path));
 			}
 		}
@@ -118,7 +116,7 @@ Error FileAccessUnix::open_internal(const String &p_path, int p_mode_flags) {
 
 	if (is_backup_save_enabled() && (p_mode_flags == WRITE)) {
 		save_path = path;
-		// Create a temporary file in the same directory as the target file.
+		
 		path = path + "-XXXXXX";
 		CharString cs = path.utf8();
 		int fd = mkstemp(cs.ptrw());
@@ -131,7 +129,7 @@ Error FileAccessUnix::open_internal(const String &p_path, int p_mode_flags) {
 
 		f = fdopen(fd, mode_string);
 		if (f == nullptr) {
-			// Delete temp file and close descriptor if open failed.
+			
 			::unlink(cs.ptr());
 			::close(fd);
 			last_error = ERR_FILE_CANT_OPEN;
@@ -153,7 +151,7 @@ Error FileAccessUnix::open_internal(const String &p_path, int p_mode_flags) {
 		return last_error;
 	}
 
-	// Set close on exec to avoid leaking it to subprocesses.
+	
 	int fd = fileno(f);
 
 	if (fd != -1) {
@@ -282,6 +280,13 @@ Error FileAccessUnix::get_error() const {
 
 Error FileAccessUnix::resize(int64_t p_length) {
 	ERR_FAIL_NULL_V_MSG(f, FAILED, "File must be opened before use.");
+#ifdef PS3_ENABLED
+	
+	if (fseek(f, p_length, SEEK_SET) != 0) {
+		return FAILED;
+	}
+	return OK;
+#else
 	int res = ::ftruncate(fileno(f), p_length);
 	switch (res) {
 		case 0:
@@ -295,6 +300,7 @@ Error FileAccessUnix::resize(int64_t p_length) {
 		default:
 			return FAILED;
 	}
+#endif
 }
 
 void FileAccessUnix::flush() {
@@ -314,17 +320,17 @@ bool FileAccessUnix::file_exists(const String &p_path) {
 	struct stat st = {};
 	const CharString filename_utf8 = fix_path(p_path).utf8();
 
-	// Does the name exist at all?
+	
 	if (stat(filename_utf8.get_data(), &st)) {
 		return false;
 	}
 
-	// See if we have access to the file
+	
 	if (access(filename_utf8.get_data(), F_OK)) {
 		return false;
 	}
 
-	// See if this is a regular file
+	
 	switch (st.st_mode & S_IFMT) {
 		case S_IFLNK:
 		case S_IFREG:
@@ -342,9 +348,9 @@ uint64_t FileAccessUnix::_get_modified_time(const String &p_file) {
 	if (!err) {
 		uint64_t modified_time = status.st_mtime;
 #ifdef ANDROID_ENABLED
-		// Workaround for GH-101007
-		//FIXME: After saving, all timestamps (st_mtime, st_ctime, st_atime) are set to the same value.
-		// After exporting or after some time, only 'modified_time' resets to a past timestamp.
+		
+		
+		
 		uint64_t created_time = status.st_ctime;
 		if (modified_time < created_time) {
 			modified_time = created_time;
@@ -362,7 +368,7 @@ BitField<FileAccess::UnixPermissionFlags> FileAccessUnix::_get_unix_permissions(
 	int err = stat(file.utf8().get_data(), &status);
 
 	if (!err) {
-		return status.st_mode & 0xFFF; //only permissions
+		return status.st_mode & 0xFFF; 
 	} else {
 		ERR_FAIL_V_MSG(0, "Failed to get unix permissions for: " + p_file + ".");
 	}
@@ -457,4 +463,4 @@ FileAccessUnix::~FileAccessUnix() {
 	_close();
 }
 
-#endif // UNIX_ENABLED
+#endif 

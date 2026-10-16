@@ -1,4 +1,6 @@
 def can_build(env, platform):
+    if platform == "ps3":
+        return False
     # Supported architectures and platforms depend on the Embree library.
     if env["arch"] == "arm64" and platform == "windows" and env.msvc:
         return False

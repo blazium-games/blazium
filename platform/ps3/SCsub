@@ -1,0 +1,61 @@
+#!/usr/bin/env python
+from misc.utility.scons_hints import *
+
+Import("env")
+
+ps3_files = [
+    "godot_ps3.cpp",
+    "os_ps3.cpp",
+    "ps3_boot_splash.cpp",
+    "ps3_boot_log_early.c",
+    "ps3_boot_log.cpp",
+    "display_server_ps3.cpp",
+    "joypad_ps3.cpp",
+    "joypad_ps3_state.cpp",
+    "crash_handler_ps3.cpp",
+    "ps3_posix_stubs.c",
+    "drivers/norsx/norsx_framebuffer.cpp",
+    "drivers/audio/audio_driver_ps3.cpp",
+    "drivers/software/canvas_blit_ps3.cpp",
+    "drivers/software/ps3_texture_storage.cpp",
+    "drivers/software/rasterizer_canvas_ps3.cpp",
+    "drivers/software/rasterizer_compositor_ps3.cpp",
+]
+
+if env.get("spu_jobs", True):
+    ps3_files += [
+        "spu/spu_job_queue.cpp",
+    ]
+
+if env.get("rsx", False):
+    ps3_files += [
+        "drivers/rsx/rsx_context.cpp",
+    ]
+
+prog = env.add_program("#bin/blazium", ps3_files)
+
+elf_target = "#bin/ps3_" + env["target"] + ".elf"
+env.Command(elf_target, prog, "cp $SOURCE $TARGET")
+
+# Placeholder NPDRM content ID for engine templates; games set their own at export time.
+PS3_TEMPLATE_CONTENT_ID = "UP0001-BLAZ00001_00-BLAZIUM000"
+
+make_self = env.WhereIs("make_self_npdrm")
+self_target = None
+if make_self:
+    self_target = "#bin/ps3_" + env["target"] + ".self"
+    env.Command(
+        self_target,
+        elf_target,
+        make_self + " $SOURCE $TARGET " + PS3_TEMPLATE_CONTENT_ID,
+    )
+
+template_name = None
+if env["target"] == "template_release":
+    template_name = "ps3_release.ppc64"
+elif env["target"] == "template_debug":
+    template_name = "ps3_debug.ppc64"
+
+if template_name:
+    template_source = self_target if make_self and self_target else elf_target
+    env.Command("#bin/" + template_name, template_source, "cp $SOURCE $TARGET")

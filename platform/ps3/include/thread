@@ -1,0 +1,49 @@
+#pragma once
+
+#include <chrono>
+#include <cstdint>
+
+namespace std {
+
+class thread {
+public:
+	thread() noexcept = default;
+	thread(thread &&other) noexcept { other.joinable_ = false; }
+	thread(const thread &) = delete;
+
+	template <typename F, typename... Args>
+	explicit thread(F &&, Args &&...) noexcept {}
+
+	~thread() = default;
+
+	thread &operator=(thread &&other) noexcept {
+		joinable_ = other.joinable_;
+		other.joinable_ = false;
+		return *this;
+	}
+
+	void join() noexcept { joinable_ = false; }
+	bool joinable() const noexcept { return joinable_; }
+
+	static unsigned int hardware_concurrency() noexcept { return 1; }
+
+	using id = std::uintptr_t;
+
+private:
+	bool joinable_ = false;
+};
+
+namespace this_thread {
+
+inline thread::id get_id() noexcept {
+	return 1;
+}
+
+inline void yield() noexcept {}
+
+template <typename Rep, typename Period>
+inline void sleep_for(const std::chrono::duration<Rep, Period> &) noexcept {}
+
+} // namespace this_thread
+
+} // namespace std
