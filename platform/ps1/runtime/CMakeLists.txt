@@ -1,0 +1,156 @@
+# Guest-only PSn00bSDK target. Host compilers and packers are spawned by
+# blazium-toolchain (ps1 build). Do not cmake the sibling PSn00bSDK tree.
+
+cmake_minimum_required(VERSION 3.21)
+
+project(
+	blazium_ps1_runtime
+	LANGUAGES C CXX ASM
+	VERSION 0.1.0
+	DESCRIPTION "Blazium PS1 guest hello"
+)
+
+psn00bsdk_add_executable(runtime GPREL main.cpp script_vm.cpp fmv_play.cpp)
+file(GLOB _ps1_root_extra RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "*.cpp")
+list(REMOVE_ITEM _ps1_root_extra main.cpp script_vm.cpp fmv_play.cpp)
+file(GLOB _ps1_extra RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
+	"extra/*.cpp" "extra/*.c" "extra/*.S")
+if(_ps1_root_extra OR _ps1_extra)
+	target_sources(runtime PRIVATE ${_ps1_root_extra} ${_ps1_extra})
+endif()
+target_include_directories(runtime PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/extra")
+target_compile_options(runtime PRIVATE -fno-exceptions -fno-rtti)
+target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_COOK_ABI=20)
+
+set(BLAZIUM_PS1_TIM "" CACHE FILEPATH "Optional cooked TIM to embed")
+if(BLAZIUM_PS1_TIM)
+	configure_file("${BLAZIUM_PS1_TIM}" "${CMAKE_CURRENT_BINARY_DIR}/TEX00.TIM" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_tim "${CMAKE_CURRENT_BINARY_DIR}/TEX00.TIM")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_TIM=1)
+endif()
+
+set(BLAZIUM_PS1_MESH "" CACHE FILEPATH "Optional cooked SVECTOR mesh to embed")
+if(BLAZIUM_PS1_MESH)
+	configure_file("${BLAZIUM_PS1_MESH}" "${CMAKE_CURRENT_BINARY_DIR}/MESH00.BIN" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_mesh "${CMAKE_CURRENT_BINARY_DIR}/MESH00.BIN")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_MESH=1)
+endif()
+
+set(BLAZIUM_PS1_VAG "" CACHE FILEPATH "Optional cooked VAG to embed")
+if(BLAZIUM_PS1_VAG)
+	configure_file("${BLAZIUM_PS1_VAG}" "${CMAKE_CURRENT_BINARY_DIR}/SFX00.VAG" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_vag "${CMAKE_CURRENT_BINARY_DIR}/SFX00.VAG")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_VAG=1)
+endif()
+
+set(BLAZIUM_PS1_SPRITE "" CACHE FILEPATH "Optional cooked SPRITE table to embed")
+if(BLAZIUM_PS1_SPRITE)
+	configure_file("${BLAZIUM_PS1_SPRITE}" "${CMAKE_CURRENT_BINARY_DIR}/SPRITE00.BIN" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_sprite "${CMAKE_CURRENT_BINARY_DIR}/SPRITE00.BIN")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_SPRITE=1)
+endif()
+
+set(BLAZIUM_PS1_SCRIPT "" CACHE FILEPATH "Optional cooked SCRIPT.IR to embed")
+if(BLAZIUM_PS1_SCRIPT)
+	configure_file("${BLAZIUM_PS1_SCRIPT}" "${CMAKE_CURRENT_BINARY_DIR}/SCRIPT.IR" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_script "${CMAKE_CURRENT_BINARY_DIR}/SCRIPT.IR")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_SCRIPT=1)
+endif()
+
+set(BLAZIUM_PS1_GDBC "" CACHE FILEPATH "Optional cooked GDScript bytecode")
+if(BLAZIUM_PS1_GDBC)
+	configure_file("${BLAZIUM_PS1_GDBC}" "${CMAKE_CURRENT_BINARY_DIR}/SCRIPT.GD.BC" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_gdbc "${CMAKE_CURRENT_BINARY_DIR}/SCRIPT.GD.BC")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_GDBC=1)
+endif()
+
+set(BLAZIUM_PS1_LUAU "" CACHE FILEPATH "Optional cooked Luau bytecode")
+if(BLAZIUM_PS1_LUAU)
+	configure_file("${BLAZIUM_PS1_LUAU}" "${CMAKE_CURRENT_BINARY_DIR}/SCRIPT.LU.BC" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_luau "${CMAKE_CURRENT_BINARY_DIR}/SCRIPT.LU.BC")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_LUAU=1)
+endif()
+
+set(BLAZIUM_PS1_STR "" CACHE FILEPATH "Optional cooked STR")
+if(BLAZIUM_PS1_STR)
+	configure_file("${BLAZIUM_PS1_STR}" "${CMAKE_CURRENT_BINARY_DIR}/FMV00.STR" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_str "${CMAKE_CURRENT_BINARY_DIR}/FMV00.STR")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_STR=1)
+endif()
+
+set(BLAZIUM_PS1_XA "" CACHE FILEPATH "Optional cooked XA")
+if(BLAZIUM_PS1_XA)
+	configure_file("${BLAZIUM_PS1_XA}" "${CMAKE_CURRENT_BINARY_DIR}/FMV00.XA" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_xa "${CMAKE_CURRENT_BINARY_DIR}/FMV00.XA")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_XA=1)
+endif()
+
+set(BLAZIUM_PS1_NODE "" CACHE FILEPATH "Optional cooked NODE table")
+if(BLAZIUM_PS1_NODE)
+	configure_file("${BLAZIUM_PS1_NODE}" "${CMAKE_CURRENT_BINARY_DIR}/NODE00.BIN" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_node "${CMAKE_CURRENT_BINARY_DIR}/NODE00.BIN")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_NODE=1)
+endif()
+
+set(BLAZIUM_PS1_HUD "" CACHE FILEPATH "Optional cooked HUD00.bin")
+if(BLAZIUM_PS1_HUD)
+	configure_file("${BLAZIUM_PS1_HUD}" "${CMAKE_CURRENT_BINARY_DIR}/HUD00.BIN" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_hud "${CMAKE_CURRENT_BINARY_DIR}/HUD00.BIN")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_HUD=1)
+endif()
+
+set(BLAZIUM_PS1_TILE "" CACHE FILEPATH "Optional cooked TILE00.bin")
+if(BLAZIUM_PS1_TILE)
+	configure_file("${BLAZIUM_PS1_TILE}" "${CMAKE_CURRENT_BINARY_DIR}/TILE00.BIN" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_tile "${CMAKE_CURRENT_BINARY_DIR}/TILE00.BIN")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_TILE=1)
+endif()
+
+set(BLAZIUM_PS1_SCENE "" CACHE FILEPATH "Optional cooked SCENE00.bin")
+if(BLAZIUM_PS1_SCENE)
+	configure_file("${BLAZIUM_PS1_SCENE}" "${CMAKE_CURRENT_BINARY_DIR}/SCENE00.BIN" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_scene "${CMAKE_CURRENT_BINARY_DIR}/SCENE00.BIN")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_SCENE=1)
+endif()
+
+set(BLAZIUM_PS1_ANIM "" CACHE FILEPATH "Optional cooked ANIM00.bin")
+if(BLAZIUM_PS1_ANIM)
+	configure_file("${BLAZIUM_PS1_ANIM}" "${CMAKE_CURRENT_BINARY_DIR}/ANIM00.BIN" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_anim "${CMAKE_CURRENT_BINARY_DIR}/ANIM00.BIN")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_ANIM=1)
+endif()
+
+set(BLAZIUM_PS1_CAM "" CACHE FILEPATH "Optional cooked CAM00.bin")
+if(BLAZIUM_PS1_CAM)
+	configure_file("${BLAZIUM_PS1_CAM}" "${CMAKE_CURRENT_BINARY_DIR}/CAM00.BIN" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_cam "${CMAKE_CURRENT_BINARY_DIR}/CAM00.BIN")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_CAM=1)
+endif()
+
+set(BLAZIUM_PS1_HIT "" CACHE FILEPATH "Optional cooked HIT00.bin")
+if(BLAZIUM_PS1_HIT)
+	configure_file("${BLAZIUM_PS1_HIT}" "${CMAKE_CURRENT_BINARY_DIR}/HIT00.BIN" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_hit "${CMAKE_CURRENT_BINARY_DIR}/HIT00.BIN")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_HIT=1)
+endif()
+
+set(BLAZIUM_PS1_NAV "" CACHE FILEPATH "Optional cooked NAV00.bin")
+if(BLAZIUM_PS1_NAV)
+	configure_file("${BLAZIUM_PS1_NAV}" "${CMAKE_CURRENT_BINARY_DIR}/NAV00.BIN" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_nav "${CMAKE_CURRENT_BINARY_DIR}/NAV00.BIN")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_NAV=1)
+endif()
+
+set(BLAZIUM_PS1_PATH "" CACHE FILEPATH "Optional cooked PATH00.bin")
+if(BLAZIUM_PS1_PATH)
+	configure_file("${BLAZIUM_PS1_PATH}" "${CMAKE_CURRENT_BINARY_DIR}/PATH00.BIN" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_path "${CMAKE_CURRENT_BINARY_DIR}/PATH00.BIN")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_PATH=1)
+endif()
+
+set(BLAZIUM_PS1_WAY "" CACHE FILEPATH "Optional cooked WAY00.bin")
+if(BLAZIUM_PS1_WAY)
+	configure_file("${BLAZIUM_PS1_WAY}" "${CMAKE_CURRENT_BINARY_DIR}/WAY00.BIN" COPYONLY)
+	psn00bsdk_target_incbin(runtime PRIVATE cooked_way "${CMAKE_CURRENT_BINARY_DIR}/WAY00.BIN")
+	target_compile_definitions(runtime PRIVATE BLAZIUM_PS1_HAS_WAY=1)
+endif()

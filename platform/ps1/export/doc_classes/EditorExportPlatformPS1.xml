@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="EditorExportPlatformPS1" inherits="EditorExportPlatform" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+		Exporter for PlayStation 1. Writes a PS-X EXE by spawning blazium-toolchain. No Godot export templates.
+	</brief_description>
+	<description>
+		[EditorExportPlatformPS1] appears in Project → Export as "PS1" on Windows and Linux hosts only. Export cooks assets then runs [code]blazium-toolchain ps1 setup[/code] (if needed) and [code]ps1 build --out[/code] using the guest stub bundled in the toolchain. Guest [code]*.cpp[/code] is written next to the EXE under [code]guest/[/code]. Optional Editor Setting [code]export/ps1/runtime_src[/code] replaces the stub ([code]--src[/code]). [code]export/ps1/runtime_overlay[/code], [code]BLAZIUM_PS1_OVERLAY[/code], or project [code]res://ps1_guest[/code] overlays extra or replacement sources ([code]--overlay[/code]). One-click runs [code]blazium-toolchain ps1 run[/code] (pcsx-redux + OpenBIOS). GDExtension and C# are rejected. This class does not call [code]find_export_template()[/code] or [code]save_pack()[/code].
+	</description>
+	<tutorials>
+	</tutorials>
+</class>
