@@ -160,6 +160,22 @@
 				Returns message type, for the message with [param index].
 			</description>
 		</method>
+		<method name="get_name" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_option_label" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="device" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_options_count" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
 		<method name="get_os_name" qualifiers="const">
 			<return type="String" />
 			<description>
@@ -170,6 +186,14 @@
 			<return type="int" enum="EditorExportPlatform.ExportMessageType" />
 			<description>
 				Returns most severe message type currently present in the export log.
+			</description>
+		</method>
+		<method name="run">
+			<return type="int" enum="Error" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<param index="1" name="device" type="int" />
+			<param index="2" name="debug_flags" type="int" enum="EditorExportPlatform.DebugFlags" is_bitfield="true" default="0" />
+			<description>
 			</description>
 		</method>
 		<method name="save_pack">

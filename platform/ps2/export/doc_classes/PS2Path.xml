@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PS2Path" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="path_follow">
+			<return type="bool" />
+			<param index="0" name="speed" type="float" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="path_offset" type="float" setter="set_path_offset" getter="get_path_offset" default="0.0">
+		</member>
+	</members>
+</class>

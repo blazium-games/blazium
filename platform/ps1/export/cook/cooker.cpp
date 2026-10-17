@@ -19,11 +19,12 @@
 #include "xa_writer.h"
 
 #include "core/config/project_settings.h"
-#include "core/io/image.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
+#include "core/io/image.h"
 #include "core/io/resource_loader.h"
 #include "core/math/math_funcs.h"
+#include "core/object/script_language.h"
 #include "core/templates/hash_set.h"
 #include "core/typedefs.h"
 #include "scene/2d/animated_sprite_2d.h"
@@ -45,7 +46,6 @@
 #include "scene/2d/physics/collision_shape_2d.h"
 #include "scene/2d/polygon_2d.h"
 #include "scene/2d/sprite_2d.h"
-#include "scene/3d/sprite_3d.h"
 #include "scene/2d/tile_map.h"
 #include "scene/2d/tile_map_layer.h"
 #include "scene/3d/audio_stream_player_3d.h"
@@ -56,15 +56,19 @@
 #include "scene/3d/label_3d.h"
 #include "scene/3d/light_3d.h"
 #include "scene/3d/marker_3d.h"
+#include "scene/3d/mesh_instance_3d.h"
 #include "scene/3d/multimesh_instance_3d.h"
+#include "scene/3d/node_3d.h"
 #include "scene/3d/physics/area_3d.h"
 #include "scene/3d/physics/collision_polygon_3d.h"
 #include "scene/3d/physics/collision_shape_3d.h"
 #include "scene/3d/physics/vehicle_body_3d.h"
+#include "scene/3d/skeleton_3d.h"
+#include "scene/3d/sprite_3d.h"
 #include "scene/3d/world_environment.h"
-#include "scene/resources/3d/importer_mesh.h"
-#include "scene/resources/environment.h"
-#include "scene/resources/multimesh.h"
+#include "scene/animation/animation_player.h"
+#include "scene/audio/audio_stream_player.h"
+#include "scene/gui/base_button.h"
 #include "scene/gui/button.h"
 #include "scene/gui/check_box.h"
 #include "scene/gui/check_button.h"
@@ -75,37 +79,30 @@
 #include "scene/gui/option_button.h"
 #include "scene/gui/panel.h"
 #include "scene/gui/panel_container.h"
-#include "scene/gui/base_button.h"
 #include "scene/gui/progress_bar.h"
 #include "scene/gui/range.h"
 #include "scene/gui/slider.h"
 #include "scene/gui/texture_button.h"
 #include "scene/gui/texture_rect.h"
 #include "scene/gui/video_stream_player.h"
-#include "scene/3d/mesh_instance_3d.h"
-#include "scene/3d/node_3d.h"
 #include "scene/main/canvas_layer.h"
-#include "scene/animation/animation_player.h"
-#include "scene/3d/skeleton_3d.h"
-#include "scene/resources/animation.h"
-#include "scene/audio/audio_stream_player.h"
 #include "scene/resources/2d/capsule_shape_2d.h"
 #include "scene/resources/2d/circle_shape_2d.h"
 #include "scene/resources/2d/rectangle_shape_2d.h"
 #include "scene/resources/2d/tile_set.h"
 #include "scene/resources/3d/box_shape_3d.h"
 #include "scene/resources/3d/capsule_shape_3d.h"
+#include "scene/resources/3d/importer_mesh.h"
 #include "scene/resources/3d/sphere_shape_3d.h"
-#include "scene/resources/sprite_frames.h"
+#include "scene/resources/animation.h"
 #include "scene/resources/audio_stream_wav.h"
+#include "scene/resources/environment.h"
 #include "scene/resources/material.h"
 #include "scene/resources/mesh.h"
+#include "scene/resources/multimesh.h"
 #include "scene/resources/packed_scene.h"
-#include "core/object/script_language.h"
+#include "scene/resources/sprite_frames.h"
 #include "scene/resources/texture.h"
-
-#include <cstdio>
-#include <ctime>
 
 namespace ps1_cook {
 
@@ -910,7 +907,7 @@ static Transform2D world_xform_2d(Node2D *p_node) {
 	return xf;
 }
 
-static uint8_t hit_kind_from_name(const String &p_name, bool p_monitoring) {
+static uint8_t hit_kind_from_name(const String &p_name) {
 	const String n = p_name.to_lower();
 	if (n.contains("hurt")) {
 		return 1;
@@ -918,7 +915,7 @@ static uint8_t hit_kind_from_name(const String &p_name, bool p_monitoring) {
 	if (n.contains("hit") && !n.contains("hurt")) {
 		return 2;
 	}
-	return p_monitoring ? 0 : 0;
+	return 0;
 }
 
 static void emit_hit_3d(SceneGather &r_g, Area3D *p_area, int p_node_id) {
@@ -991,7 +988,7 @@ static void emit_hit_3d(SceneGather &r_g, Area3D *p_area, int p_node_id) {
 	SceneGather::HitRow h;
 	h.node_id = p_node_id;
 	h.dim = 3;
-	h.kind = hit_kind_from_name(p_area->get_name(), p_area->is_monitoring());
+	h.kind = hit_kind_from_name(p_area->get_name());
 	h.flags = p_area->is_monitoring() ? 1 : 0;
 	{
 		const uint32_t layer = p_area->get_collision_layer() & 0xFFu;
@@ -1069,7 +1066,7 @@ static void emit_hit_2d(SceneGather &r_g, Area2D *p_area, int p_node_id) {
 	SceneGather::HitRow h;
 	h.node_id = p_node_id;
 	h.dim = 2;
-	h.kind = hit_kind_from_name(p_area->get_name(), p_area->is_monitoring());
+	h.kind = hit_kind_from_name(p_area->get_name());
 	h.flags = p_area->is_monitoring() ? 1 : 0;
 	{
 		const uint32_t layer = p_area->get_collision_layer() & 0xFFu;
@@ -2067,11 +2064,11 @@ static void walk_scene(Node *p_node, SceneGather &r_g, int p_parent) {
 		const uint8_t tex = register_tileset_atlas(r_g, ts);
 		const Transform2D xf = world_xform_2d(tm);
 		const Size2i tsz = ts.is_valid() ? ts->get_tile_size() : Size2i(16, 16);
-		for (int layer = 0; layer < tm->get_layers_count(); layer++) {
-			const TypedArray<Vector2i> cells = tm->get_used_cells(layer);
+		for (int layer_idx = 0; layer_idx < tm->get_layers_count(); layer_idx++) {
+			const TypedArray<Vector2i> cells = tm->get_used_cells(layer_idx);
 			for (int i = 0; i < cells.size(); i++) {
 				const Vector2i cell = cells[i];
-				emit_tile_cell(r_g, xf.xform(Vector2(cell.x * tsz.x, cell.y * tsz.y)), tm->get_cell_atlas_coords(layer, cell), tsz, tex, my >= 0 ? my : 0, tile_data_solid(tm->get_cell_tile_data(layer, cell), ts));
+				emit_tile_cell(r_g, xf.xform(Vector2(cell.x * tsz.x, cell.y * tsz.y)), tm->get_cell_atlas_coords(layer_idx, cell), tsz, tex, my >= 0 ? my : 0, tile_data_solid(tm->get_cell_tile_data(layer_idx, cell), ts));
 			}
 		}
 	}
@@ -2763,21 +2760,21 @@ static void write_hit_table(const Vector<SceneGather::HitRow> &p_hits, float p_s
 
 static void fill_nav_from_hits(SceneGather &r_g) {
 	if (r_g.nav_verts.is_empty()) {
-	for (int i = 0; i < r_g.hits.size() && r_g.nav_verts.size() < 32; i++) {
-		if (!(r_g.hits[i].flags & 1)) {
-			continue;
+		for (int i = 0; i < r_g.hits.size() && r_g.nav_verts.size() < 32; i++) {
+			if (!(r_g.hits[i].flags & 1)) {
+				continue;
+			}
+			SceneGather::NavVert v;
+			v.pos = (r_g.hits[i].mn + r_g.hits[i].mx) * 0.5f;
+			v.node = r_g.hits[i].node_id;
+			r_g.nav_verts.push_back(v);
 		}
-		SceneGather::NavVert v;
-		v.pos = (r_g.hits[i].mn + r_g.hits[i].mx) * 0.5f;
-		v.node = r_g.hits[i].node_id;
-		r_g.nav_verts.push_back(v);
-	}
-	for (int i = 0; i + 1 < r_g.nav_verts.size() && r_g.nav_edges.size() < 48; i++) {
-		SceneGather::NavEdge e;
-		e.a = uint8_t(i);
-		e.b = uint8_t(i + 1);
-		r_g.nav_edges.push_back(e);
-	}
+		for (int i = 0; i + 1 < r_g.nav_verts.size() && r_g.nav_edges.size() < 48; i++) {
+			SceneGather::NavEdge e;
+			e.a = uint8_t(i);
+			e.b = uint8_t(i + 1);
+			r_g.nav_edges.push_back(e);
+		}
 	}
 	if (!r_g.nav_obs.is_empty() && !r_g.nav_verts.is_empty()) {
 		Vector<SceneGather::NavVert> kept;
@@ -3319,16 +3316,6 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		extra_sprite_cooks.push_back(esc);
 	}
 	if (!sprite_cooks.is_empty() || !gathered.hud.is_empty() || !gathered.tiles.is_empty()) {
-		// #region agent log
-		{
-			FILE *logf = fopen("D:/projects/ps1_blazium/debug-9aa74d.log", "a");
-			if (logf) {
-				fprintf(logf, "{\"sessionId\":\"9aa74d\",\"runId\":\"cook\",\"hypothesisId\":\"A\",\"location\":\"cooker.cpp:images-reassign-before\",\"message\":\"HUD/sprite path about to copy gathered.images\",\"data\":{\"local_images\":%d,\"gathered_images\":%d,\"hud\":%d,\"sprites\":%d,\"tris\":%d},\"timestamp\":%lld}\n",
-						int(images.size()), int(gathered.images.size()), int(gathered.hud.size()), int(sprite_cooks.size()), int(src_tris.size()), (long long)time(nullptr) * 1000);
-				fclose(logf);
-			}
-		}
-		// #endregion
 		images = gathered.images;
 		image_names = gathered.image_names;
 		if (images.is_empty() && !src_tris.is_empty()) {
@@ -3337,16 +3324,6 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			images.push_back(fallback);
 			image_names.push_back("res://generated/fallback.png");
 		}
-		// #region agent log
-		{
-			FILE *logf = fopen("D:/projects/ps1_blazium/debug-9aa74d.log", "a");
-			if (logf) {
-				fprintf(logf, "{\"sessionId\":\"9aa74d\",\"runId\":\"cook\",\"hypothesisId\":\"A\",\"location\":\"cooker.cpp:images-reassign-after\",\"message\":\"images after HUD/sprite copy\",\"data\":{\"local_images\":%d,\"gathered_images\":%d},\"timestamp\":%lld}\n",
-						int(images.size()), int(gathered.images.size()), (long long)time(nullptr) * 1000);
-				fclose(logf);
-			}
-		}
-		// #endregion
 	}
 	Vector<CookLight> lights = gathered.lights;
 	for (int r = 0; r < live_roots.size(); r++) {
@@ -3483,7 +3460,6 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	}
 
 	Vector<TimBlob> tims;
-	int vram_total = 0;
 	const int clut_x = (p_opts.region == 1 || display_w >= 640) ? 640 : 0;
 	for (int i = 0; i < images.size() && i < kMaxTims; i++) {
 		TimBlob one;
@@ -3509,18 +3485,7 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 			return terr;
 		}
 		tims.push_back(one);
-		vram_total += one.vram_bytes;
 	}
-	// #region agent log
-	{
-		FILE *logf = fopen("D:/projects/ps1_blazium/debug-9aa74d.log", "a");
-		if (logf) {
-			fprintf(logf, "{\"sessionId\":\"9aa74d\",\"runId\":\"cook\",\"hypothesisId\":\"A\",\"location\":\"cooker.cpp:tim-pack\",\"message\":\"TIM pack result\",\"data\":{\"images\":%d,\"tims\":%d,\"tris\":%d,\"hud\":%d},\"timestamp\":%lld}\n",
-					int(images.size()), int(tims.size()), int(src_tris.size()), int(gathered.hud.size()), (long long)time(nullptr) * 1000);
-			fclose(logf);
-		}
-	}
-	// #endregion
 	TimBlob packed;
 	if (!tims.is_empty()) {
 		const Error perr = write_tpak(tims, packed);
@@ -3567,9 +3532,9 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 	r_out.budget_path = p_export_dir.path_join("BUDGET.txt");
 	r_out.warnings_path = p_export_dir.path_join("WARNINGS.txt");
 
-	Ref<FileAccess> tf = FileAccess::open(r_out.tim_path, FileAccess::WRITE);
-	ERR_FAIL_COND_V(tf.is_null(), ERR_CANT_CREATE);
-	tf->store_buffer(packed.bytes);
+	Ref<FileAccess> tim_f = FileAccess::open(r_out.tim_path, FileAccess::WRITE);
+	ERR_FAIL_COND_V(tim_f.is_null(), ERR_CANT_CREATE);
+	tim_f->store_buffer(packed.bytes);
 
 	if (!mesh.bytes.is_empty()) {
 		r_out.mesh_path = p_export_dir.path_join("MESH00.bin");
@@ -3822,9 +3787,9 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		Vector<uint8_t> tileb;
 		write_tile_table(gathered, tileb);
 		r_out.tile_path = p_export_dir.path_join("TILE00.bin");
-		Ref<FileAccess> tf = FileAccess::open(r_out.tile_path, FileAccess::WRITE);
-		ERR_FAIL_COND_V(tf.is_null(), ERR_CANT_CREATE);
-		tf->store_buffer(tileb);
+		Ref<FileAccess> tile_f = FileAccess::open(r_out.tile_path, FileAccess::WRITE);
+		ERR_FAIL_COND_V(tile_f.is_null(), ERR_CANT_CREATE);
+		tile_f->store_buffer(tileb);
 		if (!packs.is_empty()) {
 			packs.write[0].tile_bytes = uint32_t(tileb.size());
 			packs.write[0].ram_bytes = packs[0].node_bytes + packs[0].mesh_bytes + packs[0].hud_bytes + packs[0].tile_bytes + uint32_t(packed.bytes.size());
@@ -3857,9 +3822,9 @@ Error cook_project(const String &p_export_dir, CookResult &r_out, const CookOpti
 		Vector<uint8_t> tileb;
 		write_tile_table(eg, tileb);
 		const String tilep = pdir.path_join("TILE" + nn + ".bin");
-		Ref<FileAccess> tf = FileAccess::open(tilep, FileAccess::WRITE);
-		ERR_FAIL_COND_V(tf.is_null(), ERR_CANT_CREATE);
-		tf->store_buffer(tileb);
+		Ref<FileAccess> tile_f = FileAccess::open(tilep, FileAccess::WRITE);
+		ERR_FAIL_COND_V(tile_f.is_null(), ERR_CANT_CREATE);
+		tile_f->store_buffer(tileb);
 		r_out.extra_pack_files.push_back(tilep);
 		MeshBlob emesh;
 		if (!eg.tris.is_empty()) {

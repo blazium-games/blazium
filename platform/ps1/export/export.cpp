@@ -14,7 +14,6 @@
 #include "export_plugin.h"
 #include "flavor_plugin.h"
 
-#include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "editor/editor_node.h"
 #include "editor/editor_settings.h"
@@ -26,11 +25,13 @@ void register_ps1_exporter_types() {
 	GDREGISTER_CLASS(PS1FlavorEditorPlugin);
 }
 
+#if defined(WINDOWS_ENABLED) || defined(LINUXBSD_ENABLED)
 static void _ps1_flavor_init() {
 	if (EditorNode::get_singleton()) {
 		EditorNode::get_singleton()->add_editor_plugin(memnew(PS1FlavorEditorPlugin));
 	}
 }
+#endif
 
 void register_ps1_exporter() {
 #if defined(WINDOWS_ENABLED) || defined(LINUXBSD_ENABLED)
@@ -46,10 +47,10 @@ void register_ps1_exporter() {
 
 	Ref<EditorExportPlatformPS1> platform;
 	platform.instantiate();
+	// GDScript only treats PS1.* as callable when the singleton exists at
+	// analyze time, so register it with the exporter, before any plugin.
+	platform->set_api_singleton(memnew(PS1));
 	EditorExport::get_singleton()->add_export_platform(platform);
-	if (Engine::get_singleton() && !Engine::get_singleton()->has_singleton("PS1")) {
-		Engine::get_singleton()->add_singleton(Engine::Singleton("PS1", memnew(PS1)));
-	}
 	EditorNode::add_init_callback(_ps1_flavor_init);
 #endif
 }

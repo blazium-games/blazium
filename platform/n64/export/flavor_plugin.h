@@ -352,11 +352,9 @@ class N64FlavorEditorPlugin : public EditorPlugin {
 
 	VBoxContainer *dock = nullptr;
 	Label *status = nullptr;
-	N64 *n64_stub = nullptr;
 	bool last_enabled = false;
 
 	void _refresh();
-	void _sync_singleton(bool p_enabled);
 
 protected:
 	static void _bind_methods() {}

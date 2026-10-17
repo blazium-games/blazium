@@ -12,14 +12,14 @@
 #pragma once
 
 #include "core/input/shortcut.h"
+#include "core/io/marshalls.h"
 #include "core/math/color.h"
 #include "core/math/vector2.h"
 #include "core/math/vector3.h"
 #include "core/object/object.h"
+#include "core/object/object_id.h"
 #include "core/string/node_path.h"
 #include "core/string/ustring.h"
-#include "core/object/object_id.h"
-#include "core/io/marshalls.h"
 #include "core/variant/dictionary.h"
 #include "core/variant/variant.h"
 #include "editor/plugins/editor_plugin.h"
@@ -716,6 +716,52 @@ public:
 		(void)p_off;
 		return 0;
 	}
+	// Split screen on the PS2: count views (2: top and bottom halves, 3-4:
+	// quarters), each drawn from its Camera3D. 0 or 1 goes back to one view.
+	bool set_views(int p_count, const Variant &p_cam0 = Variant(), const Variant &p_cam1 = Variant(),
+			const Variant &p_cam2 = Variant(), const Variant &p_cam3 = Variant()) {
+		_fail_ps2();
+		(void)p_count;
+		(void)p_cam0;
+		(void)p_cam1;
+		(void)p_cam2;
+		(void)p_cam3;
+		return false;
+	}
+	// Every pad, for local multiplayer: pad 0 is player 1, then a multitap's
+	// other slots, then port 2. Buttons by name: cross circle square triangle
+	// l1 r1 l2 r2 l3 r3 start select up down left right.
+	int pad_count() const {
+		_fail_ps2();
+		return 0;
+	}
+	bool pad_pressed(int p_pad, const String &p_button) const {
+		_fail_ps2();
+		(void)p_pad;
+		(void)p_button;
+		return false;
+	}
+	bool pad_just_pressed(int p_pad, const String &p_button) const {
+		_fail_ps2();
+		(void)p_pad;
+		(void)p_button;
+		return false;
+	}
+	// Steering for one pad: -1 left .. 1 right (d-pad, else the left stick).
+	float pad_axis(int p_pad) const {
+		_fail_ps2();
+		(void)p_pad;
+		return 0.0f;
+	}
+	// GS distance fog on the PS2: colour, then linear from near to far view
+	// depth. No arguments (or far <= near) turns it off.
+	bool set_fog(const Color &p_color = Color(), float p_near = 0.0f, float p_far = 0.0f) {
+		_fail_ps2();
+		(void)p_color;
+		(void)p_near;
+		(void)p_far;
+		return false;
+	}
 	PackedByteArray godot_save_bytes(const Variant &p_v) const {
 		int len = 0;
 		encode_variant(p_v, nullptr, len, false);
@@ -1095,13 +1141,11 @@ class PS2FlavorEditorPlugin : public EditorPlugin {
 	VBoxContainer *dock = nullptr;
 	Label *status = nullptr;
 	Label *warn = nullptr;
-	PS2 *ps2_stub = nullptr;
 	bool last_enabled = false;
 	ObjectID last_root;
 	int last_nodes = -1;
 
 	void _refresh();
-	void _sync_singleton(bool p_enabled);
 
 protected:
 	static void _bind_methods() {}

@@ -11,7 +11,6 @@
 
 #include "flavor_plugin.h"
 
-#include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "servers/display_server.h"
 
@@ -95,30 +94,8 @@ void N64Spawner::_bind_methods() {}
 void N64LoadZone::_bind_methods() {}
 void N64UnloadZone::_bind_methods() {}
 
-void N64FlavorEditorPlugin::_sync_singleton(bool p_enabled) {
-	Engine *eng = Engine::get_singleton();
-	if (!eng) {
-		return;
-	}
-	if (p_enabled) {
-		if (!n64_stub) {
-			n64_stub = memnew(N64);
-		}
-		if (!eng->has_singleton("N64")) {
-			eng->add_singleton(Engine::Singleton("N64", n64_stub));
-		}
-		return;
-	}
-	if (eng->has_singleton("N64")) {
-		eng->remove_singleton("N64");
-	}
-}
-
 void N64FlavorEditorPlugin::_refresh() {
 	const bool enabled = ProjectSettings::get_singleton() && bool(ProjectSettings::get_singleton()->get("n64/enabled"));
-	if (enabled) {
-		_sync_singleton(true);
-	}
 	if (!status) {
 		return;
 	}
@@ -149,14 +126,12 @@ N64FlavorEditorPlugin::N64FlavorEditorPlugin() {
 		add_control_to_dock(DOCK_SLOT_RIGHT_UL, dock);
 		set_process(true);
 	}
-	_sync_singleton(true);
 	if (!headless) {
 		_refresh();
 	}
 }
 
 N64FlavorEditorPlugin::~N64FlavorEditorPlugin() {
-	n64_stub = nullptr;
 	if (dock) {
 		remove_control_from_docks(dock);
 		dock = nullptr;

@@ -14,6 +14,7 @@
 #include "cook/cooker.h"
 #include "logo_svg.gen.h"
 
+#include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
@@ -201,6 +202,42 @@ void EditorExportPlatformPS2::get_export_options(List<ExportOption> *r_options) 
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "ps2/width", PROPERTY_HINT_ENUM, "640,512,320"), 0));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "ps2/display_hint", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY), "Height from width: 640/512 -> 448 NTSC / 512 PAL; 320 -> 224. NTSC 60 Hz, PAL 50 Hz."));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::BOOL, "ps2/make_iso"), false));
+	// The disc's boot ELF name. The PS2 BIOS checks it against the disc's key
+	// and only boots product codes; PCSX2's fast boot skips the BIOS, so a
+	// GAME.ELF disc boots fast but not with a full boot.
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "ps2/product_code", PROPERTY_HINT_PLACEHOLDER_TEXT, "SLUS_000.01"), "SLUS_000.01"));
+	// The picture PS2LOGO shows during a full boot, from the disc's first 12
+	// sectors. A disc without one stops at a gray box. Empty: the project's
+	// name in the guest's HUD font.
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "ps2/boot_logo", PROPERTY_HINT_FILE, "*.png,*.jpg,*.jpeg,*.webp,*.svg"), ""));
+}
+
+bool EditorExportPlatformPS2::_is_product_code(const String &p_code) {
+	// four letters, underscore, three digits, dot, two digits: SLUS_000.01
+	if (p_code.length() != 11 || p_code[4] != '_' || p_code[8] != '.') {
+		return false;
+	}
+	for (int i = 0; i < 11; i++) {
+		const char32_t c = p_code[i];
+		if (i < 4) {
+			if (!is_ascii_alphabet_char(c)) {
+				return false;
+			}
+		} else if (i != 4 && i != 8 && !is_digit(c)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+String EditorExportPlatformPS2::get_export_option_warning(const EditorExportPreset *p_preset, const StringName &p_name) const {
+	if (p_preset && p_name == StringName("ps2/product_code")) {
+		const String code = String(p_preset->get("ps2/product_code")).strip_edges();
+		if (!code.is_empty() && !_is_product_code(code)) {
+			return "Use a product code like SLUS_000.01 (four letters, _, three digits, ., two digits). The PS2 BIOS only boots a disc whose boot ELF has one.";
+		}
+	}
+	return String();
 }
 
 List<String> EditorExportPlatformPS2::get_binary_extensions(const Ref<EditorExportPreset> &p_preset) const {
@@ -252,7 +289,7 @@ bool EditorExportPlatformPS2::has_valid_project_configuration(const Ref<EditorEx
 	}
 	r_error += "Works: MESH/GTEX/NODE pack 0 in the ELF; STREAM extras; CAM/HIT/HUD/TILE/NAV/ANIM per pack; Input; move_and_slide; overlaps/raycast/tile_solid_at; look/orbit/shake; linear tweens; IMA SFX/MUSIC via libsdr; set_fade; DISP NTSC/PAL 640/512/320 (heights 448/512 or 224).\n";
 	r_error += "Partial: change_scene/load/instantiate resolve STREAM paths; AnimationPlayer Node3D TRS keys (no AnimationTree); Button HUD slots; custom IR (not the official GDScript/Luau VM).\n";
-	r_error += "Refused: play_xa/stop_xa (no CD-XA; use play_sfx/load_music IMA). play_fmv (no license-clean IPU decoder). set_fog, spawn_shot, memcard_wrap. Official GDScript/Luau VMs. GDExtension/C#. AnimationTree/RigidBody/GPUParticles.\n";
+	r_error += "Refused: play_xa/stop_xa (no CD-XA; use play_sfx/load_music IMA). play_fmv (no license-clean IPU decoder). spawn_shot, memcard_wrap. Official GDScript/Luau VMs. GDExtension/C#. AnimationTree/RigidBody/GPUParticles.\n";
 	r_error += "Audio is WAV-only (first res:// .wav = SFX00; path containing music = MUSIC00). FileAccess is user:// only (host:SAVE.BIN / mc0:SAVE.BIN). STREAM/SFX/DISP/CAM.. are not ELF-embedded (host: or ISO).\n";
 	r_error += "BIOS is required only for One-click / ps2 run, not for export. Guest framebuffer follows ps2/width and ps2/region (DISP.bin).\n";
 	r_error += "EE 24 MiB and GS 4 MiB are shared across every resident pack (not per-scene). Catalog up to 99 extras; at most 16 extras + pack 0 in RAM. Unload rooms/NPCs you are not using.\n";
@@ -367,7 +404,8 @@ Error EditorExportPlatformPS2::export_project(const Ref<EditorExportPreset> &p_p
 
 	if (want_iso) {
 		String iso_warn;
-		if (_try_make_iso(p_path, iso_warn) != OK) {
+		const String boot_logo = _write_boot_logo(p_preset, p_path.get_base_dir());
+		if (_try_make_iso(p_path, String(p_preset->get("ps2/product_code")).strip_edges(), boot_logo, iso_warn) != OK) {
 			add_message(EXPORT_MESSAGE_WARNING, "PS2", iso_warn.is_empty() ? String("ISO skipped.") : iso_warn);
 		}
 	}
@@ -389,7 +427,200 @@ void EditorExportPlatformPS2::_emit_cook_messages(const ps2_cook::CookResult &p_
 	}
 }
 
-Error EditorExportPlatformPS2::_try_make_iso(const String &p_elf_path, String &r_warning) {
+static const uint8_t kLogoFont5x7[95][7] = {
+	{ 0, 0, 0, 0, 0, 0, 0 }, /* space */
+	{ 4, 4, 4, 4, 4, 0, 4 },
+	{ 10, 10, 0, 0, 0, 0, 0 },
+	{ 10, 31, 10, 31, 10, 0, 0 },
+	{ 4, 14, 20, 14, 5, 14, 4 },
+	{ 17, 18, 4, 8, 19, 0, 0 },
+	{ 8, 20, 8, 21, 18, 13, 0 },
+	{ 4, 4, 0, 0, 0, 0, 0 },
+	{ 4, 8, 8, 8, 8, 8, 4 },
+	{ 4, 2, 2, 2, 2, 2, 4 },
+	{ 0, 10, 4, 31, 4, 10, 0 },
+	{ 0, 4, 4, 31, 4, 4, 0 },
+	{ 0, 0, 0, 0, 4, 4, 8 },
+	{ 0, 0, 0, 31, 0, 0, 0 },
+	{ 0, 0, 0, 0, 0, 4, 4 },
+	{ 1, 2, 4, 8, 16, 0, 0 },
+	{ 14, 17, 19, 21, 25, 17, 14 }, /* 0 */
+	{ 4, 12, 4, 4, 4, 4, 14 },
+	{ 14, 17, 1, 6, 8, 16, 31 },
+	{ 14, 17, 1, 6, 1, 17, 14 },
+	{ 2, 6, 10, 18, 31, 2, 2 },
+	{ 31, 16, 30, 1, 1, 17, 14 },
+	{ 6, 8, 16, 30, 17, 17, 14 },
+	{ 31, 1, 2, 4, 8, 8, 8 },
+	{ 14, 17, 17, 14, 17, 17, 14 },
+	{ 14, 17, 17, 15, 1, 2, 12 },
+	{ 0, 4, 4, 0, 4, 4, 0 },
+	{ 0, 4, 4, 0, 4, 4, 8 },
+	{ 2, 4, 8, 16, 8, 4, 2 },
+	{ 0, 0, 31, 0, 31, 0, 0 },
+	{ 8, 4, 2, 1, 2, 4, 8 },
+	{ 14, 17, 1, 6, 4, 0, 4 },
+	{ 14, 17, 19, 21, 23, 16, 14 },
+	{ 14, 17, 17, 31, 17, 17, 17 }, /* A */
+	{ 30, 17, 17, 30, 17, 17, 30 },
+	{ 14, 17, 16, 16, 16, 17, 14 },
+	{ 30, 17, 17, 17, 17, 17, 30 },
+	{ 31, 16, 16, 30, 16, 16, 31 },
+	{ 31, 16, 16, 30, 16, 16, 16 },
+	{ 14, 17, 16, 23, 17, 17, 15 },
+	{ 17, 17, 17, 31, 17, 17, 17 },
+	{ 14, 4, 4, 4, 4, 4, 14 },
+	{ 1, 1, 1, 1, 17, 17, 14 },
+	{ 17, 18, 20, 24, 20, 18, 17 },
+	{ 16, 16, 16, 16, 16, 16, 31 },
+	{ 17, 27, 21, 21, 17, 17, 17 },
+	{ 17, 25, 21, 19, 17, 17, 17 },
+	{ 14, 17, 17, 17, 17, 17, 14 },
+	{ 30, 17, 17, 30, 16, 16, 16 },
+	{ 14, 17, 17, 17, 21, 18, 13 },
+	{ 30, 17, 17, 30, 20, 18, 17 },
+	{ 14, 17, 16, 14, 1, 17, 14 },
+	{ 31, 4, 4, 4, 4, 4, 4 },
+	{ 17, 17, 17, 17, 17, 17, 14 },
+	{ 17, 17, 17, 17, 17, 10, 4 },
+	{ 17, 17, 17, 21, 21, 21, 10 },
+	{ 17, 17, 10, 4, 10, 17, 17 },
+	{ 17, 17, 10, 4, 4, 4, 4 },
+	{ 31, 1, 2, 4, 8, 16, 31 },
+	{ 14, 8, 8, 8, 8, 8, 14 }, /* [ */
+	{ 16, 8, 4, 2, 1, 0, 0 },
+	{ 14, 2, 2, 2, 2, 2, 14 },
+	{ 4, 10, 17, 0, 0, 0, 0 },
+	{ 0, 0, 0, 0, 0, 0, 31 },
+	{ 8, 4, 0, 0, 0, 0, 0 },
+	{ 0, 0, 14, 1, 15, 17, 15 }, /* a */
+	{ 16, 16, 22, 25, 17, 17, 30 },
+	{ 0, 0, 14, 16, 16, 17, 14 },
+	{ 1, 1, 13, 19, 17, 17, 15 },
+	{ 0, 0, 14, 17, 31, 16, 14 },
+	{ 6, 9, 8, 28, 8, 8, 8 },
+	{ 0, 15, 17, 17, 15, 1, 14 },
+	{ 16, 16, 22, 25, 17, 17, 17 },
+	{ 4, 0, 12, 4, 4, 4, 14 },
+	{ 2, 0, 6, 2, 2, 18, 12 },
+	{ 16, 16, 18, 20, 24, 20, 18 },
+	{ 12, 4, 4, 4, 4, 4, 14 },
+	{ 0, 0, 26, 21, 21, 17, 17 },
+	{ 0, 0, 22, 25, 17, 17, 17 },
+	{ 0, 0, 14, 17, 17, 17, 14 },
+	{ 0, 0, 30, 17, 30, 16, 16 },
+	{ 0, 0, 13, 19, 15, 1, 1 },
+	{ 0, 0, 22, 25, 16, 16, 16 },
+	{ 0, 0, 14, 16, 14, 1, 30 },
+	{ 8, 8, 28, 8, 8, 9, 6 },
+	{ 0, 0, 17, 17, 17, 19, 13 },
+	{ 0, 0, 17, 17, 17, 10, 4 },
+	{ 0, 0, 17, 17, 21, 21, 10 },
+	{ 0, 0, 17, 10, 4, 10, 17 },
+	{ 0, 0, 17, 17, 15, 1, 14 },
+	{ 0, 0, 31, 2, 4, 8, 31 },
+	{ 2, 4, 4, 8, 4, 4, 2 }, /* { */
+	{ 4, 4, 4, 4, 4, 4, 4 },
+	{ 8, 4, 4, 2, 4, 4, 8 },
+	{ 0, 0, 8, 21, 2, 0, 0 },
+};
+
+// BOOTLOGO.RAW for the toolchain's `ps2 iso --boot-logo`: the boot logo as
+// raw 8-bit gray at the size PS2LOGO shows it (384x64 NTSC, 344x71 PAL),
+// from ps2/boot_logo (fitted and centered on black) or, without one, the
+// project's name in the guest's 5x7 HUD font. The first pixel is always
+// black, as on Sony's discs. Returns the file's path, or "" on failure.
+String EditorExportPlatformPS2::_write_boot_logo(const Ref<EditorExportPreset> &p_preset, const String &p_dir) {
+	const bool pal = int(p_preset->get("ps2/region")) == 1;
+	const int w = pal ? 344 : 384;
+	const int h = pal ? 71 : 64;
+	Vector<uint8_t> px;
+	px.resize(w * h);
+	px.fill(0);
+	const String path = String(p_preset->get("ps2/boot_logo")).strip_edges();
+	bool drawn = false;
+	if (!path.is_empty()) {
+		Ref<Image> img;
+		Ref<Texture2D> tex = ResourceLoader::exists(path) ? Ref<Texture2D>(ResourceLoader::load(path)) : Ref<Texture2D>();
+		if (tex.is_valid()) {
+			img = tex->get_image();
+		}
+		if (img.is_null()) {
+			img.instantiate();
+			if (img->load(ProjectSettings::get_singleton()->globalize_path(path)) != OK) {
+				img.unref();
+			}
+		}
+		if (img.is_valid() && !img->is_empty()) {
+			img = img->duplicate();
+			if (img->is_compressed()) {
+				img->decompress();
+			}
+			img->convert(Image::FORMAT_RGBA8);
+			const float sc = MIN(float(w) / img->get_width(), float(h) / img->get_height());
+			const int iw = MAX(1, int(img->get_width() * sc));
+			const int ih = MAX(1, int(img->get_height() * sc));
+			img->resize(iw, ih, Image::INTERPOLATE_BILINEAR);
+			const int ox = (w - iw) / 2;
+			const int oy = (h - ih) / 2;
+			for (int y = 0; y < ih; y++) {
+				for (int x = 0; x < iw; x++) {
+					const Color c = img->get_pixel(x, y);
+					px.write[(oy + y) * w + ox + x] = uint8_t(CLAMP(c.get_luminance() * c.a * 255.0f + 0.5f, 0.0f, 255.0f));
+				}
+			}
+			drawn = true;
+		} else {
+			add_message(EXPORT_MESSAGE_WARNING, "PS2", "ps2/boot_logo " + path + " could not be loaded; using the project name.");
+		}
+	}
+	if (!drawn) {
+		String text = String(GLOBAL_GET("application/config/name")).strip_edges().to_upper();
+		if (text.is_empty()) {
+			text = "BLAZIUM";
+		}
+		int scale = 3;
+		while (scale > 1 && text.length() * 6 * scale - scale > w - 8) {
+			scale--;
+		}
+		const int tw = text.length() * 6 * scale - scale;
+		const int x0 = MAX(0, (w - tw) / 2);
+		const int y0 = (h - 7 * scale) / 2;
+		for (int i = 0; i < text.length(); i++) {
+			const char32_t ch = text[i];
+			if (ch < 32 || ch > 126) {
+				continue;
+			}
+			for (int ry = 0; ry < 7; ry++) {
+				const uint8_t bits = kLogoFont5x7[ch - 32][ry];
+				for (int cx = 0; cx < 5; cx++) {
+					if (!(bits & (16 >> cx))) {
+						continue;
+					}
+					for (int dy = 0; dy < scale; dy++) {
+						for (int dx = 0; dx < scale; dx++) {
+							const int x = x0 + (i * 6 + cx) * scale + dx;
+							const int y = y0 + ry * scale + dy;
+							if (x >= 0 && x < w && y >= 0 && y < h) {
+								px.write[y * w + x] = 0xe0;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	px.write[0] = 0;
+	const String out = p_dir.path_join("BOOTLOGO.RAW");
+	Ref<FileAccess> f = FileAccess::open(out, FileAccess::WRITE);
+	if (f.is_null()) {
+		return String();
+	}
+	f->store_buffer(px);
+	return out;
+}
+
+Error EditorExportPlatformPS2::_try_make_iso(const String &p_elf_path, const String &p_product_code, const String &p_boot_logo, String &r_warning) {
 	const String dir = p_elf_path.get_base_dir();
 	const String iso_out = dir.path_join(p_elf_path.get_file().get_basename() + ".iso");
 	List<String> args;
@@ -399,6 +630,18 @@ Error EditorExportPlatformPS2::_try_make_iso(const String &p_elf_path, String &r
 	args.push_back(dir);
 	args.push_back("--out");
 	args.push_back(iso_out);
+	// the boot ELF goes on the disc under this name (ps2/product_code)
+	if (_is_product_code(p_product_code)) {
+		args.push_back("--boot-elf");
+		args.push_back(p_product_code.to_upper());
+		// the logo is scrambled with a key from the product code
+		if (!p_boot_logo.is_empty()) {
+			args.push_back("--boot-logo");
+			args.push_back(p_boot_logo);
+		}
+	} else if (!p_product_code.is_empty()) {
+		add_message(EXPORT_MESSAGE_WARNING, "PS2", "ps2/product_code \"" + p_product_code + "\" is not a product code like SLUS_000.01; the ISO uses the toolchain's default.");
+	}
 	String output;
 	int exitcode = 0;
 	const Error err = _spawn_toolchain(args, output, exitcode);
@@ -449,6 +692,14 @@ Error EditorExportPlatformPS2::run(const Ref<EditorExportPreset> &p_preset, int 
 	return OS::get_singleton()->create_process(tc, args);
 }
 
+void EditorExportPlatformPS2::set_api_singleton(Object *p_api) {
+	ERR_FAIL_NULL(p_api);
+	ERR_FAIL_COND(api_singleton != nullptr);
+	ERR_FAIL_COND(Engine::get_singleton()->has_singleton("PS2"));
+	api_singleton = p_api;
+	Engine::get_singleton()->add_singleton(Engine::Singleton("PS2", api_singleton));
+}
+
 EditorExportPlatformPS2::EditorExportPlatformPS2() {
 	if (EditorNode::get_singleton()) {
 		Ref<Image> img = memnew(Image);
@@ -456,4 +707,16 @@ EditorExportPlatformPS2::EditorExportPlatformPS2() {
 		ImageLoaderSVG::create_image_from_string(img, _ps2_logo_svg, EDSCALE, upsample, false);
 		logo = ImageTexture::create_from_image(img);
 	}
+}
+
+EditorExportPlatformPS2::~EditorExportPlatformPS2() {
+	if (!api_singleton) {
+		return;
+	}
+	Engine *engine = Engine::get_singleton();
+	if (engine && engine->has_singleton("PS2") && engine->get_singleton_object("PS2") == api_singleton) {
+		engine->remove_singleton("PS2");
+	}
+	memdelete(api_singleton);
+	api_singleton = nullptr;
 }

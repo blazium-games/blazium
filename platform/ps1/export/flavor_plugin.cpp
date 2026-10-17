@@ -16,7 +16,6 @@
 #include "cook/cooker.h"
 #include "cook/script_cook.h"
 
-#include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
@@ -30,9 +29,6 @@
 #include "scene/gui/control.h"
 #include "scene/resources/mesh.h"
 #include "servers/display_server.h"
-
-#include <cstdio>
-#include <ctime>
 
 void PS1::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("load_scene", "path"), &PS1::load_scene);
@@ -456,43 +452,11 @@ static int _count_literal_packs() {
 	return n;
 }
 
-void PS1FlavorEditorPlugin::_sync_singleton(bool p_enabled) {
-	Engine *eng = Engine::get_singleton();
-	if (!eng) {
-		return;
-	}
-	if (p_enabled) {
-		if (!ps1_stub) {
-			ps1_stub = memnew(PS1);
-		}
-		if (!eng->has_singleton("PS1")) {
-			eng->add_singleton(Engine::Singleton("PS1", ps1_stub));
-		}
-	} else {
-		// Keep the process-lifetime stub. GDScript only treats PS1.* as
-		// callable when Engine::has_singleton("PS1") is true at analyze time.
-	}
-	// #region agent log
-	{
-		FILE *df = fopen("D:/projects/ps1_blazium/debug-9aa74d.log", "a");
-		if (df) {
-			fprintf(df,
-					"{\"sessionId\":\"9aa74d\",\"runId\":\"post-fix\",\"hypothesisId\":\"H2\",\"location\":\"flavor_plugin.cpp:_sync_singleton\",\"message\":\"PS1 singleton sync\",\"data\":{\"want\":%s,\"has\":%s},\"timestamp\":%lld}\n",
-					p_enabled ? "true" : "false",
-					eng->has_singleton("PS1") ? "true" : "false",
-					(long long)time(nullptr) * 1000);
-			fclose(df);
-		}
-	}
-	// #endregion
-}
-
 void PS1FlavorEditorPlugin::_refresh() {
 	if (!status || !warn) {
 		return;
 	}
 	const bool enabled = ProjectSettings::get_singleton() && bool(ProjectSettings::get_singleton()->get("ps1/enabled"));
-	_sync_singleton(true);
 	last_enabled = enabled;
 	if (!enabled) {
 		status->set_text("Turn on Project Settings → ps1/enabled for live PS1 budget warnings.\nPS1.* is PS1 export only; use OS.has_feature(\"ps1\").");
@@ -571,16 +535,12 @@ PS1FlavorEditorPlugin::PS1FlavorEditorPlugin() {
 		add_control_to_dock(DOCK_SLOT_RIGHT_UL, dock);
 		set_process(true);
 	}
-	_sync_singleton(true);
 	if (!headless) {
 		_refresh();
 	}
 }
 
 PS1FlavorEditorPlugin::~PS1FlavorEditorPlugin() {
-	// Do not drop the Engine singleton or delete a stub the Engine still owns.
-	// Headless --export-release tears the plugin down before script cook.
-	ps1_stub = nullptr;
 	if (dock) {
 		remove_control_from_docks(dock);
 		dock = nullptr;

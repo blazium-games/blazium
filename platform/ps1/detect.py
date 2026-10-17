@@ -22,6 +22,8 @@ def get_flags():
 def get_doc_classes():
     return [
         "EditorExportPlatformPS1",
+        "PS1",
+        "PS1FlavorEditorPlugin",
     ]
 
 
