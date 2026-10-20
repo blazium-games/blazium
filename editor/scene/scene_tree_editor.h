@@ -178,6 +178,9 @@ class SceneTreeEditor : public Control {
 	bool updating_tree = false;
 	bool show_enabled_subscene = false;
 	bool is_scene_tree_dock = false;
+	// The Scene dock's node buttons (script, visibility, lock...) in another
+	// tree, such as the split view's second pane.
+	bool show_node_buttons = false;
 
 	void _edited();
 	void _renamed(TreeItem *p_item, TreeItem *p_batch_item, Node *p_node = nullptr);
@@ -254,6 +257,7 @@ public:
 	void set_show_all_nodes(bool p_show_all_nodes);
 
 	void set_as_scene_tree_dock();
+	void set_show_node_buttons(bool p_show);
 	void set_display_foreign_nodes(bool p_display);
 
 	void set_marked(const HashSet<Node *> &p_marked, bool p_selectable = true, bool p_children_selectable = true);

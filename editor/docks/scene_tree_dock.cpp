@@ -5097,11 +5097,15 @@ void SceneTreeDock::_create_remap_for_resource(Ref<Resource> p_resource, HashMap
 }
 
 void SceneTreeDock::_list_all_subresources(PopupMenu *p_menu) {
+	list_subresources(p_menu, edited_scene);
+}
+
+void SceneTreeDock::list_subresources(PopupMenu *p_menu, Node *p_scene_root) {
 	p_menu->clear();
 
 	List<Pair<Ref<Resource>, Node *>> all_resources;
-	if (edited_scene) {
-		_gather_resources(edited_scene, all_resources);
+	if (p_scene_root) {
+		_gather_resources(p_scene_root, p_scene_root, all_resources);
 	}
 
 	HashMap<String, List<Pair<Ref<Resource>, Node *>>> resources_by_type;
@@ -5144,8 +5148,8 @@ void SceneTreeDock::_list_all_subresources(PopupMenu *p_menu) {
 	p_menu->reset_size();
 }
 
-void SceneTreeDock::_gather_resources(Node *p_node, List<Pair<Ref<Resource>, Node *>> &r_resources) {
-	if (p_node != edited_scene && p_node->get_owner() != edited_scene) {
+void SceneTreeDock::_gather_resources(Node *p_node, Node *p_scene_root, List<Pair<Ref<Resource>, Node *>> &r_resources) {
+	if (p_node != p_scene_root && p_node->get_owner() != p_scene_root) {
 		return;
 	}
 
@@ -5168,7 +5172,7 @@ void SceneTreeDock::_gather_resources(Node *p_node, List<Pair<Ref<Resource>, Nod
 			continue;
 		}
 
-		if (!res->is_built_in() || res->get_path().get_slice("::", 0) != edited_scene->get_scene_file_path()) {
+		if (!res->is_built_in() || res->get_path().get_slice("::", 0) != p_scene_root->get_scene_file_path()) {
 			// Ignore external and foreign resources.
 			continue;
 		}
@@ -5178,7 +5182,7 @@ void SceneTreeDock::_gather_resources(Node *p_node, List<Pair<Ref<Resource>, Nod
 	}
 
 	for (int i = 0; i < p_node->get_child_count(); i++) {
-		_gather_resources(p_node->get_child(i), r_resources);
+		_gather_resources(p_node->get_child(i), p_scene_root, r_resources);
 	}
 }
 

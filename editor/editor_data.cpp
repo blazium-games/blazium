@@ -801,7 +801,12 @@ bool EditorData::reload_scene_from_memory(int p_idx, bool p_mark_unsaved) {
 
 	new_scene->set_scene_file_path(edited_scene[p_idx].root->get_scene_file_path());
 	Node *old_root = edited_scene[p_idx].root;
-	EditorNode::get_singleton()->set_edited_scene(new_scene);
+	if (p_idx == current_edited_scene) {
+		EditorNode::get_singleton()->set_edited_scene(new_scene);
+	} else {
+		// Not the scene being edited, so not in the editor's scene root.
+		set_scene_root(p_idx, new_scene);
+	}
 	memdelete(old_root);
 	edited_scene.write[p_idx].selection = new_selection;
 
@@ -847,6 +852,18 @@ Node *EditorData::get_edited_scene_root(int p_idx) {
 		ERR_FAIL_INDEX_V(p_idx, edited_scene.size(), nullptr);
 		return edited_scene[p_idx].root;
 	}
+}
+
+Node *EditorData::get_open_scene_root_of(const Node *p_node) {
+	if (!p_node) {
+		return nullptr;
+	}
+	for (const EditedScene &scene : edited_scene) {
+		if (scene.root && (scene.root == p_node || scene.root->is_ancestor_of(p_node))) {
+			return scene.root;
+		}
+	}
+	return nullptr;
 }
 
 void EditorData::set_edited_scene_root(Node *p_root) {

@@ -322,7 +322,7 @@ class SceneTreeDock : public EditorDock {
 	void _create_remap_for_resource(Ref<Resource> p_resource, HashMap<Ref<Resource>, Ref<Resource>> &r_remap);
 
 	void _list_all_subresources(PopupMenu *p_menu);
-	void _gather_resources(Node *p_node, List<Pair<Ref<Resource>, Node *>> &r_resources);
+	void _gather_resources(Node *p_node, Node *p_scene_root, List<Pair<Ref<Resource>, Node *>> &r_resources);
 	void _edit_subresource(int p_idx, const PopupMenu *p_from_menu);
 
 	bool profile_allow_editing = true;
@@ -367,6 +367,9 @@ public:
 	void perform_node_renames(Node *p_base, HashMap<Node *, NodePath> *p_renames, HashMap<Ref<Animation>, HashSet<int>> *r_rem_anims = nullptr, LocalVector<Pair<StringName, StringName>> *r_folded_group_renames = nullptr);
 	void perform_node_replace(Node *p_base, Node *p_node, Node *p_by_node);
 	SceneTreeEditor *get_tree_editor() { return scene_tree; }
+	// For another open scene, edited beside the current one in the split view.
+	void list_subresources(PopupMenu *p_menu, Node *p_scene_root);
+	bool would_instantiate_cyclically(const String &p_scene_path, Node *p_instance) { return _cyclical_dependency_exists(p_scene_path, p_instance); }
 	EditorData *get_editor_data() { return editor_data; }
 
 	void add_remote_tree_editor(Tree *p_remote);

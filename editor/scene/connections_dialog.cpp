@@ -77,6 +77,13 @@ static Node *_find_first_script(Node *p_root, Node *p_node) {
 	return nullptr;
 }
 
+// The scene a signal's source is in: the edited one, or another open scene
+// edited beside it in the split view.
+static Node *_get_source_scene_root(Object *p_source, SceneTree *p_tree) {
+	Node *root = EditorNode::get_editor_data().get_open_scene_root_of(Object::cast_to<Node>(p_source));
+	return root ? root : p_tree->get_edited_scene_root();
+}
+
 class ConnectDialogBinds : public Object {
 	GDCLASS(ConnectDialogBinds, Object);
 
@@ -703,6 +710,8 @@ void ConnectDialog::init(const ConnectionData &p_cd, const PackedStringArray &p_
 	signal = p_cd.signal;
 	signal_args = p_signal_args;
 
+	// Targets come from the source's own scene.
+	tree->set_scene_root_override(_get_source_scene_root(source, get_tree()));
 	tree->set_selected(nullptr);
 	tree->set_marked(Object::cast_to<Node>(source));
 
@@ -740,7 +749,8 @@ void ConnectDialog::popup_dialog(const String &p_for_signal) {
 	filter_nodes->clear();
 
 	if (!advanced->is_pressed()) {
-		error_label->set_visible(!_find_first_script(get_tree()->get_edited_scene_root(), get_tree()->get_edited_scene_root()));
+		Node *scene_root = _get_source_scene_root(source, get_tree());
+		error_label->set_visible(!_find_first_script(scene_root, scene_root));
 	}
 
 	if (first_popup) {
@@ -764,7 +774,8 @@ void ConnectDialog::_advanced_pressed() {
 		tree->set_connect_to_script_mode(true);
 
 		vbc_right->hide();
-		error_label->set_visible(!_find_first_script(get_tree()->get_edited_scene_root(), get_tree()->get_edited_scene_root()));
+		Node *scene_root = _get_source_scene_root(source, get_tree());
+		error_label->set_visible(!_find_first_script(scene_root, scene_root));
 	}
 
 	EditorSettings::get_singleton()->set_project_metadata("editor_metadata", "use_advanced_connections", advanced->is_pressed());
@@ -1239,7 +1250,8 @@ void ConnectionsDock::_open_connection_dialog(TreeItem &p_item) {
 	Node *selected_node = Object::cast_to<Node>(selected_object);
 	Node *dst_node = selected_node->get_owner() ? selected_node->get_owner() : selected_node;
 	if (!dst_node || dst_node->get_script().is_null()) {
-		dst_node = _find_first_script(get_tree()->get_edited_scene_root(), get_tree()->get_edited_scene_root());
+		Node *scene_root = _get_source_scene_root(selected_node, get_tree());
+		dst_node = _find_first_script(scene_root, scene_root);
 	}
 	cd.source = selected_object;
 	cd.target = dst_node;

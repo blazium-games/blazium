@@ -65,6 +65,7 @@
 #include "editor/inspector/editor_context_menu_plugin.h"
 #include "editor/run/editor_run_bar.h"
 #include "editor/scene/editor_scene_tabs.h"
+#include "editor/scene/editor_split_view.h"
 #include "editor/script/find_in_files.h"
 #include "editor/script/script_editor_base.h"
 #include "editor/script/script_editor_navigation_marker.h"
@@ -390,6 +391,11 @@ void DocumentList::_show_context_menu() {
 			context_menu->add_shortcut(ED_GET_SHORTCUT("script_editor/copy_path"), DocumentEditorContainer::FILE_MENU_COPY_PATH);
 			context_menu->add_shortcut(ED_GET_SHORTCUT("script_editor/copy_uid"), DocumentEditorContainer::FILE_MENU_COPY_UID);
 			context_menu->add_shortcut(ED_GET_SHORTCUT("script_editor/show_in_file_system"), DocumentEditorContainer::FILE_MENU_SHOW_IN_FILE_SYSTEM);
+			if (document_editor_container->is_main_editor && EditorSplitView::get_singleton()) {
+				context_menu->add_item(TTRC("Show in Split View"), DocumentEditorContainer::FILE_MENU_SHOW_IN_SPLIT_VIEW);
+				context_menu->set_item_tooltip(-1, TTRC("Show this file beside the one you were editing before it."));
+				context_menu->set_item_disabled(-1, document_editor_container->tab_container->get_tab_count() < 2);
+			}
 			if (!document_editor_container->is_main_editor) {
 				context_menu->add_shortcut(ED_SHORTCUT("script_editor/open_in_inspector", TTRC("Open File in Inspector")), DocumentEditorContainer::FILE_MENU_INSPECT);
 				context_menu->add_shortcut(ED_SHORTCUT("script_editor/inspect_native_code", TTRC("Inspect Native Shader Code...")), DocumentEditorContainer::FILE_MENU_INSPECT_NATIVE_SHADER_CODE);
@@ -2051,6 +2057,11 @@ void DocumentEditorContainer::_menu_option(int p_option) {
 			} break;
 			case FILE_MENU_COPY_UID: {
 				_copy_script_uid();
+			} break;
+			case FILE_MENU_SHOW_IN_SPLIT_VIEW: {
+				if (EditorSplitView::get_singleton()) {
+					EditorSplitView::get_singleton()->show_script_in_preview(seb);
+				}
 			} break;
 			case FILE_MENU_SHOW_IN_FILE_SYSTEM: {
 				const Ref<Resource> res = seb->get_edited_resource();
@@ -3937,6 +3948,25 @@ void DocumentEditorContainer::_update_document_name_button() {
 
 void DocumentEditorContainer::_help_search(const String &p_text) {
 	ScriptEditor::get_singleton()->open_help_search_dialog(p_text);
+}
+
+Ref<EditorSyntaxHighlighter> DocumentEditorContainer::create_syntax_highlighter(const Ref<Resource> &p_resource) const {
+	ERR_FAIL_COND_V(p_resource.is_null(), Ref<EditorSyntaxHighlighter>());
+	// Same choice as when an editor is opened for the resource.
+	const Ref<Script> scr = p_resource;
+	for (const Ref<EditorSyntaxHighlighter> &registered : syntax_highlighters) {
+		const PackedStringArray languages = registered->_get_supported_languages();
+		const bool supported = scr.is_valid() ? languages.has(scr->get_language()->get_name()) : languages.has(p_resource->get_path().get_extension());
+		if (!supported) {
+			continue;
+		}
+		Ref<EditorSyntaxHighlighter> highlighter = registered->_create();
+		if (highlighter.is_valid()) {
+			highlighter->_set_edited_resource(p_resource);
+			return highlighter;
+		}
+	}
+	return Ref<EditorSyntaxHighlighter>();
 }
 
 void DocumentEditorContainer::register_syntax_highlighter(const Ref<EditorSyntaxHighlighter> &p_syntax_highlighter) {

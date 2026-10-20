@@ -559,6 +559,7 @@ void EditorSettings::_load_defaults(Ref<ConfigFile> p_extra_config) {
 	_initial_set("interface/editor/split_view/show_pane_docks", true, true);
 	_initial_set("interface/editor/split_view/floating", false, true);
 	_initial_set("interface/editor/split_view/compare_scripts", false, true);
+	_initial_set("interface/editor/split_view/code_beside_scene", false, true);
 	_initial_set("interface/editor/behavior/automatically_open_screenshots", true, true);
 	EDITOR_SETTING_USAGE(Variant::BOOL, PROPERTY_HINT_NONE, "interface/editor/display/single_window_mode", false, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_RESTART_IF_CHANGED | PROPERTY_USAGE_EDITOR_BASIC_SETTING)
 	_initial_set("interface/editor/input/mouse_extra_buttons_navigate_history", true);
