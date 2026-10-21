@@ -80,6 +80,20 @@ TEST_CASE("[Modules][LuauModule] wrap_for_write compressed round-trip") {
 	Vector<uint8_t> decrypted = luau_module::LuauBytecodeFormat::decrypt_export_data(wrapped);
 	PackedByteArray unwrapped = luau_module::LuauBytecodeFormat::unwrap(decrypted);
 	CHECK(unwrapped.size() == raw.size());
+	CHECK(unwrapped == raw);
+
+	String repeated;
+	for (int i = 0; i < 400; i++) {
+		repeated += "local value_" + itos(i) + " = " + itos(i) + "\n";
+	}
+	repeated += "return value_0\n";
+	PackedByteArray large = luau_module::Luau::compile(repeated);
+	CHECK(large.size() > 1000);
+	Vector<uint8_t> packed = luau_module::LuauBytecodeFormat::wrap_compressed(large);
+	CHECK(packed.size() > 8);
+	CHECK(packed.size() < large.size());
+	PackedByteArray restored = luau_module::LuauBytecodeFormat::unwrap(packed);
+	CHECK(restored == large);
 }
 
 TEST_CASE("[Modules][LuauModule] parse global class metadata from source") {
