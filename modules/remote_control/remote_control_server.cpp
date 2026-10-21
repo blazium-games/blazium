@@ -161,6 +161,23 @@ bool RemoteControlServer::configured_allow_eval() {
 	return false;
 }
 
+static bool token_matches(const String &p_got, const String &p_want) {
+	const CharString got = p_got.utf8();
+	const CharString want = p_want.utf8();
+	const int got_len = got.length();
+	const int want_len = want.length();
+	const int n = got_len > want_len ? got_len : want_len;
+	uint8_t diff = got_len == want_len ? 0 : 1;
+	const char *got_data = got.get_data();
+	const char *want_data = want.get_data();
+	for (int i = 0; i < n; i++) {
+		const uint8_t g = (i < got_len && got_data) ? (uint8_t)got_data[i] : 0;
+		const uint8_t w = (i < want_len && want_data) ? (uint8_t)want_data[i] : 0;
+		diff |= (uint8_t)(g ^ w);
+	}
+	return diff == 0;
+}
+
 bool RemoteControlServer::_authorized(const Ref<HTTPRequestContext> &p_context, Ref<HTTPResponse> p_response) const {
 	String current_token;
 	{
@@ -168,12 +185,13 @@ bool RemoteControlServer::_authorized(const Ref<HTTPRequestContext> &p_context, 
 		current_token = token;
 	}
 	if (current_token.is_empty()) {
-		return true;
+		_json_error(p_response, 401, "Unauthorized");
+		return false;
 	}
 	String auth = p_context->get_header("Authorization");
-	String expected = "Bearer " + current_token;
+	String presented = auth.begins_with("Bearer ") ? auth.substr(7) : String();
 	String alt = p_context->get_header("X-Remote-Control-Token");
-	if (auth == expected || alt == current_token) {
+	if (token_matches(presented, current_token) || token_matches(alt, current_token)) {
 		return true;
 	}
 	_json_error(p_response, 401, "Unauthorized");
@@ -629,6 +647,10 @@ Error RemoteControlServer::start() {
 	ERR_FAIL_NULL_V_MSG(http, ERR_UNAVAILABLE, "HTTPServer module singleton is not available.");
 
 	const String cfg_token = configured_token();
+	if (cfg_token.is_empty()) {
+		ERR_PRINT("RemoteControl: refusing to start without a token");
+		return ERR_UNAUTHORIZED;
+	}
 	const bool cfg_allow_eval = configured_allow_eval();
 	const String cfg_bind = configured_bind_address();
 	const int port = configured_port();

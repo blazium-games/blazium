@@ -75,6 +75,7 @@ private:
 		int udp_port = 0;
 		PackedByteArray tcp_buffer;
 		uint64_t last_activity = 0;
+		int auth_failures = 0;
 		int next_request_id = 1;
 		HashMap<int, String> multi_packet_responses; // For Source multi-packet responses
 	};

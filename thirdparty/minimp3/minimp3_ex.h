@@ -150,8 +150,8 @@ static void mp3dec_skip_id3v1(const uint8_t *buf, size_t *pbuf_size)
     {
         buf_size -= 32;
         const uint8_t *tag = buf + buf_size + 8 + 4;
-        uint32_t tag_size = (uint32_t)(tag[3] << 24) | (tag[2] << 16) | (tag[1] << 8) | tag[0];
-        if (buf_size >= tag_size)
+        uint32_t tag_size = ((uint32_t)tag[3] << 24) | ((uint32_t)tag[2] << 16) | ((uint32_t)tag[1] << 8) | (uint32_t)tag[0];
+        if (tag_size < buf_size)
             buf_size -= tag_size;
     }
 #endif
@@ -899,6 +899,8 @@ size_t mp3dec_ex_read_frame(mp3dec_ex_t *dec, mp3d_sample_t **buf, mp3dec_frame_
             dec->input_consumed += frame_info->frame_bytes;
         } else
         {
+            if (dec->offset > end_offset)
+                return 0;
             dec_buf = dec->file.buffer + dec->offset;
             uint64_t buf_size = end_offset - dec->offset;
             if (!buf_size)
