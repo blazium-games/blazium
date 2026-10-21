@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PS2Vehicle" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="move_6dof">
+			<return type="Vector3" />
+			<param index="0" name="ax" type="float" />
+			<param index="1" name="ay" type="float" />
+			<param index="2" name="az" type="float" />
+			<param index="3" name="pitch" type="float" />
+			<param index="4" name="yaw" type="float" />
+			<param index="5" name="roll" type="float" />
+			<param index="6" name="speed" type="float" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="mass" type="float" setter="set_mass" getter="get_mass" default="1.0">
+		</member>
+		<member name="mode" type="int" setter="set_mode" getter="get_mode" default="0">
+		</member>
+		<member name="steer" type="float" setter="set_steer" getter="get_steer" default="0.0">
+		</member>
+		<member name="thrust" type="float" setter="set_thrust" getter="get_thrust" default="8.0">
+		</member>
+	</members>
+</class>

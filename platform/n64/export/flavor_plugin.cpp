@@ -11,7 +11,6 @@
 
 #include "flavor_plugin.h"
 
-#include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "servers/display_server.h"
 
@@ -95,30 +94,8 @@ void N64Spawner::_bind_methods() {}
 void N64LoadZone::_bind_methods() {}
 void N64UnloadZone::_bind_methods() {}
 
-void N64FlavorEditorPlugin::_sync_singleton(bool p_enabled) {
-	Engine *eng = Engine::get_singleton();
-	if (!eng) {
-		return;
-	}
-	if (p_enabled) {
-		if (!n64_stub) {
-			n64_stub = memnew(N64);
-		}
-		if (!eng->has_singleton("N64")) {
-			eng->add_singleton(Engine::Singleton("N64", n64_stub));
-		}
-		return;
-	}
-	if (eng->has_singleton("N64")) {
-		eng->remove_singleton("N64");
-	}
-}
-
 void N64FlavorEditorPlugin::_refresh() {
 	const bool enabled = ProjectSettings::get_singleton() && bool(ProjectSettings::get_singleton()->get("n64/enabled"));
-	if (enabled) {
-		_sync_singleton(true);
-	}
 	if (!status) {
 		return;
 	}
@@ -131,34 +108,53 @@ void N64FlavorEditorPlugin::_refresh() {
 }
 
 void N64FlavorEditorPlugin::_notification(int p_what) {
-	if (p_what == NOTIFICATION_PROCESS && dock) {
-		const bool enabled = ProjectSettings::get_singleton() && bool(ProjectSettings::get_singleton()->get("n64/enabled"));
-		if (enabled != last_enabled) {
+	switch (p_what) {
+		case NOTIFICATION_ENTER_TREE: {
+			// Only the plugin the editor adds enters the tree; instances ClassDB
+			// creates for docs do not, so they never build a dock.
+			const bool headless = DisplayServer::get_singleton() && String(DisplayServer::get_singleton()->get_name()) == "headless";
+			if (headless || dock) {
+				break;
+			}
+			dock = memnew(VBoxContainer);
+			status = memnew(Label);
+			status->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
+			dock->add_child(status);
+			add_control_to_dock(DOCK_SLOT_RIGHT_UL, dock);
+			set_process(true);
 			_refresh();
-		}
+		} break;
+		case NOTIFICATION_EXIT_TREE: {
+			if (!dock) {
+				break;
+			}
+			set_process(false);
+			// Removing a dock does not free it.
+			remove_control_from_docks(dock);
+			memdelete(dock);
+			dock = nullptr;
+			status = nullptr;
+		} break;
+		case NOTIFICATION_PROCESS: {
+			if (!dock) {
+				break;
+			}
+			const bool enabled = ProjectSettings::get_singleton() && bool(ProjectSettings::get_singleton()->get("n64/enabled"));
+			if (enabled != last_enabled) {
+				_refresh();
+			}
+		} break;
 	}
 }
 
 N64FlavorEditorPlugin::N64FlavorEditorPlugin() {
-	const bool headless = DisplayServer::get_singleton() && String(DisplayServer::get_singleton()->get_name()) == "headless";
-	if (!headless) {
-		dock = memnew(VBoxContainer);
-		status = memnew(Label);
-		status->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
-		dock->add_child(status);
-		add_control_to_dock(DOCK_SLOT_RIGHT_UL, dock);
-		set_process(true);
-	}
-	_sync_singleton(true);
-	if (!headless) {
-		_refresh();
-	}
 }
 
 N64FlavorEditorPlugin::~N64FlavorEditorPlugin() {
-	n64_stub = nullptr;
+	// NOTIFICATION_EXIT_TREE normally frees the dock; this covers a plugin
+	// destroyed without leaving the tree.
 	if (dock) {
-		remove_control_from_docks(dock);
+		memdelete(dock);
 		dock = nullptr;
 	}
 }

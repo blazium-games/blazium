@@ -1080,13 +1080,11 @@ class PS1FlavorEditorPlugin : public EditorPlugin {
 	VBoxContainer *dock = nullptr;
 	Label *status = nullptr;
 	Label *warn = nullptr;
-	PS1 *ps1_stub = nullptr;
 	ObjectID last_root;
 	int last_nodes = -1;
 	bool last_enabled = false;
 
 	void _refresh();
-	void _sync_singleton(bool p_enabled);
 
 protected:
 	static void _bind_methods() {}

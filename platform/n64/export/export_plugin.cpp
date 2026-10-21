@@ -14,6 +14,7 @@
 #include "cook/cooker.h"
 #include "logo_svg.gen.h"
 
+#include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
@@ -21,10 +22,10 @@
 #include "core/io/resource_loader.h"
 #include "core/os/os.h"
 #include "editor/editor_node.h"
-#include "servers/display_server.h"
 #include "editor/editor_settings.h"
 #include "editor/themes/editor_scale.h"
 #include "modules/svg/image_loader_svg.h"
+#include "servers/display_server.h"
 
 // Must match blazium-toolchain/guest/n64 CookABI. Cook writers land in P3.
 static const int kGuestABI = 1;
@@ -478,6 +479,14 @@ Error EditorExportPlatformN64::run(const Ref<EditorExportPreset> &p_preset, int 
 	return OS::get_singleton()->create_process(tc, args);
 }
 
+void EditorExportPlatformN64::set_api_singleton(Object *p_api) {
+	ERR_FAIL_NULL(p_api);
+	ERR_FAIL_COND(api_singleton != nullptr);
+	ERR_FAIL_COND(Engine::get_singleton()->has_singleton("N64"));
+	api_singleton = p_api;
+	Engine::get_singleton()->add_singleton(Engine::Singleton("N64", api_singleton));
+}
+
 EditorExportPlatformN64::EditorExportPlatformN64() {
 	if (EditorNode::get_singleton()) {
 		Ref<Image> img = memnew(Image);
@@ -485,4 +494,16 @@ EditorExportPlatformN64::EditorExportPlatformN64() {
 		ImageLoaderSVG::create_image_from_string(img, _n64_logo_svg, EDSCALE, upsample, false);
 		logo = ImageTexture::create_from_image(img);
 	}
+}
+
+EditorExportPlatformN64::~EditorExportPlatformN64() {
+	if (!api_singleton) {
+		return;
+	}
+	Engine *engine = Engine::get_singleton();
+	if (engine && engine->has_singleton("N64") && engine->get_singleton_object("N64") == api_singleton) {
+		engine->remove_singleton("N64");
+	}
+	memdelete(api_singleton);
+	api_singleton = nullptr;
 }

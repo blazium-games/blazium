@@ -16,6 +16,10 @@
 #include "scene/resources/image_texture.h"
 
 class EditorExportPlatformN64 : public EditorExportPlatform {
+	// The N64 script API object, registered as the "N64" Engine singleton.
+	// Owned by the exporter so it is freed when the editor shuts down.
+	Object *api_singleton = nullptr;
+
 	GDCLASS(EditorExportPlatformN64, EditorExportPlatform);
 
 	Ref<ImageTexture> logo;
@@ -48,5 +52,9 @@ public:
 	virtual String get_option_tooltip(int p_index) const override { return "Spawn blazium-toolchain n64 run"; }
 	virtual Error run(const Ref<EditorExportPreset> &p_preset, int p_device, BitField<EditorExportPlatform::DebugFlags> p_debug_flags) override;
 
+	// Registers p_api as the "N64" Engine singleton and takes ownership of it.
+	void set_api_singleton(Object *p_api);
+
 	EditorExportPlatformN64();
+	~EditorExportPlatformN64();
 };

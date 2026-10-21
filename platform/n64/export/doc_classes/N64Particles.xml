@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="N64Particles" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="life" type="float" setter="set_life" getter="get_life" default="1.0">
+		</member>
+		<member name="mode" type="int" setter="set_mode" getter="get_mode" default="0">
+		</member>
+		<member name="rate" type="float" setter="set_rate" getter="get_rate" default="8.0">
+		</member>
+		<member name="speed" type="float" setter="set_speed" getter="get_speed" default="2.0">
+		</member>
+	</members>
+</class>
