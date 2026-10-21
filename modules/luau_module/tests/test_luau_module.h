@@ -82,11 +82,11 @@ TEST_CASE("[Modules][LuauModule] wrap_for_write compressed round-trip") {
 	CHECK(unwrapped.size() == raw.size());
 	CHECK(unwrapped == raw);
 
-	String repeated;
-	for (int i = 0; i < 400; i++) {
-		repeated += "local value_" + itos(i) + " = " + itos(i) + "\n";
+	String repeated = "local text = \"";
+	for (int i = 0; i < 2000; i++) {
+		repeated += "abcdefghij";
 	}
-	repeated += "return value_0\n";
+	repeated += "\"\nreturn #text\n";
 	PackedByteArray large = luau_module::Luau::compile(repeated);
 	CHECK(large.size() > 1000);
 	Vector<uint8_t> packed = luau_module::LuauBytecodeFormat::wrap_compressed(large);
