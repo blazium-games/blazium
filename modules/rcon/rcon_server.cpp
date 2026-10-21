@@ -86,11 +86,32 @@ void RCONServer::_bind_methods() {
 	BIND_ENUM_CONSTANT(STATE_ERROR);
 }
 
+static bool rcon_password_matches(const String &p_got, const String &p_want) {
+	const CharString got = p_got.utf8();
+	const CharString want = p_want.utf8();
+	const int got_len = got.length();
+	const int want_len = want.length();
+	const int n = got_len > want_len ? got_len : want_len;
+	uint8_t diff = got_len == want_len ? 0 : 1;
+	const char *got_data = got.get_data();
+	const char *want_data = want.get_data();
+	for (int i = 0; i < n; i++) {
+		const uint8_t g = (i < got_len && got_data) ? (uint8_t)got_data[i] : 0;
+		const uint8_t w = (i < want_len && want_data) ? (uint8_t)want_data[i] : 0;
+		diff |= (uint8_t)(g ^ w);
+	}
+	return diff == 0;
+}
+
 Error RCONServer::start_server(int p_port, const String &p_password, Protocol p_protocol) {
 	MutexLock lock(mutex);
 
 	if (state != STATE_STOPPED) {
 		return ERR_ALREADY_IN_USE;
+	}
+
+	if (p_password.is_empty()) {
+		return ERR_INVALID_PARAMETER;
 	}
 
 	port = p_port;
@@ -99,7 +120,7 @@ Error RCONServer::start_server(int p_port, const String &p_password, Protocol p_
 
 	if (protocol == PROTOCOL_SOURCE) {
 		tcp_server.instantiate();
-		Error err = tcp_server->listen(port);
+		Error err = tcp_server->listen(port, IPAddress("127.0.0.1"));
 		if (err != OK) {
 			state = STATE_ERROR;
 			Dictionary error_data;
@@ -109,7 +130,7 @@ Error RCONServer::start_server(int p_port, const String &p_password, Protocol p_
 		}
 	} else {
 		udp_peer.instantiate();
-		Error err = udp_peer->bind(port);
+		Error err = udp_peer->bind(port, IPAddress("127.0.0.1"));
 		if (err != OK) {
 			state = STATE_ERROR;
 			Dictionary error_data;
@@ -467,6 +488,10 @@ void RCONServer::_accept_new_clients_tcp() {
 		Ref<StreamPeerTCP> peer = tcp_server->take_connection();
 		if (peer.is_valid()) {
 			MutexLock lock(mutex);
+			if (clients.size() >= 8) {
+				peer->disconnect_from_host();
+				return;
+			}
 
 			Client client;
 			client.id = next_client_id++;
@@ -511,11 +536,11 @@ void RCONServer::_process_client_tcp(Client &p_client) {
 
 			int total_size = packet_size + 4;
 
-			if (total_size <= 4) {
+			if (packet_size < 10 || packet_size > 4096) {
 				p_client.tcp_buffer.clear();
-				Dictionary error_data;
-				error_data["error"] = "Corrupt packet size";
-				_queue_event_unlocked(Event::EVENT_SERVER_ERROR, 0, error_data);
+				if (p_client.tcp_peer.is_valid()) {
+					p_client.tcp_peer->disconnect_from_host();
+				}
 				break;
 			}
 
@@ -600,7 +625,7 @@ void RCONServer::_process_source_packet(Client &p_client, const PackedByteArray 
 	// Handle authentication
 	if (type == RCONPacket::SOURCE_SERVERDATA_AUTH) {
 		// Check password
-		if (body == password) {
+		if (rcon_password_matches(body, password)) {
 			p_client.authenticated = true;
 
 			// Send response value packet (id matches)
@@ -615,6 +640,10 @@ void RCONServer::_process_source_packet(Client &p_client, const PackedByteArray 
 
 			_queue_event(Event::EVENT_CLIENT_AUTHENTICATED, p_client.id, Dictionary());
 		} else {
+			p_client.auth_failures++;
+			if (p_client.auth_failures >= 5 && p_client.tcp_peer.is_valid()) {
+				p_client.tcp_peer->disconnect_from_host();
+			}
 			// Authentication failed
 			// Auth failed (send -1 id)
 			PackedByteArray response = RCONPacket::create_source_command(-1, "");
@@ -659,6 +688,9 @@ void RCONServer::_process_battleye_packet(const IPAddress &p_address, int p_port
 
 	if (is_new_client) {
 		MutexLock lock(mutex);
+		if (clients.size() >= 8) {
+			return;
+		}
 		Client new_client;
 		new_client.id = next_client_id++;
 		new_client.udp_address = p_address;
@@ -685,7 +717,7 @@ void RCONServer::_process_battleye_packet(const IPAddress &p_address, int p_port
 			login_password = String::utf8((const char *)pwd_data.ptr(), pwd_data.size());
 		}
 
-		if (login_password == password) {
+		if (rcon_password_matches(login_password, password)) {
 			client->authenticated = true;
 
 			// Send success response
@@ -711,6 +743,9 @@ void RCONServer::_process_battleye_packet(const IPAddress &p_address, int p_port
 
 			_queue_event(Event::EVENT_CLIENT_AUTHENTICATED, client->id, Dictionary());
 		} else {
+			client->auth_failures++;
+			const int failed_id = client->id;
+			const bool drop = client->auth_failures >= 5;
 			// Send failed login response
 			PackedByteArray response;
 			response.push_back('B');
@@ -734,7 +769,10 @@ void RCONServer::_process_battleye_packet(const IPAddress &p_address, int p_port
 
 			Dictionary data;
 			data["address"] = client->udp_address.operator String() + String(":") + itos(client->udp_port);
-			_queue_event(Event::EVENT_AUTH_FAILED, client->id, data);
+			_queue_event(Event::EVENT_AUTH_FAILED, failed_id, data);
+			if (drop) {
+				_disconnect_client(failed_id);
+			}
 		}
 	} else if (type == RCONPacket::BATTLEYE_COMMAND) {
 		if (client->authenticated) {

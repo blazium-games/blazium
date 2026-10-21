@@ -121,8 +121,8 @@ TEST_CASE("[RCONServer] Server initialization and state") {
 	CHECK(server->is_running() == false);
 	CHECK(server->get_state() == RCONServer::STATE_STOPPED);
 
-	// Note: Actually starting the server would require available ports
-	// and is better suited for integration tests
+	CHECK(server->start_server(0, "", RCONServer::PROTOCOL_SOURCE) == ERR_INVALID_PARAMETER);
+	CHECK(server->get_state() == RCONServer::STATE_STOPPED);
 }
 
 TEST_CASE("[RCONServer] Command registration") {
