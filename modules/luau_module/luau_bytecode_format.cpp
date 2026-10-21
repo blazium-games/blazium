@@ -33,6 +33,21 @@
 
 using namespace luau_module;
 
+namespace {
+constexpr int MAX_LUAU_BYTECODE = 16 * 1024 * 1024;
+
+void write_u32(uint8_t *p_dst, uint32_t p_value) {
+	p_dst[0] = p_value & 0xff;
+	p_dst[1] = (p_value >> 8) & 0xff;
+	p_dst[2] = (p_value >> 16) & 0xff;
+	p_dst[3] = (p_value >> 24) & 0xff;
+}
+
+uint32_t read_u32(const uint8_t *p_src) {
+	return (uint32_t)p_src[0] | ((uint32_t)p_src[1] << 8) | ((uint32_t)p_src[2] << 16) | ((uint32_t)p_src[3] << 24);
+}
+} //namespace
+
 Vector<uint8_t> LuauBytecodeFormat::decrypt_export_data(const Vector<uint8_t> &p_data) {
 	static const char key[] = "blazium_luau_export_key";
 	if (p_data.size() < 4 || memcmp(p_data.ptr(), MAGIC_ENCRYPT, 4) != 0) {
@@ -79,11 +94,15 @@ Vector<uint8_t> LuauBytecodeFormat::wrap_compressed(const PackedByteArray &p_byt
 		return wrap_raw(p_bytecode);
 	}
 	compressed.resize(compressed_size);
+	if (p_bytecode.size() <= 0 || p_bytecode.size() > MAX_LUAU_BYTECODE) {
+		return wrap_raw(p_bytecode);
+	}
 
 	Vector<uint8_t> out;
-	out.resize(4 + compressed_size);
+	out.resize(8 + compressed_size);
 	memcpy(out.ptrw(), MAGIC_ZSTD, 4);
-	memcpy(out.ptrw() + 4, compressed.ptr(), compressed_size);
+	write_u32(out.ptrw() + 4, (uint32_t)p_bytecode.size());
+	memcpy(out.ptrw() + 8, compressed.ptr(), compressed_size);
 	return out;
 }
 
@@ -120,12 +139,18 @@ PackedByteArray LuauBytecodeFormat::unwrap(const Vector<uint8_t> &p_file_data, b
 		if (r_was_compressed) {
 			*r_was_compressed = true;
 		}
-		const int max_output = Compression::get_max_compressed_buffer_size(payload_size, Compression::MODE_ZSTD);
-		result.resize(max_output);
-		const int decompressed_size = Compression::decompress(result.ptrw(), max_output, payload, payload_size, Compression::MODE_ZSTD);
-		if (decompressed_size > 0) {
-			result.resize(decompressed_size);
-		} else {
+		if (payload_size < 4) {
+			result.clear();
+			return result;
+		}
+		const uint32_t raw_size = read_u32(payload);
+		if (raw_size == 0 || raw_size > (uint32_t)MAX_LUAU_BYTECODE) {
+			result.clear();
+			return result;
+		}
+		result.resize((int)raw_size);
+		const int decompressed_size = Compression::decompress(result.ptrw(), (int)raw_size, payload + 4, payload_size - 4, Compression::MODE_ZSTD);
+		if (decompressed_size != (int)raw_size) {
 			result.clear();
 		}
 		return result;
