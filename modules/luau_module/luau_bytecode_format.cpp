@@ -46,7 +46,7 @@ void write_u32(uint8_t *p_dst, uint32_t p_value) {
 uint32_t read_u32(const uint8_t *p_src) {
 	return (uint32_t)p_src[0] | ((uint32_t)p_src[1] << 8) | ((uint32_t)p_src[2] << 16) | ((uint32_t)p_src[3] << 24);
 }
-}
+} //namespace
 
 Vector<uint8_t> LuauBytecodeFormat::decrypt_export_data(const Vector<uint8_t> &p_data) {
 	static const char key[] = "blazium_luau_export_key";
