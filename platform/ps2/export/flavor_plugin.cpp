@@ -14,17 +14,16 @@
 #include "cook/cooker.h"
 #include "cook/script_cook.h"
 
-#include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/os/os.h"
 #include "core/templates/hash_set.h"
 #include "editor/editor_interface.h"
+#include "scene/2d/camera_2d.h"
 #include "scene/2d/sprite_2d.h"
 #include "scene/2d/tile_map.h"
 #include "scene/2d/tile_map_layer.h"
-#include "scene/2d/camera_2d.h"
 #include "scene/3d/camera_3d.h"
 #include "scene/3d/mesh_instance_3d.h"
 #include "scene/3d/physics/collision_object_3d.h"
@@ -162,6 +161,13 @@ void PS2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_flip", "node", "flip"), &PS2::set_flip);
 	ClassDB::bind_method(D_METHOD("poke", "off", "byte"), &PS2::poke);
 	ClassDB::bind_method(D_METHOD("peek", "off"), &PS2::peek);
+	ClassDB::bind_method(D_METHOD("set_fog", "color", "near", "far"), &PS2::set_fog, DEFVAL(Color()), DEFVAL(0.0f), DEFVAL(0.0f));
+	ClassDB::bind_method(D_METHOD("set_views", "count", "camera0", "camera1", "camera2", "camera3"), &PS2::set_views,
+			DEFVAL(Variant()), DEFVAL(Variant()), DEFVAL(Variant()), DEFVAL(Variant()));
+	ClassDB::bind_method(D_METHOD("pad_count"), &PS2::pad_count);
+	ClassDB::bind_method(D_METHOD("pad_pressed", "pad", "button"), &PS2::pad_pressed);
+	ClassDB::bind_method(D_METHOD("pad_just_pressed", "pad", "button"), &PS2::pad_just_pressed);
+	ClassDB::bind_method(D_METHOD("pad_axis", "pad"), &PS2::pad_axis);
 	ClassDB::bind_method(D_METHOD("godot_save_bytes", "value"), &PS2::godot_save_bytes);
 	ClassDB::bind_method(D_METHOD("godot_load_bytes", "bytes"), &PS2::godot_load_bytes);
 	ClassDB::bind_method(D_METHOD("move_6dof", "node", "ax", "ay", "az", "pitch", "yaw", "roll", "speed"), &PS2::move_6dof);
@@ -389,30 +395,8 @@ static int _count_literal_packs() {
 	return n;
 }
 
-void PS2FlavorEditorPlugin::_sync_singleton(bool p_enabled) {
-	Engine *eng = Engine::get_singleton();
-	if (!eng) {
-		return;
-	}
-	if (p_enabled) {
-		if (!ps2_stub) {
-			ps2_stub = memnew(PS2);
-		}
-		if (!eng->has_singleton("PS2")) {
-			eng->add_singleton(Engine::Singleton("PS2", ps2_stub));
-		}
-		return;
-	}
-	if (eng->has_singleton("PS2")) {
-		eng->remove_singleton("PS2");
-	}
-}
-
 void PS2FlavorEditorPlugin::_refresh() {
 	const bool enabled = ProjectSettings::get_singleton() && bool(ProjectSettings::get_singleton()->get("ps2/enabled"));
-	if (enabled) {
-		_sync_singleton(true);
-	}
 	if (!status) {
 		return;
 	}
@@ -436,7 +420,7 @@ void PS2FlavorEditorPlugin::_refresh() {
 	const String bios = OS::get_singleton() ? String(OS::get_singleton()->get_environment("PS2_BIOS_DIR")) : String();
 	const String oneclick = bios.is_empty() ? "One-click disabled: set PS2_BIOS_DIR to a legal BIOS folder (export does not need BIOS)." : "One-click: PS2_BIOS_DIR is set (ps2 run / PCSX2 -elf).";
 	status->set_text(vformat(
-			"nodes %d/%d\ntris %d/%d\ntextures %d/%d\ncameras %d/%d\nHIT %d/%d\nHUD %d/%d\ntiles %d\ncatalog extras %d/%d (resident max %d + pack 0)\nest EE %d/%d  GS %d/%d\nEE 24 MiB and GS 4 MiB are shared. Extra STREAM packs cap at 2 MiB EE. Unload rooms/NPCs you are not using.\nPS2.* is PS2 export only; use OS.has_feature(\"ps2\").\nWorks: STREAM host:/cdrom0:, HIT, camera2D/3D, 6DoF/vehicle, CPU particles, nav/path, 16 tweens, IMA SFX/MUSIC, set_fade, DISP.\nPartial: change_scene swap / load_scene+instantiate additive, Button HUD, AnimationPlayer TRS, custom IR.\nRefused: play_xa, play_fmv, set_fog, spawn_shot, memcard_wrap, gsKit, official VMs, live GPUParticles/RigidBody.\n%s",
+			"nodes %d/%d\ntris %d/%d\ntextures %d/%d\ncameras %d/%d\nHIT %d/%d\nHUD %d/%d\ntiles %d\ncatalog extras %d/%d (resident max %d + pack 0)\nest EE %d/%d  GS %d/%d\nEE 24 MiB and GS 4 MiB are shared. Extra STREAM packs cap at 2 MiB EE. Unload rooms/NPCs you are not using.\nPS2.* is PS2 export only; use OS.has_feature(\"ps2\").\nWorks: STREAM host:/cdrom0:, HIT, camera2D/3D, 6DoF/vehicle, CPU particles, nav/path, 16 tweens, IMA SFX/MUSIC, set_fade, set_fog, MultiMesh instances, DISP.\nPartial: change_scene swap / load_scene+instantiate additive, Button HUD, AnimationPlayer TRS, custom IR.\nRefused: play_xa, play_fmv, spawn_shot, memcard_wrap, gsKit, official VMs, live GPUParticles/RigidBody.\n%s",
 			nodes, ps2_cook::kMaxNodes, tris, ps2_cook::kMaxTris, tex, ps2_cook::kMaxTextures,
 			cams, ps2_cook::kMaxCameras, hits, ps2_cook::kMaxHits, hud, ps2_cook::kMaxHud, tiles,
 			extras, ps2_cook::kMaxScenePacks, ps2_cook::kMaxResidentExtras,
@@ -481,44 +465,64 @@ void PS2FlavorEditorPlugin::_refresh() {
 }
 
 void PS2FlavorEditorPlugin::_notification(int p_what) {
-	if (p_what == NOTIFICATION_PROCESS && dock) {
-		Node *root = EditorInterface::get_singleton() ? EditorInterface::get_singleton()->get_edited_scene_root() : nullptr;
-		const ObjectID id = root ? root->get_instance_id() : ObjectID();
-		int nodes = 0, tris = 0, tex = 0, hud = 0, tiles = 0, cams = 0, hits = 0;
-		_count_scene(root, nodes, tris, tex, hud, tiles, cams, hits);
-		const bool enabled = ProjectSettings::get_singleton() && bool(ProjectSettings::get_singleton()->get("ps2/enabled"));
-		if (id != last_root || nodes != last_nodes || enabled != last_enabled) {
-			last_root = id;
-			last_nodes = nodes;
+	switch (p_what) {
+		case NOTIFICATION_ENTER_TREE: {
+			// Only the plugin the editor adds enters the tree; instances ClassDB
+			// creates for docs do not, so they never build a dock.
+			const bool headless = DisplayServer::get_singleton() && String(DisplayServer::get_singleton()->get_name()) == "headless";
+			if (headless || dock) {
+				break;
+			}
+			dock = memnew(VBoxContainer);
+			status = memnew(Label);
+			status->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
+			dock->add_child(status);
+			warn = memnew(Label);
+			warn->add_theme_color_override("font_color", Color(1, 0.35f, 0.35f));
+			warn->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
+			dock->add_child(warn);
+			add_control_to_dock(DOCK_SLOT_RIGHT_UL, dock);
+			set_process(true);
 			_refresh();
-		}
+		} break;
+		case NOTIFICATION_EXIT_TREE: {
+			if (!dock) {
+				break;
+			}
+			set_process(false);
+			// Removing a dock does not free it.
+			remove_control_from_docks(dock);
+			memdelete(dock);
+			dock = nullptr;
+			status = nullptr;
+			warn = nullptr;
+		} break;
+		case NOTIFICATION_PROCESS: {
+			if (!dock) {
+				break;
+			}
+			Node *root = EditorInterface::get_singleton() ? EditorInterface::get_singleton()->get_edited_scene_root() : nullptr;
+			const ObjectID id = root ? root->get_instance_id() : ObjectID();
+			int nodes = 0, tris = 0, tex = 0, hud = 0, tiles = 0, cams = 0, hits = 0;
+			_count_scene(root, nodes, tris, tex, hud, tiles, cams, hits);
+			const bool enabled = ProjectSettings::get_singleton() && bool(ProjectSettings::get_singleton()->get("ps2/enabled"));
+			if (id != last_root || nodes != last_nodes || enabled != last_enabled) {
+				last_root = id;
+				last_nodes = nodes;
+				_refresh();
+			}
+		} break;
 	}
 }
 
 PS2FlavorEditorPlugin::PS2FlavorEditorPlugin() {
-	const bool headless = DisplayServer::get_singleton() && String(DisplayServer::get_singleton()->get_name()) == "headless";
-	if (!headless) {
-		dock = memnew(VBoxContainer);
-		status = memnew(Label);
-		status->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
-		dock->add_child(status);
-		warn = memnew(Label);
-		warn->add_theme_color_override("font_color", Color(1, 0.35f, 0.35f));
-		warn->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
-		dock->add_child(warn);
-		add_control_to_dock(DOCK_SLOT_RIGHT_UL, dock);
-		set_process(true);
-	}
-	_sync_singleton(true);
-	if (!headless) {
-		_refresh();
-	}
 }
 
 PS2FlavorEditorPlugin::~PS2FlavorEditorPlugin() {
-	ps2_stub = nullptr;
+	// NOTIFICATION_EXIT_TREE normally frees the dock; this covers a plugin
+	// destroyed without leaving the tree.
 	if (dock) {
-		remove_control_from_docks(dock);
+		memdelete(dock);
 		dock = nullptr;
 	}
 }

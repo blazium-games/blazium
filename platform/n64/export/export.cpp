@@ -14,7 +14,6 @@
 #include "export_plugin.h"
 #include "flavor_plugin.h"
 
-#include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "editor/editor_node.h"
 #include "editor/editor_settings.h"
@@ -38,11 +37,13 @@ void register_n64_exporter_types() {
 	GDREGISTER_CLASS(N64FlavorEditorPlugin);
 }
 
+#if defined(WINDOWS_ENABLED) || defined(LINUXBSD_ENABLED)
 static void _n64_flavor_init() {
 	if (EditorNode::get_singleton()) {
 		EditorNode::get_singleton()->add_editor_plugin(memnew(N64FlavorEditorPlugin));
 	}
 }
+#endif
 
 void register_n64_exporter() {
 #if defined(WINDOWS_ENABLED) || defined(LINUXBSD_ENABLED)
@@ -57,10 +58,10 @@ void register_n64_exporter() {
 
 	Ref<EditorExportPlatformN64> platform;
 	platform.instantiate();
+	// GDScript only treats N64.* as callable when the singleton exists at
+	// analyze time, so register it with the exporter, before any plugin.
+	platform->set_api_singleton(memnew(N64));
 	EditorExport::get_singleton()->add_export_platform(platform);
-	if (Engine::get_singleton() && !Engine::get_singleton()->has_singleton("N64")) {
-		Engine::get_singleton()->add_singleton(Engine::Singleton("N64", memnew(N64)));
-	}
 	EditorNode::add_init_callback(_n64_flavor_init);
 #endif
 }

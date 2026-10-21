@@ -8,4 +8,14 @@
 	</description>
 	<tutorials>
 	</tutorials>
+	<members>
+		<member name="ps1/make_iso" type="bool" setter="" getter="">
+		</member>
+		<member name="ps1/output_kind" type="int" setter="" getter="">
+		</member>
+		<member name="ps1/region" type="int" setter="" getter="">
+		</member>
+		<member name="ps1/width" type="int" setter="" getter="">
+		</member>
+	</members>
 </class>

@@ -22,6 +22,20 @@ def get_flags():
 def get_doc_classes():
     return [
         "EditorExportPlatformN64",
+        "N64",
+        "N64Checkpoint",
+        "N64CameraVolume",
+        "N64Follow",
+        "N64Path",
+        "N64Waypoint",
+        "N64NavRegion",
+        "N64Particles",
+        "N64Vehicle",
+        "N64Tween",
+        "N64Spawner",
+        "N64LoadZone",
+        "N64UnloadZone",
+        "N64FlavorEditorPlugin",
     ]
 
 

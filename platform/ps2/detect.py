@@ -22,6 +22,27 @@ def get_flags():
 def get_doc_classes():
     return [
         "EditorExportPlatformPS2",
+        "PS2",
+        "PS2Spawner",
+        "PS2CameraVolume",
+        "PS2Follow",
+        "PS2Waypoint",
+        "PS2Path",
+        "PS2NavRegion",
+        "PS2Vehicle",
+        "PS2Particles",
+        "PS2Tween",
+        "PS2SpawnPoint",
+        "PS2Checkpoint",
+        "PS2Portal",
+        "PS2SavePoint",
+        "PS2MusicZone",
+        "PS2LoadZone",
+        "PS2UnloadZone",
+        "PS2Hazard",
+        "PS2Pickup",
+        "PS2Talk",
+        "PS2FlavorEditorPlugin",
     ]
 
 

@@ -24,12 +24,16 @@
 
 namespace ps1_cook {
 
-static const uint8_t kTapeReturn = 0;
-static const uint8_t kTapeLoadConstF = 1;
-static const uint8_t kTapeLoadArg = 2;
-static const uint8_t kTapeMul = 3;
-static const uint8_t kTapeAdd = 4;
-static const uint8_t kTapeCallSelf = 5;
+// Tape opcodes shared with the PS1 runtime. Not every opcode is emitted by
+// this cooker yet (kTapeAdd), but the values are part of the format.
+enum TapeOp : uint8_t {
+	kTapeReturn = 0,
+	kTapeLoadConstF = 1,
+	kTapeLoadArg = 2,
+	kTapeMul = 3,
+	kTapeAdd = 4,
+	kTapeCallSelf = 5,
+};
 
 static String strip_line_comments(const String &p_source) {
 	PackedStringArray lines = p_source.split("\n");
@@ -203,7 +207,7 @@ bool method_is_allowlisted(const String &p_name) {
 			p_name == "move_and_slide" || p_name == "move_and_drive" || p_name == "tile_solid_at" || p_name == "tile_at" ||
 			p_name == "load_audio" || p_name == "unload_audio" || p_name == "can_load_audio" ||
 			p_name == "is_audio_loaded" || p_name == "play_sfx" || p_name == "stop_sfx" ||
-			p_name == "set_sfx_volume" || 			p_name == "emit" || p_name == "set_fog" ||
+			p_name == "set_sfx_volume" || p_name == "emit" || p_name == "set_fog" ||
 			p_name == "set_fade" || p_name == "set_light" ||
 			p_name == "atan2" || p_name == "length" || p_name == "length_squared" ||
 			p_name == "normalized" || p_name == "distance_to" || p_name == "dot" ||

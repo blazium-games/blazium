@@ -18,6 +18,10 @@
 #include "scene/resources/image_texture.h"
 
 class EditorExportPlatformPS2 : public EditorExportPlatform {
+	// The PS2 script API object, registered as the "PS2" Engine singleton.
+	// Owned by the exporter so it is freed when the editor shuts down.
+	Object *api_singleton = nullptr;
+
 	GDCLASS(EditorExportPlatformPS2, EditorExportPlatform);
 
 	Ref<ImageTexture> logo;
@@ -30,12 +34,15 @@ class EditorExportPlatformPS2 : public EditorExportPlatform {
 	Error _ensure_toolchain(const String &p_profile, String &r_error);
 	bool _scan_forbidden(const String &p_dir, String &r_hit) const;
 	Error _spawn_toolchain(const List<String> &p_args, String &r_output, int &r_exit) const;
-	Error _try_make_iso(const String &p_elf_path, String &r_warning);
+	Error _try_make_iso(const String &p_elf_path, const String &p_product_code, const String &p_boot_logo, String &r_warning);
+	String _write_boot_logo(const Ref<EditorExportPreset> &p_preset, const String &p_dir);
+	static bool _is_product_code(const String &p_code);
 	void _emit_cook_messages(const ps2_cook::CookResult &p_cooked);
 
 public:
 	virtual void get_preset_features(const Ref<EditorExportPreset> &p_preset, List<String> *r_features) const override;
 	virtual void get_export_options(List<ExportOption> *r_options) const override;
+	virtual String get_export_option_warning(const EditorExportPreset *p_preset, const StringName &p_name) const override;
 	virtual String get_os_name() const override { return "PlayStation 2"; }
 	virtual String get_name() const override { return "PS2"; }
 	virtual Ref<Texture2D> get_logo() const override { return logo; }
@@ -51,5 +58,9 @@ public:
 	virtual String get_option_tooltip(int p_index) const override { return "Spawn blazium-toolchain ps2 run"; }
 	virtual Error run(const Ref<EditorExportPreset> &p_preset, int p_device, BitField<EditorExportPlatform::DebugFlags> p_debug_flags) override;
 
+	// Registers p_api as the "PS2" Engine singleton and takes ownership of it.
+	void set_api_singleton(Object *p_api);
+
 	EditorExportPlatformPS2();
+	~EditorExportPlatformPS2();
 };

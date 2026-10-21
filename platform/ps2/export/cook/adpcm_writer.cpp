@@ -2,11 +2,29 @@
 /*  adpcm_writer.cpp                                                      */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                               BLAZIUM                                  */
-/*                        https://blazium.app                             */
+/*                             BLAZIUM ENGINE                             */
+/*                          https://blazium.app                           */
 /**************************************************************************/
 /* Copyright (c) 2024-present Blazium Engine contributors.                */
-/* SPDX-License-Identifier: MIT                                           */
+/*                                                                        */
+/* Permission is hereby granted, free of charge, to any person obtaining  */
+/* a copy of this software and associated documentation files (the        */
+/* "Software"), to deal in the Software without restriction, including    */
+/* without limitation the rights to use, copy, modify, merge, publish,    */
+/* distribute, sublicense, and/or sell copies of the Software, and to     */
+/* permit persons to whom the Software is furnished to do so, subject to  */
+/* the following conditions:                                              */
+/*                                                                        */
+/* The above copyright notice and this permission notice shall be         */
+/* included in all copies or substantial portions of the Software.        */
+/*                                                                        */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
+/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
+/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
+/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
+/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
+/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
+/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
 #include "adpcm_writer.h"
@@ -149,6 +167,29 @@ Error write_sfx_pcm(const Vector<int16_t> &p_pcm, int p_sample_rate, SfxBlob &r_
 		return write_sfx_beep(r_out);
 	}
 	finish_blob(nibbles, p_sample_rate > 0 ? p_sample_rate : 22050, r_out, "SFX ");
+	return OK;
+}
+
+Error write_sfx_bank(const Vector<SfxClip> &p_clips, SfxBlob &r_out) {
+	if (p_clips.is_empty() || p_clips.size() > 65535) {
+		return ERR_INVALID_PARAMETER;
+	}
+	Vector<uint8_t> out;
+	out.push_back('S');
+	out.push_back('F');
+	out.push_back('X');
+	out.push_back('B');
+	append_u16(out, 1);
+	append_u16(out, uint16_t(p_clips.size()));
+	for (int i = 0; i < p_clips.size(); i++) {
+		Vector<uint8_t> nibbles;
+		encode_ima(p_clips[i].pcm, nibbles);
+		append_u16(out, uint16_t(CLAMP(p_clips[i].sample_rate, 1, 65535)));
+		append_u32(out, uint32_t(nibbles.size()));
+		out.append_array(nibbles);
+	}
+	r_out.bytes = out;
+	r_out.sample_rate = p_clips[0].sample_rate;
 	return OK;
 }
 

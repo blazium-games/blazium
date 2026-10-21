@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="N64" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="change_scene">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="create_tween">
+			<return type="bool" />
+			<param index="0" name="id" type="int" />
+			<param index="1" name="dur" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="drive_vehicle">
+			<return type="bool" />
+			<param index="0" name="id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="follow_node">
+			<return type="bool" />
+			<param index="0" name="id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_abi" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_rdram_free" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_rdram_limit" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_rdram_used" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_tmem_free" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_tmem_limit" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_tmem_used" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="godot_load_bytes" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="bytes" type="PackedByteArray" />
+			<description>
+			</description>
+		</method>
+		<method name="godot_save_bytes" qualifiers="const">
+			<return type="PackedByteArray" />
+			<param index="0" name="value" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="instantiate">
+			<return type="Variant" />
+			<param index="0" name="path_or_pack" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="is_ready" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="kill_tweens">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="load_anims">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="load_particles">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="load_sprites">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="look_camera">
+			<return type="bool" />
+			<param index="0" name="yaw" type="float" />
+			<param index="1" name="pitch" type="float" />
+			<param index="2" name="roll" type="float" default="0.0" />
+			<description>
+			</description>
+		</method>
+		<method name="mempak_load">
+			<return type="PackedByteArray" />
+			<description>
+			</description>
+		</method>
+		<method name="mempak_save">
+			<return type="bool" />
+			<param index="0" name="data" type="PackedByteArray" />
+			<description>
+			</description>
+		</method>
+		<method name="move_6dof">
+			<return type="bool" />
+			<param index="0" name="dx" type="float" />
+			<param index="1" name="dy" type="float" />
+			<param index="2" name="dz" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="navmesh_next">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="next_camera">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="overlaps">
+			<return type="int" />
+			<param index="0" name="x" type="float" />
+			<param index="1" name="y" type="float" />
+			<param index="2" name="z" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="path_follow">
+			<return type="bool" />
+			<param index="0" name="id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="play_anim">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="play_particles">
+			<return type="bool" />
+			<param index="0" name="id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="play_sfx">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="respawn">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="set_camera">
+			<return type="bool" />
+			<param index="0" name="id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_checkpoint">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="set_default_camera">
+			<return type="bool" />
+			<param index="0" name="id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_fade">
+			<return type="bool" />
+			<param index="0" name="alpha" type="float" />
+			<param index="1" name="color" type="Color" default="Color(0, 0, 0, 1)" />
+			<description>
+			</description>
+		</method>
+		<method name="set_orbit">
+			<return type="bool" />
+			<param index="0" name="az" type="float" />
+			<param index="1" name="el" type="float" />
+			<param index="2" name="rad" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="stop_sfx">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="unload_anims">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="unload_particles">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="user_load">
+			<return type="PackedByteArray" />
+			<description>
+			</description>
+		</method>
+		<method name="user_save">
+			<return type="bool" />
+			<param index="0" name="data" type="PackedByteArray" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

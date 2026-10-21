@@ -328,12 +328,14 @@ static void emit_loadk_s(Vector<uint8_t> &o, const char *s) {
 static const char *kUnsupportedCalls[] = {
 	"play_xa", "stop_xa",
 	"memcard_wrap", "memcard_unwrap",
-	"set_fog", "spawn_shot"
+	"spawn_shot"
 };
 
 static bool is_ps2_alias(const String &p_name) {
 	return p_name == "set_rumble" || p_name == "stop_rumble" || p_name == "get_pressure" ||
-			p_name == "play_sfx" || p_name == "stop_sfx" || p_name == "swap_pack" ||
+			p_name == "play_sfx" || p_name == "stop_sfx" || p_name == "swap_pack" || p_name == "set_fog" ||
+			p_name == "set_views" || p_name == "pad_count" || p_name == "pad_pressed" ||
+			p_name == "pad_just_pressed" || p_name == "pad_axis" ||
 			p_name == "load_scene" || p_name == "unload_scene" || p_name == "get_abi" ||
 			p_name == "is_ready" || p_name == "get_display_width" || p_name == "get_display_height" ||
 			p_name == "memcard_present" || p_name == "memcard_ready" || p_name == "memcard_save" ||
@@ -387,8 +389,6 @@ static bool reject_unsupported_apis(const String &p_src, String &r_why) {
 		if (p_src.contains(bad)) {
 			if (String(bad) == "play_xa" || String(bad) == "stop_xa") {
 				r_why = String(bad) + " is not supported on PS2 ABI 1 (no CD-XA; use PS2.play_sfx / load_music IMA)";
-			} else if (String(bad) == "set_fog") {
-				r_why = "set_fog is not supported on PS2 ABI 1 (use PS2.set_fade for a GS overlay)";
 			} else if (String(bad) == "spawn_shot") {
 				r_why = "spawn_shot is not supported on PS2 ABI 1";
 			} else {
@@ -1104,7 +1104,7 @@ Error cook_scripts(const String &p_export_dir, ScriptCook &r_out) {
 		r_out.warnings.push_back("overlaps / raycast query HIT00 AABBs (including already-overlapping boxes). tile_solid_at uses TILE00 floor(x),floor(z) cells.");
 	}
 	if (has_fade) {
-		r_out.warnings.push_back("set_fade is a GS blended fullscreen rect (not set_fog). change_scene_fade lerps that overlay to clear.");
+		r_out.warnings.push_back("set_fade is a GS blended fullscreen rect. change_scene_fade lerps that overlay to clear.");
 	}
 	if (has_tween) {
 		r_out.warnings.push_back("create_tween / create_timer are 16 linear slots on PS2 ABI 1 (volume tweens drive MUSIC). Not SceneTreeTween.");
