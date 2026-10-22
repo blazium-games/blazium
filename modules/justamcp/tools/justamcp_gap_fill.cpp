@@ -581,6 +581,61 @@ int justamcp_export_smoke_timeout_ms(const Dictionary &p_args) {
 	return CLAMP(requested, 1000, 30000);
 }
 
+String justamcp_normalize_export_smoke_path(const String &p_path) {
+	String path = p_path.strip_edges().replace("\\", "/").simplify_path();
+	while (path.length() > 1 && path.ends_with("/")) {
+		path = path.substr(0, path.length() - 1);
+	}
+	return path;
+}
+
+static bool _export_smoke_path_equal(const String &p_a, const String &p_b) {
+#ifdef WINDOWS_ENABLED
+	return p_a.nocasecmp_to(p_b) == 0;
+#else
+	return p_a == p_b;
+#endif
+}
+
+static bool _export_smoke_path_inside(const String &p_path, const String &p_directory) {
+	if (p_directory.is_empty() || p_directory == "/" || p_directory == ".") {
+		return false;
+	}
+	const String prefix = p_directory.ends_with("/") ? p_directory : p_directory + "/";
+#ifdef WINDOWS_ENABLED
+	if (p_path.length() < prefix.length()) {
+		return false;
+	}
+	return p_path.substr(0, prefix.length()).nocasecmp_to(prefix) == 0;
+#else
+	return p_path.begins_with(prefix);
+#endif
+}
+
+bool justamcp_export_smoke_path_allowed(const String &p_candidate, const Vector<String> &p_export_directories) {
+	const String candidate = justamcp_normalize_export_smoke_path(p_candidate);
+	if (candidate.is_empty() || candidate == "." || candidate == "..") {
+		return false;
+	}
+	for (int i = 0; i < p_export_directories.size(); i++) {
+		const String directory = justamcp_normalize_export_smoke_path(p_export_directories[i]);
+		if (_export_smoke_path_equal(candidate, directory)) {
+			continue;
+		}
+		if (_export_smoke_path_inside(candidate, directory)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool justamcp_export_smoke_direct_argv(const String &p_path, String &r_executable, Vector<String> &r_arguments) {
+	r_arguments.clear();
+	r_executable = p_path;
+	// argv[0] is the export itself. No shell string is built around the path.
+	return !p_path.is_empty();
+}
+
 Dictionary justamcp_editor_get_camera(const Dictionary &p_args) {
 	SubViewport *viewport = _editor_viewport_3d(int(p_args.get("index", 0)));
 	Camera3D *camera = viewport ? viewport->get_camera_3d() : nullptr;

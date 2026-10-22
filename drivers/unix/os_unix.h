@@ -39,6 +39,7 @@ class OS_Unix : public OS {
 	struct ProcessInfo {
 		mutable bool is_running = true;
 		mutable int exit_code = -1;
+		bool leads_group = false;
 	};
 	HashMap<ProcessID, ProcessInfo> *process_map = nullptr;
 	Mutex process_map_mutex;

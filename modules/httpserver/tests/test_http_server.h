@@ -56,3 +56,34 @@ TEST_CASE("[HTTPServer] too many header bytes are rejected") {
 	const int from = MAX(3, ok_len - 3);
 	CHECK(HTTPServer::find_header_terminator(split.ptr(), split.size(), from, HTTPServer::MAX_HEADER_BYTES) == ok_len);
 }
+
+TEST_CASE("[HTTPServer] negative Content-Length is rejected and does not finish the body") {
+	int length = 99;
+	CHECK(HTTPServer::accept_content_length("0", 40, 8192, length) == 0);
+	CHECK(length == 0);
+	CHECK(HTTPServer::accept_content_length("15", 40, 8192, length) == 0);
+	CHECK(length == 15);
+	CHECK(HTTPServer::accept_content_length("  8", 40, 8192, length) == 0);
+	CHECK(length == 8);
+
+	length = 99;
+	CHECK(HTTPServer::accept_content_length("-1", 40, 8192, length) == 400);
+	CHECK(length == 0);
+	CHECK(HTTPServer::accept_content_length("+5", 40, 8192, length) == 400);
+	CHECK(HTTPServer::accept_content_length("12abc", 40, 8192, length) == 400);
+	CHECK(HTTPServer::accept_content_length("", 40, 8192, length) == 400);
+	CHECK(HTTPServer::accept_content_length("  ", 40, 8192, length) == 400);
+
+	// Declared body must fit in the remaining request budget. Do not clamp down and dispatch early.
+	CHECK(HTTPServer::accept_content_length("100", 8000, 8192, length) == 0);
+	CHECK(length == 100);
+	CHECK(HTTPServer::accept_content_length("193", 8000, 8192, length) == 413);
+	CHECK(length == 0);
+
+	const int header_length = 40;
+	CHECK_FALSE(HTTPServer::request_body_ready(header_length, header_length, -1));
+	CHECK(HTTPServer::request_body_ready(header_length, header_length, 0));
+	CHECK_FALSE(HTTPServer::request_body_ready(header_length, header_length, 5));
+	CHECK(HTTPServer::request_body_ready(header_length + 5, header_length, 5));
+	CHECK_FALSE(HTTPServer::request_body_ready(header_length - 1, header_length, 0));
+}

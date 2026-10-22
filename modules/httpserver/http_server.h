@@ -162,6 +162,10 @@ public:
 	static bool accept_another_client(int p_current_clients);
 	// Returns the header length, -1 when more bytes are required, or -2 when the cap is exceeded.
 	static int find_header_terminator(const uint8_t *p_data, int p_len, int p_scan_from, int p_max_header_bytes);
+	// 0 when p_value is a non-negative Content-Length that fits, otherwise 400 or 413.
+	// A negative or partial parse must not be treated as a finished body.
+	static int accept_content_length(const String &p_value, int p_header_length, int p_max_request_size, int &r_length);
+	static bool request_body_ready(int p_received, int p_header_length, int p_body_length);
 
 	// Async hold-client completion (handler called hold(); later complete from main/worker).
 	Error complete_response(int p_client_id, const Ref<HTTPResponse> &p_response);

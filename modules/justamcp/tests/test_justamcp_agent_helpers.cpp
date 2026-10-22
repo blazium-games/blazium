@@ -628,6 +628,35 @@ void test_justamcp_play_clock_and_script_guard() {
 	CHECK(justamcp_export_smoke_timeout_ms(long_timeout) == 30000);
 	CHECK(justamcp_export_smoke_timeout_ms(Dictionary()) == 8000);
 
+	Vector<String> export_dirs;
+	export_dirs.push_back("/tmp/proj/build");
+	CHECK(justamcp_export_smoke_path_allowed("/tmp/proj/build/game.exe", export_dirs));
+	CHECK(justamcp_export_smoke_path_allowed("/tmp/proj/build/x$(id>/tmp/p).exe", export_dirs));
+	CHECK(!justamcp_export_smoke_path_allowed("/tmp/proj/build/../secret/game.exe", export_dirs));
+	CHECK(!justamcp_export_smoke_path_allowed("/tmp/proj/build_extra/game.exe", export_dirs));
+	CHECK(!justamcp_export_smoke_path_allowed("/usr/bin/id", export_dirs));
+	CHECK(!justamcp_export_smoke_path_allowed("/tmp/proj/build", export_dirs));
+	Vector<String> windows_dirs;
+	windows_dirs.push_back("C:/exports");
+	CHECK(justamcp_export_smoke_path_allowed("C:\\exports\\game.exe", windows_dirs));
+	CHECK(!justamcp_export_smoke_path_allowed("C:/exports_other/game.exe", windows_dirs));
+#ifdef WINDOWS_ENABLED
+	CHECK(justamcp_export_smoke_path_allowed("c:/exports/game.exe", windows_dirs));
+#endif
+
+	String executable;
+	Vector<String> launch_args;
+	const String tricky = "C:/exports/x$(curl)|sh `%PATH%` \"game.exe";
+	CHECK(justamcp_export_smoke_direct_argv(tricky, executable, launch_args));
+	CHECK(executable == tricky);
+	CHECK(launch_args.is_empty());
+	CHECK(executable != "/bin/sh");
+	CHECK(executable.to_lower() != "cmd.exe");
+	for (int i = 0; i < launch_args.size(); i++) {
+		CHECK(launch_args[i] != "-c");
+		CHECK(launch_args[i] != "/c");
+	}
+
 	JustAMCPPromptExecutor prompts;
 	Dictionary migration = prompts.get_prompt("blazium_version_migration", Dictionary());
 	CHECK(bool(migration.get("ok", false)));

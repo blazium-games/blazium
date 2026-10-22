@@ -46,6 +46,15 @@
 
 #include "../justamcp_mcp_tool_macros.h"
 
+#if defined(UNIX_ENABLED)
+#include <stdlib.h>
+#endif
+
+#if defined(WINDOWS_ENABLED)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 void JustAMCPExportTools::_bind_methods() {}
 
 JustAMCPExportTools::JustAMCPExportTools() {}
@@ -368,6 +377,147 @@ Dictionary JustAMCPExportTools::_export_project(const Dictionary &p_params) {
 	return MCP_SUCCESS(res);
 }
 
+static String _canonicalize_export_smoke_path(const String &p_path) {
+	const String normalized = justamcp_normalize_export_smoke_path(p_path);
+	if (normalized.is_empty()) {
+		return String();
+	}
+#if defined(WINDOWS_ENABLED)
+	const String windows_path = normalized.replace("/", "\\");
+	HANDLE handle = ::CreateFileW((LPCWSTR)windows_path.utf16().get_data(), FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+	if (handle == INVALID_HANDLE_VALUE) {
+		return String();
+	}
+	const DWORD expected_size = ::GetFinalPathNameByHandleW(handle, nullptr, 0, VOLUME_NAME_DOS | FILE_NAME_NORMALIZED);
+	if (expected_size == 0) {
+		::CloseHandle(handle);
+		return String();
+	}
+	Char16String buffer;
+	buffer.resize((int)expected_size);
+	const DWORD wrote = ::GetFinalPathNameByHandleW(handle, (LPWSTR)buffer.ptrw(), expected_size, VOLUME_NAME_DOS | FILE_NAME_NORMALIZED);
+	::CloseHandle(handle);
+	if (wrote == 0 || wrote >= expected_size) {
+		return String();
+	}
+	String result;
+	if (result.parse_utf16(buffer.ptr()) != OK || result.is_empty()) {
+		return String();
+	}
+	if (result.begins_with("\\\\?\\UNC\\")) {
+		result = "//" + result.trim_prefix("\\\\?\\UNC\\");
+	} else {
+		result = result.trim_prefix("\\\\?\\");
+	}
+	return justamcp_normalize_export_smoke_path(result.replace("\\", "/"));
+#elif defined(UNIX_ENABLED)
+	char *resolved = ::realpath(normalized.utf8().get_data(), nullptr);
+	if (!resolved) {
+		return String();
+	}
+	String result;
+	const Error parse_ok = result.parse_utf8(resolved);
+	::free(resolved);
+	if (parse_ok != OK) {
+		return String();
+	}
+	return justamcp_normalize_export_smoke_path(result);
+#else
+	return normalized;
+#endif
+}
+
+static String _absolute_export_smoke_path(String p_path) {
+	p_path = p_path.strip_edges();
+	if (p_path.is_empty() || !ProjectSettings::get_singleton()) {
+		return p_path;
+	}
+	if (p_path.begins_with("res://") || p_path.begins_with("user://")) {
+		return ProjectSettings::get_singleton()->globalize_path(p_path);
+	}
+	if (!p_path.is_absolute_path()) {
+		return ProjectSettings::get_singleton()->globalize_path("res://").path_join(p_path);
+	}
+	return p_path;
+}
+
+static Vector<String> _export_smoke_directories() {
+	Vector<String> directories;
+	if (!FileAccess::exists("res://export_presets.cfg") || !ProjectSettings::get_singleton()) {
+		return directories;
+	}
+	Ref<ConfigFile> cfg;
+	cfg.instantiate();
+	if (cfg->load("res://export_presets.cfg") != OK) {
+		return directories;
+	}
+	int idx = 0;
+	while (cfg->has_section("preset." + itos(idx))) {
+		String export_path = cfg->get_value("preset." + itos(idx), "export_path", "");
+		idx++;
+		export_path = _absolute_export_smoke_path(export_path);
+		if (export_path.is_empty()) {
+			continue;
+		}
+		const String directory = _canonicalize_export_smoke_path(justamcp_normalize_export_smoke_path(export_path).get_base_dir());
+		if (!directory.is_empty()) {
+			directories.push_back(directory);
+		}
+	}
+	return directories;
+}
+
+static void _append_available_pipe(const Ref<FileAccess> &p_pipe, String &r_output) {
+	if (p_pipe.is_null() || !p_pipe->is_open()) {
+		return;
+	}
+	while (true) {
+		const uint64_t available = p_pipe->get_length();
+		if (available == 0) {
+			break;
+		}
+		const int chunk = int(MIN(available, (uint64_t)4096));
+		if (chunk <= 0) {
+			break;
+		}
+		Vector<uint8_t> buf;
+		buf.resize(chunk);
+		const uint64_t got = p_pipe->get_buffer(buf.ptrw(), chunk);
+		if (got == 0 || got > (uint64_t)chunk) {
+			break;
+		}
+		r_output += String::utf8((const char *)buf.ptr(), (int)got);
+		if (r_output.length() > 16384) {
+			r_output = r_output.substr(r_output.length() - 8192);
+		}
+	}
+}
+
+static void _reap_smoke_process(OS::ProcessID p_pid) {
+	if (!OS::get_singleton() || p_pid == 0) {
+		return;
+	}
+#ifdef WINDOWS_ENABLED
+	List<String> kill_args;
+	kill_args.push_back("/F");
+	kill_args.push_back("/T");
+	kill_args.push_back("/PID");
+	kill_args.push_back(itos(p_pid));
+	String kill_output;
+	int kill_exit = 0;
+	OS::get_singleton()->execute("taskkill", kill_args, &kill_output, &kill_exit, true);
+#endif
+	OS::get_singleton()->kill(p_pid);
+	const uint64_t wait_started = OS::get_singleton()->get_ticks_msec();
+	while (OS::get_singleton()->is_process_running(p_pid)) {
+		if (OS::get_singleton()->get_ticks_msec() - wait_started > 2000) {
+			OS::get_singleton()->kill(p_pid);
+			break;
+		}
+		OS::get_singleton()->delay_usec(20000);
+	}
+}
+
 Dictionary JustAMCPExportTools::_export_smoke(const Dictionary &p_params) {
 	if (Thread::is_main_thread()) {
 		Dictionary err;
@@ -375,64 +525,64 @@ Dictionary JustAMCPExportTools::_export_smoke(const Dictionary &p_params) {
 		err["error"] = "OS::execute refused on main thread";
 		return err;
 	}
-	String path = p_params.get("path", "");
+	String path = _absolute_export_smoke_path(p_params.get("path", ""));
 	if (path.is_empty()) {
 		return MCP_INVALID_PARAMS("Missing param: path");
-	}
-	if (path.begins_with("res://") && ProjectSettings::get_singleton()) {
-		path = ProjectSettings::get_singleton()->globalize_path(path);
 	}
 	if (!FileAccess::exists(path)) {
 		return MCP_NOT_FOUND("Export artifact '" + path + "'");
 	}
-	const int timeout_ms = justamcp_export_smoke_timeout_ms(p_params);
-	const String log_path = path + ".justamcp_smoke.log";
-	List<String> args;
-	OS::ProcessID pid = 0;
-	Error err = FAILED;
-#ifdef WINDOWS_ENABLED
-	args.push_back("/c");
-	args.push_back(vformat("\"%s\" > \"%s\" 2>&1", path, log_path));
-	err = OS::get_singleton()->create_process("cmd.exe", args, &pid);
-#else
-	args.push_back("-c");
-	args.push_back(vformat("\"%s\" > \"%s\" 2>&1", path, log_path));
-	err = OS::get_singleton()->create_process("/bin/sh", args, &pid);
-#endif
-	if (err != OK || pid == 0) {
-		return MCP_INTERNAL("Failed to launch export artifact: " + path);
+	const String canonical = _canonicalize_export_smoke_path(path);
+	const Vector<String> directories = _export_smoke_directories();
+	if (canonical.is_empty() || !justamcp_export_smoke_path_allowed(canonical, directories)) {
+		return MCP_INVALID_PARAMS("Export smoke path is outside the configured export output directories.");
 	}
+#ifdef WINDOWS_ENABLED
+	if (canonical.contains("\"") || canonical.contains("\n") || canonical.contains("\r")) {
+		return MCP_INVALID_PARAMS("Export path contains characters that cannot be passed without a command line shell.");
+	}
+#endif
+	String executable;
+	Vector<String> launch_args;
+	if (!justamcp_export_smoke_direct_argv(canonical, executable, launch_args)) {
+		return MCP_INVALID_PARAMS("Missing param: path");
+	}
+	List<String> args;
+	for (int i = 0; i < launch_args.size(); i++) {
+		args.push_back(launch_args[i]);
+	}
+	const int timeout_ms = justamcp_export_smoke_timeout_ms(p_params);
+	const Dictionary launched = OS::get_singleton()->execute_with_pipe(executable, args);
+	const OS::ProcessID pid = launched.get("pid", (int64_t)0);
+	if (pid == 0) {
+		return MCP_INTERNAL("Failed to launch export artifact: " + canonical);
+	}
+	Ref<FileAccess> stdout_pipe = launched.get("stdio", Variant());
+	Ref<FileAccess> stderr_pipe = launched.get("stderr", Variant());
+	String output;
 	const uint64_t started = OS::get_singleton()->get_ticks_msec();
 	bool timed_out = false;
+	bool stop_requested = false;
 	while (OS::get_singleton()->is_process_running(pid)) {
-		if (justamcp_is_cancel_requested() || int(OS::get_singleton()->get_ticks_msec() - started) >= timeout_ms) {
-			timed_out = int(OS::get_singleton()->get_ticks_msec() - started) >= timeout_ms;
-			OS::get_singleton()->kill(pid);
-#ifdef WINDOWS_ENABLED
-			List<String> kill_args;
-			kill_args.push_back("/F");
-			kill_args.push_back("/T");
-			kill_args.push_back("/PID");
-			kill_args.push_back(itos(pid));
-			String kill_output;
-			int kill_exit = 0;
-			OS::get_singleton()->execute("taskkill", kill_args, &kill_output, &kill_exit, true);
-#endif
+		_append_available_pipe(stdout_pipe, output);
+		_append_available_pipe(stderr_pipe, output);
+		const int elapsed = int(OS::get_singleton()->get_ticks_msec() - started);
+		if (justamcp_is_cancel_requested() || elapsed >= timeout_ms) {
+			timed_out = elapsed >= timeout_ms;
+			stop_requested = justamcp_is_cancel_requested();
+			_reap_smoke_process(pid);
 			break;
 		}
 		OS::get_singleton()->delay_usec(50000);
 	}
+	_append_available_pipe(stdout_pipe, output);
+	_append_available_pipe(stderr_pipe, output);
 	int exit_code = -1;
-	if (!timed_out) {
+	if (!timed_out && !stop_requested) {
 		exit_code = OS::get_singleton()->get_process_exit_code(pid);
 	}
-	String output;
-	if (FileAccess::exists(log_path)) {
-		output = FileAccess::get_file_as_string(log_path);
-		DirAccess::remove_absolute(log_path);
-	}
 	Dictionary res;
-	res["path"] = path;
+	res["path"] = canonical;
 	res["exit_code"] = exit_code;
 	res["timed_out"] = timed_out;
 	res["timeout_ms"] = timeout_ms;

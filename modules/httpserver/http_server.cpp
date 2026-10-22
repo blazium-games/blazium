@@ -294,10 +294,23 @@ void HTTPServer::_poll_client(int p_client_id, ClientConnection &p_client) {
 
 				String header_str = String((const char *)p_client.req_buf.ptr(), p_client.header_length);
 				Vector<String> lines = header_str.split("\r\n");
+				bool saw_content_length = false;
 				for (int j = 1; j < lines.size(); j++) {
 					if (lines[j].to_lower().begins_with("content-length:")) {
-						p_client.body_length = lines[j].substr(15).strip_edges().to_int();
-						break;
+						if (saw_content_length) {
+							_send_error(p_client_id, p_client, 400, "Bad Request");
+							_clear_client(p_client_id);
+							return;
+						}
+						saw_content_length = true;
+						int parsed_length = 0;
+						const int status = accept_content_length(lines[j].substr(15), p_client.header_length, max_request_size, parsed_length);
+						if (status != 0) {
+							_send_error(p_client_id, p_client, status, status == 413 ? "Request Entity Too Large" : "Bad Request");
+							_clear_client(p_client_id);
+							return;
+						}
+						p_client.body_length = parsed_length;
 					}
 				}
 			} else {
@@ -306,7 +319,7 @@ void HTTPServer::_poll_client(int p_client_id, ClientConnection &p_client) {
 		}
 
 		if (p_client.headers_parsed) {
-			if (p_client.req_pos - p_client.header_length >= p_client.body_length) {
+			if (request_body_ready(p_client.req_pos, p_client.header_length, p_client.body_length)) {
 				_parse_and_dispatch_request(p_client_id, p_client);
 				return;
 			}
@@ -888,6 +901,42 @@ String HTTPServer::get_cors_origin() const {
 
 bool HTTPServer::accept_another_client(int p_current_clients) {
 	return p_current_clients >= 0 && p_current_clients < MAX_CONCURRENT_CLIENTS;
+}
+
+int HTTPServer::accept_content_length(const String &p_value, int p_header_length, int p_max_request_size, int &r_length) {
+	r_length = 0;
+	const String value = p_value.strip_edges();
+	if (value.is_empty() || p_header_length < 0 || p_max_request_size <= 0) {
+		return 400;
+	}
+
+	// RFC 9110: Content-Length is 1*DIGIT. Signs and trailing junk are not a length.
+	int64_t parsed = 0;
+	for (int i = 0; i < value.length(); i++) {
+		const char32_t c = value[i];
+		if (c < '0' || c > '9') {
+			return 400;
+		}
+		const int digit = int(c - '0');
+		if (parsed > (INT64_MAX - digit) / 10) {
+			return 413;
+		}
+		parsed = parsed * 10 + digit;
+	}
+
+	const int64_t room = (int64_t)p_max_request_size - (int64_t)p_header_length;
+	if (parsed > room || parsed > INT32_MAX) {
+		return 413;
+	}
+	r_length = (int)parsed;
+	return 0;
+}
+
+bool HTTPServer::request_body_ready(int p_received, int p_header_length, int p_body_length) {
+	if (p_body_length < 0 || p_header_length < 0 || p_received < p_header_length) {
+		return false;
+	}
+	return p_received - p_header_length >= p_body_length;
 }
 
 int HTTPServer::find_header_terminator(const uint8_t *p_data, int p_len, int p_scan_from, int p_max_header_bytes) {
