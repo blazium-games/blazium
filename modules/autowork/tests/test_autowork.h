@@ -18,6 +18,7 @@
 #include "core/variant/dictionary.h"
 #include "modules/autowork/autowork_collector.h"
 #include "modules/autowork/autowork_config.h"
+#include "modules/autowork/autowork_e2e_server.h"
 #include "modules/autowork/autowork_logger.h"
 #include "modules/autowork/autowork_main.h"
 #include "modules/remote_control/remote_control_server.h"
@@ -167,4 +168,13 @@ TEST_CASE("[Modules][Autowork] AutoworkTest assertions are ClassDB-bound") {
 
 TEST_CASE("[Modules][RemoteControl] default port is 6508") {
 	TestAutowork::test_remote_control_default_port();
+}
+
+TEST_CASE("[Modules][Autowork] E2E server stays down without a token or outside the editor") {
+	CHECK_FALSE(AutoworkE2EServer::may_start(false, "secret"));
+	CHECK_FALSE(AutoworkE2EServer::may_start(true, ""));
+	CHECK(AutoworkE2EServer::may_start(true, "secret"));
+	CHECK_FALSE(AutoworkE2EServer::mutation_authorized("wrong", "secret"));
+	CHECK_FALSE(AutoworkE2EServer::mutation_authorized("", "secret"));
+	CHECK(AutoworkE2EServer::mutation_authorized("secret", "secret"));
 }

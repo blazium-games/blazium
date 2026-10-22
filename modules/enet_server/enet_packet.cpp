@@ -258,9 +258,22 @@ Variant ENetPacketUtils::decode_auto(const PackedByteArray &p_data) {
 			memcpy(raw.ptrw(), p_data.ptr() + 1, p_data.size() - 1);
 			return raw;
 		}
-		case PACKET_TYPE_VARIANT:
-		case PACKET_TYPE_DICTIONARY: {
+		case PACKET_TYPE_VARIANT: {
 			return decode_variant(p_data);
+		}
+		case PACKET_TYPE_DICTIONARY: {
+			// Payload is a marshaled Dictionary. decode_variant() rejects this
+			// type byte, so decode the bytes after the header directly.
+			if (p_data.size() < 2) {
+				return Variant();
+			}
+			int len = p_data.size() - 1;
+			Variant variant;
+			Error err = ::decode_variant(variant, p_data.ptr() + 1, len, nullptr, false);
+			if (err != OK || variant.get_type() != Variant::DICTIONARY) {
+				return Variant();
+			}
+			return variant;
 		}
 		case PACKET_TYPE_JSON: {
 			String json = decode_json(p_data);
@@ -278,8 +291,7 @@ Variant ENetPacketUtils::decode_auto(const PackedByteArray &p_data) {
 			return decode_node_metadata(p_data);
 		}
 		default: {
-			// Try to decode as variant anyway
-			return decode_variant(p_data);
+			return Variant();
 		}
 	}
 }

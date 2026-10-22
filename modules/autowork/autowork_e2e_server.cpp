@@ -41,6 +41,7 @@
 #include "core/io/json.h"
 #include "core/math/expression.h"
 #include "core/math/random_number_generator.h"
+#include "core/os/os.h"
 #include "core/os/time.h"
 #include "scene/2d/node_2d.h"
 #include "scene/gui/control.h"
@@ -51,12 +52,33 @@
 
 const String AutoworkE2EServer::SERVER_VERSION = "1.1.0";
 
+bool AutoworkE2EServer::may_start(bool p_editor_binary, const String &p_token) {
+	return p_editor_binary && !p_token.is_empty();
+}
+
+bool AutoworkE2EServer::mutation_authorized(const String &p_presented, const String &p_expected) {
+	if (p_presented.is_empty() || p_expected.is_empty()) {
+		return false;
+	}
+	Ref<Crypto> crypto = Crypto::create();
+	if (crypto.is_null()) {
+		return false;
+	}
+	return crypto->constant_time_compare(p_expected.to_utf8_buffer(), p_presented.to_utf8_buffer());
+}
+
 void AutoworkE2EServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_wait_signal_emitted"), &AutoworkE2EServer::_on_wait_signal_emitted);
 }
 
 AutoworkE2EServer::AutoworkE2EServer() {
 	if (!AutoworkE2EConfig::is_enabled()) {
+		set_process(false);
+		set_physics_process(false);
+		return;
+	}
+	if (!may_start(OS::get_singleton() && OS::get_singleton()->has_feature("editor"), AutoworkE2EConfig::get_token())) {
+		ERR_PRINT("Autowork E2E server requires an editor binary and --aw-e2e-token.");
 		set_process(false);
 		set_physics_process(false);
 		return;
@@ -331,6 +353,16 @@ void AutoworkE2EServer::_handle_hello(PeerContext *p_ctx, const Dictionary &p_cm
 	Variant cmd_id = p_cmd.get("id", Variant());
 	String hmac_provided = p_cmd.get("hmac", "");
 	String expected_token = AutoworkE2EConfig::get_token();
+
+	if (expected_token.is_empty()) {
+		Dictionary err_res;
+		err_res["id"] = cmd_id;
+		err_res["error"] = "auth_failed";
+		err_res["message"] = "E2E token is required";
+		_send_response(p_ctx, err_res);
+		_disconnect_peer(p_ctx);
+		return;
+	}
 
 	if (!expected_token.is_empty()) {
 		Ref<HMACContext> hmac = Ref<HMACContext>(HMACContext::create());
@@ -758,6 +790,12 @@ Dictionary AutoworkE2EServer::_cmd_get_property(const Dictionary &p_cmd, const V
 }
 
 Dictionary AutoworkE2EServer::_cmd_set_property(const Dictionary &p_cmd, const Variant &p_id) {
+	if (!mutation_authorized(p_cmd.get("token", ""), AutoworkE2EConfig::get_token())) {
+		Dictionary denied;
+		denied["id"] = p_id;
+		denied["error"] = "E2E token is required";
+		return denied;
+	}
 	String path = p_cmd.get("path", "");
 	String property = p_cmd.get("property", "");
 	Variant raw_value = p_cmd.get("value", Variant());
@@ -778,6 +816,12 @@ Dictionary AutoworkE2EServer::_cmd_set_property(const Dictionary &p_cmd, const V
 }
 
 Dictionary AutoworkE2EServer::_cmd_call_method(const Dictionary &p_cmd, const Variant &p_id) {
+	if (!mutation_authorized(p_cmd.get("token", ""), AutoworkE2EConfig::get_token())) {
+		Dictionary denied;
+		denied["id"] = p_id;
+		denied["error"] = "E2E token is required";
+		return denied;
+	}
 	String path = p_cmd.get("path", "");
 	String method = p_cmd.get("method", "");
 	Array raw_args = p_cmd.get("args", Array());

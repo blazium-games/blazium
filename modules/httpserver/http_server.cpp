@@ -145,6 +145,13 @@ void HTTPServer::_poll() {
 
 	// Accept new connections
 	while (server->is_connection_available()) {
+		if (!accept_another_client(clients.size())) {
+			Ref<StreamPeerTCP> extra = server->take_connection();
+			if (extra.is_valid()) {
+				extra->disconnect_from_host();
+			}
+			break;
+		}
 		Ref<StreamPeerTCP> tcp = server->take_connection();
 		if (tcp.is_valid()) {
 			int client_id = next_client_id++;
@@ -156,6 +163,7 @@ void HTTPServer::_poll() {
 			client.is_sse = false;
 			client.sse_connection_id = 0;
 			client.headers_parsed = false;
+			client.header_scan = 3;
 			client.header_length = 0;
 			client.body_length = 0;
 			clients[client_id] = client;
@@ -274,21 +282,26 @@ void HTTPServer::_poll_client(int p_client_id, ClientConnection &p_client) {
 		p_client.req_pos += read;
 
 		if (!p_client.headers_parsed) {
-			for (int i = 3; i < p_client.req_pos; i++) {
-				if (p_client.req_buf[i] == '\n' && p_client.req_buf[i - 1] == '\r' && p_client.req_buf[i - 2] == '\n' && p_client.req_buf[i - 3] == '\r') {
-					p_client.headers_parsed = true;
-					p_client.header_length = i + 1;
+			const int found = find_header_terminator(p_client.req_buf.ptr(), p_client.req_pos, p_client.header_scan, MAX_HEADER_BYTES);
+			if (found == -2) {
+				_send_error(p_client_id, p_client, 431, "Request Header Fields Too Large");
+				_clear_client(p_client_id);
+				return;
+			}
+			if (found >= 0) {
+				p_client.headers_parsed = true;
+				p_client.header_length = found;
 
-					String header_str = String((const char *)p_client.req_buf.ptr(), p_client.header_length);
-					Vector<String> lines = header_str.split("\r\n");
-					for (int j = 1; j < lines.size(); j++) {
-						if (lines[j].to_lower().begins_with("content-length:")) {
-							p_client.body_length = lines[j].substr(15).strip_edges().to_int();
-							break;
-						}
+				String header_str = String((const char *)p_client.req_buf.ptr(), p_client.header_length);
+				Vector<String> lines = header_str.split("\r\n");
+				for (int j = 1; j < lines.size(); j++) {
+					if (lines[j].to_lower().begins_with("content-length:")) {
+						p_client.body_length = lines[j].substr(15).strip_edges().to_int();
+						break;
 					}
-					break;
 				}
+			} else {
+				p_client.header_scan = MAX(3, p_client.req_pos - 3);
 			}
 		}
 
@@ -614,6 +627,8 @@ String HTTPServer::_get_status_text(int p_code) const {
 			return "Method Not Allowed";
 		case 413:
 			return "Request Entity Too Large";
+		case 431:
+			return "Request Header Fields Too Large";
 		case 500:
 			return "Internal Server Error";
 		case 501:
@@ -869,6 +884,30 @@ void HTTPServer::set_cors_origin(const String &p_origin) {
 
 String HTTPServer::get_cors_origin() const {
 	return cors_origin;
+}
+
+bool HTTPServer::accept_another_client(int p_current_clients) {
+	return p_current_clients >= 0 && p_current_clients < MAX_CONCURRENT_CLIENTS;
+}
+
+int HTTPServer::find_header_terminator(const uint8_t *p_data, int p_len, int p_scan_from, int p_max_header_bytes) {
+	if (p_data == nullptr || p_len <= 0 || p_max_header_bytes < 4) {
+		return p_len >= p_max_header_bytes ? -2 : -1;
+	}
+	const int limit = MIN(p_len, p_max_header_bytes);
+	int start = p_scan_from < 3 ? 3 : p_scan_from;
+	if (start > limit) {
+		start = limit;
+	}
+	for (int i = start; i < limit; i++) {
+		if (p_data[i] == '\n' && p_data[i - 1] == '\r' && p_data[i - 2] == '\n' && p_data[i - 3] == '\r') {
+			return i + 1;
+		}
+	}
+	if (p_len >= p_max_header_bytes) {
+		return -2;
+	}
+	return -1;
 }
 
 void HTTPServer::set_max_request_size(int p_size) {

@@ -65,6 +65,7 @@ class HTTPServer : public Object {
 		int sse_connection_id = 0;
 		uint64_t last_sse_keepalive_usec = 0;
 		bool headers_parsed = false;
+		int header_scan = 3;
 		int header_length = 0;
 		int body_length = 0;
 	};
@@ -154,6 +155,13 @@ public:
 	String get_cors_origin() const;
 	void set_max_request_size(int p_size);
 	int get_max_request_size() const;
+
+	static constexpr int MAX_CONCURRENT_CLIENTS = 32;
+	static constexpr int MAX_HEADER_BYTES = 8192;
+
+	static bool accept_another_client(int p_current_clients);
+	// Returns the header length, -1 when more bytes are required, or -2 when the cap is exceeded.
+	static int find_header_terminator(const uint8_t *p_data, int p_len, int p_scan_from, int p_max_header_bytes);
 
 	// Async hold-client completion (handler called hold(); later complete from main/worker).
 	Error complete_response(int p_client_id, const Ref<HTTPResponse> &p_response);

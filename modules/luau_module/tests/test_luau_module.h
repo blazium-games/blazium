@@ -95,6 +95,36 @@ TEST_CASE("[Modules][LuauModule] wrap_for_write compressed round-trip") {
 	CHECK(restored == large);
 }
 
+TEST_CASE("[Modules][LuauModule] encrypted bytecode uses a per-build key") {
+	PackedByteArray raw = luau_module::Luau::compile("return 1 + 1");
+	CHECK(raw.size() > 0);
+
+	luau_module::LuauBytecodeWriteOptions opts;
+	opts.encrypt = true;
+	Vector<uint8_t> first = luau_module::LuauBytecodeFormat::wrap_for_write(raw, opts);
+	Vector<uint8_t> second = luau_module::LuauBytecodeFormat::wrap_for_write(raw, opts);
+	REQUIRE(first.size() > 5 + 16);
+	REQUIRE(second.size() == first.size());
+	CHECK(first != second);
+
+	const int key_len = first[4];
+	REQUIRE(key_len >= 8);
+	REQUIRE(first.size() >= 5 + key_len);
+	bool keys_differ = false;
+	for (int i = 0; i < key_len; i++) {
+		if (first[5 + i] != second[5 + i]) {
+			keys_differ = true;
+			break;
+		}
+	}
+	CHECK(keys_differ);
+
+	PackedByteArray round_first = luau_module::LuauBytecodeFormat::unwrap(luau_module::LuauBytecodeFormat::decrypt_export_data(first));
+	PackedByteArray round_second = luau_module::LuauBytecodeFormat::unwrap(luau_module::LuauBytecodeFormat::decrypt_export_data(second));
+	CHECK(round_first == raw);
+	CHECK(round_second == raw);
+}
+
 TEST_CASE("[Modules][LuauModule] parse global class metadata from source") {
 	const String source = R"(
 --- @class LuauFixtureTableDsl

@@ -215,12 +215,41 @@ String IRCDCCTransfer::_create_dcc_send_message() const {
 	}
 }
 
+bool IRCDCCTransfer::allow_unsolicited(int p_pending) {
+	return p_pending >= 0 && p_pending < MAX_UNSOLICITED_DCC;
+}
+
+IPAddress IRCDCCTransfer::ipv4_from_dcc_integer(uint32_t p_ip) {
+	const uint8_t bytes[4] = {
+		(uint8_t)((p_ip >> 24) & 0xff),
+		(uint8_t)((p_ip >> 16) & 0xff),
+		(uint8_t)((p_ip >> 8) & 0xff),
+		(uint8_t)(p_ip & 0xff),
+	};
+	IPAddress ip;
+	ip.set_ipv4(bytes);
+	return ip;
+}
+
+bool IRCDCCTransfer::send_is_from_offerer(const String &p_offerer, const String &p_remote) {
+	return !p_offerer.is_empty() && p_offerer == p_remote;
+}
+
+void IRCDCCTransfer::note_offerer(const String &p_nick) {
+	offerer_nick = p_nick;
+	remote_nick = p_nick;
+}
+
 Error IRCDCCTransfer::accept() {
 	if (status != DCC_STATUS_PENDING) {
 		return ERR_INVALID_PARAMETER;
 	}
 
 	if (type == TYPE_FILE_RECEIVE) {
+		if (!send_is_from_offerer(offerer_nick, remote_nick)) {
+			error_message = "DCC SEND is not from the offering peer";
+			return ERR_UNAUTHORIZED;
+		}
 		return start_receive();
 	}
 

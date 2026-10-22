@@ -249,6 +249,13 @@ Dictionary JustAMCPRuntime::_cmd_call_method(const Dictionary &p_params) {
 		return err;
 	}
 
+	if (is_method_blocked(method)) {
+		Dictionary err;
+		err["type"] = "error";
+		err["message"] = "Method not allowed: " + method;
+		return err;
+	}
+
 	SceneTree *tree = Object::cast_to<SceneTree>(OS::get_singleton()->get_main_loop());
 	if (!tree) {
 		Dictionary err;
@@ -374,14 +381,11 @@ Dictionary JustAMCPRuntime::_cmd_call_node_method(const Dictionary &p_params) {
 		return ret;
 	}
 
-	String method_lower = method.to_lower();
-	for (int i = 0; _BLOCKED_METHODS[i] != nullptr; i++) {
-		if (method_lower == String(_BLOCKED_METHODS[i]).to_lower()) {
-			Dictionary ret;
-			ret["type"] = "error";
-			ret["message"] = "Method not allowed: " + method;
-			return ret;
-		}
+	if (is_method_blocked(method)) {
+		Dictionary ret;
+		ret["type"] = "error";
+		ret["message"] = "Method not allowed: " + method;
+		return ret;
 	}
 
 	SceneTree *tree = Object::cast_to<SceneTree>(OS::get_singleton()->get_main_loop());

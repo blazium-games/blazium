@@ -35,6 +35,7 @@
 
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
+#include "core/crypto/crypto.h"
 #include "core/io/json.h"
 #include "core/object/message_queue.h"
 #include "core/os/os.h"
@@ -201,6 +202,32 @@ static void _justamcp_load_project_scripts_idle() {
 	}
 }
 
+String JustAMCPRuntime::tcp_bind_address() {
+	return "127.0.0.1";
+}
+
+String JustAMCPRuntime::configured_tcp_token() {
+	if (ProjectSettings::get_singleton() && ProjectSettings::get_singleton()->has_setting("blazium/justamcp/runtime_token")) {
+		return String(ProjectSettings::get_singleton()->get_setting("blazium/justamcp/runtime_token")).strip_edges();
+	}
+	if (OS::get_singleton()) {
+		return OS::get_singleton()->get_environment("JUSTAMCP_RUNTIME_TOKEN").strip_edges();
+	}
+	return String();
+}
+
+bool JustAMCPRuntime::tcp_token_matches(const String &p_presented) {
+	const String expected = configured_tcp_token();
+	if (expected.is_empty() || p_presented.is_empty()) {
+		return false;
+	}
+	Ref<Crypto> crypto = Crypto::create();
+	if (crypto.is_null()) {
+		return false;
+	}
+	return crypto->constant_time_compare(expected.to_utf8_buffer(), p_presented.to_utf8_buffer());
+}
+
 void JustAMCPRuntime::_start_server() {
 	if (JustAMCPCliArgs::skip_mcp_server()) {
 		return;
@@ -242,8 +269,14 @@ void JustAMCPRuntime::_start_server() {
 		server->stop();
 	}
 
-	const bool bind_to_localhost = JustAMCPSettingsResolver::resolve_bool("blazium/justamcp/bind_to_localhost_only", true);
-	String bind_address = bind_to_localhost ? "127.0.0.1" : "*";
+	if (configured_tcp_token().is_empty()) {
+		ERR_PRINT("[MCP Runtime] Refusing to start TCP bridge without a token. Set blazium/justamcp/runtime_token.");
+		if (!http_host || !http_host->is_server_started()) {
+			enabled = false;
+		}
+		return;
+	}
+	const String bind_address = tcp_bind_address();
 
 	int tcp_port = port;
 	if (http_host && http_host->is_server_started()) {
@@ -377,6 +410,11 @@ void JustAMCPRuntime::_handle_message(Ref<StreamPeerTCP> p_client, const String 
 	}
 
 	Dictionary message = result;
+	const String presented = message.get("token", "");
+	if (!tcp_token_matches(presented)) {
+		_send_error(p_client, "token required");
+		return;
+	}
 	String command = message.get("command", "");
 	Dictionary params = message.get("params", Dictionary());
 	Variant request_id = message.get("id", Variant());

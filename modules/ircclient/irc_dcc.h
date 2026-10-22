@@ -61,6 +61,7 @@ private:
 	Status status = DCC_STATUS_PENDING;
 
 	String remote_nick;
+	String offerer_nick;
 	String filename;
 	String local_path;
 	int64_t file_size = 0;
@@ -119,6 +120,13 @@ public:
 
 	void set_error_message(const String &p_message);
 	String get_error_message() const;
+
+	static constexpr int MAX_UNSOLICITED_DCC = 8;
+	static bool allow_unsolicited(int p_pending);
+	static IPAddress ipv4_from_dcc_integer(uint32_t p_ip);
+	static bool send_is_from_offerer(const String &p_offerer, const String &p_remote);
+
+	void note_offerer(const String &p_nick);
 
 	// Transfer control
 	Error accept();

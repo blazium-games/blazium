@@ -129,8 +129,13 @@ Error ResourceImporterQuakeWad::import(ResourceUID::ID p_source_id, const String
 		}
 	}
 
-	const int num_entries = file->get_32();
-	const int dir_offset = file->get_32();
+	const uint32_t num_entries = file->get_32();
+	const uint32_t dir_offset = file->get_32();
+	const uint64_t file_len = (uint64_t)file->get_length();
+	if (num_entries > 100000 || (uint64_t)dir_offset + (uint64_t)num_entries * 32u > file_len) {
+		ERR_PRINT("Error: WAD directory does not fit the file");
+		return ERR_INVALID_DATA;
+	}
 
 	struct WadEntry {
 		int offset = 0;
@@ -143,7 +148,7 @@ Error ResourceImporterQuakeWad::import(ResourceUID::ID p_source_id, const String
 
 	LocalVector<WadEntry> entries;
 	file->seek(dir_offset);
-	for (int entry_idx = 0; entry_idx < num_entries; entry_idx++) {
+	for (uint32_t entry_idx = 0; entry_idx < num_entries; entry_idx++) {
 		WadEntry entry;
 		entry.offset = file->get_32();
 		entry.in_wad_size = file->get_32();
@@ -174,16 +179,26 @@ Error ResourceImporterQuakeWad::import(ResourceUID::ID p_source_id, const String
 
 		TextureData texture_data;
 		texture_data.name = entry.name;
-		texture_data.width = file->get_32();
-		texture_data.height = file->get_32();
+		const uint32_t width = file->get_32();
+		const uint32_t height = file->get_32();
+		if (width == 0 || height == 0 || width > 8192 || height > 8192) {
+			continue;
+		}
+		const uint64_t num_pixels = (uint64_t)width * (uint64_t)height;
+		const uint64_t pos = (uint64_t)file->get_position();
+		if (num_pixels > file_len || pos > file_len || num_pixels > file_len - pos) {
+			continue;
+		}
+		texture_data.width = (int)width;
+		texture_data.height = (int)height;
 
 		LocalVector<int> mip_offsets;
 		for (int idx = 0; idx < MAX_MIP_LEVELS; idx++) {
 			mip_offsets.push_back(file->get_32());
 		}
 
-		const int num_pixels = texture_data.width * texture_data.height;
-		Vector<uint8_t> raw_pixels = file->get_buffer(num_pixels);
+		const int num_pixels_i = (int)num_pixels;
+		Vector<uint8_t> raw_pixels = file->get_buffer(num_pixels_i);
 		texture_data.pixels.resize(raw_pixels.size());
 		for (int i = 0; i < raw_pixels.size(); i++) {
 			texture_data.pixels.set(i, raw_pixels[i]);
@@ -221,7 +236,7 @@ Error ResourceImporterQuakeWad::import(ResourceUID::ID p_source_id, const String
 				pixels_rgb.push_back(rgb_color.get_r8());
 				pixels_rgb.push_back(rgb_color.get_g8());
 				pixels_rgb.push_back(rgb_color.get_b8());
-				if (rgb_color.b == 1 && rgb_color.r == 0 && rgb_color.b == 0) {
+				if (palette_color == 255) {
 					pixels_rgb.push_back(0);
 				} else {
 					pixels_rgb.push_back(255);

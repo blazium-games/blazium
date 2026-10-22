@@ -202,7 +202,16 @@ bool JWT::validate_signature_hs256(const String &p_jwt, const String &p_secret) 
 	core_bind::Marshalls *singleton = core_bind::Marshalls::get_singleton();
 	String expected_sig = singleton->raw_to_base64(hmac).replace("+", "-").replace("/", "_").replace("=", "");
 
-	return expected_sig == split[2];
+	const CharString got = split[2].utf8();
+	const CharString want = expected_sig.utf8();
+	const int n = got.length() > want.length() ? got.length() : want.length();
+	unsigned char diff = (unsigned char)(got.length() ^ want.length());
+	for (int i = 0; i < n; i++) {
+		const unsigned char a = i < got.length() ? (unsigned char)got[i] : 0;
+		const unsigned char b = i < want.length() ? (unsigned char)want[i] : 0;
+		diff |= (unsigned char)(a ^ b);
+	}
+	return diff == 0;
 }
 
 String JWT::create_jwt_hs256(const Dictionary &p_header, const Dictionary &p_payload, const String &p_secret) {

@@ -135,4 +135,41 @@ TEST_CASE("[ENetServer][Stage1] auto_encode_decode") {
 	CHECK(key_value == "value");
 }
 
+TEST_CASE("[ENetServer][Stage1] decode_auto dictionary type returns the payload") {
+	ENetPacketUtils *utils = ENetPacketUtils::get_singleton();
+	REQUIRE(utils != nullptr);
+
+	Dictionary original;
+	original["key"] = "value";
+	original["n"] = 7;
+	PackedByteArray encoded = utils->encode_variant(original);
+	REQUIRE(encoded.size() > 1);
+	encoded.write[0] = ENetPacketUtils::PACKET_TYPE_DICTIONARY;
+
+	Variant decoded = utils->decode_auto(encoded);
+	CHECK(decoded.get_type() == Variant::DICTIONARY);
+	Dictionary result = decoded;
+	CHECK((String)result["key"] == "value");
+	CHECK((int)result["n"] == 7);
+}
+
+TEST_CASE("[ENetServer][Stage1] decode_auto unknown type is empty") {
+	ENetPacketUtils *utils = ENetPacketUtils::get_singleton();
+	REQUIRE(utils != nullptr);
+
+	Dictionary original;
+	original["key"] = "value";
+	PackedByteArray encoded = utils->encode_variant(original);
+	REQUIRE(encoded.size() > 1);
+	encoded.write[0] = 0x7F;
+
+	Variant decoded = utils->decode_auto(encoded);
+	CHECK(decoded.get_type() == Variant::NIL);
+
+	Variant known = utils->decode_auto(utils->encode_variant(42));
+	CHECK((int)known == 42);
+	Variant known_string = utils->decode_auto(utils->encode_string("kept"));
+	CHECK((String)known_string == "kept");
+}
+
 } // namespace TestENetPacketUtils

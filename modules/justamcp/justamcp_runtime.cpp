@@ -72,8 +72,19 @@ const char *JustAMCPRuntime::_BLOCKED_METHODS[] = {
 	"eval", "compile", "compile_file", "set_script",
 	"system", "exec", "request_permissions", "quit", "crash",
 	"set_meta", "remove_meta", "get_meta",
+	"call", "callv",
 	nullptr
 };
+
+bool JustAMCPRuntime::is_method_blocked(const String &p_method) {
+	const String method_lower = p_method.to_lower();
+	for (int i = 0; _BLOCKED_METHODS[i] != nullptr; i++) {
+		if (method_lower == String(_BLOCKED_METHODS[i]).to_lower()) {
+			return true;
+		}
+	}
+	return false;
+}
 
 const char *JustAMCPRuntime::_EVAL_BLOCKED_PATTERNS[] = {
 	"OS.", "Engine.", "FileAccess.", "DirAccess.", "Directory.", "ClassDB.",
