@@ -262,7 +262,7 @@ Variant ENetPacketUtils::decode_auto(const PackedByteArray &p_data) {
 			return decode_variant(p_data);
 		}
 		case PACKET_TYPE_DICTIONARY: {
-			// Payload is a marshalled Dictionary. decode_variant() rejects this
+			// Payload is a marshaled Dictionary. decode_variant() rejects this
 			// type byte, so decode the bytes after the header directly.
 			if (p_data.size() < 2) {
 				return Variant();
