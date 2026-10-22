@@ -185,7 +185,8 @@ Error ResourceImporterQuakeWad::import(ResourceUID::ID p_source_id, const String
 			continue;
 		}
 		const uint64_t num_pixels = (uint64_t)width * (uint64_t)height;
-		if (num_pixels > file_len || file->get_position() + (int64_t)num_pixels > (int64_t)file_len) {
+		const uint64_t pos = (uint64_t)file->get_position();
+		if (num_pixels > file_len || pos > file_len || num_pixels > file_len - pos) {
 			continue;
 		}
 		texture_data.width = (int)width;
