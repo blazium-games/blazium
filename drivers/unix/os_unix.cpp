@@ -84,6 +84,11 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <fcntl.h>
+#if defined(__linux__)
+#include <sys/syscall.h>
+#endif
+
 #ifndef RTLD_DEEPBIND
 #define RTLD_DEEPBIND 0
 #endif
@@ -581,6 +586,41 @@ Dictionary OS_Unix::get_memory_info() const {
 	return meminfo;
 }
 
+#ifndef __EMSCRIPTEN__
+static void _set_cloexec(int p_fd) {
+	if (p_fd < 0) {
+		return;
+	}
+	const int flags = ::fcntl(p_fd, F_GETFD);
+	if (flags >= 0) {
+		::fcntl(p_fd, F_SETFD, flags | FD_CLOEXEC);
+	}
+}
+
+// Drop inherited sockets and other descriptors so a launched game cannot use the host's fds.
+static void _close_inherited_fds() {
+#if defined(__linux__) && defined(SYS_close_range)
+	if (::syscall(SYS_close_range, (unsigned int)(STDERR_FILENO + 1), ~0U, 0) == 0) {
+		return;
+	}
+#endif
+	int max_fd = 1024;
+	struct rlimit limit;
+	if (::getrlimit(RLIMIT_NOFILE, &limit) == 0 && limit.rlim_cur > (rlim_t)(STDERR_FILENO + 1) && limit.rlim_cur != RLIM_INFINITY) {
+		max_fd = (int)limit.rlim_cur;
+	}
+	if (max_fd < STDERR_FILENO + 1) {
+		max_fd = STDERR_FILENO + 1;
+	}
+	if (max_fd > 65536) {
+		max_fd = 65536;
+	}
+	for (int fd = STDERR_FILENO + 1; fd < max_fd; fd++) {
+		::close(fd);
+	}
+}
+#endif
+
 Dictionary OS_Unix::execute_with_pipe(const String &p_path, const List<String> &p_arguments) {
 #define CLEAN_PIPES           \
 	if (pipe_in[0] >= 0) {    \
@@ -614,14 +654,20 @@ Dictionary OS_Unix::execute_with_pipe(const String &p_path, const List<String> &
 	int pipe_err[2] = { -1, -1 };
 
 	ERR_FAIL_COND_V(pipe(pipe_in) != 0, ret);
+	_set_cloexec(pipe_in[0]);
+	_set_cloexec(pipe_in[1]);
 	if (pipe(pipe_out) != 0) {
 		CLEAN_PIPES
 		ERR_FAIL_V(ret);
 	}
+	_set_cloexec(pipe_out[0]);
+	_set_cloexec(pipe_out[1]);
 	if (pipe(pipe_err) != 0) {
 		CLEAN_PIPES
 		ERR_FAIL_V(ret);
 	}
+	_set_cloexec(pipe_err[0]);
+	_set_cloexec(pipe_err[1]);
 
 	// Create process.
 	pid_t pid = fork();
@@ -632,6 +678,7 @@ Dictionary OS_Unix::execute_with_pipe(const String &p_path, const List<String> &
 
 	if (pid == 0) {
 		// The child process.
+		::setpgid(0, 0);
 		Vector<CharString> cs;
 		cs.push_back(p_path.utf8());
 		for (const String &arg : p_arguments) {
@@ -654,12 +701,14 @@ Dictionary OS_Unix::execute_with_pipe(const String &p_path, const List<String> &
 		::dup2(pipe_err[1], STDERR_FILENO);
 
 		CLEAN_PIPES
+		_close_inherited_fds();
 
 		execvp(p_path.utf8().get_data(), &args[0]);
 		// The execvp() function only returns if an error occurs.
 		ERR_PRINT("Could not create child process: " + p_path);
 		raise(SIGKILL);
 	}
+	const bool leads_group = ::setpgid(pid, pid) == 0;
 	::close(pipe_in[0]);
 	::close(pipe_out[1]);
 	::close(pipe_err[1]);
@@ -673,6 +722,7 @@ Dictionary OS_Unix::execute_with_pipe(const String &p_path, const List<String> &
 	err_pipe->open_existing(pipe_err[0], 0);
 
 	ProcessInfo pi;
+	pi.leads_group = leads_group;
 	process_map_mutex.lock();
 	process_map->insert(pid, pi);
 	process_map_mutex.unlock();
@@ -745,6 +795,7 @@ Error OS_Unix::execute(const String &p_path, const List<String> &p_arguments, St
 		}
 		args.push_back(0);
 
+		_close_inherited_fds();
 		execvp(p_path.utf8().get_data(), &args[0]);
 		// The execvp() function only returns if an error occurs.
 		ERR_PRINT("Could not create child process: " + p_path);
@@ -787,6 +838,7 @@ Error OS_Unix::create_process(const String &p_path, const List<String> &p_argume
 		}
 		args.push_back(0);
 
+		_close_inherited_fds();
 		execvp(p_path.utf8().get_data(), &args[0]);
 		// The execvp() function only returns if an error occurs.
 		ERR_PRINT("Could not create child process: " + p_path);
@@ -794,6 +846,7 @@ Error OS_Unix::create_process(const String &p_path, const List<String> &p_argume
 	}
 
 	ProcessInfo pi;
+	pi.leads_group = true;
 	process_map_mutex.lock();
 	process_map->insert(pid, pi);
 	process_map_mutex.unlock();
@@ -806,11 +859,31 @@ Error OS_Unix::create_process(const String &p_path, const List<String> &p_argume
 }
 
 Error OS_Unix::kill(const ProcessID &p_pid) {
-	int ret = ::kill(p_pid, SIGKILL);
+	bool leads_group = false;
+	{
+		MutexLock lock(process_map_mutex);
+		if (process_map) {
+			const ProcessInfo *pi = process_map->getptr(p_pid);
+			if (pi) {
+				leads_group = pi->leads_group;
+			}
+		}
+	}
+	const pid_t pid = (pid_t)p_pid;
+	int ret = -1;
+	if (leads_group) {
+		// create_process() uses setsid() and execute_with_pipe() uses setpgid(), so this pid leads a group.
+		ret = ::kill(-pid, SIGKILL);
+		if (ret != 0) {
+			ret = ::kill(pid, SIGKILL);
+		}
+	} else {
+		ret = ::kill(pid, SIGKILL);
+	}
 	if (!ret) {
-		//avoid zombie process
-		int st;
-		::waitpid(p_pid, &st, 0);
+		// Reap the direct child. Group members that are not our children are reparented after SIGKILL.
+		int st = 0;
+		::waitpid(pid, &st, 0);
 	}
 	return ret ? ERR_INVALID_PARAMETER : OK;
 }
