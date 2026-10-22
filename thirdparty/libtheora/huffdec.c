@@ -225,6 +225,7 @@ int oc_huff_tree_unpack(oc_pack_buf *_opb,unsigned char _tokens[256][2]){
         _tokens[ntokens][1]=(unsigned char)(len+neb);
         ntokens++;
       }
+      if(len<=0)break;
       code_bit=0x80000000U>>len-1;
       while(len>0&&(code&code_bit)){
         code^=code_bit;

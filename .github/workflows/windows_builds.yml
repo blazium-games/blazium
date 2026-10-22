@@ -219,7 +219,7 @@ jobs:
         uses: dsaltares/fetch-gh-release-asset@1.1.2
         with:
           repo: godotengine/godot-angle-static
-          version: tags/chromium/6601.2
+          version: tags/chromium/7578
           file: godot-angle-static-x86_64-${{ matrix.compiler == 'gcc' && 'gcc' || 'msvc' }}-release.zip
           target: angle/angle.zip
 

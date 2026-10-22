@@ -410,7 +410,7 @@ Patches:
 ## graphite
 
 - Upstream: https://github.com/silnrsi/graphite
-- Version: 1.3.14 (27572742003b93dc53dc02c01c237b72c6c25f54, 2022)
+- Version: 1.3.14 plus ad78c6b (CVE-2026-50593 slot bounds, 2026)
 - License: MIT
 
 Files extracted from upstream source:
@@ -562,7 +562,7 @@ Files extracted from upstream source:
 ## libtheora
 
 - Upstream: https://www.theora.org
-- Version: git (7180717276af1ebc7da15c83162d6c5d6203aabf, 2020)
+- Version: git (5665f86b8fd8345bb09469990e79221562ac204b, CVE-2024-56431, 2025)
 - License: BSD-3-Clause
 
 Files extracted from upstream source:
