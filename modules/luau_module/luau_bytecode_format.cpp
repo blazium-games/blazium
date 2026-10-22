@@ -29,12 +29,19 @@
 
 #include "luau_bytecode_format.h"
 
+#include "core/crypto/crypto_core.h"
 #include "core/io/compression.h"
 
 using namespace luau_module;
 
 namespace {
 constexpr int MAX_LUAU_BYTECODE = 16 * 1024 * 1024;
+constexpr int EXPORT_KEY_LEN = 16;
+
+bool fill_export_key(uint8_t *p_dst, int p_len) {
+	CryptoCore::RandomGenerator rng;
+	return rng.init() == OK && rng.get_random_bytes(p_dst, p_len) == OK;
+}
 
 void write_u32(uint8_t *p_dst, uint32_t p_value) {
 	p_dst[0] = p_value & 0xff;
@@ -49,30 +56,42 @@ uint32_t read_u32(const uint8_t *p_src) {
 } //namespace
 
 Vector<uint8_t> LuauBytecodeFormat::decrypt_export_data(const Vector<uint8_t> &p_data) {
-	static const char key[] = "blazium_luau_export_key";
 	if (p_data.size() < 4 || memcmp(p_data.ptr(), MAGIC_ENCRYPT, 4) != 0) {
 		return p_data;
 	}
-
+	if (p_data.size() < 5) {
+		return Vector<uint8_t>();
+	}
+	const int key_len = p_data[4];
+	if (key_len < 8 || key_len > 64 || p_data.size() < 5 + key_len) {
+		return Vector<uint8_t>();
+	}
+	const uint8_t *key = p_data.ptr() + 5;
+	const int payload = p_data.size() - (5 + key_len);
 	Vector<uint8_t> decrypted;
-	decrypted.resize(p_data.size() - 4);
-	memcpy(decrypted.ptrw(), p_data.ptr() + 4, decrypted.size());
-	const int key_len = sizeof(key) - 1;
-	for (int i = 0; i < decrypted.size(); i++) {
-		decrypted.write[i] ^= key[i % key_len];
+	decrypted.resize(payload);
+	const uint8_t *src = p_data.ptr() + 5 + key_len;
+	for (int i = 0; i < payload; i++) {
+		decrypted.write[i] = src[i] ^ key[i % key_len];
 	}
 	return decrypted;
 }
 
 Vector<uint8_t> LuauBytecodeFormat::encrypt_data(const Vector<uint8_t> &p_data) {
-	static const char key[] = "blazium_luau_export_key";
+	uint8_t key[EXPORT_KEY_LEN];
+	if (!fill_export_key(key, EXPORT_KEY_LEN)) {
+		return Vector<uint8_t>();
+	}
 	Vector<uint8_t> encrypted;
-	encrypted.resize(4 + p_data.size());
+	encrypted.resize(5 + EXPORT_KEY_LEN + p_data.size());
 	memcpy(encrypted.ptrw(), MAGIC_ENCRYPT, 4);
-	memcpy(encrypted.ptrw() + 4, p_data.ptr(), p_data.size());
-	const int key_len = sizeof(key) - 1;
-	for (int i = 4; i < encrypted.size(); i++) {
-		encrypted.write[i] ^= key[i % key_len];
+	encrypted.write[4] = (uint8_t)EXPORT_KEY_LEN;
+	memcpy(encrypted.ptrw() + 5, key, EXPORT_KEY_LEN);
+	if (p_data.size() > 0) {
+		memcpy(encrypted.ptrw() + 5 + EXPORT_KEY_LEN, p_data.ptr(), p_data.size());
+	}
+	for (int i = 0; i < p_data.size(); i++) {
+		encrypted.write[5 + EXPORT_KEY_LEN + i] ^= key[i % EXPORT_KEY_LEN];
 	}
 	return encrypted;
 }

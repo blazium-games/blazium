@@ -1157,10 +1157,20 @@ void IRCClient::_handle_command(Ref<IRCMessage> p_message) {
 				if (ctcp_cmd == "DCC") {
 					PackedStringArray dcc_parts = ctcp_params.split(" ", false);
 					if (dcc_parts.size() >= 5 && dcc_parts[0] == "SEND") {
+						int pending_receives = 0;
+						for (int i = 0; i < active_transfers.size(); i++) {
+							const Ref<IRCDCCTransfer> &existing = active_transfers[i];
+							if (existing.is_valid() && existing->get_transfer_type() == IRCDCCTransfer::TYPE_FILE_RECEIVE && existing->get_status() == IRCDCCTransfer::DCC_STATUS_PENDING) {
+								pending_receives++;
+							}
+						}
+						if (!IRCDCCTransfer::allow_unsolicited(pending_receives)) {
+							return;
+						}
 						Ref<IRCDCCTransfer> transfer;
 						transfer.instantiate();
 						transfer->set_transfer_type(IRCDCCTransfer::TYPE_FILE_RECEIVE);
-						transfer->set_remote_nick(sender);
+						transfer->note_offerer(sender);
 
 						// Sanitize the filename for security
 						String sanitized_filename = _sanitize_dcc_filename(dcc_parts[1]);
@@ -1181,7 +1191,7 @@ void IRCClient::_handle_command(Ref<IRCMessage> p_message) {
 						} else {
 							// IPv4 as integer (legacy format)
 							uint32_t ip_int = ip_str.to_int();
-							ip.set_ipv4((uint8_t *)&ip_int);
+							ip = IRCDCCTransfer::ipv4_from_dcc_integer(ip_int);
 							transfer->set_use_ipv6(false);
 						}
 

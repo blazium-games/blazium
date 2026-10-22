@@ -29,6 +29,7 @@
 
 #pragma once
 
+#include "modules/ircclient/irc_dcc.h"
 #include "modules/ircclient/irc_message.h"
 
 #include "tests/test_macros.h"
@@ -198,6 +199,24 @@ TEST_CASE("[IRCClient][IRCMessage] Edge cases") {
 		CHECK(msg->get_username().is_empty());
 		CHECK(msg->get_hostname().is_empty());
 	}
+}
+
+TEST_CASE("[IRCClient][DCC] unsolicited SEND is capped and bound to the offerer") {
+	CHECK(IRCDCCTransfer::allow_unsolicited(0));
+	CHECK_FALSE(IRCDCCTransfer::allow_unsolicited(IRCDCCTransfer::MAX_UNSOLICITED_DCC));
+
+	const IPAddress loopback = IRCDCCTransfer::ipv4_from_dcc_integer(0x7F000001);
+	CHECK(String(loopback) == "127.0.0.1");
+
+	CHECK_FALSE(IRCDCCTransfer::send_is_from_offerer("alice", "bob"));
+	CHECK(IRCDCCTransfer::send_is_from_offerer("alice", "alice"));
+
+	Ref<IRCDCCTransfer> transfer;
+	transfer.instantiate();
+	transfer->set_transfer_type(IRCDCCTransfer::TYPE_FILE_RECEIVE);
+	transfer->note_offerer("alice");
+	transfer->set_remote_nick("bob");
+	CHECK(transfer->accept() == ERR_UNAUTHORIZED);
 }
 
 } // namespace TestIRCClient

@@ -33,6 +33,8 @@
 
 void test_justamcp_runtime_ping_command();
 void test_justamcp_runtime_unknown_command();
+void test_justamcp_runtime_blocks_call_and_callv();
+void test_justamcp_runtime_tcp_requires_token_and_loopback();
 
 TEST_CASE("[Modules][JustAMCP] runtime ping command") {
 	test_justamcp_runtime_ping_command();
@@ -40,4 +42,12 @@ TEST_CASE("[Modules][JustAMCP] runtime ping command") {
 
 TEST_CASE("[Modules][JustAMCP] runtime unknown command") {
 	test_justamcp_runtime_unknown_command();
+}
+
+TEST_CASE("[Modules][JustAMCP] runtime TCP bridge blocks call and callv") {
+	test_justamcp_runtime_blocks_call_and_callv();
+}
+
+TEST_CASE("[Modules][JustAMCP] runtime TCP bridge requires a token and binds loopback") {
+	test_justamcp_runtime_tcp_requires_token_and_loopback();
 }

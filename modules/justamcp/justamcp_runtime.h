@@ -75,6 +75,7 @@ private:
 
 	static const char *_BLOCKED_METHODS[];
 	static const char *_EVAL_BLOCKED_PATTERNS[];
+	static bool is_method_blocked(const String &p_method);
 
 	static void _debug_print(const String &p_message);
 	void _start_server();
@@ -179,6 +180,10 @@ public:
 	void unregister_prompt(const String &p_name);
 	Array list_tools() const;
 	bool is_listening() const;
+
+	static String tcp_bind_address();
+	static String configured_tcp_token();
+	static bool tcp_token_matches(const String &p_presented);
 
 	static bool is_valid_project_mcp_dir(const String &p_dir);
 	void load_project_mcp_scripts();

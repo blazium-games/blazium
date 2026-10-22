@@ -167,6 +167,9 @@ protected:
 	static void _bind_methods();
 
 public:
+	static bool may_start(bool p_editor_binary, const String &p_token);
+	static bool mutation_authorized(const String &p_presented, const String &p_expected);
+
 	AutoworkE2EServer();
 	~AutoworkE2EServer();
 };

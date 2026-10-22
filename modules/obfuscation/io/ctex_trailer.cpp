@@ -88,7 +88,7 @@ bool ObfuscationCtexTrailer::read(const String &p_path, PackedByteArray &r_claim
 			memcpy(r_path_hmac.ptrw(), buf.ptr() + payload_off + 16, 32);
 			int sigoff = payload_off + 48;
 			uint32_t siglen = buf[sigoff] | ((uint32_t)buf[sigoff + 1] << 8) | ((uint32_t)buf[sigoff + 2] << 16) | ((uint32_t)buf[sigoff + 3] << 24);
-			if (sigoff + 4 + (int)siglen > buf.size()) {
+			if ((uint64_t)sigoff + 4u + (uint64_t)siglen > (uint64_t)buf.size()) {
 				continue;
 			}
 			r_sig.resize(siglen);

@@ -37,6 +37,10 @@
 Ref<DiscordAuthResult> DiscordAuthClient::authenticate_sync(const String &p_url, const String &p_access_token, int64_t p_client_id, bool p_debug_logging) {
 	Ref<DiscordAuthResult> result;
 	result.instantiate();
+	if (!p_url.begins_with("https://")) {
+		result->set_error_message("Auth server URL must use https");
+		return result;
+	}
 
 	if (p_url.is_empty()) {
 		result->set_error_message("Auth server URL is empty");
@@ -117,7 +121,14 @@ Ref<DiscordAuthResult> DiscordAuthClient::authenticate_sync(const String &p_url,
 	}
 
 	PackedByteArray response_bytes;
+	const uint64_t read_start_usec = Time::get_singleton()->get_ticks_usec();
+	const double read_timeout_sec = 15.0;
 	while (true) {
+		if ((Time::get_singleton()->get_ticks_usec() - read_start_usec) / 1000000.0 > read_timeout_sec) {
+			result->set_error_message("Timed out reading auth server response");
+			http->close();
+			return result;
+		}
 		http->poll();
 		HTTPClient::Status status = http->get_status();
 		if (status == HTTPClient::STATUS_BODY) {
@@ -142,8 +153,9 @@ Ref<DiscordAuthResult> DiscordAuthClient::authenticate_sync(const String &p_url,
 	String response_text = String::utf8((const char *)response_bytes.ptr(), response_bytes.size());
 
 	if (p_debug_logging) {
-		print_line(vformat("[DiscordAuthClient] POST %s -> HTTP %d", p_url, response_code));
-		print_line(vformat("[DiscordAuthClient] Response: %s", response_text));
+		if (p_debug_logging) {
+			print_line(vformat("[DiscordAuthClient] POST %s -> HTTP %d", p_url, response_code));
+		}
 	}
 
 	Variant parsed = JSON::parse_string(response_text);

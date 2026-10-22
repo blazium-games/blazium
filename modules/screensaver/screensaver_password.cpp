@@ -92,9 +92,10 @@ static bool _reg_read(const String &p_value, String &r_out) {
 	const Char16String value = p_value.utf16();
 	const LSTATUS st = RegQueryValueExW(key, (LPCWSTR)value.get_data(), nullptr, &type, (LPBYTE)buf, &size);
 	RegCloseKey(key);
-	if (st != ERROR_SUCCESS || type != REG_SZ) {
+	if (st != ERROR_SUCCESS || type != REG_SZ || size == 0 || size >= sizeof(buf) || (size % sizeof(wchar_t)) != 0) {
 		return false;
 	}
+	buf[size / sizeof(wchar_t)] = 0;
 	r_out = String::utf16((const char16_t *)buf);
 	return !r_out.is_empty();
 }
