@@ -38,6 +38,20 @@
 namespace {
 constexpr uint8_t BIN_DIM_2D = 2;
 constexpr uint8_t BIN_DIM_3D = 3;
+constexpr uint32_t BNAV_MAX_COUNT = 1u << 20;
+
+bool _bnav_fits(Ref<FileAccess> p_file, uint32_t p_count, uint32_t p_elem_bytes) {
+	if (p_count > BNAV_MAX_COUNT) {
+		return false;
+	}
+	const uint64_t need = (uint64_t)p_count * (uint64_t)p_elem_bytes;
+	const uint64_t pos = (uint64_t)p_file->get_position();
+	const uint64_t len = (uint64_t)p_file->get_length();
+	if (pos > len) {
+		return false;
+	}
+	return need <= (len - pos);
+}
 } //namespace
 
 Error NavimeshExportSerialize::write_json(const Dictionary &p_payload, const String &p_path) {
@@ -73,6 +87,9 @@ static String _load_string_f(Ref<FileAccess> p_file) {
 	if (len == 0) {
 		return String();
 	}
+	if (!_bnav_fits(p_file, len, 1)) {
+		return String();
+	}
 	Vector<uint8_t> buf;
 	buf.resize(len);
 	p_file->get_buffer(buf.ptrw(), len);
@@ -89,6 +106,9 @@ static void _store_floats(Ref<FileAccess> p_file, const Array &p_values) {
 static Array _load_floats(Ref<FileAccess> p_file) {
 	Array out;
 	const uint32_t count = p_file->get_32();
+	if (!_bnav_fits(p_file, count, 4)) {
+		return out;
+	}
 	out.resize(count);
 	for (uint32_t i = 0; i < count; i++) {
 		out[i] = p_file->get_float();
@@ -111,6 +131,9 @@ static Array _load_vertices(Ref<FileAccess> p_file) {
 	const uint8_t stride = p_file->get_8();
 	const uint32_t count = p_file->get_32();
 	Array out;
+	if (stride == 0 || stride > 4 || !_bnav_fits(p_file, count, (uint32_t)stride * 4u)) {
+		return out;
+	}
 	out.resize(count);
 	for (uint32_t i = 0; i < count; i++) {
 		Array v;
@@ -137,9 +160,15 @@ static void _store_polys(Ref<FileAccess> p_file, const Array &p_polygons) {
 static Array _load_polys(Ref<FileAccess> p_file) {
 	Array out;
 	const uint32_t count = p_file->get_32();
+	if (!_bnav_fits(p_file, count, 4)) {
+		return out;
+	}
 	out.resize(count);
 	for (uint32_t i = 0; i < count; i++) {
 		const uint32_t n = p_file->get_32();
+		if (!_bnav_fits(p_file, n, 4)) {
+			return Array();
+		}
 		Array poly;
 		poly.resize(n);
 		for (uint32_t j = 0; j < n; j++) {
@@ -179,6 +208,9 @@ static void _store_variant_dict(Ref<FileAccess> p_file, const Dictionary &p_dict
 static Dictionary _load_variant_dict(Ref<FileAccess> p_file) {
 	Dictionary out;
 	const uint32_t count = p_file->get_32();
+	if (count > BNAV_MAX_COUNT) {
+		return out;
+	}
 	for (uint32_t i = 0; i < count; i++) {
 		const String key = _load_string_f(p_file);
 		const uint8_t type = p_file->get_8();
@@ -236,6 +268,9 @@ static Dictionary _load_region_bin(Ref<FileAccess> p_file) {
 	region["polygons"] = _load_polys(p_file);
 	const uint32_t outline_count = p_file->get_32();
 	Array outlines;
+	if (outline_count > BNAV_MAX_COUNT) {
+		return region;
+	}
 	outlines.resize(outline_count);
 	for (uint32_t i = 0; i < outline_count; i++) {
 		outlines[i] = _load_vertices(p_file);
@@ -339,6 +374,9 @@ static Dictionary _load_payload_bin(Ref<FileAccess> p_file) {
 
 	Array regions;
 	const uint32_t region_count = p_file->get_32();
+	if (region_count > BNAV_MAX_COUNT) {
+		return payload;
+	}
 	regions.resize(region_count);
 	for (uint32_t i = 0; i < region_count; i++) {
 		regions[i] = _load_region_bin(p_file);
@@ -347,6 +385,9 @@ static Dictionary _load_payload_bin(Ref<FileAccess> p_file) {
 
 	Array links;
 	const uint32_t link_count = p_file->get_32();
+	if (link_count > BNAV_MAX_COUNT) {
+		return payload;
+	}
 	links.resize(link_count);
 	for (uint32_t i = 0; i < link_count; i++) {
 		links[i] = _load_link_bin(p_file);
@@ -355,6 +396,9 @@ static Dictionary _load_payload_bin(Ref<FileAccess> p_file) {
 
 	Array obstacles;
 	const uint32_t obstacle_count = p_file->get_32();
+	if (obstacle_count > BNAV_MAX_COUNT) {
+		return payload;
+	}
 	obstacles.resize(obstacle_count);
 	for (uint32_t i = 0; i < obstacle_count; i++) {
 		obstacles[i] = _load_obstacle_bin(p_file);
@@ -363,6 +407,9 @@ static Dictionary _load_payload_bin(Ref<FileAccess> p_file) {
 
 	Array levels;
 	const uint32_t level_count = p_file->get_32();
+	if (level_count > BNAV_MAX_COUNT) {
+		return payload;
+	}
 	levels.resize(level_count);
 	for (uint32_t i = 0; i < level_count; i++) {
 		levels[i] = _load_payload_bin(p_file);

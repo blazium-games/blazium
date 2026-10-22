@@ -3099,6 +3099,11 @@ bool tson::Chunk::parse(IJson &json)
 
 	if(json.count("width") > 0 && json.count("height") > 0)
 		m_size = {json["width"].get<int>(), json["height"].get<int>()}; else allFound = false;
+	if (m_size.x < 0 || m_size.y < 0 || (long long)m_size.x * (long long)m_size.y > (1 << 22))
+	{
+		m_data.clear();
+		return false;
+	}
 	if(json.count("x") > 0 && json.count("y") > 0)
 		m_position = {json["x"].get<int>(), json["y"].get<int>()}; else allFound = false;
 
@@ -3108,6 +3113,12 @@ bool tson::Chunk::parse(IJson &json)
 		if(json["data"].isArray())
 		{
 			auto &data = json.array("data");
+			const long long cells = (long long)m_size.x * (long long)m_size.y;
+			if (cells > 0 && (long long)data.size() > cells)
+			{
+				m_data.clear();
+				return false;
+			}
 			std::for_each(data.begin(), data.end(), [&](std::unique_ptr<IJson> &item) { m_data.push_back(item->get<int>()); });
 		}
 		else
@@ -9004,7 +9015,18 @@ void tson::Layer::decompressData()
 
 	if(hasBeenDecoded)
 	{
+		const int64_t cells = (int64_t)m_size.x * (int64_t)m_size.y;
+		if (m_size.x < 0 || m_size.y < 0 || cells > (1 << 22))
+		{
+			m_data.clear();
+			return;
+		}
 		std::vector<uint8_t> bytes = tson::Tools::Base64DecodedStringToBytes(data);
+		if (cells > 0 && bytes.size() / 4 > (size_t)cells)
+		{
+			m_data.clear();
+			return;
+		}
 		m_data = tson::Tools::BytesToUnsignedInts(bytes);
 	}
 }
