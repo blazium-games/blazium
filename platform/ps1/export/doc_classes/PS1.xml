@@ -1,0 +1,1676 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PS1" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_to_group">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="add_velocity">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="v" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="apply_gravity">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="attach_camera">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="offset" type="Vector3" default="Vector3(0, 0, 0)" />
+			<description>
+			</description>
+		</method>
+		<method name="can_instantiate" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path_or_pack" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="can_jump" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="can_load_animations" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="can_load_audio" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="can_load_cameras" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="can_load_hitboxes" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="can_load_hud" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="can_load_meshes" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="can_load_music" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="can_load_nav" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="can_load_paths" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="can_load_scene" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="can_load_sprites" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="can_load_text" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="can_load_textures" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="can_load_tiles" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="can_load_waypoints" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="change_scene">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="change_scene_fade">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="seconds" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="clear_shots">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="clip_orbit">
+			<return type="bool" />
+			<param index="0" name="on" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="consume_jump">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="count_in_group" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="count_path_points" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="path" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="count_waypoints" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="path" type="int" default="-1" />
+			<description>
+			</description>
+		</method>
+		<method name="create_tween">
+			<return type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="emit">
+			<return type="bool" />
+			<param index="0" name="pos" type="Vector3" />
+			<param index="1" name="count" type="int" />
+			<param index="2" name="sprite_or_tim" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="emit_mesh">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="n" type="int" />
+			<param index="2" name="tex" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="find_nearest" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="from" type="Variant" />
+			<param index="1" name="group" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="follow_node">
+			<return type="bool" />
+			<param index="0" name="self" type="Variant" />
+			<param index="1" name="target" type="Variant" />
+			<param index="2" name="speed" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="format_int" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="n" type="int" />
+			<param index="1" name="width" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_action_strength" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="action" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_angular_velocity" qualifiers="const">
+			<return type="Vector3" />
+			<param index="0" name="node" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="get_billboard" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="get_camera" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_camera_count" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_camera_name" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_camera_rotation" qualifiers="const">
+			<return type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="get_camera_transform" qualifiers="const">
+			<return type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="get_first_in_group" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_flip_v" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="get_floor_node" qualifiers="const">
+			<return type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="get_floor_normal" qualifiers="const">
+			<return type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="get_forward" qualifiers="const">
+			<return type="Vector3" />
+			<param index="0" name="node" type="Variant" default="null" />
+			<description>
+			</description>
+		</method>
+		<method name="get_free_hud" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_free_nodes" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_free_ram" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_free_shots" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_free_tiles" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_hitbox_layer" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="node" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="get_hp" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="node" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="get_in_group" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_loaded_scene" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_loaded_scene_count" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_node_budget" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_node_count" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_node_meta" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="node" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="get_overlapping_area" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_overlapping_area_count" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_path_point" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="path" type="int" />
+			<param index="1" name="i" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_path_progress" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="node" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="get_ram_budget" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_ray_node" qualifiers="const">
+			<return type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="get_ray_point" qualifiers="const">
+			<return type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="get_right" qualifiers="const">
+			<return type="Vector3" />
+			<param index="0" name="node" type="Variant" default="null" />
+			<description>
+			</description>
+		</method>
+		<method name="get_shot_count" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_speed" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="node" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="get_static_memory_peak_usage" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_static_memory_usage" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_stick" qualifiers="const">
+			<return type="Vector2" />
+			<param index="0" name="device" type="int" />
+			<param index="1" name="stick" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_triangle_budget" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_triangle_count" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_up" qualifiers="const">
+			<return type="Vector3" />
+			<param index="0" name="node" type="Variant" default="null" />
+			<description>
+			</description>
+		</method>
+		<method name="get_velocity" qualifiers="const">
+			<return type="Vector3" />
+			<param index="0" name="node" type="Variant" default="null" />
+			<description>
+			</description>
+		</method>
+		<method name="get_waypoint" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="i" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_waypoint_pos" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="i" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="has_overlapping_areas" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="hitbox_kind" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="node" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="hurt">
+			<return type="int" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="amount" type="int" />
+			<param index="2" name="vx" type="float" />
+			<param index="3" name="vy" type="float" />
+			<param index="4" name="vz" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="intersects_ray" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="from" type="Vector3" />
+			<param index="1" name="dir" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="is_action_just_pressed_on" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="device" type="int" />
+			<param index="1" name="action" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="is_action_just_released_on" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="device" type="int" />
+			<param index="1" name="action" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="is_action_pressed_on" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="device" type="int" />
+			<param index="1" name="action" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="is_animations_loaded" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="is_audio_loaded" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="is_camera_current" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_cameras_loaded" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="is_hitboxes_loaded" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="is_hud_loaded" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="is_in_group" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="is_invuln" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="is_meshes_loaded" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="is_music_loaded" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="is_nav_loaded" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="is_on_ceiling" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="is_on_floor" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="is_on_wall" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="is_paths_loaded" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="is_paused" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="is_scene_loaded" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="is_sprites_loaded" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="is_text_loaded" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="is_textures_loaded" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="is_tiles_loaded" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="is_waypoints_loaded" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="kill_tweens">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="knockback">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="vx" type="float" />
+			<param index="2" name="vy" type="float" />
+			<param index="3" name="vz" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="last_shot_hit" qualifiers="const">
+			<return type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="load_animations">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="load_audio">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="load_cameras">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="load_hitboxes">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="load_hud">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="load_meshes">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="load_music">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="load_nav">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="load_paths">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="load_scene">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="load_slot">
+			<return type="bool" />
+			<param index="0" name="slot" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="load_sprites">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="load_text">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="load_textures">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="load_tiles">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="load_waypoints">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="look_camera">
+			<return type="bool" />
+			<param index="0" name="yaw" type="float" />
+			<param index="1" name="pitch" type="float" />
+			<param index="2" name="roll" type="float" default="0.0" />
+			<description>
+			</description>
+		</method>
+		<method name="make_current">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="memcard_count" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="slot" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="memcard_delete">
+			<return type="bool" />
+			<param index="0" name="slot" type="int" />
+			<param index="1" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="memcard_exists" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="slot" type="int" />
+			<param index="1" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="memcard_format">
+			<return type="bool" />
+			<param index="0" name="slot" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="memcard_load" qualifiers="const">
+			<return type="PackedByteArray" />
+			<param index="0" name="slot" type="int" />
+			<param index="1" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="memcard_name" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="slot" type="int" />
+			<param index="1" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="memcard_present" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="slot" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="memcard_ready" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="slot" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="memcard_save">
+			<return type="bool" />
+			<param index="0" name="slot" type="int" />
+			<param index="1" name="name" type="String" />
+			<param index="2" name="bytes" type="Variant" default="null" />
+			<description>
+			</description>
+		</method>
+		<method name="memcard_unwrap">
+			<return type="PackedByteArray" />
+			<param index="0" name="framed" type="PackedByteArray" />
+			<description>
+			</description>
+		</method>
+		<method name="memcard_wrap">
+			<return type="PackedByteArray" />
+			<param index="0" name="payload" type="Variant" />
+			<param index="1" name="title" type="String" default="&quot;&quot;" />
+			<description>
+			</description>
+		</method>
+		<method name="move_and_drive">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="throttle" type="float" />
+			<param index="2" name="steer" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="move_and_fly">
+			<return type="Vector3" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="throttle" type="float" />
+			<param index="2" name="yaw" type="float" />
+			<param index="3" name="pitch" type="float" />
+			<param index="4" name="roll" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="move_and_slide">
+			<return type="Vector3" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="velocity" type="Vector3" />
+			<param index="2" name="mask" type="int" default="255" />
+			<description>
+			</description>
+		</method>
+		<method name="move_planar">
+			<return type="Variant" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="ax" type="float" />
+			<param index="2" name="ay" type="float" />
+			<param index="3" name="speed" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="nav_follow">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="goal" type="Variant" />
+			<param index="2" name="speed" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="nav_nearest" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="from" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="nav_next" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="from" type="Vector3" />
+			<param index="1" name="to" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="nav_next_node" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="from" type="Variant" />
+			<param index="1" name="to" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="next_camera">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="orbit_camera">
+			<return type="bool" />
+			<param index="0" name="target" type="Variant" />
+			<param index="1" name="yaw" type="float" />
+			<param index="2" name="pitch" type="float" />
+			<param index="3" name="dist" type="float" />
+			<param index="4" name="clip" type="int" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="overlaps" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="a" type="Variant" />
+			<param index="1" name="b" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="overlaps_entered" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="a" type="Variant" />
+			<param index="1" name="b" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="overlaps_group">
+			<return type="Variant" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="group" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="overlaps_group_entered">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="group" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="peek" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="off" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="play_fmv">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="play_sfx">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="play_xa">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="poke">
+			<return type="bool" />
+			<param index="0" name="off" type="int" />
+			<param index="1" name="n" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="portal">
+			<return type="bool" />
+			<param index="0" name="unload_path" type="String" />
+			<param index="1" name="load_path" type="String" />
+			<param index="2" name="fade" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="prev_camera">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="quit">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="raycast" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="from" type="Vector3" />
+			<param index="1" name="dir" type="Vector3" />
+			<param index="2" name="dist" type="float" />
+			<param index="3" name="mask" type="int" default="255" />
+			<description>
+			</description>
+		</method>
+		<method name="raycast_group" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="from" type="Vector3" />
+			<param index="1" name="dir" type="Vector3" />
+			<param index="2" name="dist" type="float" />
+			<param index="3" name="group" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="raycast_point" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="from" type="Vector3" />
+			<param index="1" name="dir" type="Vector3" />
+			<param index="2" name="dist" type="float" />
+			<param index="3" name="mask" type="int" default="255" />
+			<description>
+			</description>
+		</method>
+		<method name="remove_from_group">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="respawn">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="save_slot">
+			<return type="bool" />
+			<param index="0" name="slot" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="say">
+			<return type="bool" />
+			<param index="0" name="hud" type="Variant" />
+			<param index="1" name="line" type="String" />
+			<param index="2" name="cps" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="say_done" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="seek_animation">
+			<return type="bool" />
+			<param index="0" name="sec" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_air_jumps">
+			<return type="void" />
+			<param index="0" name="n" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_angular_velocity">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="v" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="set_animation_speed">
+			<return type="bool" />
+			<param index="0" name="s" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_billboard">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="on" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_camera">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_camera_drag">
+			<return type="bool" />
+			<param index="0" name="n" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_camera_limits">
+			<return type="bool" />
+			<param index="0" name="l" type="int" />
+			<param index="1" name="t" type="int" />
+			<param index="2" name="r" type="int" />
+			<param index="3" name="b" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_camera_node">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="set_camera_scale">
+			<return type="bool" />
+			<param index="0" name="h" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_camera_transform">
+			<return type="bool" />
+			<param index="0" name="pos" type="Vector3" />
+			<param index="1" name="rot" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="set_checkpoint">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="set_checkpoint_scene">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="set_coyote">
+			<return type="void" />
+			<param index="0" name="ms" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_cull_dist">
+			<return type="bool" />
+			<param index="0" name="d" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_default_camera">
+			<return type="bool" />
+			<param index="0" name="index_or_name" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="set_drive_friction">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="f" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_fade">
+			<return type="bool" />
+			<param index="0" name="alpha" type="float" />
+			<param index="1" name="color" type="Color" default="Color(0, 0, 0, 1)" />
+			<description>
+			</description>
+		</method>
+		<method name="set_flip">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="h" type="bool" />
+			<param index="2" name="v" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_flip_v">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="v" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_fog">
+			<return type="bool" />
+			<param index="0" name="on" type="bool" />
+			<param index="1" name="start" type="float" />
+			<param index="2" name="end" type="float" />
+			<param index="3" name="color" type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="set_frame">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="i" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_global_position">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="pos" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="set_gravity">
+			<return type="bool" />
+			<param index="0" name="g" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="set_hitbox_enabled">
+			<return type="void" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="on" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_hitbox_layer">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="layer" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_hitstop">
+			<return type="void" />
+			<param index="0" name="ms" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_hp">
+			<return type="int" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="n" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_hud_text">
+			<return type="bool" />
+			<param index="0" name="hud" type="Variant" />
+			<param index="1" name="text" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="set_invuln">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="ms" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_jump_buffer">
+			<return type="void" />
+			<param index="0" name="ms" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_light">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="dir" type="Vector3" />
+			<param index="2" name="color" type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="set_line">
+			<return type="bool" />
+			<param index="0" name="hud" type="Variant" />
+			<param index="1" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="set_line_chars">
+			<return type="bool" />
+			<param index="0" name="hud" type="Variant" />
+			<param index="1" name="name" type="String" />
+			<param index="2" name="n" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_music_fade">
+			<return type="bool" />
+			<param index="0" name="to_vol" type="float" />
+			<param index="1" name="ms" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_music_volume">
+			<return type="bool" />
+			<param index="0" name="vol" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_node_meta">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="n" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_one_way_pass">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="on" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_particle_color">
+			<return type="bool" />
+			<param index="0" name="c" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="set_particle_flipbook">
+			<return type="bool" />
+			<param index="0" name="tex" type="int" />
+			<param index="1" name="frames" type="int" />
+			<param index="2" name="fps" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_particle_gravity">
+			<return type="bool" />
+			<param index="0" name="g" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="set_particle_mode">
+			<return type="bool" />
+			<param index="0" name="m" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_path_progress">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="t" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_paused">
+			<return type="bool" />
+			<param index="0" name="on" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_process_when_paused">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="on" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_rumble">
+			<return type="bool" />
+			<param index="0" name="device" type="int" />
+			<param index="1" name="small" type="int" />
+			<param index="2" name="large" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_sfx_volume">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="vol" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_spawn">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="x" type="float" />
+			<param index="2" name="y" type="float" />
+			<param index="3" name="z" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_stick_deadzone">
+			<return type="bool" />
+			<param index="0" name="n" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_stream_mode">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="m" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_stream_spread">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="n" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_stream_vel">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="v" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="set_wall_jump">
+			<return type="void" />
+			<param index="0" name="ms" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_y_sort">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="on" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="shake_camera">
+			<return type="bool" />
+			<param index="0" name="amp" type="float" />
+			<param index="1" name="ms" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="shot_hit" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="i" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="shot_hit_any">
+			<return type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="spawn_shot">
+			<return type="int" />
+			<param index="0" name="from" type="Vector3" />
+			<param index="1" name="vel" type="Vector3" />
+			<param index="2" name="life" type="float" />
+			<param index="3" name="tex" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="start_stream">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="rate" type="int" />
+			<param index="2" name="tex" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="stop_music">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="stop_rumble">
+			<return type="bool" />
+			<param index="0" name="device" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="stop_sfx">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="stop_stream">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="stop_xa">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="swap_pack">
+			<return type="bool" />
+			<param index="0" name="unload_path" type="String" />
+			<param index="1" name="load_path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="tile_at" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="x" type="float" />
+			<param index="1" name="y" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="tile_solid_at" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="x" type="float" />
+			<param index="1" name="y" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="translate_local">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="v" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="tween_count" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="tween_is_done">
+			<return type="bool" />
+			<param index="0" name="tw" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="tween_property">
+			<return type="bool" />
+			<param index="0" name="tween" type="Variant" />
+			<param index="1" name="node" type="Variant" />
+			<param index="2" name="prop" type="String" />
+			<param index="3" name="to" type="Variant" />
+			<param index="4" name="sec" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="unload_animations">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="unload_audio">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="unload_cameras">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="unload_extras">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="unload_hitboxes">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="unload_hud">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="unload_meshes">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="unload_music">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="unload_nav">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="unload_pack">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="unload_pack_of">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="unload_paths">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="unload_scene">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="unload_sprites">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="unload_text">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="unload_textures">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="unload_tiles">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="unload_waypoints">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="world_to_screen" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="pos" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="wrap_position">
+			<return type="bool" />
+			<param index="0" name="node" type="Variant" />
+			<param index="1" name="min" type="Variant" />
+			<param index="2" name="max" type="Variant" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

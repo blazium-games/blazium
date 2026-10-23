@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="EditorExportPlatformN64" inherits="EditorExportPlatform" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+		Exporter for Nintendo 64. Writes a .z64 by spawning blazium-toolchain. No Godot export templates.
+	</brief_description>
+	<description>
+		[EditorExportPlatformN64] appears in Project → Export as "N64" on Windows and Linux hosts only. Export runs [code]blazium-toolchain n64 setup --profile compile[/code] (if needed) then [code]n64 build --out[/code] using the guest stub bundled in the toolchain. The product is a big-endian [code].z64[/code] ([code]80 37 12 40[/code]). There is no ISO, CUE, Godot template, or [code].tpz[/code]. Guest [code]*.cpp[/code] is written next to the ROM under [code]guest/[/code]. Optional Editor Setting [code]export/n64/runtime_src[/code] replaces the stub ([code]--src[/code]). [code]export/n64/runtime_overlay[/code], [code]BLAZIUM_N64_OVERLAY[/code], or project [code]res://n64_guest[/code] overlays extra or replacement sources ([code]--overlay[/code]). Preset [member n64/region] is NTSC, PAL, or region-free; v1 framebuffer is 320×240. One-click runs [code]blazium-toolchain n64 run[/code] (Windows default Project64, Linux Ares; skip a missing validator). No PIF or BIOS dump is required. GDExtension and C# are rejected. This class does not call [code]find_export_template()[/code] or [code]save_pack()[/code] and never searches [code]C:\ultra[/code].
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="n64/display_hint" type="String" setter="" getter="">
+		</member>
+		<member name="n64/emu" type="int" setter="" getter="">
+		</member>
+		<member name="n64/rdram" type="int" setter="" getter="">
+		</member>
+		<member name="n64/rdram_hint" type="String" setter="" getter="">
+		</member>
+		<member name="n64/region" type="int" setter="" getter="">
+		</member>
+		<member name="n64/rumble" type="int" setter="" getter="">
+		</member>
+		<member name="n64/rumble_hint" type="String" setter="" getter="">
+		</member>
+		<member name="n64/width" type="int" setter="" getter="">
+		</member>
+	</members>
+</class>

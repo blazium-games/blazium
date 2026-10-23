@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PS2Particles" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="load_particles">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="unload_particles">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="amount" type="int" setter="set_amount" getter="get_amount" default="16">
+		</member>
+		<member name="lifetime" type="float" setter="set_lifetime" getter="get_lifetime" default="1.0">
+		</member>
+		<member name="mode" type="int" setter="set_mode" getter="get_mode" default="0">
+		</member>
+	</members>
+</class>

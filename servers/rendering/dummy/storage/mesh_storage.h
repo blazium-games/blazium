@@ -49,9 +49,20 @@ private:
 
 	mutable RID_Owner<DummyMesh> mesh_owner;
 
+	// Kept on the CPU so that headless runs (exports, tools that build
+	// scenes) can set and read instances back, and save them.
 	struct DummyMultiMesh {
 		PackedFloat32Array buffer;
+		int instances = 0;
+		int visible_instances = -1;
+		RS::MultimeshTransformFormat xform_format = RS::MULTIMESH_TRANSFORM_3D;
+		bool uses_colors = false;
+		bool uses_custom_data = false;
+		int stride = 12;
+		RID mesh;
 	};
+
+	DummyMultiMesh *_dummy_multimesh(RID p_rid) const { return multimesh_owner.get_or_null(p_rid); }
 
 	mutable RID_Owner<DummyMultiMesh> multimesh_owner;
 
@@ -152,31 +163,31 @@ public:
 	virtual void _multimesh_initialize(RID p_rid) override;
 	virtual void _multimesh_free(RID p_rid) override;
 
-	virtual void _multimesh_allocate_data(RID p_multimesh, int p_instances, RS::MultimeshTransformFormat p_transform_format, bool p_use_colors = false, bool p_use_custom_data = false) override {}
-	virtual int _multimesh_get_instance_count(RID p_multimesh) const override { return 0; }
+	virtual void _multimesh_allocate_data(RID p_multimesh, int p_instances, RS::MultimeshTransformFormat p_transform_format, bool p_use_colors = false, bool p_use_custom_data = false) override;
+	virtual int _multimesh_get_instance_count(RID p_multimesh) const override;
 
-	virtual void _multimesh_set_mesh(RID p_multimesh, RID p_mesh) override {}
-	virtual void _multimesh_instance_set_transform(RID p_multimesh, int p_index, const Transform3D &p_transform) override {}
-	virtual void _multimesh_instance_set_transform_2d(RID p_multimesh, int p_index, const Transform2D &p_transform) override {}
-	virtual void _multimesh_instance_set_color(RID p_multimesh, int p_index, const Color &p_color) override {}
-	virtual void _multimesh_instance_set_custom_data(RID p_multimesh, int p_index, const Color &p_color) override {}
+	virtual void _multimesh_set_mesh(RID p_multimesh, RID p_mesh) override;
+	virtual void _multimesh_instance_set_transform(RID p_multimesh, int p_index, const Transform3D &p_transform) override;
+	virtual void _multimesh_instance_set_transform_2d(RID p_multimesh, int p_index, const Transform2D &p_transform) override;
+	virtual void _multimesh_instance_set_color(RID p_multimesh, int p_index, const Color &p_color) override;
+	virtual void _multimesh_instance_set_custom_data(RID p_multimesh, int p_index, const Color &p_color) override;
 
 	virtual void _multimesh_set_custom_aabb(RID p_multimesh, const AABB &p_aabb) override {}
 	virtual AABB _multimesh_get_custom_aabb(RID p_multimesh) const override { return AABB(); }
 
-	virtual RID _multimesh_get_mesh(RID p_multimesh) const override { return RID(); }
+	virtual RID _multimesh_get_mesh(RID p_multimesh) const override;
 	virtual AABB _multimesh_get_aabb(RID p_multimesh) override { return AABB(); }
 
-	virtual Transform3D _multimesh_instance_get_transform(RID p_multimesh, int p_index) const override { return Transform3D(); }
-	virtual Transform2D _multimesh_instance_get_transform_2d(RID p_multimesh, int p_index) const override { return Transform2D(); }
-	virtual Color _multimesh_instance_get_color(RID p_multimesh, int p_index) const override { return Color(); }
-	virtual Color _multimesh_instance_get_custom_data(RID p_multimesh, int p_index) const override { return Color(); }
+	virtual Transform3D _multimesh_instance_get_transform(RID p_multimesh, int p_index) const override;
+	virtual Transform2D _multimesh_instance_get_transform_2d(RID p_multimesh, int p_index) const override;
+	virtual Color _multimesh_instance_get_color(RID p_multimesh, int p_index) const override;
+	virtual Color _multimesh_instance_get_custom_data(RID p_multimesh, int p_index) const override;
 	virtual void _multimesh_set_buffer(RID p_multimesh, const Vector<float> &p_buffer) override;
 	virtual RID _multimesh_get_buffer_rd_rid(RID p_multimesh) const override { return RID(); }
 	virtual Vector<float> _multimesh_get_buffer(RID p_multimesh) const override;
 
-	virtual void _multimesh_set_visible_instances(RID p_multimesh, int p_visible) override {}
-	virtual int _multimesh_get_visible_instances(RID p_multimesh) const override { return 0; }
+	virtual void _multimesh_set_visible_instances(RID p_multimesh, int p_visible) override;
+	virtual int _multimesh_get_visible_instances(RID p_multimesh) const override;
 
 	MultiMeshInterpolator *_multimesh_get_interpolator(RID p_multimesh) const override { return nullptr; }
 
