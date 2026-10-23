@@ -104,14 +104,14 @@ inline void JacobiConjugation(const int32_t x, const int32_t y, const int32_t z,
   double scale = 1.0 / (g.ch * g.ch + g.sh * g.sh);
   double a = (g.ch * g.ch - g.sh * g.sh) * scale;
   double b = 2.0 * g.sh * g.ch * scale;
-  Symmetric3x3 _S = S;
+  Symmetric3x3 s_tmp = S;
   // perform conjugation S = Q'*S*Q
-  S.m_00 = a * (a * _S.m_00 + b * _S.m_10) + b * (a * _S.m_10 + b * _S.m_11);
-  S.m_10 = a * (-b * _S.m_00 + a * _S.m_10) + b * (-b * _S.m_10 + a * _S.m_11);
-  S.m_11 = -b * (-b * _S.m_00 + a * _S.m_10) + a * (-b * _S.m_10 + a * _S.m_11);
-  S.m_20 = a * _S.m_20 + b * _S.m_21;
-  S.m_21 = -b * _S.m_20 + a * _S.m_21;
-  S.m_22 = _S.m_22;
+  S.m_00 = a * (a * s_tmp.m_00 + b * s_tmp.m_10) + b * (a * s_tmp.m_10 + b * s_tmp.m_11);
+  S.m_10 = a * (-b * s_tmp.m_00 + a * s_tmp.m_10) + b * (-b * s_tmp.m_10 + a * s_tmp.m_11);
+  S.m_11 = -b * (-b * s_tmp.m_00 + a * s_tmp.m_10) + a * (-b * s_tmp.m_10 + a * s_tmp.m_11);
+  S.m_20 = a * s_tmp.m_20 + b * s_tmp.m_21;
+  S.m_21 = -b * s_tmp.m_20 + a * s_tmp.m_21;
+  S.m_22 = s_tmp.m_22;
   // update cumulative rotation qV
   vec3 tmp = g.sh * vec3(q);
   g.sh *= q[3];
@@ -122,18 +122,18 @@ inline void JacobiConjugation(const int32_t x, const int32_t y, const int32_t z,
   q[x] = q[x] * g.ch + tmp[y];
   q[y] = q[y] * g.ch + -tmp[x];
   // re-arrange matrix for next iteration
-  _S.m_00 = S.m_11;
-  _S.m_10 = S.m_21;
-  _S.m_11 = S.m_22;
-  _S.m_20 = S.m_10;
-  _S.m_21 = S.m_20;
-  _S.m_22 = S.m_00;
-  S.m_00 = _S.m_00;
-  S.m_10 = _S.m_10;
-  S.m_11 = _S.m_11;
-  S.m_20 = _S.m_20;
-  S.m_21 = _S.m_21;
-  S.m_22 = _S.m_22;
+  s_tmp.m_00 = S.m_11;
+  s_tmp.m_10 = S.m_21;
+  s_tmp.m_11 = S.m_22;
+  s_tmp.m_20 = S.m_10;
+  s_tmp.m_21 = S.m_20;
+  s_tmp.m_22 = S.m_00;
+  S.m_00 = s_tmp.m_00;
+  S.m_10 = s_tmp.m_10;
+  S.m_11 = s_tmp.m_11;
+  S.m_20 = s_tmp.m_20;
+  S.m_21 = s_tmp.m_21;
+  S.m_22 = s_tmp.m_22;
 }
 // Function used to contain the Givens permutations and the loop of the jacobi
 // steps controlled by JACOBI_STEPS Returns the quaternion q containing the

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="EditorExportPlatformPS3" inherits="EditorExportPlatform" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>Export platform for PlayStation 3 homebrew.</brief_description>
+	<description>Exports Blazium projects as PS3 homebrew packages (EBOOT.BIN + USRDIR/game.pck) for RPCS3 and real hardware.</description>
+</class>

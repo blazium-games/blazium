@@ -152,7 +152,11 @@ void OS_Unix::initialize_debugging() {
 		struct sigaction action;
 		memset(&action, 0, sizeof(action));
 		action.sa_handler = handle_interrupt;
+#ifdef PS3_ENABLED
+		::sigaction(SIGINT, &action, NULL);
+#else
 		sigaction(SIGINT, &action, nullptr);
+#endif
 	}
 }
 

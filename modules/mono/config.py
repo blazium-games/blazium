@@ -1,4 +1,6 @@
 def can_build(env, platform):
+    if platform == "ps3":
+        return False
     if env["arch"].startswith("rv"):
         return False
 

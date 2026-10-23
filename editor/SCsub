@@ -63,6 +63,8 @@ void register_exporter_types() {{
     for e in env.platform_exporters:
         # Add all .cpp files in export folder
         env.add_source_files(env.editor_sources, f"../platform/{e}/export/*.cpp")
+        if e == "ps3":
+            env.add_source_files(env.editor_sources, f"../platform/{e}/editor/*.cpp")
 
     # Core API documentation.
     docs = []

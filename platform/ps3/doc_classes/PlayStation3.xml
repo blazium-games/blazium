@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PlayStation3" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>PlayStation 3 platform singleton.</brief_description>
+	<description>Provides platform-specific utilities for PS3 homebrew targets.</description>
+	<methods>
+		<method name="get_memory_available">
+			<return type="int" />
+			<description>Returns estimated available user memory in bytes.</description>
+		</method>
+		<method name="get_platform_name">
+			<return type="String" />
+			<description>Returns the platform display name.</description>
+		</method>
+		<method name="request_exit">
+			<return type="void" />
+			<description>Requests application exit via LV2.</description>
+		</method>
+	</methods>
+</class>

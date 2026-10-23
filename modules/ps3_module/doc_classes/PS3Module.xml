@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PS3Module" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		PS3 module entry point for SDK metadata.
+	</brief_description>
+	<description>
+		Provides PlayStation 3 SDK and firmware information when [code]ps3_module[/code] is enabled in PS3 template builds.
+	</description>
+	<methods>
+		<method name="get_boot_phase" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the last PS3 boot milestone (e.g. [code]early_init[/code], [code]main_entry[/code], [code]modules_loaded[/code]).
+			</description>
+		</method>
+		<method name="get_memory_available_mb" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns approximate user memory budget in megabytes.
+			</description>
+		</method>
+		<method name="get_firmware_version" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the host/emulator firmware version string when available.
+			</description>
+		</method>
+		<method name="get_sdk_version" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the SDK/toolchain identifier (PSL1GHT).
+			</description>
+		</method>
+	</methods>
+</class>

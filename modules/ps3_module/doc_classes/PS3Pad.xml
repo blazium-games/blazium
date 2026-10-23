@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PS3Pad" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		PS3 controller helper for pressure, sticks, and rumble.
+	</brief_description>
+	<description>
+		Provides direct access to PSL1GHT pad features on PlayStation 3 builds. Uses the shared platform pad layer also consumed by the engine Input singleton.
+	</description>
+	<methods>
+		<method name="get_left_stick" qualifiers="const">
+			<return type="Vector2" />
+			<description>
+				Returns the left analog stick as a normalized vector.
+			</description>
+		</method>
+		<method name="get_port" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the controller port index.
+			</description>
+		</method>
+		<method name="get_pressure" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="button" type="int" />
+			<description>
+				Returns button pressure for the given pad button index.
+			</description>
+		</method>
+		<method name="get_right_stick" qualifiers="const">
+			<return type="Vector2" />
+			<description>
+				Returns the right analog stick as a normalized vector.
+			</description>
+		</method>
+		<method name="is_connected" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when a controller is connected on the configured port.
+			</description>
+		</method>
+		<method name="set_port">
+			<return type="void" />
+			<param index="0" name="port" type="int" />
+			<description>
+				Sets the controller port index.
+			</description>
+		</method>
+		<method name="set_rumble">
+			<return type="void" />
+			<param index="0" name="weak" type="float" />
+			<param index="1" name="strong" type="float" />
+			<description>
+				Sets weak and strong motor rumble intensities from 0.0 to 1.0.
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="DPAD_LEFT" value="0" />
+		<constant name="DPAD_DOWN" value="1" />
+		<constant name="DPAD_RIGHT" value="2" />
+		<constant name="DPAD_UP" value="3" />
+		<constant name="CROSS" value="4" />
+		<constant name="CIRCLE" value="5" />
+		<constant name="TRIANGLE" value="6" />
+		<constant name="SQUARE" value="7" />
+		<constant name="L1" value="8" />
+		<constant name="R1" value="9" />
+		<constant name="L2" value="10" />
+		<constant name="R2" value="11" />
+		<constant name="START" value="12" />
+		<constant name="SELECT" value="13" />
+		<constant name="L3" value="14" />
+		<constant name="R3" value="15" />
+	</constants>
+</class>

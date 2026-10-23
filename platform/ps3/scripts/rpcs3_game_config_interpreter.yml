@@ -1,0 +1,7 @@
+# RPCS3 interpreter fallback — very slow on large templates; compat debugging only.
+Core:
+  PPU Decoder: Interpreter (static)
+  LLVM Precompilation: false
+  Debug Console Mode: true
+Miscellaneous:
+  Show PPU compilation hint: false
