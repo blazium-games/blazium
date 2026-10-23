@@ -550,6 +550,18 @@
 				Returns the current ticket request state.
 			</description>
 		</method>
+		<method name="get_workshop_consumer_app_id" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the app ID whose Workshop items are made, updated and listed: the one set with [method set_workshop_app_ids], or the running app's ID.
+			</description>
+		</method>
+		<method name="get_workshop_creator_app_id" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the app ID that Workshop queries expect items to have been made with: the one set with [method set_workshop_app_ids], or the consumer app ID.
+			</description>
+		</method>
 		<method name="grant_promo_items">
 			<return type="bool" />
 			<description>
@@ -962,6 +974,21 @@
 			<param index="1" name="vote_up" type="bool" />
 			<description>
 				Votes a Workshop item up ([code]true[/code]) or down ([code]false[/code]). Emits [signal workshop_item_vote_set].
+			</description>
+		</method>
+		<method name="set_workshop_app_ids">
+			<return type="void" />
+			<param index="0" name="consumer_app_id" type="int" />
+			<param index="1" name="creator_app_id" type="int" default="0" />
+			<description>
+				Sets which apps the Workshop calls use, for a creation tool that has its own app ID and publishes into a game's Workshop. [param consumer_app_id] is the game: [method create_workshop_item], [method start_item_update] and the favorites calls use it, and the queries list its items. [param creator_app_id] is the app the items were made with; [method query_workshop_items] and [method query_user_workshop_items] pass it to Steam. Pass [code]0[/code] for either to use the running app (the default). One of the two must be the running app, and the tool's app ID must be listed under App Publish Permissions on the game's Workshop configuration page.
+				[codeblock]
+				# In the creation tool (its own app ID):
+				Steam.initialize(TOOL_APP_ID)
+				Steam.set_workshop_app_ids(GAME_APP_ID, TOOL_APP_ID)
+				# In the game, to list items made with the tool:
+				Steam.set_workshop_app_ids(GAME_APP_ID, TOOL_APP_ID)
+				[/codeblock]
 			</description>
 		</method>
 		<method name="show_lobby_invite_dialog">

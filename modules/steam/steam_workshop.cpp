@@ -90,6 +90,9 @@ const WorkshopStatisticName WORKSHOP_STATISTICS[] = {
 
 void Steam::_bind_workshop_methods() {
 	ClassDB::bind_method(D_METHOD("has_workshop_support"), &Steam::has_workshop_support);
+	ClassDB::bind_method(D_METHOD("set_workshop_app_ids", "consumer_app_id", "creator_app_id"), &Steam::set_workshop_app_ids, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("get_workshop_consumer_app_id"), &Steam::get_workshop_consumer_app_id);
+	ClassDB::bind_method(D_METHOD("get_workshop_creator_app_id"), &Steam::get_workshop_creator_app_id);
 	ClassDB::bind_method(D_METHOD("get_num_subscribed_items", "include_locally_disabled"), &Steam::get_num_subscribed_items, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("get_subscribed_items", "include_locally_disabled"), &Steam::get_subscribed_items, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("get_item_state", "published_file_id"), &Steam::get_item_state);
@@ -250,10 +253,35 @@ bool Steam::_ensure_workshop_ready() const {
 }
 
 uint32_t Steam::_get_workshop_app_id() const {
+	if (workshop_consumer_app_id > 0) {
+		return (uint32_t)workshop_consumer_app_id;
+	}
 	if (app_id > 0) {
 		return (uint32_t)app_id;
 	}
 	return loader.get_app_id();
+}
+
+uint32_t Steam::_get_workshop_creator_app_id() const {
+	if (workshop_creator_app_id > 0) {
+		return (uint32_t)workshop_creator_app_id;
+	}
+	return _get_workshop_app_id();
+}
+
+void Steam::set_workshop_app_ids(int p_consumer_app_id, int p_creator_app_id) {
+	ERR_FAIL_COND_MSG(p_consumer_app_id < 0 || p_creator_app_id < 0, "Workshop app IDs can't be negative.");
+	workshop_consumer_app_id = p_consumer_app_id;
+	workshop_creator_app_id = p_creator_app_id;
+	_log_debug(vformat("Workshop app IDs: consumer=%d creator=%d", (int64_t)_get_workshop_app_id(), (int64_t)_get_workshop_creator_app_id()));
+}
+
+int Steam::get_workshop_consumer_app_id() const {
+	return (int)_get_workshop_app_id();
+}
+
+int Steam::get_workshop_creator_app_id() const {
+	return (int)_get_workshop_creator_app_id();
 }
 
 bool Steam::_track_workshop_call(SteamAPICallHandle_t p_call, int p_callback_id, uint64_t p_published_file_id, uint64_t p_query_handle, bool p_flag) {
@@ -761,13 +789,14 @@ int64_t Steam::query_workshop_items(WorkshopQueryType p_query_type, WorkshopMatc
 		return -1;
 	}
 	const uint32_t workshop_app_id = _get_workshop_app_id();
+	const uint32_t creator_app_id = _get_workshop_creator_app_id();
 	SteamUGCQueryHandle_t handle = STEAM_UGC_QUERY_HANDLE_INVALID;
 	if (p_options.has("cursor")) {
 		// Cursor-based paging; pass "*" for the first page.
 		const String cursor = p_options["cursor"];
-		handle = loader.ugc_create_query_all_request_cursor(steam_ugc, (int)p_query_type, (int)p_matching_type, workshop_app_id, workshop_app_id, cursor.utf8().get_data());
+		handle = loader.ugc_create_query_all_request_cursor(steam_ugc, (int)p_query_type, (int)p_matching_type, creator_app_id, workshop_app_id, cursor.utf8().get_data());
 	} else {
-		handle = loader.ugc_create_query_all_request_page(steam_ugc, (int)p_query_type, (int)p_matching_type, workshop_app_id, workshop_app_id, (uint32_t)MAX(p_page, 1));
+		handle = loader.ugc_create_query_all_request_page(steam_ugc, (int)p_query_type, (int)p_matching_type, creator_app_id, workshop_app_id, (uint32_t)MAX(p_page, 1));
 	}
 	return _send_workshop_query(handle, p_options);
 }
@@ -783,7 +812,8 @@ int64_t Steam::query_user_workshop_items(WorkshopUserList p_list_type, WorkshopM
 	// The account ID is the low 32 bits of a 64-bit Steam ID.
 	const uint32_t account_id = (uint32_t)(steam_id & 0xFFFFFFFFULL);
 	const uint32_t workshop_app_id = _get_workshop_app_id();
-	const SteamUGCQueryHandle_t handle = loader.ugc_create_query_user_request(steam_ugc, account_id, (int)p_list_type, (int)p_matching_type, (int)p_sort_order, workshop_app_id, workshop_app_id, (uint32_t)MAX(p_page, 1));
+	const uint32_t creator_app_id = _get_workshop_creator_app_id();
+	const SteamUGCQueryHandle_t handle = loader.ugc_create_query_user_request(steam_ugc, account_id, (int)p_list_type, (int)p_matching_type, (int)p_sort_order, creator_app_id, workshop_app_id, (uint32_t)MAX(p_page, 1));
 	return _send_workshop_query(handle, p_options);
 }
 

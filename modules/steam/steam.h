@@ -252,6 +252,10 @@ private:
 	bool initialized = false;
 	bool debug_logging = false;
 	int app_id = 0;
+	// Workshop app IDs, for a creation tool that publishes into another app's
+	// Workshop. 0 means the running app.
+	int workshop_consumer_app_id = 0;
+	int workshop_creator_app_id = 0;
 	SteamAPILoader::HSteamPipe steam_pipe = 0;
 	SteamAPILoader::ISteamUserPtr steam_user = nullptr;
 	SteamAPILoader::ISteamUserStatsPtr steam_user_stats = nullptr;
@@ -339,6 +343,7 @@ private:
 	static void _bind_workshop_methods();
 	bool _ensure_workshop_ready() const;
 	uint32_t _get_workshop_app_id() const;
+	uint32_t _get_workshop_creator_app_id() const;
 	bool _track_workshop_call(SteamAPICallHandle_t p_call, int p_callback_id, uint64_t p_published_file_id = 0, uint64_t p_query_handle = 0, bool p_flag = false);
 	bool _handle_workshop_callback(int p_callback_id, const void *p_data, int p_size);
 	void _handle_workshop_call_failure(const WorkshopPendingCall &p_call);
@@ -438,6 +443,9 @@ public:
 
 	// Steam Workshop (ISteamUGC).
 	bool has_workshop_support() const;
+	void set_workshop_app_ids(int p_consumer_app_id, int p_creator_app_id = 0);
+	int get_workshop_consumer_app_id() const;
+	int get_workshop_creator_app_id() const;
 	int get_num_subscribed_items(bool p_include_locally_disabled = false) const;
 	PackedInt64Array get_subscribed_items(bool p_include_locally_disabled = false) const;
 	BitField<WorkshopItemState> get_item_state(uint64_t p_published_file_id) const;
