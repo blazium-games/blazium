@@ -62,6 +62,9 @@ public:
 private:
 	Status status;
 	String running_scene;
+	bool writing_movie = false;
+
+	bool _wait_for_movie_writer(const List<ProcessID> &p_pids, ProcessID p_only_pid = 0);
 
 public:
 	inline static EditorRunInstanceStarting instance_starting_callback = nullptr;

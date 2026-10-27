@@ -56,6 +56,8 @@ class MovieWriterMJPEG : public MovieWriter {
 
 	Ref<FileAccess> f;
 
+	void _update_header_sizes(uint64_t p_riff_end, uint64_t p_movi_end);
+
 protected:
 	virtual uint32_t get_audio_mix_rate() const override;
 	virtual AuSE::SpeakerMode get_audio_speaker_mode() const override;

@@ -101,7 +101,8 @@ Error EditorRun::run(const String &p_scene, const String &p_write_movie, const V
 		args.push_back("--debug-mute-audio");
 	}
 
-	if (p_write_movie != "") {
+	writing_movie = !p_write_movie.is_empty();
+	if (writing_movie) {
 		args.push_back("--write-movie");
 		args.push_back(p_write_movie);
 		args.push_back("--fixed-fps");
@@ -221,23 +222,67 @@ bool EditorRun::has_child_process(ProcessID p_pid) const {
 	return false;
 }
 
+// How long to wait for a project that's writing a movie to finish the file and exit by
+// itself before killing it.
+static constexpr uint64_t MOVIE_WRITER_QUIT_TIMEOUT_MSEC = 10000;
+
+// When Movie Maker mode is on, killing the project outright prevents the MovieWriter from
+// finalizing the file (for AVI, the header sizes and the frame index are never written,
+// so many players refuse to open it). Ask the project to quit through the debugger
+// instead, and wait for it to exit. Anything still running afterwards is killed by the caller.
+// Returns `true` if a quit request was sent (and so some processes may already have exited).
+bool EditorRun::_wait_for_movie_writer(const List<ProcessID> &p_pids, ProcessID p_only_pid) {
+	if (!writing_movie || p_pids.is_empty()) {
+		return false;
+	}
+	if (!EditorDebuggerNode::get_singleton()->request_remote_quit(p_only_pid)) {
+		return false;
+	}
+
+	OS *os = OS::get_singleton();
+	const uint64_t deadline = os->get_ticks_msec() + MOVIE_WRITER_QUIT_TIMEOUT_MSEC;
+	while (os->get_ticks_msec() < deadline) {
+		bool any_running = false;
+		for (const ProcessID &E : p_pids) {
+			if ((p_only_pid == 0 || E == p_only_pid) && os->is_process_running(E)) {
+				any_running = true;
+				break;
+			}
+		}
+		if (!any_running) {
+			return true;
+		}
+		os->delay_usec(10000);
+	}
+	WARN_PRINT("Timed out waiting for the running project to finish writing its movie. The project will be stopped, and the movie file may be incomplete.");
+	return true;
+}
+
 void EditorRun::stop_child_process(ProcessID p_pid) {
 	if (has_child_process(p_pid)) {
-		OS::get_singleton()->kill(p_pid);
+		const bool waited = _wait_for_movie_writer(pids, p_pid);
+		if (!waited || OS::get_singleton()->is_process_running(p_pid)) {
+			OS::get_singleton()->kill(p_pid);
+		}
 		pids.erase(p_pid);
 	}
 }
 
 void EditorRun::stop() {
 	if (status != STATUS_STOP && pids.size() > 0) {
+		const bool waited = _wait_for_movie_writer(pids);
 		for (const ProcessID &E : pids) {
-			OS::get_singleton()->kill(E);
+			// Only skip processes that are known to have exited after being asked to quit.
+			if (!waited || OS::get_singleton()->is_process_running(E)) {
+				OS::get_singleton()->kill(E);
+			}
 		}
 		pids.clear();
 	}
 
 	status = STATUS_STOP;
 	running_scene = "";
+	writing_movie = false;
 }
 
 ProcessID EditorRun::get_current_process() const {

@@ -239,6 +239,7 @@ public:
 	void set_keep_open(bool p_keep_open);
 	Error start(const String &p_uri = "tcp://");
 	void stop(bool p_force = false);
+	bool request_remote_quit(int p_pid = 0);
 
 	bool plugins_capture(ScriptEditorDebugger *p_debugger, const String &p_message, const Array &p_data);
 	void add_debugger_plugin(const Ref<EditorDebuggerPlugin> &p_plugin);

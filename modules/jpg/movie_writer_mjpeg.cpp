@@ -224,16 +224,43 @@ Error MovieWriterMJPEG::write_frame(const Ref<Image> &p_image, const int32_t *p_
 
 	frame_count++;
 
+	// Keep the header sizes and frame counts up to date while recording (about once per
+	// second of video), so if the process is killed or crashes before `write_end()`, the
+	// file is still playable up to that point. It will only be missing the `idx1` index.
+	if (fps > 0 && frame_count % fps == 0) {
+		const uint64_t pos = f->get_position();
+		_update_header_sizes(pos, pos);
+		f->seek(pos);
+		f->flush();
+	}
+
 	return OK;
+}
+
+void MovieWriterMJPEG::_update_header_sizes(uint64_t p_riff_end, uint64_t p_movi_end) {
+	// RIFF chunk size excludes the 8-byte "RIFF" + size header.
+	f->seek(4);
+	f->store_32(uint32_t(p_riff_end - 8));
+	f->seek(total_frames_ofs);
+	f->store_32(frame_count);
+	f->seek(total_frames_ofs2);
+	f->store_32(frame_count);
+	f->seek(total_frames_ofs3);
+	f->store_32(frame_count);
+	f->seek(total_audio_frames_ofs4);
+	f->store_32(uint32_t(uint64_t(frame_count) * mix_rate / fps));
+	// The movi LIST size covers everything after its size field ("movi" + all chunks).
+	f->seek(movi_data_ofs);
+	f->store_32(uint32_t(p_movi_end - movi_data_ofs - 4));
 }
 
 void MovieWriterMJPEG::write_end() {
 	if (f.is_valid()) {
 		// Finalize the file (frame indices)
+		const uint64_t movi_end = f->get_position();
 		f->store_buffer((const uint8_t *)"idx1", 4);
 		f->store_32(8 * 4 * frame_count);
 		uint32_t ofs = 4;
-		uint32_t all_data_size = 0;
 		for (uint32_t i = 0; i < frame_count; i++) {
 			f->store_buffer((const uint8_t *)"00db", 4);
 			f->store_32(16); // AVI_KEYFRAME
@@ -248,22 +275,9 @@ void MovieWriterMJPEG::write_end() {
 			f->store_32(audio_block_size);
 
 			ofs += audio_block_size + 8;
-			all_data_size += jpg_frame_sizes[i] + audio_block_size;
 		}
 
-		uint32_t file_size = f->get_position();
-		f->seek(4);
-		f->store_32(file_size - 78);
-		f->seek(total_frames_ofs);
-		f->store_32(frame_count);
-		f->seek(total_frames_ofs2);
-		f->store_32(frame_count);
-		f->seek(total_frames_ofs3);
-		f->store_32(frame_count);
-		f->seek(total_audio_frames_ofs4);
-		f->store_32(frame_count * mix_rate / fps);
-		f->seek(movi_data_ofs);
-		f->store_32(all_data_size + 4 + 16 * frame_count);
+		_update_header_sizes(f->get_position(), movi_end);
 
 		f.unref();
 	}

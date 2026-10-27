@@ -335,6 +335,24 @@ Error EditorDebuggerNode::start(const String &p_uri) {
 	return OK;
 }
 
+// Asks running projects to quit through their normal shutdown path. If `p_pid` is not 0,
+// only the session belonging to that process is asked. Sessions stopped at a breakpoint
+// are skipped, since they can't process the request. Returns `true` if a request was sent.
+bool EditorDebuggerNode::request_remote_quit(int p_pid) {
+	bool sent = false;
+	_for_all(tabs, [&](ScriptEditorDebugger *dbg) {
+		if (!dbg->is_session_active() || dbg->is_breaked()) {
+			return;
+		}
+		if (p_pid != 0 && dbg->get_remote_pid() != p_pid) {
+			return;
+		}
+		dbg->send_message("core:quit", Array());
+		sent = true;
+	});
+	return sent;
+}
+
 void EditorDebuggerNode::stop(bool p_force) {
 	if (keep_open && !p_force) {
 		return;

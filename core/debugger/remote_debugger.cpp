@@ -41,6 +41,7 @@
 #include "core/math/expression.h"
 #include "core/object/class_db.h"
 #include "core/object/script_language.h"
+#include "core/os/main_loop.h"
 #include "core/os/os.h"
 #include "servers/display/display_server.h"
 
@@ -742,6 +743,14 @@ Error RemoteDebugger::_core_capture(const String &p_cmd, const Array &p_data, bo
 		script_debugger->set_ignore_error_breaks(p_data[0]);
 	} else if (p_cmd == "break") {
 		script_debugger->debug(script_debugger->get_break_language());
+	} else if (p_cmd == "quit") {
+		// Sent by the editor when it stops a project that is writing a movie, so the
+		// process exits through its normal shutdown path and the MovieWriter can finalize
+		// the file (e.g. write the AVI header sizes and index) instead of being killed.
+		MainLoop *main_loop = OS::get_singleton()->get_main_loop();
+		if (main_loop) {
+			main_loop->call(SNAME("quit"));
+		}
 	} else {
 		r_captured = false;
 	}
