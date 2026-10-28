@@ -104,7 +104,10 @@ void EditorObjectSelector::_show_popup() {
 }
 
 void EditorObjectSelector::_about_to_show() {
-	Object *obj = ObjectDB::get_instance(history->get_path_object(history->get_path_size() - 1));
+	Object *obj = ObjectDB::get_instance(shown_object);
+	if (!obj) {
+		obj = ObjectDB::get_instance(history->get_path_object(history->get_path_size() - 1));
+	}
 	if (!obj) {
 		return;
 	}
@@ -118,7 +121,21 @@ void EditorObjectSelector::_about_to_show() {
 	}
 }
 
+void EditorObjectSelector::set_shown_object(Object *p_object) {
+	shown_object = p_object ? p_object->get_instance_id() : ObjectID();
+}
+
 void EditorObjectSelector::update_path() {
+	if (Object *shown = ObjectDB::get_instance(shown_object)) {
+		Ref<Texture2D> obj_icon = EditorNode::get_singleton()->get_object_icon(shown);
+		if (obj_icon.is_valid()) {
+			current_object_icon->set_texture(obj_icon);
+		}
+		const String name = InspectorDock::get_object_display_name(shown);
+		current_object_label->set_text(name);
+		set_tooltip_text(name + "\n" + vformat(TTR("Type: %s"), shown->get_class()) + "\n" + TTR("Click to open a list of sub-resources."));
+		return;
+	}
 	for (int i = 0; i < history->get_path_size(); i++) {
 		Object *obj = ObjectDB::get_instance(history->get_path_object(i));
 		if (!obj) {

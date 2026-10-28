@@ -50,6 +50,8 @@ class EditorObjectSelector : public Button {
 	PopupMenu *sub_objects_menu = nullptr;
 
 	Vector<ObjectID> objects;
+	// Shown instead of the history's current object.
+	ObjectID shown_object;
 
 	void _show_popup();
 	void _id_pressed(int p_idx);
@@ -63,6 +65,9 @@ public:
 	virtual Size2 get_minimum_size() const override;
 
 	void update_path();
+	// Shows an object that isn't in the history, until set back to null.
+	void set_shown_object(Object *p_object);
+	ObjectID get_shown_object() const { return shown_object; }
 	void clear_path();
 	void enable_path();
 

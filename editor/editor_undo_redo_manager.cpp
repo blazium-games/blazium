@@ -75,6 +75,20 @@ int EditorUndoRedoManager::get_history_id_for_object(Object *p_object) const {
 			if (idx > 0) {
 				history_id = idx;
 			}
+		} else {
+			// A node of another open scene, edited where it's shown beside
+			// the current one: its own scene's history.
+			EditorData &editor_data = EditorNode::get_editor_data();
+			for (int i = 0; i < editor_data.get_edited_scene_count(); i++) {
+				const Node *root = editor_data.get_edited_scene_root(i);
+				if (root && (node == root || root->is_ancestor_of(node))) {
+					const int idx = editor_data.get_scene_history_id(i);
+					if (idx > 0) {
+						history_id = idx;
+					}
+					break;
+				}
+			}
 		}
 	}
 

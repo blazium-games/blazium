@@ -1136,6 +1136,9 @@
 		<member name="interface/editor/localization/ui_layout_direction" type="int" setter="" getter="">
 			Editor UI default layout direction.
 		</member>
+		<member name="interface/editor/split_view/code_beside_scene" type="bool" setter="" getter="">
+			If [code]true[/code], on the 2D and 3D screens the split view shows a script beside the scene being edited, instead of another scene. It follows the selection: the script of the node selected last. Clicking it opens the script in the script editor.
+		</member>
 		<member name="interface/editor/split_view/compare_scripts" type="bool" setter="" getter="">
 			If [code]true[/code], on the Script screen the split view shows another open script beside the one being edited, instead of the edited scene. The script you switch away from appears there; clicking it edits it.
 		</member>

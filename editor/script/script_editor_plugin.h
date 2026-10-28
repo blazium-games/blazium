@@ -197,6 +197,7 @@ class DocumentEditorContainer : public MarginContainer {
 		FILE_MENU_MOVE_UP,
 		FILE_MENU_MOVE_DOWN,
 		FILE_MENU_SORT,
+		FILE_MENU_SHOW_IN_SPLIT_VIEW,
 
 		// Search.
 		HELP_SEARCH_FIND,
@@ -478,6 +479,8 @@ public:
 
 	Vector<Ref<Script>> get_open_scripts() const;
 	ScriptEditorBase *get_resource_editor(const Ref<Resource> &p_res) const;
+	// A new highlighter for p_resource, as an editor for it would get.
+	Ref<EditorSyntaxHighlighter> create_syntax_highlighter(const Ref<Resource> &p_resource) const;
 
 	ScriptEditorBase *get_current_editor() const { return _get_current_editor(); }
 
