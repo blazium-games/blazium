@@ -161,7 +161,7 @@ static void _variant_to_ryml(ryml::NodeRef node, const Variant &v) {
 			break;
 		case Variant::DICTIONARY: {
 			Dictionary d = v;
-			node |= ryml::MAP; // works on your version
+			node.set_map();
 			Array keys = d.keys();
 			for (int i = 0; i < keys.size(); i++) {
 				String key = keys[i];
@@ -173,7 +173,7 @@ static void _variant_to_ryml(ryml::NodeRef node, const Variant &v) {
 		}
 		case Variant::ARRAY: {
 			Array a = v;
-			node |= ryml::SEQ; // works on your version
+			node.set_seq(); // works on your version
 			for (int i = 0; i < a.size(); i++) {
 				ryml::NodeRef child = node.append_child();
 				_variant_to_ryml(child, a[i]);
