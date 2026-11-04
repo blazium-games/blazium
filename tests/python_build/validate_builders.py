@@ -16,28 +16,40 @@ from glsl_builders import build_raw_header, build_rd_header
 FUNC_PATH_KWARGS: list[tuple[Callable[..., None], str, dict[str, Any]]] = [
     (
         build_gles3_header,
-        "tests/python_build/fixtures/gles3/vertex_fragment.out",
-        {"shader": "tests/python_build/fixtures/gles3/vertex_fragment.glsl"},
+        "tests/python_build/fixtures/gles3/vertex_fragment.glsl",
+        {
+            "include": "drivers/gles3/shader_gles3.h",
+            "class_suffix": "GLES3",
+            "optional_output_filename": "tests/python_build/fixtures/gles3/vertex_fragment.out",
+        },
     ),
     (
         build_raw_header,
-        "tests/python_build/fixtures/glsl/compute.out",
-        {"shader": "tests/python_build/fixtures/glsl/compute.glsl"},
+        "tests/python_build/fixtures/glsl/compute.glsl",
+        {
+            "optional_output_filename": "tests/python_build/fixtures/glsl/compute.out",
+        },
     ),
     (
         build_raw_header,
-        "tests/python_build/fixtures/glsl/vertex_fragment.out",
-        {"shader": "tests/python_build/fixtures/glsl/vertex_fragment.glsl"},
+        "tests/python_build/fixtures/glsl/vertex_fragment.glsl",
+        {
+            "optional_output_filename": "tests/python_build/fixtures/glsl/vertex_fragment.out",
+        },
     ),
     (
         build_rd_header,
-        "tests/python_build/fixtures/rd_glsl/compute.out",
-        {"shader": "tests/python_build/fixtures/rd_glsl/compute.glsl"},
+        "tests/python_build/fixtures/rd_glsl/compute.glsl",
+        {
+            "optional_output_filename": "tests/python_build/fixtures/rd_glsl/compute.out",
+        },
     ),
     (
         build_rd_header,
-        "tests/python_build/fixtures/rd_glsl/vertex_fragment.out",
-        {"shader": "tests/python_build/fixtures/rd_glsl/vertex_fragment.glsl"},
+        "tests/python_build/fixtures/rd_glsl/vertex_fragment.glsl",
+        {
+            "optional_output_filename": "tests/python_build/fixtures/rd_glsl/vertex_fragment.out",
+        },
     ),
 ]
 
