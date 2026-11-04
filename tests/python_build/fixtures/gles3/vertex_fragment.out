@@ -5,7 +5,7 @@
 #include "drivers/gles3/shader_gles3.h"
 
 
-class VertexFragmentShaderGLES3 : public ShaderGLES3 {
+class VertexFragmentOutShaderGLES3 : public ShaderGLES3 {
 
 public:
 
@@ -37,7 +37,7 @@ protected:
 		static const Feedback* _feedbacks=nullptr;
 		static const char _vertex_code[]={
 R"<!>(
-precision highp float;
+		precision highp float;
 precision highp int;
 
 layout(location = 0) in highp vec3 vertex;
@@ -45,7 +45,7 @@ layout(location = 0) in highp vec3 vertex;
 out highp vec4 position_interp;
 
 void main() {
-	position_interp = vec4(vertex.x,1,0,1);
+	position_interp = vec4(vertex.x, 1, 0, 1);
 }
 
 )<!>"
@@ -65,7 +65,7 @@ void main() {
 )<!>"
 		};
 
-		_setup(_vertex_code,_fragment_code,"VertexFragmentShaderGLES3",0,_uniform_strings,0,_ubo_pairs,0,_feedbacks,0,_texunit_pairs,1,_spec_pairs,1,_variant_defines);
+		_setup(_vertex_code,_fragment_code,"VertexFragmentOutShaderGLES3",0,_uniform_strings,0,_ubo_pairs,0,_feedbacks,0,_texunit_pairs,1,_spec_pairs,1,_variant_defines);
 	}
 
 };

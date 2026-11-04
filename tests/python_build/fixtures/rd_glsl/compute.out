@@ -3,11 +3,11 @@
 
 #include "servers/rendering/renderer_rd/shader_rd.h"
 
-class ComputeShaderRD : public ShaderRD {
+class ComputeOutShaderRD : public ShaderRD {
 
 public:
 
-	ComputeShaderRD() {
+	ComputeOutShaderRD() {
 
 		static const char _compute_code[] = {
 R"<!>(
@@ -24,6 +24,6 @@ void main() {
 }
 )<!>"
 		};
-		setup(nullptr, nullptr, _compute_code, "ComputeShaderRD");
+		setup(nullptr, nullptr, _compute_code, "ComputeOutShaderRD");
 	}
 };
