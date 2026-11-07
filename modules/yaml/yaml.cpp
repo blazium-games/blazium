@@ -189,23 +189,28 @@ static void _variant_to_ryml(ryml::NodeRef node, const Variant &v) {
 // ---------- Public API ----------
 Variant YAML::parse_string(const String &p_yaml) {
 	ryml_setup_error_handling();
-
 	s_ryml_error = false;
 	s_ryml_error_msg.clear();
 
 	CharString utf8 = p_yaml.utf8();
 	ryml::csubstr src(utf8.get_data(), utf8.length());
 
-	if (setjmp(s_ryml_jmp_buf) == 0) {
-		ryml::Tree tree = ryml::parse_in_arena(src);
+	ryml::Tree *tree = nullptr;
 
-		if (s_ryml_error || !tree.rootref().readable()) {
+	if (setjmp(s_ryml_jmp_buf) == 0) {
+		tree = new ryml::Tree(ryml::parse_in_arena(src));
+
+		if (s_ryml_error || !tree->rootref().readable()) {
+			delete tree;
 			ERR_PRINT("YAML parse error: " + s_ryml_error_msg);
 			return Variant();
 		}
-		return _ryml_to_variant(tree.rootref());
+
+		Variant result = _ryml_to_variant(tree->rootref());
+		delete tree;
+		return result;
 	} else {
-		// landed here from longjmp
+		delete tree; // safe if still nullptr
 		ERR_PRINT("YAML parse error: " + s_ryml_error_msg);
 		return Variant();
 	}
