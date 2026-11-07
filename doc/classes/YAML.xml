@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="YAML" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+    <brief_description>
+        Utility class for parsing and generating YAML.
+    </brief_description>
+    <description>
+        Provides static methods to parse YAML text into Godot [Variant]s and to convert [Variant]s back into YAML strings.
+        [codeblock]
+        var data = YAML.parse_string("""
+        name: Player
+        health: 100
+        inventory:
+          - Sword
+          - Shield
+        """)
+        print(data.name)          # "Player"
+        print(data.inventory[0])  # "Sword"
+
+        var yaml_text = YAML.stringify(data)
+        print(yaml_text)
+        [/codeblock]
+        On parse errors the methods return [code]null[/code] and print an error message (they do not crash the engine).
+    </description>
+    <tutorials>
+    </tutorials>
+    <methods>
+        <method name="parse_string" qualifiers="static">
+            <return type="Variant" />
+            <param index="0" name="yaml" type="String" />
+            <description>
+                Parses the given YAML string and returns the corresponding [Variant] (usually a [Dictionary] or [Array]).
+                Returns [code]null[/code] if the YAML is invalid. An error message is printed to the console.
+                [codeblock]
+                var result = YAML.parse_string("key: value")
+                if result == null:
+                    push_error("Failed to parse YAML")
+                else:
+                    print(result.key)  # "value"
+                [/codeblock]
+            </description>
+        </method>
+        <method name="parse_file" qualifiers="static">
+            <return type="Variant" />
+            <param index="0" name="path" type="String" />
+            <description>
+                Loads a YAML file from [param path] and parses its contents.
+                Equivalent to [code]YAML.parse_string(FileAccess.get_file_as_string(path))[/code].
+                Returns [code]null[/code] if the file cannot be opened or the content is invalid YAML.
+            </description>
+        </method>
+        <method name="stringify" qualifiers="static">
+            <return type="String" />
+            <param index="0" name="value" type="Variant" />
+            <param index="1" name="indent" type="int" default="2" />
+            <description>
+                Converts a [Variant] into a YAML-formatted string.
+                Supported types: [code]null[/code], [bool], [int], [float], [String], [Dictionary] and [Array] (and nested combinations of these).
+                Other types are converted to their string representation.
+                [codeblock]
+                var data = {
+                    "name": "Player",
+                    "stats": [10, 20, 30]
+                }
+                print(YAML.stringify(data))
+                # name: Player
+                # stats:
+                #   - 10
+                #   - 20
+                #   - 30
+                [/codeblock]
+            </description>
+        </method>
+    </methods>
+</class>

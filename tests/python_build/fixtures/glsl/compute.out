@@ -1,13 +1,12 @@
 /* WARNING, THIS FILE WAS GENERATED, DO NOT EDIT */
 #pragma once
 
-static const char compute_shader_glsl[] = {
+static const char compute.out[] = {
 R"<!>(#[compute]
 
 #version 450
 
 #VERSION_DEFINES
-
 
 #define M_PI 3.14159265359
 

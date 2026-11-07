@@ -6,11 +6,11 @@ mode_ninepatch = #define USE_NINEPATCH
 
 #[specializations]
 
-DISABLE_LIGHTING = false
+		DISABLE_LIGHTING = false
 
 #[vertex]
 
-precision highp float;
+		precision highp float;
 precision highp int;
 
 layout(location = 0) in highp vec3 vertex;
@@ -18,7 +18,7 @@ layout(location = 0) in highp vec3 vertex;
 out highp vec4 position_interp;
 
 void main() {
-	position_interp = vec4(vertex.x,1,0,1);
+	position_interp = vec4(vertex.x, 1, 0, 1);
 }
 
 #[fragment]
