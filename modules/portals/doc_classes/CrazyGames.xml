@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CrazyGames" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		CrazyGames export.
+	</brief_description>
+	<description>
+		Starts and stops gameplay, requests ads, and reports whether the game is running on CrazyGames.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="gameplay_start">
+			<return type="void" />
+			<description>
+				Marks the start of gameplay.
+			</description>
+		</method>
+		<method name="gameplay_stop">
+			<return type="void" />
+			<description>
+				Marks the end of gameplay.
+			</description>
+		</method>
+		<method name="request_midgame_ad">
+			<return type="void" />
+			<description>
+				Requests a mid-roll ad.
+			</description>
+		</method>
+		<method name="request_rewarded_ad">
+			<return type="void" />
+			<description>
+				Requests a rewarded ad.
+			</description>
+		</method>
+		<method name="get_environment">
+			<return type="String" />
+			<description>
+				Returns local, crazygames, or disabled.
+			</description>
+		</method>
+	</methods>
+</class>

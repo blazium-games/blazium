@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Telegram" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Telegram mini app export.
+	</brief_description>
+	<description>
+		Reads Telegram WebApp init data, theme, viewport, and safe area, and can send data back to the bot.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_init_data">
+			<return type="String" />
+			<description>
+				Returns the signed Telegram init data.
+			</description>
+		</method>
+		<method name="get_theme">
+			<return type="Dictionary" />
+			<description>
+				Returns the Telegram theme parameters.
+			</description>
+		</method>
+		<method name="get_viewport">
+			<return type="Dictionary" />
+			<description>
+				Returns the Telegram viewport size.
+			</description>
+		</method>
+		<method name="get_safe_area">
+			<return type="Dictionary" />
+			<description>
+				Returns the Telegram safe area insets.
+			</description>
+		</method>
+		<method name="request_fullscreen">
+			<return type="void" />
+			<description>
+				Asks Telegram to expand the mini app.
+			</description>
+		</method>
+		<method name="send_data">
+			<return type="void" />
+			<param index="0" name="data" type="String" />
+			<description>
+				Sends a string back to the Telegram bot.
+			</description>
+		</method>
+	</methods>
+</class>

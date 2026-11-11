@@ -148,19 +148,10 @@ void EditorExportPlatformWeb::_fix_html(Vector<uint8_t> &p_html, const Ref<Edito
 		head_include += "<link id=\"-gd-engine-icon\" rel=\"icon\" type=\"image/png\" href=\"" + p_name + ".icon.png\" />\n";
 		head_include += "<link rel=\"apple-touch-icon\" href=\"" + p_name + ".apple-touch-icon.png\"/>\n";
 	}
-	if (p_preset->get("progressive_web_app/enabled")) {
+	if (_export_pwa_enabled(p_preset)) {
 		head_include += "<link rel=\"manifest\" href=\"" + p_name + ".manifest.json\">\n";
 	}
-	String blazium_third_party;
-	bool youtube_playable = p_preset->get("blazium/youtube_playable/enabled");
-	bool discord_embed = p_preset->get("blazium/discord_embed/enabled");
-	if (youtube_playable || discord_embed) {
-		if (youtube_playable) {
-			// the ytplay sdk needs to be the first
-			blazium_third_party += R"(<script src="https://www.youtube.com/game_api/v1"></script>)";
-		}
-		blazium_third_party += R"(<script src=")" + p_name + ".third.party.js" + R"("></script>)";
-	}
+	String blazium_third_party = _export_third_party_scripts(p_preset, p_name);
 	String blazium_header_embeds;
 	if (p_preset->get("blazium/web_headers/enabled")) {
 		if (p_preset->has("blazium/web_headers/title")) {
@@ -344,13 +335,13 @@ Error EditorExportPlatformWeb::_build_js_files(const Ref<EditorExportPreset> &p_
 	}
 	engine_config["args"] = args;
 
-	if (p_preset->get("progressive_web_app/enabled")) {
+	if (_export_pwa_enabled(p_preset)) {
 		engine_config["serviceWorker"] = name + ".service.worker.js";
 	}
 
 	HashMap<String, String> replaces;
 	replaces["$GODOT_CONFIG"] = Variant(engine_config).to_json_string();
-	if (p_preset->get("variant/thread_support")) {
+	if (_export_threads_enabled(p_preset)) {
 		replaces["$GODOT_THREADS_ENABLED"] = "true";
 	} else {
 		replaces["$GODOT_THREADS_ENABLED"] = "false";
@@ -497,7 +488,7 @@ void EditorExportPlatformWeb::get_preset_features(const Ref<EditorExportPreset> 
 		r_features->push_back("etc2");
 		r_features->push_back("astc");
 	}
-	if (p_preset->get("variant/thread_support").operator bool()) {
+	if (_export_threads_enabled(p_preset)) {
 		r_features->push_back("threads");
 	} else {
 		r_features->push_back("nothreads");
@@ -596,8 +587,8 @@ bool EditorExportPlatformWeb::has_valid_export_configuration(const Ref<EditorExp
 
 	String err;
 	bool valid = false;
-	bool extensions = (bool)p_preset->get("variant/extensions_support");
-	bool thread_support = (bool)p_preset->get("variant/thread_support");
+	bool extensions = _export_extensions_enabled(p_preset);
+	bool thread_support = _export_threads_enabled(p_preset);
 
 	// Look for export templates (first official, and if defined custom templates).
 	bool dvalid = exists_export_template(_get_template_name(extensions, thread_support, true), &err);
@@ -657,9 +648,9 @@ Error EditorExportPlatformWeb::export_project(const Ref<EditorExportPreset> &p_p
 
 	const String custom_debug = p_preset->get("custom_template/debug");
 	const String custom_release = p_preset->get("custom_template/release");
-	const String custom_html = p_preset->get("html/custom_html_shell");
+	const String custom_html = _export_custom_html_shell(p_preset);
 	const bool export_icon = p_preset->get("html/export_icon");
-	const bool pwa = p_preset->get("progressive_web_app/enabled");
+	const bool pwa = _export_pwa_enabled(p_preset);
 
 	const String base_dir = p_path.get_base_dir();
 	const String base_path = p_path.get_basename();
@@ -674,8 +665,8 @@ Error EditorExportPlatformWeb::export_project(const Ref<EditorExportPreset> &p_p
 	String template_path = p_debug ? custom_debug : custom_release;
 	template_path = template_path.strip_edges();
 	if (template_path.is_empty()) {
-		bool extensions = (bool)p_preset->get("variant/extensions_support");
-		bool thread_support = (bool)p_preset->get("variant/thread_support");
+		bool extensions = _export_extensions_enabled(p_preset);
+		bool thread_support = _export_threads_enabled(p_preset);
 		template_path = find_export_template(_get_template_name(extensions, thread_support, p_debug));
 	}
 
@@ -1117,6 +1108,68 @@ Error EditorExportPlatformWeb::_stop_server() {
 
 Ref<Texture2D> EditorExportPlatformWeb::get_run_icon() const {
 	return run_icon;
+}
+
+bool EditorExportPlatformWeb::_export_extensions_enabled(const Ref<EditorExportPreset> &p_preset) const {
+	return p_preset->get("variant/extensions_support");
+}
+
+bool EditorExportPlatformWeb::_export_threads_enabled(const Ref<EditorExportPreset> &p_preset) const {
+	return p_preset->get("variant/thread_support");
+}
+
+bool EditorExportPlatformWeb::_export_pwa_enabled(const Ref<EditorExportPreset> &p_preset) const {
+	return p_preset->get("progressive_web_app/enabled");
+}
+
+String EditorExportPlatformWeb::_export_custom_html_shell(const Ref<EditorExportPreset> &p_preset) const {
+	return p_preset->get("html/custom_html_shell");
+}
+
+String EditorExportPlatformWeb::_export_third_party_scripts(const Ref<EditorExportPreset> &p_preset, const String &p_name) const {
+	String blazium_third_party;
+	bool youtube_playable = p_preset->get("blazium/youtube_playable/enabled");
+	bool discord_embed = p_preset->get("blazium/discord_embed/enabled");
+	if (youtube_playable || discord_embed) {
+		if (youtube_playable) {
+			// the ytplay sdk needs to be the first
+			blazium_third_party += R"(<script src="https://www.youtube.com/game_api/v1"></script>)";
+		}
+		blazium_third_party += R"(<script src=")" + p_name + ".third.party.js" + R"("></script>)";
+	}
+	return blazium_third_party;
+}
+
+Error EditorExportPlatformWeb::read_template_file(const String &p_zip_path, const String &p_internal_path, Vector<uint8_t> &r_data) const {
+	Ref<FileAccess> io_fa;
+	zlib_filefunc_def io = zipio_create_io(&io_fa);
+	unzFile pkg = unzOpen2(p_zip_path.utf8().get_data(), &io);
+	if (!pkg) {
+		return ERR_FILE_NOT_FOUND;
+	}
+	if (unzLocateFile(pkg, p_internal_path.utf8().get_data(), 1) != UNZ_OK) {
+		unzClose(pkg);
+		return ERR_FILE_NOT_FOUND;
+	}
+	unz_file_info info;
+	unzGetCurrentFileInfo(pkg, &info, nullptr, 0, nullptr, 0, nullptr, 0);
+	if (unzOpenCurrentFile(pkg) != UNZ_OK) {
+		unzClose(pkg);
+		return ERR_FILE_CORRUPT;
+	}
+	r_data.resize(info.uncompressed_size);
+	if (info.uncompressed_size > 0) {
+		const int read = unzReadCurrentFile(pkg, r_data.ptrw(), r_data.size());
+		if (read < 0) {
+			unzCloseCurrentFile(pkg);
+			unzClose(pkg);
+			return ERR_FILE_CORRUPT;
+		}
+		r_data.resize(read);
+	}
+	unzCloseCurrentFile(pkg);
+	unzClose(pkg);
+	return OK;
 }
 
 EditorExportPlatformWeb::EditorExportPlatformWeb() {

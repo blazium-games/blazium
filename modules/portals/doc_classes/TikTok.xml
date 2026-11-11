@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TikTok" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		TikTok mini-game export.
+	</brief_description>
+	<description>
+		TikTok mini-game calls. TikTok uses its own runtime and does not alias the Douyin runtime.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+	</methods>
+</class>

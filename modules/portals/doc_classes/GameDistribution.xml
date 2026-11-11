@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GameDistribution" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		GameDistribution export.
+	</brief_description>
+	<description>
+		Shows an advertisement. Pause and resume follow the host game events.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="show_ad">
+			<return type="void" />
+			<description>
+				Shows a GameDistribution advertisement.
+			</description>
+		</method>
+	</methods>
+</class>

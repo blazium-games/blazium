@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Douyin" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Douyin mini-game export.
+	</brief_description>
+	<description>
+		Douyin mini-game calls, including the Douyin payment request.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="request_game_payment">
+			<return type="void" />
+			<param index="0" name="options" type="Dictionary" />
+			<description>
+				Starts a Douyin payment request. This does nothing on WeChat and TikTok.
+			</description>
+		</method>
+	</methods>
+</class>

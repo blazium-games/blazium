@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Meta" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Meta instant game export.
+	</brief_description>
+	<description>
+		Reads the player id, name, photo, locale, entry-point data, and context id after the instant game has started.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_player_id">
+			<return type="String" />
+			<description>
+				Returns the instant-game player id.
+			</description>
+		</method>
+		<method name="get_player_name">
+			<return type="String" />
+			<description>
+				Returns the instant-game player name.
+			</description>
+		</method>
+		<method name="get_player_photo">
+			<return type="String" />
+			<description>
+				Returns the instant-game player photo URL.
+			</description>
+		</method>
+		<method name="get_locale">
+			<return type="String" />
+			<description>
+				Returns the instant-game locale.
+			</description>
+		</method>
+		<method name="get_entry_point_data">
+			<return type="String" />
+			<description>
+				Returns the entry-point payload as JSON.
+			</description>
+		</method>
+		<method name="get_context_id">
+			<return type="String" />
+			<description>
+				Returns the instant-game context id.
+			</description>
+		</method>
+	</methods>
+</class>

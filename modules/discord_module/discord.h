@@ -124,6 +124,10 @@ private:
 	uint64_t user_id = 0;
 	ConnectionState connection_state = STATE_DISCONNECTED;
 	String last_error;
+	bool embed_lifecycle_bound = false;
+	Variant embed_pause_callback;
+	Variant embed_resume_callback;
+	Variant embed_result_callback;
 	Dictionary pending_presence;
 	Dictionary last_presence_sent;
 	Discord_Client client;
@@ -134,6 +138,11 @@ private:
 	void _log_lifecycle(const String &p_message);
 	void _log_debug(const String &p_message);
 	void _set_last_error(const String &p_error);
+	void _bind_embed_lifecycle();
+	void _on_embed_paused();
+	void _on_embed_resumed();
+	void _on_embed_result(const String &p_json);
+	String _call_embed(const String &p_method, const Dictionary &p_args = Dictionary());
 	void _set_auth_state(AuthState p_state);
 	void _report_authorization_failed(const String &p_error);
 	Error _require_presence_ready(const char *p_operation);
@@ -229,6 +238,10 @@ public:
 	String get_access_token() const;
 	String get_username() const;
 	uint64_t get_user_id() const;
+	bool is_on_host() const;
+	void ready();
+	void set_activity(const String &p_details, const String &p_state);
+	void clear_activity();
 	int get_relationships_count() const;
 	String get_last_error() const { return last_error; }
 	String get_default_presence_scopes() const;

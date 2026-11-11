@@ -222,6 +222,20 @@ const Engine = (function () {
 				this.rtenv['copyToFS'](path, buffer);
 			},
 
+			copyFSToAdapter: function (path) {
+				if (this.rtenv == null) {
+					throw new Error('Engine must be inited before copying files');
+				}
+				return this.rtenv['copyFSToAdapter'](path);
+			},
+
+			ensureFSDirectory: function (path) {
+				if (this.rtenv == null) {
+					throw new Error('Engine must be inited before creating directories');
+				}
+				this.rtenv['ensureFSDirectory'](path);
+			},
+
 			/**
 			 * Request that the current instance quit.
 			 *
@@ -263,6 +277,8 @@ const Engine = (function () {
 		Engine.prototype['start'] = Engine.prototype.start;
 		Engine.prototype['startGame'] = Engine.prototype.startGame;
 		Engine.prototype['copyToFS'] = Engine.prototype.copyToFS;
+		Engine.prototype['copyFSToAdapter'] = Engine.prototype.copyFSToAdapter;
+		Engine.prototype['ensureFSDirectory'] = Engine.prototype.ensureFSDirectory;
 		Engine.prototype['requestQuit'] = Engine.prototype.requestQuit;
 		Engine.prototype['installServiceWorker'] = Engine.prototype.installServiceWorker;
 		// Also expose static methods as instance methods
@@ -288,4 +304,5 @@ const Engine = (function () {
 }());
 if (typeof window !== 'undefined') {
 	window['Engine'] = Engine;
+	window['BlaziumEngine'] = Engine;
 }

@@ -1274,7 +1274,7 @@ const _GodotAudio = {
 			}, 1000);
 			GodotOS.atexit(GodotAudio.close_async);
 
-			const path = GodotConfig.locate_file('godot.audio.position.worklet.js');
+			const path = GodotConfig.locate_file('blazium.audio.position.worklet.js');
 			GodotAudio.audioPositionWorkletPromise = ctx.audioWorklet.addModule(path);
 
 			return ctx.destination.channelCount;
@@ -1946,7 +1946,7 @@ const GodotAudioWorklet = {
 		ring_buffer: null,
 
 		create: function (channels) {
-			const path = GodotConfig.locate_file('godot.audio.worklet.js');
+			const path = GodotConfig.locate_file('blazium.audio.worklet.js');
 			GodotAudioWorklet.promise = GodotAudio.ctx.audioWorklet
 				.addModule(path)
 				.then(function () {

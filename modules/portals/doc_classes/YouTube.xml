@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="YouTube" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		YouTube Playables export.
+	</brief_description>
+	<description>
+		Sends score, save data, language, and lifecycle events to the YouTube Playables runtime.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="send_first_frame">
+			<return type="void" />
+			<description>
+				Reports that the first frame has been presented.
+			</description>
+		</method>
+		<method name="game_ready">
+			<return type="void" />
+			<description>
+				Reports that the game is ready to play.
+			</description>
+		</method>
+		<method name="send_score">
+			<return type="void" />
+			<param index="0" name="score" type="int" />
+			<description>
+				Sends a score to YouTube.
+			</description>
+		</method>
+		<method name="save_data">
+			<return type="void" />
+			<param index="0" name="data" type="String" />
+			<description>
+				Saves a string with the YouTube host.
+			</description>
+		</method>
+		<method name="load_data">
+			<return type="void" />
+			<description>
+				Loads the saved string. The value arrives through [signal result].
+			</description>
+		</method>
+		<method name="get_language">
+			<return type="String" />
+			<description>
+				Returns the language reported by YouTube.
+			</description>
+		</method>
+		<method name="is_audio_enabled">
+			<return type="bool" />
+			<description>
+				Returns true when YouTube allows game audio.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="audio_enabled">
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				Emitted when YouTube changes the audio permission.
+			</description>
+		</signal>
+	</signals>
+</class>

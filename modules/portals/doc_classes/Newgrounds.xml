@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Newgrounds" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Newgrounds.io export.
+	</brief_description>
+	<description>
+		Unlocks medals, submits scores, and reads or writes cloud saves. Secure calls wait in a queue until the player is signed in.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="log_in">
+			<return type="void" />
+			<description>
+				Opens the Newgrounds sign-in page.
+			</description>
+		</method>
+		<method name="unlock_medal">
+			<return type="void" />
+			<param index="0" name="id" type="int" />
+			<description>
+				Unlocks a medal. The call is queued while signed out.
+			</description>
+		</method>
+		<method name="submit_score">
+			<return type="void" />
+			<param index="0" name="board" type="String" />
+			<param index="1" name="score" type="int" />
+			<description>
+				Submits a score. The call is queued while signed out.
+			</description>
+		</method>
+		<method name="cloud_save">
+			<return type="void" />
+			<param index="0" name="key" type="String" />
+			<param index="1" name="value" type="String" />
+			<description>
+				Writes a cloud save. The call is queued while signed out.
+			</description>
+		</method>
+		<method name="cloud_load">
+			<return type="String" />
+			<param index="0" name="key" type="String" />
+			<description>
+				Requests a cloud save. The value arrives through [signal result].
+			</description>
+		</method>
+	</methods>
+</class>

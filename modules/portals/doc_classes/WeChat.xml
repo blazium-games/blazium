@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="WeChat" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		WeChat mini-game export.
+	</brief_description>
+	<description>
+		WeChat mini-game calls, including the WeChat payment request.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="request_midas_payment">
+			<return type="void" />
+			<param index="0" name="options" type="Dictionary" />
+			<description>
+				Starts a WeChat payment request. This does nothing on Douyin and TikTok.
+			</description>
+		</method>
+	</methods>
+</class>

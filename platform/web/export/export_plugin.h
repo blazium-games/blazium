@@ -116,6 +116,14 @@ class EditorExportPlatformWeb : public EditorExportPlatform {
 	Error _start_server(const String &p_bind_host, uint16_t p_bind_port, bool p_use_tls);
 	Error _stop_server();
 
+protected:
+	virtual bool _export_extensions_enabled(const Ref<EditorExportPreset> &p_preset) const;
+	virtual bool _export_threads_enabled(const Ref<EditorExportPreset> &p_preset) const;
+	virtual bool _export_pwa_enabled(const Ref<EditorExportPreset> &p_preset) const;
+	virtual String _export_custom_html_shell(const Ref<EditorExportPreset> &p_preset) const;
+	virtual String _export_third_party_scripts(const Ref<EditorExportPreset> &p_preset, const String &p_name) const;
+	Error read_template_file(const String &p_zip_path, const String &p_internal_path, Vector<uint8_t> &r_data) const;
+
 public:
 	virtual void get_preset_features(const Ref<EditorExportPreset> &p_preset, List<String> *r_features) const override;
 
