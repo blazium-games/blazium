@@ -112,6 +112,8 @@ const GodotFS = {
 	$GodotFS__postset: [
 		'Module["initFS"] = GodotFS.init;',
 		'Module["copyToFS"] = GodotFS.copy_to_fs;',
+		'Module["copyFSToAdapter"] = GodotFS.copy_fs_to_adapter;',
+		'Module["ensureFSDirectory"] = GodotFS.ensure_directory;',
 	].join(''),
 	$GodotFS: {
 		// ERRNO_CODES works every odd version of emscripten, but this will break too eventually.
@@ -220,6 +222,19 @@ const GodotFS = {
 				FS.mkdirTree(dir);
 			}
 			FS.writeFile(path, new Uint8Array(buffer));
+		},
+
+		copy_fs_to_adapter: function (path) {
+			const data = FS.readFile(path);
+			const bridge = (typeof globalThis !== 'undefined') ? globalThis.blaziumHostBridge : null;
+			if (bridge && typeof bridge.writeHostFile === 'function') {
+				bridge.writeHostFile(path, data);
+			}
+			return data;
+		},
+
+		ensure_directory: function (path) {
+			FS.mkdirTree(path);
 		},
 	},
 };

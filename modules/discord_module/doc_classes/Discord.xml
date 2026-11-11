@@ -61,6 +61,12 @@
 				Cancels an outgoing game friend request. OAuth only.
 			</description>
 		</method>
+		<method name="clear_activity">
+			<return type="void" />
+			<description>
+				Clears the embedded app activity text.
+			</description>
+		</method>
 		<method name="clear_debug_log">
 			<return type="void" />
 			<description>
@@ -78,6 +84,12 @@
 			<param index="0" name="secret" type="String" />
 			<description>
 				Creates or joins a Discord lobby by secret. OAuth only. Emits [signal lobby_joined] on success.
+			</description>
+		</method>
+		<method name="embedded_ready">
+			<return type="void" />
+			<description>
+				Completes the Discord embedded app handshake. The native [signal ready] signal remains the rich-presence ready notification. Off the embedded host, the call reports that the game is not on this host.
 			</description>
 		</method>
 		<method name="get_access_token" qualifiers="const">
@@ -247,6 +259,12 @@
 				Returns [code]true[/code] after a successful [method initialize] or [method initialize_presence_only].
 			</description>
 		</method>
+		<method name="is_on_host" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns true when the exported game is running inside Discord.
+			</description>
+		</method>
 		<method name="is_presence_only_mode" qualifiers="const">
 			<return type="bool" />
 			<description>
@@ -365,6 +383,14 @@
 				Sends a game-scoped friend request by user ID. OAuth only.
 			</description>
 		</method>
+		<method name="set_activity">
+			<return type="void" />
+			<param index="0" name="details" type="String" />
+			<param index="1" name="state" type="String" />
+			<description>
+				Sets the embedded app activity text.
+			</description>
+		</method>
 		<method name="set_debug_logging">
 			<return type="void" />
 			<param index="0" name="enabled" type="bool" />
@@ -453,6 +479,11 @@
 				Emitted when [method create_or_join_lobby] succeeds.
 			</description>
 		</signal>
+		<signal name="paused">
+			<description>
+				Emitted when the embedded app is hidden.
+			</description>
+		</signal>
 		<signal name="ready">
 			<description>
 				Emitted when Discord is ready for rich presence updates.
@@ -493,11 +524,28 @@
 				Emitted when the relationship count is refreshed after connect.
 			</description>
 		</signal>
+		<signal name="result">
+			<param index="0" name="json" type="String" />
+			<description>
+				Emitted when an embedded app call returns a payload.
+			</description>
+		</signal>
+		<signal name="resumed">
+			<description>
+				Emitted when the embedded app becomes visible again.
+			</description>
+		</signal>
 		<signal name="rich_presence_updated">
 			<param index="0" name="success" type="bool" />
 			<param index="1" name="error" type="String" />
 			<description>
 				Emitted when a rich presence update completes.
+			</description>
+		</signal>
+		<signal name="unavailable">
+			<param index="0" name="message" type="String" />
+			<description>
+				Emitted when an embedded app call is made outside Discord.
 			</description>
 		</signal>
 		<signal name="user_updated">

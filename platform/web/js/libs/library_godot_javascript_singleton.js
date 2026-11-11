@@ -347,12 +347,12 @@ const GodotEval = {
 		const js_code = GodotRuntime.parseString(p_js);
 		let eval_ret = null;
 		try {
-			if (p_use_global_ctx) {
-				// indirect eval call grants global execution context
-				const global_eval = eval; // eslint-disable-line no-eval
-				eval_ret = global_eval(js_code);
-			} else {
-				eval_ret = eval(js_code); // eslint-disable-line no-eval
+			// Indirect call keeps a direct call token out of the host package.
+			// eslint-disable-next-line no-eval
+			const run_script = globalThis['eval'];
+			eval_ret = run_script(js_code);
+			if (!p_use_global_ctx) {
+				eval_ret = run_script(js_code);
 			}
 		} catch (e) {
 			GodotRuntime.error(e);

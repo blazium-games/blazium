@@ -57,6 +57,9 @@ def get_opts():
             "Use Emscripten PROXY_TO_PTHREAD option to run the main application code to a separate thread",
             False,
         ),
+        BoolVariable(
+            "blazium_host", "Build the mini-game host template without threads, SIMD, or wasm exceptions", False
+        ),
     ]
 
 
@@ -238,6 +241,18 @@ def configure(env: "SConsEnvironment"):
 
     env.Append(LINKFLAGS=["-s%s=%sKB" % ("STACK_SIZE", env["stack_size"])])
 
+    if env["blazium_host"]:
+        if env["threads"]:
+            print_warning("blazium_host requires threads=no, disabling threads.")
+        env["threads"] = False
+        if env["dlink_enabled"]:
+            print_warning("blazium_host requires dlink_enabled=no, disabling dynamic linking.")
+        env["dlink_enabled"] = False
+        env["proxy_to_pthread"] = False
+        env.extra_suffix = ".host" + env.extra_suffix
+        env.Append(CCFLAGS=["-fno-vectorize"])
+        env.Append(LINKFLAGS=["-sDYNAMIC_EXECUTION=0"])
+
     if env["threads"]:
         # Thread support (via SharedArrayBuffer).
         env.Append(CPPDEFINES=["PTHREAD_NO_RENAME"])
@@ -290,9 +305,10 @@ def configure(env: "SConsEnvironment"):
     # Wrap the JavaScript support code around a closure named Blazium.
     env.Append(LINKFLAGS=["-sMODULARIZE=1", "-sEXPORT_NAME='Blazium'"])
 
-    # Force long jump mode to 'wasm'
-    env.Append(CCFLAGS=["-sSUPPORT_LONGJMP='wasm'"])
-    env.Append(LINKFLAGS=["-sSUPPORT_LONGJMP='wasm'"])
+    # Mini-game hosts reject wasm exceptions. Browser exports keep the wasm mode.
+    longjmp_mode = "emscripten" if env["blazium_host"] else "wasm"
+    env.Append(CCFLAGS=["-sSUPPORT_LONGJMP='%s'" % longjmp_mode])
+    env.Append(LINKFLAGS=["-sSUPPORT_LONGJMP='%s'" % longjmp_mode])
 
     # Allow increasing memory buffer size during runtime. This is efficient
     # when using WebAssembly (in comparison to asm.js) and works well for

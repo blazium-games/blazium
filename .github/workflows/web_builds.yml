@@ -36,6 +36,13 @@ jobs:
             tests: false
             artifact: true
 
+          - name: Mini-game host template (target=template_release, blazium_host=yes)
+            cache-name: web-blazium-host-template
+            target: template_release
+            sconsflags: threads=no blazium_host=yes
+            tests: false
+            artifact: true
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4

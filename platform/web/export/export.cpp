@@ -30,6 +30,7 @@
 
 #include "export.h"
 
+#include "export_platform_host.h"
 #include "export_plugin.h"
 
 #include "editor/editor_settings.h"
@@ -37,6 +38,7 @@
 
 void register_web_exporter_types() {
 	GDREGISTER_VIRTUAL_CLASS(EditorExportPlatformWeb);
+	GDREGISTER_VIRTUAL_CLASS(EditorExportPlatformHost);
 }
 
 void register_web_exporter() {
@@ -53,4 +55,43 @@ void register_web_exporter() {
 	Ref<EditorExportPlatformWeb> platform;
 	platform.instantiate();
 	EditorExport::get_singleton()->add_export_platform(platform);
+
+	const char *names[] = {
+		"Discord",
+		"YouTube",
+		"Telegram",
+		"Reddit",
+		"Newgrounds",
+		"CrazyGames",
+		"Poki",
+		"Meta",
+		"GameDistribution",
+		"WeChat",
+		"Douyin",
+		"TikTok",
+	};
+	const char *ids[] = {
+		"discord",
+		"youtube",
+		"telegram",
+		"reddit",
+		"newgrounds",
+		"crazygames",
+		"poki",
+		"meta",
+		"gamedistribution",
+		"wechat",
+		"douyin",
+		"tiktok",
+	};
+	for (int i = 0; i < 12; i++) {
+		Ref<EditorExportPlatformHost> host;
+		host.instantiate();
+		const bool folder = i >= 9;
+		const bool index_html = String::utf8(ids[i]) == "crazygames" || String::utf8(ids[i]) == "meta";
+		const bool reddit = String::utf8(ids[i]) == "reddit";
+		const bool boot = String::utf8(ids[i]) == "discord" || String::utf8(ids[i]) == "telegram" || String::utf8(ids[i]) == "crazygames" || String::utf8(ids[i]) == "poki" || String::utf8(ids[i]) == "meta";
+		host->configure(names[i], ids[i], folder, index_html, reddit, boot);
+		EditorExport::get_singleton()->add_export_platform(host);
+	}
 }

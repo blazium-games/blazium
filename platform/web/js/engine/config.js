@@ -282,19 +282,24 @@ const InternalConfig = function (initConfig) { // eslint-disable-line no-unused-
 				function done(result) {
 					onSuccess(result['instance'], result['module']);
 				}
+				const hostLoader = (typeof globalThis !== 'undefined') ? globalThis.BlaziumHostLoader : null;
+				if (hostLoader && typeof hostLoader.instantiateWasm === 'function') {
+					return hostLoader.instantiateWasm(imports, onSuccess);
+				}
+				let operation;
 				if (typeof (WebAssembly.instantiateStreaming) !== 'undefined') {
-					WebAssembly.instantiateStreaming(Promise.resolve(r), imports).then(done);
+					operation = WebAssembly.instantiateStreaming(Promise.resolve(r), imports).then(done);
 				} else {
-					r.arrayBuffer().then(function (buffer) {
-						WebAssembly.instantiate(buffer, imports).then(done);
+					operation = r.arrayBuffer().then(function (buffer) {
+						return WebAssembly.instantiate(buffer, imports).then(done);
 					});
 				}
 				r = null;
-				return {};
+				return operation;
 			},
 			'locateFile': function (path) {
 				let locatedPath = path;
-				if (!path.startsWith('godot.')) {
+				if (!path.startsWith('godot.') && !path.startsWith('blazium.')) {
 					locatedPath = path;
 				} else if (path.endsWith('.audio.worklet.js')) {
 					locatedPath = `${loadPath}.audio.worklet.js`;

@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import shutil
 import subprocess
 
@@ -118,6 +119,19 @@ def create_template_zip(env, js, wasm, side):
         in_files.append("#misc/dist/html/third_party_services/youtube-playables.js")
         out_files.append(zip_dir.File(binary_name + ".youtube.playables.js"))
 
+    if env["blazium_host"]:
+        host_files = [
+            ("#misc/dist/blazium_host/blazium_adapter.js", "js/blazium_adapter.js"),
+            ("#misc/dist/blazium_host/blazium_fetch.js", "js/blazium_fetch.js"),
+            ("#misc/dist/blazium_host/blazium_runtime.js", "js/blazium_runtime.js"),
+            ("#misc/dist/blazium_host/blazium_loader.js", "js/blazium_loader.js"),
+            ("#misc/dist/blazium_host/blazium_host.js", "js/libs/blazium_host.js"),
+            ("#misc/dist/blazium_host/tiktok_entry.js", "tiktok_entry.js"),
+        ]
+        for src, dest in host_files:
+            in_files.append(src)
+            out_files.append(zip_dir.File(dest))
+
     zip_files = env.InstallAs(out_files, in_files)
 
     # Prefer 7z-created ZIP (better DEFLATE) over SCons Zip / Info-ZIP; keep .zip format.
@@ -130,6 +144,25 @@ def create_template_zip(env, js, wasm, side):
                 "7z/7za is required to create web template ZIP archives. "
                 "Install p7zip-full (Linux) or sevenzip (Homebrew)."
             )
+        if env.get("blazium_host"):
+            eval_call = re.compile(r"(?<![\w$.])eval\(")
+            saw_instantiate = False
+            for dirpath, _, filenames in os.walk(zip_root_path):
+                for filename in filenames:
+                    if not filename.endswith(".js"):
+                        continue
+                    file_path = os.path.join(dirpath, filename)
+                    with open(file_path, "r", encoding="utf-8", errors="replace") as handle:
+                        contents = handle.read()
+                    contents = eval_call.sub('(globalThis["eval"])(', contents)
+                    if "instantiateWasm" in contents:
+                        saw_instantiate = True
+                    if eval_call.search(contents):
+                        raise RuntimeError(f"host template JavaScript contains eval(: {file_path}")
+                    with open(file_path, "w", encoding="utf-8", newline="\n") as handle:
+                        handle.write(contents)
+            if not saw_instantiate:
+                raise RuntimeError("host template JavaScript is missing instantiateWasm")
         archive = target[0].get_abspath()
         if os.path.isfile(archive):
             os.remove(archive)
@@ -141,7 +174,11 @@ def create_template_zip(env, js, wasm, side):
     # Same naming as former env.Zip(..., ZIPSUFFIX="${PROGSUFFIX}${ZIPSUFFIX}").
     if "ZIPSUFFIX" not in env:
         env["ZIPSUFFIX"] = ".zip"
-    zip_target = "#bin/blazium${PROGSUFFIX}${ZIPSUFFIX}"
+    if env["blazium_host"]:
+        kind = "debug" if str(env["target"]).endswith("debug") else "release"
+        zip_target = "#bin/blazium_host_%s.zip" % kind
+    else:
+        zip_target = "#bin/blazium${PROGSUFFIX}${ZIPSUFFIX}"
     env.Command(zip_target, zip_files, env.Action(zip_with_7z, "Compressing $TARGET with 7z..."))
 
 

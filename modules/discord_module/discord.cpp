@@ -29,6 +29,11 @@
 
 #include "discord.h"
 
+#include "modules/portals/portal_runtime.h"
+
+#include "core/io/json.h"
+#include "core/object/callable_method_pointer.h"
+
 #include "core/config/project_settings.h"
 #include "core/os/os.h"
 #include "core/variant/array.h"
@@ -82,6 +87,10 @@ void Discord::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_user", "user_id"), &Discord::get_user);
 	ClassDB::bind_method(D_METHOD("get_user_id"), &Discord::get_user_id);
 	ClassDB::bind_method(D_METHOD("get_username"), &Discord::get_username);
+	ClassDB::bind_method(D_METHOD("is_on_host"), &Discord::is_on_host);
+	ClassDB::bind_method(D_METHOD("embedded_ready"), &Discord::ready);
+	ClassDB::bind_method(D_METHOD("set_activity", "details", "state"), &Discord::set_activity);
+	ClassDB::bind_method(D_METHOD("clear_activity"), &Discord::clear_activity);
 	ClassDB::bind_method(D_METHOD("get_version"), &Discord::get_version);
 	ClassDB::bind_method(D_METHOD("initialize", "client_id"), &Discord::initialize, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("initialize_presence_only", "client_id"), &Discord::initialize_presence_only);
@@ -125,6 +134,10 @@ void Discord::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("connection_state_changed", PropertyInfo(Variant::INT, "state"), PropertyInfo(Variant::INT, "error"), PropertyInfo(Variant::INT, "error_detail")));
 	ADD_SIGNAL(MethodInfo("lobby_joined", PropertyInfo(Variant::INT, "lobby_id")));
 	ADD_SIGNAL(MethodInfo("ready"));
+	ADD_SIGNAL(MethodInfo("paused"));
+	ADD_SIGNAL(MethodInfo("resumed"));
+	ADD_SIGNAL(MethodInfo("unavailable", PropertyInfo(Variant::STRING, "message")));
+	ADD_SIGNAL(MethodInfo("result", PropertyInfo(Variant::STRING, "json")));
 	ADD_SIGNAL(MethodInfo("relationship_action_completed", PropertyInfo(Variant::STRING, "action"), PropertyInfo(Variant::INT, "user_id"), PropertyInfo(Variant::BOOL, "success"), PropertyInfo(Variant::STRING, "error")));
 	ADD_SIGNAL(MethodInfo("relationship_created", PropertyInfo(Variant::INT, "user_id"), PropertyInfo(Variant::BOOL, "is_discord")));
 	ADD_SIGNAL(MethodInfo("relationship_deleted", PropertyInfo(Variant::INT, "user_id"), PropertyInfo(Variant::BOOL, "is_discord")));
@@ -788,6 +801,10 @@ String Discord::get_access_token() const {
 }
 
 String Discord::get_username() const {
+	if (is_on_host()) {
+		Variant result = PortalRuntime::invoke("BlaziumPortals", "discord", "getUsername", "{}");
+		return result.get_type() == Variant::NIL ? String() : String(result);
+	}
 	if (auth_state != AUTH_READY) {
 		return String();
 	}
@@ -795,10 +812,70 @@ String Discord::get_username() const {
 }
 
 uint64_t Discord::get_user_id() const {
+	if (is_on_host()) {
+		Variant result = PortalRuntime::invoke("BlaziumPortals", "discord", "getUserId", "{}");
+		return result.get_type() == Variant::NIL ? 0 : String(result).to_int();
+	}
 	if (auth_state != AUTH_READY) {
 		return 0;
 	}
 	return user_id;
+}
+
+bool Discord::is_on_host() const {
+	return PortalRuntime::is_available("BlaziumPortals", "discord");
+}
+
+String Discord::_call_embed(const String &p_method, const Dictionary &p_args) {
+	if (!is_on_host()) {
+		_set_last_error("Not on this host");
+		emit_signal(SNAME("unavailable"), last_error);
+		return String();
+	}
+	last_error = String();
+	_bind_embed_lifecycle();
+	Variant result = PortalRuntime::invoke("BlaziumPortals", "discord", p_method, JSON::stringify(p_args));
+	return result.get_type() == Variant::NIL ? String() : String(result);
+}
+
+void Discord::_bind_embed_lifecycle() {
+	if (embed_lifecycle_bound) {
+		return;
+	}
+	embed_lifecycle_bound = true;
+	embed_pause_callback = PortalRuntime::make_callback(callable_mp(this, &Discord::_on_embed_paused));
+	embed_resume_callback = PortalRuntime::make_callback(callable_mp(this, &Discord::_on_embed_resumed));
+	embed_result_callback = PortalRuntime::make_callback(callable_mp(this, &Discord::_on_embed_result));
+	PortalRuntime::bind("BlaziumPortals", "paused", embed_pause_callback);
+	PortalRuntime::bind("BlaziumPortals", "resumed", embed_resume_callback);
+	PortalRuntime::bind("BlaziumPortals", "result", embed_result_callback);
+}
+
+void Discord::_on_embed_paused() {
+	emit_signal(SNAME("paused"));
+}
+
+void Discord::_on_embed_resumed() {
+	emit_signal(SNAME("resumed"));
+}
+
+void Discord::_on_embed_result(const String &p_json) {
+	emit_signal(SNAME("result"), p_json);
+}
+
+void Discord::ready() {
+	_call_embed("ready");
+}
+
+void Discord::set_activity(const String &p_details, const String &p_state) {
+	Dictionary args;
+	args["details"] = p_details;
+	args["state"] = p_state;
+	_call_embed("setActivity", args);
+}
+
+void Discord::clear_activity() {
+	_call_embed("clearActivity");
 }
 
 int Discord::get_relationships_count() const {
