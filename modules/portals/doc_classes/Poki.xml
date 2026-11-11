@@ -9,6 +9,12 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="commercial_break">
+			<return type="void" />
+			<description>
+				Runs a commercial break.
+			</description>
+		</method>
 		<method name="gameplay_start">
 			<return type="void" />
 			<description>
@@ -21,16 +27,9 @@
 				Marks the end of gameplay.
 			</description>
 		</method>
-		<method name="commercial_break">
-			<return type="void" />
+		<method name="get_last_error" qualifiers="const">
+			<return type="String" />
 			<description>
-				Runs a commercial break.
-			</description>
-		</method>
-		<method name="rewarded_break">
-			<return type="void" />
-			<description>
-				Runs a rewarded break.
 			</description>
 		</method>
 		<method name="get_shareable_url">
@@ -39,12 +38,41 @@
 				Returns the last shareable URL, requesting one when needed.
 			</description>
 		</method>
+		<method name="is_on_host" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="rewarded_break">
+			<return type="void" />
+			<description>
+				Runs a rewarded break.
+			</description>
+		</method>
 	</methods>
 	<signals>
 		<signal name="break_done">
 			<param index="0" name="kind" type="String" />
 			<description>
 				Emitted when a commercial or rewarded break finishes.
+			</description>
+		</signal>
+		<signal name="paused">
+			<description>
+			</description>
+		</signal>
+		<signal name="result">
+			<param index="0" name="json" type="String" />
+			<description>
+			</description>
+		</signal>
+		<signal name="resumed">
+			<description>
+			</description>
+		</signal>
+		<signal name="unavailable">
+			<param index="0" name="message" type="String" />
+			<description>
 			</description>
 		</signal>
 	</signals>

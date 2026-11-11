@@ -9,6 +9,29 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="get_context_id">
+			<return type="String" />
+			<description>
+				Returns the instant-game context id.
+			</description>
+		</method>
+		<method name="get_entry_point_data">
+			<return type="String" />
+			<description>
+				Returns the entry-point payload as JSON.
+			</description>
+		</method>
+		<method name="get_last_error" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_locale">
+			<return type="String" />
+			<description>
+				Returns the instant-game locale.
+			</description>
+		</method>
 		<method name="get_player_id">
 			<return type="String" />
 			<description>
@@ -27,23 +50,30 @@
 				Returns the instant-game player photo URL.
 			</description>
 		</method>
-		<method name="get_locale">
-			<return type="String" />
+		<method name="is_on_host" qualifiers="const">
+			<return type="bool" />
 			<description>
-				Returns the instant-game locale.
-			</description>
-		</method>
-		<method name="get_entry_point_data">
-			<return type="String" />
-			<description>
-				Returns the entry-point payload as JSON.
-			</description>
-		</method>
-		<method name="get_context_id">
-			<return type="String" />
-			<description>
-				Returns the instant-game context id.
 			</description>
 		</method>
 	</methods>
+	<signals>
+		<signal name="paused">
+			<description>
+			</description>
+		</signal>
+		<signal name="result">
+			<param index="0" name="json" type="String" />
+			<description>
+			</description>
+		</signal>
+		<signal name="resumed">
+			<description>
+			</description>
+		</signal>
+		<signal name="unavailable">
+			<param index="0" name="message" type="String" />
+			<description>
+			</description>
+		</signal>
+	</signals>
 </class>

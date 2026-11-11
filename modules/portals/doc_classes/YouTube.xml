@@ -9,23 +9,38 @@
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="send_first_frame">
-			<return type="void" />
-			<description>
-				Reports that the first frame has been presented.
-			</description>
-		</method>
 		<method name="game_ready">
 			<return type="void" />
 			<description>
 				Reports that the game is ready to play.
 			</description>
 		</method>
-		<method name="send_score">
-			<return type="void" />
-			<param index="0" name="score" type="int" />
+		<method name="get_language">
+			<return type="String" />
 			<description>
-				Sends a score to YouTube.
+				Returns the language reported by YouTube.
+			</description>
+		</method>
+		<method name="get_last_error" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="is_audio_enabled">
+			<return type="bool" />
+			<description>
+				Returns true when YouTube allows game audio.
+			</description>
+		</method>
+		<method name="is_on_host" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="load_data">
+			<return type="void" />
+			<description>
+				Loads the saved string. The value arrives through [signal result].
 			</description>
 		</method>
 		<method name="save_data">
@@ -35,22 +50,17 @@
 				Saves a string with the YouTube host.
 			</description>
 		</method>
-		<method name="load_data">
+		<method name="send_first_frame">
 			<return type="void" />
 			<description>
-				Loads the saved string. The value arrives through [signal result].
+				Reports that the first frame has been presented.
 			</description>
 		</method>
-		<method name="get_language">
-			<return type="String" />
+		<method name="send_score">
+			<return type="void" />
+			<param index="0" name="score" type="int" />
 			<description>
-				Returns the language reported by YouTube.
-			</description>
-		</method>
-		<method name="is_audio_enabled">
-			<return type="bool" />
-			<description>
-				Returns true when YouTube allows game audio.
+				Sends a score to YouTube.
 			</description>
 		</method>
 	</methods>
@@ -61,10 +71,23 @@
 				Emitted when YouTube changes the audio permission.
 			</description>
 		</signal>
+		<signal name="paused">
+			<description>
+			</description>
+		</signal>
 		<signal name="result">
 			<param index="0" name="json" type="String" />
 			<description>
 				Emitted when a host call returns a payload.
+			</description>
+		</signal>
+		<signal name="resumed">
+			<description>
+			</description>
+		</signal>
+		<signal name="unavailable">
+			<param index="0" name="message" type="String" />
+			<description>
 			</description>
 		</signal>
 	</signals>

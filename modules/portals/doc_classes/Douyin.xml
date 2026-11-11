@@ -9,6 +9,81 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="check_session">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="clear_storage">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="get_clipboard">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_last_error" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_launch_info">
+			<return type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="get_profile">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="get_storage">
+			<return type="String" />
+			<param index="0" name="key" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_system_info">
+			<return type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="is_on_host" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="load_subpackage">
+			<return type="void" />
+			<param index="0" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="login">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="play_inner_audio">
+			<return type="void" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="read_host_file">
+			<return type="PackedByteArray" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="remove_storage">
+			<return type="void" />
+			<param index="0" name="key" type="String" />
+			<description>
+			</description>
+		</method>
 		<method name="request_game_payment">
 			<return type="void" />
 			<param index="0" name="options" type="Dictionary" />
@@ -16,5 +91,83 @@
 				Starts a Douyin payment request. This does nothing on WeChat and TikTok.
 			</description>
 		</method>
+		<method name="set_clipboard">
+			<return type="void" />
+			<param index="0" name="text" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="set_storage">
+			<return type="void" />
+			<param index="0" name="key" type="String" />
+			<param index="1" name="value" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="share">
+			<return type="void" />
+			<param index="0" name="payload" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="show_modal">
+			<return type="void" />
+			<param index="0" name="title" type="String" />
+			<param index="1" name="content" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="show_rewarded_ad">
+			<return type="void" />
+			<param index="0" name="ad_unit_id" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="show_toast">
+			<return type="void" />
+			<param index="0" name="message" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="write_host_file">
+			<return type="void" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="data" type="PackedByteArray" />
+			<description>
+			</description>
+		</method>
 	</methods>
+	<signals>
+		<signal name="hidden">
+			<description>
+			</description>
+		</signal>
+		<signal name="host_error">
+			<param index="0" name="message" type="String" />
+			<description>
+			</description>
+		</signal>
+		<signal name="paused">
+			<description>
+			</description>
+		</signal>
+		<signal name="result">
+			<param index="0" name="json" type="String" />
+			<description>
+			</description>
+		</signal>
+		<signal name="resumed">
+			<description>
+			</description>
+		</signal>
+		<signal name="shown">
+			<description>
+			</description>
+		</signal>
+		<signal name="unavailable">
+			<param index="0" name="message" type="String" />
+			<description>
+			</description>
+		</signal>
+	</signals>
 </class>

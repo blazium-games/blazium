@@ -119,7 +119,9 @@ TEST_CASE("[Portals] off-host fallbacks") {
 }
 
 TEST_CASE("[Portals] shared method table and host-only payments") {
+#ifdef MODULE_DISCORD_MODULE_ENABLED
 	CHECK(ClassDB::has_signal("Discord", "paused"));
+#endif
 	CHECK(ClassDB::has_signal("Poki", "resumed"));
 	CHECK(ClassDB::has_signal("Poki", "break_done"));
 	CHECK(ClassDB::has_signal("YouTube", "audio_enabled"));

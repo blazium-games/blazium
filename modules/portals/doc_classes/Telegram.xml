@@ -15,6 +15,17 @@
 				Returns the signed Telegram init data.
 			</description>
 		</method>
+		<method name="get_last_error" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_safe_area">
+			<return type="Dictionary" />
+			<description>
+				Returns the Telegram safe area insets.
+			</description>
+		</method>
 		<method name="get_theme">
 			<return type="Dictionary" />
 			<description>
@@ -27,10 +38,9 @@
 				Returns the Telegram viewport size.
 			</description>
 		</method>
-		<method name="get_safe_area">
-			<return type="Dictionary" />
+		<method name="is_on_host" qualifiers="const">
+			<return type="bool" />
 			<description>
-				Returns the Telegram safe area insets.
 			</description>
 		</method>
 		<method name="request_fullscreen">
@@ -47,4 +57,24 @@
 			</description>
 		</method>
 	</methods>
+	<signals>
+		<signal name="paused">
+			<description>
+			</description>
+		</signal>
+		<signal name="result">
+			<param index="0" name="json" type="String" />
+			<description>
+			</description>
+		</signal>
+		<signal name="resumed">
+			<description>
+			</description>
+		</signal>
+		<signal name="unavailable">
+			<param index="0" name="message" type="String" />
+			<description>
+			</description>
+		</signal>
+	</signals>
 </class>

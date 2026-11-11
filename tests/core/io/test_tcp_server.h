@@ -200,12 +200,17 @@ TEST_CASE("[TCPServer] When stopped shouldn't accept new connections") {
 	CHECK_FALSE(server->is_connection_available());
 
 	wait_for_condition([&]() {
-		return new_client->poll() != Error::OK || new_client->get_status() == StreamPeerTCP::STATUS_ERROR;
+		const Error err = new_client->poll();
+		const StreamPeerTCP::Status peer_status = new_client->get_status();
+		// A refused connect reports ERROR. Some stacks complete the handshake and
+		// then reset it, which leaves the peer at NONE.
+		return err != Error::OK || peer_status == StreamPeerTCP::STATUS_ERROR || peer_status == StreamPeerTCP::STATUS_NONE;
 	});
 
 	CHECK_FALSE(server->is_connection_available());
 
-	CHECK_EQ(new_client->get_status(), StreamPeerTCP::STATUS_ERROR);
+	const StreamPeerTCP::Status peer_status = new_client->get_status();
+	CHECK((peer_status == StreamPeerTCP::STATUS_ERROR || peer_status == StreamPeerTCP::STATUS_NONE));
 	new_client->disconnect_from_host();
 	CHECK_EQ(new_client->get_status(), StreamPeerTCP::STATUS_NONE);
 }

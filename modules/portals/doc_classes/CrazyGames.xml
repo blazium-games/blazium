@@ -21,6 +21,22 @@
 				Marks the end of gameplay.
 			</description>
 		</method>
+		<method name="get_environment">
+			<return type="String" />
+			<description>
+				Returns local, crazygames, or disabled.
+			</description>
+		</method>
+		<method name="get_last_error" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="is_on_host" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
 		<method name="request_midgame_ad">
 			<return type="void" />
 			<description>
@@ -33,11 +49,25 @@
 				Requests a rewarded ad.
 			</description>
 		</method>
-		<method name="get_environment">
-			<return type="String" />
-			<description>
-				Returns local, crazygames, or disabled.
-			</description>
-		</method>
 	</methods>
+	<signals>
+		<signal name="paused">
+			<description>
+			</description>
+		</signal>
+		<signal name="result">
+			<param index="0" name="json" type="String" />
+			<description>
+			</description>
+		</signal>
+		<signal name="resumed">
+			<description>
+			</description>
+		</signal>
+		<signal name="unavailable">
+			<param index="0" name="message" type="String" />
+			<description>
+			</description>
+		</signal>
+	</signals>
 </class>

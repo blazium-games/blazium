@@ -9,10 +9,20 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="get_last_error" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
 		<method name="get_username">
 			<return type="String" />
 			<description>
 				Returns the Reddit username supplied to the page.
+			</description>
+		</method>
+		<method name="is_on_host" qualifiers="const">
+			<return type="bool" />
+			<description>
 			</description>
 		</method>
 		<method name="submit_score">
@@ -23,4 +33,24 @@
 			</description>
 		</method>
 	</methods>
+	<signals>
+		<signal name="paused">
+			<description>
+			</description>
+		</signal>
+		<signal name="result">
+			<param index="0" name="json" type="String" />
+			<description>
+			</description>
+		</signal>
+		<signal name="resumed">
+			<description>
+			</description>
+		</signal>
+		<signal name="unavailable">
+			<param index="0" name="message" type="String" />
+			<description>
+			</description>
+		</signal>
+	</signals>
 </class>

@@ -1562,6 +1562,8 @@
 		<member name="CrashReporter" type="CrashReporter" setter="" getter="">
 			The [CrashReporter] singleton.
 		</member>
+		<member name="CrazyGames" type="CrazyGames" setter="" getter="">
+		</member>
 		<member name="CrowdControl" type="CrowdControl" setter="" getter="">
 			The [CrowdControl] singleton.
 		</member>
@@ -1569,6 +1571,8 @@
 		</member>
 		<member name="DisplayServer" type="DisplayServer" setter="" getter="">
 			The [DisplayServer] singleton.
+		</member>
+		<member name="Douyin" type="Douyin" setter="" getter="">
 		</member>
 		<member name="ENV" type="ENV" setter="" getter="">
 		</member>
@@ -1593,6 +1597,8 @@
 		</member>
 		<member name="GDExtensionManager" type="GDExtensionManager" setter="" getter="">
 			The [GDExtensionManager] singleton.
+		</member>
+		<member name="GameDistribution" type="GameDistribution" setter="" getter="">
 		</member>
 		<member name="Geometry2D" type="Geometry2D" setter="" getter="">
 			The [Geometry2D] singleton.
@@ -1631,6 +1637,8 @@
 		<member name="Marshalls" type="Marshalls" setter="" getter="">
 			The [Marshalls] singleton.
 		</member>
+		<member name="Meta" type="Meta" setter="" getter="">
+		</member>
 		<member name="NativeMenu" type="NativeMenu" setter="" getter="">
 			The [NativeMenu] singleton.
 			[b]Note:[/b] Only implemented on macOS.
@@ -1646,6 +1654,8 @@
 		</member>
 		<member name="NavimeshExporter" type="NavimeshExporter" setter="" getter="">
 			The [NavimeshExporter] singleton.
+		</member>
+		<member name="Newgrounds" type="Newgrounds" setter="" getter="">
 		</member>
 		<member name="OBSClient" type="OBSClient" setter="" getter="">
 			The [OBSClient] singleton.
@@ -1670,8 +1680,12 @@
 		<member name="PhysicsServer3DManager" type="PhysicsServer3DManager" setter="" getter="">
 			The [PhysicsServer3DManager] singleton.
 		</member>
+		<member name="Poki" type="Poki" setter="" getter="">
+		</member>
 		<member name="ProjectSettings" type="ProjectSettings" setter="" getter="">
 			The [ProjectSettings] singleton.
+		</member>
+		<member name="Reddit" type="Reddit" setter="" getter="">
 		</member>
 		<member name="RemoteControlRegistry" type="RemoteControlRegistry" setter="" getter="">
 			The [RemoteControlRegistry] singleton.
@@ -1696,11 +1710,15 @@
 		</member>
 		<member name="Steam" type="Steam" setter="" getter="">
 		</member>
+		<member name="Telegram" type="Telegram" setter="" getter="">
+		</member>
 		<member name="TextServerManager" type="TextServerManager" setter="" getter="">
 			The [TextServerManager] singleton.
 		</member>
 		<member name="ThemeDB" type="ThemeDB" setter="" getter="">
 			The [ThemeDB] singleton.
+		</member>
+		<member name="TikTok" type="TikTok" setter="" getter="">
 		</member>
 		<member name="Time" type="Time" setter="" getter="">
 			The [Time] singleton.
@@ -1711,11 +1729,15 @@
 		<member name="TwitchAPI" type="TwitchAPI" setter="" getter="">
 			The [TwitchAPI] singleton.
 		</member>
+		<member name="WeChat" type="WeChat" setter="" getter="">
+		</member>
 		<member name="WorkerThreadPool" type="WorkerThreadPool" setter="" getter="">
 			The [WorkerThreadPool] singleton.
 		</member>
 		<member name="XRServer" type="XRServer" setter="" getter="">
 			The [XRServer] singleton.
+		</member>
+		<member name="YouTube" type="YouTube" setter="" getter="">
 		</member>
 	</members>
 	<constants>
