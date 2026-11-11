@@ -57,7 +57,9 @@ def get_opts():
             "Use Emscripten PROXY_TO_PTHREAD option to run the main application code to a separate thread",
             False,
         ),
-        BoolVariable("blazium_host", "Build the mini-game host template without threads, SIMD, or wasm exceptions", False),
+        BoolVariable(
+            "blazium_host", "Build the mini-game host template without threads, SIMD, or wasm exceptions", False
+        ),
     ]
 
 

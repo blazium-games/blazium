@@ -38,15 +38,25 @@
 // Script singletons must inherit Object directly. Shared host calls live in
 // this helper, which is not itself a script class.
 
-#define PORTAL_HOST_HANDLERS(m_class)                                       \
-	friend class PortalApi<m_class>;                                        \
-	void _portal_paused() { emit_signal(SNAME("paused")); }                 \
-	void _portal_resumed() { emit_signal(SNAME("resumed")); }               \
-	void _portal_result(const String &p_json) { emit_signal(SNAME("result"), p_json); }
+#define PORTAL_HOST_HANDLERS(m_class)           \
+	friend class PortalApi<m_class>;            \
+	void _portal_paused() {                     \
+		emit_signal(SNAME("paused"));           \
+	}                                           \
+	void _portal_resumed() {                    \
+		emit_signal(SNAME("resumed"));          \
+	}                                           \
+	void _portal_result(const String &p_json) { \
+		emit_signal(SNAME("result"), p_json);   \
+	}
 
-#define PORTAL_HOST_PUBLIC(m_class)                                         \
-	bool is_on_host() const { return PortalApi<m_class>::is_on_host(); }    \
-	String get_last_error() const { return PortalApi<m_class>::get_last_error(); }
+#define PORTAL_HOST_PUBLIC(m_class)                  \
+	bool is_on_host() const {                        \
+		return PortalApi<m_class>::is_on_host();     \
+	}                                                \
+	String get_last_error() const {                  \
+		return PortalApi<m_class>::get_last_error(); \
+	}
 
 template <class T>
 class PortalApi {

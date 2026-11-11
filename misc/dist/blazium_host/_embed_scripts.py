@@ -24,7 +24,39 @@ for folder in sources:
         bodies.append(text)
 
 out = os.path.join(root, "platform", "web", "export", "portal_scripts.inc")
+header = """\
+/**************************************************************************/
+/*  portal_scripts.inc                                                    */
+/**************************************************************************/
+/*                         This file is part of:                          */
+/*                             BLAZIUM ENGINE                             */
+/*                          https://blazium.app                           */
+/**************************************************************************/
+/* Copyright (c) 2024-present Blazium Engine contributors.                */
+/*                                                                        */
+/* Permission is hereby granted, free of charge, to any person obtaining  */
+/* a copy of this software and associated documentation files (the        */
+/* "Software"), to deal in the Software without restriction, including    */
+/* without limitation the rights to use, copy, modify, merge, publish,    */
+/* distribute, sublicense, and/or sell copies of the Software, and to     */
+/* permit persons to whom the Software is furnished to do so, subject to  */
+/* the following conditions:                                              */
+/*                                                                        */
+/* The above copyright notice and this permission notice shall be         */
+/* included in all copies or substantial portions of the Software.        */
+/*                                                                        */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
+/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
+/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
+/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
+/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
+/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
+/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
+/**************************************************************************/
+
+"""
 with open(out, "w", encoding="utf-8", newline="\n") as handle:
+    handle.write(header)
     handle.write("/* Embedded portal and host scripts. Generated from misc/dist. */\n")
     handle.write(f"static const int portal_script_count = {len(names)};\n")
     handle.write("static const char *portal_script_names[] = {\n")

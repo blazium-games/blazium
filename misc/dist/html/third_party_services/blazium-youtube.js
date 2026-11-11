@@ -9,72 +9,72 @@
 			if (game && game.game && game.game.firstFrameReady) {
 				game.game.firstFrameReady();
 			}
-			return "";
+			return '';
 		},
 		gameReady: function () {
 			const game = api();
 			if (game && game.game && game.game.gameReady) {
 				game.game.gameReady();
 			}
-			return "";
+			return '';
 		},
 		sendScore: function (args) {
 			const game = api();
 			if (game && game.engagement && game.engagement.sendScore) {
 				game.engagement.sendScore({ value: Number(args.score || 0) });
 			}
-			return "";
+			return '';
 		},
 		saveData: function (args) {
 			const game = api();
 			if (game && game.game && game.game.saveData) {
-				game.game.saveData(String(args.data || ""));
+				game.game.saveData(String(args.data || ''));
 			}
-			return "";
+			return '';
 		},
 		loadData: function () {
 			const game = api();
 			if (game && game.game && game.game.loadData) {
 				game.game.loadData().then(function (data) {
-					P.emitResult("loadData", data || "");
+					P.emitResult('loadData', data || '');
 				}, function () {
-					P.emitResult("loadData", "");
+					P.emitResult('loadData', '');
 				});
 			}
-			return "";
+			return '';
 		},
 		getLanguage: function () {
 			const game = api();
 			if (game && game.system && game.system.getLanguage) {
 				const language = game.system.getLanguage();
-				return language && language.then ? "" : String(language || "");
+				return language && language.then ? '' : String(language || '');
 			}
-			return "";
+			return '';
 		},
 		isAudioEnabled: function () {
 			const game = api();
-			if (game && game.system && typeof game.system.isAudioEnabled === "function") {
-				return game.system.isAudioEnabled() ? "true" : "false";
+			if (game && game.system && typeof game.system.isAudioEnabled === 'function') {
+				return game.system.isAudioEnabled() ? 'true' : 'false';
 			}
-			return "true";
+			return 'true';
 		},
 	};
-	root.YoutubePlayables = root.YoutubePlayables || {};
+	root.YoutubePlayables ||= {};
 	root.YoutubePlayables.gameReady = function () {
 		P.handlers.youtube.gameReady();
 	};
 	const game = api();
 	if (game && game.system) {
-		if (typeof game.system.onPause === "function") {
+		if (typeof game.system.onPause === 'function') {
 			game.system.onPause(function () {
 				P.emitPaused();
 			});
 		}
-		if (typeof game.system.onResume === "function") {
+		if (typeof game.system.onResume === 'function') {
 			game.system.onResume(function () {
 				P.emitResumed();
 			});
 		}
 	}
 	P._ready = !!game;
-})(typeof globalThis !== "undefined" ? globalThis : this);
+})(globalThis);

@@ -7,7 +7,7 @@
 	P.handlers.telegram = {
 		getInitData: function () {
 			const current = app();
-			return current && current.initData ? String(current.initData) : "";
+			return current && current.initData ? String(current.initData) : '';
 		},
 		getTheme: function () {
 			const current = app();
@@ -33,34 +33,34 @@
 		},
 		requestFullscreen: function () {
 			const current = app();
-			if (current && typeof current.requestFullscreen === "function") {
+			if (current && typeof current.requestFullscreen === 'function') {
 				current.requestFullscreen();
-			} else if (current && typeof current.expand === "function") {
+			} else if (current && typeof current.expand === 'function') {
 				current.expand();
 			}
-			return "";
+			return '';
 		},
 		sendData: function (args) {
 			const current = app();
-			if (current && typeof current.sendData === "function") {
-				current.sendData(String(args.data || ""));
+			if (current && typeof current.sendData === 'function') {
+				current.sendData(String(args.data || ''));
 			}
-			return "";
+			return '';
 		},
 	};
 	P.boot = function () {
 		const current = root.Telegram && root.Telegram.WebApp;
 		if (!current) {
-			return Promise.reject(new Error("Telegram WebApp missing"));
+			return Promise.reject(new Error('Telegram WebApp missing'));
 		}
 		state.app = current;
-		if (typeof current.ready === "function") {
+		if (typeof current.ready === 'function') {
 			current.ready();
 		}
-		if (typeof current.expand === "function") {
+		if (typeof current.expand === 'function') {
 			current.expand();
 		}
 		P._ready = true;
 		return Promise.resolve();
 	};
-})(typeof globalThis !== "undefined" ? globalThis : this);
+})(globalThis);

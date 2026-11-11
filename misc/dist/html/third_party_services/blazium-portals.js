@@ -4,7 +4,7 @@
 		handlers: {},
 		_slots: {},
 		config: function () {
-			return root.BlaziumPortalConfig || { host: "" };
+			return root.BlaziumPortalConfig || { host: '' };
 		},
 		available: function (host) {
 			return portals.config().host === host && portals._ready === true;
@@ -34,14 +34,14 @@
 		},
 		call: function (host, method, arg) {
 			if (portals.config().host !== host) {
-				return "";
+				return '';
 			}
 			const table = portals.handlers[host];
-			if (!table || typeof table[method] !== "function") {
-				return "";
+			if (!table || typeof table[method] !== 'function') {
+				return '';
 			}
 			let parsed = {};
-			if (typeof arg === "string" && arg.length) {
+			if (typeof arg === 'string' && arg.length) {
 				try {
 					parsed = JSON.parse(arg);
 				} catch (err) {
@@ -50,12 +50,12 @@
 			}
 			const result = table[method](parsed || {});
 			if (result === undefined || result === null) {
-				return "";
+				return '';
 			}
-			if (typeof result === "string") {
+			if (typeof result === 'string') {
 				return result;
 			}
-			if (typeof result === "number" || typeof result === "boolean") {
+			if (typeof result === 'number' || typeof result === 'boolean') {
 				return String(result);
 			}
 			return JSON.stringify(result);
@@ -67,4 +67,4 @@
 		reportProgress: function () {},
 	};
 	root.BlaziumPortals = portals;
-})(typeof globalThis !== "undefined" ? globalThis : this);
+})(globalThis);

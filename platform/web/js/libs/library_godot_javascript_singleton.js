@@ -348,6 +348,7 @@ const GodotEval = {
 		let eval_ret = null;
 		try {
 			// Indirect call keeps a direct call token out of the host package.
+			// eslint-disable-next-line no-eval
 			const run_script = globalThis['eval'];
 			eval_ret = run_script(js_code);
 			if (!p_use_global_ctx) {

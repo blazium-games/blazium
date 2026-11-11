@@ -61,5 +61,11 @@
 				Emitted when YouTube changes the audio permission.
 			</description>
 		</signal>
+		<signal name="result">
+			<param index="0" name="json" type="String" />
+			<description>
+				Emitted when a host call returns a payload.
+			</description>
+		</signal>
 	</signals>
 </class>

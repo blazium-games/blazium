@@ -46,4 +46,12 @@
 			</description>
 		</method>
 	</methods>
+	<signals>
+		<signal name="result">
+			<param index="0" name="json" type="String" />
+			<description>
+				Emitted when a host call returns a payload.
+			</description>
+		</signal>
+	</signals>
 </class>

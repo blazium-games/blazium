@@ -1,8 +1,8 @@
 (function (root) {
 	const P = root.BlaziumPortals;
-	const state = { shareableUrl: "" };
+	const state = { shareableUrl: '' };
 	function finish(kind) {
-		P.emitSlot("break_done", kind);
+		P.emitSlot('break_done', kind);
 		P.emitResumed();
 	}
 	P.handlers.poki = {
@@ -10,37 +10,37 @@
 			if (root.PokiSDK && root.PokiSDK.gameplayStart) {
 				root.PokiSDK.gameplayStart();
 			}
-			return "";
+			return '';
 		},
 		gameplayStop: function () {
 			if (root.PokiSDK && root.PokiSDK.gameplayStop) {
 				root.PokiSDK.gameplayStop();
 			}
-			return "";
+			return '';
 		},
 		commercialBreak: function () {
 			if (!root.PokiSDK || !root.PokiSDK.commercialBreak) {
-				return "";
+				return '';
 			}
 			P.emitPaused();
 			root.PokiSDK.commercialBreak().then(function () {
-				finish("commercial");
+				finish('commercial');
 			}, function () {
-				finish("commercial");
+				finish('commercial');
 			});
-			return "";
+			return '';
 		},
 		rewardedBreak: function () {
 			if (!root.PokiSDK || !root.PokiSDK.rewardedBreak) {
-				return "";
+				return '';
 			}
 			P.emitPaused();
 			root.PokiSDK.rewardedBreak().then(function () {
-				finish("rewarded");
+				finish('rewarded');
 			}, function () {
-				finish("rewarded");
+				finish('rewarded');
 			});
-			return "";
+			return '';
 		},
 		getShareableUrl: function () {
 			if (state.shareableUrl) {
@@ -48,23 +48,23 @@
 			}
 			if (root.PokiSDK && root.PokiSDK.shareableURL) {
 				root.PokiSDK.shareableURL({}).then(function (url) {
-					state.shareableUrl = String(url || "");
-					P.emitResult("shareableUrl", state.shareableUrl);
+					state.shareableUrl = String(url || '');
+					P.emitResult('shareableUrl', state.shareableUrl);
 				});
 			}
 			return state.shareableUrl;
 		},
 	};
 	P.boot = function () {
-		if (!root.PokiSDK || typeof root.PokiSDK.init !== "function") {
-			return Promise.reject(new Error("Poki SDK missing"));
+		if (!root.PokiSDK || typeof root.PokiSDK.init !== 'function') {
+			return Promise.reject(new Error('Poki SDK missing'));
 		}
 		const host = root.location && root.location.hostname;
-		if ((host === "localhost" || host === "127.0.0.1") && typeof root.PokiSDK.setDebug === "function") {
+		if ((host === 'localhost' || host === '127.0.0.1') && typeof root.PokiSDK.setDebug === 'function') {
 			root.PokiSDK.setDebug(true);
 		}
 		return root.PokiSDK.init().then(function () {
 			P._ready = true;
 		});
 	};
-})(typeof globalThis !== "undefined" ? globalThis : this);
+})(globalThis);
