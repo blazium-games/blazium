@@ -33,7 +33,9 @@
 #include "../minigame_host.h"
 
 #include "core/config/engine.h"
+#include "core/io/file_access.h"
 #include "core/object/class_db.h"
+#include "core/os/os.h"
 #include "modules/modules_enabled.gen.h"
 #include "tests/test_macros.h"
 
@@ -116,6 +118,35 @@ TEST_CASE("[Portals] off-host fallbacks") {
 	REQUIRE(tiktok != nullptr);
 	tiktok->check_session();
 	CHECK(tiktok->get_last_error() == expected);
+
+	Betacade *betacade = singleton_of<Betacade>("Betacade");
+	REQUIRE(betacade != nullptr);
+	CHECK_FALSE(betacade->is_available());
+	CHECK_FALSE(betacade->is_replaying());
+	betacade->event("level.complete");
+	betacade->set_state(Dictionary());
+	betacade->submit_score(3.0);
+	betacade->achieve("three-stars");
+	CHECK(betacade->get_last_error().is_empty());
+	Dictionary saved;
+	saved["level"] = 2;
+	const bool saved_ok = betacade->save("portal_test_save", saved);
+	if (!saved_ok) {
+		Error err = OK;
+		Ref<FileAccess> probe = FileAccess::open("user://betacade_probe.txt", FileAccess::WRITE, &err);
+		INFO("user_data_dir=" << OS::get_singleton()->get_user_data_dir().utf8().get_data() << " probe=" << static_cast<int>(err) << " probe_valid=" << probe.is_valid());
+	}
+	CHECK(saved_ok);
+	Variant loaded = betacade->load("portal_test_save");
+	CHECK(loaded.get_type() == Variant::DICTIONARY);
+	CHECK(int(Dictionary(loaded)["level"]) == 2);
+	CHECK(betacade->save("portal_test_score", 4));
+	Variant score = betacade->load("portal_test_score");
+	CHECK(score.get_type() == Variant::FLOAT);
+	CHECK(double(score) == 4.0);
+	betacade->remove("portal_test_save");
+	betacade->remove("portal_test_score");
+	CHECK(betacade->load("portal_test_save", 0) == Variant(0));
 }
 
 TEST_CASE("[Portals] shared method table and host-only payments") {
@@ -128,6 +159,12 @@ TEST_CASE("[Portals] shared method table and host-only payments") {
 	CHECK(ClassDB::has_signal("WeChat", "shown"));
 	CHECK(ClassDB::has_signal("Douyin", "hidden"));
 	CHECK(ClassDB::has_signal("TikTok", "host_error"));
+	CHECK(ClassDB::has_signal("Betacade", "paused"));
+	CHECK(ClassDB::has_signal("Betacade", "replay_entered"));
+	CHECK(ClassDB::has_signal("Betacade", "replay_state"));
+	CHECK(ClassDB::has_signal("Betacade", "replay_exited"));
+	CHECK(ClassDB::has_method("Betacade", "is_available"));
+	CHECK(ClassDB::has_method("Betacade", "save"));
 
 	CHECK(ClassDB::has_method("WeChat", "login"));
 	CHECK(ClassDB::has_method("Douyin", "login"));

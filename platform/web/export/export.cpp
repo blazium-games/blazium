@@ -66,6 +66,7 @@ void register_web_exporter() {
 		"Poki",
 		"Meta",
 		"GameDistribution",
+		"Betacade",
 		"WeChat",
 		"Douyin",
 		"TikTok",
@@ -80,14 +81,15 @@ void register_web_exporter() {
 		"poki",
 		"meta",
 		"gamedistribution",
+		"betacade",
 		"wechat",
 		"douyin",
 		"tiktok",
 	};
-	for (int i = 0; i < 12; i++) {
+	for (int i = 0; i < 13; i++) {
 		Ref<EditorExportPlatformHost> host;
 		host.instantiate();
-		const bool folder = i >= 9;
+		const bool folder = i >= 10;
 		const bool index_html = String::utf8(ids[i]) == "crazygames" || String::utf8(ids[i]) == "meta";
 		const bool reddit = String::utf8(ids[i]) == "reddit";
 		const bool boot = String::utf8(ids[i]) == "discord" || String::utf8(ids[i]) == "telegram" || String::utf8(ids[i]) == "crazygames" || String::utf8(ids[i]) == "poki" || String::utf8(ids[i]) == "meta";

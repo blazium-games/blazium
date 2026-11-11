@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Betacade" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Betacade playtest export.
+	</brief_description>
+	<description>
+		Reports game state, saves, and custom events to a Betacade play page from a Blazium Web export. Saves become progress and pinned metrics, [method event] becomes a custom event, and [method set_state] feeds replays. Off Betacade every call stays safe: a Betacade Web export still writes [code]localStorage[/code] and the other calls do nothing; on other platforms saves go to [code]user://betacade.cfg[/code].
+		The play page contract is Matt Connors' Betacade module and the public Betacade guide linked below.
+	</description>
+	<tutorials>
+		<link title="Betacade module">https://github.com/mcdoco/blazium-betacade</link>
+		<link title="Betacade contract">https://api.betacade.com/llms.txt</link>
+	</tutorials>
+	<methods>
+		<method name="achieve">
+			<return type="void" />
+			<param index="0" name="key" type="String" />
+			<description>
+				Asks Betacade to check the saves for the achievement [param key] now. Call it after the [method save] that should earn it.
+			</description>
+		</method>
+		<method name="event">
+			<return type="void" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="fields" type="Dictionary" default="{}" />
+			<description>
+				Records a custom event. [param name] uses letters, digits, and [code]_ . : -[/code], up to 40 characters. [param fields] has at most 16 keys, each a number, a bool, or a [String]. Track moments, not frames.
+			</description>
+		</method>
+		<method name="get_last_error" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the last host error, or an empty string. Betacade calls do not report an error when the play page is absent.
+			</description>
+		</method>
+		<method name="is_available" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when this export is running on a Betacade play page.
+			</description>
+		</method>
+		<method name="is_on_host" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when the Betacade export glue is loaded.
+			</description>
+		</method>
+		<method name="is_replaying" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] while the studio replay viewer is playing this game back.
+			</description>
+		</method>
+		<method name="load">
+			<return type="Variant" />
+			<param index="0" name="key" type="String" />
+			<param index="1" name="default" type="Variant" default="null" />
+			<description>
+				Returns the value last saved under [param key], or [param default]. Values go through JSON, so numbers come back as [float].
+			</description>
+		</method>
+		<method name="remove">
+			<return type="void" />
+			<param index="0" name="key" type="String" />
+			<description>
+				Removes the save under [param key].
+			</description>
+		</method>
+		<method name="save">
+			<return type="bool" />
+			<param index="0" name="key" type="String" />
+			<param index="1" name="value" type="Variant" />
+			<description>
+				Saves [param value] as JSON under [param key]. On a Betacade Web export this is [code]localStorage.setItem[/code]. Elsewhere it is [code]user://betacade.cfg[/code]. Save when something happens, up to about once a second, and keep each key under 256 KB. Keys that start with [code]secret:[/code] stay on the device.
+			</description>
+		</method>
+		<method name="set_state">
+			<return type="void" />
+			<param index="0" name="state" type="Variant" />
+			<description>
+				Gives Betacade the latest game state for a smooth replay. Calling it every frame is fine: only the latest value is kept. If [signal replay_state] is connected before the first call, the game also registers for replays.
+			</description>
+		</method>
+		<method name="submit_score">
+			<return type="void" />
+			<param index="0" name="score" type="float" />
+			<description>
+				Sends a score to the game's leaderboard when a run ends. Higher wins; send a time negated.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="paused">
+			<description>
+				The play page paused the game.
+			</description>
+		</signal>
+		<signal name="replay_entered">
+			<description>
+				The studio replay viewer started playing this game back.
+			</description>
+		</signal>
+		<signal name="replay_exited">
+			<description>
+				The replay viewer finished.
+			</description>
+		</signal>
+		<signal name="replay_state">
+			<param index="0" name="state" type="Variant" />
+			<description>
+				In a replay: draw this [param state], one previously passed to [method set_state].
+			</description>
+		</signal>
+		<signal name="result">
+			<param index="0" name="json" type="String" />
+			<description>
+				Emitted when a host call returns a payload.
+			</description>
+		</signal>
+		<signal name="resumed">
+			<description>
+				The play page resumed the game.
+			</description>
+		</signal>
+		<signal name="unavailable">
+			<param index="0" name="message" type="String" />
+			<description>
+				Emitted when a call cannot reach the host.
+			</description>
+		</signal>
+	</signals>
+</class>

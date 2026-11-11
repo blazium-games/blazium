@@ -51,6 +51,7 @@ void initialize_portals_module(ModuleInitializationLevel p_level) {
 		return;
 	}
 
+	GDREGISTER_CLASS(Betacade);
 	GDREGISTER_CLASS(YouTube);
 	GDREGISTER_CLASS(Telegram);
 	GDREGISTER_CLASS(Reddit);
@@ -63,6 +64,7 @@ void initialize_portals_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(Douyin);
 	GDREGISTER_CLASS(TikTok);
 
+	add_portal_singleton("Betacade", memnew(Betacade));
 	add_portal_singleton("YouTube", memnew(YouTube));
 	add_portal_singleton("Telegram", memnew(Telegram));
 	add_portal_singleton("Reddit", memnew(Reddit));
