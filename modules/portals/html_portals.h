@@ -31,6 +31,10 @@
 
 #include "portal_host.h"
 
+#ifndef WEB_ENABLED
+#include "core/io/config_file.h"
+#endif
+
 class YouTube : public Object, public PortalApi<YouTube> {
 	GDCLASS(YouTube, Object);
 
@@ -170,4 +174,44 @@ public:
 	PORTAL_HOST_PUBLIC(GameDistribution)
 	GameDistribution();
 	void show_ad();
+};
+
+class Betacade : public Object, public PortalApi<Betacade> {
+	GDCLASS(Betacade, Object);
+
+	bool callbacks_bound = false;
+#ifndef WEB_ENABLED
+	Ref<ConfigFile> store;
+#endif
+	Variant pause_callback;
+	Variant resume_callback;
+	Variant replay_entered_callback;
+	Variant replay_state_callback;
+	Variant replay_exited_callback;
+
+#ifndef WEB_ENABLED
+	Ref<ConfigFile> _get_store();
+#endif
+	void ensure_bound();
+	String web_call(const String &p_method, const Dictionary &p_args);
+	void _on_replay_entered();
+	void _on_replay_state(const String &p_json);
+	void _on_replay_exited();
+
+protected:
+	static void _bind_methods();
+	PORTAL_HOST_HANDLERS(Betacade)
+
+public:
+	PORTAL_HOST_PUBLIC(Betacade)
+	Betacade();
+	bool is_available() const;
+	bool is_replaying() const;
+	void set_state(const Variant &p_state);
+	void event(const String &p_name, const Dictionary &p_fields = Dictionary());
+	bool save(const String &p_key, const Variant &p_value);
+	Variant load(const String &p_key, const Variant &p_default = Variant());
+	void remove(const String &p_key);
+	void submit_score(double p_score);
+	void achieve(const String &p_key);
 };

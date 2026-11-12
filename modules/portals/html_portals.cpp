@@ -31,8 +31,18 @@
 
 #include "portal_runtime.h"
 
+#include "core/io/json.h"
+#ifndef WEB_ENABLED
+#include "core/io/config_file.h"
+#include "core/os/os.h"
+#endif
 #include "core/object/callable_method_pointer.h"
 #include "core/object/class_db.h"
+
+#ifndef WEB_ENABLED
+static const char *BETACADE_SAVE_PATH = "user://betacade.cfg";
+static const char *BETACADE_SAVE_SECTION = "saves";
+#endif
 
 YouTube::YouTube() {
 	host_id = "youtube";
@@ -319,4 +329,184 @@ void GameDistribution::_bind_methods() {
 
 void GameDistribution::show_ad() {
 	host_call("showAd");
+}
+
+Betacade::Betacade() {
+	host_id = "betacade";
+}
+
+void Betacade::_bind_methods() {
+	PortalApi<Betacade>::bind_common();
+	ClassDB::bind_method(D_METHOD("is_available"), &Betacade::is_available);
+	ClassDB::bind_method(D_METHOD("is_replaying"), &Betacade::is_replaying);
+	ClassDB::bind_method(D_METHOD("set_state", "state"), &Betacade::set_state);
+	ClassDB::bind_method(D_METHOD("event", "name", "fields"), &Betacade::event, DEFVAL(Dictionary()));
+	ClassDB::bind_method(D_METHOD("save", "key", "value"), &Betacade::save);
+	ClassDB::bind_method(D_METHOD("load", "key", "default"), &Betacade::load, DEFVAL(Variant()));
+	ClassDB::bind_method(D_METHOD("remove", "key"), &Betacade::remove);
+	ClassDB::bind_method(D_METHOD("submit_score", "score"), &Betacade::submit_score);
+	ClassDB::bind_method(D_METHOD("achieve", "key"), &Betacade::achieve);
+	ADD_SIGNAL(MethodInfo("replay_entered"));
+	ADD_SIGNAL(MethodInfo("replay_state", PropertyInfo(Variant::NIL, "state", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NIL_IS_VARIANT)));
+	ADD_SIGNAL(MethodInfo("replay_exited"));
+}
+
+#ifndef WEB_ENABLED
+Ref<ConfigFile> Betacade::_get_store() {
+	if (store.is_null()) {
+		store.instantiate();
+		store->load(BETACADE_SAVE_PATH);
+	}
+	return store;
+}
+#endif
+
+void Betacade::ensure_bound() {
+	if (callbacks_bound) {
+		return;
+	}
+	callbacks_bound = true;
+	pause_callback = PortalRuntime::make_callback(callable_mp(this, &Betacade::_portal_paused));
+	resume_callback = PortalRuntime::make_callback(callable_mp(this, &Betacade::_portal_resumed));
+	replay_entered_callback = PortalRuntime::make_callback(callable_mp(this, &Betacade::_on_replay_entered));
+	replay_state_callback = PortalRuntime::make_callback(callable_mp(this, &Betacade::_on_replay_state));
+	replay_exited_callback = PortalRuntime::make_callback(callable_mp(this, &Betacade::_on_replay_exited));
+	PortalRuntime::bind(js_interface, "paused", pause_callback);
+	PortalRuntime::bind(js_interface, "resumed", resume_callback);
+	PortalRuntime::bind(js_interface, "replay_entered", replay_entered_callback);
+	PortalRuntime::bind(js_interface, "replay_state", replay_state_callback);
+	PortalRuntime::bind(js_interface, "replay_exited", replay_exited_callback);
+}
+
+String Betacade::web_call(const String &p_method, const Dictionary &p_args) {
+#ifdef WEB_ENABLED
+	ensure_bound();
+	Variant result = PortalRuntime::invoke(js_interface, host_id, p_method, JSON::stringify(p_args));
+	if (result.get_type() == Variant::NIL) {
+		return String();
+	}
+	return String(result);
+#else
+	(void)p_method;
+	(void)p_args;
+	return String();
+#endif
+}
+
+void Betacade::_on_replay_entered() {
+	emit_signal(SNAME("replay_entered"));
+}
+
+void Betacade::_on_replay_state(const String &p_json) {
+	emit_signal(SNAME("replay_state"), JSON::parse_string(p_json));
+}
+
+void Betacade::_on_replay_exited() {
+	emit_signal(SNAME("replay_exited"));
+}
+
+bool Betacade::is_available() const {
+#ifdef WEB_ENABLED
+	Variant result = PortalRuntime::invoke(js_interface, host_id, "available", "{}");
+	return String(result) == "true";
+#else
+	return false;
+#endif
+}
+
+bool Betacade::is_replaying() const {
+#ifdef WEB_ENABLED
+	Variant result = PortalRuntime::invoke(js_interface, host_id, "replaying", "{}");
+	return String(result) == "true";
+#else
+	return false;
+#endif
+}
+
+void Betacade::set_state(const Variant &p_state) {
+	Dictionary args;
+	args["json"] = JSON::stringify(p_state);
+	args["replay"] = has_connections(SNAME("replay_state"));
+	web_call("setState", args);
+}
+
+void Betacade::event(const String &p_name, const Dictionary &p_fields) {
+	Dictionary args;
+	args["name"] = p_name;
+	args["fields"] = p_fields;
+	web_call("track", args);
+}
+
+bool Betacade::save(const String &p_key, const Variant &p_value) {
+	const String json = JSON::stringify(p_value);
+#ifdef WEB_ENABLED
+	Dictionary args;
+	args["key"] = p_key;
+	args["value"] = json;
+	return web_call("storageSet", args) == "true";
+#else
+	OS::get_singleton()->ensure_user_data_dir();
+	Ref<ConfigFile> file = _get_store();
+	file->set_value(BETACADE_SAVE_SECTION, p_key, json);
+	return file->save(BETACADE_SAVE_PATH) == OK;
+#endif
+}
+
+Variant Betacade::load(const String &p_key, const Variant &p_default) {
+	String json;
+	bool found = false;
+#ifdef WEB_ENABLED
+	Dictionary args;
+	args["key"] = p_key;
+	Variant result = PortalRuntime::invoke(js_interface, host_id, "storageGet", JSON::stringify(args));
+	Variant parsed = JSON::parse_string(String(result));
+	if (parsed.get_type() == Variant::DICTIONARY) {
+		Dictionary record = parsed;
+		found = record.get("found", false);
+		if (found) {
+			json = record["value"];
+		}
+	}
+#else
+	Ref<ConfigFile> file = _get_store();
+	if (file->has_section_key(BETACADE_SAVE_SECTION, p_key)) {
+		json = file->get_value(BETACADE_SAVE_SECTION, p_key);
+		found = true;
+	}
+#endif
+	if (!found) {
+		return p_default;
+	}
+	Variant value = JSON::parse_string(json);
+	if (value.get_type() == Variant::NIL && json != "null") {
+		return p_default;
+	}
+	return value;
+}
+
+void Betacade::remove(const String &p_key) {
+#ifdef WEB_ENABLED
+	Dictionary args;
+	args["key"] = p_key;
+	web_call("storageRemove", args);
+#else
+	OS::get_singleton()->ensure_user_data_dir();
+	Ref<ConfigFile> file = _get_store();
+	if (file->has_section_key(BETACADE_SAVE_SECTION, p_key)) {
+		file->erase_section_key(BETACADE_SAVE_SECTION, p_key);
+		file->save(BETACADE_SAVE_PATH);
+	}
+#endif
+}
+
+void Betacade::submit_score(double p_score) {
+	Dictionary args;
+	args["score"] = p_score;
+	web_call("submitScore", args);
+}
+
+void Betacade::achieve(const String &p_key) {
+	Dictionary args;
+	args["key"] = p_key;
+	web_call("achieve", args);
 }
