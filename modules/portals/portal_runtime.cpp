@@ -30,8 +30,33 @@
 #include "portal_runtime.h"
 
 #ifdef WEB_ENABLED
+#include "core/object/callable_method_pointer.h"
 #include "platform/web/api/javascript_bridge_singleton.h"
+
+namespace {
+// window[name], or null without the error get_interface prints for a missing one: a plain Web
+// export has no portal runtime, and the singletons are called every frame.
+Ref<JavaScriptObject> portal_interface(JavaScriptBridge *p_bridge, const String &p_interface) {
+	Ref<JavaScriptObject> window = p_bridge->get_interface("window");
+	if (window.is_null()) {
+		return Ref<JavaScriptObject>();
+	}
+	return window->get(p_interface);
+}
+} // namespace
 #endif
+
+// JavaScriptBridge calls a callback with one Array of the JS arguments. Hand them to the target as
+// arguments, and no more than it takes: a slot may pass a payload its handler doesn't use.
+void PortalRuntime::call_unpacked(const Array &p_args, const Callable &p_target) {
+	Array args = p_args;
+	bool valid = false;
+	const int count = p_target.get_argument_count(&valid);
+	if (valid && count >= 0 && args.size() > count) {
+		args.resize(count);
+	}
+	p_target.callv(args);
+}
 
 bool PortalRuntime::is_available(const String &p_interface, const String &p_host) {
 #ifdef WEB_ENABLED
@@ -39,7 +64,7 @@ bool PortalRuntime::is_available(const String &p_interface, const String &p_host
 	if (bridge == nullptr || p_interface.is_empty() || p_host.is_empty()) {
 		return false;
 	}
-	Ref<JavaScriptObject> host = bridge->get_interface(p_interface);
+	Ref<JavaScriptObject> host = portal_interface(bridge, p_interface);
 	if (host.is_null()) {
 		return false;
 	}
@@ -58,7 +83,7 @@ Variant PortalRuntime::invoke(const String &p_interface, const String &p_host, c
 	if (bridge == nullptr) {
 		return Variant();
 	}
-	Ref<JavaScriptObject> host = bridge->get_interface(p_interface);
+	Ref<JavaScriptObject> host = portal_interface(bridge, p_interface);
 	if (host.is_null()) {
 		return Variant();
 	}
@@ -78,7 +103,7 @@ Variant PortalRuntime::make_callback(const Callable &p_callable) {
 	if (bridge == nullptr || !p_callable.is_valid()) {
 		return Variant();
 	}
-	Ref<JavaScriptObject> callback = bridge->create_callback(p_callable);
+	Ref<JavaScriptObject> callback = bridge->create_callback(callable_mp_static(&PortalRuntime::call_unpacked).bind(p_callable));
 	return callback;
 #else
 	(void)p_callable;
@@ -92,7 +117,7 @@ void PortalRuntime::bind(const String &p_interface, const String &p_slot, const 
 	if (bridge == nullptr || p_callback.get_type() == Variant::NIL) {
 		return;
 	}
-	Ref<JavaScriptObject> host = bridge->get_interface(p_interface);
+	Ref<JavaScriptObject> host = portal_interface(bridge, p_interface);
 	if (host.is_null()) {
 		return;
 	}

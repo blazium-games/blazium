@@ -30,6 +30,7 @@
 #pragma once
 
 #include "core/string/ustring.h"
+#include "core/variant/array.h"
 #include "core/variant/callable.h"
 #include "core/variant/variant.h"
 
@@ -39,4 +40,5 @@ public:
 	static Variant invoke(const String &p_interface, const String &p_host, const String &p_method, const String &p_json_args);
 	static Variant make_callback(const Callable &p_callable);
 	static void bind(const String &p_interface, const String &p_slot, const Variant &p_callback);
+	static void call_unpacked(const Array &p_args, const Callable &p_target);
 };

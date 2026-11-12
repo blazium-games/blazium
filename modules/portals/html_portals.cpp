@@ -39,6 +39,10 @@
 #include "core/object/callable_method_pointer.h"
 #include "core/object/class_db.h"
 
+#ifdef WEB_ENABLED
+#include "platform/web/api/javascript_bridge_singleton.h"
+#endif
+
 #ifndef WEB_ENABLED
 static const char *BETACADE_SAVE_PATH = "user://betacade.cfg";
 static const char *BETACADE_SAVE_SECTION = "saves";
@@ -333,7 +337,42 @@ void GameDistribution::show_ad() {
 
 Betacade::Betacade() {
 	host_id = "betacade";
+#ifdef WEB_ENABLED
+	// The page's pause and replay signals reach the game from the first frame, not only after its
+	// first save or event. JavaScriptBridge doesn't exist yet when singletons are made.
+	callable_mp(this, &Betacade::ensure_bound).call_deferred();
+#endif
 }
+
+#ifdef WEB_ENABLED
+// Saves go to localStorage on every web export, not only under the Betacade preset (whose portal
+// runtime answers only on its own host), so the same project keeps its saves on itch.io or Poki.
+static Ref<JavaScriptObject> betacade_local_storage() {
+	JavaScriptBridge *bridge = JavaScriptBridge::get_singleton();
+	if (bridge == nullptr) {
+		return Ref<JavaScriptObject>();
+	}
+	Ref<JavaScriptObject> window = bridge->get_interface("window");
+	if (window.is_null()) {
+		return Ref<JavaScriptObject>();
+	}
+	return window->get("localStorage");
+}
+
+static bool betacade_storage_call(const StringName &p_method, const Variant &p_key, const Variant &p_value, int p_argc, Variant *r_ret = nullptr) {
+	Ref<JavaScriptObject> storage = betacade_local_storage();
+	if (storage.is_null()) {
+		return false;
+	}
+	const Variant *args[2] = { &p_key, &p_value };
+	Callable::CallError err;
+	Variant ret = storage->callp(p_method, args, p_argc, err);
+	if (r_ret) {
+		*r_ret = ret;
+	}
+	return err.error == Callable::CallError::CALL_OK;
+}
+#endif
 
 void Betacade::_bind_methods() {
 	PortalApi<Betacade>::bind_common();
@@ -365,8 +404,11 @@ void Betacade::ensure_bound() {
 	if (callbacks_bound) {
 		return;
 	}
-	callbacks_bound = true;
 	pause_callback = PortalRuntime::make_callback(callable_mp(this, &Betacade::_portal_paused));
+	if (pause_callback.get_type() == Variant::NIL) {
+		return; // No JavaScriptBridge yet: try again on the next call.
+	}
+	callbacks_bound = true;
 	resume_callback = PortalRuntime::make_callback(callable_mp(this, &Betacade::_portal_resumed));
 	replay_entered_callback = PortalRuntime::make_callback(callable_mp(this, &Betacade::_on_replay_entered));
 	replay_state_callback = PortalRuntime::make_callback(callable_mp(this, &Betacade::_on_replay_state));
@@ -416,7 +458,11 @@ bool Betacade::is_available() const {
 
 bool Betacade::is_replaying() const {
 #ifdef WEB_ENABLED
-	Variant result = PortalRuntime::invoke(js_interface, host_id, "replaying", "{}");
+	// A game that skips set_state while replaying still registers its replay hooks here, if it
+	// connected replay_state: the studio's smooth viewer asks for them before any state is set.
+	const_cast<Betacade *>(this)->ensure_bound();
+	const bool replay = has_connections(SNAME("replay_state"));
+	Variant result = PortalRuntime::invoke(js_interface, host_id, "replaying", replay ? "{\"replay\":true}" : "{}");
 	return String(result) == "true";
 #else
 	return false;
@@ -438,12 +484,10 @@ void Betacade::event(const String &p_name, const Dictionary &p_fields) {
 }
 
 bool Betacade::save(const String &p_key, const Variant &p_value) {
+	ERR_FAIL_COND_V_MSG(p_key.is_empty(), false, "Betacade.save: the key is empty.");
 	const String json = JSON::stringify(p_value);
 #ifdef WEB_ENABLED
-	Dictionary args;
-	args["key"] = p_key;
-	args["value"] = json;
-	return web_call("storageSet", args) == "true";
+	return betacade_storage_call(SNAME("setItem"), p_key, json, 2);
 #else
 	OS::get_singleton()->ensure_user_data_dir();
 	Ref<ConfigFile> file = _get_store();
@@ -456,16 +500,10 @@ Variant Betacade::load(const String &p_key, const Variant &p_default) {
 	String json;
 	bool found = false;
 #ifdef WEB_ENABLED
-	Dictionary args;
-	args["key"] = p_key;
-	Variant result = PortalRuntime::invoke(js_interface, host_id, "storageGet", JSON::stringify(args));
-	Variant parsed = JSON::parse_string(String(result));
-	if (parsed.get_type() == Variant::DICTIONARY) {
-		Dictionary record = parsed;
-		found = record.get("found", false);
-		if (found) {
-			json = record["value"];
-		}
+	Variant stored;
+	if (betacade_storage_call(SNAME("getItem"), p_key, Variant(), 1, &stored) && stored.get_type() == Variant::STRING) {
+		json = stored;
+		found = true;
 	}
 #else
 	Ref<ConfigFile> file = _get_store();
@@ -486,9 +524,7 @@ Variant Betacade::load(const String &p_key, const Variant &p_default) {
 
 void Betacade::remove(const String &p_key) {
 #ifdef WEB_ENABLED
-	Dictionary args;
-	args["key"] = p_key;
-	web_call("storageRemove", args);
+	betacade_storage_call(SNAME("removeItem"), p_key, Variant(), 1);
 #else
 	OS::get_singleton()->ensure_user_data_dir();
 	Ref<ConfigFile> file = _get_store();
