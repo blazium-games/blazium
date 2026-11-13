@@ -31,9 +31,11 @@
 
 #include "../html_portals.h"
 #include "../minigame_host.h"
+#include "../portal_runtime.h"
 
 #include "core/config/engine.h"
 #include "core/io/file_access.h"
+#include "core/object/callable_method_pointer.h"
 #include "core/object/class_db.h"
 #include "core/os/os.h"
 #include "modules/modules_enabled.gen.h"
@@ -147,6 +149,63 @@ TEST_CASE("[Portals] off-host fallbacks") {
 	betacade->remove("portal_test_save");
 	betacade->remove("portal_test_score");
 	CHECK(betacade->load("portal_test_save", 0) == Variant(0));
+}
+
+TEST_CASE("[Portals] Betacade rejects an empty save key") {
+	Betacade *betacade = singleton_of<Betacade>("Betacade");
+	REQUIRE(betacade != nullptr);
+
+	ERR_PRINT_OFF;
+	const bool empty_saved = betacade->save("", 1);
+	ERR_PRINT_ON;
+	CHECK_FALSE(empty_saved);
+	CHECK(betacade->load("", "missing") == Variant("missing"));
+
+	CHECK(betacade->save("portal_test_key", 1));
+	CHECK(betacade->load("portal_test_key", "missing") == Variant(1.0));
+	betacade->remove("portal_test_key");
+}
+
+static int unpack_zero_calls = 0;
+static String unpack_text;
+
+static void unpack_zero() {
+	unpack_zero_calls++;
+}
+
+static void unpack_one(const String &p_text) {
+	unpack_text = p_text;
+}
+
+TEST_CASE("[Portals] page callbacks get their arguments, not JavaScriptBridge's Array") {
+	unpack_zero_calls = 0;
+	unpack_text = String();
+	const Callable zero = callable_mp_static(&unpack_zero);
+	const Callable one = callable_mp_static(&unpack_one);
+	Array payload;
+	payload.push_back("{\"level\":7}");
+
+	// What JavaScriptBridge::create_callback does: one argument, the Array.
+	const Variant packed = payload;
+	const Variant *packed_args[1] = { &packed };
+	Variant ret;
+	Callable::CallError err;
+	ERR_PRINT_OFF;
+	one.callp(packed_args, 1, ret, err);
+	ERR_PRINT_ON;
+	CHECK(unpack_text != "{\"level\":7}");
+#ifdef DEBUG_METHODS_ENABLED
+	zero.callp(packed_args, 1, ret, err);
+	CHECK(err.error == Callable::CallError::CALL_ERROR_TOO_MANY_ARGUMENTS);
+	CHECK(unpack_zero_calls == 0);
+#endif
+
+	PortalRuntime::call_unpacked(payload, one);
+	CHECK(unpack_text == "{\"level\":7}");
+	PortalRuntime::call_unpacked(payload, zero);
+	CHECK(unpack_zero_calls == 1);
+	PortalRuntime::call_unpacked(Array(), zero);
+	CHECK(unpack_zero_calls == 2);
 }
 
 TEST_CASE("[Portals] shared method table and host-only payments") {

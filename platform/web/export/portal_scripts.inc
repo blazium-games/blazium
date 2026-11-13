@@ -125,8 +125,11 @@ static const char *portal_script_bodies[] = {
 			const page = host();
 			return page && typeof page.track === 'function' ? 'true' : 'false';
 		},
-		replaying: function () {
+		replaying: function (args) {
 			const page = host();
+			if (page && args && args.replay) {
+				ensureReplay(page);
+			}
 			try {
 				return page && page.replaying ? 'true' : 'false';
 			} catch (err) {

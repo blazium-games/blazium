@@ -90,7 +90,7 @@ void register_web_exporter() {
 		Ref<EditorExportPlatformHost> host;
 		host.instantiate();
 		const bool folder = i >= 10;
-		const bool index_html = String::utf8(ids[i]) == "crazygames" || String::utf8(ids[i]) == "meta";
+		const bool index_html = String::utf8(ids[i]) == "crazygames" || String::utf8(ids[i]) == "meta" || String::utf8(ids[i]) == "betacade";
 		const bool reddit = String::utf8(ids[i]) == "reddit";
 		const bool boot = String::utf8(ids[i]) == "discord" || String::utf8(ids[i]) == "telegram" || String::utf8(ids[i]) == "crazygames" || String::utf8(ids[i]) == "poki" || String::utf8(ids[i]) == "meta";
 		host->configure(names[i], ids[i], folder, index_html, reddit, boot);
