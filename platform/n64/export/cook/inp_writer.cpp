@@ -20,7 +20,7 @@
 
 namespace n64_cook {
 
-	static const int kNameLen = 24;
+static const int kNameLen = 24;
 
 static const uint16_t kBtnA = 1 << 0;
 static const uint16_t kBtnB = 1 << 1;

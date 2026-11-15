@@ -18,10 +18,10 @@ namespace n64_cook {
 
 // Must match blazium-toolchain/guest/n64 CookABI. Do not reuse PS1/PS2 ABI numbers.
 static const int kCookABI = 1;
-	static const int kMaxNodes = 256;
-	static const int kMaxTris = 16384;
-	static const int kMaxActions = 32;
-	static const int kMaxPacks = 24;
+static const int kMaxNodes = 256;
+static const int kMaxTris = 16384;
+static const int kMaxActions = 32;
+static const int kMaxPacks = 24;
 static const int kMaxCams = 8;
 static const int kMaxHits = 64;
 static const int kMaxAnims = 16;
