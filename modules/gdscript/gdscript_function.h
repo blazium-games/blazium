@@ -555,9 +555,18 @@ public:
 	_FORCE_INLINE_ int get_argument_count() const { return _argument_count; }
 	_FORCE_INLINE_ Variant get_rpc_config() const { return rpc_config; }
 	_FORCE_INLINE_ int get_max_stack_size() const { return _stack_size; }
+	_FORCE_INLINE_ const Vector<int> &get_code() const { return code; }
+	_FORCE_INLINE_ int get_code_size() const { return _code_size; }
+	_FORCE_INLINE_ int get_constant_count() const { return constants.size(); }
+	_FORCE_INLINE_ int get_global_names_count() const { return global_names.size(); }
+	_FORCE_INLINE_ int get_method_bind_count() const { return methods.size(); }
 
 	Variant get_constant(int p_idx) const;
 	StringName get_global_name(int p_idx) const;
+	StringName get_method_bind_name(int p_idx) const;
+	StringName get_setter_name(int p_idx) const;
+	StringName get_getter_name(int p_idx) const;
+	int get_validated_operator_kind(int p_idx) const;
 
 	Variant call(GDScriptInstance *p_instance, const Variant **p_args, int p_argcount, Callable::CallError &r_err, CallState *p_state = nullptr);
 	void debug_get_stack_member_state(int p_line, List<Pair<StringName, int>> *r_stackvars) const;

@@ -2569,6 +2569,10 @@ Array EditorExportPlatform::get_current_presets() const {
 
 void EditorExportPlatform::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_os_name"), &EditorExportPlatform::get_os_name);
+	ClassDB::bind_method(D_METHOD("get_name"), &EditorExportPlatform::get_name);
+	ClassDB::bind_method(D_METHOD("get_options_count"), &EditorExportPlatform::get_options_count);
+	ClassDB::bind_method(D_METHOD("get_option_label", "device"), &EditorExportPlatform::get_option_label);
+	ClassDB::bind_method(D_METHOD("run", "preset", "device", "debug_flags"), &EditorExportPlatform::run, DEFVAL(0));
 
 	ClassDB::bind_method(D_METHOD("create_preset"), &EditorExportPlatform::create_preset);
 

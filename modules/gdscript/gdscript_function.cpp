@@ -31,6 +31,7 @@
 #include "gdscript_function.h"
 
 #include "gdscript.h"
+#include "core/object/method_bind.h"
 
 Variant GDScriptFunction::get_constant(int p_idx) const {
 	ERR_FAIL_INDEX_V(p_idx, constants.size(), "<errconst>");
@@ -40,6 +41,49 @@ Variant GDScriptFunction::get_constant(int p_idx) const {
 StringName GDScriptFunction::get_global_name(int p_idx) const {
 	ERR_FAIL_INDEX_V(p_idx, global_names.size(), "<errgname>");
 	return global_names[p_idx];
+}
+
+StringName GDScriptFunction::get_method_bind_name(int p_idx) const {
+	ERR_FAIL_INDEX_V(p_idx, methods.size(), StringName());
+	return methods[p_idx] ? methods[p_idx]->get_name() : StringName();
+}
+
+StringName GDScriptFunction::get_setter_name(int p_idx) const {
+#ifdef DEBUG_ENABLED
+	ERR_FAIL_INDEX_V(p_idx, setter_names.size(), StringName());
+	return StringName(setter_names[p_idx]);
+#else
+	(void)p_idx;
+	return StringName();
+#endif
+}
+
+StringName GDScriptFunction::get_getter_name(int p_idx) const {
+#ifdef DEBUG_ENABLED
+	ERR_FAIL_INDEX_V(p_idx, getter_names.size(), StringName());
+	return StringName(getter_names[p_idx]);
+#else
+	(void)p_idx;
+	return StringName();
+#endif
+}
+
+int GDScriptFunction::get_validated_operator_kind(int p_idx) const {
+	ERR_FAIL_INDEX_V(p_idx, operator_funcs.size(), int(Variant::OP_MULTIPLY));
+	const Variant::ValidatedOperatorEvaluator fn = operator_funcs[p_idx];
+	if (!fn) {
+		return int(Variant::OP_MULTIPLY);
+	}
+	for (int op = 0; op < int(Variant::OP_MAX); op++) {
+		for (int a = 0; a < int(Variant::VARIANT_MAX); a++) {
+			for (int b = 0; b < int(Variant::VARIANT_MAX); b++) {
+				if (Variant::get_validated_operator_evaluator(Variant::Operator(op), Variant::Type(a), Variant::Type(b)) == fn) {
+					return op;
+				}
+			}
+		}
+	}
+	return int(Variant::OP_MULTIPLY);
 }
 
 struct _GDFKC {
