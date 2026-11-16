@@ -27,8 +27,6 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include <cstddef>
-#include <cstdint>
 #include <inline_c.h>
 #include <psxapi.h>
 #include <psxcd.h>
@@ -39,6 +37,8 @@
 #include <psxsn.h>
 #include <psxspu.h>
 #include <string.h>
+#include <cstddef>
+#include <cstdint>
 
 #include "fmv_play.h"
 #include "script_vm.h"
@@ -974,11 +974,11 @@ static void draw_cooked_sprites(uint16_t *tpages, uint16_t *cluts) {
 			continue;
 		}
 		const uint8_t rgb = spr[si].rgb ? spr[si].rgb : 255;
-			const uint8_t u = uint8_t(spr[si].u + spr[si].frame * spr[si].w);
-			const uint8_t u1 = spr[si].flip_h ? u : uint8_t(u + spr[si].w);
-			const uint8_t u0 = spr[si].flip_h ? uint8_t(u + spr[si].w) : u;
-			const uint8_t v0 = spr[si].flip_v ? uint8_t(spr[si].v + spr[si].h) : spr[si].v;
-			const uint8_t v1 = spr[si].flip_v ? spr[si].v : uint8_t(spr[si].v + spr[si].h);
+		const uint8_t u = uint8_t(spr[si].u + spr[si].frame * spr[si].w);
+		const uint8_t u1 = spr[si].flip_h ? u : uint8_t(u + spr[si].w);
+		const uint8_t u0 = spr[si].flip_h ? uint8_t(u + spr[si].w) : u;
+		const uint8_t v0 = spr[si].flip_v ? uint8_t(spr[si].v + spr[si].h) : spr[si].v;
+		const uint8_t v1 = spr[si].flip_v ? spr[si].v : uint8_t(spr[si].v + spr[si].h);
 		const int16_t x = spr[si].x ? spr[si].x : nodes[ni].px;
 		const int16_t y = spr[si].y ? spr[si].y : int16_t(-nodes[ni].py);
 		const uint8_t tex = uint8_t(spr[si].tex & 15);

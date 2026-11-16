@@ -30,8 +30,8 @@
 
 #include "gdscript_function.h"
 
-#include "gdscript.h"
 #include "core/object/method_bind.h"
+#include "gdscript.h"
 
 Variant GDScriptFunction::get_constant(int p_idx) const {
 	ERR_FAIL_INDEX_V(p_idx, constants.size(), "<errconst>");

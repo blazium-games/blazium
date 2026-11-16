@@ -67,7 +67,9 @@ static const int kEngineId = -4;
 static const int kPackBase = 1000;
 static const int kTimerBase = 2000;
 static const int kTweenBase = 3000;
-enum { SIG_TIMEOUT = 1, SIG_PRESSED = 2, SIG_ANIM = 3 };
+enum { SIG_TIMEOUT = 1,
+	SIG_PRESSED = 2,
+	SIG_ANIM = 3 };
 struct ScriptVMConn {
 	int src;
 	uint8_t sig;
@@ -204,7 +206,17 @@ static int g_quit = 0;
 static int16_t g_hud_ox = 0, g_hud_oy = 0;
 static ScriptVMShot g_shot[32];
 static int g_nshot = 32;
-enum { NK_NONE = 0, NK_PATH = 1, NK_RAY = 2, NK_SHAPE = 3, NK_NOTE = 4, NK_ENAB = 5, NK_REMOTE = 6, NK_TIMER = 7, NK_AGENT = 8, NK_ARM = 9, NK_LOOK = 10 };
+enum { NK_NONE = 0,
+	NK_PATH = 1,
+	NK_RAY = 2,
+	NK_SHAPE = 3,
+	NK_NOTE = 4,
+	NK_ENAB = 5,
+	NK_REMOTE = 6,
+	NK_TIMER = 7,
+	NK_AGENT = 8,
+	NK_ARM = 9,
+	NK_LOOK = 10 };
 struct TweenSlot {
 	uint8_t used;
 	int16_t node;
@@ -338,7 +350,14 @@ enum {
 	OP_END = 151
 };
 
-enum { V_NIL, V_BOOL, V_INT, V_FLOAT, V_STR, V_V2, V_V3, V_OBJ };
+enum { V_NIL,
+	V_BOOL,
+	V_INT,
+	V_FLOAT,
+	V_STR,
+	V_V2,
+	V_V3,
+	V_OBJ };
 
 struct GVar {
 	uint8_t type;
@@ -3113,7 +3132,7 @@ static int instantiate_pack(int pack, int parent) {
 	const int hlo = int(g_packs[pack].hud_lo);
 	const int hhi = int(g_packs[pack].hud_hi);
 	const int tlo = int(g_packs[pack].tile_lo);
-	const int thi = int(g_packs[pack].tile_hi);
+	const int t_hi = int(g_packs[pack].tile_hi);
 	int hneed = ch;
 	int tneed = ct;
 	int nfree = 0;
@@ -3194,7 +3213,7 @@ static int instantiate_pack(int pack, int parent) {
 			g_nhud = dsth + 1;
 		}
 	}
-	for (int t = tlo; t < thi && t < g_ntile; t++) {
+	for (int t = tlo; t < t_hi && t < g_ntile; t++) {
 		const int nid = int(g_tiles[t].node_id);
 		if (nid < lo || nid >= hi) {
 			continue;
@@ -4839,7 +4858,7 @@ static int apply_call(const ScriptVMHost *host, int node, const char *name, floa
 		return 1;
 	}
 	if ((name_is(name, "get_x") || name_is(name, "get_y") || name_is(name, "get_z") ||
-			name_is(name, "set_x") || name_is(name, "set_y") || name_is(name, "set_z"))) {
+				name_is(name, "set_x") || name_is(name, "set_y") || name_is(name, "set_z"))) {
 		int nid = node;
 		int ai = 0;
 		if (argv && argc > 0 && argv[0].type == V_OBJ) {
@@ -10813,7 +10832,7 @@ static int run_tape(const uint8_t *blob, size_t size, const char *want, float de
 	const uint8_t *p = blob + 8;
 	const uint8_t *end = blob + size;
 	uint16_t owners[16];
-	int nown = 0;
+	int n_owners = 0;
 	for (uint16_t i = 0; i < npaths; i++) {
 		if (p >= end) {
 			return 0;
@@ -10825,8 +10844,8 @@ static int run_tape(const uint8_t *blob, size_t size, const char *want, float de
 		}
 		const uint16_t owner = ru16(p);
 		p += 2;
-		if (nown < 16) {
-			owners[nown++] = owner;
+		if (n_owners < 16) {
+			owners[n_owners++] = owner;
 		}
 	}
 	if (p + 2 > end) {
@@ -10889,7 +10908,7 @@ static int run_tape(const uint8_t *blob, size_t size, const char *want, float de
 		if (script_filter >= 0 && int(f / 2) != script_filter) {
 			continue;
 		}
-		const int owner = (f / 2 < nown) ? int(owners[f / 2]) : 0;
+		const int owner = (f / 2 < n_owners) ? int(owners[f / 2]) : 0;
 		if (self_override < 0 && !owner_node_visible(owner)) {
 			continue;
 		}

@@ -11,9 +11,9 @@
 
 #pragma once
 
+#include "core/error/error_list.h"
 #include "core/math/vector3.h"
 #include "core/templates/vector.h"
-#include "core/error/error_list.h"
 
 namespace n64_cook {
 
