@@ -174,8 +174,16 @@ void JustAMCPServer::_on_request_cancelled(const Variant &p_request_id, const St
 				return;
 			}
 
-			if (still->is_task_augmented && !still->pending_task_dispatch && still->task_id.is_empty()) {
-				return;
+			if (still->is_task_augmented && still->task_id.is_empty()) {
+				if (!still->pending_task_dispatch) {
+					// The dispatcher already claimed this entry; it re-checks cancel_requested
+					// under the queue mutex and frees the entry itself.
+					return;
+				}
+				// Claim the entry before releasing the lock so a concurrent
+				// _dispatch_task_augmented_tools_call skips it instead of using it while
+				// send_tool_result frees it.
+				still->pending_task_dispatch = false;
 			}
 		}
 		Dictionary cancelled;
