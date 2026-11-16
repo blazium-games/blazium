@@ -199,13 +199,20 @@ TEST_CASE("[TCPServer] When stopped shouldn't accept new connections") {
 
 	CHECK_FALSE(server->is_connection_available());
 
+	// Depending on the OS, connecting to a stopped server either fails outright (STATUS_ERROR) or
+	// connects briefly and is reset by the peer, which StreamPeerTCP reports as STATUS_NONE
+	// (seen on macOS runners). Either way the stopped server must not accept the connection.
 	wait_for_condition([&]() {
-		return new_client->poll() != Error::OK || new_client->get_status() == StreamPeerTCP::STATUS_ERROR;
+		const Error err = new_client->poll();
+		const StreamPeerTCP::Status status = new_client->get_status();
+		return err != Error::OK || status == StreamPeerTCP::STATUS_ERROR || status == StreamPeerTCP::STATUS_NONE;
 	});
 
 	CHECK_FALSE(server->is_connection_available());
 
-	CHECK_EQ(new_client->get_status(), StreamPeerTCP::STATUS_ERROR);
+	const StreamPeerTCP::Status new_client_status = new_client->get_status();
+	const bool connection_refused = new_client_status == StreamPeerTCP::STATUS_ERROR || new_client_status == StreamPeerTCP::STATUS_NONE;
+	CHECK_MESSAGE(connection_refused, "Connecting to a stopped server should fail.");
 	new_client->disconnect_from_host();
 	CHECK_EQ(new_client->get_status(), StreamPeerTCP::STATUS_NONE);
 }
