@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PS2Follow" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="follow">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="speed" type="float" setter="set_speed" getter="get_speed" default="4.0">
+		</member>
+		<member name="target_path" type="NodePath" setter="set_target_path" getter="get_target_path" default="NodePath(&quot;&quot;)">
+		</member>
+	</members>
+</class>

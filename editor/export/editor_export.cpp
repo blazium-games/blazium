@@ -30,6 +30,7 @@
 
 #include "editor_export.h"
 
+#include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/io/config_file.h"
 #include "editor/editor_settings.h"
@@ -123,6 +124,11 @@ void EditorExport::emit_presets_runnable_changed() {
 }
 
 void EditorExport::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_export_platform_count"), &EditorExport::get_export_platform_count);
+	ClassDB::bind_method(D_METHOD("get_export_platform", "idx"), &EditorExport::get_export_platform);
+	ClassDB::bind_method(D_METHOD("get_export_preset_count"), &EditorExport::get_export_preset_count);
+	ClassDB::bind_method(D_METHOD("get_export_preset", "idx"), &EditorExport::get_export_preset);
+
 	ADD_SIGNAL(MethodInfo(_export_presets_updated));
 	ADD_SIGNAL(MethodInfo(_export_presets_runnable_updated));
 }
@@ -457,6 +463,9 @@ EditorExport::EditorExport() {
 	_export_presets_runnable_updated = StringName("export_presets_runnable_updated", true);
 
 	singleton = this;
+	if (Engine::get_singleton() && !Engine::get_singleton()->has_singleton("EditorExport")) {
+		Engine::get_singleton()->add_singleton(Engine::Singleton("EditorExport", this));
+	}
 	set_process(true);
 }
 
