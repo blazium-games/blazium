@@ -207,6 +207,10 @@ void JustAMCPServer::_dispatch_task_augmented_tools_call(const Variant &p_reques
 			}
 		}
 
+		if (entry && !entry->pending_task_dispatch && entry->cancel_requested) {
+			// Cancelled and claimed by _on_request_cancelled before dispatch ran; it owns cleanup.
+			return;
+		}
 		if (!entry || !entry->pending_task_dispatch) {
 			ERR_PRINT("JustAMCP: task-augmented tools/call dispatch could not find a pending queue entry.");
 			return;
@@ -315,6 +319,11 @@ void JustAMCPServer::_dispatch_task_augmented_tools_call(const Variant &p_reques
 		session_id = still_entry->session_id;
 		sse_connection_id = still_entry->sse_connection_id;
 		send_sse = !has_stateless;
+		if (has_stateless) {
+			// Signal while the queue mutex is held: once task_id is set and the lock is released,
+			// a concurrent cancel may complete and free this entry.
+			still_entry->signal_completion();
+		}
 	}
 
 	if (!progress_token.is_empty()) {
@@ -323,7 +332,6 @@ void JustAMCPServer::_dispatch_task_augmented_tools_call(const Variant &p_reques
 	_register_task_route(task_id, session_id, sse_connection_id);
 
 	if (has_stateless) {
-		entry->signal_completion();
 		_schedule_process_pending_tools();
 	} else if (send_sse) {
 		_send_sse_routed(JSON::stringify(rpc_result), session_id, sse_connection_id);
